@@ -1561,7 +1561,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_block_usage, "--write_block_usage")
-        .help("Writes the cluster-level block types usage summary to the specified JSON or XML file.")
+        .help("Writes the cluster-level block types usage summary to the specified JSON, XML or TXT file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& netlist_grp = parser.add_argument_group("netlist options");

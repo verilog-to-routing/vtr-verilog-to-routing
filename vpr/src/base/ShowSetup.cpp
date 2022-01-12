@@ -63,23 +63,70 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     }
 }
 
-void printClusteredNetlistStats(std::string block_usage_filename) {
+void ClusteredNetlistStats::writeHuman(std::ostream& output) const {
+    output << "Cluster level netlist and block usage statistics\n";
+    output << "Netlist num_nets: " << num_nets << "\n";
+    output << "Netlist num_blocks: " << num_blocks << "\n";
+    for (const auto& type : logical_block_types) {
+        output << "Netlist " << type.name << " blocks: " << num_blocks_type[type.index] << ".\n";
+    }
+
+    output << "Netlist inputs pins: " << L_num_p_inputs << "\n";
+    output << "Netlist output pins: " << L_num_p_outputs << "\n";
+}
+void ClusteredNetlistStats::writeJSON(std::ostream& output) const {
+    output << "{\n";
+
+    output << "  \"num_nets\": \"" << num_nets << "\",\n";
+    output << "  \"num_blocks\": \"" << num_blocks << "\",\n";
+
+    output << "  \"input_pins\": \"" << L_num_p_inputs << "\",\n";
+    output << "  \"output_pins\": \"" << L_num_p_outputs << "\",\n";
+
+    output << "  \"blocks\": {\n";
+
+    for (const auto& type : logical_block_types) {
+        output << "    \"" << type.name << "\": " << num_blocks_type[type.index];
+        if ((int)type.index < (int)logical_block_types.size() - 1)
+            output << ",\n";
+        else
+            output << "\n";
+    }
+    output << "  }\n";
+    output << "}\n";
+}
+
+void ClusteredNetlistStats::writeXML(std::ostream& output) const {
+    output << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    output << "<block_usage_report>\n";
+
+    output << "  <nets num=\"" << num_nets << "\"></nets>\n";
+    output << "  <blocks num=\"" << num_blocks << "\">\n";
+
+    for (const auto& type : logical_block_types) {
+        output << "    <block type=\"" << type.name << "\" usage=\"" << num_blocks_type[type.index] << "\"></block>\n";
+    }
+    output << "  </blocks>\n";
+
+    output << "  <input_pins num=\"" << L_num_p_inputs << "\"></input_pins>\n";
+    output << "  <output_pins num=\"" << L_num_p_outputs << "\"></output_pins>\n";
+
+    output << "</block_usage_report>\n";
+}
+
+ClusteredNetlistStats::ClusteredNetlistStats() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int j, L_num_p_inputs, L_num_p_outputs, num_nets, num_blocks;
-    std::vector<int> num_blocks_type(device_ctx.logical_block_types.size(), 0);
-    num_nets = (int)cluster_ctx.clb_nlist.nets().size();
-    num_blocks = (int)cluster_ctx.clb_nlist.blocks().size();
-
-    VTR_LOG("\n");
-    VTR_LOG("Netlist num_nets: %d\n", num_nets);
-    VTR_LOG("Netlist num_blocks: %d\n", num_blocks);
-
-    /* Count I/O input and output pads */
+    int j;
     L_num_p_inputs = 0;
     L_num_p_outputs = 0;
+    num_blocks_type = std::vector<int>(device_ctx.logical_block_types.size(), 0);
+    num_nets = (int)cluster_ctx.clb_nlist.nets().size();
+    num_blocks = (int)cluster_ctx.clb_nlist.blocks().size();
+    logical_block_types = device_ctx.logical_block_types;
 
+    /* Count I/O input and output pads */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
         auto physical_tile = pick_physical_type(logical_block);
@@ -101,77 +148,51 @@ void printClusteredNetlistStats(std::string block_usage_filename) {
             }
         }
     }
-
-    for (const auto& type : device_ctx.logical_block_types) {
-        VTR_LOG("Netlist %s blocks: %d.\n", type.name, num_blocks_type[type.index]);
-    }
-
-    /* Print out each block separately instead */
-    VTR_LOG("Netlist inputs pins: %d\n", L_num_p_inputs);
-    VTR_LOG("Netlist output pins: %d\n", L_num_p_outputs);
-    VTR_LOG("\n");
-    if (!block_usage_filename.empty())
-        writeClusteredNetlistStats(block_usage_filename, num_nets, num_blocks,
-                                   L_num_p_inputs, L_num_p_outputs,
-                                   num_blocks_type,
-                                   device_ctx.logical_block_types);
-
-    num_blocks_type.clear();
 }
 
-void writeClusteredNetlistStats(std::string block_usage_filename,
-                                int num_nets,
-                                int num_blocks,
-                                int L_num_p_inputs,
-                                int L_num_p_outputs,
-                                std::vector<int> num_blocks_type,
-                                std::vector<t_logical_block_type> logical_block_types) {
-    if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".json")) {
-        // write report in JSON format
-        std::fstream fp;
-        fp.open(block_usage_filename, std::fstream::out | std::fstream::trunc);
-        fp << "{\n";
+void ClusteredNetlistStats::write(OutputFormat fmt, std::ostream& output) const {
+    switch (fmt) {
+        case HumanReadable:
+            writeHuman(output);
+            break;
+        case JSON:
+            writeJSON(output);
+            break;
+        case XML:
+            writeXML(output);
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Unknown extension on in block usage summary file");
+            break;
+    }
+}
 
-        fp << "  \"num_nets\": \"" << num_nets << "\",\n";
-        fp << "  \"num_blocks\": \"" << num_blocks << "\",\n";
+void writeClusteredNetlistStats(std::string block_usage_filename) {
+    const auto stats = ClusteredNetlistStats();
 
-        fp << "  \"input_pins\": \"" << L_num_p_inputs << "\",\n";
-        fp << "  \"output_pins\": \"" << L_num_p_outputs << "\",\n";
+    // Print out the human readable version to stdout
 
-        fp << "  \"blocks\": {\n";
+    stats.write(ClusteredNetlistStats::OutputFormat::HumanReadable, std::cout);
 
-        for (const auto& type : logical_block_types) {
-            fp << "    \"" << type.name << "\": " << num_blocks_type[type.index];
-            if ((int)type.index < (int)logical_block_types.size() - 1)
-                fp << ",\n";
-            else
-                fp << "\n";
+    if (block_usage_filename.size() > 0) {
+        ClusteredNetlistStats::OutputFormat fmt;
+
+        if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".json")) {
+            fmt = ClusteredNetlistStats::OutputFormat::JSON;
+        } else if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".xml")) {
+            fmt = ClusteredNetlistStats::OutputFormat::XML;
+        } else if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".txt")) {
+            fmt = ClusteredNetlistStats::OutputFormat::HumanReadable;
+        } else {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unknown extension on output %s", block_usage_filename.c_str());
         }
-        fp << "  }\n";
-        fp << "}\n";
-    } else if (vtr::check_file_name_extension(block_usage_filename.c_str(), ".xml")) {
-        // write report in XML format
+
         std::fstream fp;
+
         fp.open(block_usage_filename, std::fstream::out | std::fstream::trunc);
-        fp << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-        fp << "<block_usage_report>\n";
-
-        fp << "  <nets num=\"" << num_nets << "\"></nets>\n";
-        fp << "  <blocks num=\"" << num_blocks << "\">\n";
-
-        for (const auto& type : logical_block_types) {
-            fp << "    <block type=\"" << type.name << "\" usage=\"" << num_blocks_type[type.index] << "\"></block>\n";
-        }
-        fp << "  </blocks>\n";
-
-        fp << "  <input_pins num=\"" << L_num_p_inputs << "\"></input_pins>\n";
-        fp << "  <output_pins num=\"" << L_num_p_outputs << "\"></output_pins>\n";
-
-        fp << "</block_usage_report>\n";
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_PACK,
-                        "Unknown extension on output %s",
-                        block_usage_filename.c_str());
+        stats.write(fmt, fp);
+        fp.close();
     }
 }
 
