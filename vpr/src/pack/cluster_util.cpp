@@ -2,6 +2,169 @@
 
 #include "cluster_router.h"
 #include "cluster_placement.h"
+#include "output_clustering.h"
+
+/* TODO: May want to check that all atom blocks are actually reached */
+static void check_cluster_atom_blocks(t_pb* pb, std::unordered_set<AtomBlockId>& blocks_checked) {
+    int i, j;
+    const t_pb_type* pb_type;
+    bool has_child = false;
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    pb_type = pb->pb_graph_node->pb_type;
+    if (pb_type->num_modes == 0) {
+        /* primitive */
+        auto blk_id = atom_ctx.lookup.pb_atom(pb);
+        if (blk_id) {
+            if (blocks_checked.count(blk_id)) {
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "pb %s contains atom block %s but atom block is already contained in another pb.\n",
+                                pb->name, atom_ctx.nlist.block_name(blk_id).c_str());
+            }
+            blocks_checked.insert(blk_id);
+            if (pb != atom_ctx.lookup.atom_pb(blk_id)) {
+                VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                                "pb %s contains atom block %s but atom block does not link to pb.\n",
+                                pb->name, atom_ctx.nlist.block_name(blk_id).c_str());
+            }
+        }
+    } else {
+        /* this is a container pb, all container pbs must contain children */
+        for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
+            for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb; j++) {
+                if (pb->child_pbs[i] != nullptr) {
+                    if (pb->child_pbs[i][j].name != nullptr) {
+                        has_child = true;
+                        check_cluster_atom_blocks(&pb->child_pbs[i][j], blocks_checked);
+                    }
+                }
+            }
+        }
+        VTR_ASSERT(has_child);
+    }
+}
+
+/*Print the contents of each cluster to an echo file*/
+static void echo_clusters(char* filename) {
+    FILE* fp;
+    fp = vtr::fopen(filename, "w");
+
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "Clusters\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    std::map<ClusterBlockId, std::vector<AtomBlockId>> cluster_atoms;
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        cluster_atoms.insert({blk_id, std::vector<AtomBlockId>()});
+    }
+
+    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
+        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
+
+        cluster_atoms[clb_index].push_back(atom_blk_id);
+    }
+
+    for (auto i = cluster_atoms.begin(); i != cluster_atoms.end(); i++) {
+        std::string cluster_name;
+        cluster_name = cluster_ctx.clb_nlist.block_name(i->first);
+        fprintf(fp, "Cluster %s Id: %zu \n", cluster_name.c_str(), size_t(i->first));
+        fprintf(fp, "\tAtoms in cluster: \n");
+
+        int num_atoms = i->second.size();
+
+        for (auto j = 0; j < num_atoms; j++) {
+            AtomBlockId atom_id = i->second[j];
+            fprintf(fp, "\t %s \n", atom_ctx.nlist.block_name(atom_id).c_str());
+        }
+    }
+
+    fprintf(fp, "\nCluster Floorplanning Constraints:\n");
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+
+    for (ClusterBlockId clb_id : cluster_ctx.clb_nlist.blocks()) {
+        std::vector<Region> reg = floorplanning_ctx.cluster_constraints[clb_id].get_partition_region();
+        if (reg.size() != 0) {
+            fprintf(fp, "\nRegions in Cluster %zu:\n", size_t(clb_id));
+            for (unsigned int i = 0; i < reg.size(); i++) {
+                print_region(fp, reg[i]);
+            }
+        }
+    }
+
+    fclose(fp);
+}
+
+/* TODO: Add more error checking! */
+void check_clustering() {
+    std::unordered_set<AtomBlockId> atoms_checked;
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    if (cluster_ctx.clb_nlist.blocks().size() == 0) {
+        VTR_LOG_WARN("Packing produced no clustered blocks");
+    }
+
+    /*
+     * Check that each atom block connects to one physical primitive and that the primitive links up to the parent clb
+     */
+    for (auto blk_id : atom_ctx.nlist.blocks()) {
+        //Each atom should be part of a pb
+        const t_pb* atom_pb = atom_ctx.lookup.atom_pb(blk_id);
+        if (!atom_pb) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Atom block %s is not mapped to a pb\n",
+                            atom_ctx.nlist.block_name(blk_id).c_str());
+        }
+
+        //Check the reverse mapping is consistent
+        if (atom_ctx.lookup.pb_atom(atom_pb) != blk_id) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "pb %s does not contain atom block %s but atom block %s maps to pb.\n",
+                            atom_pb->name,
+                            atom_ctx.nlist.block_name(blk_id).c_str(),
+                            atom_ctx.nlist.block_name(blk_id).c_str());
+        }
+
+        VTR_ASSERT(atom_ctx.nlist.block_name(blk_id) == atom_pb->name);
+
+        const t_pb* cur_pb = atom_pb;
+        while (cur_pb->parent_pb) {
+            cur_pb = cur_pb->parent_pb;
+            VTR_ASSERT(cur_pb->name);
+        }
+
+        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(blk_id);
+        if (clb_index == ClusterBlockId::INVALID()) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Atom %s is not mapped to a CLB\n",
+                            atom_ctx.nlist.block_name(blk_id).c_str());
+        }
+
+        if (cur_pb != cluster_ctx.clb_nlist.block_pb(clb_index)) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "CLB %s does not match CLB contained by pb %s.\n",
+                            cur_pb->name, atom_pb->name);
+        }
+    }
+
+    /* Check that I do not have spurious links in children pbs */
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        check_cluster_atom_blocks(cluster_ctx.clb_nlist.block_pb(blk_id), atoms_checked);
+    }
+
+    for (auto blk_id : atom_ctx.nlist.blocks()) {
+        if (!atoms_checked.count(blk_id)) {
+            VPR_FATAL_ERROR(VPR_ERROR_PACK,
+                            "Atom block %s not found in any cluster.\n",
+                            atom_ctx.nlist.block_name(blk_id).c_str());
+        }
+    }
+}
 
 //calculate the initial timing at the start of packing stage
 void calc_init_packing_timing (const t_packer_opts& packer_opts, 
@@ -88,4 +251,25 @@ void free_clustering_data(const t_packer_opts& packer_opts,
     free(memory_pool);
 
     free(primitives_list);
+}
+
+
+void check_and_output_clustering(const t_packer_opts& packer_opts, 
+	  							 const std::unordered_set<AtomNetId>& is_clock, 
+	  							 const t_arch* arch, 
+	  							 const int& num_clb, 
+	  							 const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing) {
+
+	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+	VTR_ASSERT(num_clb == (int)cluster_ctx.clb_nlist.blocks().size());
+    check_clustering();
+
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERS)) {
+        echo_clusters(getEchoFileName(E_ECHO_CLUSTERS));
+    }
+
+    output_clustering(intra_lb_routing, packer_opts.global_clocks, is_clock, arch->architecture_id, packer_opts.output_file.c_str(), false);
+
+    VTR_ASSERT(cluster_ctx.clb_nlist.blocks().size() == intra_lb_routing.size());
 }
