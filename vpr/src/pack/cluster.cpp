@@ -475,8 +475,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     vtr::vector<AtomBlockId, float> atom_criticality(atom_ctx.nlist.blocks().size(), 0.);
 
     if (packer_opts.timing_driven) {
-        calc_init_packing_timing (packer_opts, analysis_opts, expected_lowest_cost_pb_gnode, 
-              clustering_delay_calc, timing_info, atom_criticality);
+        calc_init_packing_timing(packer_opts, analysis_opts, expected_lowest_cost_pb_gnode,
+                                 clustering_delay_calc, timing_info, atom_criticality);
     }
 
     auto seed_atoms = initialize_seed_atoms(packer_opts.cluster_seed_type, atom_molecules, max_molecule_stats, atom_criticality);
@@ -741,24 +741,12 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
         print_le_count(le_count, le_pb_type);
     }
 
-    /****************************************************************
-     * Free Data Structures
-     *****************************************************************/
+    //check clustering and output it
     check_and_output_clustering(packer_opts, is_clock, arch, num_clb, intra_lb_routing);
-/*
-    VTR_ASSERT(num_clb == (int)cluster_ctx.clb_nlist.blocks().size());
-    check_clustering();
 
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERS)) {
-        echo_clusters(getEchoFileName(E_ECHO_CLUSTERS));
-    }
-
-    output_clustering(intra_lb_routing, packer_opts.global_clocks, is_clock, arch->architecture_id, packer_opts.output_file.c_str(), false);
-
-    VTR_ASSERT(cluster_ctx.clb_nlist.blocks().size() == intra_lb_routing.size());
-*/
-    free_clustering_data(packer_opts, intra_lb_routing, hill_climbing_inputs_avail, cluster_placement_stats, 
-                      unclustered_list_head, memory_pool, primitives_list);
+    // Free Data Structures
+    free_clustering_data(packer_opts, intra_lb_routing, hill_climbing_inputs_avail, cluster_placement_stats,
+                         unclustered_list_head, memory_pool, primitives_list);
 
     return num_used_type_instances;
 }

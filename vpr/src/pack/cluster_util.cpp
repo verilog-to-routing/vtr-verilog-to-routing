@@ -167,13 +167,12 @@ void check_clustering() {
 }
 
 //calculate the initial timing at the start of packing stage
-void calc_init_packing_timing (const t_packer_opts& packer_opts, 
-							   const t_analysis_opts& analysis_opts,
-							   const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode, 
-							   std::shared_ptr<PreClusterDelayCalculator>& clustering_delay_calc, 
-							   std::shared_ptr<SetupTimingInfo>& timing_info, 
-							   vtr::vector<AtomBlockId, float>& atom_criticality) {
-
+void calc_init_packing_timing(const t_packer_opts& packer_opts,
+                              const t_analysis_opts& analysis_opts,
+                              const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
+                              std::shared_ptr<PreClusterDelayCalculator>& clustering_delay_calc,
+                              std::shared_ptr<SetupTimingInfo>& timing_info,
+                              vtr::vector<AtomBlockId, float>& atom_criticality) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     /*
@@ -218,19 +217,17 @@ void calc_init_packing_timing (const t_packer_opts& packer_opts,
             atom_criticality[blk] = std::max(atom_criticality[blk], crit);
         }
     }
-
 }
 
 //Free the clustering data structures
-void free_clustering_data(const t_packer_opts& packer_opts, 
-						  vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing, 
-						  int* hill_climbing_inputs_avail, 
-						  t_cluster_placement_stats* cluster_placement_stats, 
-						  t_molecule_link* unclustered_list_head, 
-						  t_molecule_link* memory_pool, 
-						  t_pb_graph_node** primitives_list) {
-
-	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+void free_clustering_data(const t_packer_opts& packer_opts,
+                          vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
+                          int* hill_climbing_inputs_avail,
+                          t_cluster_placement_stats* cluster_placement_stats,
+                          t_molecule_link* unclustered_list_head,
+                          t_molecule_link* memory_pool,
+                          t_pb_graph_node** primitives_list) {
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
         free_intra_lb_nets(intra_lb_routing[blk_id]);
@@ -253,16 +250,15 @@ void free_clustering_data(const t_packer_opts& packer_opts,
     free(primitives_list);
 }
 
+//check the clustering and output it
+void check_and_output_clustering(const t_packer_opts& packer_opts,
+                                 const std::unordered_set<AtomNetId>& is_clock,
+                                 const t_arch* arch,
+                                 const int& num_clb,
+                                 const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing) {
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
-void check_and_output_clustering(const t_packer_opts& packer_opts, 
-	  							 const std::unordered_set<AtomNetId>& is_clock, 
-	  							 const t_arch* arch, 
-	  							 const int& num_clb, 
-	  							 const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing) {
-
-	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-
-	VTR_ASSERT(num_clb == (int)cluster_ctx.clb_nlist.blocks().size());
+    VTR_ASSERT(num_clb == (int)cluster_ctx.clb_nlist.blocks().size());
     check_clustering();
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERS)) {
