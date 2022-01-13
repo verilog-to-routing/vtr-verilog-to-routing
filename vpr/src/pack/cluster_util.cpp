@@ -1,5 +1,9 @@
 #include "cluster_util.h"
 
+#include "cluster_router.h"
+#include "cluster_placement.h"
+
+//calculate the initial timing at the start of packing stage
 void calc_init_packing_timing (const t_packer_opts& packer_opts, 
 							   const t_analysis_opts& analysis_opts,
 							   const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode, 
@@ -52,4 +56,36 @@ void calc_init_packing_timing (const t_packer_opts& packer_opts,
         }
     }
 
+}
+
+//Free the clustering data structures
+void free_clustering_data(const t_packer_opts& packer_opts, 
+						  vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing, 
+						  int* hill_climbing_inputs_avail, 
+						  t_cluster_placement_stats* cluster_placement_stats, 
+						  t_molecule_link* unclustered_list_head, 
+						  t_molecule_link* memory_pool, 
+						  t_pb_graph_node** primitives_list) {
+
+	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks())
+        free_intra_lb_nets(intra_lb_routing[blk_id]);
+
+    intra_lb_routing.clear();
+
+    if (packer_opts.hill_climbing_flag)
+        free(hill_climbing_inputs_avail);
+
+    free_cluster_placement_stats(cluster_placement_stats);
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks())
+        cluster_ctx.clb_nlist.remove_block(blk_id);
+
+    cluster_ctx.clb_nlist = ClusteredNetlist();
+
+    free(unclustered_list_head);
+    free(memory_pool);
+
+    free(primitives_list);
 }

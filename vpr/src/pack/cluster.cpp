@@ -77,52 +77,6 @@
 //Constant allowing all cluster pins to be used
 const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL(1., 1.);
 
-enum e_gain_update {
-    GAIN,
-    NO_GAIN
-};
-enum e_feasibility {
-    FEASIBLE,
-    INFEASIBLE
-};
-enum e_gain_type {
-    HILL_CLIMBING,
-    NOT_HILL_CLIMBING
-};
-enum e_removal_policy {
-    REMOVE_CLUSTERED,
-    LEAVE_CLUSTERED
-};
-/* TODO: REMOVE_CLUSTERED no longer used, remove */
-enum e_net_relation_to_clustered_block {
-    INPUT,
-    OUTPUT
-};
-
-enum e_detailed_routing_stages {
-    E_DETAILED_ROUTE_AT_END_ONLY = 0,
-    E_DETAILED_ROUTE_FOR_EACH_ATOM,
-    E_DETAILED_ROUTE_INVALID
-};
-
-/* Linked list structure.  Stores one integer (iblk). */
-struct t_molecule_link {
-    t_pack_molecule* moleculeptr;
-    t_molecule_link* next;
-};
-
-struct t_molecule_stats {
-    int num_blocks = 0; //Number of blocks across all primitives in molecule
-
-    int num_pins = 0;        //Number of pins across all primitives in molecule
-    int num_input_pins = 0;  //Number of input pins across all primitives in molecule
-    int num_output_pins = 0; //Number of output pins across all primitives in molecule
-
-    int num_used_ext_pins = 0;    //Number of *used external* pins across all primitives in molecule
-    int num_used_ext_inputs = 0;  //Number of *used external* input pins across all primitives in molecule
-    int num_used_ext_outputs = 0; //Number of *used external* output pins across all primitives in molecule
-};
-
 /* Keeps a linked list of the unclustered blocks to speed up looking for *
  * unclustered blocks with a certain number of *external* inputs.        *
  * [0..lut_size].  Unclustered_list_head[i] points to the head of the    *
@@ -806,25 +760,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     output_clustering(intra_lb_routing, packer_opts.global_clocks, is_clock, arch->architecture_id, packer_opts.output_file.c_str(), false);
 
     VTR_ASSERT(cluster_ctx.clb_nlist.blocks().size() == intra_lb_routing.size());
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks())
-        free_intra_lb_nets(intra_lb_routing[blk_id]);
-
-    intra_lb_routing.clear();
-
-    if (packer_opts.hill_climbing_flag)
-        free(hill_climbing_inputs_avail);
-
-    free_cluster_placement_stats(cluster_placement_stats);
-
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks())
-        cluster_ctx.clb_nlist.remove_block(blk_id);
-
-    cluster_ctx.clb_nlist = ClusteredNetlist();
-
-    free(unclustered_list_head);
-    free(memory_pool);
-
-    free(primitives_list);
+  
+    free_clustering_data(packer_opts, intra_lb_routing, hill_climbing_inputs_avail, cluster_placement_stats, 
+                      unclustered_list_head, memory_pool, primitives_list);
 
     return num_used_type_instances;
 }

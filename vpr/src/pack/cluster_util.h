@@ -9,6 +9,53 @@
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
+enum e_gain_update {
+    GAIN,
+    NO_GAIN
+};
+enum e_feasibility {
+    FEASIBLE,
+    INFEASIBLE
+};
+enum e_gain_type {
+    HILL_CLIMBING,
+    NOT_HILL_CLIMBING
+};
+enum e_removal_policy {
+    REMOVE_CLUSTERED,
+    LEAVE_CLUSTERED
+};
+/* TODO: REMOVE_CLUSTERED no longer used, remove */
+enum e_net_relation_to_clustered_block {
+    INPUT,
+    OUTPUT
+};
+
+enum e_detailed_routing_stages {
+    E_DETAILED_ROUTE_AT_END_ONLY = 0,
+    E_DETAILED_ROUTE_FOR_EACH_ATOM,
+    E_DETAILED_ROUTE_INVALID
+};
+
+/* Linked list structure.  Stores one integer (iblk). */
+struct t_molecule_link {
+    t_pack_molecule* moleculeptr;
+    t_molecule_link* next;
+};
+
+struct t_molecule_stats {
+    int num_blocks = 0; //Number of blocks across all primitives in molecule
+
+    int num_pins = 0;        //Number of pins across all primitives in molecule
+    int num_input_pins = 0;  //Number of input pins across all primitives in molecule
+    int num_output_pins = 0; //Number of output pins across all primitives in molecule
+
+    int num_used_ext_pins = 0;    //Number of *used external* pins across all primitives in molecule
+    int num_used_ext_inputs = 0;  //Number of *used external* input pins across all primitives in molecule
+    int num_used_ext_outputs = 0; //Number of *used external* output pins across all primitives in molecule
+};
+
+
 //calculate the initial timing at the start of packing stage
 void calc_init_packing_timing (const t_packer_opts& packer_opts, 
 							   const t_analysis_opts& analysis_opts,
@@ -17,3 +64,11 @@ void calc_init_packing_timing (const t_packer_opts& packer_opts,
 							   std::shared_ptr<SetupTimingInfo>& timing_info, 
 							   vtr::vector<AtomBlockId, float>& atom_criticality);
 
+//Free the clustering data structures
+void free_clustering_data(const t_packer_opts& packer_opts, 
+						  vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing, 
+						  int* hill_climbing_inputs_avail, 
+						  t_cluster_placement_stats* cluster_placement_stats, 
+						  t_molecule_link* unclustered_list_head, 
+						  t_molecule_link* memory_pool, 
+						  t_pb_graph_node** primitives_list);
