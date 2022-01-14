@@ -62,7 +62,6 @@ bool try_pack(t_packer_opts* packer_opts,
         num_models++;
         cur_model = cur_model->next;
     }
-    VTR_LOG("Number of models is %d \n", num_models);
 
     is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 

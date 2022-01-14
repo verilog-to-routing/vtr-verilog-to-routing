@@ -501,8 +501,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     mark_all_molecules_valid(molecule_head);
 
     num_molecules = count_molecules(molecule_head);
-    VTR_LOG("Number of molecules is %d \n", num_molecules);
-    VTR_LOG("Number of attraction groups is %d\n", attraction_groups.num_attraction_groups());
 
     for (const auto& type : device_ctx.logical_block_types) {
         if (is_empty_type(&type))
@@ -533,7 +531,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               num_molecules);
 
     auto primitive_candidate_block_types = identify_primitive_candidate_block_types();
-    VTR_LOG("Candiate block types size: %d \n", primitive_candidate_block_types.size());
     // find the cluster type that has lut primitives
     auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types);
     // find a LE pb_type within the found logic_block_type
