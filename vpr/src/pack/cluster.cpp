@@ -190,6 +190,30 @@ static void try_fill_cluster(const t_packer_opts& packer_opts,
                              PartitionRegion& temp_cluster_pr,
                              e_block_pack_status& block_pack_status);
 
+static t_pack_molecule* save_cluster_routing_and_pick_new_seed(const t_packer_opts& packer_opts,
+                                                               const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                               const int& num_clb,
+                                                               const std::vector<AtomBlockId>& seed_atoms,
+                                                               const int& num_blocks_hill_added,
+                                                               vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
+                                                               int& seedindex,
+                                                               t_cluster_progress_stats& cluster_stats,
+                                                               t_lb_router_data* router_data);
+
+static void store_cluster_info_and_free(const t_packer_opts& packer_opts,
+                                        const ClusterBlockId& clb_index,
+                                        const t_logical_block_type_ptr logic_block_type,
+                                        const t_pb_type* le_pb_type,
+                                        std::vector<int>& le_count,
+                                        vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets);
+
+static void free_data_and_requeue_used_mols_if_illegal(const ClusterBlockId& clb_index,
+                                                       const int& savedseedindex,
+                                                       const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                       std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                                       int& num_clb,
+                                                       int& seedindex);
+
 static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                                                          const AtomBlockId blk_id,
                                                          t_pb* cb,
@@ -608,45 +632,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             is_cluster_legal = check_cluster_legality(verbosity, detailed_routing_stage, router_data);
 
             if (is_cluster_legal) {
-                intra_lb_routing.push_back(router_data->saved_lb_nets);
-                VTR_ASSERT((int)intra_lb_routing.size() == num_clb);
-                router_data->saved_lb_nets = nullptr;
-
-                //Pick a new seed
-                istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, seed_atoms);
-
-                if (packer_opts.timing_driven) {
-                    if (num_blocks_hill_added > 0) {
-                        cluster_stats.blocks_since_last_analysis += num_blocks_hill_added;
-                    }
-                }
-
-                /* store info that will be used later in packing from pb_stats and free the rest */
-                t_pb_stats* pb_stats = cluster_ctx.clb_nlist.block_pb(clb_index)->pb_stats;
-                for (const AtomNetId mnet_id : pb_stats->marked_nets) {
-                    int external_terminals = atom_ctx.nlist.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[mnet_id];
-                    /* Check if external terminals of net is within the fanout limit and that there exists external terminals */
-                    if (external_terminals < packer_opts.transitive_fanout_threshold && external_terminals > 0) {
-                        clb_inter_blk_nets[clb_index].push_back(mnet_id);
-                    }
-                }
-                auto cur_pb = cluster_ctx.clb_nlist.block_pb(clb_index);
-
-                // update the data structure holding the LE counts
-                update_le_count(cur_pb, logic_block_type, le_pb_type, le_count);
-
-                //print clustering progress incrementally
-                //print_pack_status(num_clb, num_molecules, num_molecules_processed, mols_since_last_print, device_ctx.grid.width(), device_ctx.grid.height());
-
-                free_pb_stats_recursive(cur_pb);
+                istart = save_cluster_routing_and_pick_new_seed(packer_opts, atom_molecules, num_clb, seed_atoms, num_blocks_hill_added, intra_lb_routing, seedindex, cluster_stats, router_data);
+                store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, le_count, clb_inter_blk_nets);
             } else {
-                /* Free up data structures and requeue used molecules */
-                num_used_type_instances[cluster_ctx.clb_nlist.block_type(clb_index)]--;
-                revalid_molecules(cluster_ctx.clb_nlist.block_pb(clb_index), atom_molecules);
-                cluster_ctx.clb_nlist.remove_block(clb_index);
-                cluster_ctx.clb_nlist.compress();
-                num_clb--;
-                seedindex = savedseedindex;
+                free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, atom_molecules, num_used_type_instances, num_clb, seedindex);
             }
             free_router_data(router_data);
             router_data = nullptr;
@@ -1839,6 +1828,78 @@ static void try_fill_cluster(const t_packer_opts& packer_opts,
                                              clb_inter_blk_nets,
                                              clb_index,
                                              packer_opts.pack_verbosity);
+}
+
+static t_pack_molecule* save_cluster_routing_and_pick_new_seed(const t_packer_opts& packer_opts,
+                                                               const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                               const int& num_clb,
+                                                               const std::vector<AtomBlockId>& seed_atoms,
+                                                               const int& num_blocks_hill_added,
+                                                               vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
+                                                               int& seedindex,
+                                                               t_cluster_progress_stats& cluster_stats,
+                                                               t_lb_router_data* router_data) {
+    t_pack_molecule* next_seed = nullptr;
+
+    intra_lb_routing.push_back(router_data->saved_lb_nets);
+    VTR_ASSERT((int)intra_lb_routing.size() == num_clb);
+    router_data->saved_lb_nets = nullptr;
+
+    //Pick a new seed
+    next_seed = get_highest_gain_seed_molecule(&seedindex, atom_molecules, seed_atoms);
+
+    if (packer_opts.timing_driven) {
+        if (num_blocks_hill_added > 0) {
+            cluster_stats.blocks_since_last_analysis += num_blocks_hill_added;
+        }
+    }
+    return next_seed;
+}
+
+static void store_cluster_info_and_free(const t_packer_opts& packer_opts,
+                                        const ClusterBlockId& clb_index,
+                                        const t_logical_block_type_ptr logic_block_type,
+                                        const t_pb_type* le_pb_type,
+                                        std::vector<int>& le_count,
+                                        vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets) {
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    /* store info that will be used later in packing from pb_stats and free the rest */
+    t_pb_stats* pb_stats = cluster_ctx.clb_nlist.block_pb(clb_index)->pb_stats;
+    for (const AtomNetId mnet_id : pb_stats->marked_nets) {
+        int external_terminals = atom_ctx.nlist.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[mnet_id];
+        /* Check if external terminals of net is within the fanout limit and that there exists external terminals */
+        if (external_terminals < packer_opts.transitive_fanout_threshold && external_terminals > 0) {
+            clb_inter_blk_nets[clb_index].push_back(mnet_id);
+        }
+    }
+    auto cur_pb = cluster_ctx.clb_nlist.block_pb(clb_index);
+
+    // update the data structure holding the LE counts
+    update_le_count(cur_pb, logic_block_type, le_pb_type, le_count);
+
+    //print clustering progress incrementally
+    //print_pack_status(num_clb, num_molecules, num_molecules_processed, mols_since_last_print, device_ctx.grid.width(), device_ctx.grid.height());
+
+    free_pb_stats_recursive(cur_pb);
+}
+
+/* Free up data structures and requeue used molecules */
+static void free_data_and_requeue_used_mols_if_illegal(const ClusterBlockId& clb_index,
+                                                       const int& savedseedindex,
+                                                       const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                       std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                                       int& num_clb,
+                                                       int& seedindex) {
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    num_used_type_instances[cluster_ctx.clb_nlist.block_type(clb_index)]--;
+    revalid_molecules(cluster_ctx.clb_nlist.block_pb(clb_index), atom_molecules);
+    cluster_ctx.clb_nlist.remove_block(clb_index);
+    cluster_ctx.clb_nlist.compress();
+    num_clb--;
+    seedindex = savedseedindex;
 }
 
 /*****************************************/
