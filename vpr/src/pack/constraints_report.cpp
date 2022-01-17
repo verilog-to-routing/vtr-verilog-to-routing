@@ -11,7 +11,7 @@ bool check_constraints_filling() {
     GridTileLookup grid_tiles;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& device_ctx = g_vpr_ctx.device();
 
     auto& block_types = device_ctx.logical_block_types;
@@ -55,6 +55,7 @@ bool check_constraints_filling() {
             num_tiles = grid_tiles.region_tile_count(region_info.first, &block_types[j]);
             if (num_assigned_blocks > num_tiles) {
                 floorplan_regions_overfull = true;
+                floorplanning_ctx.overfull_regions.push_back(region_info.first);
                 VTR_LOG("\n \nRegion (%d, %d) to (%d, %d) st %d \n", rect.xmin(), rect.ymin(), rect.xmax(), rect.ymax(), region_info.first.get_sub_tile());
                 VTR_LOG("Assigned %d blocks of type %s, but only has %d tiles of that type\n", num_assigned_blocks, block_types[j].name, num_tiles);
             }

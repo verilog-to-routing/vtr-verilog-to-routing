@@ -951,7 +951,7 @@ static void print_pack_status(int num_clb,
         fflush(stdout);
         mols_since_last_print = 0;
         if (attraction_groups.num_attraction_groups() > 0) {
-            update_attraction_group_status(attraction_groups);
+            //update_attraction_group_status(attraction_groups);
         }
     }
 }
