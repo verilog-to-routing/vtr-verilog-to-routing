@@ -55,6 +55,14 @@ struct t_molecule_stats {
     int num_used_ext_outputs = 0; //Number of *used external* output pins across all primitives in molecule
 };
 
+struct t_cluster_stats {
+    int num_molecules = 0;
+    int num_molecules_processed = 0;
+    int mols_since_last_print = 0;
+    int blocks_since_last_analysis = 0;
+    int num_unrelated_clustering_attempts = 0;
+};
+
 void check_clustering();
 
 //calculate the initial timing at the start of packing stage
