@@ -269,3 +269,48 @@ void check_and_output_clustering(const t_packer_opts& packer_opts,
 
     VTR_ASSERT(cluster_ctx.clb_nlist.blocks().size() == intra_lb_routing.size());
 }
+
+void get_max_cluster_size_and_pb_depth(int& max_cluster_size,
+                                       int& max_pb_depth) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    int cur_cluster_size, cur_pb_depth;
+
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (is_empty_type(&type))
+            continue;
+
+        cur_cluster_size = get_max_primitives_in_pb_type(type.pb_type);
+        cur_pb_depth = get_max_depth_of_pb_type(type.pb_type);
+        if (cur_cluster_size > max_cluster_size) {
+            max_cluster_size = cur_cluster_size;
+        }
+        if (cur_pb_depth > max_pb_depth) {
+            max_pb_depth = cur_pb_depth;
+        }
+    }
+}
+
+bool check_cluster_legality(const int& verbosity,
+                            const int& detailed_routing_stage,
+                            t_lb_router_data* router_data) {
+    bool is_cluster_legal;
+
+    if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
+        /* is_mode_conflict does not affect this stage. It is needed when trying to route the packed clusters.
+         *
+         * It holds a flag that is used to verify whether try_intra_lb_route ended in a mode conflict issue.
+         * If the value is TRUE the cluster has to be repacked, and its internal pb_graph_nodes will have more restrict choices
+         * for what regards the mode that has to be selected
+         */
+        t_mode_selection_status mode_status;
+        is_cluster_legal = try_intra_lb_route(router_data, verbosity, &mode_status);
+        if (is_cluster_legal) {
+            VTR_LOGV(verbosity > 2, "\tPassed route at end.\n");
+        } else {
+            VTR_LOGV(verbosity > 0, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
+        }
+    } else {
+        is_cluster_legal = true;
+    }
+    return is_cluster_legal;
+}

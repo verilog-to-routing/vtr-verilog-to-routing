@@ -2,6 +2,7 @@
 #include "atom_netlist.h"
 #include "pack_types.h"
 #include "echo_files.h"
+#include "vpr_utils.h"
 
 #include "timing_info.h"
 #include "PreClusterDelayCalculator.h"
@@ -55,7 +56,7 @@ struct t_molecule_stats {
     int num_used_ext_outputs = 0; //Number of *used external* output pins across all primitives in molecule
 };
 
-struct t_cluster_stats {
+struct t_cluster_progress_stats {
     int num_molecules = 0;
     int num_molecules_processed = 0;
     int mols_since_last_print = 0;
@@ -88,3 +89,10 @@ void check_and_output_clustering(const t_packer_opts& packer_opts,
                                  const t_arch* arch,
                                  const int& num_clb,
                                  const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing);
+
+void get_max_cluster_size_and_pb_depth(int& max_cluster_size,
+                                       int& max_pb_depth);
+
+bool check_cluster_legality(const int& verbosity,
+                            const int& detailed_routing_stage,
+                            t_lb_router_data* router_data);

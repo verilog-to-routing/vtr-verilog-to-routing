@@ -173,7 +173,7 @@ static void try_fill_cluster(const t_packer_opts& packer_opts,
                              const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                              t_pack_molecule*& next_molecule,
                              t_pb_graph_node** primitives_list,
-                             t_cluster_stats& cluster_stats,
+                             t_cluster_progress_stats& cluster_stats,
                              int num_clb,
                              const int num_models,
                              const int max_cluster_size,
@@ -392,11 +392,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
      *****************************************************************/
     VTR_ASSERT(packer_opts.packer_algorithm == PACK_GREEDY);
 
-    t_cluster_stats cluster_stats;
+    t_cluster_progress_stats cluster_stats;
 
     //int num_molecules, num_molecules_processed, mols_since_last_print, blocks_since_last_analysis,
-    int num_clb, num_blocks_hill_added, max_cluster_size, cur_cluster_size,
-        max_pb_depth, cur_pb_depth,
+    int num_clb, num_blocks_hill_added, max_cluster_size, max_pb_depth,
         seedindex, savedseedindex /* index of next most timing critical block */,
         detailed_routing_stage, *hill_climbing_inputs_avail;
 
@@ -455,19 +454,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     cluster_stats.num_molecules = count_molecules(molecule_head);
 
-    for (const auto& type : device_ctx.logical_block_types) {
-        if (is_empty_type(&type))
-            continue;
-
-        cur_cluster_size = get_max_primitives_in_pb_type(type.pb_type);
-        cur_pb_depth = get_max_depth_of_pb_type(type.pb_type);
-        if (cur_cluster_size > max_cluster_size) {
-            max_cluster_size = cur_cluster_size;
-        }
-        if (cur_pb_depth > max_pb_depth) {
-            max_pb_depth = cur_pb_depth;
-        }
-    }
+    get_max_cluster_size_and_pb_depth(max_cluster_size, max_pb_depth);
 
     if (packer_opts.hill_climbing_flag) {
         hill_climbing_inputs_avail = (int*)vtr::calloc(max_cluster_size + 1,
@@ -535,7 +522,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               lb_type_rr_graphs, &router_data,
                               detailed_routing_stage, &cluster_ctx.clb_nlist,
                               primitive_candidate_block_types,
-                              packer_opts.pack_verbosity,
+                              verbosity,
                               packer_opts.enable_pin_feasibility_filter,
                               balance_block_type_utilization,
                               packer_opts.feasible_block_array_size,
@@ -590,7 +577,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      cur_cluster_placement_stats_ptr,
                                                      clb_inter_blk_nets,
                                                      clb_index,
-                                                     packer_opts.pack_verbosity);
+                                                     verbosity);
             prev_molecule = istart;
             while (next_molecule != nullptr && prev_molecule != next_molecule) {
                 prev_molecule = next_molecule;
@@ -618,23 +605,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  block_pack_status);
             }
 
-            if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
-                /* is_mode_conflict does not affect this stage. It is needed when trying to route the packed clusters.
-                 *
-                 * It holds a flag that is used to verify whether try_intra_lb_route ended in a mode conflict issue.
-                 * If the value is TRUE the cluster has to be repacked, and its internal pb_graph_nodes will have more restrict choices
-                 * for what regards the mode that has to be selected
-                 */
-                t_mode_selection_status mode_status;
-                is_cluster_legal = try_intra_lb_route(router_data, packer_opts.pack_verbosity, &mode_status);
-                if (is_cluster_legal) {
-                    VTR_LOGV(verbosity > 2, "\tPassed route at end.\n");
-                } else {
-                    VTR_LOGV(verbosity > 0, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
-                }
-            } else {
-                is_cluster_legal = true;
-            }
+            is_cluster_legal = check_cluster_legality(verbosity, detailed_routing_stage, router_data);
 
             if (is_cluster_legal) {
                 intra_lb_routing.push_back(router_data->saved_lb_nets);
@@ -1748,7 +1719,7 @@ static void try_fill_cluster(const t_packer_opts& packer_opts,
                              const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                              t_pack_molecule*& next_molecule,
                              t_pb_graph_node** primitives_list,
-                             t_cluster_stats& cluster_stats,
+                             t_cluster_progress_stats& cluster_stats,
                              int num_clb,
                              const int num_models,
                              const int max_cluster_size,
