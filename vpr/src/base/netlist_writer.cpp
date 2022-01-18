@@ -10,6 +10,7 @@
 #include <memory>
 #include <unordered_set>
 #include <cmath>
+#include <regex>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -2119,6 +2120,186 @@ class NetlistWriterVisitor : public NetlistVisitor {
     struct t_analysis_opts opts_;
 };
 
+/**
+ * @brief A class which writes post-synthesis merged netlists (Verilog)
+ *
+ * It implements the NetlistVisitor interface used by NetlistWalker (see netlist_walker.h)
+ */
+class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
+  public:                                                //Public interface
+    MergedNetlistWriterVisitor(std::ostream& verilog_os, ///<Output stream for verilog netlist
+                               std::ostream& blif_os,    ///<Output stream for blif netlist
+                               std::ostream& sdf_os,     ///<Output stream for SDF
+                               std::shared_ptr<const AnalysisDelayCalculator> delay_calc)
+        : NetlistWriterVisitor(verilog_os, blif_os, sdf_os, delay_calc) {}
+
+    std::map<std::string, int> portmap;
+
+    void visit_atom_impl(const t_pb* atom) override {
+        auto& atom_ctx = g_vpr_ctx.atom();
+
+        auto atom_pb = atom_ctx.lookup.pb_atom(atom);
+        if (atom_pb == AtomBlockId::INVALID()) {
+            return;
+        }
+        const t_model* model = atom_ctx.nlist.block_model(atom_pb);
+
+        if (model->name == std::string(MODEL_INPUT)) {
+            auto merged_io_name = make_io(atom, PortType::INPUT);
+            if (merged_io_name != "")
+                inputs_.emplace_back(merged_io_name);
+        } else if (model->name == std::string(MODEL_OUTPUT)) {
+            auto merged_io_name = make_io(atom, PortType::OUTPUT);
+            if (merged_io_name != "")
+                outputs_.emplace_back(merged_io_name);
+        } else if (model->name == std::string(MODEL_NAMES)) {
+            cell_instances_.push_back(make_lut_instance(atom));
+        } else if (model->name == std::string(MODEL_LATCH)) {
+            cell_instances_.push_back(make_latch_instance(atom));
+        } else if (model->name == std::string("single_port_ram")) {
+            cell_instances_.push_back(make_ram_instance(atom));
+        } else if (model->name == std::string("dual_port_ram")) {
+            cell_instances_.push_back(make_ram_instance(atom));
+        } else if (model->name == std::string("multiply")) {
+            cell_instances_.push_back(make_multiply_instance(atom));
+        } else if (model->name == std::string("adder")) {
+            cell_instances_.push_back(make_adder_instance(atom));
+        } else {
+            cell_instances_.push_back(make_blackbox_instance(atom));
+        }
+    }
+
+    /**
+     * @brief Returns the name of circuit-level Input/Output ports with multi-bit
+     * ports merged into one.
+     *
+     * The I/O is recorded and instantiated by the top level output routines
+     *   @param atom    The implementation primitive representing the I/O
+     *   @param dir     The IO direction
+     *   @param portmap Map for keeping port names and width
+     */
+    std::string make_io(const t_pb* atom,
+                        PortType dir) {
+        const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
+
+        std::string io_name;
+        std::string indexed_io_name;
+        int cluster_pin_idx = -1;
+        // regex for matching 3 groups:
+        // * 'out:' - optional
+        // * verilog identifier - mandatory
+        // * index - optional
+        std::string rgx = "(out:)?([a-zA-Z$_]+[a-zA-Z0-9$_]*)(\\[[0-9]+\\])?$";
+        std::string name(atom->name);
+        std::regex regex(rgx);
+        std::smatch matches;
+
+        if (dir == PortType::INPUT) {
+            VTR_ASSERT(pb_graph_node->num_output_ports == 1);                        //One output port
+            VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1);                      //One output pin
+            cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+
+            io_name = "";
+            indexed_io_name = atom->name;
+
+            if (std::regex_match(name, matches, regex)) {
+                if (std::find(inputs_.begin(), inputs_.end(), matches[2]) == inputs_.end()) { //Skip already existing multi-bit port names
+                    io_name = matches[2];
+                    portmap[matches[2]] = 0;
+                } else {
+                    portmap[matches[2]]++;
+                }
+            }
+
+        } else {
+            VTR_ASSERT(pb_graph_node->num_input_ports == 1);                        //One input port
+            VTR_ASSERT(pb_graph_node->num_input_pins[0] == 1);                      //One input pin
+            cluster_pin_idx = pb_graph_node->input_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+
+            //Strip off the starting 'out:' that vpr adds to uniqify outputs
+            //this makes the port names match the input blif file
+
+            io_name = "";
+            indexed_io_name = atom->name + 4;
+
+            if (std::regex_search(name, matches, regex)) {
+                if (std::find(outputs_.begin(), outputs_.end(), matches[2]) == outputs_.end()) { //Skip already existing multi-bit port names
+                    portmap[matches[2]] = 0;
+                    io_name = matches[2];
+                } else {
+                    portmap[matches[2]]++;
+                }
+            }
+        }
+
+        const auto& top_pb_route = find_top_pb_route(atom);
+
+        if (top_pb_route.count(cluster_pin_idx)) {
+            //Net exists
+            auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+
+            //Port direction is inverted (inputs drive internal nets, outputs sink internal nets)
+            PortType wire_dir = (dir == PortType::INPUT) ? PortType::OUTPUT : PortType::INPUT;
+
+            //Look up the tnode associated with this pin (used for delay calculation)
+            tatum::NodeId tnode_id = find_tnode(atom, cluster_pin_idx);
+
+            auto wire_name = make_inst_wire(atom_net_id, tnode_id, indexed_io_name, wire_dir, 0, 0);
+
+            //Connect the wires to to I/Os with assign statements
+            if (wire_dir == PortType::INPUT) {
+                assignments_.emplace_back(indexed_io_name, escape_verilog_identifier(wire_name));
+            } else {
+                assignments_.emplace_back(escape_verilog_identifier(wire_name), indexed_io_name);
+            }
+        }
+
+        return io_name;
+    }
+
+    void print_primary_io(int depth) {
+        //Primary Inputs
+        for (auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
+            //verilog_os_ << indent(depth + 1) << "input " << escape_verilog_identifier(*iter);
+            std::string range;
+            if (portmap[*iter] > 0)
+                verilog_os_ << indent(depth + 1) << "input [" << portmap[*iter] << ":0] " << *iter;
+            else
+                verilog_os_ << indent(depth + 1) << "input " << *iter;
+            if (iter + 1 != inputs_.end() || outputs_.size() > 0) {
+                verilog_os_ << ",";
+            }
+            verilog_os_ << "\n";
+        }
+
+        //Primary Outputs
+        for (auto iter = outputs_.begin(); iter != outputs_.end(); ++iter) {
+            std::string range;
+            if (portmap[*iter] > 0)
+                verilog_os_ << indent(depth + 1) << "output [" << portmap[*iter] << ":0] " << *iter;
+            else
+                verilog_os_ << indent(depth + 1) << "output " << *iter;
+            if (iter + 1 != outputs_.end()) {
+                verilog_os_ << ",";
+            }
+            verilog_os_ << "\n";
+        }
+    }
+
+    void print_assignments(int depth) {
+        verilog_os_ << "\n";
+        verilog_os_ << indent(depth + 1) << "//IO assignments\n";
+        for (auto& assign : assignments_) {
+            assign.print_merged_verilog(verilog_os_, indent(depth + 1));
+        }
+    }
+
+    void finish_impl() override {
+        // Don't write to blif and sdf streams
+        print_verilog();
+    }
+};
+
 //
 // Externally Accessible Functions
 //
@@ -2144,6 +2325,23 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
     nl_walker.walk();
 }
 
+///@brief Main routing for this file. See netlist_writer.h for details.
+void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc) {
+    std::string verilog_filename = basename + "_merged_post_synthesis.v";
+
+    VTR_LOG("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
+
+    std::ofstream verilog_os(verilog_filename);
+    // Don't write blif and sdf, pass dummy streams
+    std::ofstream blif_os;
+    std::ofstream sdf_os;
+
+    MergedNetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc);
+
+    NetlistWalker nl_walker(visitor);
+
+    nl_walker.walk();
+}
 //
 // File-scope function implementations
 //
