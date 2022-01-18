@@ -791,6 +791,11 @@ class Assignment {
     void print_verilog(std::ostream& os, std::string indent) {
         os << indent << "assign " << escape_verilog_identifier(lval_) << " = " << escape_verilog_identifier(rval_) << ";\n";
     }
+
+    void print_merged_verilog(std::ostream& os, std::string indent) {
+        os << indent << "assign " << lval_ << " = " << rval_ << ";\n";
+    }
+
     void print_blif(std::ostream& os, std::string indent) {
         os << indent << ".names " << rval_ << " " << lval_ << "\n";
         os << indent << "1 1\n";
