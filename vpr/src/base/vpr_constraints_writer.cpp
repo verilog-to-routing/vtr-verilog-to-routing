@@ -21,10 +21,17 @@
 
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split) {
 
-    //Split half of all blocks between two partitions
     VprConstraints constraints;
 
-    setup_vpr_floorplan_constraints_cutpoints(constraints);
+    if (floorplan_split == HALVES) {
+    	setup_vpr_floorplan_constraints_cutpoints(constraints, 2, 1);
+    } else if (floorplan_split == QUADRANTS) {
+    	setup_vpr_floorplan_constraints_cutpoints(constraints, 2, 2);
+    } else if (floorplan_split == SIXTEENTHS) {
+    	setup_vpr_floorplan_constraints_cutpoints(constraints, 4, 4);
+    } else { //one_spot
+    	setup_vpr_floorplan_constraints(constraints, expand, subtile);
+    }
 
     VprConstraintsSerializer writer(constraints);
 
@@ -139,7 +146,7 @@ void setup_vpr_floorplan_constraints_half(VprConstraints& constraints, int expan
     }
 }
 
-void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints) {
+void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
@@ -147,9 +154,6 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints) {
 
     //calculate the cutpoint values according to the grid size
     //load two maps - one for horizontal cutpoints and one for vertical
-
-    int horizontal_cutpoints = 2;
-    int vertical_cutpoints = 1;
 
     std::set<int> horizontal_bounds;
     std::vector<int> horizontal_cuts;
@@ -162,10 +166,12 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints) {
 
     unsigned int horizontal_point = horizontal_interval;
     horizontal_cuts.push_back(0);
-    while (horizontal_point < device_ctx.grid.width() - 1) {
+    int num_horizontal_cuts = 0;
+    while (num_horizontal_cuts < horizontal_cutpoints - 1) {
     	horizontal_bounds.insert(horizontal_point);
     	horizontal_cuts.push_back(horizontal_point);
     	horizontal_point = horizontal_point + horizontal_interval;
+    	num_horizontal_cuts++;
     }
     //Add in the last point after your exit the while loop
     horizontal_bounds.insert(device_ctx.grid.width());
@@ -176,10 +182,12 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints) {
 
     unsigned int vertical_point = vertical_interval;
     vertical_cuts.push_back(0);
-    while (vertical_point < device_ctx.grid.height() - 1) {
+    int num_vertical_cuts = 0;
+    while (num_vertical_cuts < vertical_cutpoints - 1) {
     	vertical_bounds.insert(vertical_point);
     	vertical_cuts.push_back(vertical_point);
     	vertical_point = vertical_point + vertical_interval;
+    	num_vertical_cuts++;
     }
     //Add in the last point after your exit the while loop
     vertical_bounds.insert(device_ctx.grid.height());

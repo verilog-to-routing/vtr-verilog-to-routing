@@ -45,7 +45,7 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
 
 void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile);
 
-void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints);
+void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints);
 
 void setup_vpr_floorplan_constraints_half(VprConstraints& constraints, int expand, bool subtile);
 
