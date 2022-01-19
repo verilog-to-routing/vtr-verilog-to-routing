@@ -41,7 +41,7 @@
  *   @param subtile     Specifies whether to write out the constraint regions with or without
  *                      subtile values.
  */
-void write_vpr_floorplan_constraints(std::string file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split);
+void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split);
 
 void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile);
 

@@ -19,7 +19,7 @@
 #include "vpr_constraints_writer.h"
 #include "region.h"
 
-void write_vpr_floorplan_constraints(std::string file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split) {
+void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split) {
     VprConstraints constraints;
 
     if (floorplan_split == HALVES) {
@@ -34,9 +34,9 @@ void write_vpr_floorplan_constraints(std::string file_name, int expand, bool sub
 
     VprConstraintsSerializer writer(constraints);
 
-    if (vtr::check_file_name_extension(file_name.c_str(), ".xml")) {
+    if (vtr::check_file_name_extension(file_name, ".xml")) {
         std::fstream fp;
-        fp.open(file_name.c_str(), std::fstream::out | std::fstream::trunc);
+        fp.open(file_name, std::fstream::out | std::fstream::trunc);
         fp.precision(std::numeric_limits<float>::max_digits10);
         void* context;
         uxsd::write_vpr_constraints_xml(writer, context, fp);
@@ -242,7 +242,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
         int height = device_ctx.grid.height();
         VTR_ASSERT(x >= 0 && x < width);
         VTR_ASSERT(y >= 0 && y < height);
-        int xminimum, yminimum, xmaximum, ymaximum;
+        int xminimum = 0, yminimum = 0, xmaximum = 0, ymaximum = 0;
 
         for (unsigned int h = 1; h < horizontal_cuts.size(); h++) {
             if (x < horizontal_cuts[h]) {
