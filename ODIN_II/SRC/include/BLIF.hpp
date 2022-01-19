@@ -329,9 +329,10 @@ class BLIF {
          *
          * @param input_count number of inputs
          * @param node pointer to the netlist node
+         * @param names list of node inputs
          * ---------------------------------------------------------------------------------------------
          */
-        static operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node);
+        static operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, char** names);
         /**
          * ---------------------------------------------------------------------------------------------
          * (function: create_latch_node_and_driver)

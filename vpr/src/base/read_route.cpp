@@ -506,8 +506,8 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_nodes;
-    const auto& switch_info = device_ctx.rr_switch_inf;
-
+    /*TODO We need to remove temp_rr_graph once rr_graph is resolved*/
+    const auto& temp_rr_graph = device_ctx.rr_graph;
     // If it's starting a new sub branch this is ok
     if (device_ctx.rr_graph.node_type(prev_node) == SINK) return true;
 
@@ -519,7 +519,7 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
 
         // If there are any non-configurable branches return true
         short edge_switch = rr_graph.edge_switch(edge);
-        if (!(switch_info[edge_switch].configurable())) return true;
+        if (!(temp_rr_graph.rr_switch_inf(RRSwitchId(edge_switch)).configurable())) return true;
     }
 
     // If it's part of a non configurable node list, return true

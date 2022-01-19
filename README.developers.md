@@ -92,7 +92,7 @@ The overall approach is similar, but we call out the differences below.
 
 ## Commit Messages
 
-Commit messages are an important part of understanding the code base and it's history.
+Commit messages are an important part of understanding the code base and its history.
 It is therefore *extremely* important to provide the following information in the commit message:
 
 * What is being changed?
@@ -966,7 +966,7 @@ $ make
 this turns on more extensive assertion checking and re-builds VTR.
 
 ## GDB Pretty Printers
-To make it easier to debug some of VTR's data structures with [GDB](www.gnu.org/gdb).
+To make it easier to debug some of VTR's data structures with [GDB](https://www.sourceware.org/gdb/).
 
 ### STL Pretty Printers
 
@@ -1145,7 +1145,7 @@ make CMAKE_PARAMS="-DVTR_IPO_BUILD=off" -j8 vpr
 # External Subtrees
 VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).
 
-To simplify the process of working with subtrees we use the [`dev/external_subtrees.py`](./dev/external_subtrees.py) script.
+To simplify the process of working with subtrees we use the [`dev/external_subtrees.py`](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/dev/external_subtrees.py) script.
 
 For instance, running `./dev/external_subtrees.py --list` from the VTR root it shows the subtrees:
 ```
@@ -1159,7 +1159,7 @@ Component: libtatum        Path: libs/EXTERNAL/libtatum         URL: https://git
 Code included in VTR by subtrees should *not be modified within the VTR source tree*.
 Instead changes should be made in the relevant up-stream repository, and then synced into the VTR tree.
 
-### Updating an existing Subtree
+## Updating an existing Subtree
 1. From the VTR root run: `./dev/external_subtrees.py $SUBTREE_NAME`, where `$SUBTREE_NAME` is the name of an existing subtree.
 
     For example to update the `libtatum` subtree:
@@ -1167,7 +1167,7 @@ Instead changes should be made in the relevant up-stream repository, and then sy
     ./dev/external_subtrees.py --update libtatum
     ```
 
-### Adding a new Subtree
+## Adding a new Subtree
 
 To add a new external subtree to VTR do the following:
 
@@ -1207,7 +1207,7 @@ To add a new external subtree to VTR do the following:
     The first will squash all the upstream changes, the second will merge those changes into the current branch.
 
 
-### Subtree Rational
+## Subtree Rational
 
 VTR uses subtrees to allow easy tracking of upstream dependencies.
 
@@ -1221,7 +1221,7 @@ See [here](https://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git
 # Finding Bugs with Coverity
 [Coverity Scan](https://scan.coverity.com) is a static code analysis service which can be used to detect bugs.
 
-### Browsing Defects
+## Browsing Defects
 To view defects detected do the following:
 
 1. Get a coverity scan account
@@ -1231,7 +1231,7 @@ To view defects detected do the following:
 2. Browse the existing defects through the coverity web interface
 
 
-### Submitting a build
+## Submitting a build
 To submit a build to coverity do the following:
 
 1. [Download](https://scan.coverity.com/download) the coverity build tool
@@ -1264,7 +1264,7 @@ Note that we explicitly asked for gcc and g++, the coverity build tool defaults 
 
 Once the build has been analyzed you can browse the latest results through the coverity web interface
 
-### No files emitted
+## No files emitted
 If you get the following warning from cov-build:
 
     [WARNING] No files were emitted.
@@ -1303,5 +1303,5 @@ The following outlines the procedure to following when making an official VTR re
  * GitHub will automatically create a release based on the tag
  * Add the new change log entry to the [GitHub release description](https://github.com/verilog-to-routing/vtr-verilog-to-routing/releases)
  * Update the [ReadTheDocs configuration](https://readthedocs.org/projects/vtr/versions/) to build and serve documentation for the relevant tag (e.g. `v8.0.0`)
- * Send a release announcement email to the [vtr-announce](vtr-announce@googlegroups.com) mailing list (make sure to thank all contributors!)
+ * Send a release announcement email to the [vtr-announce](mailto:vtr-announce@googlegroups.com) mailing list (make sure to thank all contributors!)
 

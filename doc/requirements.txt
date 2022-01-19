@@ -2,15 +2,15 @@
 # used by Read The Docs to install python required
 # modules with pip.
 
-Sphinx==3.0
+Sphinx==3.1
 sphinx_rtd_theme
 
 # Support custom domains
 sphinxcontrib-domaintools
 
 # Support Markdown
-recommonmark
 sphinx-markdown-tables
+myst_parser
 
 # Handle markdown cross-references
 git+https://github.com/SymbiFlow/sphinxcontrib-markdown-symlinks

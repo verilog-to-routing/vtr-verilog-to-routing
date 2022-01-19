@@ -84,7 +84,7 @@ modules:	/* Empty */ {}
 			|	modules module {}
 			;
 
-module:		header declarations statements footer
+module:		header body footer
 			{
                 if(parse_info->pass_type == COUNT_PASS) {
                     parse_info->number_of_modules++;
@@ -126,10 +126,16 @@ header:		TOKEN_MODULE TOKEN_REGULARID '(' IdentifierList ')' ';'
 			}
 			;
 
-
-declarations:	/* Empty */ {}
-			|	declarations declaration {}
+body:           /* Empty */ {}
+			|	body declaration_statement {} /* the body consists of a mix of declarations and statements */
 			;
+
+
+declaration_statement:	        declaration
+			|
+                                statement  
+			;
+
 
 declaration:	PinType IdentifierList ';'
 				{
@@ -158,9 +164,7 @@ declaration:	PinType IdentifierList ';'
 footer:		TOKEN_ENDMODULE	{}
 			;
 
-statements:	/* Empty */ {}
-			| statements statement {}
-			;
+
 
 statement:		AssignStatement {}
 			|	TriStatement {}
@@ -673,7 +677,16 @@ IdentifierList:		Identifier
 					}
 				;
 
-Identifier:		TOKEN_ESCAPEDID
+Identifier:	TOKEN_ESCAPEDID '[' TOKEN_INTCONSTANT ']'
+				{
+                    if(parse_info->pass_type == COUNT_PASS) {
+                        //pass
+                    } else {
+                        /* Allocate space for an identifier. Specify index used */
+                        $$ = (uintptr_t) allocate_identifier($1, T_TRUE, $3);
+                    }
+				}
+			|	TOKEN_ESCAPEDID
 				{
                     if(parse_info->pass_type == COUNT_PASS) {
                         //pass

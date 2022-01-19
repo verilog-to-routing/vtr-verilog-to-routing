@@ -157,8 +157,8 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
     sharable_switch_trans = alloc_and_load_sharable_switch_trans(num_switch,
                                                                  R_minW_nmos, R_minW_pmos);
 
-    for (size_t from_node = 0; from_node < device_ctx.rr_nodes.size(); from_node++) {
-        RRNodeId from_rr_node = RRNodeId(from_node);
+    for (const RRNodeId& from_rr_node : device_ctx.rr_graph.nodes()) {
+        size_t from_node = (size_t)from_rr_node;
         from_rr_type = rr_graph.node_type(from_rr_node);
 
         switch (from_rr_type) {
@@ -167,7 +167,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                 num_edges = rr_graph.num_edges(RRNodeId(from_node));
 
                 for (iedge = 0; iedge < num_edges; iedge++) {
-                    RRNodeId to_node = RRNodeId(device_ctx.rr_nodes[from_node].edge_sink_node(iedge));
+                    RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), iedge);
                     to_rr_type = rr_graph.node_type(to_node);
 
                     /* Ignore any uninitialized rr_graph nodes */
@@ -178,9 +178,9 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                     switch (to_rr_type) {
                         case CHANX:
                         case CHANY:
-                            iswitch = device_ctx.rr_nodes[from_node].edge_switch(iedge);
+                            iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
 
-                            if (device_ctx.rr_switch_inf[iswitch].buffered()) {
+                            if (rr_graph.rr_switch_inf(RRSwitchId(iswitch)).buffered()) {
                                 iseg = seg_index_of_sblock(from_node, size_t(to_node));
                                 shared_buffer_trans[iseg] = std::max(shared_buffer_trans[iseg],
                                                                      sharable_switch_trans[iswitch]);
@@ -253,7 +253,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                 shared_opin_buffer_trans = 0.;
 
                 for (iedge = 0; iedge < num_edges; iedge++) {
-                    iswitch = device_ctx.rr_nodes[from_node].edge_switch(iedge);
+                    iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
                     ntrans_no_sharing += unsharable_switch_trans[iswitch]
                                          + sharable_switch_trans[iswitch];
                     ntrans_sharing += unsharable_switch_trans[iswitch];
@@ -354,8 +354,8 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
     cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
 
     ntrans = 0;
-    for (size_t from_node = 0; from_node < device_ctx.rr_nodes.size(); from_node++) {
-        RRNodeId from_rr_node = RRNodeId(from_node);
+    for (const RRNodeId& from_rr_node : device_ctx.rr_graph.nodes()) {
+        size_t from_node = size_t(from_rr_node);
         from_rr_type = rr_graph.node_type(from_rr_node);
 
         switch (from_rr_type) {
@@ -365,7 +365,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 
                 /* Increment number of inputs per cblock if IPIN */
                 for (iedge = 0; iedge < num_edges; iedge++) {
-                    RRNodeId to_node = RRNodeId(device_ctx.rr_nodes[from_node].edge_sink_node(iedge));
+                    RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), iedge);
                     to_rr_type = rr_graph.node_type(to_node);
 
                     /* Ignore any uninitialized rr_graph nodes */
@@ -377,22 +377,22 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                         case CHANX:
                         case CHANY:
                             if (!chan_node_switch_done[size_t(to_node)]) {
-                                int switch_index = device_ctx.rr_nodes[from_node].edge_switch(iedge);
-                                auto switch_type = device_ctx.rr_switch_inf[switch_index].type();
+                                int switch_index = rr_graph.edge_switch(RRNodeId(from_node), iedge);
+                                auto switch_type = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type();
 
                                 int fan_in = rr_graph.node_fan_in(to_node);
 
-                                if (device_ctx.rr_switch_inf[switch_index].type() == SwitchType::MUX) {
+                                if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::MUX) {
                                     /* Each wire segment begins with a multipexer followed by a driver for unidirectional */
                                     /* Each multiplexer contains all the fan-in to that routing node */
                                     /* Add up area of multiplexer */
                                     ntrans += trans_per_mux(fan_in, trans_sram_bit,
-                                                            device_ctx.rr_switch_inf[switch_index].mux_trans_size);
+                                                            rr_graph.rr_switch_inf(RRSwitchId(switch_index)).mux_trans_size);
 
                                     /* Add up area of buffer */
                                     /* The buffer size should already have been auto-sized (if required) when
                                      * the rr switches were created from the arch switches */
-                                    ntrans += device_ctx.rr_switch_inf[switch_index].buf_size;
+                                    ntrans += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buf_size;
                                 } else if (switch_type == SwitchType::SHORT) {
                                     ntrans += 0.; //Electrical shorts contribute no transisitor area
                                 } else if (switch_type == SwitchType::BUFFER) {
@@ -407,7 +407,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 
                                     //This is a non-configurable buffer, so there are no mux transistors,
                                     //only the buffer area
-                                    ntrans += device_ctx.rr_switch_inf[switch_index].buf_size;
+                                    ntrans += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buf_size;
                                 } else {
                                     VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Unexpected switch type %d while calculating area of uni-directional routing", switch_type);
                                 }
@@ -489,7 +489,7 @@ static float get_cblock_trans(int* num_inputs_to_cblock, int wire_to_ipin_switch
     int num_inputs;
 
     auto& device_ctx = g_vpr_ctx.device();
-
+    const auto& rr_graph = device_ctx.rr_graph;
     trans_per_cblock = (float*)vtr::malloc((max_inputs_to_cblock + 1) * sizeof(float));
 
     trans_per_cblock[0] = 0.; /* i.e., not an IPIN or no inputs */
@@ -500,14 +500,14 @@ static float get_cblock_trans(int* num_inputs_to_cblock, int wire_to_ipin_switch
 
     for (int i = 1; i <= max_inputs_to_cblock; i++) {
         trans_per_cblock[i] = trans_per_mux(i, trans_sram_bit,
-                                            device_ctx.rr_switch_inf[wire_to_ipin_switch].mux_trans_size);
-        trans_per_cblock[i] += device_ctx.rr_switch_inf[wire_to_ipin_switch].buf_size;
+                                            rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).mux_trans_size);
+        trans_per_cblock[i] += rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).buf_size;
     }
 
     trans_count = 0.;
 
-    for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
-        num_inputs = num_inputs_to_cblock[i];
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        num_inputs = num_inputs_to_cblock[(size_t)rr_id];
         trans_count += trans_per_cblock[num_inputs];
     }
 
@@ -526,23 +526,23 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit, flo
     int i;
 
     auto& device_ctx = g_vpr_ctx.device();
-
+    const auto& rr_graph = device_ctx.rr_graph;
     unsharable_switch_trans = (float*)vtr::malloc(num_switch * sizeof(float));
 
     for (i = 0; i < num_switch; i++) {
-        if (device_ctx.rr_switch_inf[i].type() == SwitchType::SHORT) {
+        if (rr_graph.rr_switch_inf(RRSwitchId(i)).type() == SwitchType::SHORT) {
             //Electrical shorts do not use any transistors
             unsharable_switch_trans[i] = 0.;
         } else {
-            if (!device_ctx.rr_switch_inf[i].buffered()) {
-                Rpass = device_ctx.rr_switch_inf[i].R;
+            if (!rr_graph.rr_switch_inf(RRSwitchId(i)).buffered()) {
+                Rpass = rr_graph.rr_switch_inf(RRSwitchId(i)).R;
             } else { /* Buffer.  Set Rpass = Rbuf = 1/2 Rtotal. */
-                Rpass = device_ctx.rr_switch_inf[i].R / 2.;
+                Rpass = rr_graph.rr_switch_inf(RRSwitchId(i)).R / 2.;
             }
 
             unsharable_switch_trans[i] = trans_per_R(Rpass, R_minW_nmos);
 
-            if (device_ctx.rr_switch_inf[i].configurable()) {
+            if (rr_graph.rr_switch_inf(RRSwitchId(i)).configurable()) {
                 //Configurable switches use SRAM
                 unsharable_switch_trans[i] += trans_sram_bit;
             }
@@ -566,14 +566,14 @@ alloc_and_load_sharable_switch_trans(int num_switch,
     int i;
 
     auto& device_ctx = g_vpr_ctx.device();
-
+    const auto& rr_graph = device_ctx.rr_graph;
     sharable_switch_trans = (float*)vtr::malloc(num_switch * sizeof(float));
 
     for (i = 0; i < num_switch; i++) {
-        if (!device_ctx.rr_switch_inf[i].buffered()) {
+        if (!rr_graph.rr_switch_inf(RRSwitchId(i)).buffered()) {
             sharable_switch_trans[i] = 0.;
         } else { /* Buffer.  Set Rbuf = Rpass = 1/2 Rtotal. */
-            Rbuf = device_ctx.rr_switch_inf[i].R / 2.;
+            Rbuf = rr_graph.rr_switch_inf(RRSwitchId(i)).R / 2.;
             sharable_switch_trans[i] = trans_per_buf(Rbuf, R_minW_nmos,
                                                      R_minW_pmos);
         }

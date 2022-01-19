@@ -6,7 +6,7 @@ Get VTR
 How to Cite
 ~~~~~~~~~~~
 
-Citations are important in academia, as they ensure contributors recieve credit for their efforts.
+Citations are important in academia, as they ensure contributors receive credit for their efforts.
 Therefore please use the following paper as a general citation whenever you use VTR:
 
     K. E. Murray, O. Petelin, S. Zhong, J. M. Wang, M. ElDafrawy, J.-P. Legault, E. Sha, A. G. Graham, J. Wu, M. J. P. Walker, H. Zeng, P. Patros, J. Luu, K. B. Kent and V. Betz "VTR 8: High Performance CAD and Customizable FPGA Architecture Modelling", ACM TRETS, 2020
@@ -77,11 +77,11 @@ Here are some highlights of the |version| full release:
 
   Along with experiments for more conventional FPGAs, we also include an experiment that explores FPGAs with embedded floating-point cores investigated in :cite:`ho_floating_point_fpga` to illustrate the usage of the VTR framework to explore unconventional FPGA architectures.
 
-Development Trunk
-~~~~~~~~~~~~~~~~~
-The development trunk for the Verilog-to-Routing project is hosted at:
+Development Repository
+~~~~~~~~~~~~~~~~~~~~~~
+The development repository for the Verilog-to-Routing project is hosted at:
 
     https://github.com/verilog-to-routing/vtr-verilog-to-routing
 
-Unlike the nicely packaged offical releases the code in a constant state of flux.
+Unlike the nicely packaged official releases the code in a constant state of flux.
 You should expect that the tools are not always stable and that more work is needed to get the flow to run.

@@ -310,7 +310,7 @@ static bool check_adjacent(int from_node, int to_node) {
     reached = false;
 
     for (t_edge_size iconn = 0; iconn < rr_graph.num_edges(RRNodeId(from_node)); iconn++) {
-        if (device_ctx.rr_nodes[from_node].edge_sink_node(iconn) == to_node) {
+        if (size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iconn)) == size_t(to_node)) {
             reached = true;
             break;
         }
@@ -499,9 +499,9 @@ void recompute_occupancy_from_scratch() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* First set the occupancy of everything to zero. */
-
-    for (size_t inode_idx = 0; inode_idx < device_ctx.rr_nodes.size(); inode_idx++)
-        route_ctx.rr_node_route_inf[inode_idx].set_occ(0);
+    /*FIXME: the type cast should be eliminated by making rr_node_route_inf adapt RRNodeId */
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes())
+        route_ctx.rr_node_route_inf[(size_t)rr_id].set_occ(0);
 
     /* Now go through each net and count the tracks and pins used everywhere */
 
@@ -832,7 +832,7 @@ bool StubFinder::RecurseTree(t_rt_node* rt_root) {
     } else {
         bool is_stub = true;
         for (t_linked_rt_edge* edge = rt_root->u.child_list; edge != nullptr; edge = edge->next) {
-            bool driver_switch_configurable = device_ctx.rr_switch_inf[edge->iswitch].configurable();
+            bool driver_switch_configurable = rr_graph.rr_switch_inf(RRSwitchId(edge->iswitch)).configurable();
 
             bool child_is_stub = RecurseTree(edge->child);
             if (!child_is_stub) {
