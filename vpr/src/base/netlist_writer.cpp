@@ -2130,8 +2130,9 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
     MergedNetlistWriterVisitor(std::ostream& verilog_os, ///<Output stream for verilog netlist
                                std::ostream& blif_os,    ///<Output stream for blif netlist
                                std::ostream& sdf_os,     ///<Output stream for SDF
-                               std::shared_ptr<const AnalysisDelayCalculator> delay_calc)
-        : NetlistWriterVisitor(verilog_os, blif_os, sdf_os, delay_calc) {}
+                               std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                               struct t_analysis_opts opts)
+        : NetlistWriterVisitor(verilog_os, blif_os, sdf_os, delay_calc, opts) {}
 
     std::map<std::string, int> portmap;
 
@@ -2326,7 +2327,7 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
 }
 
 ///@brief Main routing for this file. See netlist_writer.h for details.
-void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc) {
+void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
     std::string verilog_filename = basename + "_merged_post_synthesis.v";
 
     VTR_LOG("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
@@ -2336,7 +2337,7 @@ void merged_netlist_writer(const std::string basename, std::shared_ptr<const Ana
     std::ofstream blif_os;
     std::ofstream sdf_os;
 
-    MergedNetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc);
+    MergedNetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, opts);
 
     NetlistWalker nl_walker(visitor);
 

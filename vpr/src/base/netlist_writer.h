@@ -24,6 +24,6 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
  * Written filename ends in {basename}_merged_post_synthesis.v where {basename} is the
  * basename argument.
  */
-void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc);
+void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts);
 
 #endif
