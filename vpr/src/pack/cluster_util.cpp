@@ -250,7 +250,7 @@ void free_clustering_data(const t_packer_opts& packer_opts,
     free(primitives_list);
 }
 
-static void check_floorplan_regions(bool& floorplan_regions_overfull) {
+void check_floorplan_regions(bool& floorplan_regions_overfull) {
     floorplan_regions_overfull = check_clusters_floorplan_feasibility();
 }
 

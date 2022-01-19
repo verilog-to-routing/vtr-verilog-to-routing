@@ -97,7 +97,7 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
 
     auto& overfull_regions = floorplanning_ctx.overfull_regions;
     PartitionRegion overfull_regions_pr;
-    for (int i = 0; i < overfull_regions.size(); i++) {
+    for (unsigned int i = 0; i < overfull_regions.size(); i++) {
         overfull_regions_pr.add_to_part_region(overfull_regions[i]);
     }
     /*
