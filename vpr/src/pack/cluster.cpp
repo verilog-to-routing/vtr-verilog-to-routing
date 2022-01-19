@@ -180,9 +180,9 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
 static void try_fill_cluster(const t_packer_opts& packer_opts,
                              t_cluster_placement_stats* cur_cluster_placement_stats_ptr,
                              const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
-							 t_pack_molecule*& prev_molecule,
+                             t_pack_molecule*& prev_molecule,
                              t_pack_molecule*& next_molecule,
-							 int& num_same_molecules,
+                             int& num_same_molecules,
                              t_pb_graph_node** primitives_list,
                              t_cluster_progress_stats& cluster_stats,
                              int num_clb,
@@ -199,7 +199,7 @@ static void try_fill_cluster(const t_packer_opts& packer_opts,
                              t_lb_router_data* router_data,
                              t_ext_pin_util target_external_pin_util,
                              PartitionRegion& temp_cluster_pr,
-							 std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                             std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                              e_block_pack_status& block_pack_status);
 
 static t_pack_molecule* save_cluster_routing_and_pick_new_seed(const t_packer_opts& packer_opts,
@@ -635,16 +635,15 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             }
             int num_same_molecules = 0;
 
-
             while (next_molecule != nullptr && num_same_molecules < max_num_same_molecules) {
                 prev_molecule = next_molecule;
 
                 try_fill_cluster(packer_opts,
                                  cur_cluster_placement_stats_ptr,
                                  atom_molecules,
-								 prev_molecule,
+                                 prev_molecule,
                                  next_molecule,
-								 num_same_molecules,
+                                 num_same_molecules,
                                  primitives_list,
                                  cluster_stats,
                                  num_clb,
@@ -661,7 +660,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  router_data,
                                  target_ext_pin_util,
                                  temp_cluster_pr,
-								 primitive_candidate_block_types,
+                                 primitive_candidate_block_types,
                                  block_pack_status);
             }
 
@@ -671,9 +670,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 istart = save_cluster_routing_and_pick_new_seed(packer_opts, atom_molecules, num_clb, seed_atoms, num_blocks_hill_added, intra_lb_routing, seedindex, cluster_stats, router_data);
                 store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, le_count, clb_inter_blk_nets);
             } else {
-
                 free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, atom_molecules, num_used_type_instances, num_clb, seedindex);
-
             }
             free_router_data(router_data);
             router_data = nullptr;
@@ -687,7 +684,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     //check clustering and output it
     check_and_output_clustering(packer_opts, is_clock, arch, num_clb, intra_lb_routing, floorplan_regions_overfull);
-
 
     // Free Data Structures
     free_clustering_data(packer_opts, intra_lb_routing, hill_climbing_inputs_avail, cluster_placement_stats,
@@ -1858,9 +1854,9 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 static void try_fill_cluster(const t_packer_opts& packer_opts,
                              t_cluster_placement_stats* cur_cluster_placement_stats_ptr,
                              const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
-							 t_pack_molecule*& prev_molecule,
+                             t_pack_molecule*& prev_molecule,
                              t_pack_molecule*& next_molecule,
-							 int& num_same_molecules,
+                             int& num_same_molecules,
                              t_pb_graph_node** primitives_list,
                              t_cluster_progress_stats& cluster_stats,
                              int num_clb,
@@ -1877,7 +1873,7 @@ static void try_fill_cluster(const t_packer_opts& packer_opts,
                              t_lb_router_data* router_data,
                              t_ext_pin_util target_ext_pin_util,
                              PartitionRegion& temp_cluster_pr,
-							 std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                             std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                              e_block_pack_status& block_pack_status) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -1936,9 +1932,9 @@ static void try_fill_cluster(const t_packer_opts& packer_opts,
                                                  cur_cluster_placement_stats_ptr,
                                                  clb_inter_blk_nets,
                                                  clb_index, packer_opts.pack_verbosity,
-												 primitive_candidate_block_types);
+                                                 primitive_candidate_block_types);
         if (prev_molecule == next_molecule) {
-        	num_same_molecules++;
+            num_same_molecules++;
         }
         return;
     }
@@ -1961,7 +1957,7 @@ static void try_fill_cluster(const t_packer_opts& packer_opts,
                       cluster_stats.mols_since_last_print,
                       device_ctx.grid.width(),
                       device_ctx.grid.height(),
-					  attraction_groups);
+                      attraction_groups);
 
     update_cluster_stats(next_molecule, clb_index,
                          is_clock, //Set of all clocks
@@ -1988,10 +1984,10 @@ static void try_fill_cluster(const t_packer_opts& packer_opts,
                                              clb_inter_blk_nets,
                                              clb_index,
                                              packer_opts.pack_verbosity,
-											 primitive_candidate_block_types);
+                                             primitive_candidate_block_types);
 
     if (prev_molecule == next_molecule) {
-    	num_same_molecules++;
+        num_same_molecules++;
     }
 }
 

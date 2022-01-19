@@ -260,7 +260,7 @@ void check_and_output_clustering(const t_packer_opts& packer_opts,
                                  const t_arch* arch,
                                  const int& num_clb,
                                  const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
-								 bool& floorplan_regions_overfull) {
+                                 bool& floorplan_regions_overfull) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     VTR_ASSERT(num_clb == (int)cluster_ctx.clb_nlist.blocks().size());

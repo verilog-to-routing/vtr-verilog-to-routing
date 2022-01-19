@@ -92,7 +92,7 @@ void check_and_output_clustering(const t_packer_opts& packer_opts,
                                  const t_arch* arch,
                                  const int& num_clb,
                                  const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
-								 bool& floorplan_regions_overfull);
+                                 bool& floorplan_regions_overfull);
 
 void get_max_cluster_size_and_pb_depth(int& max_cluster_size,
                                        int& max_pb_depth);
