@@ -36,7 +36,7 @@ void write_vpr_floorplan_constraints(std::string file_name, int expand, bool sub
 
     if (vtr::check_file_name_extension(file_name.c_str(), ".xml")) {
         std::fstream fp;
-        fp.open(file_name, std::fstream::out | std::fstream::trunc);
+        fp.open(file_name.c_str(), std::fstream::out | std::fstream::trunc);
         fp.precision(std::numeric_limits<float>::max_digits10);
         void* context;
         uxsd::write_vpr_constraints_xml(writer, context, fp);
