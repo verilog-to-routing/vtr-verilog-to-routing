@@ -912,8 +912,6 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        verilog_os_ << indent(depth + 1) << "wire DummyOut;\n";
-
         //connections between primary I/Os and their internal wires
         verilog_os_ << "\n";
         verilog_os_ << indent(depth + 1) << "//IO assignments\n";
@@ -2222,7 +2220,7 @@ void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::strin
                     os << "1'b0";
                 } else {
                     VTR_ASSERT(type == PortType::OUTPUT);
-                    os << "DummyOut";
+                    os << "";
                 }
             } else {
                 //Connected
