@@ -19,6 +19,6 @@
  * If the region is overfull, a message is printed saying which
  * region is overfull, and by how many clusters.
  */
-bool check_constraints_filling();
+bool check_clusters_floorplan_feasibility();
 
 #endif /* VPR_SRC_PACK_CONSTRAINTS_REPORT_H_ */

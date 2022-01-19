@@ -632,7 +632,7 @@ bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     //Write out a vpr floorplanning constraints file if the option is specified
     if (!filename_opts.write_vpr_constraints_file.empty()) {
-        write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile, placer_opts.floorplan_split);
+        write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file, placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile, placer_opts.floorplan_split);
     }
 
     return true;

@@ -7,7 +7,7 @@
 
 #include "constraints_report.h"
 
-bool check_constraints_filling() {
+bool check_clusters_floorplan_feasibility() {
     GridTileLookup grid_tiles;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();

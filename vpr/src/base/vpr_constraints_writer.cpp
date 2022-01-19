@@ -19,23 +19,22 @@
 #include "vpr_constraints_writer.h"
 #include "region.h"
 
-void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split) {
-
+void write_vpr_floorplan_constraints(std::string file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split) {
     VprConstraints constraints;
 
     if (floorplan_split == HALVES) {
-    	setup_vpr_floorplan_constraints_cutpoints(constraints, 2, 1);
+        setup_vpr_floorplan_constraints_cutpoints(constraints, 2, 1);
     } else if (floorplan_split == QUADRANTS) {
-    	setup_vpr_floorplan_constraints_cutpoints(constraints, 2, 2);
+        setup_vpr_floorplan_constraints_cutpoints(constraints, 2, 2);
     } else if (floorplan_split == SIXTEENTHS) {
-    	setup_vpr_floorplan_constraints_cutpoints(constraints, 4, 4);
+        setup_vpr_floorplan_constraints_cutpoints(constraints, 4, 4);
     } else { //one_spot
-    	setup_vpr_floorplan_constraints(constraints, expand, subtile);
+        setup_vpr_floorplan_constraints(constraints, expand, subtile);
     }
 
     VprConstraintsSerializer writer(constraints);
 
-    if (vtr::check_file_name_extension(file_name, ".xml")) {
+    if (vtr::check_file_name_extension(file_name.c_str(), ".xml")) {
         std::fstream fp;
         fp.open(file_name, std::fstream::out | std::fstream::trunc);
         fp.precision(std::numeric_limits<float>::max_digits10);
@@ -168,10 +167,10 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     horizontal_cuts.push_back(0);
     int num_horizontal_cuts = 0;
     while (num_horizontal_cuts < horizontal_cutpoints - 1) {
-    	horizontal_bounds.insert(horizontal_point);
-    	horizontal_cuts.push_back(horizontal_point);
-    	horizontal_point = horizontal_point + horizontal_interval;
-    	num_horizontal_cuts++;
+        horizontal_bounds.insert(horizontal_point);
+        horizontal_cuts.push_back(horizontal_point);
+        horizontal_point = horizontal_point + horizontal_interval;
+        num_horizontal_cuts++;
     }
     //Add in the last point after your exit the while loop
     horizontal_bounds.insert(device_ctx.grid.width());
@@ -184,10 +183,10 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     vertical_cuts.push_back(0);
     int num_vertical_cuts = 0;
     while (num_vertical_cuts < vertical_cutpoints - 1) {
-    	vertical_bounds.insert(vertical_point);
-    	vertical_cuts.push_back(vertical_point);
-    	vertical_point = vertical_point + vertical_interval;
-    	num_vertical_cuts++;
+        vertical_bounds.insert(vertical_point);
+        vertical_cuts.push_back(vertical_point);
+        vertical_point = vertical_point + vertical_interval;
+        num_vertical_cuts++;
     }
     //Add in the last point after your exit the while loop
     vertical_bounds.insert(device_ctx.grid.height());
@@ -196,13 +195,13 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     //PRINTING THE CUTPOINTS
     VTR_LOG("Horizontal cuts: \n");
     for (unsigned int j = 0; j < horizontal_cuts.size(); j++) {
-    	VTR_LOG("%d ", horizontal_cuts[j]);
+        VTR_LOG("%d ", horizontal_cuts[j]);
     }
     VTR_LOG("\n");
 
     VTR_LOG("Vertical cuts: \n");
     for (unsigned int m = 0; m < vertical_cuts.size(); m++) {
-    	VTR_LOG("%d ", vertical_cuts[m]);
+        VTR_LOG("%d ", vertical_cuts[m]);
     }
     VTR_LOG("\n");
 
@@ -211,20 +210,20 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     std::unordered_map<Region, std::vector<AtomBlockId>> region_atoms;
 
     for (unsigned int i = 0; i < horizontal_cuts.size() - 1; i++) {
-    	int xmin = horizontal_cuts[i];
-    	int xmax = horizontal_cuts[i+1] - 1;
+        int xmin = horizontal_cuts[i];
+        int xmax = horizontal_cuts[i + 1] - 1;
 
-    	for (unsigned int j = 0; j < vertical_cuts.size() - 1; j++) {
-    		int ymin = vertical_cuts[j];
-    		int ymax = vertical_cuts[j+1] - 1;
+        for (unsigned int j = 0; j < vertical_cuts.size() - 1; j++) {
+            int ymin = vertical_cuts[j];
+            int ymax = vertical_cuts[j + 1] - 1;
 
-    		Region reg;
-    		//VTR_ASSERT(xmax < device_ctx.grid.width() && ymax < device_ctx.grid.height());
-    		reg.set_region_rect(xmin, ymin, xmax, ymax);
-    		std::vector<AtomBlockId> atoms;
+            Region reg;
+            //VTR_ASSERT(xmax < device_ctx.grid.width() && ymax < device_ctx.grid.height());
+            reg.set_region_rect(xmin, ymin, xmax, ymax);
+            std::vector<AtomBlockId> atoms;
 
-    		region_atoms.insert({reg, atoms});
-    	}
+            region_atoms.insert({reg, atoms});
+        }
     }
 
     //based on the number of partitions you have, go through a loop of that size
@@ -246,19 +245,19 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
         int xminimum, yminimum, xmaximum, ymaximum;
 
         for (unsigned int h = 1; h < horizontal_cuts.size(); h++) {
-        	if (x < horizontal_cuts[h]) {
-        		xmaximum = horizontal_cuts[h] - 1;
-        		xminimum = horizontal_cuts[h - 1];
-        		break;
-        	}
+            if (x < horizontal_cuts[h]) {
+                xmaximum = horizontal_cuts[h] - 1;
+                xminimum = horizontal_cuts[h - 1];
+                break;
+            }
         }
 
         for (unsigned int v = 1; v < vertical_cuts.size(); v++) {
-        	if (y < vertical_cuts[v]) {
-        		ymaximum = vertical_cuts[v] - 1;
-        		yminimum = vertical_cuts[v - 1];
-        		break;
-        	}
+            if (y < vertical_cuts[v]) {
+                ymaximum = vertical_cuts[v] - 1;
+                yminimum = vertical_cuts[v - 1];
+                break;
+            }
         }
 
         Region current_reg;
@@ -269,26 +268,25 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
         VTR_ASSERT(got != region_atoms.end());
 
         for (int at = 0; at < num_atoms; at++) {
-        	got->second.push_back(atoms[at]);
+            got->second.push_back(atoms[at]);
         }
     }
 
     int num_partitions = 0;
     for (auto region : region_atoms) {
-    	Partition part;
-    	PartitionId partid(num_partitions);
-    	std::string part_name = "Part" + std::to_string(num_partitions);
-    	vtr::Rect<int> rect = region.first.get_region_rect();
-    	create_partition(part, part_name, rect.xmin(), rect.ymin(), rect.xmax(), rect.ymax());
-    	constraints.add_partition(part);
+        Partition part;
+        PartitionId partid(num_partitions);
+        std::string part_name = "Part" + std::to_string(num_partitions);
+        vtr::Rect<int> rect = region.first.get_region_rect();
+        create_partition(part, part_name, rect.xmin(), rect.ymin(), rect.xmax(), rect.ymax());
+        constraints.add_partition(part);
 
-    	for (unsigned int k = 0; k < region.second.size(); k++) {
-    		constraints.add_constrained_atom(region.second[k], partid);
-    	}
+        for (unsigned int k = 0; k < region.second.size(); k++) {
+            constraints.add_constrained_atom(region.second[k], partid);
+        }
 
-    	num_partitions++;
+        num_partitions++;
     }
-
 }
 
 void create_partition(Partition& part, std::string part_name, int xmin, int ymin, int xmax, int ymax) {

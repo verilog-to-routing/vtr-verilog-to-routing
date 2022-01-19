@@ -1990,7 +1990,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<constraints_split_factor, ParseFloorplanSplit>(args.floorplan_split, "--floorplan_split")
-        .help("Used to say how many partitions the floorplan constraints file should split the blocks into.")
+        .help(
+            "Specifies how many partitions are created from a placement when a floorplan constraint file is generated "
+            "via the --write_vpr_constraints option.")
         .default_value("halves")
         .choices({"halves", "quadrants", "sixteenths", "one_spot"})
         .show_in(argparse::ShowIn::HELP_ONLY);

@@ -951,7 +951,7 @@ static void print_pack_status(int num_clb,
         fflush(stdout);
         mols_since_last_print = 0;
         if (attraction_groups.num_attraction_groups() > 0) {
-            //update_attraction_group_status(attraction_groups);
+            update_attraction_group_status(attraction_groups);
         }
     }
 }
@@ -990,12 +990,8 @@ static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
 
 static void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
                                                      t_pb* pb) {
-    int i; //, m, k;
+    int i;
     bool found_molecule = false;
-    /*VTR_LOG("***************************");
-     * VTR_LOG("\n\n\n");
-     *
-     * VTR_LOG("Trying to remove molecule %d \n", molecule->atom_block_ids[0]);*/
 
     for (i = 0; i < pb->pb_stats->num_feasible_blocks; i++) {
         if (pb->pb_stats->feasible_blocks[i] == molecule) {
@@ -1003,16 +999,7 @@ static void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
         }
     }
 
-    /*VTR_LOG("Before: \n");
-     * for (m = 0; m < pb->pb_stats->num_feasible_blocks; m++) {
-     * VTR_LOG("%d ", pb->pb_stats->feasible_blocks[m]->atom_block_ids[0]);
-     * }
-     * VTR_LOG("\n");*/
-
     if (found_molecule == false) {
-        /*VTR_LOG("Molecule %d not in candidates\n", molecule->atom_block_ids[0]);
-         * VTR_LOG("\n\n\n");
-         * VTR_LOG("***************************");*/
         return;
     }
 
@@ -1032,17 +1019,6 @@ static void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
         }
     }
     pb->pb_stats->num_feasible_blocks--;
-
-    /*VTR_LOG("After: \n");
-     * for (k = 0; k < pb->pb_stats->num_feasible_blocks; k++) {
-     * VTR_LOG("%d ", pb->pb_stats->feasible_blocks[k]->atom_block_ids[0]);
-     * }
-     * VTR_LOG("\n");
-     *
-     * VTR_LOG("Removed molecule %d from candidates\n", molecule->atom_block_ids[0]);
-     *
-     * VTR_LOG("\n\n\n");
-     * VTR_LOG("***************************");*/
 }
 
 /* Add blk to list of feasible blocks sorted according to gain */
@@ -1055,14 +1031,6 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
     int num_molecule_failures = 0;
 
     AttractGroupId cluster_att_grp = pb->pb_stats->attraction_grp_id;
-
-    /*if (attraction_groups.num_attraction_groups() == 0) {
-     * for (i = 0; i < pb->pb_stats->num_feasible_blocks; i++) {
-     * if (pb->pb_stats->feasible_blocks[i] == molecule) {
-     * return; // already in queue, do nothing
-     * }
-     * }
-     * }*/
 
     //if the molecule has already failed, remove it from the list of candidates for the current cluster
     if (attraction_groups.num_attraction_groups() > 0) {
@@ -1079,13 +1047,11 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
         }
     }
 
-    //if (attraction_groups.num_attraction_groups() == 0) {
     for (i = 0; i < pb->pb_stats->num_feasible_blocks; i++) {
         if (pb->pb_stats->feasible_blocks[i] == molecule) {
             return; // already in queue, do nothing
         }
     }
-    //}
 
     if (pb->pb_stats->num_feasible_blocks >= max_queue_size - 1) {
         /* maximum size for array, remove smallest gain element and sort */
@@ -1530,8 +1496,10 @@ static bool cleanup_pb(t_pb* pb) {
  * packed into the current cluster. The legality checks are related to
  * floorplanning, pin feasibility, and routing (if detailed route
  * checking is enabled). The routine returns BLK_PASSED if the molecule
- * can be packed in the cluster. Otherwise, it returns the appropriate
- * failed pack status based on which legality check the molecule failed.
+ * can be packed in the cluster. If the block passes, the routine commits
+ * it to the current cluster and updates the appropriate data structures.
+ * Otherwise, it returns the appropriate failed pack status based on which
+ * legality check the molecule failed.
  */
 static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -2764,7 +2732,6 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     AttractionGroup& group = attraction_groups.get_attraction_group_info(grp_id);
     std::vector<AtomBlockId> available_att_group_atoms;
 
-    //if (cur_pb->pb_stats->pulled_from_atom_groups == 0) {
     for (AtomBlockId atom : group.group_atoms) {
         const auto& atom_model = atom_ctx.nlist.block_model(atom);
 
@@ -2776,12 +2743,9 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
         if (std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()
             && atom_ctx.lookup.atom_clb(atom) == ClusterBlockId::INVALID()) {
             available_att_group_atoms.push_back(atom);
-            //cur_pb->pb_stats->available_att_group_atoms.push_back(atom);
         }
     }
-    //}
 
-    //int num_available_atoms = available_att_group_atoms.size();
     int num_available_atoms = available_att_group_atoms.size();
     if (num_available_atoms == 0) {
         return;
@@ -2830,48 +2794,6 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
             }
         }
     }
-
-    /*int interval = 0.1 * num_available_atoms;
-     * std::vector<int> exploration_points;
-     * for (int k = 0; k < 10; k++) {
-     * exploration_points.push_back(k);
-     * }
-     *
-     * int picks_from_interval = 0.1 * interval;
-     *
-     * for (int j = 0; j <= 9; j++) {
-     * //int num_exploration_points = exploration_points.size();
-     * //int selected_exploration_index = rand() % num_exploration_points;
-     * //int selected_exp_point = exploration_points[selected_exploration_index];
-     * int selected_exp_point = j;
-     * for (int i = 0; i < picks_from_interval; i++) {
-     * int min = interval * selected_exp_point;
-     * int max = (interval * (selected_exp_point + 1) - 1);
-     * std::random_device rd;
-     * std::mt19937 gen(rd());
-     * std::uniform_int_distribution<> distr(min, max);
-     * int selected_atom = distr(gen);
-     * if (selected_atom >= num_available_atoms) {
-     * continue;
-     * }
-     * AtomBlockId blk_id = available_att_group_atoms[selected_atom];
-     * if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
-     * auto rng = atom_molecules.equal_range(blk_id);
-     * for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
-     * t_pack_molecule* molecule = kv.second;
-     * if (molecule->valid) {
-     * bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
-     * if (success) {
-     * add_molecule_to_pb_stats_candidates(molecule,
-     * cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
-     * }
-     * }
-     * }
-     * }
-     * }
-     *
-     * //exploration_points.erase(exploration_points.begin() + selected_exploration_index);
-     * }*/
 }
 
 /* Add molecules based on transitive connections (eg. 2 hops away) with current cluster*/
@@ -3045,7 +2967,7 @@ static void check_clustering() {
 }
 
 static void check_floorplan_regions(bool& floorplan_regions_overfull) {
-    floorplan_regions_overfull = check_constraints_filling();
+    floorplan_regions_overfull = check_clusters_floorplan_feasibility();
 }
 
 /*Print the contents of each cluster to an echo file*/
