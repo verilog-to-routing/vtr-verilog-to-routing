@@ -57,6 +57,8 @@ struct NetlistReader {
         outpad_model_ = find_model(MODEL_OUTPUT);
         main_netlist_.set_block_types(inpad_model_, outpad_model_);
 
+        prepare_port_net_maps();
+
         VTR_LOG("Reading IOs...\n");
         read_ios();
         VTR_LOG("Reading names...\n");
@@ -77,6 +79,59 @@ struct NetlistReader {
     const t_arch& arch_;
 
     LogicalNetlist::Netlist::CellInstance::Reader top_cell_instance_;
+
+    std::unordered_map<size_t, std::unordered_map<std::pair<size_t, size_t>, std::string, vtr::hash_pair>> port_net_maps_;
+
+    void prepare_port_net_maps() {
+        auto inst_list = nr_.getInstList();
+        auto decl_list = nr_.getCellDecls();
+        auto str_list = nr_.getStrList();
+        auto port_list = nr_.getPortList();
+        auto top_cell = nr_.getCellList()[nr_.getTopInst().getCell()];
+
+        for (auto net : top_cell.getNets()) {
+            std::string net_name = str_list[net.getName()];
+
+            // Rename constant nets to their correct name based on the device architecture
+            // database
+            for (auto port : net.getPortInsts()) {
+                if (port.isExtPort())
+                    continue;
+
+                auto port_inst = port.getInst();
+                auto cell = inst_list[port_inst].getCell();
+                if (str_list[decl_list[cell].getName()] == arch_.gnd_cell.first)
+                    net_name = arch_.gnd_net;
+
+                if (str_list[decl_list[cell].getName()] == arch_.vcc_cell.first)
+                    net_name = arch_.vcc_net;
+            }
+
+            for (auto port : net.getPortInsts()) {
+                if (!port.isInst())
+                    continue;
+
+                size_t inst = port.getInst();
+
+                size_t port_bit = get_port_bit(port);
+
+                auto port_idx = port.getPort();
+                int start, end;
+                std::tie(start, end) = get_bus_range(port_list[port_idx]);
+
+                int bus_size = std::abs(end - start);
+
+                port_bit = start < end ? port_bit : bus_size - port_bit;
+
+                auto pair = std::make_pair(port_idx, port_bit);
+                std::unordered_map<std::pair<size_t, size_t>, std::string, vtr::hash_pair> map{{pair, net_name}};
+
+                auto result = port_net_maps_.emplace(inst, map);
+                if (!result.second)
+                    result.first->second.emplace(pair, net_name);
+            }
+        }
+    }
 
     void read_ios() {
         const t_model* input_model = find_model(MODEL_INPUT);
@@ -141,7 +196,7 @@ struct NetlistReader {
         auto port_list = nr_.getPortList();
         auto str_list = nr_.getStrList();
 
-        std::vector<std::tuple<unsigned int, int, std::string>> insts;
+        std::vector<std::tuple<size_t, int, std::string>> insts;
         for (auto cell_inst : top_cell.getInsts()) {
             auto cell = decl_list[inst_list[cell_inst].getCell()];
 
@@ -150,12 +205,14 @@ struct NetlistReader {
             std::string init_param;
             std::tie(is_lut, width, init_param) = is_lut_cell(str_list[cell.getName()]);
 
-            if (is_lut)
-                insts.emplace_back(cell_inst, width, init_param);
+            if (!is_lut)
+                continue;
+
+            insts.emplace_back(cell_inst, width, init_param);
         }
 
         for (auto inst : insts) {
-            unsigned int inst_idx;
+            size_t inst_idx;
             int lut_width;
             std::string init_param;
             std::tie(inst_idx, lut_width, init_param) = inst;
@@ -260,24 +317,15 @@ struct NetlistReader {
             AtomPortId oport_id = main_netlist_.create_port(blk_id, blk_model->outputs);
 
             auto cell_lib = decl_list[inst_list[inst_idx].getCell()];
-            std::unordered_map<unsigned int, std::string> port_net_map;
-
-            for (auto net : top_cell.getNets()) {
-                std::string net_name = str_list[net.getName()];
-                for (auto port : net.getPortInsts()) {
-                    if (!port.isInst() || port.getInst() != inst_idx)
-                        continue;
-
-                    port_net_map.emplace(port.getPort(), net_name);
-                }
-            }
-
+            auto port_net_map = port_net_maps_.at(inst_idx);
             int inum = 0;
             for (auto port : cell_lib.getPorts()) {
-                if (port_net_map.find(port) == port_net_map.end())
+                std::pair<size_t, size_t> pair{port, 0};
+
+                if (port_net_map.find(pair) == port_net_map.end())
                     continue;
 
-                auto net_name = port_net_map.at(port);
+                auto net_name = port_net_map.at(pair);
                 AtomNetId net_id = main_netlist_.create_net(net_name);
 
                 auto dir = port_list[port].getDir();
@@ -303,7 +351,7 @@ struct NetlistReader {
         auto port_list = nr_.getPortList();
         auto str_list = nr_.getStrList();
 
-        std::vector<std::pair<unsigned int, unsigned int>> insts;
+        std::vector<std::pair<size_t, size_t>> insts;
         for (auto cell_inst : top_cell.getInsts()) {
             auto cell = decl_list[inst_list[cell_inst].getCell()];
 
@@ -334,7 +382,7 @@ struct NetlistReader {
                           inst_name.c_str(), conflicting_model->name, blk_model->name);
             }
 
-            auto port_net_map = get_port_net_map(inst_idx);
+            auto port_net_map = port_net_maps_.at(inst_idx);
 
             auto cell = decl_list[inst_list[inst_idx].getCell()];
             if (str_list[cell.getName()] == arch_.vcc_cell.first)
@@ -445,58 +493,12 @@ struct NetlistReader {
         return std::make_pair(0, 0);
     }
 
-    unsigned int get_port_bit(LogicalNetlist::Netlist::PortInstance::Reader port_inst_reader) {
-        unsigned int port_bit = 0;
+    size_t get_port_bit(LogicalNetlist::Netlist::PortInstance::Reader port_inst_reader) {
+        size_t port_bit = 0;
         if (port_inst_reader.getBusIdx().which() == LogicalNetlist::Netlist::PortInstance::BusIdx::IDX)
             port_bit = port_inst_reader.getBusIdx().getIdx();
 
         return port_bit;
-    }
-
-    std::unordered_map<std::pair<unsigned int, unsigned int>, std::string, vtr::hash_pair> get_port_net_map(unsigned int inst_idx) {
-        auto inst_list = nr_.getInstList();
-        auto decl_list = nr_.getCellDecls();
-        auto str_list = nr_.getStrList();
-        auto port_list = nr_.getPortList();
-
-        auto top_cell = nr_.getCellList()[nr_.getTopInst().getCell()];
-        std::unordered_map<std::pair<unsigned int, unsigned int>, std::string, vtr::hash_pair> map;
-        for (auto net : top_cell.getNets()) {
-            std::string net_name = str_list[net.getName()];
-
-            for (auto port : net.getPortInsts()) {
-                if (port.isExtPort())
-                    continue;
-
-                auto port_inst = port.getInst();
-                auto cell = inst_list[port_inst].getCell();
-                if (str_list[decl_list[cell].getName()] == arch_.gnd_cell.first)
-                    net_name = arch_.gnd_net;
-
-                if (str_list[decl_list[cell].getName()] == arch_.vcc_cell.first)
-                    net_name = arch_.vcc_net;
-            }
-
-            for (auto port : net.getPortInsts()) {
-                if (!port.isInst() || port.getInst() != inst_idx)
-                    continue;
-
-                unsigned int port_bit = get_port_bit(port);
-
-                auto port_idx = port.getPort();
-                int start, end;
-                std::tie(start, end) = get_bus_range(port_list[port_idx]);
-
-                int bus_size = std::abs(end - start);
-
-                port_bit = start < end ? port_bit : bus_size - port_bit;
-
-                auto pair = std::make_pair(port_idx, port_bit);
-                map.emplace(pair, net_name);
-            }
-        }
-
-        return map;
     }
 
     std::tuple<bool, int, std::string> is_lut_cell(std::string cell_name) {
