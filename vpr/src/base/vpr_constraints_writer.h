@@ -47,6 +47,8 @@ void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bo
 
 void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints);
 
+void setup_vpr_floorplan_constraints_cutpoints_half(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints);
+
 void setup_vpr_floorplan_constraints_half(VprConstraints& constraints, int expand, bool subtile);
 
 void create_partition(Partition& part, std::string part_name, int xmin, int ymin, int xmax, int ymax);

@@ -812,7 +812,7 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
 
     AttractGroupId cluster_att_grp = pb->pb_stats->attraction_grp_id;
 
-    //if the molecule has already failed, remove it from the list of candidates for the current cluster
+    //Attraction groups are created for the purposes of packing more densely
     if (attraction_groups.num_attraction_groups() > 0) {
         auto got = pb->pb_stats->atom_failures.find(molecule->atom_block_ids[0]);
         if (got == pb->pb_stats->atom_failures.end()) {
