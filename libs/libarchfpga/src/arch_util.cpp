@@ -569,6 +569,7 @@ t_physical_tile_type get_empty_physical_type(std::string name) {
     type.switchblock_switch_overrides = vtr::Matrix<int>({{size_t(type.width), size_t(type.height)}}, DEFAULT_SWITCH);
     type.is_input_type = false;
     type.is_output_type = false;
+    type.is_empty = true;
 
     return type;
 }
@@ -577,6 +578,7 @@ t_logical_block_type get_empty_logical_type(std::string name) {
     t_logical_block_type type;
     type.name = vtr::strdup(name.c_str());
     type.pb_type = nullptr;
+    type.is_empty = true;
 
     return type;
 }

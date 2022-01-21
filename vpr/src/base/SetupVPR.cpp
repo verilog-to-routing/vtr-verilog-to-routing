@@ -139,7 +139,7 @@ void SetupVPR(const t_options* Options,
     int num_inputs = 0;
     int num_outputs = 0;
     for (auto& type : device_ctx.physical_tile_types) {
-        if (type.index == 0) {
+        if (type.is_empty) {
             VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE == nullptr);
             VTR_ASSERT(type.num_pins == 0);
             device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &type;
@@ -157,7 +157,7 @@ void SetupVPR(const t_options* Options,
     device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = nullptr;
     int max_equivalent_tiles = 0;
     for (const auto& type : device_ctx.logical_block_types) {
-        if (type.index == 0) {
+        if (type.is_empty) {
             VTR_ASSERT(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE == nullptr);
             VTR_ASSERT(type.pb_type == nullptr);
             device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = &type;

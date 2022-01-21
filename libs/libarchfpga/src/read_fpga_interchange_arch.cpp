@@ -1065,7 +1065,8 @@ struct ArchReader {
                 const auto& lut_element = lut_elements[i];
 
                 auto mid_pb_type = &mode->pb_type_children[count++];
-                mid_pb_type->name = vtr::stringf("LUT%d", i);
+                std::string lut_name = "LUT" + std::to_string(i);
+                mid_pb_type->name = vtr::strdup(lut_name.c_str());
                 mid_pb_type->num_pb = 1;
                 mid_pb_type->parent_mode = mode;
                 mid_pb_type->blif_model = nullptr;
@@ -1122,6 +1123,8 @@ struct ArchReader {
             mode->num_interconnect = lut_bel.input_pins.size() + 1;
             mode->interconnect = new t_interconnect[mode->num_interconnect];
 
+            std::string istr, ostr, name;
+
             // Inputs
             for (size_t j = 0; j < lut_bel.input_pins.size(); ++j) {
                 auto* ic = &mode->interconnect[j];
@@ -1130,11 +1133,13 @@ struct ArchReader {
                 ic->parent_mode = mode;
                 ic->parent_mode_index = mode->index;
 
-                ic->input_string = vtr::stringf("%s.%s", parent->name, lut_bel.input_pins[j].c_str());
-                ic->output_string = vtr::stringf("%s.in[%d]", pb_type->name, j);
-                ic->name = vtr::stringf("%s_to_%s",
-                                        ic->input_string,
-                                        ic->output_string);
+                istr = std::string(parent->name) + "." + lut_bel.input_pins[j];
+                ostr = std::string(pb_type->name) + ".in[" + std::to_string(j) + "]";
+                name = istr + "_to_" + ostr;
+
+                ic->input_string = vtr::strdup(istr.c_str());
+                ic->output_string = vtr::strdup(ostr.c_str());
+                ic->name = vtr::strdup(name.c_str());
             }
 
             // Output
@@ -1143,11 +1148,13 @@ struct ArchReader {
             ic->parent_mode = mode;
             ic->parent_mode_index = mode->index;
 
-            ic->input_string = vtr::stringf("%s.out", pb_type->name);
-            ic->output_string = vtr::stringf("%s.%s", parent->name, lut_bel.output_pin.c_str());
-            ic->name = vtr::stringf("%s_to_%s",
-                                    ic->input_string,
-                                    ic->output_string);
+            istr = std::string(pb_type->name) + ".out";
+            ostr = std::string(parent->name) + "." + lut_bel.output_pin;
+            name = istr + "_to_" + ostr;
+
+            ic->input_string = vtr::strdup(istr.c_str());
+            ic->output_string = vtr::strdup(ostr.c_str());
+            ic->name = vtr::strdup(name.c_str());
         }
     }
 
@@ -1181,9 +1188,15 @@ struct ArchReader {
         mode->interconnect = new t_interconnect[mode->num_interconnect];
         t_interconnect* ic = &mode->interconnect[0];
 
-        ic->input_string = vtr::stringf("%s.in", pb_type->name);
-        ic->output_string = vtr::stringf("%s.out", pb_type->name);
-        ic->name = vtr::strdup("passthrough");
+        std::string istr, ostr, name;
+
+        istr = std::string(pb_type->name) + ".in";
+        ostr = std::string(pb_type->name) + ".out";
+        name = "passthrough";
+
+        ic->input_string = vtr::strdup(istr.c_str());
+        ic->output_string = vtr::strdup(ostr.c_str());
+        ic->name = vtr::strdup(name.c_str());
 
         ic->type = COMPLETE_INTERC;
         ic->parent_mode = mode;
@@ -1233,11 +1246,13 @@ struct ArchReader {
         ic->parent_mode = mode;
         ic->parent_mode_index = mode->index;
 
-        ic->input_string = vtr::stringf("%s.in", pb_type->name);
-        ic->output_string = vtr::stringf("%s.in", lut->name);
-        ic->name = vtr::stringf("%s_to_%s",
-                                ic->input_string,
-                                ic->output_string);
+        istr = std::string(pb_type->name) + ".in";
+        ostr = std::string(lut->name) + ".in";
+        name = istr + "_to_" + ostr;
+
+        ic->input_string = vtr::strdup(istr.c_str());
+        ic->output_string = vtr::strdup(ostr.c_str());
+        ic->name = vtr::strdup(name.c_str());
 
         // Output
         ic = &mode->interconnect[1];
@@ -1245,11 +1260,13 @@ struct ArchReader {
         ic->parent_mode = mode;
         ic->parent_mode_index = mode->index;
 
-        ic->input_string = vtr::stringf("%s.out", lut->name);
-        ic->output_string = vtr::stringf("%s.out", pb_type->name);
-        ic->name = vtr::stringf("%s_to_%s",
-                                ic->input_string,
-                                ic->output_string);
+        istr = std::string(lut->name) + ".out";
+        ostr = std::string(pb_type->name) + ".out";
+        name = istr + "_to_" + ostr;
+
+        ic->input_string = vtr::strdup(istr.c_str());
+        ic->output_string = vtr::strdup(ostr.c_str());
+        ic->name = vtr::strdup(name.c_str());
     }
 
     /** @brief Generates the leaf pb types for the PAD type */

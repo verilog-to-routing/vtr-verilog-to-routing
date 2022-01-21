@@ -501,34 +501,4 @@ int get_pid() {
 #endif
 }
 
-char* stringf(const char* format, ...) {
-    // Initial buffer
-    const int initial_size = 80 + 1;
-    char* str = (char*)vtr::malloc(initial_size);
-
-    // Init and copy args list
-    va_list va1, va2;
-    va_start(va1, format);
-    va_copy(va2, va1);
-
-    // First attempt
-    int len = vsnprintf(str, initial_size, format, va1);
-    VTR_ASSERT(len >= 0);
-
-    // The buffer was too small
-    if (len >= initial_size) {
-        str = (char*)vtr::realloc((void*)str, len + 1);
-        VTR_ASSERT(str != nullptr);
-        len = vsnprintf(str, len + 1, format, va2);
-        VTR_ASSERT(len >= 0);
-        VTR_ASSERT(len <= len);
-    }
-
-    // Cleanup
-    va_end(va1);
-    va_end(va2);
-
-    return str;
-}
-
 } // namespace vtr

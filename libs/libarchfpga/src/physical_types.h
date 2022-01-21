@@ -653,6 +653,9 @@ struct t_physical_tile_type {
 
     // Does this t_physical_tile_type contain an outpad?
     bool is_output_type = false;
+
+    // Is this t_physical_tile_type an empty type?
+    bool is_empty = false;
 };
 
 /* Holds the capacity range of a certain sub_tile block within the parent physical tile type.
@@ -828,6 +831,9 @@ struct t_logical_block_type {
 
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
+
+    // Is this t_logical_block_type empty?
+    bool is_empty = false;
 };
 
 /*************************************************************************************************
