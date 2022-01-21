@@ -19,7 +19,7 @@ RouterDelayProfiler::RouterDelayProfiler(
           g_vpr_ctx.device().rr_nodes,
           &g_vpr_ctx.device().rr_graph,
           g_vpr_ctx.device().rr_rc_data,
-          g_vpr_ctx.device().rr_switch_inf,
+          g_vpr_ctx.device().rr_graph.rr_switch(),
           g_vpr_ctx.mutable_routing().rr_node_route_inf) {}
 
 bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
@@ -124,7 +124,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
         device_ctx.rr_nodes,
         &g_vpr_ctx.device().rr_graph,
         device_ctx.rr_rc_data,
-        device_ctx.rr_switch_inf,
+        device_ctx.rr_graph.rr_switch(),
         routing_ctx.rr_node_route_inf);
     RouterStats router_stats;
 

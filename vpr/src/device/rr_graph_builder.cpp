@@ -38,6 +38,10 @@ RRSegmentId RRGraphBuilder::add_rr_segment(const t_segment_inf& segment_info) {
 vtr::vector<RRSegmentId, t_segment_inf>& RRGraphBuilder::rr_segments() {
     return rr_segments_;
 }
+vtr::vector<RRSwitchId, t_rr_switch_inf>& RRGraphBuilder::rr_switch() {
+    return rr_switch_inf_;
+}
+
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     t_rr_type node_type = node_storage_.node_type(node);
     short node_ptc_num = node_storage_.node_ptc_num(node);

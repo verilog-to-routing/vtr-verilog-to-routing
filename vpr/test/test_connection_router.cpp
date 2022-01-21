@@ -49,7 +49,7 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
         device_ctx.rr_nodes,
         &device_ctx.rr_graph,
         device_ctx.rr_rc_data,
-        device_ctx.rr_switch_inf,
+        device_ctx.rr_graph.rr_switch(),
         g_vpr_ctx.mutable_routing().rr_node_route_inf);
 
     // Find the cheapest route if possible.

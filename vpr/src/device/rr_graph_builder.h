@@ -43,6 +43,7 @@ class RRGraphBuilder {
     void reserve_segments(const size_t& num_segments);
     RRSegmentId add_rr_segment(const t_segment_inf& segment_info);
     vtr::vector<RRSegmentId, t_segment_inf>& rr_segments();
+    vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch();
     /** @brief Set the type of a node with a given valid id */
     inline void set_node_type(RRNodeId id, t_rr_type type) {
         node_storage_.set_node_type(id, type);
@@ -239,6 +240,14 @@ class RRGraphBuilder {
     RRSpatialLookup node_lookup_;
     vtr::vector<RRSegmentId, t_segment_inf> rr_segments_; /* detailed information about the segments, which are used in the RRGraph */
     vtr::vector<RRSegmentId, RRSegmentId> segment_ids_;   /* unique identifiers for routing segments which are used in the RRGraph */
+    /* Switch related data
+     * Note that so far there has been no need to remove
+     * switches, so no such facility exists
+     */
+    /* Unique identifiers for switches which are used in the RRGraph */
+    vtr::vector<RRSwitchId, RRSwitchId> switch_ids_;
+    /* Detailed information about the switches, which are used in the RRGraph */
+    vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
 
     /* Metadata is an extra data on rr-nodes and edges, respectively, that is not used by vpr
      * but simply passed through the flow so that it can be used by downstream tools.

@@ -382,7 +382,7 @@ class RRGraphView {
     inline size_t num_rr_segments() const {
         return rr_segments_.size();
     }
-    vtr::vector<RRSegmentId, t_segment_inf> rr_segments() const {
+    const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments() const {
         return rr_segments_;
     }
 
@@ -407,7 +407,7 @@ class RRGraphView {
     inline size_t num_rr_switches() const {
         return rr_switch_inf_.size();
     }
-    vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch() const {
+    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch() const {
         return rr_switch_inf_;
     }
     /** @brief Return the fast look-up data structure for queries from client functions */
