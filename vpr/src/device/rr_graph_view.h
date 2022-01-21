@@ -410,6 +410,7 @@ class RRGraphView {
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch() const {
         return rr_switch_inf_;
     }
+
     /** @brief Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;

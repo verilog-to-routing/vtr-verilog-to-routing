@@ -38,7 +38,7 @@ void write_rr_graph(const char* file_name) {
         &device_ctx.rr_nodes,
         &device_ctx.rr_graph_builder,
         &device_ctx.rr_graph,
-        &device_ctx.rr_switch_inf,
+        &device_ctx.rr_graph_builder.rr_switch(),
         &device_ctx.rr_indexed_data,
         device_ctx.num_arch_switches,
         device_ctx.arch_switch_inf,

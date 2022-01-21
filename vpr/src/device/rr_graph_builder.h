@@ -41,7 +41,9 @@ class RRGraphBuilder {
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
     void reserve_segments(const size_t& num_segments);
+    void reserve_switches(const size_t& num_switches);
     RRSegmentId add_rr_segment(const t_segment_inf& segment_info);
+    RRSwitchId add_rr_switch(const t_rr_switch_inf& switch_info);
     vtr::vector<RRSegmentId, t_segment_inf>& rr_segments();
     vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch();
     /** @brief Set the type of a node with a given valid id */
@@ -197,6 +199,9 @@ class RRGraphBuilder {
     /** @brief This function resize node storage to accomidate size RR nodes. */
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
+    }
+    inline void resize_switches(size_t size) {
+        rr_switch_inf_.resize(size);
     }
 
     /** brief Validate that edge data is partitioned correctly

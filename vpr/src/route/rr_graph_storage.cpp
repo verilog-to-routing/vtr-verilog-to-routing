@@ -495,8 +495,6 @@ void t_rr_graph_storage::partition_edges() {
 
     edges_read_ = true;
     VTR_ASSERT(remapped_edges_);
-
-    const auto& device_ctx = g_vpr_ctx.device();
     // This sort ensures two things:
     //  - Edges are stored in ascending source node order.  This is required
     //    by assign_first_edges()
@@ -505,7 +503,7 @@ void t_rr_graph_storage::partition_edges() {
     std::sort(
         edge_sort_iterator(this, 0),
         edge_sort_iterator(this, edge_src_node_.size()),
-        edge_compare_src_node_and_configurable_first(device_ctx.rr_switch_inf));
+        edge_compare_src_node_and_configurable_first(g_vpr_ctx.mutable_device().rr_graph_builder.rr_switch()));
 
     partitioned_ = true;
 

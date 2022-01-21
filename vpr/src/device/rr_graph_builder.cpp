@@ -26,6 +26,11 @@ void RRGraphBuilder::reserve_segments(const size_t& num_segments) {
     this->segment_ids_.reserve(num_segments);
     this->rr_segments_.reserve(num_segments);
 }
+/* Reserve a list of switches */
+void RRGraphBuilder::reserve_switches(const size_t& num_switches) {
+    this->switch_ids_.reserve(num_switches);
+    this->rr_switch_inf_.reserve(num_switches);
+}
 RRSegmentId RRGraphBuilder::add_rr_segment(const t_segment_inf& segment_info) {
     //Allocate an ID
     RRSegmentId segment_id = RRSegmentId(segment_ids_.size());
@@ -34,6 +39,15 @@ RRSegmentId RRGraphBuilder::add_rr_segment(const t_segment_inf& segment_info) {
     rr_segments_.push_back(segment_info);
 
     return segment_id;
+}
+RRSwitchId RRGraphBuilder::add_rr_switch(const t_rr_switch_inf& switch_info) {
+    //Allocate an ID
+    RRSwitchId switch_id = RRSwitchId(switch_ids_.size());
+    switch_ids_.push_back(switch_id);
+
+    rr_switch_inf_.push_back(switch_info);
+
+    return switch_id;
 }
 vtr::vector<RRSegmentId, t_segment_inf>& RRGraphBuilder::rr_segments() {
     return rr_segments_;
@@ -79,6 +93,7 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
     rr_segments_.clear();
+    rr_switch_inf_.clear();
 }
 
 void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm,
