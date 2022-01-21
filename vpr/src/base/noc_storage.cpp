@@ -61,7 +61,7 @@ int NocStorage::get_noc_link_number_of_connections(NocLinkId id) const{
 
 void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y){
 
-    VTR_ASSERT(!built_noc);
+    VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
         
     router_storage.emplace_back(id, grid_position_x, grid_posistion_y);
 
@@ -77,7 +77,7 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y){
 
 void NocStorage::add_link(NocRouterId source, NocRouterId sink){
 
-    VTR_ASSERT(!built_noc);
+    VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     link_storage.emplace_back(source, sink);
 
     return;
@@ -85,7 +85,7 @@ void NocStorage::add_link(NocRouterId source, NocRouterId sink){
 
 void NocStorage::add_noc_router_link(NocRouterId router_id, NocLinkId link_id){
 
-    VTR_ASSERT(!built_noc);
+    VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     router_link_list[router_id].push_back(link_id);
 
     return;
@@ -114,7 +114,7 @@ void NocStorage::set_noc_link_number_of_connections(NocLinkId id, int number_of_
 
 void NocStorage::finished_building_noc(void){
 
-    VTR_ASSERT(!built_noc);
+    VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     built_noc = true;
 
     return;
