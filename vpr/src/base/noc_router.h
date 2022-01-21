@@ -9,13 +9,15 @@
 class NocRouter {
 
     private:
-        int router_id;
+        // this represents the id provided by the user when describing
+        // the NoC in the architecture description file 
+        int router_id; 
         int router_grid_position_x;
         int router_grid_position_y;
 
         // atom id and clustering block id can be used to identigy which router moduleswe are using
         // atom id is faster than string
-        std::string router_design_module_name;
+        std::string router_design_module_ref;
 
         // traffic flow information will be providedin an input file through
         // module names and how the trffic flows between them
@@ -24,14 +26,14 @@ class NocRouter {
         NocRouter(int id, int grid_position_x, int grid_position_y);
         ~NocRouter();
 
-        int get_router_id(void);
-        int get_router_grid_position_x(void);
-        int get_router_grid_position_y(void);
+        int get_router_id(void) const;
+        int get_router_grid_position_x(void) const;
+        int get_router_grid_position_y(void) const;
 
-        std::string get_router_design_module_name(void);
+        std::string get_router_design_module_ref(void) const;
 
         // setters
-        void set_router_design_module_name(std::string design_module_name);
+        void set_router_design_module_ref(std::string design_module_ref);
 
 
 
