@@ -40,6 +40,9 @@ class RRGraphBuilder {
     t_rr_graph_storage& node_storage();
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
+    void reserve_segments(const size_t& num_segments);
+    RRSegmentId add_rr_segment(const t_segment_inf& segment_info);
+    vtr::vector<RRSegmentId, t_segment_inf>& rr_segments();
     /** @brief Set the type of a node with a given valid id */
     inline void set_node_type(RRNodeId id, t_rr_type type) {
         node_storage_.set_node_type(id, type);
@@ -234,6 +237,8 @@ class RRGraphBuilder {
     t_rr_graph_storage& node_storage_;
     /* Fast look-up for rr nodes */
     RRSpatialLookup node_lookup_;
+    vtr::vector<RRSegmentId, t_segment_inf> rr_segments_; /* detailed information about the segments, which are used in the RRGraph */
+    vtr::vector<RRSegmentId, RRSegmentId> segment_ids_;   /* unique identifiers for routing segments which are used in the RRGraph */
 
     /* Metadata is an extra data on rr-nodes and edges, respectively, that is not used by vpr
      * but simply passed through the flow so that it can be used by downstream tools.

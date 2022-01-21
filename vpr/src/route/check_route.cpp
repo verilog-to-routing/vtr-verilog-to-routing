@@ -56,7 +56,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    const int num_switches = device_ctx.rr_switch_inf.size();
+    const int num_switches = rr_graph.num_rr_switches();
 
     VTR_LOG("\n");
     VTR_LOG("Checking to ensure routing is legal...\n");

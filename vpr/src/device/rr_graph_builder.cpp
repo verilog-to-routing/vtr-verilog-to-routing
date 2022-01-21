@@ -22,7 +22,22 @@ t_rr_graph_storage& RRGraphBuilder::node_storage() {
 RRSpatialLookup& RRGraphBuilder::node_lookup() {
     return node_lookup_;
 }
+void RRGraphBuilder::reserve_segments(const size_t& num_segments) {
+    this->segment_ids_.reserve(num_segments);
+    this->rr_segments_.reserve(num_segments);
+}
+RRSegmentId RRGraphBuilder::add_rr_segment(const t_segment_inf& segment_info) {
+    //Allocate an ID
+    RRSegmentId segment_id = RRSegmentId(segment_ids_.size());
+    segment_ids_.push_back(segment_id);
 
+    rr_segments_.push_back(segment_info);
+
+    return segment_id;
+}
+vtr::vector<RRSegmentId, t_segment_inf>& RRGraphBuilder::rr_segments() {
+    return rr_segments_;
+}
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     t_rr_type node_type = node_storage_.node_type(node);
     short node_ptc_num = node_storage_.node_ptc_num(node);
@@ -59,6 +74,7 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
 
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
+    rr_segments_.clear();
 }
 
 void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm,

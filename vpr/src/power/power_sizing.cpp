@@ -379,7 +379,7 @@ static double power_count_transistors_switchbox() {
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    for (size_t seg_idx = 0; seg_idx < device_ctx.rr_segments.size(); seg_idx++) {
+    for (size_t seg_idx = 0; seg_idx < rr_graph.num_rr_segments(); seg_idx++) {
         /* In each switchbox, the different types of segments occur with relative freqencies.
          * Thus the total number of wires of each segment type is (#tracks * freq * 2).
          * The (x2) factor accounts for vertical and horizontal tracks.
