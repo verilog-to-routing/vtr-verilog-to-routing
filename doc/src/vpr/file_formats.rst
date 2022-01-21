@@ -394,7 +394,7 @@ The ``.param`` statement allows parameters (e.g. primitive modes) to be tagged o
 Parameters can have one of the three available types. Type is inferred from the format in which a parameter is provided.
 
  * **string**
-    Whenever a parameter value is quoted it is considered to be a string.
+    Whenever a parameter value is quoted it is considered to be a string. BLIF parser does not allow escaped characters hence those are illegal and will cause syntax errors.
 
  * **binary word**
     Binary words are specified using strings of characters ``0`` and ``1``. No other characters are allowed. Number of characters denotes the word length.
