@@ -40,12 +40,15 @@ class RRGraphBuilder {
     t_rr_graph_storage& node_storage();
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
-    void reserve_segments(const size_t& num_segments);
-    void reserve_switches(const size_t& num_switches);
+
+    /** @brief Return a writable object of rr_segments*/
     RRSegmentId add_rr_segment(const t_segment_inf& segment_info);
-    RRSwitchId add_rr_switch(const t_rr_switch_inf& switch_info);
     vtr::vector<RRSegmentId, t_segment_inf>& rr_segments();
+
+    /** @brief Return a writable object of rr_switch_inf*/
+    RRSwitchId add_rr_switch(const t_rr_switch_inf& switch_info);
     vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch();
+
     /** @brief Set the type of a node with a given valid id */
     inline void set_node_type(RRNodeId id, t_rr_type type) {
         node_storage_.set_node_type(id, type);
@@ -191,15 +194,21 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
     }
 
-    /** @brief This function reserve storage for RR nodes. */
+    /* Reserve the lists of nodes, edges, switches etc. to be memory efficient.
+     * This function is mainly used to reserve memory space inside RRGraph,
+     * when adding a large number of nodes/edge/switches/segments,
+     * in order to avoid memory fragements */
     inline void reserve_nodes(size_t size) {
         node_storage_.reserve(size);
     }
+    void reserve_segments(const size_t& num_segments);
+    void reserve_switches(const size_t& num_switches);
 
     /** @brief This function resize node storage to accomidate size RR nodes. */
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
+    /** @brief This function resize rr_switch to accomidate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);
     }
@@ -243,6 +252,11 @@ class RRGraphBuilder {
     t_rr_graph_storage& node_storage_;
     /* Fast look-up for rr nodes */
     RRSpatialLookup node_lookup_;
+
+    /* Segment relatex data
+     * Segment info should be corrected annotated for each rr_node
+     * whose type is CHANX and CHANY
+     */
     vtr::vector<RRSegmentId, t_segment_inf> rr_segments_; /* detailed information about the segments, which are used in the RRGraph */
     vtr::vector<RRSegmentId, RRSegmentId> segment_ids_;   /* unique identifiers for routing segments which are used in the RRGraph */
     /* Switch related data

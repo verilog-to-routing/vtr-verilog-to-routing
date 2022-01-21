@@ -22,6 +22,7 @@ t_rr_graph_storage& RRGraphBuilder::node_storage() {
 RRSpatialLookup& RRGraphBuilder::node_lookup() {
     return node_lookup_;
 }
+/* Reserve a list of segments */
 void RRGraphBuilder::reserve_segments(const size_t& num_segments) {
     this->segment_ids_.reserve(num_segments);
     this->rr_segments_.reserve(num_segments);
@@ -31,6 +32,7 @@ void RRGraphBuilder::reserve_switches(const size_t& num_switches) {
     this->switch_ids_.reserve(num_switches);
     this->rr_switch_inf_.reserve(num_switches);
 }
+/* Create segment */
 RRSegmentId RRGraphBuilder::add_rr_segment(const t_segment_inf& segment_info) {
     //Allocate an ID
     RRSegmentId segment_id = RRSegmentId(segment_ids_.size());
