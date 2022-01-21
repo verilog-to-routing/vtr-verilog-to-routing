@@ -36,6 +36,10 @@ class NocStorage
 
         // flags to keep track of the status
         bool built_noc;
+
+        // preventy "pass by value" of this object
+        NocStorage(const NocStorage&) = delete;
+        void operator=(const NocStorage&) = delete;
     public:
 
         // default contructor (cleare all the elements in the vectors)
