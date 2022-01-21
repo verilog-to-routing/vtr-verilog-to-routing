@@ -392,7 +392,8 @@ struct BlifAllocCallback : public blifparse::Callback {
         bool is_valid = is_string_param(value) || is_binary_param(value) || is_real_param(value);
 
         if (!is_valid) {
-            parse_error(lineno_, ".param", "Incorrect parameter value specification");
+            std::string msg = "Incorrect parameter '" + name + "' value specification. Value '" + value + "' is not recognized as string, binary word or real number. Possible causes:\n\t* lack or inconsistency in quotes (string)\n\t* no dot '.' to separate integer and fractional part (real number)\n\t* use of characters other than '1' and '0' (binary word)";
+            parse_error(lineno_, ".param", msg);
         }
 
         curr_model().set_block_param(curr_block(), name, value);
