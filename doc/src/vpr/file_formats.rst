@@ -413,6 +413,8 @@ For example:
 
 Would set the parameters ``feedback``, ``multiplier`` and ``power``  of the above ``pll`` ``.subckt`` to ``"internal"``, ``0.50`` and ``001101`` respectively.
 
+.. warning:: Integers in notation other than binary (e.g. decimal, hexadecimal) are not supported. Occurrence of params with digits other than 1 and 0 for binary words, not quoted (strings) or not separated with dot ``.`` (real numbers) are considered to be illegal.
+
 Interpretation of parameter values is out of scope of the BLIF format extension.
 
 ``.param`` statements propagate to ``<parameter>`` elements in the packed netlist.
