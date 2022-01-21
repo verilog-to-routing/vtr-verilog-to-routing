@@ -16,6 +16,7 @@ NocStorage::~NocStorage(){
 const std::vector<NocLinkId>& NocStorage::get_noc_router_connections(NocRouterId id) const{
 
     return router_link_list[id];
+
 }
 
 int NocStorage::get_noc_router_grid_position_x(NocRouterId id) const{
@@ -61,7 +62,15 @@ int NocStorage::get_noc_link_number_of_connections(NocLinkId id) const{
 void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y){
 
     VTR_ASSERT(!built_noc);
+        
     router_storage.emplace_back(id, grid_position_x, grid_posistion_y);
+
+    // get the corresponding NocRouterId for the newly added router and
+    // add it to the conversion table.
+    // We build the conversion table here as it gurantees only unique routers
+    // in the NoC are added.
+    NocRouterId converted_id((int)(router_storage.size() - 1));
+    router_id_conversion_table.emplace(id, converted_id);
 
     return;
 }
@@ -120,5 +129,18 @@ void NocStorage::clear_noc(void){
     built_noc = false;
 
     return;
+}
+
+NocRouterId NocStorage::convert_router_id(int id) const{
+
+    std::unordered_map<int, NocRouterId>::const_iterator result = router_id_conversion_table.find(id);
+
+    if (result == router_id_conversion_table.end())
+    {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Cannot convert router with id:%d. The router was not found within the NoC.", id);
+    }
+
+    return result->second;
+    
 }
 

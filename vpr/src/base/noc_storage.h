@@ -5,11 +5,14 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include "noc_data_types.h"
 #include "vtr_vector.h"
 #include "noc_router.h"
 #include "noc_link.h"
 #include "vtr_assert.h"
+#include "vpr_error.h"
+
 
 class NocStorage
 {
@@ -23,6 +26,13 @@ class NocStorage
 
         // list of links in the noc
         vtr::vector<NocLinkId, NocLink> link_storage;
+
+        // The user provides an id for routers when describing the noc in the architecture file.
+        // This id system will be different than than the NocRouterIds assigned to each router
+        // when creating the NoC datastructre.
+        // A conversion table is created below that maps the user provided router ids to the corresponding
+        // NocRouterId.
+        std::unordered_map<int, NocRouterId> router_id_conversion_table;
 
         // flags to keep track of the status
         bool built_noc;
@@ -64,6 +74,7 @@ class NocStorage
         // general utiliy functions
         void finished_building_noc();
         void clear_noc();
+        NocRouterId convert_router_id(int id) const;
 
 };
 
