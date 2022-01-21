@@ -3,35 +3,35 @@
 
 #include <iostream>
 #include "noc_router.h"
+#include "noc_data_types.h"
 
 
 class NocLink
 {
     private:
-        // better to change these to ids
-        // instead of references
-        NocRouter* source_router;
-        NocRouter* sink_router;
+        // the two routers that are connected by this link
+        NocRouterId source_router;
+        NocRouterId sink_router;
 
         double bandwidth_usage;
 
         // represents the number of routed communication paths between routers that use
         // this link. Congestion is proportional to this variable.
-        double number_of_connections;
+        int number_of_connections;
 
     public:
-        NocLink(NocRouter* source_router, NocRouter* sink_router);
+        NocLink(NocRouterId source_router, NocRouterId sink_router);
         ~NocLink();
 
         // getters
-        NocRouter* get_source_router(void);
-        NocRouter* get_sink_router(void);
-        double get_bandwidth_usage(void);
-        double get_number_of_connections(void);
+        NocRouterId get_source_router(void) const;
+        NocRouterId get_sink_router(void) const;
+        double get_bandwidth_usage(void) const;
+        int get_number_of_connections(void) const;
         
         // setters
         void set_bandwidth_usage(double bandwidth_usage);
-        void set_number_of_connections(double number_of_connections);
+        void set_number_of_connections(int number_of_connections);
 
 };
 
