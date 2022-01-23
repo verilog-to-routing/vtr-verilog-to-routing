@@ -161,6 +161,8 @@ static void print_pack_status(int num_clb,
 
 static void update_attraction_group_status(AttractionInfo& attraction_groups);
 
+static void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb);
+
 static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                   const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                                   t_pack_molecule* molecule,
@@ -1332,14 +1334,7 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
     if (cluster_placement_stats_ptr->has_long_chain && molecule->is_chain() && molecule->chain_info->is_long_chain) {
         VTR_LOGV(verbosity > 4, "\t\t\tFAILED Placement Feasibility Filter: Only one long chain per cluster is allowed\n");
         //Record the failure of this molecule in the current pb stats
-        for (unsigned int m = 0; m < molecule->atom_block_ids.size(); m++) {
-            auto got = pb->pb_stats->atom_failures.find(molecule->atom_block_ids[m]);
-            if (got == pb->pb_stats->atom_failures.end()) {
-                pb->pb_stats->atom_failures.insert({molecule->atom_block_ids[m], 1});
-            } else {
-                got->second++;
-            }
-        }
+        record_molecule_failure(molecule, pb);
         return BLK_FAILED_FEASIBLE;
     }
 
@@ -1355,15 +1350,8 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                                                                  temp_cluster_pr,
                                                                  cluster_pr_needs_update);
             if (block_pack_status == BLK_FAILED_FLOORPLANNING) {
-                //Record the failure of this molecule in the current pb stats
-                for (unsigned int w = 0; w < molecule->atom_block_ids.size(); w++) {
-                    auto got = pb->pb_stats->atom_failures.find(molecule->atom_block_ids[w]);
-                    if (got == pb->pb_stats->atom_failures.end()) {
-                        pb->pb_stats->atom_failures.insert({molecule->atom_block_ids[w], 1});
-                    } else {
-                        got->second++;
-                    }
-                }
+            	//Record the failure of this molecule in the current pb stats
+            	record_molecule_failure(molecule, pb);
                 return block_pack_status;
             }
             if (cluster_pr_needs_update == true) {
@@ -1511,14 +1499,7 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                 }
 
                 //Record the failure of this molecule in the current pb stats
-                for (unsigned int k = 0; k < molecule->atom_block_ids.size(); k++) {
-                    auto got = pb->pb_stats->atom_failures.find(molecule->atom_block_ids[k]);
-                    if (got == pb->pb_stats->atom_failures.end()) {
-                        pb->pb_stats->atom_failures.insert({molecule->atom_block_ids[k], 1});
-                    } else {
-                        got->second++;
-                    }
-                }
+                record_molecule_failure(molecule, pb);
 
                 /* Packing failed, but a part of the pb tree is still allocated and pbs have their modes set.
                  * Before trying to pack next molecule the unused pbs need to be freed and, the most important,
@@ -1535,6 +1516,18 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
         }
     }
     return block_pack_status;
+}
+
+static void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb) {
+    //Record the failure of the molecule in this cluster in the current pb stats
+    for (unsigned int i_atom = 0; i_atom < molecule->atom_block_ids.size(); i_atom++) {
+        auto got = pb->pb_stats->atom_failures.find(molecule->atom_block_ids[i_atom]);
+        if (got == pb->pb_stats->atom_failures.end()) {
+            pb->pb_stats->atom_failures.insert({molecule->atom_block_ids[i_atom], 1});
+        } else {
+            got->second++;
+        }
+    }
 }
 
 /**

@@ -291,7 +291,6 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
 }
 
 void setup_vpr_floorplan_constraints_cutpoints_half(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
     ClusterAtomsLookup atoms_lookup;
