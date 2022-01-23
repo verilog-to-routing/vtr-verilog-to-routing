@@ -23,11 +23,11 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
     VprConstraints constraints;
 
     if (floorplan_split == HALVES) {
-        setup_vpr_floorplan_constraints_cutpoints_half(constraints, 2, 1);
+        setup_vpr_floorplan_constraints_cutpoints(constraints, 2, 1);
     } else if (floorplan_split == QUADRANTS) {
-        setup_vpr_floorplan_constraints_cutpoints_half(constraints, 2, 2);
+        setup_vpr_floorplan_constraints_cutpoints(constraints, 2, 2);
     } else if (floorplan_split == SIXTEENTHS) {
-        setup_vpr_floorplan_constraints_cutpoints_half(constraints, 4, 4);
+        setup_vpr_floorplan_constraints_cutpoints(constraints, 4, 4);
     } else { //one_spot
         setup_vpr_floorplan_constraints_half(constraints, expand, subtile);
     }
@@ -45,6 +45,7 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
                         "Unknown extension on output %s",
                         file_name);
     }
+
 }
 
 void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile) {

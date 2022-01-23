@@ -42,14 +42,6 @@ struct AttractionGroup {
      * are potential candidates to be put in a cluster with the same attraction group.
      */
     float gain = 0.08;
-
-    /*
-     * If the group is made up from a partition of atoms that are confined to a size one spot
-     * (i.e. one x, y grid location), the clusterer will immediately put all atoms in the group
-     * into the same cluster
-     */
-    /* TODO: Add the code in the clusterer that will do the above steps. */
-    //bool must_be_packed_in_one_cluster = false;
 };
 
 class AttractionInfo {
