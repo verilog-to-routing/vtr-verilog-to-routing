@@ -178,9 +178,15 @@ struct RR_Graph_Builder {
     std::unordered_map<std::tuple<int /*timing_model*/, bool /*buffered*/>, int /*idx*/, hash_tuple::hash<std::tuple<int, bool>>> pips_models_;
     std::unordered_map<std::tuple<int /*node_id*/, int /*node_id*/>, std::tuple<int /*switch_id*/, int /* tile_id */, std::tuple<int /*name*/, int /*wire0*/, int /*wire1*/, bool /*forward*/>>, hash_tuple::hash<std::tuple<int, int>>> pips_;
 
-    std::map<std::tuple<int, int>, int> wire_to_node_;
+    std::unordered_map<std::tuple<int, int>,
+                       int,
+                       hash_tuple::hash<std::tuple<int,int>>> wire_to_node_;
     std::unordered_map<int, std::set<location>> node_to_locs_;
-    std::map<std::tuple<int, int> /*<node, tile_id>*/, int /*segment type*/> node_tile_to_segment_;
+    std::unordered_map<std::tuple<int, int> /*<node, tile_id>*/,
+                       int /*segment type*/,
+                       hash_tuple::hash<std::tuple<int,int>>> node_tile_to_segment_;
+    std::unordered_map<int, std::pair<float, float>> node_to_RC_;
+    int total_node_count_;
 
     /*
      * Offsets for FPGA Interchange node processing
@@ -246,6 +252,8 @@ struct RR_Graph_Builder {
     }
 
     std::string str(int idx) {
+        if (idx == -1)
+            return std::string("constant_block");
         return std::string(ar_.getStrList()[idx].cStr());
     }
 
@@ -379,10 +387,10 @@ struct RR_Graph_Builder {
         device_ctx_.rr_switch_inf.reserve(seen.size() + 1);
         int id = 2;
         make_room_in_vector(&device_ctx_.rr_switch_inf, 0);
-        fill_switch(device_ctx_.rr_switch_inf[0], 0, 0, 0, 0, 0, 0, 0,
+        fill_switch(device_ctx_.rr_switch_inf[RRSwitchId(0)], 0, 0, 0, 0, 0, 0, 0,
                     vtr::strdup("short"), SwitchType::SHORT);
         make_room_in_vector(&device_ctx_.rr_switch_inf, 1);
-        fill_switch(device_ctx_.rr_switch_inf[1], 0, 0, 0, 0, 0, 0, 0,
+        fill_switch(device_ctx_.rr_switch_inf[RRSwitchId(1)], 0, 0, 0, 0, 0, 0, 0,
                     vtr::strdup("generic"), SwitchType::MUX);
         const auto& pip_models = ar_.getPipTimings();
         float R, Cin, Cout, Cint, Tdel;
@@ -423,7 +431,7 @@ struct RR_Graph_Builder {
             type = buffered ? SwitchType::MUX : SwitchType::PASS_GATE;
             mux_trans_size = buffered ? 1 : 0;
 
-            fill_switch(device_ctx_.rr_switch_inf[id], R, Cin, Cout, Cint, Tdel,
+            fill_switch(device_ctx_.rr_switch_inf[RRSwitchId(id)], R, Cin, Cout, Cint, Tdel,
                         mux_trans_size, 0, vtr::strdup(switch_name.c_str()), type);
 
             id++;
@@ -434,10 +442,15 @@ struct RR_Graph_Builder {
      * Create mapping form tile_id to its location
      */
     void create_tile_id_to_loc() {
+        int max_height = 0;
         for (const auto& tile : ar_.getTileList()) {
             tile_to_loc_[tile.getName()] = location(tile.getCol() + 1, tile.getRow() + 1);
+            max_height = std::max(max_height, (int)(tile.getRow() +1));
             loc_to_tile_[location(tile.getCol() + 1, tile.getRow() + 1)] = tile.getName();
         }
+        /* tile with name -1 is assosiated with constant source tile */
+        tile_to_loc_[-1] = location(1, max_height + 1);
+        loc_to_tile_[location(1, max_height + 1)] = -1;
     }
 
     /*
@@ -445,21 +458,105 @@ struct RR_Graph_Builder {
      * Create mapping from wire to node id and from node id to its locations
      * These ids are used later for site pins and pip conections (rr_edges)
      */
+    void process_const_nodes() {
+        for (const auto& tile : ar_.getTileList()) {
+            int tile_id = tile.getName();
+            auto tile_type = ar_.getTileTypeList()[tile.getType()];
+            auto wires = tile_type.getWires();
+            for (const auto& constant : tile_type.getConstants()){
+                int const_id = constant.getConstant() == Device::ConstantType::VCC ? 1 : 0;
+                for (const auto wire_id : constant.getWires()) {
+                    wire_to_node_[std::make_tuple(tile_id, wires[wire_id])] = const_id;
+                    node_to_locs_[const_id].insert(tile_to_loc_[tile_id]);
+                    if (wire_name_to_seg_idx_.find(str(wires[wire_id])) == wire_name_to_seg_idx_.end())
+                        wire_name_to_seg_idx_[str(wires[wire_id])] = -1;
+                    node_tile_to_segment_[std::make_tuple(const_id, tile_id)] = wire_name_to_seg_idx_[str(wires[wire_id])];
+                }
+            }
+        }
+        for (const auto& node_source : ar_.getConstants().getNodeSources()) {
+            int tile_id = node_source.getTile();
+            int wire_id = node_source.getWire();
+            int const_id = node_source.getConstant() == Device::ConstantType::VCC ? 1 : 0;
+            wire_to_node_[std::make_tuple(tile_id, wire_id)] = const_id;
+            node_to_locs_[const_id].insert(tile_to_loc_[tile_id]);
+            if (wire_name_to_seg_idx_.find(str(wire_id)) == wire_name_to_seg_idx_.end())
+                wire_name_to_seg_idx_[str(wire_id)] = -1;
+            node_tile_to_segment_[std::make_tuple(const_id, tile_id)] = wire_name_to_seg_idx_[str(wire_id)];
+        }
+        for (int i = 0; i < 2; ++i) {
+            wire_to_node_[std::make_tuple(-1, i)] = i;
+            node_to_locs_[i].insert(tile_to_loc_[-1]);
+            node_tile_to_segment_[std::make_tuple(i, -1)] = -1;
+        }
+    }
+
     void create_uniq_node_ids() {
-        int id = 0;
+        /*
+            Process constant sources
+        */
+        process_const_nodes();
+        /*
+            Process nodes
+        */
+        int id = 2;
+        bool constant_node;
+        int node_id;
         for (const auto& node : ar_.getNodes()) {
+            constant_node = false;
+            /*
+                Nodes connected to constant sources should be combined into single constant node
+            */
             for (const auto& wire_id_ : node.getWires()) {
                 const auto& wire = ar_.getWires()[wire_id_];
                 int tile_id = wire.getTile();
                 int wire_id = wire.getWire();
-                wire_to_node_[std::make_tuple(tile_id, wire_id)] = id;
-                node_to_locs_[id].insert(tile_to_loc_[tile_id]);
+                if (wire_to_node_.find(std::make_tuple(tile_id, wire_id)) != wire_to_node_.end() &&
+                    wire_to_node_[std::make_tuple(tile_id, wire_id)] < 2) {
+                    constant_node = true;
+                    node_id = wire_to_node_[std::make_tuple(tile_id, wire_id)];
+                }
+            }
+            if (!constant_node){
+                node_id = id++;
+            }
+            float capacitance = 0.0, resistance = 0.0; // Some random data
+            if (node_to_RC_.find(node_id) == node_to_RC_.end()) {
+                node_to_RC_[node_id] = std::pair<float, float>(0, 0);
+                capacitance = 0.000000001; resistance = 5.7;
+            }
+            if (ar_.hasNodeTimings()) {
+                auto model = ar_.getNodeTimings()[node.getNodeTiming()];
+                capacitance = get_corner_value(model.getCapacitance(), "slow", "typ");
+                resistance = get_corner_value(model.getResistance(), "slow", "typ");
+            }
+            node_to_RC_[node_id].first += resistance;
+            node_to_RC_[node_id].second += capacitance;
+#ifdef DEBUG
+            if (constant_node) {
+                const auto& wires = ar_.getWires();
+                std::tuple<int, int> base_wire_(wires[node.getWires()[0]].getTile(), wires[node.getWires()[0]].getWire());
+                VTR_LOG("Constant_node: %s\n", wire_to_node_[base_wire_] == 1 ? "VCC\0": "GND\0");
+                for (const auto& wire_id_ : node.getWires()) {
+                    const auto& wire = ar_.getWires()[wire_id_];
+                    int tile_id = wire.getTile();
+                    int wire_id = wire.getWire();
+                    VTR_LOG("tile:%s wire:%s\n", str(tile_id).c_str(), str(wire_id).c_str());
+                }
+            }
+#endif
+            for (const auto& wire_id_ : node.getWires()) {
+                const auto& wire = ar_.getWires()[wire_id_];
+                int tile_id = wire.getTile();
+                int wire_id = wire.getWire();
+                wire_to_node_[std::make_tuple(tile_id, wire_id)] = node_id;
+                node_to_locs_[node_id].insert(tile_to_loc_[tile_id]);
                 if (wire_name_to_seg_idx_.find(str(wire_id)) == wire_name_to_seg_idx_.end())
                     wire_name_to_seg_idx_[str(wire_id)] = -1;
-                node_tile_to_segment_[std::make_tuple(id, tile_id)] = wire_name_to_seg_idx_[str(wire_id)];
+                node_tile_to_segment_[std::make_tuple(node_id, tile_id)] = wire_name_to_seg_idx_[str(wire_id)];
             }
-            id++;
         }
+        total_node_count_ = id;
     }
 
     /*
@@ -473,8 +570,6 @@ struct RR_Graph_Builder {
             const auto& tile_type = ar_.getTileTypeList()[tile.getType()];
 
             for (const auto& pip : tile_type.getPips()) {
-                if (pip.isPseudoCells())
-                    continue;
                 int wire0_name, wire1_name;
                 int node0, node1;
                 int switch_id;
@@ -487,6 +582,9 @@ struct RR_Graph_Builder {
                     continue;
                 node0 = wire_to_node_[std::make_tuple(tile_id, wire0_name)];
                 node1 = wire_to_node_[std::make_tuple(tile_id, wire1_name)];
+                // Allow for pseudopips that connect from/to VCC/GND
+                if (pip.isPseudoCells() && (node0 > 1 && node1> 1))
+                    continue;
 
                 used_by_pip_.emplace(node0, loc);
                 used_by_pip_.emplace(node1, loc);
@@ -903,6 +1001,7 @@ struct RR_Graph_Builder {
     }
 
     void process_set(std::unordered_set<intermediate_node*>& set,
+                     std::unordered_set<location, hash_tuple::hash<location>>& nodes_used,
                      std::map<location, intermediate_node*>& existing_nodes,
                      std::map<location, std::tuple<location, e_rr_type, int>>& local_redirect,
                      float R,
@@ -920,6 +1019,7 @@ struct RR_Graph_Builder {
             auto key = std::make_tuple(add_vec(start->loc, offset), chan_type);
             idx = virtual_chan_loc_map_[key].size();
             do {
+                nodes_used.insert(end->loc);
                 len++;
                 local_redirect.emplace(end->loc, std::make_tuple(add_vec(start->loc, offset), chan_type, idx));
                 if (!end->links[side])
@@ -962,6 +1062,7 @@ struct RR_Graph_Builder {
                                 float R,
                                 float C) {
         std::unordered_set<intermediate_node*> chanxs, chanys;
+        std::unordered_set<location, hash_tuple::hash<location>> nodes_in_chanxs, nodes_in_chanys;
         bool chanx_start, chany_start, single_node;
         for (auto const& i : existing_nodes) {
             single_node = true;
@@ -973,11 +1074,15 @@ struct RR_Graph_Builder {
                 chanx_start = pip_uses_node_loc(node_id, left_node->loc) || left_node->links[TOP_EDGE] || left_node->links[BOTTOM_EDGE];
             } else {
                 chanx_start = i.second->has_pins || single_node;
+                if (i.second->links[RIGHT_EDGE])
+                    nodes_in_chanxs.insert(i.first);
             }
             if (i.second->links[TOP_EDGE]) {
                 intermediate_node* top_node = existing_nodes[add_vec(i.second->loc, offsets[TOP_EDGE])];
                 chany_start = pip_uses_node_loc(node_id, top_node->loc) || pin_uses_node_loc(node_id, top_node->loc);
                 chany_start |= top_node->links[LEFT_EDGE] || top_node->links[RIGHT_EDGE];
+            } else if (i.second->links[BOTTOM_EDGE]) {
+                nodes_in_chanys.insert(i.first);
             }
             if (chanx_start)
                 chanxs.insert(i.second);
@@ -987,25 +1092,35 @@ struct RR_Graph_Builder {
 
         std::map<location, std::tuple<location, e_rr_type, int>> local_redirect_x, local_redirect_y;
 
-        process_set(chanys, existing_nodes, local_redirect_y, R, C, location(0, 0), BOTTOM_EDGE, CHANY);
-        process_set(chanxs, existing_nodes, local_redirect_x, R, C, offsets[BOTTOM_EDGE], RIGHT_EDGE, CHANX);
+        process_set(chanys, nodes_in_chanys, existing_nodes, local_redirect_y, R, C, location(0, 0), BOTTOM_EDGE, CHANY);
+        process_set(chanxs, nodes_in_chanxs, existing_nodes, local_redirect_x, R, C, offsets[BOTTOM_EDGE], RIGHT_EDGE, CHANX);
         connect_base_on_redirects(chanys, TOP_EDGE, local_redirect_y, local_redirect_y);
-        connect_base_on_redirects(chanxs, LEFT_EDGE, local_redirect_x, local_redirect_y);
+        //connect_base_on_redirects(chanxs, LEFT_EDGE, local_redirect_x, local_redirect_y);
         connect_base_on_redirects(chanxs, LEFT_EDGE, local_redirect_x, local_redirect_x);
-        connect_base_on_redirects(chanys, TOP_EDGE, local_redirect_y, local_redirect_x);
+        //connect_base_on_redirects(chanys, TOP_EDGE, local_redirect_y, local_redirect_x);
 
         bool ry, rx;
+        for (auto i : nodes_in_chanys) {
+            location node = i;
+            if (nodes_in_chanxs.find(i) != nodes_in_chanxs.end()){
+                ry = local_redirect_y.find(node) != local_redirect_y.end();
+                rx = local_redirect_x.find(node) != local_redirect_x.end();
+                location x,y;
+                if (rx)
+                    x = node;
+                else
+                    x = add_vec(node, offsets[RIGHT_EDGE]);
+                if (ry)
+                    y = node;
+                else
+                    y = add_vec(node, offsets[BOTTOM_EDGE]);
+                add_short(y, x, local_redirect_y, local_redirect_x);
+            }
+        }
+
         for (auto const node : existing_nodes) {
             ry = local_redirect_y.find(node.first) != local_redirect_y.end();
             rx = local_redirect_x.find(node.first) != local_redirect_x.end();
-            if (node.second->links[RIGHT_EDGE] && node.second->links[BOTTOM_EDGE]) {
-                location bottom_node = add_vec(node.first, offsets[BOTTOM_EDGE]);
-                location right_node = add_vec(node.first, offsets[RIGHT_EDGE]);
-                add_short(bottom_node, right_node, local_redirect_y, local_redirect_x);
-            }
-            if (ry && rx) {
-                add_short(node.first, node.first, local_redirect_y, local_redirect_x);
-            }
             if (rx) {
                 virtual_redirect_.emplace(std::make_tuple(node_id, node.first), local_redirect_x[node.first]);
             } else if (ry) {
@@ -1037,10 +1152,7 @@ struct RR_Graph_Builder {
      * Process FPGA Interchange nodes
      */
     void process_nodes() {
-        auto wires = ar_.getWires();
-        for (auto const& node : ar_.getNodes()) {
-            std::tuple<int, int> base_wire_(wires[node.getWires()[0]].getTile(), wires[node.getWires()[0]].getWire());
-            int node_id = wire_to_node_[base_wire_];
+        for (int node_id = 0; node_id < total_node_count_; ++node_id) {
             int seg_id;
             if (usefull_node_.find(node_id) == usefull_node_.end()) {
                 continue;
@@ -1060,12 +1172,8 @@ struct RR_Graph_Builder {
             }
             node_id_count_[node_id] = div;
             VTR_ASSERT(div > 0);
-            float capacitance = 0.000000001, resistance = 5.7; // Some random data
-            if (ar_.hasNodeTimings()) {
-                auto model = ar_.getNodeTimings()[node.getNodeTiming()];
-                capacitance = get_corner_value(model.getCapacitance(), "slow", "typ") / div;
-                resistance = get_corner_value(model.getResistance(), "slow", "typ") / div;
-            }
+            float resistance = node_to_RC_[node_id].first / div;
+            float capacitance = node_to_RC_[node_id].second / div;
             graph_reduction_stage2(node_id, existing_nodes, resistance, capacitance);
             delete_nodes(existing_nodes);
         }
@@ -1146,6 +1254,16 @@ struct RR_Graph_Builder {
                 }
                 it = next_good_site(it + 1, tile);
             }
+        }
+        /*
+            Add constant ource
+        */
+        sink_source_loc_map_[-1].resize(2);
+        for ( auto i : {0, 1}) {
+            location loc = tile_to_loc_[-1];
+            used_by_pin_.insert(std::make_tuple(i, loc));
+            usefull_node_.insert(i);
+            sink_source_loc_map_[-1][i] = std::make_tuple(false, 0, i);
         }
     }
 
@@ -1382,8 +1500,12 @@ struct RR_Graph_Builder {
                 sink_src = mux_id;
                 src = input ? track_id : pin_id;
 
-                device_ctx_.rr_graph_builder.emplace_back_edge(RRNodeId(src), RRNodeId(sink_src), 0);
-                device_ctx_.rr_graph_builder.emplace_back_edge(RRNodeId(sink_src), RRNodeId(sink), sink == track_id ? 1 : 0);
+                device_ctx_.rr_graph_builder.emplace_back_edge(RRNodeId(src),
+                                                               RRNodeId(sink_src),
+                                                               src == track_id ? 1 :0);
+                device_ctx_.rr_graph_builder.emplace_back_edge(RRNodeId(sink_src),
+                                                               RRNodeId(sink),
+                                                               sink == track_id ? 1 : 0);
             }
         }
     }

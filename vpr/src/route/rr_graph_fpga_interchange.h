@@ -33,13 +33,12 @@ struct hash<std::pair<T1, T2>> {
         size_t lhs, rhs;
         lhs = std::hash<T1>()(p.first);
         rhs = std::hash<T2>()(p.second);
-        lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
-        return lhs;
+        return (lhs * lhs + 3UL * lhs + 2UL * lhs * rhs + rhs + rhs * rhs) / 2UL;
     }
 };
 template<class T>
 inline void hash_combine(std::size_t& seed, T const& v) {
-    seed ^= hash_tuple::hash<T>()(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hash_tuple::hash<T>()(v) + 0x9e3779b97f4a7c15UL + (seed << 12) + (seed >> 4);
 }
 // Recursive template code derived from Matthieu M.
 template<class Tuple, size_t Index = std::tuple_size<Tuple>::value - 1>

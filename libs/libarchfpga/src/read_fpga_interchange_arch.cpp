@@ -2129,6 +2129,7 @@ struct ArchReader {
         t_sub_tile sub_tile;
         sub_tile.index = 0;
         sub_tile.name = vtr::strdup(const_block_.c_str());
+        sub_tile.capacity.set(0, 0);
         int count = 0;
         for (auto const_cell : const_cells) {
             sub_tile.sub_tile_to_tile_pin_indices.push_back(count);
@@ -2139,7 +2140,7 @@ struct ArchReader {
 
             port.name = vtr::strdup((const_cell.first + "_" + const_cell.second).c_str());
 
-            port.index = port.absolute_first_pin_index = port.port_index_by_type = 0;
+            port.index = port.absolute_first_pin_index = port.port_index_by_type = count;
 
             sub_tile.ports.push_back(port);
 
@@ -2219,10 +2220,10 @@ struct ArchReader {
                 grid_def.loc_defs.emplace_back(std::move(single));
             }
 
-            // The constant source tile will be placed at (0, 0)
+            // The constant source tile will be placed at (1, max_height)
             t_grid_loc_def constant(const_block_, 1);
             constant.x.start_expr = std::to_string(1);
-            constant.y.start_expr = std::to_string(1);
+            constant.y.start_expr = std::to_string(grid_def.height -1);
 
             constant.x.end_expr = constant.x.start_expr + " + w - 1";
             constant.y.end_expr = constant.y.start_expr + " + h - 1";
