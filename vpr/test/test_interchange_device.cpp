@@ -110,7 +110,7 @@ TEST_CASE("read_interchange_tiles", "[vpr]") {
 
     FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
 
-    std::unordered_set<std::string> ptypes = {"NULL", "IOB", "PWR", "CLB"};
+    std::unordered_set<std::string> ptypes = {"EMPTY", "IOB", "PWR", "CLB"};
 
     // Check that there are exactly the expected models
     for (auto ptype : physical_tile_types) {
@@ -134,7 +134,7 @@ TEST_CASE("read_interchange_pb_types", "[vpr]") {
 
     FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
 
-    std::unordered_set<std::string> ltypes = {"NULL", "IOPAD", "SLICE", "POWER"};
+    std::unordered_set<std::string> ltypes = {"EMPTY", "IOPAD", "SLICE", "POWER"};
 
     std::unordered_map<std::string, PORTS> slice_ports = {
         {"L0_0", PORTS::IN_PORT},
@@ -162,7 +162,7 @@ TEST_CASE("read_interchange_pb_types", "[vpr]") {
         ltypes.erase(name);
 
         if (ltype.pb_type == nullptr) {
-            REQUIRE(name == std::string("NULL"));
+            REQUIRE(name == std::string("EMPTY"));
             continue;
         }
 
