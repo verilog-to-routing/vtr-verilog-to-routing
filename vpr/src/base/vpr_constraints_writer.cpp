@@ -153,12 +153,10 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     ClusterAtomsLookup atoms_lookup;
 
     //calculate the cutpoint values according to the grid size
-    //load two maps - one for horizontal cutpoints and one for vertical
+    //load two arrays - one for horizontal cutpoints and one for vertical
 
-    std::set<int> horizontal_bounds;
     std::vector<int> horizontal_cuts;
 
-    std::set<int> vertical_bounds;
     std::vector<int> vertical_cuts;
 
     int horizontal_interval = device_ctx.grid.width() / horizontal_cutpoints;
@@ -168,13 +166,11 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     horizontal_cuts.push_back(0);
     int num_horizontal_cuts = 0;
     while (num_horizontal_cuts < horizontal_cutpoints - 1) {
-        horizontal_bounds.insert(horizontal_point);
         horizontal_cuts.push_back(horizontal_point);
         horizontal_point = horizontal_point + horizontal_interval;
         num_horizontal_cuts++;
     }
     //Add in the last point after your exit the while loop
-    horizontal_bounds.insert(device_ctx.grid.width());
     horizontal_cuts.push_back(device_ctx.grid.width());
 
     int vertical_interval = device_ctx.grid.height() / vertical_cutpoints;
@@ -184,30 +180,14 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     vertical_cuts.push_back(0);
     int num_vertical_cuts = 0;
     while (num_vertical_cuts < vertical_cutpoints - 1) {
-        vertical_bounds.insert(vertical_point);
         vertical_cuts.push_back(vertical_point);
         vertical_point = vertical_point + vertical_interval;
         num_vertical_cuts++;
     }
     //Add in the last point after your exit the while loop
-    vertical_bounds.insert(device_ctx.grid.height());
     vertical_cuts.push_back(device_ctx.grid.height());
 
-    //PRINTING THE CUTPOINTS
-    VTR_LOG("Horizontal cuts: \n");
-    for (unsigned int j = 0; j < horizontal_cuts.size(); j++) {
-        VTR_LOG("%d ", horizontal_cuts[j]);
-    }
-    VTR_LOG("\n");
-
-    VTR_LOG("Vertical cuts: \n");
-    for (unsigned int m = 0; m < vertical_cuts.size(); m++) {
-        VTR_LOG("%d ", vertical_cuts[m]);
-    }
-    VTR_LOG("\n");
-
-    //go through cluster blocks and decide which partition each one belongs in based on the cutpoints
-
+    //Create floorplan regions based on the cutpoints
     std::unordered_map<Region, std::vector<AtomBlockId>> region_atoms;
 
     for (unsigned int i = 0; i < horizontal_cuts.size() - 1; i++) {
@@ -219,16 +199,13 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
             int ymax = vertical_cuts[j + 1] - 1;
 
             Region reg;
-            //VTR_ASSERT(xmax < device_ctx.grid.width() && ymax < device_ctx.grid.height());
+            VTR_ASSERT(xmax < device_ctx.grid.width() && ymax < device_ctx.grid.height());
             reg.set_region_rect(xmin, ymin, xmax, ymax);
             std::vector<AtomBlockId> atoms;
 
             region_atoms.insert({reg, atoms});
         }
     }
-
-    //based on the number of partitions you have, go through a loop of that size
-    //at each iteration, create a partition with the appropriate region and store it in the constraints object
 
     /*
      * For each cluster block, see which region it belongs to, and add its atoms to the
