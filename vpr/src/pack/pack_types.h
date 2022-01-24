@@ -52,9 +52,11 @@ struct t_pb_stats {
      * used by all other child pbs in this parent pb.                               */
     std::map<AtomBlockId, float> hillgain;
 
-    std::map<AtomBlockId, int> atom_failures; //stores the number of times the atom has failed to be packed into a cluster
-    //this value is used when calculating gains
-    //key: root block id of the molecule, value: number of times the molecule has failed try_pack_molecule for the cluster
+    /*
+     * stores the number of times atoms have failed to be packed into the cluster
+     * key: root block id of the molecule, value: number of times the molecule has failed to be packed into the cluster
+     */
+    std::map<AtomBlockId, int> atom_failures;
 
     int pulled_from_atom_groups;
     int num_att_group_atoms_used;

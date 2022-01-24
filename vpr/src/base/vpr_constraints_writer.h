@@ -13,19 +13,17 @@
  * The option --write_vpr_constraints can be used to generate the constraints files.
  *
  * Users can also use the VPR option --floorplan_split to specify which constraints files they would like to generate.
- * The options for floorplan_split include halves, quadrants, sixteenths and one_spot. Two constraints files will be generated
+ * The options for floorplan_split include halves, quadrants, sixteenths and one_spot. One constraints file will be generated
  * in each case. The default setting for floorplan_split is halves.
  *
- * If the user specified halves, two floorplanning partitions would be created which each take up one half the grid.
- * One of the constraints files assigns all cluster blocks to one of these two partitions, while the other constraints
- * file would assign half of all cluster blocks to one of the two partitions (meaning the other half are unconstrained).
+ * If the user specified halves, two floorplanning partitions would be created which each take up one half of the grid.
+ * The generated constraints file would assign all primitives to one of the two partitions that were created.
  * The same idea applies for the quadrants and sixteenths options, except that the floorplan partitions would split the
  * grid into quadrants and sixteenths respectively, as the names imply.
  *
- * If the one_spot option is specified, all blocks will be locked to their original placement spot in one file, and half
- * of all blocks will be locked to their original placement spot in the other file. The vpr options --place_constraint_subtile
- * and --place_constraint_expand can be used in this case to specify whether the blocks should also be locked down to a particular
- * subtile, or whether the constraint region should expand beyond one spot.
+ * If the one_spot option is specified, all blocks will be locked to their original placement spot.The vpr options
+ * --place_constraint_subtile and --place_constraint_expand can be used in this case to specify whether
+ * the blocks should also be locked down to a particular subtile, or whether the constraint region should expand beyond one spot.
  */
 
 #ifndef VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
@@ -46,8 +44,6 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
 void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile);
 
 void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints);
-
-void setup_vpr_floorplan_constraints_cutpoints_half(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints);
 
 void setup_vpr_floorplan_constraints_half(VprConstraints& constraints, int expand, bool subtile);
 
