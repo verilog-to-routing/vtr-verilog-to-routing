@@ -56,11 +56,6 @@ void AttractionInfo::reset_attraction_groups() {
     atom_attraction_group.resize(num_atoms);
     fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());
 
-    /*
-     * Create an attraction group for each partition in the floorplanning constraints
-     * if the packer option for attraction groups is turned on.
-     */
-
     for (int ipart = 0; ipart < num_parts; ipart++) {
         PartitionId partid(ipart);
 
@@ -82,6 +77,8 @@ void AttractionInfo::reset_attraction_groups() {
             atom_attraction_group[att_group.group_atoms[iatom]] = group_id;
         }
     }
+
+    VTR_LOG("%d attraction groups were created \n", num_att_grps);
 }
 
 void AttractionInfo::create_att_groups_for_overfull_regions() {

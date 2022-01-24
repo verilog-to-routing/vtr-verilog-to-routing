@@ -199,7 +199,6 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
             int ymax = vertical_cuts[j + 1] - 1;
 
             Region reg;
-            VTR_ASSERT(xmax < device_ctx.grid.width() && ymax < device_ctx.grid.height());
             reg.set_region_rect(xmin, ymin, xmax, ymax);
             std::vector<AtomBlockId> atoms;
 
