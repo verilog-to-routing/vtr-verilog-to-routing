@@ -379,10 +379,11 @@ class RRGraphView {
     inline const t_segment_inf& rr_segments(RRSegmentId seg_id) const {
         return rr_segments_[seg_id];
     }
+    /** @brief Return the number of rr_segments in the routing resource graph */
     inline size_t num_rr_segments() const {
         return rr_segments_.size();
     }
-    /** @brief Return the rr_segments structure for queries from client functions */
+    /** @brief Return a read-only list of rr_segments for queries from client functions  */
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments() const {
         return rr_segments_;
     }
@@ -405,6 +406,7 @@ class RRGraphView {
     inline const t_rr_switch_inf& rr_switch_inf(RRSwitchId switch_id) const {
         return rr_switch_inf_[switch_id];
     }
+    /** @brief Return the number of rr_segments in the routing resource graph */
     inline size_t num_rr_switches() const {
         return rr_switch_inf_.size();
     }

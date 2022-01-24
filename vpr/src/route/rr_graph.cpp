@@ -702,6 +702,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         const t_rr_switch_inf& temp_rr_switch = create_rr_switch_from_arch_switch(iswitch, R_minW_nmos, R_minW_pmos);
         device_ctx.rr_graph_builder.add_rr_switch(temp_rr_switch);
     }
+
     auto update_chan_width = alloc_and_load_rr_graph(
         device_ctx.rr_graph_builder,
         device_ctx.rr_nodes, device_ctx.rr_graph, segment_inf.size(),
@@ -877,6 +878,11 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
         }
     }
 }
+/* This function creates a routing switch for the usage of routing resource graph, based on a routing switch defined in architecture file.
+ *
+ * Since users can specify a routing switch whose buffer size is automatically tuned for routing architecture, the function here sets a definite buffer size, as required by placers and routers.
+ */
+
 t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
                                                   const float R_minW_nmos,
                                                   const float R_minW_pmos) {
@@ -909,6 +915,7 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
 
     return rr_switch_inf;
 }
+/* This function is same as create_rr_switch_from_arch_switch() in terms of functionality. It is tuned for clients functions in routing resource graph builder */
 void load_rr_switch_from_arch_switch(int arch_switch_idx,
                                      int rr_switch_idx,
                                      int fanin,

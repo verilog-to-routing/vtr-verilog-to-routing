@@ -41,12 +41,14 @@ class RRGraphBuilder {
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
 
-    /** @brief Return a writable object of rr_segments*/
+    /** @brief Add a rr_segment to the routing resource graph. Return an valid id if successful.*/
     RRSegmentId add_rr_segment(const t_segment_inf& segment_info);
+    /** @brief Return a writable list of all the rr_segments */
     vtr::vector<RRSegmentId, t_segment_inf>& rr_segments();
 
-    /** @brief Return a writable object of rr_switch_inf*/
+    /** @brief Add a rr_swtich_inf to the routing resource graph. Return an valid id if successful.*/
     RRSwitchId add_rr_switch(const t_rr_switch_inf& switch_info);
+    /** @brief Return a writable list of all the rr_switch_inf */
     vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch();
 
     /** @brief Set the type of a node with a given valid id */
@@ -194,15 +196,15 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
     }
 
-    /* Reserve the lists of nodes, edges, switches etc. to be memory efficient.
+    /** @brief Reserve the lists of nodes, edges, switches etc. to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,
      * when adding a large number of nodes/edge/switches/segments,
      * in order to avoid memory fragements */
     inline void reserve_nodes(size_t size) {
         node_storage_.reserve(size);
     }
-    void reserve_segments(const size_t& num_segments);
-    void reserve_switches(const size_t& num_switches);
+    void reserve_segments(size_t num_segments);
+    void reserve_switches(size_t num_switches);
 
     /** @brief This function resize node storage to accomidate size RR nodes. */
     inline void resize_nodes(size_t size) {

@@ -488,6 +488,7 @@ void t_rr_graph_storage::mark_edges_as_rr_switch_ids() {
     remapped_edges_ = true;
 }
 
+/* TODO: This API should be moved to RRGraphBuilder */
 void t_rr_graph_storage::partition_edges() {
     if (partitioned_) {
         return;

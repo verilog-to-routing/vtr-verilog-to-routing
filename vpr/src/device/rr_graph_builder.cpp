@@ -23,12 +23,12 @@ RRSpatialLookup& RRGraphBuilder::node_lookup() {
     return node_lookup_;
 }
 /* Reserve a list of segments */
-void RRGraphBuilder::reserve_segments(const size_t& num_segments) {
+void RRGraphBuilder::reserve_segments(size_t num_segments) {
     this->segment_ids_.reserve(num_segments);
     this->rr_segments_.reserve(num_segments);
 }
 /* Reserve a list of switches */
-void RRGraphBuilder::reserve_switches(const size_t& num_switches) {
+void RRGraphBuilder::reserve_switches(size_t num_switches) {
     this->switch_ids_.reserve(num_switches);
     this->rr_switch_inf_.reserve(num_switches);
 }
