@@ -2,7 +2,6 @@
 #include "partition.h"
 
 void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const PartitionId part_id) {
-
     auto got = constrained_atoms.find(blk_id);
 
     /**

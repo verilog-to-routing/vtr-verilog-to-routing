@@ -45,7 +45,6 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
                         "Unknown extension on output %s",
                         file_name);
     }
-
 }
 
 void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile) {

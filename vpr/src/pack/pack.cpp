@@ -191,10 +191,11 @@ bool try_pack(t_packer_opts* packer_opts,
         } else {
             //Unable to pack densely enough: Give Up
 
-        	if (floorplan_regions_overfull) {
-        		VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Failed to find pack clusters densely enough to fit in the designated floorplan regions.\n"
-        				        "The floorplan regions may need to be expanded to run successfully. \n");
-        	}
+            if (floorplan_regions_overfull) {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Failed to find pack clusters densely enough to fit in the designated floorplan regions.\n"
+                                "The floorplan regions may need to be expanded to run successfully. \n");
+            }
 
             //No suitable device found
             std::string resource_reqs;

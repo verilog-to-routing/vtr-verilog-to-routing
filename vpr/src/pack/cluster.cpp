@@ -1350,8 +1350,8 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
                                                                  temp_cluster_pr,
                                                                  cluster_pr_needs_update);
             if (block_pack_status == BLK_FAILED_FLOORPLANNING) {
-            	//Record the failure of this molecule in the current pb stats
-            	record_molecule_failure(molecule, pb);
+                //Record the failure of this molecule in the current pb stats
+                record_molecule_failure(molecule, pb);
                 return block_pack_status;
             }
             if (cluster_pr_needs_update == true) {
