@@ -2780,7 +2780,7 @@ static void ProcessTiles(pugi::xml_node Node,
     /* Alloc the type list. Need one additional t_type_desctiptors:
      * 1: empty psuedo-type
      */
-    t_physical_tile_type EMPTY_PHYSICAL_TILE_TYPE = get_empty_physical_type(std::string("EMPTY"));
+    t_physical_tile_type EMPTY_PHYSICAL_TILE_TYPE = get_empty_physical_type();
     EMPTY_PHYSICAL_TILE_TYPE.index = 0;
     PhysicalTileTypes.push_back(EMPTY_PHYSICAL_TILE_TYPE);
 
@@ -3453,7 +3453,7 @@ static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node
     /* Alloc the type list. Need one additional t_type_desctiptors:
      * 1: empty psuedo-type
      */
-    t_logical_block_type EMPTY_LOGICAL_BLOCK_TYPE = get_empty_logical_type(std::string("EMPTY"));
+    t_logical_block_type EMPTY_LOGICAL_BLOCK_TYPE = get_empty_logical_type();
     EMPTY_LOGICAL_BLOCK_TYPE.index = 0;
     LogicalBlockTypes.push_back(EMPTY_LOGICAL_BLOCK_TYPE);
 

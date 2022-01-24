@@ -555,9 +555,9 @@ t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, in
     return port;
 }
 
-t_physical_tile_type get_empty_physical_type(std::string name) {
+t_physical_tile_type get_empty_physical_type(const char* name) {
     t_physical_tile_type type;
-    type.name = vtr::strdup(name.c_str());
+    type.name = vtr::strdup(name);
     type.num_pins = 0;
     type.width = 1;
     type.height = 1;
@@ -569,16 +569,14 @@ t_physical_tile_type get_empty_physical_type(std::string name) {
     type.switchblock_switch_overrides = vtr::Matrix<int>({{size_t(type.width), size_t(type.height)}}, DEFAULT_SWITCH);
     type.is_input_type = false;
     type.is_output_type = false;
-    type.is_empty = true;
 
     return type;
 }
 
-t_logical_block_type get_empty_logical_type(std::string name) {
+t_logical_block_type get_empty_logical_type(const char* name) {
     t_logical_block_type type;
-    type.name = vtr::strdup(name.c_str());
+    type.name = vtr::strdup(name);
     type.pb_type = nullptr;
-    type.is_empty = true;
 
     return type;
 }

@@ -15,7 +15,7 @@ void set_arch_file_name(const char* arch);
  */
 const char* get_arch_file_name();
 
-const std::string EMPTY_BLOCK_NAME("EMPTY");
+constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 
 class InstPort {
   public:
@@ -65,12 +65,12 @@ t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, in
 /** @brief Returns and empty physical tile type, assigned with the given name argument.
  *         The default empty string is assigned if no name is provided
  */
-t_physical_tile_type get_empty_physical_type(std::string name = EMPTY_BLOCK_NAME);
+t_physical_tile_type get_empty_physical_type(const char* name = EMPTY_BLOCK_NAME);
 
 /** @brief Returns and empty logical block type, assigned with the given name argument.
  *         The default empty string is assigned if no name is provided
  */
-t_logical_block_type get_empty_logical_type(std::string name = EMPTY_BLOCK_NAME);
+t_logical_block_type get_empty_logical_type(const char* name = EMPTY_BLOCK_NAME);
 
 std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical_tile_type_ptr type);
 

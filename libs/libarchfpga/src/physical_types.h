@@ -655,7 +655,7 @@ struct t_physical_tile_type {
     bool is_output_type = false;
 
     // Is this t_physical_tile_type an empty type?
-    bool is_empty = false;
+    bool is_empty() const;
 };
 
 /* Holds the capacity range of a certain sub_tile block within the parent physical tile type.
@@ -833,7 +833,7 @@ struct t_logical_block_type {
                                                             ///>place this type of netlist block.
 
     // Is this t_logical_block_type empty?
-    bool is_empty = false;
+    bool is_empty() const;
 };
 
 /*************************************************************************************************

@@ -969,7 +969,7 @@ struct ArchReader {
 
         int index = 0;
         // TODO: Make this dynamic depending on data from the interchange
-        auto EMPTY = get_empty_logical_type(std::string("NULL"));
+        auto EMPTY = get_empty_logical_type();
         EMPTY.index = index;
         ltypes_.push_back(EMPTY);
 
@@ -1857,7 +1857,7 @@ struct ArchReader {
 
     // Physical Tiles
     void process_tiles() {
-        auto EMPTY = get_empty_physical_type(std::string("NULL"));
+        auto EMPTY = get_empty_physical_type();
         int index = 0;
         EMPTY.index = index;
         ptypes_.push_back(EMPTY);
