@@ -12,7 +12,7 @@ void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const Partit
     if (got == constrained_atoms.end()) {
         constrained_atoms.insert({blk_id, part_id});
     } else {
-    	got->second = part_id;
+        got->second = part_id;
     }
 }
 
