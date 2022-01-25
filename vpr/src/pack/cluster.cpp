@@ -76,6 +76,16 @@
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 40  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
 
+/*
+ * When attraction groups are created, the purpose is to pack more densely by adding more molecules
+ * from the cluster's attraction group to the cluster. In a normal flow, (when attraction groups are
+ * not on), the cluster keeps being packed until the get_molecule routines return either a repeated
+ * molecule or a nullptr. When attraction groups are on, we want to keep exploring molecules for the
+ * cluster until a nullptr is returned. So, the number of repeated molecules is changed from 1 to 500,
+ * effectively making the clusterer pack a cluster until a nullptr is returned.
+ */
+#define ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES 500
+
 //Constant allowing all cluster pins to be used
 const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL(1., 1.);
 
@@ -628,15 +638,15 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      primitive_candidate_block_types);
             prev_molecule = istart;
 
-            int max_num_same_molecules = 0;
+            int max_num_repeated_molecules = 0;
             if (attraction_groups.num_attraction_groups() > 0) {
-                max_num_same_molecules = 500;
+                max_num_repeated_molecules = ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES;
             } else {
-                max_num_same_molecules = 1;
+                max_num_repeated_molecules = 1;
             }
-            int num_same_molecules = 0;
+            int num_repeated_molecules = 0;
 
-            while (next_molecule != nullptr && num_same_molecules < max_num_same_molecules) {
+            while (next_molecule != nullptr && num_repeated_molecules < max_num_repeated_molecules) {
                 prev_molecule = next_molecule;
 
                 try_fill_cluster(packer_opts,
@@ -644,7 +654,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  atom_molecules,
                                  prev_molecule,
                                  next_molecule,
-                                 num_same_molecules,
+                                 num_repeated_molecules,
                                  primitives_list,
                                  cluster_stats,
                                  num_clb,
@@ -738,6 +748,11 @@ static void print_pack_status(int num_clb,
     }
 }
 
+/*
+ * Periodically update the attraction groups to reflect which atoms in them
+ * are still available for new clusters (i.e. remove the atoms that have already
+ * been packed from the attraction group).
+ */
 static void update_attraction_group_status(AttractionInfo& attraction_groups) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -814,7 +829,10 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
 
     AttractGroupId cluster_att_grp = pb->pb_stats->attraction_grp_id;
 
-    //Attraction groups are created for the purposes of packing more densely
+    /* When the clusterer packs with attraction groups the goal is to
+     * pack more densely. Removing failed molecules to make room for the exploration of
+     * more molecules helps to achieve this purpose.
+     */
     if (attraction_groups.num_attraction_groups() > 0) {
         auto got = pb->pb_stats->atom_failures.find(molecule->atom_block_ids[0]);
         if (got == pb->pb_stats->atom_failures.end()) {
@@ -2605,9 +2623,13 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         return molecule;
     }
 
+    /*
+     * No suitable molecules were found from the above functions - if
+     * attraction groups were created, explore the attraction groups to see if
+     * any suitable molecules can be found.
+     */
     int num_pulls = attraction_groups.get_att_group_pulls();
 
-    //Molecule is a nullptr at this point, see if any molecules can be pulled from the attraction groups
     if (cur_pb->pb_stats->pulled_from_atom_groups < num_pulls) {
         add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups,
                                                             feasible_block_array_size, cluster_index, primitive_candidate_block_types);
