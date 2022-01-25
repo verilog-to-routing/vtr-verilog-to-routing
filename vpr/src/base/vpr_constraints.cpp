@@ -7,11 +7,12 @@ void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const Partit
     /**
      * Each atom can only be in one partition. If the atom is not found in constrained_atoms, it
      * will be added with its partition id.
-     * If the atom is already in constrained_atoms,
-     * nothing will happen as it has already been added as a constrained atom.
+     * If the atom is already in constrained_atoms, the partition id will be updated.
      */
     if (got == constrained_atoms.end()) {
         constrained_atoms.insert({blk_id, part_id});
+    } else {
+    	got->second = part_id;
     }
 }
 
