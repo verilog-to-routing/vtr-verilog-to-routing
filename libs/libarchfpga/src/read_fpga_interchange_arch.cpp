@@ -2223,7 +2223,7 @@ struct ArchReader {
             // The constant source tile will be placed at (1, max_height)
             t_grid_loc_def constant(const_block_, 1);
             constant.x.start_expr = std::to_string(1);
-            constant.y.start_expr = std::to_string(grid_def.height -1);
+            constant.y.start_expr = std::to_string(grid_def.height - 1);
 
             constant.x.end_expr = constant.x.start_expr + " + w - 1";
             constant.y.end_expr = constant.y.start_expr + " + h - 1";
