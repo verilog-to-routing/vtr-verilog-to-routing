@@ -87,7 +87,7 @@ struct NetlistReader {
         auto top_cell_decl = nr_.getCellDecls()[top_cell_instance_.getCell()];
         for (auto top_port : top_cell_decl.getPorts()) {
             auto port = nr_.getPortList()[top_port];
-            auto name = std::string(str_list[port.getName()].cStr());
+            std::string name = str_list[port.getName()];
             auto dir = port.getDir();
 
             int bus_size, start_bit;
@@ -145,7 +145,7 @@ struct NetlistReader {
             bool is_lut;
             int width;
             std::string init_param;
-            std::tie(is_lut, width, init_param) = is_lut_cell(str_list[cell.getName()].cStr());
+            std::tie(is_lut, width, init_param) = is_lut_cell(str_list[cell.getName()]);
 
             if (is_lut)
                 insts.emplace_back(cell_inst, width, init_param);
@@ -157,20 +157,22 @@ struct NetlistReader {
             std::string init_param;
             std::tie(inst_idx, lut_width, init_param) = inst;
 
-            std::string inst_name = str_list[inst_list[inst_idx].getName()].cStr();
+            std::string inst_name = str_list[inst_list[inst_idx].getName()];
 
             auto props = inst_list[inst_idx].getPropMap().getEntries();
             std::vector<bool> init;
             for (auto entry : props) {
-                if (std::string(str_list[entry.getKey()].cStr()) != init_param)
+                if (str_list[entry.getKey()] != init_param)
                     continue;
 
                 // TODO: export this to a library function to have generic parameter decoding
                 if (entry.which() == LogicalNetlist::Netlist::PropertyMap::Entry::TEXT_VALUE) {
                     const std::regex vhex_regex("[0-9]+'h([0-9A-Z]+)");
-                    const std::regex vbit_regex("[0-9]+'b([0-9A-Z]+)");
+                    const std::regex vbit_regex("[0-9]+'b([0-9]+)");
+                    const std::regex chex_regex("0x([0-9A-Za-z]+)");
+                    const std::regex cbit_regex("0b([0-9]+)");
                     const std::regex bit_regex("[0-1]+");
-                    std::string init_str = std::string(str_list[entry.getTextValue()].cStr());
+                    std::string init_str = str_list[entry.getTextValue()];
                     std::smatch regex_matches;
 
                     // Fill the init vector
@@ -180,7 +182,16 @@ struct NetlistReader {
                             for (int bit = 3; bit >= 0; bit--)
                                 init.push_back((value >> bit) & 1);
                         }
+                    else if (std::regex_match(init_str, regex_matches, chex_regex))
+                        for (const char& c : regex_matches[1].str()) {
+                            int value = std::stoi(std::string(1, c), 0, 16);
+                            for (int bit = 3; bit >= 0; bit--)
+                                init.push_back((value >> bit) & 1);
+                        }
                     else if (std::regex_match(init_str, regex_matches, vbit_regex))
+                        for (const char& c : regex_matches[1].str())
+                            init.push_back((bool)std::stoi(std::string(1, c), 0, 2));
+                    else if (std::regex_match(init_str, regex_matches, cbit_regex))
                         for (const char& c : regex_matches[1].str())
                             init.push_back((bool)std::stoi(std::string(1, c), 0, 2));
                     else if (std::regex_match(init_str, regex_matches, bit_regex))
@@ -249,7 +260,7 @@ struct NetlistReader {
             std::unordered_map<unsigned int, std::string> port_net_map;
 
             for (auto net : top_cell.getNets()) {
-                std::string net_name = str_list[net.getName()].cStr();
+                std::string net_name = str_list[net.getName()];
                 for (auto port : net.getPortInsts()) {
                     if (!port.isInst() || port.getInst() != inst_idx)
                         continue;
@@ -260,6 +271,9 @@ struct NetlistReader {
 
             int inum = 0;
             for (auto port : cell_lib.getPorts()) {
+                if (port_net_map.find(port) == port_net_map.end())
+                    continue;
+
                 auto net_name = port_net_map.at(port);
                 AtomNetId net_id = main_netlist_.create_net(net_name);
 
@@ -291,7 +305,7 @@ struct NetlistReader {
             auto cell = decl_list[inst_list[cell_inst].getCell()];
 
             bool is_lut;
-            std::tie(is_lut, std::ignore, std::ignore) = is_lut_cell(str_list[cell.getName()].cStr());
+            std::tie(is_lut, std::ignore, std::ignore) = is_lut_cell(str_list[cell.getName()]);
 
             if (!is_lut)
                 insts.emplace_back(cell_inst, inst_list[cell_inst].getCell());
@@ -301,10 +315,10 @@ struct NetlistReader {
             auto inst_idx = inst_pair.first;
             auto cell_idx = inst_pair.second;
 
-            auto model_name = str_list[decl_list[cell_idx].getName()].cStr();
+            auto model_name = str_list[decl_list[cell_idx].getName()];
             const t_model* blk_model = find_model(model_name);
 
-            std::string inst_name = str_list[inst_list[inst_idx].getName()].cStr();
+            std::string inst_name = str_list[inst_list[inst_idx].getName()];
             VTR_ASSERT(inst_name.empty() == 0);
 
             //The name for every block should be unique, check that there is no name conflict
@@ -320,9 +334,9 @@ struct NetlistReader {
             auto port_net_map = get_port_net_map(inst_idx);
 
             auto cell = decl_list[inst_list[inst_idx].getCell()];
-            if (std::string(str_list[cell.getName()].cStr()) == arch_.vcc_cell)
+            if (str_list[cell.getName()] == arch_.vcc_cell)
                 inst_name = arch_.vcc_cell;
-            else if (std::string(str_list[cell.getName()].cStr()) == arch_.gnd_cell)
+            else if (str_list[cell.getName()] == arch_.gnd_cell)
                 inst_name = arch_.gnd_cell;
 
             if (main_netlist_.find_block(inst_name))
@@ -343,10 +357,10 @@ struct NetlistReader {
                     net_name = arch_.gnd_net;
 
                 auto port = port_list[port_idx];
-                auto port_name = str_list[port.getName()].cStr();
+                auto port_name = str_list[port.getName()];
 
                 //Check for consistency between model and ports
-                const t_model_ports* model_port = find_model_port(blk_model, std::string(port_name));
+                const t_model_ports* model_port = find_model_port(blk_model, port_name);
                 VTR_ASSERT(model_port);
 
                 //Determine the pin type
@@ -443,7 +457,7 @@ struct NetlistReader {
         auto str_list = nr_.getStrList();
         std::unordered_map<std::pair<unsigned int, unsigned int>, std::string, vtr::hash_pair> map;
         for (auto net : top_cell.getNets()) {
-            std::string net_name = str_list[net.getName()].cStr();
+            std::string net_name = str_list[net.getName()];
             for (auto port : net.getPortInsts()) {
                 if (!port.isInst() || port.getInst() != inst_idx)
                     continue;

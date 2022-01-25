@@ -653,6 +653,9 @@ struct t_physical_tile_type {
 
     // Does this t_physical_tile_type contain an outpad?
     bool is_output_type = false;
+
+    // Is this t_physical_tile_type an empty type?
+    bool is_empty() const;
 };
 
 /* Holds the capacity range of a certain sub_tile block within the parent physical tile type.
@@ -828,6 +831,9 @@ struct t_logical_block_type {
 
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
+
+    // Is this t_logical_block_type empty?
+    bool is_empty() const;
 };
 
 /*************************************************************************************************
@@ -1738,9 +1744,31 @@ struct t_lut_cell {
     std::vector<std::string> inputs;
 };
 
+struct t_lut_bel {
+    std::string name;
+
+    std::vector<std::string> input_pins;
+    std::string output_pin;
+
+    bool operator==(const t_lut_bel& other) const {
+        return name == other.name && input_pins == other.input_pins && output_pin == other.output_pin;
+    }
+};
+
+struct t_lut_element {
+    std::string site_type;
+    int width;
+    std::vector<t_lut_bel> lut_bels;
+
+    bool operator==(const t_lut_element& other) const {
+        return site_type == other.site_type && width == other.width && lut_bels == other.lut_bels;
+    }
+};
+
 /*   Detailed routing architecture */
 struct t_arch {
     mutable vtr::string_internment strings;
+    std::vector<vtr::interned_string> interned_strings;
 
     char* architecture_id; //Secure hash digest of the architecture file to uniquely identify this architecture
 
@@ -1787,6 +1815,7 @@ struct t_arch {
 
     // Luts
     std::vector<t_lut_cell> lut_cells;
+    std::unordered_map<std::string, std::vector<t_lut_element>> lut_elements;
 
     //The name of the switch used for the input connection block (i.e. to
     //connect routing tracks to block pins).
