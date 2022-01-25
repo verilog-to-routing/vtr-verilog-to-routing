@@ -84,7 +84,7 @@ class AttractionInfo {
     vtr::vector<AttractGroupId, AttractionGroup> attraction_groups;
 
     //The number of times we explore a cluster's attraction group molecules when packing a cluster
-    int att_group_pulls;
+    int att_group_pulls = 1;
 };
 
 inline int AttractionInfo::get_att_group_pulls() {

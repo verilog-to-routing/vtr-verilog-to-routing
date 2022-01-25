@@ -2740,7 +2740,7 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
         return;
     }
 
-    if (num_available_atoms < 500) {
+    if (num_available_atoms < 100) {
         for (AtomBlockId atom_id : available_att_group_atoms) {
             if (atom_ctx.lookup.atom_clb(atom_id) == ClusterBlockId::INVALID()) {
                 auto rng = atom_molecules.equal_range(atom_id);
@@ -2762,7 +2762,7 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     int min = 0;
     int max = num_available_atoms - 1;
 
-    for (int j = 0; j < 500; j++) {
+    for (int j = 0; j < 100; j++) {
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_int_distribution<> distr(min, max);
