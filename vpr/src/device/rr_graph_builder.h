@@ -42,14 +42,34 @@ class RRGraphBuilder {
     RRSpatialLookup& node_lookup();
 
     /** @brief Add a rr_segment to the routing resource graph. Return an valid id if successful.*/
-    RRSegmentId add_rr_segment(const t_segment_inf& segment_info);
+    inline RRSegmentId add_rr_segment(const t_segment_inf& segment_info) {
+        //Allocate an ID
+        RRSegmentId segment_id = RRSegmentId(segment_ids_.size());
+        segment_ids_.push_back(segment_id);
+
+        rr_segments_.push_back(segment_info);
+
+        return segment_id;
+    }
     /** @brief Return a writable list of all the rr_segments */
-    vtr::vector<RRSegmentId, t_segment_inf>& rr_segments();
+    inline vtr::vector<RRSegmentId, t_segment_inf>& rr_segments() {
+        return rr_segments_;
+    }
 
     /** @brief Add a rr_swtich_inf to the routing resource graph. Return an valid id if successful.*/
-    RRSwitchId add_rr_switch(const t_rr_switch_inf& switch_info);
+    inline RRSwitchId add_rr_switch(const t_rr_switch_inf& switch_info) {
+        //Allocate an ID
+        RRSwitchId switch_id = RRSwitchId(switch_ids_.size());
+        switch_ids_.push_back(switch_id);
+
+        rr_switch_inf_.push_back(switch_info);
+
+        return switch_id;
+    }
     /** @brief Return a writable list of all the rr_switch_inf */
-    vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch();
+    inline vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch() {
+        return rr_switch_inf_;
+    }
 
     /** @brief Set the type of a node with a given valid id */
     inline void set_node_type(RRNodeId id, t_rr_type type) {
@@ -203,9 +223,14 @@ class RRGraphBuilder {
     inline void reserve_nodes(size_t size) {
         node_storage_.reserve(size);
     }
-    void reserve_segments(size_t num_segments);
-    void reserve_switches(size_t num_switches);
-
+    inline void reserve_segments(size_t num_segments) {
+        this->segment_ids_.reserve(num_segments);
+        this->rr_segments_.reserve(num_segments);
+    }
+    inline void reserve_switches(size_t num_switches) {
+        this->switch_ids_.reserve(num_switches);
+        this->rr_switch_inf_.reserve(num_switches);
+    }
     /** @brief This function resize node storage to accomidate size RR nodes. */
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);

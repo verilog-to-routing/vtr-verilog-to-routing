@@ -384,7 +384,7 @@ class RRGraphView {
         return rr_segments_.size();
     }
     /** @brief Return a read-only list of rr_segments for queries from client functions  */
-    const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments() const {
+    inline const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments() const {
         return rr_segments_;
     }
 
@@ -411,7 +411,7 @@ class RRGraphView {
         return rr_switch_inf_.size();
     }
     /** @brief Return the rr_switch_inf_ structure for queries from client functions */
-    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch() const {
+    inline const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch() const {
         return rr_switch_inf_;
     }
 

@@ -22,41 +22,6 @@ t_rr_graph_storage& RRGraphBuilder::node_storage() {
 RRSpatialLookup& RRGraphBuilder::node_lookup() {
     return node_lookup_;
 }
-/* Reserve a list of segments */
-void RRGraphBuilder::reserve_segments(size_t num_segments) {
-    this->segment_ids_.reserve(num_segments);
-    this->rr_segments_.reserve(num_segments);
-}
-/* Reserve a list of switches */
-void RRGraphBuilder::reserve_switches(size_t num_switches) {
-    this->switch_ids_.reserve(num_switches);
-    this->rr_switch_inf_.reserve(num_switches);
-}
-/* Create segment */
-RRSegmentId RRGraphBuilder::add_rr_segment(const t_segment_inf& segment_info) {
-    //Allocate an ID
-    RRSegmentId segment_id = RRSegmentId(segment_ids_.size());
-    segment_ids_.push_back(segment_id);
-
-    rr_segments_.push_back(segment_info);
-
-    return segment_id;
-}
-RRSwitchId RRGraphBuilder::add_rr_switch(const t_rr_switch_inf& switch_info) {
-    //Allocate an ID
-    RRSwitchId switch_id = RRSwitchId(switch_ids_.size());
-    switch_ids_.push_back(switch_id);
-
-    rr_switch_inf_.push_back(switch_info);
-
-    return switch_id;
-}
-vtr::vector<RRSegmentId, t_segment_inf>& RRGraphBuilder::rr_segments() {
-    return rr_segments_;
-}
-vtr::vector<RRSwitchId, t_rr_switch_inf>& RRGraphBuilder::rr_switch() {
-    return rr_switch_inf_;
-}
 
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     t_rr_type node_type = node_storage_.node_type(node);
