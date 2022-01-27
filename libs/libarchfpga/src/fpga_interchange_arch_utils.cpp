@@ -76,3 +76,24 @@ float get_corner_value(DeviceResources::Device::CornerModel::Reader model, const
     }
     return 0.;
 }
+
+void fill_switch(t_rr_switch_inf& switch_,
+                 float R,
+                 float Cin,
+                 float Cout,
+                 float Cinternal,
+                 float Tdel,
+                 float mux_trans_size,
+                 float buf_size,
+                 char* name,
+                 SwitchType type) {
+    switch_.R = R;
+    switch_.Cin = Cin;
+    switch_.Cout = Cout;
+    switch_.Cinternal = Cinternal;
+    switch_.Tdel = Tdel;
+    switch_.mux_trans_size = mux_trans_size;
+    switch_.buf_size = buf_size;
+    switch_.name = name;
+    switch_.set_type(type);
+}

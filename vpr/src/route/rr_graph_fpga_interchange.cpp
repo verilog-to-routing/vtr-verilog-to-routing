@@ -34,6 +34,10 @@ enum node_sides {
 
 auto NODESIDES = {LEFT_EDGE, TOP_EDGE, RIGHT_EDGE, BOTTOM_EDGE};
 enum node_sides OPPOSITE_SIDE[] = {RIGHT_EDGE, BOTTOM_EDGE, LEFT_EDGE, TOP_EDGE};
+enum constant {
+    GND = 0,
+    VCC,
+};
 
 /*
  * Intermediate data type.
@@ -89,8 +93,7 @@ struct RR_Graph_Builder {
         , device_ctx_(device_ctx)
         , segment_inf_(segment_inf)
         , grid_(grid)
-        , base_cost_type_(base_cost_type)
-        , empty_(device_ctx.arch->strings.intern_string(vtr::string_view(""))) {
+        , base_cost_type_(base_cost_type) {
         for (auto& type : physical_tile_types) {
             tile_type_to_pb_type_[std::string(type.name)] = &type;
         }
@@ -144,12 +147,12 @@ struct RR_Graph_Builder {
         create_tile_id_to_loc();
         create_uniq_node_ids();
         create_sink_source_nodes();
-        create_pips_();
+        create_pips();
         process_nodes();
 #ifdef DEBUG
         print_virtual();
 #endif
-        virtual_to_real_();
+        virtual_to_real();
         pack_to_rr_graph();
 #ifdef DEBUG
         print();
@@ -163,8 +166,6 @@ struct RR_Graph_Builder {
     const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf_;
     const DeviceGrid& grid_;
     const enum e_base_cost_type base_cost_type_;
-
-    vtr::interned_string empty_;
 
     std::unordered_map<std::string, const t_physical_tile_type*> tile_type_to_pb_type_;
 
@@ -230,7 +231,7 @@ struct RR_Graph_Builder {
      */
     std::unordered_set<std::tuple<int /*node_id*/, location>, hash_tuple::hash<std::tuple<int, location>>> used_by_pip_;
     std::unordered_set<std::tuple<int /*node_id*/, location>, hash_tuple::hash<std::tuple<int, location>>> used_by_pin_;
-    std::unordered_set<int /* node_id*/> usefull_node_;
+    std::unordered_set<int /* node_id*/> useful_node_;
 
     /* Sink_source_loc_map is used to create ink/source and ipin/opin rr_nodes,
      * rr_edges from sink/source to ipin/opin and from ipin/opin to their coresponding segments
@@ -258,6 +259,22 @@ struct RR_Graph_Builder {
             return std::string("constant_block");
         return std::string(ar_.getStrList()[idx].cStr());
     }
+
+    /*
+     * This code iterates over each node independently when transforming
+     * an FPGA Interchange device resource into a VTR RR Graph.
+     * During the transformation, segments are created and they require
+     * a starting and ending coordinates as well as their track location.
+     * At any given time only one segment can occupy a single physical track.
+     * Solving the track assignment with an online algorithm would yield a huge
+     * slow down with a suboptimal maximal number of tracks in a single channel.
+     * This is solved by only storing a starting and ending location and
+     * the track number in the starting position, thus it is named "virtual".
+     * Then, when all FPGA Interchange nodes are taken care of,
+     * the physical track placement is computed.
+     * Much of the code runs on virtual assignment, as it's fast to create,
+     * use and is only translated when creating the final rr_graph.
+     */
 
     /*
      * Debug print function
@@ -350,27 +367,6 @@ struct RR_Graph_Builder {
         }
     }
 
-    void fill_switch(t_rr_switch_inf& switch_,
-                     float R,
-                     float Cin,
-                     float Cout,
-                     float Cinternal,
-                     float Tdel,
-                     float mux_trans_size,
-                     float buf_size,
-                     char* name,
-                     SwitchType type) {
-        switch_.R = R;
-        switch_.Cin = Cin;
-        switch_.Cout = Cout;
-        switch_.Cinternal = Cinternal;
-        switch_.Tdel = Tdel;
-        switch_.mux_trans_size = mux_trans_size;
-        switch_.buf_size = buf_size;
-        switch_.name = name;
-        switch_.set_type(type);
-    }
-
     /*
      * Fill device_ctx rr_switch_inf structure and store id of each PIP type for future use
      */
@@ -378,15 +374,13 @@ struct RR_Graph_Builder {
         std::set<std::tuple<int /*timing*/, bool /*buffered*/>> seen;
         for (const auto& tile : ar_.getTileTypeList()) {
             for (const auto& pip : tile.getPips()) {
-                if (pip.isPseudoCells())
-                    continue;
                 seen.emplace(pip.getTiming(), pip.getBuffered21());
                 if (!pip.getDirectional()) {
                     seen.emplace(pip.getTiming(), pip.getBuffered20());
                 }
             }
         }
-        device_ctx_.rr_switch_inf.reserve(seen.size() + 1);
+        device_ctx_.rr_switch_inf.reserve(seen.size() + 2);
         int id = 2;
         make_room_in_vector(&device_ctx_.rr_switch_inf, 0);
         fill_switch(device_ctx_.rr_switch_inf[RRSwitchId(0)], 0, 0, 0, 0, 0, 0, 0,
@@ -456,9 +450,7 @@ struct RR_Graph_Builder {
     }
 
     /*
-     * Create uniq id for each FPGA Interchange node.
-     * Create mapping from wire to node id and from node id to its locations
-     * These ids are used later for site pins and pip conections (rr_edges)
+     * Helper function for create_uniq_node_ids. It process constant sources into single node.
      */
     void process_const_nodes() {
         for (const auto& tile : ar_.getTileList()) {
@@ -466,7 +458,7 @@ struct RR_Graph_Builder {
             auto tile_type = ar_.getTileTypeList()[tile.getType()];
             auto wires = tile_type.getWires();
             for (const auto& constant : tile_type.getConstants()) {
-                int const_id = constant.getConstant() == Device::ConstantType::VCC ? 1 : 0;
+                int const_id = constant.getConstant() == Device::ConstantType::VCC ? VCC : GND;
                 for (const auto wire_id : constant.getWires()) {
                     wire_to_node_[std::make_tuple(tile_id, wires[wire_id])] = const_id;
                     node_to_locs_[const_id].insert(tile_to_loc_[tile_id]);
@@ -479,54 +471,62 @@ struct RR_Graph_Builder {
         for (const auto& node_source : ar_.getConstants().getNodeSources()) {
             int tile_id = node_source.getTile();
             int wire_id = node_source.getWire();
-            int const_id = node_source.getConstant() == Device::ConstantType::VCC ? 1 : 0;
+            int const_id = node_source.getConstant() == Device::ConstantType::VCC ? VCC : GND;
             wire_to_node_[std::make_tuple(tile_id, wire_id)] = const_id;
             node_to_locs_[const_id].insert(tile_to_loc_[tile_id]);
             if (wire_name_to_seg_idx_.find(str(wire_id)) == wire_name_to_seg_idx_.end())
                 wire_name_to_seg_idx_[str(wire_id)] = -1;
             node_tile_to_segment_[std::make_tuple(const_id, tile_id)] = wire_name_to_seg_idx_[str(wire_id)];
         }
-        for (int i = 0; i < 2; ++i) {
+        for (auto const i : {GND, VCC}) {
             wire_to_node_[std::make_tuple(-1, i)] = i;
             node_to_locs_[i].insert(tile_to_loc_[-1]);
             node_tile_to_segment_[std::make_tuple(i, -1)] = -1;
         }
     }
 
+    /*
+     * Create uniq id for each FPGA Interchange node.
+     * Create mapping from wire to node id and from node id to its locations
+     * These ids are used later for site pins and pip conections (rr_edges)
+     */
     void create_uniq_node_ids() {
-        /*
-         * Process constant sources
-         */
         process_const_nodes();
-        /*
-         * Process nodes
-         */
-        int id = 2;
+
+        // Process nodes
+        int id = 2; // ids 0 and 1 are reserved respectively for GND and VCC constants
         bool constant_node;
         int node_id;
         for (const auto& node : ar_.getNodes()) {
             constant_node = false;
-            /*
-             * Nodes connected to constant sources should be combined into single constant node
-             */
+            // Nodes connected to constant sources should be combined into single constant node
             for (const auto& wire_id_ : node.getWires()) {
                 const auto& wire = ar_.getWires()[wire_id_];
                 int tile_id = wire.getTile();
                 int wire_id = wire.getWire();
                 if (wire_to_node_.find(std::make_tuple(tile_id, wire_id)) != wire_to_node_.end() && wire_to_node_[std::make_tuple(tile_id, wire_id)] < 2) {
+                    /*
+                     * At least one of node wires is marked as constant source, that make whole node constant source.
+                     * Give this node id equal to const source type.
+                     */
                     constant_node = true;
                     node_id = wire_to_node_[std::make_tuple(tile_id, wire_id)];
                 }
             }
+
+            //If node is not part of constant network give it uniq id.
             if (!constant_node) {
                 node_id = id++;
             }
-            float capacitance = 0.0, resistance = 0.0; // Some random data
+            float capacitance = 0.0, resistance = 0.0;
             if (node_to_RC_.find(node_id) == node_to_RC_.end()) {
                 node_to_RC_[node_id] = std::pair<float, float>(0, 0);
+                // Some random data
                 capacitance = 0.000000001;
                 resistance = 5.7;
             }
+
+            // Check if device has timing model. If it does, use it
             if (ar_.hasNodeTimings()) {
                 auto model = ar_.getNodeTimings()[node.getNodeTiming()];
                 capacitance = get_corner_value(model.getCapacitance(), "slow", "typ");
@@ -565,7 +565,7 @@ struct RR_Graph_Builder {
      * Create entry for each pip in device architecture,
      * also store meta data related to that pip such as: tile_name, wire names, and its direction.
      */
-    void create_pips_() {
+    void create_pips() {
         for (const auto& tile : ar_.getTileList()) {
             int tile_id = tile.getName();
             location loc = tile_to_loc_[tile_id];
@@ -584,15 +584,21 @@ struct RR_Graph_Builder {
                     continue;
                 node0 = wire_to_node_[std::make_tuple(tile_id, wire0_name)];
                 node1 = wire_to_node_[std::make_tuple(tile_id, wire1_name)];
-                // Allow for pseudopips that connect from/to VCC/GND
-                if (pip.isPseudoCells() && (node0 > 1 && node1 > 1))
-                    continue;
-
+                /*
+                 * Allow for pseudopips that connect from/to VCC/GND.
+                 * Temporary workaround for nexus family.
+                 */
+                /*
+                 * FIXME
+                 * right now we allow for pseudo pips even tho we don;t check if they are avaiable
+                 * if (pip.isPseudoCells() && (node0 > 1 && node1 > 1))
+                 * continue;
+                 */
                 used_by_pip_.emplace(node0, loc);
                 used_by_pip_.emplace(node1, loc);
 
-                usefull_node_.insert(node0);
-                usefull_node_.insert(node1);
+                useful_node_.insert(node0);
+                useful_node_.insert(node1);
 
                 int name = tile_id;
                 if (tile.hasSubTilesPrefices())
@@ -698,6 +704,10 @@ struct RR_Graph_Builder {
         return roots;
     }
 
+    /*
+     * Given end, node and side check if node is more to the given side than end,
+     * if so it updates end. It's used to create bounding boxes for FPGA Interchange nodes.
+     */
     intermediate_node* update_end(intermediate_node* end, intermediate_node* node, enum node_sides side) {
         intermediate_node* res = end;
         int x, y;
@@ -726,6 +736,13 @@ struct RR_Graph_Builder {
         }
         return res;
     }
+
+    /*
+     * Given start, end, existing nodes and connections (list of sides that line uses)
+     * it creates straight line connections from start to end.
+     * If there are missing nodes on the way, it will create new nodes and store them in
+     * existing nodes.
+     */
 
     void add_line(std::map<location, intermediate_node*>& existing_nodes,
                   location start,
@@ -944,10 +961,10 @@ struct RR_Graph_Builder {
             back_walker.push(vertex);
             vertex->segment_id = seg_id;
             single_node = true;
+            has_chanx = false;
             for (auto i : NODESIDES) {
                 if (vertex->links[i]) {
                     single_node = false;
-                    has_chanx = false;
                     intermediate_node* other_node = existing_nodes[add_vec(vertex->loc, offsets[i])];
                     if (other_node->visited == nullptr || vertex->visited == other_node) {
                         if (i == node_sides::LEFT_EDGE) {
@@ -1097,9 +1114,7 @@ struct RR_Graph_Builder {
         process_set(chanys, nodes_in_chanys, existing_nodes, local_redirect_y, R, C, location(0, 0), BOTTOM_EDGE, CHANY);
         process_set(chanxs, nodes_in_chanxs, existing_nodes, local_redirect_x, R, C, offsets[BOTTOM_EDGE], RIGHT_EDGE, CHANX);
         connect_base_on_redirects(chanys, TOP_EDGE, local_redirect_y, local_redirect_y);
-        //connect_base_on_redirects(chanxs, LEFT_EDGE, local_redirect_x, local_redirect_y);
         connect_base_on_redirects(chanxs, LEFT_EDGE, local_redirect_x, local_redirect_x);
-        //connect_base_on_redirects(chanys, TOP_EDGE, local_redirect_y, local_redirect_x);
 
         bool ry, rx;
         for (auto i : nodes_in_chanys) {
@@ -1120,7 +1135,7 @@ struct RR_Graph_Builder {
             }
         }
 
-        for (auto const node : existing_nodes) {
+        for (auto const& node : existing_nodes) {
             ry = local_redirect_y.find(node.first) != local_redirect_y.end();
             rx = local_redirect_x.find(node.first) != local_redirect_x.end();
             if (rx) {
@@ -1156,7 +1171,7 @@ struct RR_Graph_Builder {
     void process_nodes() {
         for (int node_id = 0; node_id < total_node_count_; ++node_id) {
             int seg_id;
-            if (usefull_node_.find(node_id) == usefull_node_.end()) {
+            if (useful_node_.find(node_id) == useful_node_.end()) {
                 continue;
             }
             std::set<location> all_possible_tiles = node_to_locs_[node_id];
@@ -1251,7 +1266,7 @@ struct RR_Graph_Builder {
                     location loc = tile_to_loc_[tile_id];
 
                     used_by_pin_.insert(std::make_tuple(node_id, loc));
-                    usefull_node_.insert(node_id);
+                    useful_node_.insert(node_id);
                     sink_source_loc_map_[tile_id][pin_id] = std::make_tuple(port.type == IN_PORT, value, node_id);
                 }
                 it = next_good_site(it + 1, tile);
@@ -1264,7 +1279,7 @@ struct RR_Graph_Builder {
         for (auto i : {0, 1}) {
             location loc = tile_to_loc_[-1];
             used_by_pin_.insert(std::make_tuple(i, loc));
-            usefull_node_.insert(i);
+            useful_node_.insert(i);
             sink_source_loc_map_[-1][i] = std::make_tuple(false, 0, i);
         }
     }
@@ -1300,12 +1315,12 @@ struct RR_Graph_Builder {
      * Create mapping from virtual to physical tracks.
      * It should work in O(N*M + L), where n,m are device dims and l is number of used segments in CHANs
      */
-    void virtual_to_real_() {
+    void virtual_to_real() {
         device_ctx_.chan_width.x_list.resize(grid_.height(), 0);
         device_ctx_.chan_width.y_list.resize(grid_.width(), 0);
 
         int min_x, min_y, max_x, max_y;
-        min_x = min_y = 0x7fffffff;
+        min_x = min_y = std::numeric_limits<int>::max();
         max_x = max_y = 0;
 
         std::unordered_map<int, std::list<int>> sweeper;
@@ -1649,6 +1664,7 @@ void build_rr_graph_fpga_interchange(const t_graph_type graph_type,
                                      const std::vector<t_segment_inf>& segment_inf,
                                      const enum e_base_cost_type base_cost_type,
                                      int* wire_to_rr_ipin_switch,
+                                     std::string& read_rr_graph_filename,
                                      bool do_check_rr_graph) {
     vtr::ScopedStartFinishTimer timer("Building RR Graph from device database");
 
@@ -1699,6 +1715,7 @@ void build_rr_graph_fpga_interchange(const t_graph_type graph_type,
     builder.build_rr_graph();
     *wire_to_rr_ipin_switch = 0;
     device_ctx.read_rr_graph_filename.assign(get_arch_file_name());
+    read_rr_graph_filename.assign(get_arch_file_name());
 
     if (do_check_rr_graph) {
         check_rr_graph(graph_type, grid, device_ctx.physical_tile_types);

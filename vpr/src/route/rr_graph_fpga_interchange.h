@@ -16,6 +16,7 @@ void build_rr_graph_fpga_interchange(const t_graph_type graph_type,
                                      const std::vector<t_segment_inf>& segment_inf,
                                      const enum e_base_cost_type base_cost_type,
                                      int* wire_to_rr_ipin_switch,
+                                     std::string& read_rr_graph_filename,
                                      bool do_check_rr_graph);
 
 namespace hash_tuple {

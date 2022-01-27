@@ -183,6 +183,29 @@ static t_pin_to_pin_annotation get_pack_pattern(std::string pp_name, std::string
     return pp;
 }
 
+void add_segment_with_default_values(t_segment_inf& seg, std::string name) {
+    // Use default values as we will populate rr_graph with correct values
+    // This segments are just declaration of future use
+    seg.name = name;
+    seg.length = 1;
+    seg.frequency = 1;
+    seg.Rmetal = 1e-12;
+    seg.Cmetal = 1e-12;
+    seg.parallel_axis = BOTH_AXIS;
+
+    // TODO: Only bi-directional segments are created, but it the interchange format
+    //       has directionality information on PIPs, which may be used to infer the
+    //       segments' directonality.
+    seg.directionality = BI_DIRECTIONAL;
+    seg.arch_wire_switch = 1;
+    seg.arch_opin_switch = 1;
+    seg.cb.resize(1);
+    seg.cb[0] = true;
+    seg.sb.resize(2);
+    seg.sb[0] = true;
+    seg.sb[1] = true;
+}
+
 /****************** End Utility functions ******************/
 
 struct ArchReader {
@@ -2368,29 +2391,6 @@ struct ArchReader {
                 as->power_buffer_type = POWER_BUFFER_TYPE_AUTO;
             }
         }
-    }
-
-    void add_segment_with_default_values(t_segment_inf& seg, std::string name) {
-        // Use default values as we will populate rr_graph with correct values
-        // This segments are just declaration of future use
-        seg.name = name;
-        seg.length = 1;
-        seg.frequency = 1;
-        seg.Rmetal = 1e-12;
-        seg.Cmetal = 1e-12;
-        seg.parallel_axis = BOTH_AXIS;
-
-        // TODO: Only bi-directional segments are created, but it the interchange format
-        //       has directionality information on PIPs, which may be used to infer the
-        //       segments' directonality.
-        seg.directionality = BI_DIRECTIONAL;
-        seg.arch_wire_switch = 1;
-        seg.arch_opin_switch = 1;
-        seg.cb.resize(1);
-        seg.cb[0] = true;
-        seg.sb.resize(2);
-        seg.sb[0] = true;
-        seg.sb[1] = true;
     }
 
     void process_segments() {

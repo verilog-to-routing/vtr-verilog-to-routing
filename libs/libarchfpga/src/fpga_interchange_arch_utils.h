@@ -34,6 +34,17 @@ extern "C" {
 
 float get_corner_value(DeviceResources::Device::CornerModel::Reader model, const char* speed_model, const char* value);
 
+void fill_switch(t_rr_switch_inf& switch_,
+                 float R,
+                 float Cin,
+                 float Cout,
+                 float Cinternal,
+                 float Tdel,
+                 float mux_trans_size,
+                 float buf_size,
+                 char* name,
+                 SwitchType type);
+
 #ifdef __cplusplus
 }
 #endif
