@@ -37,11 +37,6 @@ using namespace DeviceResources;
 using namespace LogicalNetlist;
 using namespace capnp;
 
-// Necessary to reduce code verbosity when getting the pin directions
-static const auto INPUT = LogicalNetlist::Netlist::Direction::INPUT;
-static const auto OUTPUT = LogicalNetlist::Netlist::Direction::OUTPUT;
-static const auto INOUT = LogicalNetlist::Netlist::Direction::INOUT;
-
 static const auto LOGIC = Device::BELCategory::LOGIC;
 static const auto ROUTING = Device::BELCategory::ROUTING;
 static const auto SITE_PORT = Device::BELCategory::SITE_PORT;
@@ -57,16 +52,6 @@ struct t_package_pin {
 
     std::string site_name;
     std::string bel_name;
-};
-
-struct t_bel_cell_mapping {
-    size_t cell;
-    size_t site;
-    std::vector<std::pair<size_t, size_t>> pins;
-
-    bool operator<(const t_bel_cell_mapping& other) const {
-        return cell < other.cell || (cell == other.cell && site < other.site);
-    }
 };
 
 // Intermediate data type to store information on interconnects to be created
@@ -232,7 +217,8 @@ struct ArchReader {
         // Preprocess arch information
         process_luts();
         process_package_pins();
-        process_cell_bel_mappings();
+        auto func = std::bind(&ArchReader::str, this, std::placeholders::_1);
+        process_cell_bel_mappings(ar_, bel_cell_mappings_, func);
         process_constants();
         process_bels_and_sites();
 
@@ -779,64 +765,6 @@ struct ArchReader {
                     pckg_pin.site_name = str(pin.getSite().getSite());
 
                 package_pins_.push_back(pckg_pin);
-            }
-        }
-    }
-
-    void process_cell_bel_mappings() {
-        auto primLib = ar_.getPrimLibs();
-        auto portList = primLib.getPortList();
-
-        for (auto cell_mapping : ar_.getCellBelMap()) {
-            size_t cell_name = cell_mapping.getCell();
-
-            int found_valid_prim = false;
-            for (auto primitive : primLib.getCellDecls()) {
-                bool is_prim = str(primitive.getLib()) == std::string("primitives");
-                bool is_cell = cell_name == primitive.getName();
-
-                bool has_inout = false;
-                for (auto port_idx : primitive.getPorts()) {
-                    auto port = portList[port_idx];
-
-                    if (port.getDir() == INOUT) {
-                        has_inout = true;
-                        break;
-                    }
-                }
-
-                if (is_prim && is_cell && !has_inout) {
-                    found_valid_prim = true;
-                    break;
-                }
-            }
-
-            if (!found_valid_prim)
-                continue;
-
-            for (auto common_pins : cell_mapping.getCommonPins()) {
-                std::vector<std::pair<size_t, size_t>> pins;
-
-                for (auto pin_map : common_pins.getPins())
-                    pins.emplace_back(pin_map.getCellPin(), pin_map.getBelPin());
-
-                for (auto site_type_entry : common_pins.getSiteTypes()) {
-                    size_t site_type = site_type_entry.getSiteType();
-
-                    for (auto bel : site_type_entry.getBels()) {
-                        t_bel_cell_mapping mapping;
-
-                        mapping.cell = cell_name;
-                        mapping.site = site_type;
-                        mapping.pins = pins;
-
-                        std::set<t_bel_cell_mapping> maps{mapping};
-                        auto res = bel_cell_mappings_.emplace(bel, maps);
-                        if (!res.second) {
-                            res.first->second.insert(mapping);
-                        }
-                    }
-                }
             }
         }
     }
@@ -2293,101 +2221,27 @@ struct ArchReader {
     }
 
     void process_switches() {
-        std::set<std::pair<bool, uint32_t>> pip_timing_models;
-        for (auto tile_type : ar_.getTileTypeList()) {
-            for (auto pip : tile_type.getPips()) {
-                pip_timing_models.insert(std::pair<bool, uint32_t>(pip.getBuffered21(), pip.getTiming()));
-                if (!pip.getDirectional())
-                    pip_timing_models.insert(std::pair<bool, uint32_t>(pip.getBuffered20(), pip.getTiming()));
-            }
+        std::set<std::tuple<int, bool>> seen;
+        pip_types(seen, ar_);
+
+        arch_->num_switches = seen.size() + 2;
+
+        if (arch_->num_switches > 0) {
+            arch_->Switches = new t_arch_switch_inf[arch_->num_switches];
         }
 
-        auto timing_data = ar_.getPipTimings();
+        std::vector<std::tuple<std::tuple<int, bool>, int>> pips_models_;
+        process_switches_array<t_arch_switch_inf*, int>(ar_, seen, arch_->Switches, pips_models_);
 
-        std::vector<std::pair<bool, uint32_t>> pip_timing_models_list;
-        pip_timing_models_list.reserve(pip_timing_models.size());
-
-        for (auto entry : pip_timing_models) {
-            pip_timing_models_list.push_back(entry);
-        }
-
-        size_t num_switches = pip_timing_models.size() + 2;
-        std::string switch_name;
-
-        arch_->num_switches = num_switches;
-
-        if (num_switches > 0) {
-            arch_->Switches = new t_arch_switch_inf[num_switches];
-        }
-
-        float R, Cin, Cint, Cout, Tdel;
-        for (size_t i = 0; i < num_switches; ++i) {
+        for (int i = 0; i < arch_->num_switches; ++i) {
             t_arch_switch_inf* as = &arch_->Switches[i];
-
-            R = Cin = Cint = Cout = Tdel = 0.0;
-            SwitchType type;
-
-            if (i == 0) {
-                switch_name = "short";
-                type = SwitchType::SHORT;
-                R = 0.0;
-            } else if (i == 1) {
-                switch_name = "generic";
-                type = SwitchType::MUX;
-                R = 0.0;
-            } else {
-                auto entry = pip_timing_models_list[i - 2];
-                auto model = timing_data[entry.second];
-                std::stringstream name;
-                std::string mux_type_string = entry.first ? "mux_" : "passGate_";
-                name << mux_type_string;
-
-                // FIXME: allow to dynamically choose different speed models and corners
-                R = get_corner_value(model.getOutputResistance(), "slow", "min");
-                name << "R" << std::scientific << R;
-
-                Cin = get_corner_value(model.getInputCapacitance(), "slow", "min");
-                name << "Cin" << std::scientific << Cin;
-
-                Cout = get_corner_value(model.getOutputCapacitance(), "slow", "min");
-                name << "Cout" << std::scientific << Cout;
-
-                if (entry.first) {
-                    Cint = get_corner_value(model.getInternalCapacitance(), "slow", "min");
-                    name << "Cinternal" << std::scientific << Cint;
-                }
-
-                Tdel = get_corner_value(model.getInternalDelay(), "slow", "min");
-                name << "Tdel" << std::scientific << Tdel;
-
-                switch_name = name.str() + std::to_string(i);
-                type = entry.first ? SwitchType::MUX : SwitchType::PASS_GATE;
-            }
-
-            /* Should never happen */
-            if (switch_name == std::string(VPR_DELAYLESS_SWITCH_NAME)) {
-                archfpga_throw(arch_file_, __LINE__,
-                               "Switch name '%s' is a reserved name for VPR internal usage!", switch_name.c_str());
-            }
-
-            as->name = vtr::strdup(switch_name.c_str());
-            as->set_type(type);
-            as->mux_trans_size = as->type() == SwitchType::MUX ? 1 : 0;
-
-            as->R = R;
-            as->Cin = Cin;
-            as->Cout = Cout;
-            as->Cinternal = Cint;
-            as->set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel);
 
             if (as->type() == SwitchType::SHORT || as->type() == SwitchType::PASS_GATE) {
                 as->buf_size_type = BufferSize::ABSOLUTE;
-                as->buf_size = 0;
                 as->power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
                 as->power_buffer_size = 0.;
             } else {
                 as->buf_size_type = BufferSize::AUTO;
-                as->buf_size = 0.;
                 as->power_buffer_type = POWER_BUFFER_TYPE_AUTO;
             }
         }

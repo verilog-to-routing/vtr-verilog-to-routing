@@ -21,9 +21,10 @@ using namespace DeviceResources;
 using namespace LogicalNetlist;
 using namespace capnp;
 
-static const auto INOUT = LogicalNetlist::Netlist::Direction::INOUT;
-
 typedef std::pair<int, int> location;
+
+//<switch_id, tile_id, <name, wire0, wire1, forward>>
+typedef std::tuple<int, int, std::tuple<int, int, int, bool>> pip_;
 
 enum node_sides {
     LEFT_EDGE = 0,
@@ -102,44 +103,12 @@ struct RR_Graph_Builder {
             wire_name_to_seg_idx_[segment_inf_[RRSegmentId(i)].name] = i;
         }
 
-        auto primLib = ar_.getPrimLibs();
-        auto portList = primLib.getPortList();
+        std::unordered_map<uint32_t, std::set<t_bel_cell_mapping>> temp_;
+        auto func = std::bind(&RR_Graph_Builder::str, this, std::placeholders::_1);
+        process_cell_bel_mappings(ar_, temp_, func);
 
-        for (auto cell_mapping : ar_.getCellBelMap()) {
-            size_t cell_name = cell_mapping.getCell();
-
-            int found_valid_prim = false;
-            for (auto primitive : primLib.getCellDecls()) {
-                bool is_prim = str(primitive.getLib()) == std::string("primitives");
-                bool is_cell = cell_name == primitive.getName();
-
-                bool has_inout = false;
-                for (auto port_idx : primitive.getPorts()) {
-                    auto port = portList[port_idx];
-
-                    if (port.getDir() == INOUT) {
-                        has_inout = true;
-                        break;
-                    }
-                }
-
-                if (is_prim && is_cell && !has_inout) {
-                    found_valid_prim = true;
-                    break;
-                }
-            }
-
-            if (!found_valid_prim)
-                continue;
-
-            for (auto common_pins : cell_mapping.getCommonPins()) {
-                for (auto site_type_entry : common_pins.getSiteTypes()) {
-                    for (auto bel : site_type_entry.getBels()) {
-                        bel_cell_mappings_.emplace(bel);
-                    }
-                }
-            }
-        }
+        for (auto i : temp_)
+            bel_cell_mappings_.insert(i.first);
     }
 
     void build_rr_graph() {
@@ -177,7 +146,7 @@ struct RR_Graph_Builder {
     std::unordered_map<location, int /*tile_id(name)*/, hash_tuple::hash<location>> loc_to_tile_;
 
     std::unordered_map<std::tuple<int /*timing_model*/, bool /*buffered*/>, int /*idx*/, hash_tuple::hash<std::tuple<int, bool>>> pips_models_;
-    std::unordered_map<std::tuple<int /*node_id*/, int /*node_id*/>, std::tuple<int /*switch_id*/, int /* tile_id */, std::tuple<int /*name*/, int /*wire0*/, int /*wire1*/, bool /*forward*/>>, hash_tuple::hash<std::tuple<int, int>>> pips_;
+    std::unordered_map<std::tuple<int /*node_id*/, int /*node_id*/>, pip_, hash_tuple::hash<std::tuple<int, int>>> pips_;
 
     std::unordered_map<std::tuple<int, int>,
                        int,
@@ -207,7 +176,11 @@ struct RR_Graph_Builder {
      * - node_id_count_ maps from node_id to its tile count
      */
     std::vector<std::tuple<location, e_rr_type, int /*idx*/, location, e_rr_type, int /*idx*/>> virtual_shorts_;
-    std::map<std::tuple<int /*node_id*/, location>, std::tuple<location, e_rr_type /*CHANX/CHANY*/, int /*idx*/>> virtual_redirect_;
+    std::unordered_map<std::tuple<int /*node_id*/, location>,
+                       std::tuple<location, e_rr_type /*CHANX/CHANY*/, int /*idx*/>,
+                       hash_tuple::hash<std::tuple<int, location>>>
+        virtual_redirect_;
+
     std::unordered_map<std::tuple<location, e_rr_type, int>,
                        int,
                        hash_tuple::hash<std::tuple<location, e_rr_type, int>>>
@@ -229,8 +202,14 @@ struct RR_Graph_Builder {
      * Sets contain tuples of node ids and location.
      * Each value <n,l> correspondence to node id n being used by either pip or pin at location l.
      */
-    std::unordered_set<std::tuple<int /*node_id*/, location>, hash_tuple::hash<std::tuple<int, location>>> used_by_pip_;
-    std::unordered_set<std::tuple<int /*node_id*/, location>, hash_tuple::hash<std::tuple<int, location>>> used_by_pin_;
+    std::unordered_set<std::tuple<int /*node_id*/, location>,
+                       hash_tuple::hash<std::tuple<int, location>>>
+        used_by_pip_;
+
+    std::unordered_set<std::tuple<int /*node_id*/, location>,
+                       hash_tuple::hash<std::tuple<int, location>>>
+        used_by_pin_;
+
     std::unordered_set<int /* node_id*/> useful_node_;
 
     /* Sink_source_loc_map is used to create ink/source and ipin/opin rr_nodes,
@@ -243,7 +222,10 @@ struct RR_Graph_Builder {
      * RR generation stuff
      */
     vtr::vector<RRIndexedDataId, short> seg_index_;
-    std::map<std::tuple<location, e_rr_type, int>, int> loc_type_idx_to_rr_idx_;
+    std::unordered_map<std::tuple<location, e_rr_type, int>,
+                       int,
+                       hash_tuple::hash<std::tuple<location, e_rr_type, int>>>
+        loc_type_idx_to_rr_idx_;
     int rr_idx = 0; // Do not decrement!
 
     location add_vec(location x, location dx) {
@@ -372,65 +354,14 @@ struct RR_Graph_Builder {
      */
     void create_switch_inf() {
         std::set<std::tuple<int /*timing*/, bool /*buffered*/>> seen;
-        for (const auto& tile : ar_.getTileTypeList()) {
-            for (const auto& pip : tile.getPips()) {
-                seen.emplace(pip.getTiming(), pip.getBuffered21());
-                if (!pip.getDirectional()) {
-                    seen.emplace(pip.getTiming(), pip.getBuffered20());
-                }
-            }
-        }
-        device_ctx_.rr_switch_inf.reserve(seen.size() + 2);
-        int id = 2;
-        make_room_in_vector(&device_ctx_.rr_switch_inf, 0);
-        fill_switch(device_ctx_.rr_switch_inf[RRSwitchId(0)], 0, 0, 0, 0, 0, 0, 0,
-                    vtr::strdup("short"), SwitchType::SHORT);
-        make_room_in_vector(&device_ctx_.rr_switch_inf, 1);
-        fill_switch(device_ctx_.rr_switch_inf[RRSwitchId(1)], 0, 0, 0, 0, 0, 0, 0,
-                    vtr::strdup("generic"), SwitchType::MUX);
-        const auto& pip_models = ar_.getPipTimings();
-        float R, Cin, Cout, Cint, Tdel;
-        std::string switch_name;
-        SwitchType type;
-        for (const auto& value : seen) {
-            make_room_in_vector(&device_ctx_.rr_switch_inf, id);
-            int timing_model_id;
-            int mux_trans_size;
-            bool buffered;
-            std::tie(timing_model_id, buffered) = value;
-            const auto& model = pip_models[timing_model_id];
-            pips_models_[std::make_tuple(timing_model_id, buffered)] = id;
+        pip_types(seen, ar_);
 
-            R = Cin = Cint = Cout = Tdel = 0.0;
-            std::stringstream name;
-            std::string mux_type_string = buffered ? "mux_" : "passGate_";
-            name << mux_type_string;
+        device_ctx_.rr_switch_inf.resize(seen.size() + 2);
 
-            R = get_corner_value(model.getOutputResistance(), "slow", "min");
-            name << "R" << std::scientific << R;
-
-            Cin = get_corner_value(model.getInputCapacitance(), "slow", "min");
-            name << "Cin" << std::scientific << Cin;
-
-            Cout = get_corner_value(model.getOutputCapacitance(), "slow", "min");
-            name << "Cout" << std::scientific << Cout;
-
-            if (buffered) {
-                Cint = get_corner_value(model.getInternalCapacitance(), "slow", "min");
-                name << "Cinternal" << std::scientific << Cint;
-            }
-
-            Tdel = get_corner_value(model.getInternalDelay(), "slow", "min");
-            name << "Tdel" << std::scientific << Tdel;
-
-            switch_name = name.str();
-            type = buffered ? SwitchType::MUX : SwitchType::PASS_GATE;
-            mux_trans_size = buffered ? 1 : 0;
-
-            fill_switch(device_ctx_.rr_switch_inf[RRSwitchId(id)], R, Cin, Cout, Cint, Tdel,
-                        mux_trans_size, 0, vtr::strdup(switch_name.c_str()), type);
-
-            id++;
+        std::vector<std::tuple<std::tuple<int, bool>, int>> temp_;
+        process_switches_array<t_rr_switch_inf*, int>(ar_, seen, device_ctx_.rr_switch_inf.data(), temp_);
+        for (auto i : temp_) {
+            pips_models_[std::get<0>(i)] = std::get<1>(i);
         }
     }
 
@@ -439,6 +370,8 @@ struct RR_Graph_Builder {
      */
     void create_tile_id_to_loc() {
         int max_height = 0;
+        tile_to_loc_.reserve(ar_.getTileList().size() + 1);
+        loc_to_tile_.reserve(ar_.getTileList().size() + 1);
         for (const auto& tile : ar_.getTileList()) {
             tile_to_loc_[tile.getName()] = location(tile.getCol() + 1, tile.getRow() + 1);
             max_height = std::max(max_height, (int)(tile.getRow() + 1));
@@ -534,19 +467,6 @@ struct RR_Graph_Builder {
             }
             node_to_RC_[node_id].first += resistance;
             node_to_RC_[node_id].second += capacitance;
-#ifdef DEBUG
-            if (constant_node) {
-                const auto& wires = ar_.getWires();
-                std::tuple<int, int> base_wire_(wires[node.getWires()[0]].getTile(), wires[node.getWires()[0]].getWire());
-                VTR_LOG("Constant_node: %s\n", wire_to_node_[base_wire_] == 1 ? "VCC\0" : "GND\0");
-                for (const auto& wire_id_ : node.getWires()) {
-                    const auto& wire = ar_.getWires()[wire_id_];
-                    int tile_id = wire.getTile();
-                    int wire_id = wire.getWire();
-                    VTR_LOG("tile:%s wire:%s\n", str(tile_id).c_str(), str(wire_id).c_str());
-                }
-            }
-#endif
             for (const auto& wire_id_ : node.getWires()) {
                 const auto& wire = ar_.getWires()[wire_id_];
                 int tile_id = wire.getTile();
@@ -566,6 +486,13 @@ struct RR_Graph_Builder {
      * also store meta data related to that pip such as: tile_name, wire names, and its direction.
      */
     void create_pips() {
+        int pip_count = 0;
+        for (const auto& tile : ar_.getTileList()) {
+            const auto& tile_type = ar_.getTileTypeList()[tile.getType()];
+            pip_count += tile_type.getPips().size();
+        }
+        pips_.reserve((int)(pip_count * 1.05));
+
         for (const auto& tile : ar_.getTileList()) {
             int tile_id = tile.getName();
             location loc = tile_to_loc_[tile_id];
@@ -590,7 +517,7 @@ struct RR_Graph_Builder {
                  */
                 /*
                  * FIXME
-                 * right now we allow for pseudo pips even tho we don;t check if they are avaiable
+                 * right now we allow for pseudo pips even tho we don't check if they are avaiable
                  * if (pip.isPseudoCells() && (node0 > 1 && node1 > 1))
                  * continue;
                  */
@@ -604,21 +531,22 @@ struct RR_Graph_Builder {
                 if (tile.hasSubTilesPrefices())
                     name = tile.getSubTilesPrefices()[pip.getSubTile()];
 
+                VTR_ASSERT(pips_models_.find(std::make_tuple(pip.getTiming(), pip.getBuffered21())) != pips_models_.end());
                 switch_id = pips_models_[std::make_tuple(pip.getTiming(), pip.getBuffered21())];
                 std::tuple<int, int> source_sink;
                 source_sink = std::make_tuple(node0, node1);
-                pips_.emplace(source_sink, std::make_tuple(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
+                pips_.emplace(source_sink, pip_(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
                 if (!pip.getBuffered21() && (pip.getDirectional() || pip.getBuffered20())) {
                     source_sink = std::make_tuple(node1, node0);
-                    pips_.emplace(source_sink, std::make_tuple(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
+                    pips_.emplace(source_sink, pip_(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
                 }
                 if (!pip.getDirectional()) {
                     switch_id = pips_models_[std::make_tuple(pip.getTiming(), pip.getBuffered20())];
                     source_sink = std::make_tuple(node1, node0);
-                    pips_.emplace(source_sink, std::make_tuple(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
+                    pips_.emplace(source_sink, pip_(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
                     if (!pip.getBuffered20() && pip.getBuffered21()) {
                         source_sink = std::make_tuple(node0, node1);
-                        pips_.emplace(source_sink, std::make_tuple(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
+                        pips_.emplace(source_sink, pip_(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
                     }
                 }
             }
@@ -1273,7 +1201,7 @@ struct RR_Graph_Builder {
             }
         }
         /*
-         * Add constant ource
+         * Add constant source
          */
         sink_source_loc_map_[-1].resize(2);
         for (auto i : {0, 1}) {
@@ -1547,14 +1475,6 @@ struct RR_Graph_Builder {
         }
     }
 
-    char* int_to_string(char* buff, int value) {
-        if (value < 10) {
-            return &(*buff = '0' + value) + 1;
-        } else {
-            return &(*int_to_string(buff, value / 10) = '0' + value % 10) + 1;
-        }
-    }
-
     void pack_pips() {
         for (auto& i : pips_) {
             int node1, node2;
@@ -1584,11 +1504,11 @@ struct RR_Graph_Builder {
 
             char metadata_[100];
             char* temp = int_to_string(metadata_, name);
-            *temp++ = ',';
+            *temp++ = '.';
             temp = int_to_string(temp, wire0);
             *temp++ = ',';
             temp = int_to_string(temp, wire1);
-            *temp++ = ',';
+            *temp++ = '.';
             temp = int_to_string(temp, forward ? 1 : 0);
             *temp++ = 0;
 

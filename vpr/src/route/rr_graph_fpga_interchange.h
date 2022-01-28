@@ -21,10 +21,21 @@ void build_rr_graph_fpga_interchange(const t_graph_type graph_type,
 
 namespace hash_tuple {
 namespace {
+
+// https://nullprogram.com/blog/2018/07/31/
+inline size_t splittable64(size_t x) {
+    x ^= x >> 30;
+    x *= 0xbf58476d1ce4e5b9U;
+    x ^= x >> 27;
+    x *= 0x94d049bb133111ebU;
+    x ^= x >> 31;
+    return x;
+}
+
 template<typename TT>
 struct hash {
     size_t operator()(TT const& tt) const {
-        return std::hash<TT>()(tt);
+        return splittable64(std::hash<TT>()(tt));
     }
 };
 
@@ -32,8 +43,8 @@ template<class T1, class T2>
 struct hash<std::pair<T1, T2>> {
     size_t operator()(const std::pair<T1, T2>& p) const noexcept(true) {
         size_t lhs, rhs;
-        lhs = std::hash<T1>()(p.first);
-        rhs = std::hash<T2>()(p.second);
+        lhs = splittable64(std::hash<T1>()(p.first));
+        rhs = splittable64(std::hash<T2>()(p.second));
         return (lhs * lhs + 3UL * lhs + 2UL * lhs * rhs + rhs + rhs * rhs) / 2UL;
     }
 };

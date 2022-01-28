@@ -77,7 +77,33 @@ float get_corner_value(DeviceResources::Device::CornerModel::Reader model, const
     return 0.;
 }
 
-void fill_switch(t_rr_switch_inf& switch_,
+char* int_to_string(char* buff, int value) {
+    if (value < 10) {
+        return &(*buff = '0' + value) + 1;
+    } else {
+        return &(*int_to_string(buff, value / 10) = '0' + value % 10) + 1;
+    }
+}
+
+void pip_types(std::set<std::tuple<int, bool>>& seen,
+               DeviceResources::Device::Reader ar_) {
+    for (const auto& tile : ar_.getTileTypeList()) {
+        for (const auto& pip : tile.getPips()) {
+            /*
+             * FIXME
+             * right now we allow for pseudo pips even tho we don't check if they are avaiable
+             * if (pip.isPseudoCells())
+             *     continue;
+             */
+            seen.emplace(pip.getTiming(), pip.getBuffered21());
+            if (!pip.getDirectional()) {
+                seen.emplace(pip.getTiming(), pip.getBuffered20());
+            }
+        }
+    }
+}
+
+void fill_switch(t_arch_switch_inf* switch_,
                  float R,
                  float Cin,
                  float Cout,
@@ -87,13 +113,73 @@ void fill_switch(t_rr_switch_inf& switch_,
                  float buf_size,
                  char* name,
                  SwitchType type) {
-    switch_.R = R;
-    switch_.Cin = Cin;
-    switch_.Cout = Cout;
-    switch_.Cinternal = Cinternal;
-    switch_.Tdel = Tdel;
-    switch_.mux_trans_size = mux_trans_size;
-    switch_.buf_size = buf_size;
-    switch_.name = name;
-    switch_.set_type(type);
+    switch_->R = R;
+    switch_->Cin = Cin;
+    switch_->Cout = Cout;
+    switch_->Cinternal = Cinternal;
+    switch_->set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel);
+    switch_->mux_trans_size = mux_trans_size;
+    switch_->buf_size = buf_size;
+    switch_->name = name;
+    switch_->set_type(type);
+}
+
+void process_cell_bel_mappings(DeviceResources::Device::Reader ar_,
+                               std::unordered_map<uint32_t, std::set<t_bel_cell_mapping>>& bel_cell_mappings_,
+                               std::function<std::string(size_t)> str) {
+    auto primLib = ar_.getPrimLibs();
+    auto portList = primLib.getPortList();
+
+    for (auto cell_mapping : ar_.getCellBelMap()) {
+        size_t cell_name = cell_mapping.getCell();
+
+        int found_valid_prim = false;
+        for (auto primitive : primLib.getCellDecls()) {
+            bool is_prim = str(primitive.getLib()) == std::string("primitives");
+            bool is_cell = cell_name == primitive.getName();
+
+            bool has_inout = false;
+            for (auto port_idx : primitive.getPorts()) {
+                auto port = portList[port_idx];
+
+                if (port.getDir() == INOUT) {
+                    has_inout = true;
+                    break;
+                }
+            }
+
+            if (is_prim && is_cell && !has_inout) {
+                found_valid_prim = true;
+                break;
+            }
+        }
+
+        if (!found_valid_prim)
+            continue;
+
+        for (auto common_pins : cell_mapping.getCommonPins()) {
+            std::vector<std::pair<size_t, size_t>> pins;
+
+            for (auto pin_map : common_pins.getPins())
+                pins.emplace_back(pin_map.getCellPin(), pin_map.getBelPin());
+
+            for (auto site_type_entry : common_pins.getSiteTypes()) {
+                size_t site_type = site_type_entry.getSiteType();
+
+                for (auto bel : site_type_entry.getBels()) {
+                    t_bel_cell_mapping mapping;
+
+                    mapping.cell = cell_name;
+                    mapping.site = site_type;
+                    mapping.pins = pins;
+
+                    std::set<t_bel_cell_mapping> maps{mapping};
+                    auto res = bel_cell_mappings_.emplace(bel, maps);
+                    if (!res.second) {
+                        res.first->second.insert(mapping);
+                    }
+                }
+            }
+        }
+    }
 }
