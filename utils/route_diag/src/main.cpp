@@ -104,7 +104,7 @@ static void do_one_route(int source_node, int sink_node,
             device_ctx.rr_nodes,
             &device_ctx.rr_graph,
             device_ctx.rr_rc_data,
-            device_ctx.rr_switch_inf,
+            device_ctx.rr_graph.rr_switch(),
             g_vpr_ctx.mutable_routing().rr_node_route_inf);
     enable_router_debug(router_opts, ClusterNetId(), sink_node, 1, &router);
     bool found_path;

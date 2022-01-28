@@ -52,7 +52,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
     auto total_edges_to_node = std::vector<int>(device_ctx.rr_nodes.size());
     auto switch_types_from_current_to_node = std::vector<unsigned char>(device_ctx.rr_nodes.size());
-    const int num_rr_switches = device_ctx.rr_switch_inf.size();
+    const int num_rr_switches = rr_graph.num_rr_switches();
 
     std::vector<std::pair<int, int>> edges;
 

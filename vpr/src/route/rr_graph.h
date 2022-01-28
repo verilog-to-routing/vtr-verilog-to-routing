@@ -43,6 +43,9 @@ void free_rr_graph();
 //Returns a brief one-line summary of an RR node
 std::string describe_rr_node(int inode);
 
+t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
+                                                  const float R_minW_nmos,
+                                                  const float R_minW_pmos);
 // Sets the spec for the rr_switch based on the arch switch
 void load_rr_switch_from_arch_switch(int arch_switch_idx,
                                      int rr_switch_idx,
