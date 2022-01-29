@@ -92,12 +92,17 @@
 #include "log.h"
 #include "iostream"
 
-#ifdef VPR_USE_TBB
+#ifdef VPR_USE_TBB_PRE_2021
 #    include <tbb/task_scheduler_init.h>
 
 //We need to store the scheduler object so any concurrency
 //setting is persistent
 std::unique_ptr<tbb::task_scheduler_init> tbb_scheduler;
+
+#elseif VPR_USE_TBB_POST_2021
+#    include <tbb/global_control.h>
+#    include <tbb/task_arena.h>
+
 #endif
 
 /* Local subroutines */
@@ -213,7 +218,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         }
     }
 
-#ifdef VPR_USE_TBB
+#ifdef VPR_USE_TBB_PRE_2021
     //Using Thread Building Blocks
     if (num_workers == 0) {
         //Use default concurrency (i.e. maximum conccurency)
@@ -222,6 +227,15 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     VTR_LOG("Using up to %zu parallel worker(s)\n", num_workers);
     tbb_scheduler = std::make_unique<tbb::task_scheduler_init>(num_workers);
+#elseif VPR_USE_TBB_POST_2021
+    //Using Thread Building Blocks
+    if (num_workers == 0) {
+        //Use default concurrency (i.e. maximum conccurency)
+        num_workers = tbb::task_arena().max_concurrency();
+    }
+
+    VTR_LOG("Using up to %zu parallel worker(s)\n", num_workers);
+    tbb::global_control(tbb::global_control::max_allowed_parallelism, num_workers);
 #else
     //No parallel execution support
     if (num_workers != 1) {
