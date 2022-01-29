@@ -301,6 +301,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case PAD_NODE:     //fallthrough
         case INPUT_NODE:   //fallthrough
         case OUTPUT_NODE:  //fallthrough
+        case HARD_IP:      //fallthrough
         case BUF_NODE:     //fallthrough
         case BITWISE_NOT:  //fallthrough
         case BITWISE_AND:  //fallthrough
@@ -312,7 +313,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             /* some are already resolved for this phase */
             break;
         }
-        case HARD_IP:
         case ADDER_FUNC:
         case CARRY_FUNC:
         case CLOCK_NODE:

@@ -42,9 +42,11 @@
 #include <sys/wait.h> // wait
 
 #include "YYosys.hpp"
-#include "config_t.h"   // configuration
-#include "odin_util.h"  // get_directory
-#include "odin_error.h" // error_message
+#include "Verilog.hpp"
+#include "config_t.h"    // configuration
+#include "odin_util.h"   // get_directory
+#include "odin_error.h"  // error_message
+#include "hard_blocks.h" // hard_block_names
 
 #ifdef ODIN_USE_YOSYS
 #    include "kernel/yosys.h" // Yosys
@@ -122,6 +124,8 @@ void YYosys::perform_elaboration() {
     if (this->yosys_pid == 0) {
         /* initalize Yosys */
         this->init_yosys();
+        /* generate and load DSP declarations */
+        this->load_target_dsp_blocks();
         /* perform elaboration using Yosys API */
         this->elaborate();
 
@@ -141,6 +145,35 @@ void YYosys::perform_elaboration() {
         /* Yosys successfully generated coarse-grain BLIF file */
         this->re_initialize_odin_globals();
     }
+#endif
+}
+
+/**
+ * ---------------------------------------------------------------------------------------------
+ * (function: load_target_dsp_blocks)
+ * 
+ * @brief this routine generates a Verilog file, including the 
+ * declaration of all DSP blocks available in the targer architecture.
+ * Then, the Verilog fle is read by Yosys to make it aware of them
+ * -------------------------------------------------------------------------------------------*/
+void YYosys::load_target_dsp_blocks() {
+#ifndef ODIN_USE_YOSYS
+    error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
+#else
+    Verilog::Writer vw = Verilog::Writer();
+    vw._create_file(configuration.dsp_verilog.c_str());
+
+    t_model* hb = Arch.models;
+    while (hb) {
+        // declare hardblocks in a verilog file
+        if (strcmp(hb->name, SINGLE_PORT_RAM_string) && strcmp(hb->name, DUAL_PORT_RAM_string) && strcmp(hb->name, "multiply") && strcmp(hb->name, "adder"))
+            vw.declare_blackbox(hb->name);
+
+        hb = hb->next;
+    }
+
+    vw._write(NULL);
+    run_pass(std::string("read_verilog -nomem2reg " + configuration.dsp_verilog));
 #endif
 }
 
@@ -220,7 +253,7 @@ void YYosys::execute() {
             run_pass(std::string("read_verilog -nomem2reg -nolatches " + verilog_circuit));
 
         // Check whether cells match libraries and find top module
-        run_pass(std::string("hierarchy -check -auto-top"));
+        run_pass(std::string("hierarchy -check -auto-top -purge_lib"));
 
         // Use a readable name convention
         run_pass(std::string("autoname"));
@@ -307,7 +340,7 @@ void YYosys::output_blif() {
 
     // "-param" is to print non-standard cells parameters
     // "-impltf" is to not show the definition of primary netlist ports, i.e., VCC, GND and PAD, in the output.
-    run_pass(std::string("write_blif -param -impltf " + this->coarse_grain_blif));
+    run_pass(std::string("write_blif -blackbox -param -impltf " + this->coarse_grain_blif));
 #endif
 }
 

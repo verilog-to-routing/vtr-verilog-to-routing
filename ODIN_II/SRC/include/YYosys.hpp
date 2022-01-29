@@ -89,6 +89,15 @@ class YYosys {
 
     /**
      * ---------------------------------------------------------------------------------------------
+     * (function: load_target_dsp_blocks)
+     * 
+     * @brief this routine generates a Verilog file, including the 
+     * declaration of all DSP blocks available in the targer architecture.
+     * Then, the Verilog fle is read by Yosys to make the modules reachable.
+     * -------------------------------------------------------------------------------------------*/
+    void load_target_dsp_blocks();
+    /**
+     * ---------------------------------------------------------------------------------------------
      * (function: set_default_variables)
      * 
      * @brief Initialize Yosys
