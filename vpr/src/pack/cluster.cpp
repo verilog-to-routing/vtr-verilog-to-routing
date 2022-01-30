@@ -787,33 +787,25 @@ static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
 
 static void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
                                                      t_pb* pb) {
-    int i;
+    int molecule_index;
     bool found_molecule = false;
 
-    for (i = 0; i < pb->pb_stats->num_feasible_blocks; i++) {
+    //find the molecule index
+    for (int i = 0; i < pb->pb_stats->num_feasible_blocks; i++) {
         if (pb->pb_stats->feasible_blocks[i] == molecule) {
             found_molecule = true;
+            molecule_index = i;
         }
     }
 
+	//if it is not in the array, return
     if (found_molecule == false) {
         return;
     }
 
-    //If the highest gain molecule is the molecule to be removed, just decrement
-    if (pb->pb_stats->feasible_blocks[pb->pb_stats->num_feasible_blocks - 1] == molecule) {
-        pb->pb_stats->num_feasible_blocks--;
-
-        return;
-    }
-
     //Otherwise, shift the molecules while removing the specified molecule
-    for (int j = 0; j < pb->pb_stats->num_feasible_blocks - 1; j++) {
-        if (pb->pb_stats->feasible_blocks[j + 1] == molecule) {
-            continue;
-        } else {
-            pb->pb_stats->feasible_blocks[j] = pb->pb_stats->feasible_blocks[j + 1];
-        }
+    for (int j = molecule_index; j < pb->pb_stats->num_feasible_blocks - 1; j++) {
+    	pb->pb_stats->feasible_blocks[j] = pb->pb_stats->feasible_blocks[j+1];
     }
     pb->pb_stats->num_feasible_blocks--;
 }
@@ -2762,7 +2754,7 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
         return;
     }
 
-    if (num_available_atoms < 100) {
+    if (num_available_atoms < 500) {
         for (AtomBlockId atom_id : available_att_group_atoms) {
             if (atom_ctx.lookup.atom_clb(atom_id) == ClusterBlockId::INVALID()) {
                 auto rng = atom_molecules.equal_range(atom_id);
@@ -2784,7 +2776,7 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     int min = 0;
     int max = num_available_atoms - 1;
 
-    for (int j = 0; j < 100; j++) {
+    for (int j = 0; j < 500; j++) {
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_int_distribution<> distr(min, max);

@@ -180,11 +180,14 @@ bool try_pack(t_packer_opts* packer_opts,
                     (balance_block_type_util ? "true" : "false"));
         } else if (pack_iteration == 1 && floorplan_not_fitting) {
             VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
+            attraction_groups.create_att_groups_for_overfull_regions();
             attraction_groups.set_att_group_pulls(1);
 
-        } else if (pack_iteration == 2 && floorplan_not_fitting) {
+        } else if (pack_iteration >= 2 && pack_iteration < 5 && floorplan_not_fitting) {
             VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher target pin utilization. \n");
-            attraction_groups.set_att_group_pulls(4);
+            attraction_groups.create_att_groups_for_overfull_regions();
+            int att_pulls = attraction_groups.get_att_group_pulls() + 4;
+            attraction_groups.set_att_group_pulls(att_pulls);
             t_ext_pin_util pin_util(1.0, 1.0);
             target_external_pin_util.set_block_pin_util("clb", pin_util);
 
@@ -229,7 +232,7 @@ bool try_pack(t_packer_opts* packer_opts,
             g_vpr_ctx.mutable_atom().lookup.set_atom_clb_net(net, ClusterNetId::INVALID());
         }
         g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
-        attraction_groups.reset_attraction_groups();
+        //attraction_groups.reset_attraction_groups();
 
         ++pack_iteration;
     }

@@ -86,6 +86,10 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
     auto& atom_ctx = g_vpr_ctx.atom();
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
 
+    //clear the data structures before continuing
+    atom_attraction_group.clear();
+    attraction_groups.clear();
+
     //Initialize every atom to have no attraction group id
     int num_atoms = atom_ctx.nlist.blocks().size();
 
@@ -138,6 +142,8 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
     }
 
     att_group_pulls = 1;
+
+    VTR_LOG("Number of attraction groups created is %d \n", num_att_grps);
 }
 
 AttractionGroup& AttractionInfo::get_attraction_group_info(const AttractGroupId group_id) {
