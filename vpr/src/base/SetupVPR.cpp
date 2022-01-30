@@ -139,8 +139,9 @@ void SetupVPR(const t_options* Options,
     int num_inputs = 0;
     int num_outputs = 0;
     for (auto& type : device_ctx.physical_tile_types) {
-        if (strcmp(type.name, EMPTY_BLOCK_NAME) == 0) {
+        if (type.is_empty()) {
             VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE == nullptr);
+            VTR_ASSERT(type.num_pins == 0);
             device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &type;
         }
 
@@ -156,7 +157,9 @@ void SetupVPR(const t_options* Options,
     device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = nullptr;
     int max_equivalent_tiles = 0;
     for (const auto& type : device_ctx.logical_block_types) {
-        if (0 == strcmp(type.name, EMPTY_BLOCK_NAME)) {
+        if (type.is_empty()) {
+            VTR_ASSERT(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE == nullptr);
+            VTR_ASSERT(type.pb_type == nullptr);
             device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = &type;
         }
 
@@ -623,6 +626,9 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
     analysis_opts.timing_report_detail = Options.timing_report_detail;
     analysis_opts.timing_report_skew = Options.timing_report_skew;
     analysis_opts.echo_dot_timing_graph_node = Options.echo_dot_timing_graph_node;
+
+    analysis_opts.post_synth_netlist_unconn_input_handling = Options.post_synth_netlist_unconn_input_handling;
+    analysis_opts.post_synth_netlist_unconn_output_handling = Options.post_synth_netlist_unconn_output_handling;
 
     analysis_opts.timing_update_type = Options.timing_update_type;
 }

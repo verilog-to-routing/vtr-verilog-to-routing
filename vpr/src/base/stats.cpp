@@ -46,9 +46,10 @@ void routing_stats(bool full_stats, enum e_route_type route_type, std::vector<t_
     float area, used_area;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_graph = device_ctx.rr_graph;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int num_rr_switch = device_ctx.rr_switch_inf.size();
+    int num_rr_switch = rr_graph.num_rr_switches();
 
     length_and_bends_stats();
     print_channel_stats();

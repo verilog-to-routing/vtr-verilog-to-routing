@@ -59,6 +59,8 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
 
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
+    rr_segments_.clear();
+    rr_switch_inf_.clear();
 }
 
 void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm,

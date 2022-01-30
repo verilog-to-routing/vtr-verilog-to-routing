@@ -90,8 +90,6 @@ enum class ScreenUpdatePriority {
 constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
 constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 
-constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
-
 /*
  * Files
  */
@@ -1202,6 +1200,13 @@ enum class e_timing_report_detail {
     DEBUG,            //Show additional internal debugging information
 };
 
+enum class e_post_synth_netlist_unconn_handling {
+    UNCONNECTED, // Leave unrouted ports unconnected
+    NETS,        // Leave unrouted ports unconnected but add new named nets to each of them
+    GND,         // Tie unrouted ports to ground (only for input ports)
+    VCC          // Tie unrouted ports to VCC (only for input ports)
+};
+
 struct t_timing_analysis_profile_info {
     double timing_analysis_wallclock_time() const {
         return sta_wallclock_time + slack_wallclock_time;
@@ -1297,6 +1302,8 @@ struct t_analysis_opts {
     e_stage_action doAnalysis;
 
     bool gen_post_synthesis_netlist;
+    e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_input_handling;
+    e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_output_handling;
 
     int timing_report_npaths;
     e_timing_report_detail timing_report_detail;

@@ -109,7 +109,6 @@ struct t_pin_locs {
 
 /* Function prototypes */
 /*   Populate data */
-static void SetupPinClasses(t_physical_tile_type* PhysicalTileType);
 
 static void LoadPinLoc(pugi::xml_node Locations,
                        t_physical_tile_type* type,
@@ -263,9 +262,6 @@ static bool attribute_to_bool(const pugi::xml_node node,
 int find_switch_by_name(const t_arch& arch, std::string switch_name);
 
 e_side string_to_side(std::string side_str);
-
-static void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                                        std::vector<t_logical_block_type>& LogicalBlockTypes);
 
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types);
@@ -449,105 +445,6 @@ void XmlReadArch(const char* ArchFile,
  *
  *
  */
-
-/* Sets up the pin classes for the type. */
-static void SetupPinClasses(t_physical_tile_type* PhysicalTileType) {
-    int i, k;
-    int pin_count;
-    int num_class;
-
-    pugi::xml_node Cur;
-
-    for (i = 0; i < PhysicalTileType->num_pins; i++) {
-        PhysicalTileType->pin_class.push_back(OPEN);
-        PhysicalTileType->is_ignored_pin.push_back(true);
-        PhysicalTileType->is_pin_global.push_back(true);
-    }
-
-    pin_count = 0;
-
-    t_class_range class_range;
-
-    /* Equivalent pins share the same class, non-equivalent pins belong to different pin classes */
-    for (auto& sub_tile : PhysicalTileType->sub_tiles) {
-        int capacity = sub_tile.capacity.total();
-        class_range.low = PhysicalTileType->class_inf.size();
-        class_range.high = class_range.low - 1;
-        for (i = 0; i < capacity; ++i) {
-            for (const auto& port : sub_tile.ports) {
-                if (port.equivalent != PortEquivalence::NONE) {
-                    t_class class_inf;
-                    num_class = (int)PhysicalTileType->class_inf.size();
-                    class_inf.num_pins = port.num_pins;
-                    class_inf.equivalence = port.equivalent;
-
-                    if (port.type == IN_PORT) {
-                        class_inf.type = RECEIVER;
-                    } else {
-                        VTR_ASSERT(port.type == OUT_PORT);
-                        class_inf.type = DRIVER;
-                    }
-
-                    for (k = 0; k < port.num_pins; ++k) {
-                        class_inf.pinlist.push_back(pin_count);
-                        PhysicalTileType->pin_class[pin_count] = num_class;
-                        // clock pins and other specified global ports are initially specified
-                        // as ignored pins (i.e. connections are not created in the rr_graph and
-                        // nets connected to the port are ignored as well).
-                        PhysicalTileType->is_ignored_pin[pin_count] = port.is_clock || port.is_non_clock_global;
-                        // clock pins and other specified global ports are flaged as global
-                        PhysicalTileType->is_pin_global[pin_count] = port.is_clock || port.is_non_clock_global;
-
-                        if (port.is_clock) {
-                            PhysicalTileType->clock_pin_indices.push_back(pin_count);
-                        }
-
-                        pin_count++;
-                    }
-
-                    PhysicalTileType->class_inf.push_back(class_inf);
-                    class_range.high++;
-                } else if (port.equivalent == PortEquivalence::NONE) {
-                    for (k = 0; k < port.num_pins; ++k) {
-                        t_class class_inf;
-                        num_class = (int)PhysicalTileType->class_inf.size();
-                        class_inf.num_pins = 1;
-                        class_inf.pinlist.push_back(pin_count);
-                        class_inf.equivalence = port.equivalent;
-
-                        if (port.type == IN_PORT) {
-                            class_inf.type = RECEIVER;
-                        } else {
-                            VTR_ASSERT(port.type == OUT_PORT);
-                            class_inf.type = DRIVER;
-                        }
-
-                        PhysicalTileType->pin_class[pin_count] = num_class;
-                        // clock pins and other specified global ports are initially specified
-                        // as ignored pins (i.e. connections are not created in the rr_graph and
-                        // nets connected to the port are ignored as well).
-                        PhysicalTileType->is_ignored_pin[pin_count] = port.is_clock || port.is_non_clock_global;
-                        // clock pins and other specified global ports are flaged as global
-                        PhysicalTileType->is_pin_global[pin_count] = port.is_clock || port.is_non_clock_global;
-
-                        if (port.is_clock) {
-                            PhysicalTileType->clock_pin_indices.push_back(pin_count);
-                        }
-
-                        pin_count++;
-
-                        PhysicalTileType->class_inf.push_back(class_inf);
-                        class_range.high++;
-                    }
-                }
-            }
-        }
-
-        PhysicalTileType->sub_tiles[sub_tile.index].class_range = class_range;
-    }
-
-    VTR_ASSERT(pin_count == PhysicalTileType->num_pins);
-}
 
 static void LoadPinLoc(pugi::xml_node Locations,
                        t_physical_tile_type* type,
@@ -2883,7 +2780,7 @@ static void ProcessTiles(pugi::xml_node Node,
     /* Alloc the type list. Need one additional t_type_desctiptors:
      * 1: empty psuedo-type
      */
-    t_physical_tile_type EMPTY_PHYSICAL_TILE_TYPE = SetupEmptyPhysicalType();
+    t_physical_tile_type EMPTY_PHYSICAL_TILE_TYPE = get_empty_physical_type();
     EMPTY_PHYSICAL_TILE_TYPE.index = 0;
     PhysicalTileTypes.push_back(EMPTY_PHYSICAL_TILE_TYPE);
 
@@ -3542,7 +3439,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
     int num_pins = PhysicalTileType->num_pins;
     PhysicalTileType->pinloc.resize({width, height, num_sides}, std::vector<bool>(num_pins, false));
 
-    SetupPinClasses(PhysicalTileType);
+    setup_pin_classes(PhysicalTileType);
     LoadPinLoc(Cur, PhysicalTileType, &pin_locs, loc_data);
 }
 
@@ -3556,7 +3453,7 @@ static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node
     /* Alloc the type list. Need one additional t_type_desctiptors:
      * 1: empty psuedo-type
      */
-    t_logical_block_type EMPTY_LOGICAL_BLOCK_TYPE = SetupEmptyLogicalType();
+    t_logical_block_type EMPTY_LOGICAL_BLOCK_TYPE = get_empty_logical_type();
     EMPTY_LOGICAL_BLOCK_TYPE.index = 0;
     LogicalBlockTypes.push_back(EMPTY_LOGICAL_BLOCK_TYPE);
 
@@ -4667,111 +4564,6 @@ e_side string_to_side(std::string side_str) {
                        "Invalid side specification");
     }
     return side;
-}
-
-static void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                                        std::vector<t_logical_block_type>& LogicalBlockTypes) {
-    for (auto& physical_tile : PhysicalTileTypes) {
-        if (physical_tile.index == EMPTY_TYPE_INDEX) continue;
-
-        auto eq_sites_set = get_equivalent_sites_set(&physical_tile);
-        auto equivalent_sites = std::vector<t_logical_block_type_ptr>(eq_sites_set.begin(), eq_sites_set.end());
-
-        auto criteria = [&physical_tile](const t_logical_block_type* lhs, const t_logical_block_type* rhs) {
-            int num_pins = physical_tile.num_inst_pins;
-
-            int lhs_num_logical_pins = lhs->pb_type->num_pins;
-            int rhs_num_logical_pins = rhs->pb_type->num_pins;
-
-            int lhs_diff_num_pins = num_pins - lhs_num_logical_pins;
-            int rhs_diff_num_pins = num_pins - rhs_num_logical_pins;
-
-            return lhs_diff_num_pins < rhs_diff_num_pins;
-        };
-
-        std::sort(equivalent_sites.begin(), equivalent_sites.end(), criteria);
-
-        for (auto& logical_block : LogicalBlockTypes) {
-            for (auto site : equivalent_sites) {
-                if (0 == strcmp(logical_block.name, site->pb_type->name)) {
-                    logical_block.equivalent_tiles.push_back(&physical_tile);
-                    break;
-                }
-            }
-        }
-    }
-
-    for (auto& logical_block : LogicalBlockTypes) {
-        if (logical_block.index == EMPTY_TYPE_INDEX) continue;
-
-        auto& equivalent_tiles = logical_block.equivalent_tiles;
-
-        if ((int)equivalent_tiles.size() <= 0) {
-            archfpga_throw(__FILE__, __LINE__,
-                           "Logical Block %s does not have any equivalent tiles.\n", logical_block.name);
-        }
-
-        std::unordered_map<int, bool> ignored_pins_check_map;
-        std::unordered_map<int, bool> global_pins_check_map;
-
-        auto criteria = [&logical_block](const t_physical_tile_type* lhs, const t_physical_tile_type* rhs) {
-            int num_logical_pins = logical_block.pb_type->num_pins;
-
-            int lhs_num_pins = lhs->num_inst_pins;
-            int rhs_num_pins = rhs->num_inst_pins;
-
-            int lhs_diff_num_pins = lhs_num_pins - num_logical_pins;
-            int rhs_diff_num_pins = rhs_num_pins - num_logical_pins;
-
-            return lhs_diff_num_pins < rhs_diff_num_pins;
-        };
-
-        std::sort(equivalent_tiles.begin(), equivalent_tiles.end(), criteria);
-
-        for (int pin = 0; pin < logical_block.pb_type->num_pins; pin++) {
-            for (auto& tile : equivalent_tiles) {
-                auto direct_maps = tile->tile_block_pin_directs_map.at(logical_block.index);
-
-                for (auto& sub_tile : tile->sub_tiles) {
-                    auto equiv_sites = sub_tile.equivalent_sites;
-                    if (std::find(equiv_sites.begin(), equiv_sites.end(), &logical_block) == equiv_sites.end()) {
-                        continue;
-                    }
-
-                    auto direct_map = direct_maps.at(sub_tile.index);
-
-                    auto result = direct_map.find(t_logical_pin(pin));
-                    if (result == direct_map.end()) {
-                        archfpga_throw(__FILE__, __LINE__,
-                                       "Logical pin %d not present in pin mapping between Tile %s and Block %s.\n",
-                                       pin, tile->name, logical_block.name);
-                    }
-
-                    int sub_tile_pin_index = result->second.pin;
-                    int phy_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
-
-                    bool is_ignored = tile->is_ignored_pin[phy_index];
-                    bool is_global = tile->is_pin_global[phy_index];
-
-                    auto ignored_result = ignored_pins_check_map.insert(std::pair<int, bool>(pin, is_ignored));
-                    if (!ignored_result.second && ignored_result.first->second != is_ignored) {
-                        archfpga_throw(__FILE__, __LINE__,
-                                       "Physical Tile %s has a different value for the ignored pin (physical pin: %d, logical pin: %d) "
-                                       "different from the corresponding pins of the other equivalent site %s\n.",
-                                       tile->name, phy_index, pin, logical_block.name);
-                    }
-
-                    auto global_result = global_pins_check_map.insert(std::pair<int, bool>(pin, is_global));
-                    if (!global_result.second && global_result.first->second != is_global) {
-                        archfpga_throw(__FILE__, __LINE__,
-                                       "Physical Tile %s has a different value for the global pin (physical pin: %d, logical pin: %d) "
-                                       "different from the corresponding pins of the other equivalent sites\n.",
-                                       tile->name, phy_index, pin);
-                    }
-                }
-            }
-        }
-    }
 }
 
 template<typename T>

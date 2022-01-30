@@ -1237,6 +1237,26 @@ Analysis Options
 
     **Default:** ``off``
 
+.. option:: --post_synth_netlist_unconn_inputs { unconnected | nets | gnd | vcc }
+
+    Controls how unconnected input cell ports are handled in the post-synthesis netlist
+
+     * unconnected: leave unconnected
+     * nets: connect each unconnected input pin to its own separate undriven net named: ``__vpr__unconn<ID>``, where ``<ID>`` is index assigned to this occurrence of unconnected port in design
+     * gnd: tie all to ground (``1'b0``)
+     * vcc: tie all to VCC (``1'b1``)
+
+    **Default:** ``unconnected``
+
+.. option:: --post_synth_netlist_unconn_outputs { unconnected | nets }
+
+    Controls how unconnected output cell ports are handled in the post-synthesis netlist
+
+     * unconnected: leave unconnected
+     * nets: connect each unconnected output pin to its own separate undriven net named: ``__vpr__unconn<ID>``, where ``<ID>`` is index assigned to this occurrence of unconnected port in design
+
+    **Default:** ``unconnected``
+
 .. option:: --timing_report_npaths <int>
 
     Controls how many timing paths are reported.
