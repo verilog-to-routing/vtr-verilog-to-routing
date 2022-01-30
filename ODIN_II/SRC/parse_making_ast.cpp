@@ -1877,7 +1877,7 @@ void graphVizOutputAst_traverse_node(FILE* fp, ast_node_t* node, ast_node_t* fro
             break;
 
         case IDENTIFIERS:
-            oassert(node->types.identifier);
+            //oassert(node->types.identifier != NULL);
             fprintf(fp, " %s", node->types.identifier);
             break;
 

@@ -29,6 +29,7 @@
 #include <unordered_set>
 #include <set>
 #include "arch_types.h"
+#include "read_crosstalk_file.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
@@ -1218,6 +1219,13 @@ enum class e_incr_reroute_delay_ripup {
     AUTO
 };
 
+
+enum e_crosstalk_routing_strategy {
+    CTRS_CT,         //Block If crosstalk threshold is reached
+    CTRS_CT_DEV,
+    CTRS_NONE
+};
+
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
 struct t_router_opts {
@@ -1285,6 +1293,13 @@ struct t_router_opts {
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
     int reorder_rr_graph_nodes_seed = 1;
+
+    e_crosstalk_routing_strategy crosstalk_rs;
+    bool crosstalk_sit;
+    float crosstalk_threshold;
+    float crosstalk_rand_sn;
+    std::vector<std::string> crosstalk_tn;
+    std::vector<std::string> crosstalk_sn;
 };
 
 struct t_analysis_opts {

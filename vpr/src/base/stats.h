@@ -14,6 +14,9 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends, int* length, int* s
 
 int count_netlist_clocks();
 
+
+void print_ctrs_ctu_stats(float ctu);
+
 /**
  * @brief template functions must be defined in header, or explicitely
  *        instantiated in definition file (defeats the point of template)

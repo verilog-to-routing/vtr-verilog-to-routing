@@ -78,6 +78,7 @@ set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 target_link_libraries(libvpr
                         libvtrutil
                         libarchfpga
+                        libcrosstalk
                         libsdcparse
                         libblifparse
                         libtatum

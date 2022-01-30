@@ -15,8 +15,10 @@ vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor);
 t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor);
 
 void pathfinder_update_path_occupancy(t_trace* route_segment_start, int add_or_sub);
+void pathfinder_update_path_occupancy_and_crosstalk(ClusterNetId net, t_trace* route_segment_start, int add_or_sub);
 
 void pathfinder_update_single_node_occupancy(int inode, int add_or_sub);
+void pathfinder_update_single_node_crosstalk(ClusterNetId net, int inode, int add_or_sub);
 
 void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& overuse_info);
 

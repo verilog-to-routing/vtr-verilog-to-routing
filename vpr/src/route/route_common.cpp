@@ -100,6 +100,127 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
 static vtr::vector<ClusterNetId, uint8_t> load_is_clock_net();
 
+
+static void mark_trusted_and_sensitive_nets(const t_router_opts& router_opts){
+    if(router_opts.crosstalk_rs == CTRS_NONE) return;
+    VTR_LOGV_DEBUG(f_router_debug, "CTRS - Marking Sensitive & Trusted Nets.\n");
+
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+    size_t tnc = 0, snc = 0;
+    
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        if(cluster_ctx.clb_nlist.net_is_sensitive(net_id)){
+            snc++;
+            if(cluster_ctx.clb_nlist.net_is_trusted(net_id))
+                tnc++;
+            continue;
+        }else if(cluster_ctx.clb_nlist.net_is_trusted(net_id)){
+            tnc++;
+            continue;
+        }
+    }
+    if(tnc > 0 || snc > 0){ // Already imported....
+        return;
+    }
+
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        const std::string net_name = cluster_ctx.clb_nlist.net_name(net_id);
+        
+        for(std::string ctsn : router_opts.crosstalk_sn){
+            if(net_name.find(ctsn) != std::string::npos){
+                if(!cluster_ctx.clb_nlist.net_is_sensitive(net_id))
+                    snc++;
+                cluster_ctx.clb_nlist.set_net_is_sensitive(net_id, true);
+                if(router_opts.crosstalk_sit){
+                    if(cluster_ctx.clb_nlist.net_is_trusted(net_id))
+                        tnc++;
+                    cluster_ctx.clb_nlist.set_net_is_trusted(net_id, true);
+                }
+                break;
+            }
+        }
+
+        for(std::string cttn : router_opts.crosstalk_tn){
+            if(net_name.find(cttn) != std::string::npos){
+                if(!cluster_ctx.clb_nlist.net_is_trusted(net_id))
+                    tnc++;
+                cluster_ctx.clb_nlist.set_net_is_trusted(net_id, true);
+                break;
+            }
+        }
+    }
+
+    #define LONG_NET_BB_SIZE 16
+    if(router_opts.crosstalk_rand_sn > 0.0 
+        && snc < cluster_ctx.clb_nlist.nets().size()*router_opts.crosstalk_rand_sn){
+        
+        std::vector<ClusterNetId> selectedNets;
+        std::vector<ClusterNetId> longNets, shortNets;
+        size_t selShort=0, selLong=0;
+
+        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+            t_bb bb = route_ctx.route_bb[net_id];
+            if (bb.xmax - bb.xmin >= LONG_NET_BB_SIZE || bb.ymax - bb.ymin >= LONG_NET_BB_SIZE) {
+                longNets.push_back(net_id);
+            } else {
+                shortNets.push_back(net_id);
+            }
+        }
+
+        std::random_device rd;
+        std::mt19937 g(rd());
+        //g.seed(1);//fixed seed
+        std::shuffle(longNets.begin(), longNets.end(), g);
+        std::shuffle(shortNets.begin(), shortNets.end(), g);
+
+        std::set<std::string> net_names;
+
+        for (auto ln : longNets){
+            if(selLong >= longNets.size()*router_opts.crosstalk_rand_sn)
+                break;
+            selectedNets.push_back(ln);
+            ++selLong;
+            
+        }
+        for (auto sn : shortNets){
+            if(selShort >= shortNets.size()*router_opts.crosstalk_rand_sn)
+                break;
+            selectedNets.push_back(sn);
+            ++selShort;
+            
+        }
+        for (auto net_id : selectedNets){
+            cluster_ctx.clb_nlist.set_net_is_sensitive(net_id, true);
+            std::string name = cluster_ctx.clb_nlist.net_name(net_id);
+            net_names.emplace(name);
+            snc++;
+            if(router_opts.crosstalk_sit){
+                if(!cluster_ctx.clb_nlist.net_is_trusted(net_id))
+                    tnc++;
+                cluster_ctx.clb_nlist.set_net_is_trusted(net_id, true);
+
+            }
+        }
+        longNets.clear();
+        shortNets.clear();
+        selectedNets.clear();
+
+        std::string s;
+        for (auto const& e :  net_names) {
+            s += e;
+            s += ':';
+        }
+        s.pop_back();
+        VTR_LOG("SN Import String: '%s'\n",s.c_str());
+        net_names.clear();
+    }
+
+    VTR_LOG("Total Sensitive nets %zu / %zu\n", snc, cluster_ctx.clb_nlist.nets().size());
+    VTR_LOG("Total Trusted nets %zu / %zu\n", tnc, cluster_ctx.clb_nlist.nets().size());
+}
+
+
 /************************** Subroutine definitions ***************************/
 
 void save_routing(vtr::vector<ClusterNetId, t_trace*>& best_routing,
@@ -299,6 +420,8 @@ bool try_route(int width_fac,
         VTR_LOG_WARN("No nets to route\n");
     }
 
+    mark_trusted_and_sensitive_nets(router_opts);
+
     if (router_opts.router_algorithm == BREADTH_FIRST) {
         VTR_LOG("Confirming router algorithm: BREADTH_FIRST.\n");
         success = try_breadth_first_route(router_opts);
@@ -382,6 +505,81 @@ std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
     }
     return rr_node_nets;
 }
+
+
+void pathfinder_update_path_occupancy_and_crosstalk(ClusterNetId net, t_trace* route_segment_start, int add_or_sub) {
+    /* This routine updates the occupancy of the rr_nodes that are affected by
+     * the portion of the routing of one net that starts at route_segment_start.
+     * If route_segment_start is route_ctx.trace[net_id].head, the
+     * occupancy of all the nodes in the routing of net net_id are updated.
+     * If add_or_sub is -1 the net (or net portion) is ripped up,
+     * if it is 1, the net is added to the routing.
+     */
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    
+    if(cluster_ctx.clb_nlist.net_is_trusted(net) && !cluster_ctx.clb_nlist.net_is_sensitive(net)){
+        pathfinder_update_path_occupancy(route_segment_start,add_or_sub);
+        return;
+    }
+
+    t_trace* tptr;
+
+    tptr = route_segment_start;
+    if (tptr == nullptr) /* No routing yet. */
+        return;
+
+    for (;;) {
+        pathfinder_update_single_node_occupancy(tptr->index, add_or_sub);
+        pathfinder_update_single_node_crosstalk(net, tptr->index, add_or_sub);
+
+        if (tptr->iswitch == OPEN) { //End of branch
+            tptr = tptr->next;       /* Skip next segment. */
+            if (tptr == nullptr)
+                break;
+        }
+
+        tptr = tptr->next;
+
+    } /* End while loop -- did an entire traceback. */
+}
+
+void pathfinder_update_single_node_crosstalk(ClusterNetId net, int inode, int add_or_sub) {
+    /* Updates pathfinder's crosstalk by either adding or removing the
+     * coupling of a resource node with neibouring nodes. */
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& router_ctx = g_vpr_ctx.mutable_routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    RRNodeId node = RRNodeId(inode);
+
+    if ((device_ctx.rr_nodes.node_type(node) != CHANX &&
+                 device_ctx.rr_nodes.node_type(node) != CHANY))
+        return;
+
+    if ((router_ctx.crosstalk_net[node][net] == 0 && add_or_sub>0) || 
+        (router_ctx.crosstalk_net[node][net] == 1 && add_or_sub<0)){
+        for (auto &it : device_ctx.rr_nodes.get_node_crosstalk_n(node)) {
+            for (auto crosstalk_net_itr : router_ctx.crosstalk_net[it.first]) {
+                ClusterNetId net_id = crosstalk_net_itr.first;
+                if (net_id == net) continue;
+                if (!cluster_ctx.clb_nlist.net_is_sensitive(net) && !cluster_ctx.clb_nlist.net_is_sensitive(net_id))
+                    continue;
+
+                router_ctx.crosstalk[net_id][net] += add_or_sub*it.second;
+                router_ctx.crosstalk[net][net_id] += add_or_sub*it.second;
+                if (router_ctx.crosstalk[net_id][net]<0) router_ctx.crosstalk[net_id][net] = 0;
+                if (router_ctx.crosstalk[net][net_id]<0) router_ctx.crosstalk[net][net_id] = 0;
+            }
+        }
+    }
+    
+    router_ctx.crosstalk_net[node][net] += add_or_sub;
+    VTR_ASSERT(router_ctx.crosstalk_net[node][net]>=0);
+    if(router_ctx.crosstalk_net[node][net]==0){
+        router_ctx.crosstalk_net[node].erase(net);
+    }
+}
+
 
 void pathfinder_update_path_occupancy(t_trace* route_segment_start, int add_or_sub) {
     /* This routine updates the occupancy of the rr_nodes that are affected by
@@ -493,6 +691,9 @@ void init_route_structs(int bb_factor) {
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_graph);
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
+
+    route_ctx.crosstalk.resize(cluster_ctx.clb_nlist.nets().size());
+    route_ctx.crosstalk_net.resize(device_ctx.rr_nodes.size());
 }
 
 /* This routine adds the most recently finished wire segment to the         *

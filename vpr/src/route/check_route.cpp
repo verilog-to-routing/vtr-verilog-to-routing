@@ -18,6 +18,8 @@
 #include "route_tree_timing.h"
 
 /******************** Subroutines local to this module **********************/
+static void check_node_ctrs(e_crosstalk_routing_strategy ctrs, float crosstalk_ctu);
+
 static void check_node_and_range(int inode, enum e_route_type route_type);
 static void check_source(RRNodeId inode, ClusterNetId net_id);
 static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* pin_done);
@@ -34,7 +36,7 @@ static void check_net_for_stubs(ClusterNetId net);
 
 /************************ Subroutine definitions ****************************/
 
-void check_route(enum e_route_type route_type, e_check_route_option check_route_option) {
+void check_route(enum e_route_type route_type, e_check_route_option check_route_option, e_crosstalk_routing_strategy ctrs, float crosstalk_ctu) {
     /* This routine checks that a routing:  (1) Describes a properly         *
      * connected path for each net, (2) this path connects all the           *
      * pins spanned by that net, and (3) that no routing resources are       *
@@ -82,6 +84,9 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
         max_pins = std::max(max_pins, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
 
     auto pin_done = std::make_unique<bool[]>(max_pins);
+
+    check_node_ctrs(ctrs,crosstalk_ctu);
+
 
     /* Now check that all nets are indeed connected. */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -608,6 +613,64 @@ static void check_all_non_configurable_edges() {
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         check_non_configurable_edges(net_id, non_configurable_rr_sets);
+    }
+}
+
+//Checks the neighborhood of a node given a crosstalk routing stragegy
+//Throws an error if an untrusted net is too close to a sensitive net
+static void check_node_ctrs(e_crosstalk_routing_strategy ctrs, float crosstalk_ctu) {
+    if (ctrs == CTRS_NONE) return;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    bool f_ctrs_debug = true;
+
+
+    for (auto snet_id : cluster_ctx.clb_nlist.nets()) {//For All Sensitives
+        if(!cluster_ctx.clb_nlist.net_is_sensitive(snet_id)) continue;
+
+        std::unordered_map<ClusterNetId,float> net_map;
+        std::unordered_set<RRNodeId> node_handled;
+        for (t_trace *stptr = route_ctx.trace[snet_id].head; stptr != nullptr; stptr = stptr->next) { //For All SensitiveNetNodes
+            if ((device_ctx.rr_nodes.node_type(RRNodeId(stptr->index)) != CHANX && device_ctx.rr_nodes.node_type(RRNodeId(stptr->index)) != CHANY)) continue;
+
+            if (node_handled.find(RRNodeId(stptr->index)) != node_handled.end())  continue;
+            node_handled.emplace(RRNodeId(stptr->index));
+ 
+            for  (auto &it : device_ctx.rr_nodes.get_node_crosstalk_n(RRNodeId(stptr->index))) {
+                    
+                for (auto net_id : cluster_ctx.clb_nlist.nets()) { //Look at All Untrusted (and different)
+                    if (net_id == snet_id) continue;
+                    if (cluster_ctx.clb_nlist.net_is_trusted(net_id)) continue;
+
+                    for (t_trace *tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) { //For All OtherNetNodes
+                        if (RRNodeId(tptr->index) != it.first) continue;
+                        
+                        if (net_map.find(net_id) == net_map.end()) net_map[net_id] = 0.0;
+                        net_map[net_id] += it.second;
+
+                        VTR_LOGV_DEBUG(f_ctrs_debug,"sel Node#%d (%d - %d)(%f %f) - %d\n", it.first, net_id, snet_id, net_map[net_id], it.second, stptr->index);
+                        if (net_map[net_id] > crosstalk_ctu + std::numeric_limits<float>::epsilon()) {
+                            VTR_LOGV_DEBUG(f_ctrs_debug, "in check_node_ctrs: net #%d (%c) is too close to sensitive net #%d (%c)(%f), #%d - #%d.\n", net_id,
+                                           (cluster_ctx.clb_nlist.net_is_sensitive(net_id)?'S':
+                                            cluster_ctx.clb_nlist.net_is_trusted(net_id)?'T':'-'),
+                                           snet_id,
+                                           (cluster_ctx.clb_nlist.net_is_sensitive(snet_id)?'S':
+                                            cluster_ctx.clb_nlist.net_is_trusted(snet_id)?'T':'-'),
+                                           net_map[net_id], it.first,stptr->index);
+                            for(auto &p : node_handled){
+                                VTR_LOGV_DEBUG(ctrs, "Problematic node #%d, NN %d/%d\n", p,device_ctx.rr_nodes.get_node_crosstalk_n(RRNodeId(stptr->index)).size(),
+                                               device_ctx.rr_nodes.get_node_crosstalk_n(RRNodeId(tptr->index)).size());
+                            }
+                            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                            "in check_node_ctrs: crosstalk above threashold beween two nets.\n");
+                        }
+                        break;
+                    }
+                }
+            }
+
+        }
     }
 }
 

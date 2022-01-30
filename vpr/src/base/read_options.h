@@ -176,6 +176,17 @@ struct t_options {
     argparse::ArgValue<int> reorder_rr_graph_nodes_threshold;
     argparse::ArgValue<int> reorder_rr_graph_nodes_seed;
 
+    /* Router Options CTRS */
+    argparse::ArgValue<std::string> crosstalk_lib_file;
+    argparse::ArgValue<std::string> crosstalk_src_file;
+
+    argparse::ArgValue<e_crosstalk_routing_strategy> crosstalk_rs;
+    argparse::ArgValue<bool> crosstalk_sit;
+    argparse::ArgValue<float> crosstalk_threshold;
+    argparse::ArgValue<float> crosstalk_rand_sn;
+    argparse::ArgValue<std::string> crosstalk_sn;
+    argparse::ArgValue<std::string> crosstalk_tn;
+
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;
     argparse::ArgValue<float> router_profiler_astar_fac;

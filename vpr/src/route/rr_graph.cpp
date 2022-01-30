@@ -341,6 +341,7 @@ void create_rr_graph(const t_graph_type graph_type,
         }
 
         free_rr_graph();
+        mutable_device_ctx.ctrs_lib_tmp.clear();
 
         build_rr_graph(graph_type,
                        block_types,
@@ -378,6 +379,65 @@ void create_rr_graph(const t_graph_type graph_type,
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
         write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str());
     }
+
+    
+    VTR_LOG("Loading CTRS_LIB...\n");
+    if(device_ctx.ctrs_lib_src.size()>0){
+      VTR_LOG("Loading CTRS_LIB_SRC ...\n");
+      for (auto& i : mutable_device_ctx.ctrs_lib_src){
+        if (i.p[1] >= int(device_ctx.grid.height()) ||
+            i.p[0] >= int(device_ctx.grid.width()))
+          continue;
+
+        if(i.p[2]){
+          RRNodeId a = mutable_device_ctx.rr_graph_builder.node_lookup().find_node(i.p[0],i.p[1], CHANX, i.w[0]);
+          RRNodeId b = mutable_device_ctx.rr_graph_builder.node_lookup().find_node(i.p[0],i.p[1], CHANX, i.w[1]);
+          
+          if(!a || !b) continue;
+          mutable_device_ctx.rr_nodes.set_node_crosstalk_add_n_node(a,b, i.v);
+          mutable_device_ctx.rr_nodes.set_node_crosstalk_add_n_node(b,a, i.v);
+        }else{
+          RRNodeId a = mutable_device_ctx.rr_graph_builder.node_lookup().find_node(i.p[0],i.p[1], CHANY, i.w[0]);
+          RRNodeId b = mutable_device_ctx.rr_graph_builder.node_lookup().find_node(i.p[0],i.p[1], CHANY, i.w[1]);
+
+          if(!a || !b) continue;
+          mutable_device_ctx.rr_nodes.set_node_crosstalk_add_n_node(a,b, i.v);
+          mutable_device_ctx.rr_nodes.set_node_crosstalk_add_n_node(b,a, i.v);
+
+        }
+        
+      }
+    }else if(device_ctx.ctrs_lib.size()==0){
+      crosstalk_nodeId_pair cp;
+      float v;
+      VTR_LOG_WARN("No CTRS_LIB found, using auto-generated track-index lib\n");
+      CrosstalkLibWrite("test_lib_gen.ctrs", &m_device_ctx.ctrs_lib_tmp);
+      VTR_LOG("Saving CTRS_LIB with %d entries for %d RR-entries\n", m_device_ctx.ctrs_lib_tmp.size(), device_ctx.rr_nodes.size());
+      for (auto& i : m_device_ctx.ctrs_lib_tmp){
+        cp = i.first;
+        v = i.second;
+        if(m_device_ctx.rr_nodes.node_type(RRNodeId(cp.first))!= CHANX && 
+            m_device_ctx.rr_nodes.node_type(RRNodeId(cp.first))!= CHANY) continue;
+        if(m_device_ctx.rr_nodes.node_type(RRNodeId(cp.second))!= CHANX && 
+            m_device_ctx.rr_nodes.node_type(RRNodeId(cp.second))!= CHANY) continue;
+        RRNodeId a = RRNodeId(cp.first);
+        RRNodeId b = RRNodeId(cp.second);
+        if(a==RRNodeId() || b==RRNodeId()) continue;
+        m_device_ctx.rr_nodes.set_node_crosstalk_add_n_node(a,b, v);
+        m_device_ctx.rr_nodes.set_node_crosstalk_add_n_node(b,a, v);
+      }
+    }else{
+      crosstalk_nodeId_pair cp;
+      float v;
+      VTR_LOG("CTRS_LIB found, using provided track-index lib\n");
+      for (auto& i : m_device_ctx.ctrs_lib){
+        cp = i.first;
+        v = i.second;
+        m_device_ctx.rr_nodes[cp.first].set_node_crosstalk_add_n_node(RRNodeId(cp.second), v);
+        m_device_ctx.rr_nodes[cp.second].set_node_crosstalk_add_n_node(RRNodeId(cp.first), v);
+
+      }
+    } 
 }
 
 void print_rr_graph_stats() {
@@ -1736,6 +1796,53 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_type(node, chan_type);
         rr_graph_builder.set_node_track_num(node, track);
         rr_graph_builder.set_node_direction(node, seg_details[track].direction());
+    }
+
+    auto& m_device_ctx = g_vpr_ctx.mutable_device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    for (int track = 0; track < tracks_per_chan; ++track) {
+      if (seg_details[track].length() == 0)
+          continue;
+
+      RRNodeId node = rr_graph_builder.node_lookup().find_node(x_coord, y_coord, chan_type, track);
+      // int node = get_rr_node_index(m_device_ctx.rr_node_indices, x_coord, y_coord, chan_type, track);
+      if (!node) continue;
+
+      int l = (chan_type == CHANX)? rr_graph.node_xlow(node) : rr_graph.node_ylow(node);
+      int h = (chan_type == CHANX)? rr_graph.node_xhigh(node) : rr_graph.node_yhigh(node);
+
+      for(int level = 1; level <= 2; ++level){ //Loop through two last wires
+          if(track-level<0)
+            continue;
+          if (seg_details[track-level].length() == 0)
+            continue;
+          RRNodeId n = rr_graph_builder.node_lookup().find_node(x_coord, y_coord, chan_type, track-level);
+          if (!n) continue;
+
+          int nl = (chan_type == CHANX)? rr_graph.node_xlow(n) : rr_graph.node_ylow(n);
+          int nh = (chan_type == CHANX)? rr_graph.node_xhigh(n) : rr_graph.node_yhigh(n);
+
+          int overlap = std::min(nh,h)-std::max(nl-1,l-1);
+          if(overlap <= 0) continue;
+
+          size_t nodev = size_t(node);
+          size_t nv    = size_t(n);
+          
+          #define LONG_WIRE_LEN 12
+          if (seg_details[track].length() < LONG_WIRE_LEN || seg_details[track-level].length() < LONG_WIRE_LEN)
+            continue;
+
+
+          if(level == 1){
+                //printf("Overlap1 (%d;%d) = %d\n",node,n,overlap);
+                m_device_ctx.ctrs_lib_tmp.emplace(crosstalk_nodeId_pair(nodev,nv), overlap); // Overlap length = crosstalk
+          }else if(level == 2){
+                //printf("Overlap2 (%d;%d) = %d\n",node,n,overlap);
+                //m_device_ctx.ctrs_lib_tmp.emplace(crosstalk_nodeId_pair(nodev,nv), overlap/20.0); //Paper noted 20x less crosstalk if not first neighbour.
+          }else{
+            //400x less so ignored
+          }
+      }
     }
 }
 

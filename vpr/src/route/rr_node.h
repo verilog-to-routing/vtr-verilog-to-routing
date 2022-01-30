@@ -95,10 +95,17 @@ class t_rr_node {
     RRIndexedDataId cost_index() const;
     short rc_index() const;
 
+    bool is_node_on_specific_side(e_side side) const;
+
+    std::map<RRNodeId,float> get_node_crosstalk_n() const;
+
     bool validate() const;
 
   public: //Mutators
     void set_side(e_side);
+
+
+    void set_node_crosstalk_add_n_node(RRNodeId neighbour, float v);
 
     void next_node() {
         id_ = RRNodeId((size_t)(id_) + 1);

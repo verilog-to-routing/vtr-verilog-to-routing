@@ -16,6 +16,7 @@
 #include "globals.h"
 #include "read_xml_arch_file.h"
 #include "read_fpga_interchange_arch.h"
+#include "read_crosstalk_file.h"
 #include "SetupVPR.h"
 #include "pb_type_graph.h"
 #include "pack_types.h"
@@ -128,6 +129,21 @@ void SetupVPR(const t_options* Options,
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Invalid architecture format!");
+        }
+        device_ctx.ctrs_lib.clear();
+        device_ctx.ctrs_lib_tmp.clear();
+        device_ctx.ctrs_lib_src.clear();
+        if(Options->crosstalk_lib_file.value() != "") {
+            vtr::ScopedStartFinishTimer tt("Importing CTRS Lib");
+            CrosstalkLibRead(Options->crosstalk_lib_file.value().c_str(),
+                            &device_ctx.ctrs_lib);
+            VTR_LOG("CTRS Lib imported (%d entries)\n", device_ctx.ctrs_lib.size());
+        }
+        if(Options->crosstalk_src_file.value() != "") {
+            vtr::ScopedStartFinishTimer tt("Importing CTRS LibSRC");
+            CrosstalkSourceRead(Options->crosstalk_src_file.value().c_str(),
+                            &device_ctx.ctrs_lib_src);
+            VTR_LOG("CTRS LibSRC imported (%d entries)\n", device_ctx.ctrs_lib_src.size());
         }
     }
     VTR_LOG("\n");
@@ -421,6 +437,25 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
 
     RouterOpts->max_logged_overused_rr_nodes = Options.max_logged_overused_rr_nodes;
     RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
+    
+    RouterOpts->crosstalk_rs = Options.crosstalk_rs;
+    RouterOpts->crosstalk_sit = Options.crosstalk_sit;
+    RouterOpts->crosstalk_threshold = Options.crosstalk_threshold;
+    RouterOpts->crosstalk_rand_sn = Options.crosstalk_rand_sn;
+    if(RouterOpts->crosstalk_rand_sn >1)
+        RouterOpts->crosstalk_rand_sn /=100;
+
+    std::string sn,tn;
+    ctrs_read_file(Options.crosstalk_tn.value().c_str(),tn);
+    ctrs_read_file(Options.crosstalk_sn.value().c_str(),sn);
+
+    
+    for (std::string net_name : vtr::split(tn, std::string(":"))) {
+       RouterOpts->crosstalk_tn.push_back(net_name);
+    }
+    for (std::string net_name : vtr::split(sn, std::string(":"))) {
+        RouterOpts->crosstalk_sn.push_back(net_name);
+    }
 }
 
 static void SetupAnnealSched(const t_options& Options,

@@ -461,3 +461,73 @@ int count_netlist_clocks() {
     //Since std::set does not include duplicates, the number of clocks is the size of the set
     return static_cast<int>(clock_names.size());
 }
+
+
+void print_ctrs_ctu_stats(float ctu){
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    std::vector<HistogramBucket> histogram;
+    auto comp = [](const HistogramBucket& bucket, float value) {
+        return bucket.max_value < value;
+    };
+
+    //Bins by 10%, with final > 1 bin
+    float ctus = ctu/10.0;
+    for(size_t i = 0; i<10; ++i){
+        histogram.emplace_back(i*ctus, (i+1)*ctus);
+    }
+    histogram.emplace_back(ctu, std::numeric_limits<float>::infinity());
+
+    float max_ctu = 0.0f;
+    ClusterNetId netA, netB;
+    float avg_ctu = 0.0f;
+
+    for (auto snet_id : cluster_ctx.clb_nlist.nets()) {//For All Sensitives
+        if(!cluster_ctx.clb_nlist.net_is_sensitive(snet_id)) continue;
+
+        std::unordered_map<ClusterNetId,float> net_map;
+        std::unordered_set<RRNodeId> node_handled;
+        for (t_trace *stptr = route_ctx.trace[snet_id].head; stptr != nullptr; stptr = stptr->next) { //For All SensitiveNetNodes
+            if ((device_ctx.rr_nodes.node_type(RRNodeId(stptr->index)) != CHANX && device_ctx.rr_nodes.node_type(RRNodeId(stptr->index)) != CHANY)) continue;
+
+            if (node_handled.find(RRNodeId(stptr->index)) != node_handled.end())  continue;
+            node_handled.emplace(RRNodeId(stptr->index));
+ 
+            for  (auto &it : device_ctx.rr_nodes.get_node_crosstalk_n(RRNodeId(stptr->index))) {
+                    
+                for (auto net_id : cluster_ctx.clb_nlist.nets()) { //Look at All Untrusted (and different)
+                    if (net_id == snet_id) continue;
+                    if (cluster_ctx.clb_nlist.net_is_trusted(net_id)) continue;
+
+                    for (t_trace *tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) { //For All OtherNetNodes
+                        if (RRNodeId(tptr->index) != it.first) continue;
+                        
+                        if (net_map.find(net_id) == net_map.end()) net_map[net_id] = 0.0;
+                        net_map[net_id] += it.second;
+                        break;
+                    }
+                }
+            }
+        }
+        for(auto const& x : net_map) {
+            if(x.second > max_ctu){
+                max_ctu = x.second;
+                netA = (snet_id);
+                netB = (x.first);
+            }
+            auto iter = std::lower_bound(histogram.begin(), histogram.end(), x.second, comp);
+            VTR_ASSERT(iter != histogram.end());
+            iter->count++;
+        }
+    }
+
+    //Makes more sense from high to low, so reverse
+    std::reverse(histogram.begin(), histogram.end());
+
+    VTR_LOG("\n");
+    VTR_LOG("Routing CTRS Crosstalk histogram:\n");
+    print_histogram(histogram);
+    VTR_LOG("Maximum crosstalk observed: %f (%d, %d)\n", max_ctu, netA,netB);
+}

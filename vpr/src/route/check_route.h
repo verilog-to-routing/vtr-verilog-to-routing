@@ -4,7 +4,7 @@
 #include "vpr_types.h"
 #include "route_common.h"
 
-void check_route(enum e_route_type route_type, e_check_route_option check_route_option);
+void check_route(enum e_route_type route_type, e_check_route_option check_route_option, e_crosstalk_routing_strategy ctrs, float crosstalk_ctu);
 
 void recompute_occupancy_from_scratch();
 

@@ -102,6 +102,11 @@ enum e_draw_router_expansion_cost {
     DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES,
 };
 
+enum e_draw_router_ctrs {
+    DRAW_NO_CTRS = 0,
+    DRAW_CTRS_ON,
+};
+
 enum e_draw_placement_macros {
     DRAW_NO_PLACEMENT_MACROS = 0,
     DRAW_PLACEMENT_MACROS,
@@ -171,6 +176,7 @@ struct t_draw_state {
     e_draw_routing_costs show_routing_costs;
     e_draw_block_pin_util show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
     e_draw_router_expansion_cost show_router_expansion_cost = DRAW_NO_ROUTER_EXPANSION_COST;
+    e_draw_router_ctrs show_router_ctrs = DRAW_NO_CTRS;
     e_draw_placement_macros show_placement_macros = DRAW_NO_PLACEMENT_MACROS;
     int show_routing_bb = OPEN;
     e_draw_routing_util show_routing_util = DRAW_NO_ROUTING_UTIL;

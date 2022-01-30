@@ -233,6 +233,10 @@ struct DeviceContext : public Context {
      * Used to determine when reading rrgraph if file is already loaded.
      */
     std::string read_rr_graph_filename;
+
+    t_crosstalk_lib ctrs_lib;
+    t_crosstalk_lib ctrs_lib_tmp;
+    t_crosstalk_source ctrs_lib_src;
 };
 
 /**
@@ -334,6 +338,10 @@ struct RoutingContext : public Context {
     vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
     std::vector<t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
+
+    //Holds routing information about
+    vtr::vector_map<ClusterNetId,std::unordered_map<ClusterNetId,float>> crosstalk;
+    vtr::vector_map<RRNodeId,std::unordered_map<ClusterNetId, int>> crosstalk_net;
 
     /**
      * @brief Information about whether a node is part of a non-configurable set

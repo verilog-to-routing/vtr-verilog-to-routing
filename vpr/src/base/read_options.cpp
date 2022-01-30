@@ -305,6 +305,47 @@ struct ParseRouteType {
     }
 };
 
+struct ParseCrossTalkRoutingStrategy {
+    ConvertedValue<e_crosstalk_routing_strategy> from_str(std::string str) {
+        ConvertedValue<e_crosstalk_routing_strategy> conv_value;
+        if (str == "CT"){
+            conv_value.set_value(CTRS_CT);
+        }
+        else if (str == "CT_DEV"){
+            conv_value.set_value(CTRS_CT_DEV);
+        }
+    	else if (str == "NONE"){
+    	    conv_value.set_value(CTRS_NONE);
+        }
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_crosstalk_routing_strategy (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_crosstalk_routing_strategy val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == CTRS_CT){
+            conv_value.set_value("CT");
+        }
+        else if (val == CTRS_CT_DEV){
+            conv_value.set_value("CT_DEV");
+        }
+        else {
+            VTR_ASSERT(val == CTRS_NONE);
+            conv_value.set_value("NONE");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"CT", "CT_DEV", "NONE"};
+    }
+};
+
 struct ParseBaseCost {
     ConvertedValue<e_base_cost_type> from_str(std::string str) {
         ConvertedValue<e_base_cost_type> conv_value;
@@ -2274,6 +2315,40 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Pseudo-random number generator seed used for the random_shuffle reordering algorithm")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_grp.add_argument(args.crosstalk_lib_file, "--crosstalk_lib_file")
+        .help("Crosstalk Lib file for all crosstalk pairs.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_grp.add_argument(args.crosstalk_src_file, "--crosstalk_src_file")
+        .help("Crosstalk Source file used to build library.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_grp.add_argument<float>(args.crosstalk_threshold, "--crosstalk_threshold")
+        .help("Crosstalk coupling threshold .")
+        .default_value("0.0");
+
+    route_grp.add_argument<e_crosstalk_routing_strategy, ParseCrossTalkRoutingStrategy>(args.crosstalk_rs, "--crosstalk_rs")
+        .help("Sets Custom Crosstalk routing strategies. Possible Values: B_2NN, B_NN, L_NN, L_NN_S, NONE")
+        .default_value("NONE");
+
+    route_grp.add_argument<bool, ParseOnOff>(args.crosstalk_sit, "--crosstalk_sit")
+        .help("Sensitive is Trusted: Sensitive nets are marked as trusted")
+        .default_value("off");
+
+
+    route_grp.add_argument<float>(args.crosstalk_rand_sn, "--crosstalk_rand_sn")
+            .help("Randomly label sensitive nets % [0.0-1.0]")
+            .default_value("0.0");
+
+    route_grp.add_argument<std::string>(args.crosstalk_sn, "--crosstalk_sn")
+        .help("Sensitive net names")
+        .default_value("");
+
+    route_grp.add_argument<std::string>(args.crosstalk_tn, "--crosstalk_tn")
+        .help("Trusted net names")
+        .default_value("");
+
 
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 

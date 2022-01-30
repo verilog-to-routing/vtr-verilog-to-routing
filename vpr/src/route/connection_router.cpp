@@ -188,6 +188,61 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     return std::make_pair(true, out);
 }
 
+template<typename Heap>
+bool ConnectionRouter<Heap>::ctrs_is_safe(RRNodeId nid, RRNodeId prev_nid) {
+    if (ctrs_ == CTRS_NONE) return true;
+
+    //if (prev_nid != RRNodeId()) t_ctrs_nct_[nid] = t_ctrs_nct_[prev_nid];    
+    if (rr_nodes_.node_type(nid) != CHANX && rr_nodes_.node_type(nid) != CHANY) return true;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& router_ctx = g_vpr_ctx.mutable_routing();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    std::unordered_map<ClusterNetId, float> &ctrs_ctm_ = t_ctrs_ctu_;// t_ctrs_nct_[nid];
+    // VTR_LOGV_DEBUG(ctrs_debug_,"CONSIDERING: NODE#%d ...\n", nid);
+
+    if (cluster_ctx.clb_nlist.net_is_trusted(ctrs_net_) && !cluster_ctx.clb_nlist.net_is_sensitive(ctrs_net_)){
+        // VTR_LOGV_DEBUG(ctrs_debug_,"TAKE: NODE#%d, net %d is trusted & not sensitive\n", nid,ctrs_net_);
+        return true;
+    }
+
+    if (router_ctx.crosstalk_net.contains(nid) && 
+          router_ctx.crosstalk_net[nid].find(ctrs_net_) != router_ctx.crosstalk_net[nid].end()) {
+        // VTR_LOGV_DEBUG(ctrs_debug_,"TAKE: NODE#%d already owned by net %d\n", nid,ctrs_net_);
+        return true;
+    }
+
+    std::unordered_map<ClusterNetId, float> to_add;
+    for (auto &it : device_ctx.rr_nodes.get_node_crosstalk_n(nid)) {
+        for (auto crosstalk_net_itr : router_ctx.crosstalk_net[it.first]) {
+            ClusterNetId net_id = crosstalk_net_itr.first;
+            if (net_id == ctrs_net_) continue;
+            if (!cluster_ctx.clb_nlist.net_is_sensitive(ctrs_net_) && !cluster_ctx.clb_nlist.net_is_sensitive(net_id))
+                continue;
+            if (cluster_ctx.clb_nlist.net_is_sensitive(ctrs_net_) && cluster_ctx.clb_nlist.net_is_trusted(net_id))
+                continue;
+            if (cluster_ctx.clb_nlist.net_is_trusted(ctrs_net_) && cluster_ctx.clb_nlist.net_is_sensitive(net_id))
+                continue;
+
+            to_add[net_id] += it.second;
+
+            if (router_ctx.crosstalk[ctrs_net_][net_id]+ctrs_ctm_[net_id] + to_add[net_id] > ctrs_ctu_ + std::numeric_limits<float>::epsilon()) {
+                // VTR_LOGV_DEBUG(ctrs_debug_,"SKIP: NODE#%d near net %d (%f + %f) (node#%d)\n", nid, net_id,ctrs_ctm_[net_id],to_add[net_id],it.first);
+                return false;
+            // }else {
+                // VTR_LOGV_DEBUG(ctrs_debug_,"TAKE: NODE#%d near net %d (%f + %f) (node#%d)\n", nid, net_id,ctrs_ctm_[net_id],to_add[net_id],it.first);
+            }
+        }
+    }
+    // VTR_LOGV_DEBUG(ctrs_debug_,"TAKE: NODE#%d lonely (0.0)\n", nid);
+    for(auto &n : to_add)
+        ctrs_ctm_[n.first] += n.second;
+
+    return true;
+}
+
+
 //Finds a path to sink_node, starting from the elements currently in the heap.
 //
 //This is the core maze routing routine.
@@ -212,6 +267,15 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
         ++router_stats_->heap_pops;
 
         int inode = cheapest->index;
+
+        if(!ctrs_is_safe(RRNodeId(inode), RRNodeId(cheapest->prev_node()))){
+        //if(!ctrs_is_safe(t_ctrs_ctu_, RRNodeId(inode), RRNodeId(cheapest->prev_node()))){
+            rcv_path_manager.free_path_struct(cheapest->path_data);
+            heap_.free(cheapest);
+            cheapest = nullptr;
+            continue;
+        }
+
         VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
                        inode, cheapest->cost);
 
@@ -235,6 +299,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
                                       bounding_box);
 
         rcv_path_manager.free_path_struct(cheapest->path_data);
+
         heap_.free(cheapest);
         cheapest = nullptr;
     }
@@ -297,6 +362,14 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
         ++router_stats_->heap_pops;
 
         int inode = cheapest->index;
+
+        if(!ctrs_is_safe(RRNodeId(inode),RRNodeId(cheapest->prev_node()))) {
+        //if(!ctrs_is_safe(t_ctrs_ctu_,RRNodeId(inode),RRNodeId(cheapest->prev_node()))) {
+            rcv_path_manager.free_path_struct(cheapest->path_data);
+            heap_.free(cheapest);
+            continue;
+        }
+
         VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
                        inode, cheapest->cost);
 
@@ -313,10 +386,12 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
                                       bounding_box);
 
         if (cheapest_paths[inode].index == OPEN || cheapest_paths[inode].cost >= cheapest->cost) {
-            VTR_LOGV_DEBUG(router_debug_, "  Better cost to node %d: %g (was %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
+            VTR_LOGV_DEBUG(router_debug_, "  Better cost to node %d: %g (was %g)\n", inode, cheapest->cost,
+                           cheapest_paths[inode].cost);
             cheapest_paths[inode] = *cheapest;
         } else {
-            VTR_LOGV_DEBUG(router_debug_, "  Worse cost to node %d: %g (better %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
+            VTR_LOGV_DEBUG(router_debug_, "  Worse cost to node %d: %g (better %g)\n", inode, cheapest->cost,
+                           cheapest_paths[inode].cost);
         }
 
         rcv_path_manager.free_path_struct(cheapest->path_data);

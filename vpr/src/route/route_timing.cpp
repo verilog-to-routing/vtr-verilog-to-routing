@@ -78,6 +78,7 @@ struct RoutingMetrics {
  * information.
  */
 bool f_router_debug = false;
+bool f_ctrs_debug = true;
 
 //Count the number of times the router has failed
 static int num_routing_failed = 0;
@@ -104,6 +105,7 @@ static bool timing_driven_pre_route_to_clock_root(
     ConnectionRouter& router,
     ClusterNetId net_id,
     int sink_node,
+    const t_router_opts& router_opts,
     const t_conn_cost_params cost_params,
     int high_fanout_threshold,
     t_rt_node* rt_root,
@@ -138,6 +140,24 @@ struct more_sinks_than {
         return cluster_ctx.clb_nlist.net_sinks(net_index1).size() > cluster_ctx.clb_nlist.net_sinks(net_index2).size();
     }
 };
+
+// Sorting operator, sorts first by net sensitivity and then by sink count (default metric)
+struct sensitive_or_more_sinks_than {
+    inline bool operator()(const ClusterNetId net_index1, const ClusterNetId net_index2) {
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+
+        const bool is_sensitive1 = cluster_ctx.clb_nlist.net_is_sensitive(net_index1);
+        const bool is_sensitive2 = cluster_ctx.clb_nlist.net_is_sensitive(net_index2);
+        
+        if(is_sensitive1 && !is_sensitive2)
+        	return true;
+        if(is_sensitive2 && !is_sensitive1)
+        	return false;
+
+        return cluster_ctx.clb_nlist.net_sinks(net_index1).size() > cluster_ctx.clb_nlist.net_sinks(net_index2).size();
+    }
+};
+
 
 static size_t calculate_wirelength_available();
 static WirelengthInfo calculate_wirelength_info(size_t available_wirelength);
@@ -264,9 +284,12 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     //Initialize and properly size the lookups for profiling
     profiling::profiling_initialization(get_max_pins_per_net());
 
-    //sort so net with most sinks is routed first.
+
+    
     auto sorted_nets = std::vector<ClusterNetId>(cluster_ctx.clb_nlist.nets().begin(), cluster_ctx.clb_nlist.nets().end());
-    std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
+    //sort so net with most sinks is routed first.
+    // std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
+    std::sort(sorted_nets.begin(), sorted_nets.end(), sensitive_or_more_sinks_than());
 
     /*
      * Configure the routing predictor
@@ -331,6 +354,9 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
      * Best result so far
      */
     vtr::vector<ClusterNetId, t_traceback> best_routing;
+    vtr::vector_map<ClusterNetId,std::unordered_map<ClusterNetId, float>> best_routing_crosstalk;
+    vtr::vector_map<RRNodeId,std::unordered_map<ClusterNetId,int>> best_routing_crosstalk_net;
+
     t_clb_opins_used best_clb_opins_used_locally;
     RoutingMetrics best_routing_metrics;
     int legal_convergence_count = 0;
@@ -436,6 +462,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
          */
         for (auto net_id : sorted_nets) {
             bool was_rerouted = false;
+            VTR_LOGV_DEBUG(f_ctrs_debug,"RUNNING NET %d\n",net_id);
+            router.ctrs_set(router_opts.crosstalk_rs, net_id, router_opts.crosstalk_threshold);
             bool is_routable = try_timing_driven_route_net(router,
                                                            net_id,
                                                            itry,
@@ -471,6 +499,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         reserve_locally_used_opins(&small_heap, pres_fac,
                                    router_opts.acc_fac, rip_up_local_opins);
 
+        //check_node_ctrs(router_opts.crosstalk_rs, router_opts.crosstalk_threshold);
         /*
          * Calculate metrics for the current routing
          */
@@ -542,6 +571,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
             if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
                 //Save routing
+                best_routing_crosstalk = router_ctx.crosstalk;
+                best_routing_crosstalk_net = router_ctx.crosstalk_net;
                 best_routing = router_ctx.trace;
                 best_clb_opins_used_locally = router_ctx.clb_opins_used_locally;
 
@@ -655,7 +686,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                 bool rcv_finished = false;
 
                 /* This constant represents how much extra delay the budget increaser adds to the minimum and maximum delay budgets
-                 * Experimentally this value delivers fast hold slack resolution, while not overwhelming the router 
+                 * Experimentally this value delivers fast hold slack resolution, while not overwhelming the router
                  * Increasing this will make it resolve hold faster, but could result in lower circuit quality */
                 constexpr float budget_increase_factor = 300e-12;
 
@@ -779,6 +810,9 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             pathfinder_update_path_occupancy(best_routing[net_id].head, 1);
         }
         router_ctx.trace = best_routing;
+        router_ctx.crosstalk = best_routing_crosstalk;
+        router_ctx.crosstalk_net = best_routing_crosstalk_net;
+
         router_ctx.clb_opins_used_locally = best_clb_opins_used_locally;
 
         prune_unused_non_configurable_nets(connections_inf);
@@ -1087,6 +1121,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                 router,
                 net_id,
                 sink_node,
+                router_opts,
                 cost_params,
                 router_opts.high_fanout_threshold,
                 rt_root,
@@ -1179,6 +1214,7 @@ static bool timing_driven_pre_route_to_clock_root(
     ConnectionRouter& router,
     ClusterNetId net_id,
     int sink_node,
+    const t_router_opts& router_opts,
     const t_conn_cost_params cost_params,
     int high_fanout_threshold,
     t_rt_node* rt_root,
@@ -1246,7 +1282,11 @@ static bool timing_driven_pre_route_to_clock_root(
         std::string msg = vtr::string_fmt("Routed Net %zu connection to RR node %d successfully", size_t(net_id), sink_node);
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
-    pathfinder_update_path_occupancy(new_route_start_tptr, 1);
+    if(router_opts.crosstalk_rs==CTRS_CT){
+        pathfinder_update_path_occupancy_and_crosstalk(net_id, new_route_start_tptr, 1);
+    }else{
+        pathfinder_update_path_occupancy(new_route_start_tptr, 1);
+    }
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
@@ -1306,6 +1346,8 @@ static bool timing_driven_route_sink(
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
+    VTR_LOGV_DEBUG(f_ctrs_debug,"Routing Sink %d of Net %d\n",itarget, net_id);
+    router.ctrs_clear_map();
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
     //the heap to ensure it has more flexibility to find the best path.
@@ -1367,7 +1409,11 @@ static bool timing_driven_route_sink(
         }
     }
 
-    pathfinder_update_path_occupancy(new_route_start_tptr, 1);
+    if(router_opts.crosstalk_rs==CTRS_CT){
+        pathfinder_update_path_occupancy_and_crosstalk(net_id, new_route_start_tptr, 1);
+    }else{
+        pathfinder_update_path_occupancy(new_route_start_tptr, 1);
+    }
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
@@ -1404,7 +1450,11 @@ static t_rt_node* setup_routing_resources(int itry,
         profiling::net_rerouted();
 
         // rip up the whole net
-        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
+        if(router_opts.crosstalk_rs==CTRS_CT){
+            pathfinder_update_path_occupancy_and_crosstalk(net_id, route_ctx.trace[net_id].head, -1);
+        }else{
+            pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
+        }
         free_traceback(net_id);
 
         rt_root = init_route_tree_to_source(net_id);
@@ -1441,7 +1491,11 @@ static t_rt_node* setup_routing_resources(int itry,
         //Now that the tree has been pruned, we can free the old traceback
         // NOTE: this must happen *after* pruning since it changes the
         //       recorded congestion
-        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
+        if(router_opts.crosstalk_rs==CTRS_CT){
+            pathfinder_update_path_occupancy_and_crosstalk(net_id, route_ctx.trace[net_id].head, -1);
+        }else{
+            pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
+        }
         free_traceback(net_id);
 
         if (rt_root) { //Partially pruned
@@ -1458,7 +1512,11 @@ static t_rt_node* setup_routing_resources(int itry,
             VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
             // put the updated occupancies of the route tree nodes back into pathfinder
-            pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
+            if(router_opts.crosstalk_rs==CTRS_CT){
+                pathfinder_update_path_occupancy_and_crosstalk(net_id, route_ctx.trace[net_id].head, 1);
+            }else{
+                pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
+            }
 
         } else { //Fully destroyed
             profiling::route_tree_pruned();

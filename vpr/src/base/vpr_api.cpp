@@ -753,7 +753,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            check_route(router_opts.route_type, router_opts.check_route);
+            check_route(router_opts.route_type, router_opts.check_route, router_opts.crosstalk_rs, router_opts.crosstalk_threshold);
             get_serial_num();
 
             //Update status
@@ -1263,6 +1263,9 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
                   Arch.grid_logic_tile_area,
                   vpr_setup.RoutingArch.directionality,
                   vpr_setup.RoutingArch.wire_to_rr_ipin_switch);
+
+    if(vpr_setup.RouterOpts.crosstalk_rs!=CTRS_NONE)
+        print_ctrs_ctu_stats(vpr_setup.RouterOpts.crosstalk_threshold);
 
     if (vpr_setup.TimingEnabled) {
         //Load the net delays

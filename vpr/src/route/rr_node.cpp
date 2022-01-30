@@ -41,3 +41,23 @@ bool t_rr_node::validate() const {
 
     return true;
 }
+
+void t_rr_node::set_cost_index(RRIndexedDataId new_cost_index) {
+    storage_->set_node_cost_index(id_, new_cost_index);
+}
+
+void t_rr_node::set_rc_index(short new_rc_index) {
+    storage_->set_node_rc_index(id_, new_rc_index);
+}
+
+void t_rr_node::add_side(e_side new_side) {
+    storage_->add_node_side(id_, new_side);
+}
+
+void t_rr_node::set_node_crosstalk_add_n_node(RRNodeId neighbour, float v){
+    storage_->set_node_crosstalk_add_n_node(id_,neighbour,v);
+}
+
+std::map<RRNodeId,float> t_rr_node::get_node_crosstalk_n() const {
+    return storage_->get_node_crosstalk_n(id_);
+}

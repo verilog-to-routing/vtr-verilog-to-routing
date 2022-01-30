@@ -718,6 +718,21 @@ void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
 }
 
+void t_rr_graph_storage::set_node_crosstalk_add_n_node(RRNodeId id, RRNodeId neighbour, float v){
+    if (node_type(id) != CHANX && node_type(id) != CHANY) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'neighbour' for non-channel type '%s'", node_type_string(id));
+    }
+    node_crosstalk_[id].emplace(neighbour,v);
+}
+
+
+std::map<RRNodeId,float> t_rr_graph_storage::get_node_crosstalk_n(RRNodeId id) const {
+    if (node_type(id) != CHANX && node_type(id) != CHANY) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'neighbour' for non-channel type '%s'", node_type_string(id));
+    }
+    return node_crosstalk_[id];
+}
+
 short t_rr_graph_view::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
@@ -737,6 +752,7 @@ t_rr_graph_view t_rr_graph_storage::view() const {
     return t_rr_graph_view(
         vtr::make_const_array_view_id(node_storage_),
         vtr::make_const_array_view_id(node_ptc_),
+        vtr::make_const_array_view_id(node_crosstalk_),
         vtr::make_const_array_view_id(node_first_edge_),
         vtr::make_const_array_view_id(node_fan_in_),
         vtr::make_const_array_view_id(edge_src_node_),

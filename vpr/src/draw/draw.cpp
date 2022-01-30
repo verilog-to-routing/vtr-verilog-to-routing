@@ -95,6 +95,7 @@ static void draw_routing_bb(ezgl::renderer* g);
 static void draw_routing_util(ezgl::renderer* g);
 static void draw_crit_path(ezgl::renderer* g);
 static void draw_placement_macros(ezgl::renderer* g);
+static void draw_ctrs(ezgl::renderer* g);
 
 void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name);
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y);
@@ -294,6 +295,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
                 draw_rr(g);
                 break;
         }
+        draw_ctrs(g);
 
         draw_congestion(g);
 
@@ -391,6 +393,7 @@ static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
     button_for_toggle_router_expansion_costs();
+    button_for_toggle_router_ctrs();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -405,6 +408,7 @@ static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
     std::string toggle_routing_bounding_box = "toggle_routing_bounding_box";
     std::string toggle_routing_util = "toggle_rr";
     std::string toggle_router_expansion_costs = "toggle_router_expansion_costs";
+    std::string toggle_router_ctrs = "toggle_router_ctrs";
 
     delete_button(toggle_rr.c_str());
     delete_button(toggle_congestion.c_str());
@@ -412,6 +416,7 @@ static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
     delete_button(toggle_routing_bounding_box.c_str());
     delete_button(toggle_routing_util.c_str());
     delete_button(toggle_router_expansion_costs.c_str());
+    delete_button(toggle_router_ctrs.c_str());
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -455,6 +460,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
     button_for_toggle_router_expansion_costs();
+    button_for_toggle_router_ctrs();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -901,6 +907,32 @@ void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, 
     application.refresh_drawing();
 }
 
+void toggle_router_ctrs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_router_ctrs button 
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::string button_name = "toggle_router_ctrs";
+    auto toggle_router_ctrs = find_button(button_name.c_str());
+
+    e_draw_router_ctrs new_state;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_router_ctrs));
+    if (strcmp(combo_box_content, "OFF") == 0) {
+        new_state = DRAW_NO_CTRS;
+    } else if (strcmp(combo_box_content, "ON") == 0) {
+        new_state = DRAW_CTRS_ON;
+    } else {
+        VPR_THROW(VPR_ERROR_DRAW, "Unrecognzied draw CTRS option");
+    }
+
+    g_free(combo_box_content);
+    draw_state->show_router_ctrs = new_state;
+
+    if (draw_state->show_router_ctrs == DRAW_NO_CTRS) {
+        application.update_message(draw_state->default_message);
+    }
+    application.refresh_drawing();
+}
+
 #endif // NO_GRAPHICS
 
 void alloc_draw_structs(const t_arch* arch) {
@@ -1182,6 +1214,36 @@ static void drawnets(ezgl::renderer* g) {
             /* Uncomment to draw a chain instead of a star. */
             /* driver_center = sink_center;  */
         }
+    }
+}
+
+static void draw_ctrs(ezgl::renderer* g){
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    if (draw_state->show_router_ctrs == DRAW_NO_CTRS){
+        return;
+    }
+
+//TODO: DRAW MAX CT OF NODE
+//    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+//        if (device_ctx.rr_nodes[inode].type() != CHANX && device_ctx.rr_nodes[inode].type() != CHANY) continue;
+//        draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+//        draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
+//        draw_rr_edges(inode, g);
+//    }
+
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        if (cluster_ctx.clb_nlist.net_is_sensitive(net_id)) {
+            draw_state->net_color[net_id] = ezgl::GREEN;
+        } else if (cluster_ctx.clb_nlist.net_is_trusted(net_id)){
+            draw_state->net_color[net_id] = ezgl::BLUE;
+        }else{
+            draw_state->net_color[net_id] = ezgl::BLACK;
+        }
+
+        draw_routed_net(net_id, g);
     }
 }
 
@@ -1486,6 +1548,8 @@ void draw_rr(ezgl::renderer* g) {
             }
         }
 
+
+
         /* Now call drawing routines to draw the node. */
         switch (rr_graph.node_type(rr_id)) {
             case SINK:
@@ -1536,6 +1600,8 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
 
     ezgl::rectangle bound_box = draw_get_rr_chan_bbox(inode);
     Direction dir = rr_graph.node_direction(rr_node);
+
+
 
     //We assume increasing direction, and swap if needed
     ezgl::point2d start = bound_box.bottom_left();
@@ -1682,9 +1748,8 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
 
     from_type = rr_graph.node_type(rr_node);
 
-    if ((draw_state->draw_rr_toggle == DRAW_NODES_RR)
-        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && (from_type == OPIN || from_type == SOURCE || from_type == IPIN))
-        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_CBOX_RR && (from_type == SOURCE || from_type == IPIN))) {
+    if ((draw_state->draw_rr_toggle == DRAW_NODES_RR || draw_state->show_router_ctrs == DRAW_CTRS_ON)
+        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && from_type == OPIN)) {
         return; /* Nothing to draw. */
     }
 

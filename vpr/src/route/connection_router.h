@@ -40,9 +40,11 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
         , rr_node_route_inf_(rr_node_route_inf.data(), rr_node_route_inf.size())
         , router_stats_(nullptr)
-        , router_debug_(false) {
+        , router_debug_(false)
+        , ctrs_debug_(true) {
         heap_.init_heap(grid);
         heap_.set_prune_limit(rr_nodes_.size(), kHeapPruneFactor * rr_nodes_.size());
+    //    t_ctrs_nct_.reserve(rr_nodes_.size());
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs
@@ -113,6 +115,20 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // Ensure route budgets have been calculated before enabling this
     void set_rcv_enabled(bool enable) final;
 
+    void ctrs_set(e_crosstalk_routing_strategy ctrs, ClusterNetId net, float ctrs_ctu) {
+        ctrs_ = ctrs;
+        ctrs_net_ = net;
+        ctrs_ctu_ = ctrs_ctu;
+        t_ctrs_ctu_.clear();
+      //  t_ctrs_nct_.clear();
+    }
+
+    void ctrs_clear_map(){
+        t_ctrs_ctu_.clear();
+      //  t_ctrs_nct_.clear();
+      //  t_ctrs_nct_.resize(rr_nodes_.size());
+    }
+
   private:
     // Mark that data associated with rr_node "inode" has been modified, and
     // needs to be reset in reset_path_costs.
@@ -126,6 +142,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     inline void update_cheapest(t_heap* cheapest) {
         update_cheapest(cheapest, &rr_node_route_inf_[cheapest->index]);
     }
+
+    bool ctrs_is_safe(RRNodeId nid, RRNodeId prev_nid);
 
     inline void update_cheapest(t_heap* cheapest, t_rr_node_route_inf* route_inf) {
         //Record final link to target
@@ -256,6 +274,14 @@ class ConnectionRouter : public ConnectionRouterInterface {
     RouterStats* router_stats_;
     HeapImplementation heap_;
     bool router_debug_;
+
+    bool ctrs_debug_;
+
+    e_crosstalk_routing_strategy ctrs_ = CTRS_NONE;
+    std::unordered_map<ClusterNetId, float> t_ctrs_ctu_; //temp
+    vtr::vector_map<RRNodeId,std::unordered_map<ClusterNetId, float>> t_ctrs_nct_; //temp
+    ClusterNetId ctrs_net_ = ClusterNetId();
+    float ctrs_ctu_ = 0.0;
 
     // The path manager for RCV, keeps track of the route tree as a set, also manages the allocation of the heap types
     PathManager rcv_path_manager;

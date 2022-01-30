@@ -117,6 +117,11 @@ class vector_map {
     template<typename... Args>
     void resize(Args&&... args) { vec_.resize(std::forward<Args>(args)...); }
 
+
+    ///@brief reserve function
+    template<typename... Args>
+    void reserve(Args&&... args) { vec_.reserve(std::forward<Args>(args)...); }
+
     ///@brief clears the container
     void clear() { vec_.clear(); }
 

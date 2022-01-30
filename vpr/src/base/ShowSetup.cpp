@@ -140,6 +140,37 @@ static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
     }
 }
 
+static void ShowCrosstalkSetup(const t_router_opts& RouterOpts){
+    VTR_LOG("RouterOpts.crosstalk_rs: ");
+    switch (RouterOpts.crosstalk_rs) {
+        case CTRS_NONE:
+            VTR_LOG("NONE\n");
+            break;
+        case CTRS_CT:
+            VTR_LOG("CT\n");
+            break;
+        case CTRS_CT_DEV:
+            VTR_LOG("CT_DEV\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "<Unknown>\n");
+    }
+
+    VTR_LOG("RouterOpts.crosstalk_tn: ");
+    for (auto tn_str : RouterOpts.crosstalk_tn){
+        VTR_LOG("%s ",tn_str.c_str());
+    }
+    VTR_LOG("\n");
+    VTR_LOG("RouterOpts.crosstalk_sn: ");
+    for (auto sn_str : RouterOpts.crosstalk_sn){
+        VTR_LOG("%s ",sn_str.c_str());
+    }
+    VTR_LOG("\n");
+    VTR_LOG("RouterOpts.crosstalk_rand_sn: %f\n", RouterOpts.crosstalk_rand_sn);
+    VTR_LOG("RouterOpts.crosstalk_sit: %d\n", RouterOpts.crosstalk_sit);
+    VTR_LOG("RouterOpts.crosstalk_threshold: %f\n", RouterOpts.crosstalk_threshold);
+}
+
 static void ShowRouterOpts(const t_router_opts& RouterOpts) {
     VTR_LOG("RouterOpts.route_type: ");
     switch (RouterOpts.route_type) {
@@ -165,6 +196,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "<Unknown>\n");
         }
+
+        ShowCrosstalkSetup(RouterOpts);
 
         VTR_LOG("RouterOpts.base_cost_type: ");
         switch (RouterOpts.base_cost_type) {
@@ -337,6 +370,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             default:
                 VTR_LOG_ERROR("Unknown router algorithm\n");
         }
+
+        ShowCrosstalkSetup(RouterOpts);
 
         VTR_LOG("RouterOpts.base_cost_type: ");
         switch (RouterOpts.base_cost_type) {
