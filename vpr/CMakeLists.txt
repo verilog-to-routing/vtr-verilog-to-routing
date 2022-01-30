@@ -230,7 +230,7 @@ endif()
 #Configure the build to use the selected engine
 if (VPR_USE_EXECUTION_ENGINE STREQUAL "tbb")
     target_compile_definitions(libvpr PRIVATE VPR_USE_TBB)
-    if(TBB_VERSION VERSION_LESS 2021.1)
+    if(${TBB_VERSION} VERSION_LESS 2021.1)
         target_compile_definitions(libvpr PRIVATE VPR_USE_TBB_PRE_2021)
     else()
         target_compile_definitions(libvpr PRIVATE VPR_USE_TBB_POST_2021)
