@@ -2631,25 +2631,14 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
 
     /* Grab highest gain molecule */
     t_pack_molecule* molecule = nullptr;
-    if (cur_pb->pb_stats->num_feasible_blocks > 0) {
-        cur_pb->pb_stats->num_feasible_blocks--;
-        int index = cur_pb->pb_stats->num_feasible_blocks;
-        molecule = cur_pb->pb_stats->feasible_blocks[index];
-        VTR_ASSERT(molecule->valid == true);
-        return molecule;
-    }
-
-    /*
-     * No suitable molecules were found from the above functions - if
-     * attraction groups were created, explore the attraction groups to see if
-     * any suitable molecules can be found.
-     */
-    int num_pulls = attraction_groups.get_att_group_pulls();
-
-    if (cur_pb->pb_stats->pulled_from_atom_groups < num_pulls) {
-        add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups,
-                                                            feasible_block_array_size, cluster_index, primitive_candidate_block_types);
-        cur_pb->pb_stats->pulled_from_atom_groups++;
+    if (cur_pb->pb_stats->num_feasible_blocks == 0) {
+        /*
+         * No suitable molecules were found from the above functions - if
+         * attraction groups were created, explore the attraction groups to see if
+         * any suitable molecules can be found.
+         */
+    	add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups,
+    	                                                            feasible_block_array_size, cluster_index, primitive_candidate_block_types);
     }
 
     if (cur_pb->pb_stats->num_feasible_blocks > 0) {
@@ -2738,6 +2727,9 @@ static void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur
  * If the current cluster being packed has an attraction group associated with it
  * (i.e. there are atoms in it that belong to an attraction group), this routine adds molecules
  * from the associated attraction group to the list of feasible blocks for the cluster.
+ * Attraction groups can be very large, so we only add some randomly selected molecules for efficiency
+ * if the number of atoms in the group is greater than 500. Therefore, the molecules added to the candidates
+ * will vary each time you call this function.
  */
 static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
@@ -2750,6 +2742,22 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     auto cluster_type = cluster_ctx.clb_nlist.block_type(clb_index);
+
+    /*
+     * For each cluster, we want to explore the attraction group molecules as potential
+     * candidates for the cluster a limited number of times. This limit is imposed because
+     * if the cluster belongs to a very large attraction group, we could potentially search
+     * through its attraction group molecules for a very long time.
+     * Defining a number of times to search through the attraction groups (i.e. number of
+     * attraction group pulls) determines how many times we search through the cluster's attraction
+     * group molecules for candidate molecules.
+     */
+    int num_pulls = attraction_groups.get_att_group_pulls();
+    if (cur_pb->pb_stats->pulled_from_atom_groups < num_pulls) {
+        cur_pb->pb_stats->pulled_from_atom_groups++;
+    } else {
+    	return;
+    }
 
     AttractGroupId grp_id = cur_pb->pb_stats->attraction_grp_id;
     if (grp_id == AttractGroupId::INVALID()) {
@@ -2769,6 +2777,7 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
             VTR_ASSERT(itr != primitive_candidate_block_types.end());
             std::vector<t_logical_block_type_ptr>& candidate_types = itr->second;
 
+            //Only consider molecules that are unpacked and of the correct type
             if (atom_ctx.lookup.atom_clb(atom_id) == ClusterBlockId::INVALID()
                 && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
                 auto rng = atom_molecules.equal_range(atom_id);
@@ -2802,6 +2811,7 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
         VTR_ASSERT(itr != primitive_candidate_block_types.end());
         std::vector<t_logical_block_type_ptr>& candidate_types = itr->second;
 
+        //Only consider molecules that are unpacked and of the correct type
         if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()
             && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
             auto rng = atom_molecules.equal_range(blk_id);
