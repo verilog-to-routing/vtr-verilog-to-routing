@@ -23,9 +23,9 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
     VprConstraints constraints;
 
     if (horizontal_partitions != 0 && vertical_partitions != 0) {
-    	setup_vpr_floorplan_constraints_cutpoints(constraints, horizontal_partitions, vertical_partitions);
+        setup_vpr_floorplan_constraints_cutpoints(constraints, horizontal_partitions, vertical_partitions);
     } else {
-    	setup_vpr_floorplan_constraints_one_loc(constraints, expand, subtile);
+        setup_vpr_floorplan_constraints_one_loc(constraints, expand, subtile);
     }
 
     VprConstraintsSerializer writer(constraints);

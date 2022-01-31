@@ -2021,16 +2021,18 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.floorplan_num_horizontal_partitions, "--floorplan_num_horizontal_partitions")
-        .help("An argument used for generating test constraints files. Specifies how many partitions to "
-        		"make in the horizontal dimension. Must be used in conjunction with "
-        		"--floorplan_num_vertical_partitions")
+        .help(
+            "An argument used for generating test constraints files. Specifies how many partitions to "
+            "make in the horizontal dimension. Must be used in conjunction with "
+            "--floorplan_num_vertical_partitions")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.floorplan_num_vertical_partitions, "--floorplan_num_vertical_partitions")
-        .help("An argument used for generating test constraints files. Specifies how many partitions to "
-        		"make in the vertical dimension. Must be used in conjunction with "
-        		"--floorplan_num_horizontal_partitions")
+        .help(
+            "An argument used for generating test constraints files. Specifies how many partitions to "
+            "make in the vertical dimension. Must be used in conjunction with "
+            "--floorplan_num_horizontal_partitions")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

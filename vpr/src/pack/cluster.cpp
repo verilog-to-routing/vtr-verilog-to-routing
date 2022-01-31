@@ -443,11 +443,11 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
      *
      */
 
-	/* This routine returns a map that details the number of used block type instances.
-	 * The bool floorplan_regions_overfull also acts as a return value - it is set to
-	 * true when one or more floorplan regions have more blocks assigned to them than
-	 * they can fit.
-	 */
+    /* This routine returns a map that details the number of used block type instances.
+     * The bool floorplan_regions_overfull also acts as a return value - it is set to
+     * true when one or more floorplan regions have more blocks assigned to them than
+     * they can fit.
+     */
 
     /****************************************************************
      * Initialization
@@ -733,7 +733,7 @@ static void print_pack_status(int num_clb,
                               int device_width,
                               int device_height,
                               AttractionInfo& attraction_groups) {
-	//Print a packing update each time another 4% of molecules have been packed.
+    //Print a packing update each time another 4% of molecules have been packed.
     const float print_frequency = 0.04;
 
     double percentage = (num_molecules_processed / (double)tot_num_molecules) * 100;
@@ -777,7 +777,7 @@ static void rebuild_attraction_groups(AttractionInfo& attraction_groups) {
         AttractionGroup new_att_group_info;
 
         for (AtomBlockId atom : group.group_atoms) {
-        	//If the ClusterBlockId is anything other than invalid, the atom has been packed already
+            //If the ClusterBlockId is anything other than invalid, the atom has been packed already
             if (atom_ctx.lookup.atom_clb(atom) == ClusterBlockId::INVALID()) {
                 new_att_group_info.group_atoms.push_back(atom);
             }
@@ -1552,16 +1552,15 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
  * attraction groups on. */
 static void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb) {
     //Only have to record the failure for the first atom in the molecule.
-	//The convention when checking if a molecule has failed to pack in the cluster
-	//is to check whether the first atoms has been recorded as having failed
+    //The convention when checking if a molecule has failed to pack in the cluster
+    //is to check whether the first atoms has been recorded as having failed
 
-	auto got = pb->pb_stats->atom_failures.find(molecule->atom_block_ids[0]);
-	if (got == pb->pb_stats->atom_failures.end()) {
-		pb->pb_stats->atom_failures.insert({molecule->atom_block_ids[0], 1});
-	} else {
-		got->second++;
-	}
-
+    auto got = pb->pb_stats->atom_failures.find(molecule->atom_block_ids[0]);
+    if (got == pb->pb_stats->atom_failures.end()) {
+        pb->pb_stats->atom_failures.insert({molecule->atom_block_ids[0], 1});
+    } else {
+        got->second++;
+    }
 }
 
 /**
@@ -2637,8 +2636,8 @@ static t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
          * attraction groups were created, explore the attraction groups to see if
          * any suitable molecules can be found.
          */
-    	add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups,
-    	                                                            feasible_block_array_size, cluster_index, primitive_candidate_block_types);
+        add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, atom_molecules, attraction_groups,
+                                                            feasible_block_array_size, cluster_index, primitive_candidate_block_types);
     }
 
     if (cur_pb->pb_stats->num_feasible_blocks > 0) {
@@ -2756,7 +2755,7 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     if (cur_pb->pb_stats->pulled_from_atom_groups < num_pulls) {
         cur_pb->pb_stats->pulled_from_atom_groups++;
     } else {
-    	return;
+        return;
     }
 
     AttractGroupId grp_id = cur_pb->pb_stats->attraction_grp_id;
