@@ -37,7 +37,7 @@ class NocStorage
         // flags to keep track of the status
         bool built_noc;
 
-        // preventy "pass by value" of this object
+        // prevent "copying" of this object
         NocStorage(const NocStorage&) = delete;
         void operator=(const NocStorage&) = delete;
     public:

@@ -244,6 +244,25 @@ void button_for_toggle_crit_path() {
                              toggle_crit_path_widget);
 }
 
+void button_for_displaying_noc() {
+    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
+    GObject* main_window_grid = application.get_object("InnerGrid");
+
+    GtkWidget* display_noc_widget = gtk_check_button_new_with_label("Display NoC");
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(display_noc_widget), false);
+    gtk_widget_set_name(display_noc_widget, "display_noc");
+
+    //attach to the grid
+    gtk_grid_attach((GtkGrid*)main_window_grid, display_noc_widget, label_left_start_col, button_row++, box_width, box_height);
+    
+    // show the newy added check box
+    gtk_widget_show_all((GtkWidget*)main_window);
+
+    // future signal connection
+
+}
+
+
 void button_for_toggle_rr() {
     GObject* main_window = application.get_object(application.get_main_window_id().c_str());
     GObject* main_window_grid = application.get_object("InnerGrid");
