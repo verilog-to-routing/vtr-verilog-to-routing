@@ -169,7 +169,7 @@ static void print_pack_status(int num_clb,
                               int device_height,
                               AttractionInfo& attraction_groups);
 
-static void update_attraction_group_status(AttractionInfo& attraction_groups);
+static void rebuild_attraction_groups(AttractionInfo& attraction_groups);
 
 static void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb);
 
@@ -443,6 +443,12 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
      *
      */
 
+	/* This routine returns a map that details the number of used block type instances.
+	 * The bool floorplan_regions_overfull also acts as a return value - it is set to
+	 * true when one or more floorplan regions have more blocks assigned to them than
+	 * they can fit.
+	 */
+
     /****************************************************************
      * Initialization
      *****************************************************************/
@@ -638,6 +644,14 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      primitive_candidate_block_types);
             prev_molecule = istart;
 
+            /*
+             * When attraction groups are created, the purpose is to pack more densely by adding more molecules
+             * from the cluster's attraction group to the cluster. In a normal flow, (when attraction groups are
+             * not on), the cluster keeps being packed until the get_molecule routines return either a repeated
+             * molecule or a nullptr. When attraction groups are on, we want to keep exploring molecules for the
+             * cluster until a nullptr is returned. So, the number of repeated molecules allowed is increased to a
+             * large value.
+             */
             int max_num_repeated_molecules = 0;
             if (attraction_groups.num_attraction_groups() > 0) {
                 max_num_repeated_molecules = ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES;
@@ -719,6 +733,7 @@ static void print_pack_status(int num_clb,
                               int device_width,
                               int device_height,
                               AttractionInfo& attraction_groups) {
+	//Print a packing update each time another 4% of molecules have been packed.
     const float print_frequency = 0.04;
 
     double percentage = (num_molecules_processed / (double)tot_num_molecules) * 100;
@@ -743,17 +758,17 @@ static void print_pack_status(int num_clb,
         fflush(stdout);
         mols_since_last_print = 0;
         if (attraction_groups.num_attraction_groups() > 0) {
-            update_attraction_group_status(attraction_groups);
+            rebuild_attraction_groups(attraction_groups);
         }
     }
 }
 
 /*
- * Periodically update the attraction groups to reflect which atoms in them
+ * Periodically rebuild the attraction groups to reflect which atoms in them
  * are still available for new clusters (i.e. remove the atoms that have already
  * been packed from the attraction group).
  */
-static void update_attraction_group_status(AttractionInfo& attraction_groups) {
+static void rebuild_attraction_groups(AttractionInfo& attraction_groups) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     for (int igroup = 0; igroup < attraction_groups.num_attraction_groups(); igroup++) {
@@ -762,6 +777,7 @@ static void update_attraction_group_status(AttractionInfo& attraction_groups) {
         AttractionGroup new_att_group_info;
 
         for (AtomBlockId atom : group.group_atoms) {
+        	//If the ClusterBlockId is anything other than invalid, the atom has been packed already
             if (atom_ctx.lookup.atom_clb(atom) == ClusterBlockId::INVALID()) {
                 new_att_group_info.group_atoms.push_back(atom);
             }
@@ -785,6 +801,9 @@ static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
     return false;
 }
 
+/* Remove blk from list of feasible blocks sorted according to gain
+ * Useful for removing blocks that are repeatedly failing. If a block
+ * has been found to be illegal, we don't repeatedly consider it.*/
 static void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
                                                      t_pb* pb) {
     int molecule_index;
@@ -1528,16 +1547,21 @@ static enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* clu
     return block_pack_status;
 }
 
+/* Record the failure of the molecule in this cluster in the current pb stats.
+ * If a molecule fails repeatedly, it's gain will be penalized if packing with
+ * attraction groups on. */
 static void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb) {
-    //Record the failure of the molecule in this cluster in the current pb stats
-    for (unsigned int i_atom = 0; i_atom < molecule->atom_block_ids.size(); i_atom++) {
-        auto got = pb->pb_stats->atom_failures.find(molecule->atom_block_ids[i_atom]);
-        if (got == pb->pb_stats->atom_failures.end()) {
-            pb->pb_stats->atom_failures.insert({molecule->atom_block_ids[i_atom], 1});
-        } else {
-            got->second++;
-        }
-    }
+    //Only have to record the failure for the first atom in the molecule.
+	//The convention when checking if a molecule has failed to pack in the cluster
+	//is to check whether the first atoms has been recorded as having failed
+
+	auto got = pb->pb_stats->atom_failures.find(molecule->atom_block_ids[0]);
+	if (got == pb->pb_stats->atom_failures.end()) {
+		pb->pb_stats->atom_failures.insert({molecule->atom_block_ids[0], 1});
+	} else {
+		got->second++;
+	}
+
 }
 
 /**
