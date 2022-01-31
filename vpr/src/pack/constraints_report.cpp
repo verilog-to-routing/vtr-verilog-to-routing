@@ -1,13 +1,6 @@
-/*
- * constraints_report.cpp
- *
- *  Created on: Dec. 7, 2021
- *      Author: khalid88
- */
-
 #include "constraints_report.h"
 
-bool check_clusters_floorplan_feasibility() {
+bool floorplan_constraints_regions_overfull() {
     GridTileLookup grid_tiles;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();

@@ -250,10 +250,6 @@ void free_clustering_data(const t_packer_opts& packer_opts,
     free(primitives_list);
 }
 
-void check_floorplan_regions(bool& floorplan_regions_overfull) {
-    floorplan_regions_overfull = check_clusters_floorplan_feasibility();
-}
-
 //check the clustering and output it
 void check_and_output_clustering(const t_packer_opts& packer_opts,
                                  const std::unordered_set<AtomNetId>& is_clock,
@@ -272,7 +268,8 @@ void check_and_output_clustering(const t_packer_opts& packer_opts,
 
     output_clustering(intra_lb_routing, packer_opts.global_clocks, is_clock, arch->architecture_id, packer_opts.output_file.c_str(), false);
 
-    check_floorplan_regions(floorplan_regions_overfull);
+    //check_floorplan_regions(floorplan_regions_overfull);
+    floorplan_regions_overfull = floorplan_constraints_regions_overfull();
 
     VTR_ASSERT(cluster_ctx.clb_nlist.blocks().size() == intra_lb_routing.size());
 }

@@ -84,8 +84,6 @@ void free_clustering_data(const t_packer_opts& packer_opts,
                           t_molecule_link* memory_pool,
                           t_pb_graph_node** primitives_list);
 
-void check_floorplan_regions(bool& floorplan_regions_overfull);
-
 //check clustering legality and output it
 void check_and_output_clustering(const t_packer_opts& packer_opts,
                                  const std::unordered_set<AtomNetId>& is_clock,
