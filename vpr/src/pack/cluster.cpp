@@ -798,14 +798,14 @@ static void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
         }
     }
 
-	//if it is not in the array, return
+    //if it is not in the array, return
     if (found_molecule == false) {
         return;
     }
 
     //Otherwise, shift the molecules while removing the specified molecule
     for (int j = molecule_index; j < pb->pb_stats->num_feasible_blocks - 1; j++) {
-    	pb->pb_stats->feasible_blocks[j] = pb->pb_stats->feasible_blocks[j+1];
+        pb->pb_stats->feasible_blocks[j] = pb->pb_stats->feasible_blocks[j + 1];
     }
     pb->pb_stats->num_feasible_blocks--;
 }
@@ -2733,30 +2733,20 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     }
 
     AttractionGroup& group = attraction_groups.get_attraction_group_info(grp_id);
-    std::vector<AtomBlockId> available_att_group_atoms;
-
-    for (AtomBlockId atom : group.group_atoms) {
-        const auto& atom_model = atom_ctx.nlist.block_model(atom);
-
-        auto itr = primitive_candidate_block_types.find(atom_model);
-        VTR_ASSERT(itr != primitive_candidate_block_types.end());
-        std::vector<t_logical_block_type_ptr>& candidate_types = itr->second;
-
-        //Find whether the logical block type of the current cluster is included in the candidate types of the atom being examined
-        if (std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()
-            && atom_ctx.lookup.atom_clb(atom) == ClusterBlockId::INVALID()) {
-            available_att_group_atoms.push_back(atom);
-        }
-    }
-
-    int num_available_atoms = available_att_group_atoms.size();
+    int num_available_atoms = group.group_atoms.size();
     if (num_available_atoms == 0) {
         return;
     }
 
     if (num_available_atoms < 500) {
-        for (AtomBlockId atom_id : available_att_group_atoms) {
-            if (atom_ctx.lookup.atom_clb(atom_id) == ClusterBlockId::INVALID()) {
+        for (AtomBlockId atom_id : group.group_atoms) {
+            const auto& atom_model = atom_ctx.nlist.block_model(atom_id);
+            auto itr = primitive_candidate_block_types.find(atom_model);
+            VTR_ASSERT(itr != primitive_candidate_block_types.end());
+            std::vector<t_logical_block_type_ptr>& candidate_types = itr->second;
+
+            if (atom_ctx.lookup.atom_clb(atom_id) == ClusterBlockId::INVALID()
+                && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
                 auto rng = atom_molecules.equal_range(atom_id);
                 for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
                     t_pack_molecule* molecule = kv.second;
@@ -2782,8 +2772,14 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
         std::uniform_int_distribution<> distr(min, max);
         int selected_atom = distr(gen);
 
-        AtomBlockId blk_id = available_att_group_atoms[selected_atom];
-        if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {
+        AtomBlockId blk_id = group.group_atoms[selected_atom];
+        const auto& atom_model = atom_ctx.nlist.block_model(blk_id);
+        auto itr = primitive_candidate_block_types.find(atom_model);
+        VTR_ASSERT(itr != primitive_candidate_block_types.end());
+        std::vector<t_logical_block_type_ptr>& candidate_types = itr->second;
+
+        if (atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()
+            && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
             auto rng = atom_molecules.equal_range(blk_id);
             for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
                 t_pack_molecule* molecule = kv.second;
