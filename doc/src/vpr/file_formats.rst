@@ -1046,3 +1046,159 @@ An example of what a generated routing resource graph file would look like is sh
         </rr_edges>
     </rr_graph>
 .. _end:
+
+Block types usage summary (.txt .xml or .json)
+-----------------------------------------
+
+Block types usage summary is a file written in human or machine readable format.
+It describes types and the amount of cluster-level FPGA resources that are used
+by implemented design. This file is generated after the placement step with
+option: `--write_block_usage <filename>`. It can be saved as a human readable
+text file or in XML or JSON file to provide machine readable output. Format is
+selected based on the extension of the `<filename>`.
+
+The summary consists of 4 parameters:
+
+* `nets number` - the amount of created nets
+* `blocks number` - sum of blocks used to implement the design
+* `input pins` - sum of input pins
+* `output pins` - sum of output pins
+
+and a list of `block types` followed by the number of specific block types that
+are used in the design.
+
+TXT
+~~~
+
+Presents the information in human readable format, the same as in log output:
+
+.. code-block:: none
+    :caption: TXT format of block types usage summary
+    :linenos:
+
+    Netlist num_nets: <int>
+    Netlist num_blocks: <int>
+    Netlist <block_type_name_0> blocks: <int>
+    Netlist <block_type_name_1> blocks: <int>
+    ...
+    Netlist <block_type_name_n> blocks: <int>
+    Netlist inputs pins: <int>
+    Netlist output pins: <int>
+
+.. _end:
+
+JSON
+~~~~
+
+One of two available machine readable formats. The information is written as follows:
+
+.. code-block:: json
+    :caption: JSON format of block types usage summary
+    :linenos:
+
+    {
+      "num_nets": "<int>",
+      "num_blocks": "<int>",
+      "input_pins": "<int>",
+      "output_pins": "<int>",
+      "blocks": {
+        "<block_type_name_0>": <int>,
+        "<block_type_name_1>": <int>,
+        ...
+        "<block_type_name_n>": <int>
+      }
+    }
+
+.. _end:
+
+XML
+~~~
+
+Second machine readable format. The information is written as follows:
+
+.. code-block:: xml
+    :caption: XML format of block types usage summary
+    :linenos:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <block_usage_report>
+      <nets num="<int>"></nets>
+      <blocks num="<int>">
+        <block type="<block_type_name_0>" usage="<int>"></block>
+        <block type="<block_type_name_1>" usage="<int>"></block>
+        ...
+        <block type="<block_type_name_n>" usage="<int>"></block>
+      </blocks>
+      <input_pins num="<int>"></input_pins>
+      <output_pins num="<int>"></output_pins>
+    </block_usage_report>
+
+.. _end:
+
+Timing summary (.txt .xml or .json)
+-----------------------------------------
+
+Timing summary is a file written in human or machine readable format.
+It describes final timing parameters of design implemented for the FPGA device.
+This file is generated after the routing step with option: `--write_timing_summary <filename>`.
+It can be saved as a human readable text file or in XML or JSON file to provide
+machine readable output. Format is selected based on the extension of the `<filename>`.
+
+The summary consists of 4 parameters:
+
+* `Critical Path Delay (cpd) [ns]`
+* `Max Circuit Frequency (Fmax) [MHz]`
+* `setup Worst Negative Slack (sWNS) [ns]`
+* `setup Total Negative Slack (sTNS) [ns]`
+
+TXT
+~~~
+
+Presents the information in human readable format, the same as in log output:
+
+.. code-block:: none
+    :caption: TXT format of timing summary
+    :linenos:
+
+    Final critical path delay (least slack): <double> ns, Fmax: <double> MHz
+    Final setup Worst Negative Slack (sWNS): <double> ns
+    Final setup Total Negative Slack (sTNS): <double> ns
+
+.. _end:
+
+JSON
+~~~~
+
+One of two available machine readable formats. The information is written as follows:
+
+.. code-block:: json
+    :caption: JSON format of timing summary
+    :linenos:
+
+    {
+      "cpd": <double>,
+      "fmax": <double>,
+      "swns": <double>,
+      "stns": <double>
+    }
+
+.. _end:
+
+XML
+~~~
+
+Second machine readable format. The information is written as follows:
+
+.. code-block:: xml
+    :caption: XML format of timing summary
+    :linenos:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <timing_summary_report>
+      <cpd value="<double>" unit="ns" description="Final critical path delay"></nets>
+      <fmax value="<double>" unit="MHz" description="Max circuit frequency"></fmax>
+      <swns value="<double>" unit="ns" description="setup Worst Negative Slack (sWNS)"></swns>
+      <stns value="<double>" unit="ns" description="setup Total Negative Slack (sTNS)"></stns>
+    </block_usage_report>
+
+.. _end:

@@ -626,6 +626,12 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``2``
 
+.. option:: --write_block_usage <file>
+
+    Writes out to the file under path <file> cluster-level block usage summary in machine
+    readable (JSON or XML) or human readable (TXT) format. Format is selected
+    based on the extension of <file>.
+
 .. _placer_options:
 
 Placer Options
@@ -1034,6 +1040,17 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     In addition to the information that can be seen via ``--max_logged_overused_rr_nodes``, this report prints out all the net ids that are associated with each overused RR node. Also, this report does not place a threshold upon the number of RR nodes printed.
 
     **Default:** ``off``
+
+.. option:: --write_timing_summary <file>
+
+    Writes out to the file under path <file> final timing summary in machine
+    readable (JSON or XML) or human readable (TXT) format. Format is selected
+    based on the extension of <file>. The summary consists of parameters:
+
+    * `cpd` - Final critical path delay (least slack) [ns]
+    * `fmax` - Maximal frequency of the implemented circuit [MHz]
+    * `swns` - setup Worst Negative Slack (sWNS) [ns]
+    * `stns` - Setup Total Negative Slack (sTNS) [ns]
 
 .. _timing_driven_router_options:
 
