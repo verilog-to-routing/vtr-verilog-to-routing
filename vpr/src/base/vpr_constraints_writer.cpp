@@ -19,17 +19,13 @@
 #include "vpr_constraints_writer.h"
 #include "region.h"
 
-void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split) {
+void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions) {
     VprConstraints constraints;
 
-    if (floorplan_split == HALVES) {
-        setup_vpr_floorplan_constraints_cutpoints(constraints, 2, 1);
-    } else if (floorplan_split == QUADRANTS) {
-        setup_vpr_floorplan_constraints_cutpoints(constraints, 2, 2);
-    } else if (floorplan_split == SIXTEENTHS) {
-        setup_vpr_floorplan_constraints_cutpoints(constraints, 4, 4);
-    } else { //one_spot
-        setup_vpr_floorplan_constraints(constraints, expand, subtile);
+    if (horizontal_partitions != 0 && vertical_partitions != 0) {
+    	setup_vpr_floorplan_constraints_cutpoints(constraints, horizontal_partitions, vertical_partitions);
+    } else {
+    	setup_vpr_floorplan_constraints_one_loc(constraints, expand, subtile);
     }
 
     VprConstraintsSerializer writer(constraints);
@@ -47,7 +43,7 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
     }
 }
 
-void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile) {
+void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int expand, bool subtile) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     ClusterAtomsLookup atoms_lookup;
@@ -59,59 +55,6 @@ void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bo
      * The subtile can also optionally be set in the PartitionRegion, based on the value passed in by the user.
      */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        std::string part_name;
-        part_name = cluster_ctx.clb_nlist.block_name(blk_id);
-        PartitionId partid(part_id);
-
-        Partition part;
-        part.set_name(part_name);
-
-        PartitionRegion pr;
-        Region reg;
-
-        auto loc = place_ctx.block_locs[blk_id].loc;
-
-        reg.set_region_rect(loc.x - expand, loc.y - expand, loc.x + expand, loc.y + expand);
-        if (subtile) {
-            int st = loc.sub_tile;
-            reg.set_sub_tile(st);
-        }
-
-        pr.add_to_part_region(reg);
-        part.set_part_region(pr);
-        constraints.add_partition(part);
-
-        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(blk_id);
-        int num_atoms = atoms.size();
-
-        for (auto atm = 0; atm < num_atoms; atm++) {
-            AtomBlockId atom_id = atoms[atm];
-            constraints.add_constrained_atom(atom_id, partid);
-        }
-        part_id++;
-    }
-}
-
-void setup_vpr_floorplan_constraints_half(VprConstraints& constraints, int expand, bool subtile) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    ClusterAtomsLookup atoms_lookup;
-
-    int part_id = 0;
-    int block_count = 0;
-
-    /*
-     * For each cluster block, create a partition filled with the atoms that are currently in the cluster.
-     * The PartitionRegion will be the location of the block in current placement, modified by the expansion factor.
-     * The subtile can also optionally be set in the PartitionRegion, based on the value passed in by the user.
-     */
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        if (block_count % 2 == 0) {
-            block_count++;
-            continue;
-        }
-        block_count++;
-
         std::string part_name;
         part_name = cluster_ctx.clb_nlist.block_name(blk_id);
         PartitionId partid(part_id);

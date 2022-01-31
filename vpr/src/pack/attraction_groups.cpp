@@ -42,45 +42,6 @@ AttractionInfo::AttractionInfo(bool attraction_groups_on) {
     }
 }
 
-void AttractionInfo::reset_attraction_groups() {
-    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    int num_parts = floorplanning_ctx.constraints.get_num_partitions();
-
-    //clear the data structures before continuing
-    atom_attraction_group.clear();
-    attraction_groups.clear();
-    //Initialize every atom to have no attraction group id
-    int num_atoms = atom_ctx.nlist.blocks().size();
-
-    atom_attraction_group.resize(num_atoms);
-    fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());
-
-    for (int ipart = 0; ipart < num_parts; ipart++) {
-        PartitionId partid(ipart);
-
-        AttractionGroup group_info;
-        group_info.group_atoms = floorplanning_ctx.constraints.get_part_atoms(partid);
-
-        attraction_groups.push_back(group_info);
-    }
-
-    //Then, fill in the group id for the atoms that do have an attraction group
-    int num_att_grps = attraction_groups.size();
-
-    for (int igroup = 0; igroup < num_att_grps; igroup++) {
-        AttractGroupId group_id(igroup);
-
-        AttractionGroup att_group = attraction_groups[group_id];
-
-        for (unsigned int iatom = 0; iatom < att_group.group_atoms.size(); iatom++) {
-            atom_attraction_group[att_group.group_atoms[iatom]] = group_id;
-        }
-    }
-
-    VTR_LOG("%d attraction groups were created \n", num_att_grps);
-}
-
 void AttractionInfo::create_att_groups_for_overfull_regions() {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -143,11 +104,7 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
 
     att_group_pulls = 1;
 
-    VTR_LOG("Number of attraction groups created is %d \n", num_att_grps);
-}
-
-AttractionGroup& AttractionInfo::get_attraction_group_info(const AttractGroupId group_id) {
-    return attraction_groups[group_id];
+    VTR_LOG("%d clustering attraction groups created. \n", num_att_grps);
 }
 
 void AttractionInfo::set_attraction_group_info(AttractGroupId group_id, const AttractionGroup& group_info) {

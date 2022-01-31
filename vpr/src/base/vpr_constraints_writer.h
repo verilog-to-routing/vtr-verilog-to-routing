@@ -12,18 +12,14 @@
  *
  * The option --write_vpr_constraints can be used to generate the constraints files.
  *
- * Users can also use the VPR option --floorplan_split to specify which constraints files they would like to generate.
- * The options for floorplan_split include halves, quadrants, sixteenths and one_spot. One constraints file will be generated
- * in each case. The default setting for floorplan_split is halves.
+ * The routines in this file are currently used to generate floorplan constraints for testing purposes.
+ * The constraints files they generate are used to determine whether VPR is correctly adhering to
+ * floorplan constraints during its packing and placement stages.
  *
- * If the user specified halves, two floorplanning partitions would be created which each take up one half of the grid.
- * The generated constraints file would assign all primitives to one of the two partitions that were created.
- * The same idea applies for the quadrants and sixteenths options, except that the floorplan partitions would split the
- * grid into quadrants and sixteenths respectively, as the names imply.
- *
- * If the one_spot option is specified, all blocks will be locked to their original placement spot.The vpr options
- * --place_constraint_subtile and --place_constraint_expand can be used in this case to specify whether
- * the blocks should also be locked down to a particular subtile, or whether the constraint region should expand beyond one spot.
+ * The placer options --floorplan_num_horizontal_partitions (int) and --floorplan_num_vertical_partitions (int) can be used
+ * to specify how many partitions should be created in the test constraints file.
+ * For example, if both options are 2, the constraints file will split the grid into quadrants, dividing the blocks between
+ * four partitions - two partitions in the horizontal dimension, and two partitions in the vertical dimension.
  */
 
 #ifndef VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
@@ -39,13 +35,15 @@
  *   @param subtile     Specifies whether to write out the constraint regions with or without
  *                      subtile values.
  */
-void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, enum constraints_split_factor floorplan_split);
+void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions);
 
-void setup_vpr_floorplan_constraints(VprConstraints& constraints, int expand, bool subtile);
+//Generate constraints which lock all blocks to one location.
+void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int expand, bool subtile);
 
+/* Generate constraints which divide the grid into partition according to the horizontal and vertical partition values passed in
+ * and lock down blocks to their appropriate partition.
+ */
 void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int horizontal_cutpoints, int vertical_cutpoints);
-
-void setup_vpr_floorplan_constraints_half(VprConstraints& constraints, int expand, bool subtile);
 
 void create_partition(Partition& part, std::string part_name, int xmin, int ymin, int xmax, int ymax);
 

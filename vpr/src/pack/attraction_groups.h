@@ -50,8 +50,6 @@ class AttractionInfo {
     //If no constraints were specified, then no attraction groups will be created.
     AttractionInfo(bool attraction_groups_on);
 
-    void reset_attraction_groups();
-
     void create_att_groups_for_overfull_regions();
 
     //Setters and getters for the class
@@ -83,7 +81,12 @@ class AttractionInfo {
     //Store atoms and gain value that belong to each attraction group
     vtr::vector<AttractGroupId, AttractionGroup> attraction_groups;
 
-    //The number of times we explore a cluster's attraction group molecules when packing a cluster
+    /* When packing a cluster with molecules, we have various ways of seeking candidates molecule
+     * candidates for the cluster. The att_group_pulls value is a way of keeping count of how many
+     * times a cluster has searched for candidate molecules from its attraction group. We can increase
+     * this value if we want to pack the cluster more densely (i.e. fill it with more molecules from
+     * its attraction group).
+     */
     int att_group_pulls = 1;
 };
 
@@ -114,6 +117,10 @@ inline float AttractionInfo::get_attraction_group_gain(const AttractGroupId grou
 
 inline void AttractionInfo::set_attraction_group_gain(const AttractGroupId group_id, const float new_gain) {
     attraction_groups[group_id].gain = new_gain;
+}
+
+inline AttractionGroup& AttractionInfo::get_attraction_group_info(const AttractGroupId group_id) {
+    return attraction_groups[group_id];
 }
 
 #endif /* VPR_SRC_PACK_ATTRACTION_GROUPS_H_ */

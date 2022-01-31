@@ -928,13 +928,6 @@ enum e_pad_loc_type {
     RANDOM
 };
 
-enum constraints_split_factor {
-    HALVES,
-    QUADRANTS,
-    SIXTEENTHS,
-    ONE_SPOT
-};
-
 /**
  * @brief Used to determine the RL agent's algorithm
  *
@@ -1029,9 +1022,6 @@ enum class e_place_delta_delay_algorithm {
  *   @param place_constraint_subtile
  *              True if subtiles should be specified when printing floorplan
  *              constraints. False if not.
- *   @param floorplan split
- *              Option specifying whether to split floorplan constraint regions into
- *              halves, quadrants, sixteenths, or one_spot.
  */
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
@@ -1085,7 +1075,8 @@ struct t_placer_opts {
     float place_crit_limit;
     int place_constraint_expand;
     bool place_constraint_subtile;
-    enum constraints_split_factor floorplan_split;
+    int floorplan_num_horizontal_partitions;
+    int floorplan_num_vertical_partitions;
 
     /**
      * @brief Tile types that should be used during delay sampling.
