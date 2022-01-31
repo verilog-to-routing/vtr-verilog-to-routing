@@ -7,12 +7,8 @@
 
 //#include "globals.h"
 
-RRGraphBuilder::RRGraphBuilder(t_rr_graph_storage* node_storage,
-                               MetadataStorage<int>* rr_node_metadata,
-                               MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata)
-    : node_storage_(*node_storage)
-    , rr_node_metadata_(*rr_node_metadata)
-    , rr_edge_metadata_(*rr_edge_metadata) {
+RRGraphBuilder::RRGraphBuilder(t_rr_graph_storage* node_storage)
+    : node_storage_(*node_storage) {
 }
 
 t_rr_graph_storage& RRGraphBuilder::node_storage() {
@@ -21,6 +17,14 @@ t_rr_graph_storage& RRGraphBuilder::node_storage() {
 
 RRSpatialLookup& RRGraphBuilder::node_lookup() {
     return node_lookup_;
+}
+
+MetadataStorage<int>& RRGraphBuilder::rr_node_metadata() {
+    return rr_node_metadata_;
+}
+
+MetadataStorage<std::tuple<int, int, short>>& RRGraphBuilder::rr_edge_metadata() {
+    return rr_edge_metadata_;
 }
 
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
@@ -59,6 +63,8 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
 
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
+    rr_node_metadata_.clear();
+    rr_edge_metadata_.clear();
     rr_segments_.clear();
     rr_switch_inf_.clear();
 }
@@ -123,8 +129,8 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
 
     node_lookup().reorder(dest_order);
 
-    rr_node_metadata_.remap_keys([&](int node) { return size_t(dest_order[RRNodeId(node)]); });
-    rr_edge_metadata_.remap_keys([&](std::tuple<int, int, short> edge) {
+    rr_node_metadata().remap_keys([&](int node) { return size_t(dest_order[RRNodeId(node)]); });
+    rr_edge_metadata().remap_keys([&](std::tuple<int, int, short> edge) {
         return std::make_tuple(size_t(dest_order[RRNodeId(std::get<0>(edge))]),
                                size_t(dest_order[RRNodeId(std::get<1>(edge))]),
                                std::get<2>(edge));
