@@ -309,6 +309,7 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     button_for_toggle_blk_internal();
     button_for_toggle_block_pin_util();
     button_for_toggle_placement_macros();
+    button_for_displaying_noc();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -401,6 +402,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
     button_for_toggle_router_expansion_costs();
+    button_for_displaying_noc();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
