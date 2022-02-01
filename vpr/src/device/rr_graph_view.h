@@ -421,6 +421,8 @@ class RRGraphView {
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;
     }
+    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+     *  e.g., node_lookup! */
     MetadataStorage<int> rr_node_metadata_data() const {
         return rr_node_metadata_;
     }
@@ -436,14 +438,8 @@ class RRGraphView {
     const t_rr_graph_storage& node_storage_;
     /* Fast look-up for rr nodes */
     const RRSpatialLookup& node_lookup_;
-
-    /* rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string() */
-    const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
-
-    /* Segment info for rr nodes */
-    const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
-    /* switch info for rr nodes */
-    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
+    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+     *  e.g., node_lookup! */
     /* Metadata is an extra data on rr-nodes and edges, respectively, that is not used by vpr
      * but simply passed through the flow so that it can be used by downstream tools.
      * The main (perhaps only) current use of this metadata is the fasm tool of symbiflow,
@@ -466,6 +462,14 @@ class RRGraphView {
      * value:   map of <attribute_name, attribute_value>
      */
     const MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata_;
+    /* rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string() */
+
+    const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
+
+    /* Segment info for rr nodes */
+    const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
+    /* switch info for rr nodes */
+    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
 };
 
 #endif
