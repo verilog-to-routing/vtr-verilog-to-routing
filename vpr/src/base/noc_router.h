@@ -24,7 +24,6 @@ class NocRouter {
 
     public:
         NocRouter(int id, int grid_position_x, int grid_position_y);
-        ~NocRouter();
 
         int get_router_id(void) const;
         int get_router_grid_position_x(void) const;

@@ -7,11 +7,6 @@ NocRouter::NocRouter(int id, int grid_position_x, int grid_position_y):router_id
     router_design_module_ref = "";
 }
 
-// defualt destructor
-NocRouter::~NocRouter(){
-    
-}
-
 // getters
 int NocRouter::get_router_id(void) const{
     return router_id;
