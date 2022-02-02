@@ -30,8 +30,8 @@ class NocLink
         int get_number_of_connections(void) const;
         
         // setters
-        void set_bandwidth_usage(double bandwidth_usage);
-        void set_number_of_connections(int number_of_connections);
+        void set_bandwidth_usage(double new_bandwidth_usage);
+        void set_number_of_connections(int new_number_of_connections);
 
 };
 
