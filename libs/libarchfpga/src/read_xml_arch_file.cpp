@@ -4936,6 +4936,13 @@ static bool parse_noc_router_connection_list(std::vector<int>& connection_list, 
            break;
        }
 
+        // check the case where a duplicate connection was provided
+        if (std::find(connection_list.begin(), connection_list.end(), converted_connection) != connection_list.end())
+        {
+            archfpga_throw("",-1,
+                               "The router with id:'%d' was included multiple times in the connection list for another router.", converted_connection);
+        }
+
         // if we are here then a legal router id was supplied, so store it
         connection_list.push_back(converted_connection);
 
