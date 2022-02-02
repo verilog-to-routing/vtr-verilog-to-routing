@@ -10,11 +10,6 @@ NocLink::NocLink(NocRouterId source, NocRouterId sink):source_router(source), si
     
 }
 
-NocLink::~NocLink()
-{
-
-}
-
 // getters
 NocRouterId NocLink::get_source_router(void) const{
     return source_router;

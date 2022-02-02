@@ -21,7 +21,6 @@ class NocLink
 
     public:
         NocLink(NocRouterId source_router, NocRouterId sink_router);
-        ~NocLink();
 
         // getters
         NocRouterId get_source_router(void) const;

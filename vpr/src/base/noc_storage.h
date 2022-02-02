@@ -44,8 +44,6 @@ class NocStorage
 
         // default contructor (cleare all the elements in the vectors)
         NocStorage();
-        // default destructor (dont have to do anything here)
-        ~NocStorage();
 
         // getters for the NoC
         const std::vector<NocLinkId>& get_noc_router_connections(NocRouterId id) const;
@@ -65,8 +63,7 @@ class NocStorage
 
         // setters for the NoC
         bool add_router(int id, int grid_position_x, int grid_position_y);
-        NocLinkId add_link(NocRouterId source, NocRouterId sink);
-        void add_noc_router_link(NocRouterId router_id, NocLinkId link_id);
+        void add_link(NocRouterId source, NocRouterId sink);
 
         // setters for the noc router
         void set_noc_router_design_module_ref(NocRouterId id, std::string design_module_ref);
@@ -79,6 +76,7 @@ class NocStorage
         void finished_building_noc();
         void clear_noc();
         NocRouterId convert_router_id(int id) const;
+        void make_room_for_noc_router_link_list();
 
 };
 

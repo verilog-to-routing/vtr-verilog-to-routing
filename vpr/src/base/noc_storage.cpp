@@ -6,10 +6,6 @@ NocStorage::NocStorage() {
     clear_noc();
 }
 
-// destructor
-NocStorage::~NocStorage(){
-}
-
 // getters for the NoC
 
 // get the outgoing links for a router in the NoC
@@ -75,21 +71,14 @@ bool NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y){
     return result.second;
 }
 
-NocLinkId NocStorage::add_link(NocRouterId source, NocRouterId sink){
+void NocStorage::add_link(NocRouterId source, NocRouterId sink){
 
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     link_storage.emplace_back(source, sink);
 
     // the newly added link was added to the back of the list, so we can get the id as the last element in the list
     NocLinkId added_link_id((int)link_storage.size() - 1);
-
-    return added_link_id;
-}
-
-void NocStorage::add_noc_router_link(NocRouterId router_id, NocLinkId link_id){
-
-    VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
-    router_link_list[router_id].push_back(link_id);
+    router_link_list[source].push_back(added_link_id);
 
     return;
 }
@@ -145,5 +134,11 @@ NocRouterId NocStorage::convert_router_id(int id) const{
 
     return result->second;
     
+}
+
+void NocStorage::make_room_for_noc_router_link_list(){
+
+    VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
+    router_link_list.resize(router_storage.size());
 }
 
