@@ -753,6 +753,7 @@ struct t_file_name_opts {
     std::string out_file_prefix;
     std::string read_vpr_constraints_file;
     std::string write_vpr_constraints_file;
+    std::string write_block_usage;
     bool verify_file_digests;
 };
 
@@ -1300,6 +1301,7 @@ struct t_analysis_opts {
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
     std::string echo_dot_timing_graph_node;
+    std::string write_timing_summary;
 
     e_timing_update_type timing_update_type;
 };

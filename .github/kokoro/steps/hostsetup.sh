@@ -99,8 +99,8 @@ export PATH="$PATH:/home/kbuilder/.local/bin"
 export CC=gcc-9
 export CXX=g++-9
 
-pyenv install -f 3.6.3
-pyenv global 3.6.3
+pyenv install -f 3.7.0
+pyenv global 3.7.0
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 python3 get-pip.py
 rm get-pip.py

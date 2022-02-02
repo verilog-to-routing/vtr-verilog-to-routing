@@ -950,7 +950,7 @@ void try_place(const t_placer_opts& placer_opts,
         /* Print critical path delay metrics */
         VTR_LOG("\n");
         print_setup_timing_summary(*timing_ctx.constraints,
-                                   *timing_info->setup_analyzer(), "Placement estimated ");
+                                   *timing_info->setup_analyzer(), "Placement estimated ", "");
     }
 
     sprintf(msg,

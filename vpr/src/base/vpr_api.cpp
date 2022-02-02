@@ -516,8 +516,8 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         /* Sanity check the resulting netlist */
         check_netlist(packer_opts.pack_verbosity);
 
-        /* Output the netlist stats to console. */
-        printClusteredNetlistStats();
+        /* Output the netlist stats to console and optionally to file. */
+        writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage.c_str());
 
         // print the total number of used physical blocks for each
         // physical block type after finishing the packing stage

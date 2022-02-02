@@ -1560,6 +1560,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help("Prefix for output files")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.write_block_usage, "--write_block_usage")
+        .help("Writes the cluster-level block types usage summary to the specified JSON, XML or TXT file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& netlist_grp = parser.add_argument_group("netlist options");
 
     netlist_grp.add_argument<bool, ParseOnOff>(args.absorb_buffer_luts, "--absorb_buffer_luts")
@@ -2578,6 +2582,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "         undriven net named: __vpr__unconn<ID>, where <ID> is index\n"
             "         assigned to this occurrence of unconnected port in design\n")
         .default_value("unconnected")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument(args.write_timing_summary, "--write_timing_summary")
+        .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");
