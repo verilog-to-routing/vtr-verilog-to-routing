@@ -186,6 +186,7 @@ bool try_pack(t_packer_opts* packer_opts,
         } else if (pack_iteration >= 2 && pack_iteration < 5 && floorplan_not_fitting) {
             VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher target pin utilization. \n");
             attraction_groups.create_att_groups_for_overfull_regions();
+            VTR_LOG("Pack iteration is %d\n", pack_iteration);
             attraction_groups.set_att_group_pulls(4);
             t_ext_pin_util pin_util(1.0, 1.0);
             target_external_pin_util.set_block_pin_util("clb", pin_util);
