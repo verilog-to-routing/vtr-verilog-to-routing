@@ -463,9 +463,7 @@ class RRGraphView {
      */
     const MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata_;
     /* rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string() */
-
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
-
     /* Segment info for rr nodes */
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
     /* switch info for rr nodes */
