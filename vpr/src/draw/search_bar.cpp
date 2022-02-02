@@ -68,7 +68,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         ss >> rr_node_id;
 
         // valid rr node id check
-        if (rr_node_id < 0 || rr_node_id >= int(device_ctx.rr_nodes.size())) {
+        if (rr_node_id < 0 || rr_node_id >= int(device_ctx.rr_graph.num_nodes())) {
             warning_dialog_box("Invalid RR Node ID");
             app->refresh_drawing();
             return;

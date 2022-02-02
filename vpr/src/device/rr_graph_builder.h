@@ -21,9 +21,9 @@ class RRGraphBuilder {
     /* -- Constructors -- */
   public:
     /* See detailed comments about the data structures in the internal data storage section of this file */
-    RRGraphBuilder(t_rr_graph_storage* node_storage,
-                   MetadataStorage<int>* rr_node_metadata,
-                   MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata);
+    RRGraphBuilder(
+        MetadataStorage<int>* rr_node_metadata,
+        MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -37,7 +37,7 @@ class RRGraphBuilder {
     /* -- Mutators -- */
   public:
     /** @brief Return a writable object for rr_nodes */
-    t_rr_graph_storage& node_storage();
+    t_rr_graph_storage& rr_nodes();
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
 
@@ -182,6 +182,11 @@ class RRGraphBuilder {
     inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
         node_storage_.emplace_back_edge(src, dest, edge_switch);
     }
+    /** @brief Append 1 more RR node to the RR graph. */
+    inline void emplace_back() {
+        // No edges can be assigned if mutating the rr node array.
+        node_storage_.emplace_back();
+    }
 
     /** @brief alloc_and_load_edges; It adds a batch of edges.  */
     inline void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create) {
@@ -286,7 +291,7 @@ class RRGraphBuilder {
      * That explains why the reference is used here temporarily
      */
     /* node-level storage including edge storages */
-    t_rr_graph_storage& node_storage_;
+    t_rr_graph_storage node_storage_;
     /* Fast look-up for rr nodes */
     RRSpatialLookup node_lookup_;
 

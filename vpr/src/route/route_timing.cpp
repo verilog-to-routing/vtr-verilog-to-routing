@@ -322,7 +322,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
      */
     bool routing_is_successful = false;
     WirelengthInfo wirelength_info;
-    OveruseInfo overuse_info(device_ctx.rr_nodes.size());
+    OveruseInfo overuse_info(device_ctx.rr_graph.num_nodes());
     tatum::TimingPathInfo critical_path;
     int itry; //Routing iteration number
     int itry_conflicted_mode = 0;
@@ -339,7 +339,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     ConnectionRouter router(
         device_ctx.grid,
         *router_lookahead,
-        device_ctx.rr_nodes,
+        device_ctx.rr_graph.rr_nodes(),
         &device_ctx.rr_graph,
         device_ctx.rr_rc_data,
         device_ctx.rr_graph.rr_switch(),
@@ -1944,7 +1944,7 @@ static t_bb calc_current_bb(const t_trace* head) {
     bb.ymax = 0;
 
     for (const t_trace* elem = head; elem != nullptr; elem = elem->next) {
-        const t_rr_node& node = device_ctx.rr_nodes[elem->index];
+        const t_rr_node& node = device_ctx.rr_graph.rr_nodes()[elem->index];
         //The router interprets RR nodes which cross the boundary as being
         //'within' of the BB. Only those which are *strictly* out side the
         //box are excluded, hence we use the nodes xhigh/yhigh for xmin/xmax,

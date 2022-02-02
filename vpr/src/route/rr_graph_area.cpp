@@ -145,7 +145,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
         trans_track_to_cblock_buf = 0;
     }
 
-    num_inputs_to_cblock = (int*)vtr::calloc(device_ctx.rr_nodes.size(), sizeof(int));
+    num_inputs_to_cblock = (int*)vtr::calloc(rr_graph.num_nodes(), sizeof(int));
 
     maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
     cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
@@ -319,7 +319,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
      * switches of all rr nodes. Thus we keep track of which muxes we have already
      * counted via the variable below. */
     bool* chan_node_switch_done;
-    chan_node_switch_done = (bool*)vtr::calloc(device_ctx.rr_nodes.size(), sizeof(bool));
+    chan_node_switch_done = (bool*)vtr::calloc(rr_graph.num_nodes(), sizeof(bool));
 
     /* The variable below is an accumulator variable that will add up all the   *
      * transistors in the routing.  Make double so that it doesn't stop         *
@@ -349,7 +349,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
         trans_track_to_cblock_buf = 0;
     }
 
-    num_inputs_to_cblock = (int*)vtr::calloc(device_ctx.rr_nodes.size(), sizeof(int));
+    num_inputs_to_cblock = (int*)vtr::calloc(rr_graph.num_nodes(), sizeof(int));
     maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
     cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
 

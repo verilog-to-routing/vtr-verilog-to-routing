@@ -929,7 +929,7 @@ void alloc_draw_structs(const t_arch* arch) {
     /* Space is allocated for draw_rr_node but not initialized because we do *
      * not yet know information about the routing resources.				  */
     draw_state->draw_rr_node = (t_draw_rr_node*)vtr::malloc(
-        device_ctx.rr_nodes.size() * sizeof(t_draw_rr_node));
+        device_ctx.rr_graph.num_nodes() * sizeof(t_draw_rr_node));
 
     draw_state->arch_info = arch;
 
@@ -980,10 +980,10 @@ void init_draw_coords(float width_val) {
         return; //do not initialize only if --disp off and --save_graphics off
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
-    if (device_ctx.rr_nodes.size() != 0) {
+    if (rr_graph.num_nodes() != 0) {
         draw_state->draw_rr_node = (t_draw_rr_node*)vtr::realloc(
             draw_state->draw_rr_node,
-            (device_ctx.rr_nodes.size()) * sizeof(t_draw_rr_node));
+            (rr_graph.num_nodes()) * sizeof(t_draw_rr_node));
         /*FIXME: the type cast should be eliminated by making draw_rr_node adapt RRNodeId */
         for (const RRNodeId& rr_id : rr_graph.nodes()) {
             draw_state->draw_rr_node[(size_t)rr_id].color = DEFAULT_RR_NODE_COLOR;
@@ -1310,7 +1310,7 @@ static void draw_routing_costs(ezgl::renderer* g) {
 
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
-    std::vector<float> rr_node_costs(device_ctx.rr_nodes.size(), 0.);
+    std::vector<float> rr_node_costs(device_ctx.rr_graph.num_nodes(), 0.);
 
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         float cost = 0.;
@@ -1694,7 +1694,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
         to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
         to_type = rr_graph.node_type(RRNodeId(to_node));
         to_ptc_num = rr_graph.node_ptc_num(RRNodeId(to_node));
-        bool edge_configurable = device_ctx.rr_nodes[inode].edge_is_configurable(iedge);
+        bool edge_configurable = rr_graph.rr_nodes()[inode].edge_is_configurable(iedge);
 
         switch (from_type) {
             case OPIN:
@@ -2288,7 +2288,7 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g) 
  * the physical pin is on.                                                  */
 void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen, const e_side& pin_side) {
     auto& device_ctx = g_vpr_ctx.device();
-    draw_get_rr_pin_coords(device_ctx.rr_nodes[inode], xcen, ycen, pin_side);
+    draw_get_rr_pin_coords(device_ctx.rr_graph.rr_nodes()[inode], xcen, ycen, pin_side);
 }
 
 void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, const e_side& pin_side) {
@@ -2357,7 +2357,7 @@ static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer* g) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     float xcen, ycen;
-    draw_get_rr_src_sink_coords(device_ctx.rr_nodes[inode], &xcen, &ycen);
+    draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[inode], &xcen, &ycen);
 
     g->set_color(color);
 
@@ -2786,7 +2786,7 @@ static int draw_check_rr_node_hit(float click_x, float click_y) {
             case SOURCE:
             case SINK: {
                 float xcen, ycen;
-                draw_get_rr_src_sink_coords(device_ctx.rr_nodes[inode], &xcen, &ycen);
+                draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[inode], &xcen, &ycen);
 
                 // Now check if we clicked on this pin
                 if (click_x >= xcen - draw_coords->pin_size && click_x <= xcen + draw_coords->pin_size && click_y >= ycen - draw_coords->pin_size && click_y <= ycen + draw_coords->pin_size) {
@@ -2829,7 +2829,7 @@ void draw_expand_non_configurable_rr_nodes_recurr(int from_node,
 
     for (t_edge_size iedge = 0;
          iedge < rr_graph.num_edges(RRNodeId(from_node)); ++iedge) {
-        bool edge_configurable = device_ctx.rr_nodes[from_node].edge_is_configurable(iedge);
+        bool edge_configurable = rr_graph.rr_nodes()[from_node].edge_is_configurable(iedge);
         int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iedge));
 
         if (!edge_configurable && !expanded_nodes.count(to_node)) {
@@ -3355,7 +3355,7 @@ static void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g) {
         draw_get_rr_pin_coords(ipin_node, &x1, &y1, pin_side);
 
         float x2 = 0, y2 = 0;
-        draw_get_rr_src_sink_coords(device_ctx.rr_nodes[sink_node], &x2, &y2);
+        draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[sink_node], &x2, &y2);
 
         g->draw_line({x1, y1}, {x2, y2});
 
@@ -3370,7 +3370,7 @@ static void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g
     const auto& rr_graph = device_ctx.rr_graph;
 
     float x1 = 0, y1 = 0;
-    draw_get_rr_src_sink_coords(device_ctx.rr_nodes[source_node], &x1, &y1);
+    draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[source_node], &x1, &y1);
 
     /* Draw the line for each ipin on different sides */
     for (const e_side& pin_side : SIDES) {
@@ -4141,7 +4141,7 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& routing_ctx = g_vpr_ctx.routing();
 
-    std::vector<float> rr_costs(device_ctx.rr_nodes.size());
+    std::vector<float> rr_costs(device_ctx.rr_graph.num_nodes());
 
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         float cost = get_router_expansion_cost(
@@ -4198,11 +4198,11 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
                        || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES
                        || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES);
 
-    VTR_ASSERT(rr_costs.size() == device_ctx.rr_nodes.size());
+    VTR_ASSERT(rr_costs.size() == rr_graph.num_nodes());
 
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId& rr_id : rr_graph.nodes()) {
         if (std::isnan(rr_costs[(size_t)rr_id])) continue;
 
         min_cost = std::min(min_cost, rr_costs[(size_t)rr_id]);
@@ -4214,7 +4214,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
 
     //Draw the nodes in ascending order of value, this ensures high valued nodes
     //are not overdrawn by lower value ones (e.g-> when zoomed-out far)
-    std::vector<int> nodes(device_ctx.rr_nodes.size());
+    std::vector<int> nodes(rr_graph.num_nodes());
     std::iota(nodes.begin(), nodes.end(), 0);
     auto cmp_ascending_cost = [&](int lhs_node, int rhs_node) {
         if (lowest_cost_first) {

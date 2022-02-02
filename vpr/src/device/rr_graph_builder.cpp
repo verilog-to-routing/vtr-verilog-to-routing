@@ -7,15 +7,14 @@
 
 //#include "globals.h"
 
-RRGraphBuilder::RRGraphBuilder(t_rr_graph_storage* node_storage,
-                               MetadataStorage<int>* rr_node_metadata,
-                               MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata)
-    : node_storage_(*node_storage)
-    , rr_node_metadata_(*rr_node_metadata)
+RRGraphBuilder::RRGraphBuilder(
+    MetadataStorage<int>* rr_node_metadata,
+    MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata)
+    : rr_node_metadata_(*rr_node_metadata)
     , rr_edge_metadata_(*rr_edge_metadata) {
 }
 
-t_rr_graph_storage& RRGraphBuilder::node_storage() {
+t_rr_graph_storage& RRGraphBuilder::rr_nodes() {
     return node_storage_;
 }
 
@@ -59,6 +58,7 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
 
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
+    node_storage_.clear();
     rr_segments_.clear();
     rr_switch_inf_.clear();
 }

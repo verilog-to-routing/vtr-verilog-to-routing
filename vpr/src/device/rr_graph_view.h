@@ -67,12 +67,22 @@ class RRGraphView {
      *      } 
      */
     inline vtr::StrongIdRange<RRNodeId> nodes() const {
-        return vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(size()));
+        return vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(num_nodes()));
     }
 
     /** @brief Return number of nodes. This function is inlined for runtime optimization. */
-    inline size_t size() const {
+    inline size_t num_nodes() const {
         return node_storage_.size();
+    }
+    /** @brief Is the RR graph currently empty? */
+    inline bool empty() const {
+        return node_storage_.empty();
+    }
+
+    /** @brief Returns a range of RREdgeId's belonging to RRNodeId id.
+     * If this range is empty, then RRNodeId id has no edges.*/
+    inline vtr::StrongIdRange<RREdgeId> edge_range(RRNodeId id) const {
+        return vtr::StrongIdRange<RREdgeId>(node_storage_.first_edge(id), node_storage_.last_edge(id));
     }
 
     /** @brief Get the type of a routing resource node. This function is inlined for runtime optimization. */
@@ -418,6 +428,10 @@ class RRGraphView {
     /** @brief Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;
+    }
+    /** @brief Return the node-level storage structure for queries from client functions */
+    const t_rr_graph_storage& rr_nodes() const {
+        return node_storage_;
     }
 
     /* -- Internal data storage -- */
