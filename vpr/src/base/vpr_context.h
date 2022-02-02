@@ -27,6 +27,7 @@
 #include "compressed_grid.h"
 #include "metadata_storage.h"
 #include "vpr_constraints.h"
+#include "noc_storage.h"
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -388,7 +389,33 @@ struct FloorplanningContext : public Context {
  * NoC within the device.
  */
 struct NocContext : public Context {
+    /**
+     * @brief A model of the NoC  
+     *
+     * Contains all the routers and links that make up the NoC. The routers contain
+     * information regarding the physical tile positions they represent. The links
+     * define the connections between every router  (ropology) and also metrics that describe its
+     * "usage". 
+     * 
+     *
+     * The NoC model is created once from the architecture file description. 
+     */
+    NocStorage noc_model;
 
+    /**
+     * @brief Represents the maximum allowed bandwidth for the links in the NoC (in Gbps)
+     */
+    int noc_link_bandwidth;
+
+    /**
+     * @brief Represents the delay expected when going through a link
+     */
+    int noc_link_latency;
+
+    /**
+     * @brief Represents the expected delay when going through a router
+     */
+    int noc_router_latency;
 };
 
 /**

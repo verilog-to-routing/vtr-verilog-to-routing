@@ -59,7 +59,7 @@ int NocStorage::get_noc_link_number_of_connections(NocLinkId id) const{
     return link_storage[id].get_number_of_connections();
 }
 
-void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y){
+bool NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y){
 
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
         
@@ -70,17 +70,20 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y){
     // We build the conversion table here as it gurantees only unique routers
     // in the NoC are added.
     NocRouterId converted_id((int)(router_storage.size() - 1));
-    router_id_conversion_table.emplace(id, converted_id);
+    std::pair<std::unordered_map<int, NocRouterId>::iterator, bool> result= router_id_conversion_table.emplace(id, converted_id);
 
-    return;
+    return result.second;
 }
 
-void NocStorage::add_link(NocRouterId source, NocRouterId sink){
+NocLinkId NocStorage::add_link(NocRouterId source, NocRouterId sink){
 
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     link_storage.emplace_back(source, sink);
 
-    return;
+    // the newly added link was added to the back of the list, so we can get the id as the last element in the list
+    NocLinkId added_link_id((int)link_storage.size() - 1);
+
+    return added_link_id;
 }
 
 void NocStorage::add_noc_router_link(NocRouterId router_id, NocLinkId link_id){
