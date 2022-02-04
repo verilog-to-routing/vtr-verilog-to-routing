@@ -393,7 +393,13 @@ struct ArchReader {
      *      - equivalent_sites
      *      - tile_block_pin_directs_map
      **/
-    void fill_sub_tile(t_physical_tile_type& type, t_sub_tile& sub_tile, int num_pins, int input_count, int output_count) {
+    void fill_sub_tile(t_physical_tile_type& type,
+                       t_sub_tile& sub_tile,
+                       int num_pins,
+                       int input_count,
+                       int output_count,
+                       std::unordered_map<std::string, int>* port_name_to_sub_tile_idx = nullptr,
+                       Device::SiteTypeInTileType::Reader* site_in_tile = nullptr) {
         sub_tile.num_phy_pins += num_pins;
         type.num_pins += num_pins;
         type.num_inst_pins += num_pins;
@@ -417,7 +423,7 @@ struct ArchReader {
 
         vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
 
-        for (int npin = 0; npin < type.num_pins; npin++) {
+        for (int npin = 0; npin < num_pins; npin++) {
             t_physical_pin physical_pin(npin);
             t_logical_pin logical_pin(npin);
 
@@ -425,10 +431,37 @@ struct ArchReader {
         }
 
         auto ltype = get_type_by_name<t_logical_block_type>(sub_tile.name, ltypes_);
-        sub_tile.equivalent_sites.push_back(ltype);
 
         type.tile_block_pin_directs_map[ltype->index][sub_tile.index] = directs_map;
+        sub_tile.equivalent_sites.push_back(ltype);
 
+        if (site_in_tile) {
+            auto site_types = ar_.getSiteTypeList();
+            auto site_type = site_types[site_in_tile->getPrimaryType()];
+            auto alt_sites_pins = site_in_tile->getAltPinsToPrimaryPins();
+
+            for (int i = 0; i < site_type.getAltSiteTypes().size(); ++i) {
+                auto alt_site = site_types[site_type.getAltSiteTypes()[i]];
+                if (take_sites_.count(alt_site.getName()) == 0)
+                    continue;
+
+                auto ltype = get_type_by_name<t_logical_block_type>(str(alt_site.getName()).c_str(), ltypes_);
+                sub_tile.equivalent_sites.push_back(ltype);
+
+                vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
+                auto pin_map = alt_sites_pins[i];
+
+                for (int npin = 0; npin < ltype->pb_type->num_ports; npin++) {
+                    auto pin = site_type.getPins()[pin_map.getPins()[npin]];
+                    auto idx = (*port_name_to_sub_tile_idx)[str(pin.getName())];
+                    t_physical_pin physical_pin(idx);
+                    t_logical_pin logical_pin(npin);
+
+                    directs_map.insert(logical_pin, physical_pin);
+                }
+                type.tile_block_pin_directs_map[ltype->index][sub_tile.index] = directs_map;
+            }
+        }
         // Assign FC specs
         int iblk_pin = 0;
         for (const auto& port : sub_tile.ports) {
@@ -1876,8 +1909,6 @@ struct ArchReader {
             if (take_sites_.count(site.getName()) == 0)
                 continue;
 
-            auto pins_to_wires = site_in_tile.getPrimaryPinsToTileWires();
-
             sub_tile.index = type.capacity;
             sub_tile.name = vtr::strdup(str(site.getName()).c_str());
             sub_tile.capacity.set(type.capacity, type.capacity);
@@ -1888,8 +1919,7 @@ struct ArchReader {
             int icount = 0;
             int ocount = 0;
 
-            std::unordered_map<std::string, std::string> port_name_to_wire_name;
-            int idx = 0;
+            std::unordered_map<std::string, int> port_name_to_sub_tile_idx;
             for (auto dir : {INPUT, OUTPUT}) {
                 int port_idx_by_type = 0;
                 for (auto pin : site.getPins()) {
@@ -1900,9 +1930,9 @@ struct ArchReader {
 
                     port.name = vtr::strdup(str(pin.getName()).c_str());
 
-                    port_name_to_wire_name[std::string(port.name)] = str(pins_to_wires[idx++]);
-
                     sub_tile.sub_tile_to_tile_pin_indices.push_back(type.num_pins + port_idx);
+
+                    port_name_to_sub_tile_idx[str(pin.getName())] = port_idx;
                     port.index = port_idx++;
 
                     port.absolute_first_pin_index = abs_first_pin_idx++;
@@ -1921,9 +1951,9 @@ struct ArchReader {
             }
 
             auto pins_size = site.getPins().size();
-            fill_sub_tile(type, sub_tile, pins_size, icount, ocount);
+            fill_sub_tile(type, sub_tile, pins_size, icount, ocount, &port_name_to_sub_tile_idx, &site_in_tile);
 
-            type.sub_tiles.push_back(sub_tile);
+            type.sub_tiles.emplace_back(sub_tile);
         }
     }
 
