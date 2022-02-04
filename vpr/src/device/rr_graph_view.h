@@ -430,7 +430,7 @@ class RRGraphView {
         return node_lookup_;
     }
     /** @brief Return the node-level storage structure for queries from client functions */
-    const t_rr_graph_storage& rr_nodes() const {
+    inline const t_rr_graph_storage& rr_nodes() const {
         return node_storage_;
     }
 
