@@ -45,8 +45,8 @@ void write_rr_graph(const char* file_name) {
         device_ctx.rr_graph.rr_segments(),
         device_ctx.physical_tile_types,
         device_ctx.grid,
-        &device_ctx.rr_node_metadata,
-        &device_ctx.rr_edge_metadata,
+        &device_ctx.rr_graph_builder.rr_node_metadata(),
+        &device_ctx.rr_graph_builder.rr_edge_metadata(),
         &device_ctx.arch->strings);
 
     if (vtr::check_file_name_extension(file_name, ".xml")) {

@@ -21,9 +21,7 @@ class RRGraphBuilder {
     /* -- Constructors -- */
   public:
     /* See detailed comments about the data structures in the internal data storage section of this file */
-    RRGraphBuilder(t_rr_graph_storage* node_storage,
-                   MetadataStorage<int>* rr_node_metadata,
-                   MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata);
+    RRGraphBuilder(t_rr_graph_storage* node_storage);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -40,6 +38,38 @@ class RRGraphBuilder {
     t_rr_graph_storage& node_storage();
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
+    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+     *  e.g., node_lookup! */
+    /** @brief Return a writable object for the meta data on the nodes */
+    MetadataStorage<int>& rr_node_metadata();
+    /** @brief Return a writable object for the meta data on the edge */
+    MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata();
+
+    /** @brief Return the size for rr_node_metadata */
+    inline size_t rr_node_metadata_size() const {
+        return rr_node_metadata_.size();
+    }
+    /** @brief Return the size for rr_edge_metadata */
+    inline size_t rr_edge_metadata_size() const {
+        return rr_edge_metadata_.size();
+    }
+    /** @brief Find the node in rr_node_metadata */
+    inline vtr::flat_map<int, t_metadata_dict>::const_iterator find_rr_node_metadata(const int& lookup_key) const {
+        return rr_node_metadata_.find(lookup_key);
+    }
+    /** @brief Find the edge in rr_edge_metadata */
+    inline vtr::flat_map<std::tuple<int, int, short int>, t_metadata_dict>::const_iterator find_rr_edge_metadata(const std::tuple<int, int, short int>& lookup_key) const {
+        return rr_edge_metadata_.find(lookup_key);
+    }
+    /** @brief Return the last node in rr_node_metadata */
+    inline vtr::flat_map<int, t_metadata_dict>::const_iterator end_rr_node_metadata() const {
+        return rr_node_metadata_.end();
+    }
+
+    /** @brief Return the last edge in rr_edge_metadata */
+    inline vtr::flat_map<std::tuple<int, int, short int>, t_metadata_dict>::const_iterator end_rr_edge_metadata() const {
+        return rr_edge_metadata_.end();
+    }
 
     /** @brief Add a rr_segment to the routing resource graph. Return an valid id if successful.
      *  - Each rr_segment contains the detailed information of a routing track, which is denoted by a node in CHANX or CHANY type.
@@ -304,13 +334,30 @@ class RRGraphBuilder {
     /* Detailed information about the switches, which are used in the RRGraph */
     vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
 
+    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+     *  e.g., node_lookup! */
     /* Metadata is an extra data on rr-nodes and edges, respectively, that is not used by vpr
      * but simply passed through the flow so that it can be used by downstream tools.
      * The main (perhaps only) current use of this metadata is the fasm tool of symbiflow,
      * which needs extra metadata on which programming bits control which switch in order to produce a bitstream.*/
-
-    MetadataStorage<int>& rr_node_metadata_;
-    MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata_;
+    /**
+     * @brief Attributes for each rr_node.
+     *
+     * key:     rr_node index
+     * value:   map of <attribute_name, attribute_value>
+     */
+    MetadataStorage<int> rr_node_metadata_;
+    /**
+     * @brief  Attributes for each rr_edge
+     *
+     * key:     <source rr_node_index, sink rr_node_index, iswitch>
+     * iswitch: Index of the switch type used to go from this rr_node to
+     *          the next one in the routing.  OPEN if there is no next node
+     *          (i.e. this node is the last one (a SINK) in a branch of the
+     *          net's routing).
+     * value:   map of <attribute_name, attribute_value>
+     */
+    MetadataStorage<std::tuple<int, int, short>> rr_edge_metadata_;
 };
 
 #endif
