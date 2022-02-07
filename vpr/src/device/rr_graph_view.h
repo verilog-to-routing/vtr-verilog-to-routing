@@ -37,6 +37,8 @@ class RRGraphView {
     /* See detailed comments about the data structures in the internal data storage section of this file */
     RRGraphView(const t_rr_graph_storage& node_storage,
                 const RRSpatialLookup& node_lookup,
+                const MetadataStorage<int>& rr_node_metadata,
+                const MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata,
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                 const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
@@ -425,6 +427,7 @@ class RRGraphView {
         return rr_switch_inf_;
     }
 
+
     /** @brief Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;
@@ -434,6 +437,17 @@ class RRGraphView {
         return node_storage_;
     }
 
+  /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+     *  e.g., node_lookup! */
+    MetadataStorage<int> rr_node_metadata_data() const {
+        return rr_node_metadata_;
+    }
+
+    MetadataStorage<std::tuple<int, int, short>> rr_edge_metadata_data() const {
+        return rr_edge_metadata_;
+    }
+
+
     /* -- Internal data storage -- */
     /* Note: only read-only object or data structures are allowed!!! */
   private:
@@ -441,7 +455,30 @@ class RRGraphView {
     const t_rr_graph_storage& node_storage_;
     /* Fast look-up for rr nodes */
     const RRSpatialLookup& node_lookup_;
-
+    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+     *  e.g., node_lookup! */
+    /* Metadata is an extra data on rr-nodes and edges, respectively, that is not used by vpr
+     * but simply passed through the flow so that it can be used by downstream tools.
+     * The main (perhaps only) current use of this metadata is the fasm tool of symbiflow,
+     * which needs extra metadata on which programming bits control which switch in order to produce a bitstream.*/
+    /**
+     * @brief Attributes for each rr_node.
+     *
+     * key:     rr_node index
+     * value:   map of <attribute_name, attribute_value>
+     */
+    const MetadataStorage<int>& rr_node_metadata_;
+    /**
+     * @brief  Attributes for each rr_edge
+     *
+     * key:     <source rr_node_index, sink rr_node_index, iswitch>
+     * iswitch: Index of the switch type used to go from this rr_node to
+     *          the next one in the routing.  OPEN if there is no next node
+     *          (i.e. this node is the last one (a SINK) in a branch of the
+     *          net's routing).
+     * value:   map of <attribute_name, attribute_value>
+     */
+    const MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata_;
     /* rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string() */
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
 

@@ -163,12 +163,12 @@ struct DeviceContext : public Context {
     /* A writeable view of routing resource graph to be the ONLY database 
      * for routing resource graph builder functions.
      */
-    RRGraphBuilder rr_graph_builder{&rr_node_metadata, &rr_edge_metadata};
+    RRGraphBuilder rr_graph_builder{};
 
     /* A read-only view of routing resource graph to be the ONLY database 
      * for client functions: GUI, placer, router, timing analyzer etc.
      */
-    RRGraphView rr_graph{rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_indexed_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch()};
+    RRGraphView rr_graph{rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_graph_builder.rr_node_metadata(), rr_graph_builder.rr_edge_metadata(), rr_indexed_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch()};
     int num_arch_switches;
     t_arch_switch_inf* arch_switch_inf; // [0..(num_arch_switches-1)]
 
@@ -187,25 +187,6 @@ struct DeviceContext : public Context {
      *      a single value
      */
     int virtual_clock_network_root_idx;
-
-    /**
-     * @brief Attributes for each rr_node.
-     *
-     * key:     rr_node index
-     * value:   map of <attribute_name, attribute_value>
-     */
-    MetadataStorage<int> rr_node_metadata;
-    /**
-     * @brief  Attributes for each rr_edge
-     *
-     * key:     <source rr_node_index, sink rr_node_index, iswitch>
-     * iswitch: Index of the switch type used to go from this rr_node to
-     *          the next one in the routing.  OPEN if there is no next node
-     *          (i.e. this node is the last one (a SINK) in a branch of the
-     *          net's routing).
-     * value:   map of <attribute_name, attribute_value>
-     */
-    MetadataStorage<std::tuple<int, int, short>> rr_edge_metadata;
 
     /**
      * @brief switch_fanin_remap is only used for printing out switch fanin stats

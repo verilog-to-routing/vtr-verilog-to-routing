@@ -188,13 +188,13 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     std::mt19937 g(1);
     std::shuffle(src_order.begin(), src_order.end(), g);
 
-    CHECK(device_ctx.rr_node_metadata.size() == 1);
-    CHECK(device_ctx.rr_edge_metadata.size() == 1);
+    CHECK(device_ctx.rr_graph_builder.rr_node_metadata_size() == 1);
+    CHECK(device_ctx.rr_graph_builder.rr_edge_metadata_size() == 1);
 
     auto node = arch.strings.intern_string(vtr::string_view("node"));
     auto edge = arch.strings.intern_string(vtr::string_view("edge"));
 
-    for (const auto& node_meta : device_ctx.rr_node_metadata) {
+    for (const auto& node_meta : device_ctx.rr_graph.rr_node_metadata_data()) {
         CHECK(src_order[node_meta.first] == src_inode);
         REQUIRE(node_meta.second.has(node));
         auto* value = node_meta.second.one(node);
@@ -202,7 +202,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         CHECK_THAT(value->as_string().get(&arch.strings), Equals("test node"));
     }
 
-    for (const auto& edge_meta : device_ctx.rr_edge_metadata) {
+    for (const auto& edge_meta : device_ctx.rr_graph.rr_edge_metadata_data()) {
         CHECK(src_order[std::get<0>(edge_meta.first)] == src_inode);
         CHECK(src_order[std::get<1>(edge_meta.first)] == sink_inode);
         CHECK(std::get<2>(edge_meta.first) == switch_id);
