@@ -138,7 +138,6 @@ A similar scheme is used at the outputs to ensure that either all outputs are re
 Finally, we model the relationship of the memory block with the general FPGA fabric.
 The ratio of tracks that a particular input/output pin of the CLB connects to is defined by fc_in/fc_out.
 The pinlocations describes which side of the logic block pins reside on where the pattern spread describes evenly spreading out the pins on all sides of the CLB in a round-robin fashion.
-The columns occupied by complex blocks of type CLB is defined by gridlocations where ``type="col" start="2" repeat="5"`` means that every fifth column starting from the second column type memory CLB unless that column is taken up by a block with higher priority (where a bigger number means a higher priority).
 
 .. code-block:: xml
 
@@ -148,9 +147,6 @@ The columns occupied by complex blocks of type CLB is defined by gridlocations w
       <fc_out type="frac">0.125000</fc_out>
 
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc type="col" start="2" repeat="5" priority="2"/>
-      </gridlocations>
 
 
 
@@ -248,6 +244,3 @@ Configurable Memory Bus-Based Complete Example
       <fc_out type="frac">0.125000</fc_out>
 
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc type="col" start="2" repeat="5" priority="2"/>
-      </gridlocations>

@@ -104,7 +104,6 @@ The ratio of tracks that a particular input/output pin of the CLB connects to is
 In this example, a fc_in of 0.15 means that each input pin connects to 15% of the available routing tracks in the external-to-CLB routing channel adjacent to that pin.
 The pinlocations tag is used to associate pins on the CLB with which side of the logic block pins reside on where the pattern spread corresponds to evenly spreading out the pins on all sides of the CLB in a round-robin fashion.
 In this example, the CLB has a total of 33 pins (22 input pins, 10 output pins, 1 clock pin) so 8 pins are assigned to all sides of the CLB except one side which gets assigned 9 pins.
-The columns occupied by complex blocks of type CLB is defined by gridlocations where fill means that all columns should be type CLB unless that column is taken up by a block with higher priority (where a larger number means a higher priority).
 
 .. code-block:: xml
 
@@ -114,9 +113,7 @@ The columns occupied by complex blocks of type CLB is defined by gridlocations w
       <fc_out type="frac">0.125000</fc_out>
 
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc type="fill" priority="1"/>
-      </gridlocations>
+
     </pb_type>
 
 
@@ -171,8 +168,6 @@ Classic Soft Logic Block Complete Example
       <fc_out type="frac">0.125000</fc_out>
 
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc type="fill" priority="1"/>
-      </gridlocations>
+
     </pb_type>
 
