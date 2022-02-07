@@ -427,7 +427,6 @@ class RRGraphView {
         return rr_switch_inf_;
     }
 
-
     /** @brief Return the fast look-up data structure for queries from client functions */
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;
@@ -437,7 +436,7 @@ class RRGraphView {
         return node_storage_;
     }
 
-  /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
      *  e.g., node_lookup! */
     MetadataStorage<int> rr_node_metadata_data() const {
         return rr_node_metadata_;
@@ -446,7 +445,6 @@ class RRGraphView {
     MetadataStorage<std::tuple<int, int, short>> rr_edge_metadata_data() const {
         return rr_edge_metadata_;
     }
-
 
     /* -- Internal data storage -- */
     /* Note: only read-only object or data structures are allowed!!! */
