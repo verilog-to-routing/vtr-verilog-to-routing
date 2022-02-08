@@ -131,10 +131,10 @@ void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_noc_rou
 void create_noc_routers(t_noc_inf noc_info, NocStorage* noc_model , std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles)
 {
     // keep track of the shortest distance between a logical router and the curren physical router tile
-    // also keep track of the corresponding logical router
+    // also keep track of the corresponding physical router tile index (within the list)
     double shortest_distance;
     double curr_calculated_distance;
-    t_router* closest_router;
+    int closest_physical_router;
 
     // information regarding physical router position
     double curr_physical_router_pos_x;
@@ -144,38 +144,50 @@ void create_noc_routers(t_noc_inf noc_info, NocStorage* noc_model , std::vector<
     double curr_logical_router_position_x;
     double curr_logical_router_position_y;
 
-    // result of adding a router to the NoC
-    bool router_creation;
+    // keep track of the index of each physical router (this helps uniqely identify them)
+    int curr_physical_router_index = 0;
 
     // keep track of the ids of the routers that ceate the case where multiple routers
     // have the same distance to a physical router tile 
-    int error_case_router_id_1;
-    int error_case_router_id_2;
+    int error_case_physical_router_index_1;
+    int error_case_physical_router_index_2;
+
+    // keep track of all the logical router and physical router assignments (their pairings)
+    // they are stored in the form (physical router index, logical router id)
+    std::unordered_map<int, int> router_assignments;
+    router_assignments.clear();
+
+    // reference to access elements in the router_assignments above
+    std::unordered_map<int, int>::const_iterator single_router_assignment;
     
     // Below we create all the routers within the NoC //
 
-    // go through each physical router tile and assign it to a logical router specified by the user
-    // in the architecture escription
-    for (auto physical_router = list_of_noc_router_tiles.begin(); physical_router != list_of_noc_router_tiles.end(); physical_router++)
+    // go through each logical router tile and assign it to a physical router on the FPGA
+    for (auto logical_router = noc_info.router_list.begin(); logical_router != noc_info.router_list.end(); logical_router++)
     {
-        // assign the shortest distance to a large value (this is done so that the first distance calculated can replace this)
+        // assign the shortest distance to a large value (this is done so that the first distance calculated and we can replace this)
         shortest_distance = LLONG_MAX;
 
-        curr_physical_router_pos_x = physical_router->tile_centroid_x;
-        curr_physical_router_pos_y = physical_router->tile_centroid_y;
+        // get position of the current logical router
+        curr_logical_router_position_x = logical_router->device_x_position;
+        curr_logical_router_position_y = logical_router->device_y_position;
 
-        closest_router = NULL;
+        closest_physical_router = 0;
 
-        // initialze the router ids that track the error case where two routers have the same distance to a physical router
-        // we initialize it to a in-valid router id, so that it reflects the situation where we never hit this case
-        error_case_router_id_1 = -1;
-        error_case_router_id_2 = -1;
+        // the starting index of the physical router list
+        curr_physical_router_index = 0;
 
-        // determine the logical router that is closest to the current physocal router tile 
-        for (auto logical_router = noc_info.router_list.begin(); logical_router != noc_info.router_list.end(); logical_router++)
+        // initialze the router ids that track the error case where two physical router tiles have the same distance to a logical router
+        // we initialize it to a in-valid index, so that it reflects the situation where we never hit this case
+        error_case_physical_router_index_1 = -1;
+        error_case_physical_router_index_2 = -1;
+
+        // determine the physical router tile that is closest to the current logical router
+        for (auto physical_router = list_of_noc_router_tiles.begin(); physical_router != list_of_noc_router_tiles.end(); physical_router++)
         {   
-            curr_logical_router_position_x = logical_router->device_x_position;
-            curr_logical_router_position_y = logical_router->device_y_position;
+            // get the position of the current physical router tile on the FPGA device
+            curr_physical_router_pos_x = physical_router->tile_centroid_x;
+            curr_physical_router_pos_y = physical_router->tile_centroid_y;
 
             // use euclidean distance to calculate the length between the current logical and physical routers
             curr_calculated_distance = sqrt(pow(abs(curr_physical_router_pos_x - curr_logical_router_position_x),2.0) + 
@@ -184,38 +196,51 @@ void create_noc_routers(t_noc_inf noc_info, NocStorage* noc_model , std::vector<
             // if the current distance is the same as the previous shortest distance
             if (curr_calculated_distance == shortest_distance)
             {   
-                // store the ids of the two routers
-                error_case_router_id_1 = closest_router->id;
-                error_case_router_id_2 = logical_router->id;
+                // store the ids of the two physical routers
+                error_case_physical_router_index_1 = closest_physical_router;
+                error_case_physical_router_index_2 = curr_physical_router_index;
                
             }
             else if (curr_calculated_distance < shortest_distance) // case where the current logical router is closest to the physical router tile
             {
                 // update the shortest distance and then the closest router
                 shortest_distance = curr_calculated_distance;
-                closest_router = &*logical_router;
+                closest_physical_router = curr_physical_router_index;
 
             }
 
+            // update the index for the next physical router
+            curr_physical_router_index++;
+
         }
 
-        // check the case where two routers have the same distance to the given physical router tile
-        if (error_case_router_id_1 == closest_router->id)
+        // check the case where two physical router tiles have the same distance to the given logical router
+        if (error_case_physical_router_index_1 == closest_physical_router)
         {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER, 
-                "Routers with IDs: '%d' and '%d' have the same distance to a physical router tile located at position (%d,%d). Therefore, no routers could be assigned to the physical router tile.", 
-                 error_case_router_id_1, error_case_router_id_2, physical_router->grid_width_position, physical_router->grid_height_position);
+                "Router with ID:'%d' has the same distance to physical router tiles located at position (%d,%d) and (%d,%d). Therefore, no router assignment could be made.", 
+                 logical_router->id, list_of_noc_router_tiles[error_case_physical_router_index_1].grid_width_position, list_of_noc_router_tiles[error_case_physical_router_index_1].grid_height_position, 
+                 list_of_noc_router_tiles[error_case_physical_router_index_2].grid_width_position, list_of_noc_router_tiles[error_case_physical_router_index_2].grid_height_position);
+        }
+
+        // check if the current closest physical router tile was already assigned previously to another logical router
+        single_router_assignment = router_assignments.find(closest_physical_router);
+
+        // the current physical router was already assigned previously, so throw an error
+        if (single_router_assignment != router_assignments.end())
+        {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Routers with IDs:'%d' and '%d' are both closest to physical router tile located at (%d,%d) and the physical router could not be assigned multiple times.", 
+                            logical_router->id, single_router_assignment->second, list_of_noc_router_tiles[closest_physical_router].grid_width_position, 
+                            list_of_noc_router_tiles[closest_physical_router].grid_height_position);
         }
 
         // at this point, the closest logical router to the current physical router was found
         // so add the router to the NoC
-        router_creation = noc_model->add_router(closest_router->id, physical_router->grid_width_position, physical_router->grid_height_position);
+        noc_model->add_router(logical_router->id, list_of_noc_router_tiles[closest_physical_router].grid_width_position, 
+                            list_of_noc_router_tiles[closest_physical_router].grid_height_position);
 
-        // if we failed to add a router then that means a logical router was the closest to multiple routers
-        if (!router_creation)
-        {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Router with ID:'%d' was the closest to multiple physical router tiles and therefore could not be assigned multiple times.", closest_router->id);
-        }
+        // add the new assignment to the tracker
+        router_assignments.emplace(closest_physical_router, logical_router->id);
 
     }
 
