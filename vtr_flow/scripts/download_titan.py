@@ -29,7 +29,7 @@ class ExtractionError(Exception):
 
 
 TITAN_URL_MIRRORS = {
-    "eecg": "https://www.eecg.utoronto.ca/~kmurray/titan/",
+    "eecg": "http://www.eecg.utoronto.ca/~kmurray/titan/",
     "google": "https://storage.googleapis.com/verilog-to-routing/titan/",
 }
 
@@ -82,17 +82,17 @@ def main():
 
     try:
         tar_gz_filename = "titan_release_" + args.titan_version + ".tar.gz"
-        #md5_filename = "titan_release_" + args.titan_version + ".md5"
+        md5_filename = "titan_release_" + args.titan_version + ".md5"
 
-        #tar_gz_url = urllib.parse.urljoin(TITAN_URL_MIRRORS[args.mirror], tar_gz_filename)
-        #md5_url = urllib.parse.urljoin(TITAN_URL_MIRRORS[args.mirror], md5_filename)
+        tar_gz_url = urllib.parse.urljoin(TITAN_URL_MIRRORS[args.mirror], tar_gz_filename)
+        md5_url = urllib.parse.urljoin(TITAN_URL_MIRRORS[args.mirror], md5_filename)
 
         # Requires a .decode() here to convert from bytes to a string
-        #external_md5 = load_md5_from_url(md5_url).decode()
+        external_md5 = load_md5_from_url(md5_url).decode()
 
         file_matches = False
-        #if os.path.isfile(tar_gz_filename):
-        #    file_matches = md5_matches(tar_gz_filename, external_md5)
+        if os.path.isfile(tar_gz_filename):
+            file_matches = md5_matches(tar_gz_filename, external_md5)
 
         if not args.force and file_matches:
             print(
@@ -104,12 +104,12 @@ def main():
             if os.path.isfile(tar_gz_filename) and not file_matches:
                 print("Local file MD5 does not match remote MD5")
 
-            #print("Downloading {}".format(tar_gz_url))
-            #download_url(tar_gz_filename, tar_gz_url)
+            print("Downloading {}".format(tar_gz_url))
+            download_url(tar_gz_filename, tar_gz_url)
 
-            #print("Verifying {}".format(tar_gz_url))
-            #if not md5_matches(tar_gz_filename, external_md5):
-            #    raise ChecksumError(tar_gz_filename)
+            print("Verifying {}".format(tar_gz_url))
+            if not md5_matches(tar_gz_filename, external_md5):
+                raise ChecksumError(tar_gz_filename)
 
             print("Extracting {}".format(tar_gz_filename))
             extract_to_vtr_flow_dir(args, tar_gz_filename)
@@ -153,10 +153,10 @@ def verify_titan(tar_gz_filename, md5_url):
         for chunk in iter(lambda: f.read(4096), b""):
             local_md5.update(chunk)
 
-    #if local_md5.hexdigest() != external_md5:
-    #    raise ChecksumError(
-    #        "Checksum mismatch! Local {} expected {}".format(local_md5.hexdigest(), external_md5)
-    #    )
+    if local_md5.hexdigest() != external_md5:
+        raise ChecksumError(
+            "Checksum mismatch! Local {} expected {}".format(local_md5.hexdigest(), external_md5)
+        )
     print("OK")
 
 
