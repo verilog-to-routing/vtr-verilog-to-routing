@@ -334,7 +334,7 @@ void create_rr_graph(const t_graph_type graph_type,
             }
         }
     } else {
-        if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
+        if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty()) {
             //No change in channel width, so skip re-building RR graph
             VTR_LOG("RR graph channel widths unchanged, skipping RR graph rebuild\n");
             return;
@@ -370,7 +370,7 @@ void create_rr_graph(const t_graph_type graph_type,
 
     process_non_config_sets();
 
-    verify_rr_node_indices(grid, device_ctx.rr_graph, device_ctx.rr_nodes);
+    verify_rr_node_indices(grid, device_ctx.rr_graph, device_ctx.rr_graph.rr_nodes());
 
     print_rr_graph_stats();
 
@@ -386,11 +386,11 @@ void print_rr_graph_stats() {
     const auto& rr_graph = device_ctx.rr_graph;
 
     size_t num_rr_edges = 0;
-    for (auto& rr_node : device_ctx.rr_nodes) {
+    for (auto& rr_node : rr_graph.rr_nodes()) {
         num_rr_edges += rr_graph.edges(rr_node.id()).size();
     }
 
-    VTR_LOG("  RR Graph Nodes: %zu\n", device_ctx.rr_nodes.size());
+    VTR_LOG("  RR Graph Nodes: %zu\n", rr_graph.num_nodes());
     VTR_LOG("  RR Graph Edges: %zu\n", num_rr_edges);
 }
 
@@ -705,7 +705,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     auto update_chan_width = alloc_and_load_rr_graph(
         device_ctx.rr_graph_builder,
-        device_ctx.rr_nodes, device_ctx.rr_graph, segment_inf.size(),
+        device_ctx.rr_graph_builder.rr_nodes(), device_ctx.rr_graph, segment_inf.size(),
         chan_details_x, chan_details_y,
         track_to_pin_lookup, opin_to_track_map,
         switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
@@ -721,9 +721,9 @@ static void build_rr_graph(const t_graph_type graph_type,
         clock_modeling);
 
     // Verify no incremental node allocation.
-    if (device_ctx.rr_nodes.size() > expected_node_count) {
+    if (rr_graph.num_nodes() > expected_node_count) {
         VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
-                      expected_node_count, device_ctx.rr_nodes.size());
+                      expected_node_count, rr_graph.num_nodes());
     }
 
     /* Update rr_nodes capacities if global routing */
@@ -1404,8 +1404,6 @@ void free_rr_graph() {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     device_ctx.read_rr_graph_filename.clear();
-
-    device_ctx.rr_nodes.clear();
 
     device_ctx.rr_graph_builder.clear();
 
@@ -2485,8 +2483,6 @@ std::string describe_rr_node(int inode) {
 
     std::string msg = vtr::string_fmt("RR node: %d", inode);
 
-    auto rr_node = device_ctx.rr_nodes[inode];
-
     if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) {
         auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
 
@@ -2503,11 +2499,11 @@ std::string describe_rr_node(int inode) {
                                    seg_index);
         }
     } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
-        auto type = device_ctx.grid[rr_graph.node_xlow(rr_node.id())][rr_graph.node_ylow(rr_node.id())].type;
-        std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(rr_node.id()));
+        auto type = device_ctx.grid[rr_graph.node_xlow(RRNodeId(inode))][rr_graph.node_ylow(RRNodeId(inode))].type;
+        std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(RRNodeId(inode)));
 
         msg += vtr::string_fmt(" pin: %d pin_name: %s",
-                               rr_graph.node_pin_num(rr_node.id()),
+                               rr_graph.node_pin_num(RRNodeId(inode)),
                                pin_name.c_str());
     } else {
         VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK);
@@ -3024,11 +3020,10 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
 //Collects the sets of connected non-configurable edges in the RR graph
 static void create_edge_groups(EdgeGroups* groups) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_nodes = device_ctx.rr_nodes;
     const auto& rr_graph = device_ctx.rr_graph;
-    rr_nodes.for_each_edge(
+    rr_graph.rr_nodes().for_each_edge(
         [&](RREdgeId edge, RRNodeId src, RRNodeId sink) {
-            if (!rr_graph.rr_switch_inf(RRSwitchId(rr_nodes.edge_switch(edge))).configurable()) {
+            if (!rr_graph.rr_switch_inf(RRSwitchId(rr_graph.rr_nodes().edge_switch(edge))).configurable()) {
                 groups->add_non_config_edge(size_t(src), size_t(sink));
             }
         });

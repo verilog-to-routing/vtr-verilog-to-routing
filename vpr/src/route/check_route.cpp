@@ -74,8 +74,8 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
 
     check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type);
 
-    auto connected_to_route = std::make_unique<bool[]>(device_ctx.rr_nodes.size());
-    std::fill_n(connected_to_route.get(), device_ctx.rr_nodes.size(), false);
+    auto connected_to_route = std::make_unique<bool[]>(rr_graph.num_nodes());
+    std::fill_n(connected_to_route.get(), rr_graph.num_nodes(), false);
 
     max_pins = 0;
     for (auto net_id : cluster_ctx.clb_nlist.nets())
@@ -536,7 +536,7 @@ void recompute_occupancy_from_scratch() {
             /* Will always be 0 for pads or SINK classes. */
             for (ipin = 0; ipin < num_local_opins; ipin++) {
                 inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
-                VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_nodes.size());
+                VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_graph.num_nodes());
                 route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
             }
         }
@@ -592,9 +592,9 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (inode < 0 || inode >= (int)device_ctx.rr_nodes.size()) {
+    if (inode < 0 || inode >= (int)device_ctx.rr_graph.num_nodes()) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_nodes.size() - 1);
+                        "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_graph.num_nodes() - 1);
     }
     check_rr_node(inode, route_type, device_ctx);
 }

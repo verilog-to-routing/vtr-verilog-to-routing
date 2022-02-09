@@ -101,7 +101,7 @@ static void do_one_route(int source_node, int sink_node,
     ConnectionRouter<BinaryHeap> router(
             device_ctx.grid,
             *router_lookahead,
-            device_ctx.rr_nodes,
+            device_ctx.rr_graph.rr_nodes(),
             &device_ctx.rr_graph,
             device_ctx.rr_rc_data,
             device_ctx.rr_graph.rr_switch(),

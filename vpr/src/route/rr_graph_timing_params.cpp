@@ -45,9 +45,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
     cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
     buffer_Cin = (float*)vtr::calloc(maxlen, sizeof(float));
 
-    std::vector<float> rr_node_C(device_ctx.rr_nodes.size(), 0.); //Stores the final C
+    std::vector<float> rr_node_C(rr_graph.num_nodes(), 0.); //Stores the final C
 
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId& rr_id : rr_graph.nodes()) {
         size_t inode = (size_t)rr_id;
         //The C may have already been partly initialized (e.g. with metal capacitance)
         rr_node_C[inode] += rr_graph.node_C(rr_id);
@@ -172,8 +172,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
      * Current structures only keep switch information from a node to the next node and
      * not the reverse.  Therefore I need to go through all the possible edges to figure
      * out what the Cout's should be */
-    Couts_to_add = (float*)vtr::calloc(device_ctx.rr_nodes.size(), sizeof(float));
-    for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
+    Couts_to_add = (float*)vtr::calloc(rr_graph.num_nodes(), sizeof(float));
+    for (const RRNodeId& inode : rr_graph.nodes()) {
         for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); iedge++) {
             switch_index = rr_graph.edge_switch(inode, iedge);
             to_node = size_t(rr_graph.edge_sink_node(inode, iedge));

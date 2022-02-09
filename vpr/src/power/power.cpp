@@ -1192,7 +1192,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     }
 
     /* Initialize RR Graph Structures */
-    rr_node_power = (t_rr_node_power*)vtr::calloc(device_ctx.rr_nodes.size(),
+    rr_node_power = (t_rr_node_power*)vtr::calloc(rr_graph.num_nodes(),
                                                   sizeof(t_rr_node_power));
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         rr_node_power[(size_t)rr_id].driver_switch_type = OPEN;

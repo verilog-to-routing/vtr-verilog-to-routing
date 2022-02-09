@@ -35,7 +35,7 @@ void write_rr_graph(const char* file_name) {
         /*read_rr_graph_filename=*/nullptr,
         /*read_edge_metadata=*/false,
         &device_ctx.chan_width,
-        &device_ctx.rr_nodes,
+        &device_ctx.rr_graph_builder.rr_nodes(),
         &device_ctx.rr_graph_builder,
         &device_ctx.rr_graph,
         &device_ctx.rr_graph_builder.rr_switch(),
