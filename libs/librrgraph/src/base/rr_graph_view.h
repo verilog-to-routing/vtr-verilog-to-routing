@@ -304,6 +304,12 @@ class RRGraphView {
         return node_storage_.edge_sink_node(id, iedge);
     }
 
+    /** @brief Detect if the edge is a configurable edge (controlled by a programmable routing multipler or a tri-state switch). */
+    inline bool edge_is_configurable(RRNodeId id, t_edge_size iedge) const {
+      auto iswitch = edge_switch(id, iedge);
+      return rr_switch_inf_[RRSwitchId(iswitch)].configurable();
+    }
+
     /** @brief Get the number of configurable edges. This function is inlined for runtime optimization. */
     inline t_edge_size num_configurable_edges(RRNodeId node) const {
         return node_storage_.num_configurable_edges(node);
@@ -444,6 +450,30 @@ class RRGraphView {
 
     MetadataStorage<std::tuple<int, int, short>> rr_edge_metadata_data() const {
         return rr_edge_metadata_;
+    }
+
+  public: /* Validators */
+    /** @brief Check internal assumptions about RR node are valid */
+    inline bool validate_node(RRNodeId node_id) const {
+        t_edge_size iedge = 0;
+        for (auto edge : edges()) {
+            if (edge < node_storage_.num_configurable_edges(node_id)) {
+                if (!edge_is_configurable(node_id, edge)) {
+                    VTR_LOG_ERROR("RR Node non-configurable edge found in configurable edge list");
+                }
+            } else {
+                if (edge_is_configurable(node_id, edge)) {
+                    VTR_LOG_ERROR("RR Node configurable edge found in non-configurable edge list");
+                }
+            }
+            ++iedge;
+        }
+    
+        if (iedge != node_storage_.num_edges(node_id)) {
+            VTR_LOG_ERROR("RR Node Edge iteration does not match edge size");
+        }
+    
+        return true;
     }
 
     /* -- Internal data storage -- */
