@@ -1076,6 +1076,8 @@ struct t_placer_opts {
     float place_crit_limit;
     int place_constraint_expand;
     bool place_constraint_subtile;
+    int floorplan_num_horizontal_partitions;
+    int floorplan_num_vertical_partitions;
 
     /**
      * @brief Tile types that should be used during delay sampling.

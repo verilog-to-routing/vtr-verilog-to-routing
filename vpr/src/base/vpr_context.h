@@ -377,6 +377,8 @@ struct FloorplanningContext : public Context {
      * The constraints on each cluster are computed during the clustering process and can change.
      */
     vtr::vector<ClusterBlockId, PartitionRegion> cluster_constraints;
+
+    std::vector<Region> overfull_regions;
 };
 
 /**

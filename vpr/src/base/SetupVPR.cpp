@@ -613,6 +613,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_agent_algorithm = Options.place_agent_algorithm;
     PlacerOpts->place_constraint_expand = Options.place_constraint_expand;
     PlacerOpts->place_constraint_subtile = Options.place_constraint_subtile;
+    PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
+    PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

@@ -41,15 +41,7 @@ struct AttractionGroup {
      * Atoms belonging to this attraction group will receive this gain if they
      * are potential candidates to be put in a cluster with the same attraction group.
      */
-    float gain = 5;
-
-    /*
-     * If the group is made up from a partition of atoms that are confined to a size one spot
-     * (i.e. one x, y grid location), the clusterer will immediately put all atoms in the group
-     * into the same cluster
-     */
-    /* TODO: Add the code in the clusterer that will do the above steps. */
-    //bool must_be_packed_in_one_cluster = false;
+    float gain = 0.08;
 };
 
 class AttractionInfo {
@@ -58,10 +50,12 @@ class AttractionInfo {
     //If no constraints were specified, then no attraction groups will be created.
     AttractionInfo(bool attraction_groups_on);
 
+    void create_att_groups_for_overfull_regions();
+
     //Setters and getters for the class
     AttractGroupId get_atom_attraction_group(const AtomBlockId atom_id);
 
-    const AttractionGroup& get_attraction_group_info(const AttractGroupId group_id);
+    AttractionGroup& get_attraction_group_info(const AttractGroupId group_id);
 
     void set_atom_attraction_group(const AtomBlockId atom_id, const AttractGroupId group_id);
 
@@ -75,6 +69,10 @@ class AttractionInfo {
 
     int num_attraction_groups();
 
+    int get_att_group_pulls();
+
+    void set_att_group_pulls(int num_pulls);
+
   private:
     //Store each atom's attraction group assuming each atom is in at most one attraction group
     //Atoms with no attraction group will have AttractGroupId::INVALID
@@ -82,7 +80,23 @@ class AttractionInfo {
 
     //Store atoms and gain value that belong to each attraction group
     vtr::vector<AttractGroupId, AttractionGroup> attraction_groups;
+
+    /* When packing a cluster with molecules, we have various ways of seeking candidates molecule
+     * candidates for the cluster. The att_group_pulls value is a way of keeping count of how many
+     * times a cluster has searched for candidate molecules from its attraction group. We can increase
+     * this value if we want to pack the cluster more densely (i.e. fill it with more molecules from
+     * its attraction group).
+     */
+    int att_group_pulls = 1;
 };
+
+inline int AttractionInfo::get_att_group_pulls() {
+    return att_group_pulls;
+}
+
+inline void AttractionInfo::set_att_group_pulls(int num_pulls) {
+    att_group_pulls = num_pulls;
+}
 
 inline AttractGroupId AttractionInfo::get_atom_attraction_group(const AtomBlockId atom_id) {
     return atom_attraction_group[atom_id];
@@ -103,6 +117,10 @@ inline float AttractionInfo::get_attraction_group_gain(const AttractGroupId grou
 
 inline void AttractionInfo::set_attraction_group_gain(const AttractGroupId group_id, const float new_gain) {
     attraction_groups[group_id].gain = new_gain;
+}
+
+inline AttractionGroup& AttractionInfo::get_attraction_group_info(const AttractGroupId group_id) {
+    return attraction_groups[group_id];
 }
 
 #endif /* VPR_SRC_PACK_ATTRACTION_GROUPS_H_ */

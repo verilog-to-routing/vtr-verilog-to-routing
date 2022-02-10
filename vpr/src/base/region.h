@@ -58,6 +58,10 @@ class Region {
      */
     bool is_loc_in_reg(t_pl_loc loc);
 
+    bool operator==(const Region& reg) const {
+        return (reg.get_region_rect() == this->get_region_rect() && reg.get_sub_tile() == this->get_sub_tile());
+    }
+
   private:
     //may need to include zmin, zmax for future use in 3D FPGA designs
     vtr::Rect<int> region_bounds; ///< xmin, ymin, xmax, ymax inclusive
@@ -87,5 +91,20 @@ Region intersection(const Region& r1, const Region& r2);
 
 ///@brief Used to print data from a Region
 void print_region(FILE* fp, Region region);
+
+namespace std {
+template<>
+struct hash<Region> {
+    std::size_t operator()(const Region& reg) const noexcept {
+        vtr::Rect<int> rect = reg.get_region_rect();
+        std::size_t seed = std::hash<int>{}(rect.xmin());
+        vtr::hash_combine(seed, rect.ymin());
+        vtr::hash_combine(seed, rect.xmax());
+        vtr::hash_combine(seed, rect.ymax());
+        vtr::hash_combine(seed, reg.get_sub_tile());
+        return seed;
+    }
+};
+} // namespace std
 
 #endif /* REGION_H */
