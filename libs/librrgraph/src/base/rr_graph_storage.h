@@ -572,13 +572,6 @@ class t_rr_graph_storage {
     // rr_switch_inf indicies.
     void mark_edges_as_rr_switch_ids();
 
-    // Sorts edge data such that configurable edges appears before
-    // non-configurable edges.
-    void partition_edges();
-
-    // Validate that edge data is partitioned correctly.
-    bool validate() const;
-
     /******************
      * Fan-in methods *
      ******************/
@@ -669,6 +662,7 @@ class t_rr_graph_storage {
     /***************
      * State flags *
      ***************/
+  public: /* Since rr_node_storage is an internal data of RRGraphView and RRGraphBuilder, expose these flags as public */
 
     // Has any edges been read?
     //

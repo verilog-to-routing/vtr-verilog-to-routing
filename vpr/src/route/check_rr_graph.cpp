@@ -58,7 +58,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
     for (const RRNodeId& rr_node : rr_graph.nodes()) {
         size_t inode = (size_t)rr_node;
-        rr_graph.rr_nodes()[inode].validate();
+        rr_graph.validate_node(rr_node);
 
         /* Ignore any uninitialized rr_graph nodes */
         if (!rr_graph.node_is_initialized(rr_node)) {

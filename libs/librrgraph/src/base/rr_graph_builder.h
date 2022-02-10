@@ -285,19 +285,66 @@ class RRGraphBuilder {
         rr_switch_inf_.resize(size);
     }
 
-    /** brief Validate that edge data is partitioned correctly
+    /** @brief Validate that edge data is partitioned correctly
      * @note This function is used to validate the correctness of the routing resource graph in terms
      * of graph attributes. Strongly recommend to call it when you finish the building a routing resource
      * graph. If you need more advance checks, which are related to architecture features, you should
      * consider to use the check_rr_graph() function or build your own check_rr_graph() function. */
-    inline bool validate() const {
-        return node_storage_.validate();
+    inline bool validate_node(RRNodeId node_id) const {
+        t_edge_size iedge = 0;
+        for (auto edge : edges()) {
+            if (edge < node_storage_.num_configurable_edges(node_id)) {
+                if (!edge_is_configurable(node_id, edge)) {
+                    VTR_LOG_ERROR("RR Node non-configurable edge found in configurable edge list");
+                }
+            } else {
+                if (edge_is_configurable(node_id, edge)) {
+                    VTR_LOG_ERROR("RR Node configurable edge found in non-configurable edge list");
+                }
+            }
+            ++iedge;
+        }
+    
+        if (iedge != node_storage_.num_edges(node_id)) {
+            VTR_LOG_ERROR("RR Node Edge iteration does not match edge size");
+        }
+    
+        return true;
+    }
+
+    /** @brief Validate all the nodes using the validate_node() API */
+    inline bool validate_nodes() const {
+        bool all_valid = verify_first_edges();
+        for (size_t inode = 0; inode < size(); ++inode) {
+            all_valid = validate_node(inode) || all_valid;
+        }
+        return all_valid;
     }
 
     /** @brief Sorts edge data such that configurable edges appears before
      *  non-configurable edges. */
     inline void partition_edges() {
-        node_storage_.partition_edges();
+        if (node_storage_.partitioned_) {
+            return;
+        }
+
+        node_storage_.edges_read_ = true;
+        VTR_ASSERT(node_storage_.remapped_edges_);
+        // This sort ensures two things:
+        //  - Edges are stored in ascending source node order.  This is required
+        //    by assign_first_edges()
+        //  - Edges within a source node have the configurable edges before the
+        //    non-configurable edges.
+        std::sort(
+            edge_sort_iterator(this, 0),
+            edge_sort_iterator(this, edge_src_node_.size()),
+            edge_compare_src_node_and_configurable_first(rr_switch_inf_));
+
+        node_storage_.partitioned_ = true;
+
+        node_storage_.assign_first_edges();
+
+        VTR_ASSERT_SAFE(validate_nodes());
     }
 
     /** @brief Init per node fan-in data.  Should only be called after all edges have

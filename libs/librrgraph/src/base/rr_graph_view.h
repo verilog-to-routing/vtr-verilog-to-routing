@@ -453,7 +453,11 @@ class RRGraphView {
     }
 
   public: /* Validators */
-    /** @brief Check internal assumptions about RR node are valid */
+    /** brief Validate that edge data is partitioned correctly
+     * @note This function is used to validate the correctness of the routing resource graph in terms
+     * of graph attributes. Strongly recommend to call it when you finish the building a routing resource
+     * graph. If you need more advance checks, which are related to architecture features, you should
+     * consider to use the check_rr_graph() function or build your own check_rr_graph() function. */
     inline bool validate_node(RRNodeId node_id) const {
         t_edge_size iedge = 0;
         for (auto edge : edges()) {

@@ -487,31 +487,6 @@ void t_rr_graph_storage::mark_edges_as_rr_switch_ids() {
     remapped_edges_ = true;
 }
 
-/* TODO: This API should be moved to RRGraphBuilder */
-void t_rr_graph_storage::partition_edges() {
-    if (partitioned_) {
-        return;
-    }
-
-    edges_read_ = true;
-    VTR_ASSERT(remapped_edges_);
-    // This sort ensures two things:
-    //  - Edges are stored in ascending source node order.  This is required
-    //    by assign_first_edges()
-    //  - Edges within a source node have the configurable edges before the
-    //    non-configurable edges.
-    std::sort(
-        edge_sort_iterator(this, 0),
-        edge_sort_iterator(this, edge_src_node_.size()),
-        edge_compare_src_node_and_configurable_first(g_vpr_ctx.mutable_device().rr_graph_builder.rr_switch()));
-
-    partitioned_ = true;
-
-    assign_first_edges();
-
-    VTR_ASSERT_SAFE(validate());
-}
-
 t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const {
     VTR_ASSERT(!node_first_edge_.empty() && remapped_edges_);
 
@@ -531,14 +506,6 @@ t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const
 
 t_edge_size t_rr_graph_storage::num_non_configurable_edges(const RRNodeId& id) const {
     return num_edges(id) - num_configurable_edges(id);
-}
-
-bool t_rr_graph_storage::validate() const {
-    bool all_valid = verify_first_edges();
-    for (size_t inode = 0; inode < size(); ++inode) {
-        all_valid = (*this)[inode].validate() || all_valid;
-    }
-    return all_valid;
 }
 
 const char* t_rr_graph_storage::node_type_string(RRNodeId id) const {
