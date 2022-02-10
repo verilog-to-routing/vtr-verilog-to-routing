@@ -1797,8 +1797,8 @@ connections regarding individual routers in the network. */
 struct t_router {
     int id = -1;
 
-    int device_x_position = -1;
-    int device_y_position = -1;
+    double device_x_position = -1;
+    double device_y_position = -1;
     
     std::vector<int> connection_list;
 };
