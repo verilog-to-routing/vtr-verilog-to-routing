@@ -2,6 +2,7 @@
 #define RR_NODE_TYPES_H
 
 #include <string>
+#include <vector>
 #include <array>
 #include <map>
 #include "vtr_range.h"

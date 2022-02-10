@@ -40,6 +40,7 @@ class RRGraphView {
                 const MetadataStorage<int>& rr_node_metadata,
                 const MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata,
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                const std::vector<t_rr_rc_data>& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                 const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
 
@@ -119,12 +120,14 @@ class RRGraphView {
 
     /** @brief Get the capacitance of a routing resource node. This function is inlined for runtime optimization. */
     inline float node_C(RRNodeId node) const {
-        return node_storage_.node_C(node);
+        VTR_ASSERT(node_rc_index(id) < (short)rr_rc_data_.size());
+        return rr_rc_data_[node_rc_index(id)].C;
     }
 
     /** @brief Get the resistance of a routing resource node. This function is inlined for runtime optimization. */
     inline float node_R(RRNodeId node) const {
-        return node_storage_.node_R(node);
+        VTR_ASSERT(node_rc_index(id) < (short)rr_rc_data_.size());
+        return rr_rc_data_[node_rc_index(id)].R;
     }
 
     /** @brief Get the rc_index of a routing resource node. This function is inlined for runtime optimization. */
@@ -312,12 +315,23 @@ class RRGraphView {
 
     /** @brief Get the number of configurable edges. This function is inlined for runtime optimization. */
     inline t_edge_size num_configurable_edges(RRNodeId node) const {
-        return node_storage_.num_configurable_edges(node);
+        VTR_ASSERT(!node_storage_.node_first_edge_.empty() && node_storage_.remapped_edges_);
+    
+        auto first_id = size_t(node_storage_.node_first_edge_[id]);
+        auto last_id = size_t((&(node_storage_.node_first_edge_[id]))[1]);
+        for (size_t idx = first_id; idx < last_id; ++idx) {
+            auto switch_idx = edge_switch(node, idx);
+            if (!rr_switch_inf_[RRSwitchId(switch_idx)].configurable()) {
+                return idx - first_id;
+            }
+        }
+    
+        return last_id - first_id;
     }
 
     /** @brief Get the number of non-configurable edges. This function is inlined for runtime optimization. */
     inline t_edge_size num_non_configurable_edges(RRNodeId node) const {
-        return node_storage_.num_non_configurable_edges(node);
+        return num_edges(node) - num_configurable_edges(node);
     }
 
     /** @brief A configurable edge represents a programmable switch between routing resources, which could be 
@@ -326,7 +340,7 @@ class RRGraphView {
      * a pass gate 
      * This API gets ID range for configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range configurable_edges(RRNodeId node) const {
-        return node_storage_.configurable_edges(node);
+        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(node_storage_.num_edges(id) - num_non_configurable_edges(id)));
     }
 
     /** @brief A non-configurable edge represents a hard-wired connection between routing resources, which could be 
@@ -334,7 +348,7 @@ class RRGraphView {
      * a short metal connection that can not be turned off
      * This API gets ID range for non-configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range non_configurable_edges(RRNodeId node) const {
-        return node_storage_.non_configurable_edges(node);
+        return vtr::make_range(edge_idx_iterator(node_storage_.num_edges(id) - num_non_configurable_edges(id)), edge_idx_iterator(num_edges(id)));
     }
 
     /** @brief Get outgoing edges for a node.
@@ -460,7 +474,7 @@ class RRGraphView {
      * consider to use the check_rr_graph() function or build your own check_rr_graph() function. */
     inline bool validate_node(RRNodeId node_id) const {
         t_edge_size iedge = 0;
-        for (auto edge : edges()) {
+        for (auto edge : edges(node_id)) {
             if (edge < node_storage_.num_configurable_edges(node_id)) {
                 if (!edge_is_configurable(node_id, edge)) {
                     VTR_LOG_ERROR("RR Node non-configurable edge found in configurable edge list");
@@ -518,6 +532,9 @@ class RRGraphView {
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
     /* switch info for rr nodes */
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
+
+    /* RC data for nodes. This is a flyweight data */ 
+    const std::vector<t_rr_rc_data>& rr_rc_data_;
 };
 
 #endif

@@ -487,27 +487,6 @@ void t_rr_graph_storage::mark_edges_as_rr_switch_ids() {
     remapped_edges_ = true;
 }
 
-t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const {
-    VTR_ASSERT(!node_first_edge_.empty() && remapped_edges_);
-
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-    auto first_id = size_t(node_first_edge_[id]);
-    auto last_id = size_t((&node_first_edge_[id])[1]);
-    for (size_t idx = first_id; idx < last_id; ++idx) {
-        auto switch_idx = edge_switch_[RREdgeId(idx)];
-        if (!rr_graph.rr_switch_inf(RRSwitchId(switch_idx)).configurable()) {
-            return idx - first_id;
-        }
-    }
-
-    return last_id - first_id;
-}
-
-t_edge_size t_rr_graph_storage::num_non_configurable_edges(const RRNodeId& id) const {
-    return num_edges(id) - num_configurable_edges(id);
-}
-
 const char* t_rr_graph_storage::node_type_string(RRNodeId id) const {
     return rr_node_typename[node_type(id)];
 }
@@ -531,17 +510,6 @@ const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
     }
     /* Not found, return an invalid string*/
     return SIDE_STRING[NUM_SIDES];
-}
-
-float t_rr_graph_storage::node_R(RRNodeId id) const {
-    auto& device_ctx = g_vpr_ctx.device();
-    return device_ctx.rr_rc_data[node_rc_index(id)].R;
-}
-
-float t_rr_graph_storage::node_C(RRNodeId id) const {
-    auto& device_ctx = g_vpr_ctx.device();
-    VTR_ASSERT(node_rc_index(id) < (short)device_ctx.rr_rc_data.size());
-    return device_ctx.rr_rc_data[node_rc_index(id)].C;
 }
 
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, short new_ptc_num) {
@@ -726,7 +694,6 @@ t_rr_graph_view t_rr_graph_storage::view() const {
 //       should generally be called before creating such references.
 void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                                  const vtr::vector<RRNodeId, RRNodeId>& inverse_order) {
-    VTR_ASSERT_SAFE(validate());
     VTR_ASSERT(order.size() == inverse_order.size());
     {
         auto old_node_storage = node_storage_;
@@ -771,6 +738,4 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
             node_fan_in_[order[RRNodeId(i)]] = old_node_fan_in[RRNodeId(i)];
         }
     }
-
-    VTR_ASSERT_SAFE(validate());
 }

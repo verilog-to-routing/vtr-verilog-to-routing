@@ -124,7 +124,9 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
     for (auto u : src_order)
         dest_order[u] = RRNodeId(cur_idx++);
 
+    VTR_ASSERT_SAFE(validate_nodes());
     node_storage_.reorder(dest_order, src_order);
+    VTR_ASSERT_SAFE(validate());
 
     node_lookup().reorder(dest_order);
 

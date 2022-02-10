@@ -168,8 +168,6 @@ class t_rr_graph_storage {
     int16_t node_rc_index(RRNodeId id) const {
         return node_storage_[id].rc_index_;
     }
-    float node_R(RRNodeId id) const;
-    float node_C(RRNodeId id) const;
 
     short node_xlow(RRNodeId id) const {
         return node_storage_[id].xlow_;
@@ -259,18 +257,10 @@ class t_rr_graph_storage {
     edge_idx_range edges(const RRNodeId& id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
-    edge_idx_range configurable_edges(const RRNodeId& id) const {
-        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id)));
-    }
-    edge_idx_range non_configurable_edges(const RRNodeId& id) const {
-        return vtr::make_range(edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id)), edge_idx_iterator(num_edges(id)));
-    }
 
     t_edge_size num_edges(const RRNodeId& id) const {
         return size_t(last_edge(id)) - size_t(first_edge(id));
     }
-    t_edge_size num_configurable_edges(const RRNodeId& id) const;
-    t_edge_size num_non_configurable_edges(const RRNodeId& id) const;
 
     // Get the first and last RREdgeId for the specified RRNodeId.
     //

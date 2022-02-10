@@ -292,7 +292,7 @@ class RRGraphBuilder {
      * consider to use the check_rr_graph() function or build your own check_rr_graph() function. */
     inline bool validate_node(RRNodeId node_id) const {
         t_edge_size iedge = 0;
-        for (auto edge : edges()) {
+        for (auto edge : node_storage_.edges(node_id)) {
             if (edge < node_storage_.num_configurable_edges(node_id)) {
                 if (!edge_is_configurable(node_id, edge)) {
                     VTR_LOG_ERROR("RR Node non-configurable edge found in configurable edge list");
