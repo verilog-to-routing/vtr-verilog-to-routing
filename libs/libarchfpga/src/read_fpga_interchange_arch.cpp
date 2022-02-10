@@ -168,7 +168,7 @@ static t_pin_to_pin_annotation get_pack_pattern(std::string pp_name, std::string
     return pp;
 }
 
-void add_segment_with_default_values(t_segment_inf& seg, std::string name) {
+static void add_segment_with_default_values(t_segment_inf& seg, std::string name) {
     // Use default values as we will populate rr_graph with correct values
     // This segments are just declaration of future use
     seg.name = name;
@@ -381,6 +381,25 @@ struct ArchReader {
         return pad_bels_.count(name) != 0;
     }
 
+    void add_ltype(std::function<int(int)> map,
+                   const char* name,
+                   t_sub_tile& sub_tile,
+                   t_physical_tile_type& type) {
+
+        vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
+        auto ltype = get_type_by_name<t_logical_block_type>(name, ltypes_);
+
+        for (int npin = 0; npin < ltype->pb_type->num_ports; npin++) {
+            t_physical_pin physical_pin(map(npin));
+            t_logical_pin logical_pin(npin);
+
+            directs_map.insert(logical_pin, physical_pin);
+        }
+
+        type.tile_block_pin_directs_map[ltype->index][sub_tile.index] = directs_map;
+        sub_tile.equivalent_sites.push_back(ltype);
+    }
+
     /** @brief Utility function to fill in all the necessary information for the sub_tile
      *
      *  Given a physical tile type and a corresponding sub tile with additional information on the IO pin count
@@ -421,47 +440,36 @@ struct ArchReader {
             }
         }
 
-        vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
-
-        for (int npin = 0; npin < num_pins; npin++) {
-            t_physical_pin physical_pin(npin);
-            t_logical_pin logical_pin(npin);
-
-            directs_map.insert(logical_pin, physical_pin);
-        }
-
-        auto ltype = get_type_by_name<t_logical_block_type>(sub_tile.name, ltypes_);
-
-        type.tile_block_pin_directs_map[ltype->index][sub_tile.index] = directs_map;
-        sub_tile.equivalent_sites.push_back(ltype);
-
         if (site_in_tile) {
             auto site_types = ar_.getSiteTypeList();
             auto site_type = site_types[site_in_tile->getPrimaryType()];
             auto alt_sites_pins = site_in_tile->getAltPinsToPrimaryPins();
 
-            for (int i = 0; i < site_type.getAltSiteTypes().size(); ++i) {
+            if (take_sites_.count(site_type.getName()) != 0) {
+                std::function<int(int)> map = [](int x){ return x; };
+                add_ltype(map, sub_tile.name, sub_tile, type);
+            }
+
+            for (int i = 0; i < (int)site_type.getAltSiteTypes().size(); ++i) {
                 auto alt_site = site_types[site_type.getAltSiteTypes()[i]];
+
                 if (take_sites_.count(alt_site.getName()) == 0)
                     continue;
 
-                auto ltype = get_type_by_name<t_logical_block_type>(str(alt_site.getName()).c_str(), ltypes_);
-                sub_tile.equivalent_sites.push_back(ltype);
-
-                vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
                 auto pin_map = alt_sites_pins[i];
 
-                for (int npin = 0; npin < ltype->pb_type->num_ports; npin++) {
-                    auto pin = site_type.getPins()[pin_map.getPins()[npin]];
-                    auto idx = (*port_name_to_sub_tile_idx)[str(pin.getName())];
-                    t_physical_pin physical_pin(idx);
-                    t_logical_pin logical_pin(npin);
+                std::function<int(int)> map = [pin_map, site_type, port_name_to_sub_tile_idx, this](int x){
+                    auto pin = site_type.getPins()[pin_map.getPins()[x]];
+                    return (*port_name_to_sub_tile_idx)[str(pin.getName())];
+                };
 
-                    directs_map.insert(logical_pin, physical_pin);
-                }
-                type.tile_block_pin_directs_map[ltype->index][sub_tile.index] = directs_map;
+                add_ltype(map, str(alt_site.getName()).c_str(), sub_tile, type);
             }
+        } else {
+            std::function<int(int)> map = [](int x){ return x; };
+            add_ltype(map, sub_tile.name, sub_tile, type);
         }
+
         // Assign FC specs
         int iblk_pin = 0;
         for (const auto& port : sub_tile.ports) {
@@ -735,7 +743,22 @@ struct ArchReader {
                 if (found)
                     take_sites_.insert(site_type.getName());
 
-                // TODO: Enable also alternative site types handling
+                for(auto alt_site_idx : site_type.getAltSiteTypes()) {
+                    auto alt_site = site_types[alt_site_idx];
+                    found = false;
+                    for (auto bel : alt_site.getBels()) {
+                        auto bel_name = bel.getName();
+                        bool res = bel_cell_mappings_.find(bel_name) != bel_cell_mappings_.end();
+
+                        found |= res;
+
+                        if (res || is_pad(str(bel_name)))
+                            take_bels_.insert(bel_name);
+                    }
+
+                    if (found)
+                        take_sites_.insert(alt_site.getName());
+                }
             }
         }
     }
@@ -1865,8 +1888,14 @@ struct ArchReader {
 
             bool has_valid_sites = false;
 
-            for (auto site_type : tile.getSiteTypes())
-                has_valid_sites |= take_sites_.count(siteTypeList[site_type.getPrimaryType()].getName()) != 0;
+            for (auto site_type : tile.getSiteTypes()) {
+                auto site_ = siteTypeList[site_type.getPrimaryType()];
+                has_valid_sites |= take_sites_.count(site_.getName()) != 0;
+                for (auto alt_site_idx : site_.getAltSiteTypes()){
+                    auto alt_site_ = siteTypeList[alt_site_idx];
+                    has_valid_sites |= take_sites_.count(alt_site_.getName()) != 0;
+                }
+            }
 
             if (!has_valid_sites)
                 continue;
@@ -1899,14 +1928,20 @@ struct ArchReader {
     }
 
     void process_sub_tiles(t_physical_tile_type& type, Device::TileType::Reader& tile) {
-        // TODO: only one subtile at the moment
         auto siteTypeList = ar_.getSiteTypeList();
         for (auto site_in_tile : tile.getSiteTypes()) {
             t_sub_tile sub_tile;
 
-            auto site = siteTypeList[site_in_tile.getPrimaryType()];
+            bool site_taken = false;
 
-            if (take_sites_.count(site.getName()) == 0)
+            auto site = siteTypeList[site_in_tile.getPrimaryType()];
+            site_taken |= take_sites_.count(site.getName()) != 0;
+            for (auto alt_site_idx : site.getAltSiteTypes()){
+                auto alt_site = siteTypeList[alt_site_idx];
+                site_taken |= take_sites_.count(alt_site.getName()) != 0;
+            }
+
+            if (!site_taken)
                 continue;
 
             sub_tile.index = type.capacity;

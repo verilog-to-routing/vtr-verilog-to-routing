@@ -1300,15 +1300,27 @@ struct InterchangeRRGraphBuilder {
      */
     int next_good_site(int first_idx, const Device::Tile::Reader tile) {
         auto tile_type = ar_.getTileTypeList()[tile.getType()];
+        auto site_types = ar_.getSiteTypeList();
         size_t ans = first_idx;
         for (; ans < tile.getSites().size(); ans++) {
             auto site = tile.getSites()[ans];
-            auto site_type = ar_.getSiteTypeList()[tile_type.getSiteTypes()[site.getType()].getPrimaryType()];
-
+            auto site_type = site_types[tile_type.getSiteTypes()[site.getType()].getPrimaryType()];
             bool found = false;
             for (auto bel : site_type.getBels())
                 found |= bel_cell_mappings_.find(bel.getName()) != bel_cell_mappings_.end();
 
+            if (found)
+                break;
+            for(auto alt_site_idx : site_type.getAltSiteTypes()) {
+                auto alt_site = site_types[alt_site_idx];
+                for (auto bel : alt_site.getBels()) {
+                    auto bel_name = bel.getName();
+                    bool res = bel_cell_mappings_.find(bel_name) != bel_cell_mappings_.end();
+                    found |= res;
+                }
+                if (found)
+                    break;
+            }
             if (found)
                 break;
         }
@@ -1478,7 +1490,7 @@ struct InterchangeRRGraphBuilder {
     }
 
     void pack_tiles() {
-        for (auto& node_loc : sink_source_loc_map_) {
+        for (const auto& node_loc : sink_source_loc_map_) {
             int tile_id = node_loc.first;
             int x, y;
             t_location loc = tile_loc_bimap_[tile_id];
@@ -1624,7 +1636,7 @@ struct InterchangeRRGraphBuilder {
     }
 
     void pack_tiles_edges() {
-        for (auto& i : sink_source_loc_map_) {
+        for (const auto& i : sink_source_loc_map_) {
             int tile_id = i.first;
             int x, y;
             t_location loc = tile_loc_bimap_[tile_id];
@@ -1638,22 +1650,22 @@ struct InterchangeRRGraphBuilder {
                 if (node_id == -1)
                     continue;
 
-                auto virtual_chan_key = virtual_redirect_[std::make_tuple(node_id, loc)];
                 e_rr_type pin = input ? e_rr_type::SINK : e_rr_type::SOURCE;
                 e_rr_type mux = input ? e_rr_type::IPIN : e_rr_type::OPIN;
+
+                auto virtual_chan_key = virtual_redirect_[std::make_tuple(node_id, loc)];
                 auto chan_key = std::make_tuple(std::get<0>(virtual_chan_key),
                                                 std::get<1>(virtual_chan_key),
                                                 virtual_beg_to_real_[virtual_chan_key]);
 
-                int pin_id, mux_id, track_id;
-                pin_id = loc_type_idx_to_rr_idx_[std::make_tuple(loc, pin, ipin)];
-                mux_id = loc_type_idx_to_rr_idx_[std::make_tuple(loc, mux, ipin)];
-                track_id = loc_type_idx_to_rr_idx_[chan_key];
+                int pin_id = loc_type_idx_to_rr_idx_[std::make_tuple(loc, pin, ipin)];
+                int mux_id = loc_type_idx_to_rr_idx_[std::make_tuple(loc, mux, ipin)];
 
-                int sink, sink_src, src;
-                sink = input ? pin_id : track_id;
-                sink_src = mux_id;
-                src = input ? track_id : pin_id;
+                int track_id = loc_type_idx_to_rr_idx_[chan_key];
+
+                int sink = input ? pin_id : track_id;
+                int sink_src = mux_id;
+                int src = input ? track_id : pin_id;
 
                 device_ctx_.rr_graph_builder.emplace_back_edge(RRNodeId(src),
                                                                RRNodeId(sink_src),

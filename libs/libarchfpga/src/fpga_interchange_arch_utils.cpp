@@ -135,8 +135,8 @@ void process_cell_bel_mappings(DeviceResources::Device::Reader ar_,
 
         int found_valid_prim = false;
         for (auto primitive : primLib.getCellDecls()) {
-            bool is_prim = str(primitive.getLib()) == std::string("primitives");
-            bool is_cell = cell_name == primitive.getName();
+            if (cell_name != primitive.getName()) continue;
+            if (str(primitive.getLib()) != std::string("primitives")) continue;
 
             bool has_inout = false;
             for (auto port_idx : primitive.getPorts()) {
@@ -148,7 +148,7 @@ void process_cell_bel_mappings(DeviceResources::Device::Reader ar_,
                 }
             }
 
-            if (is_prim && is_cell && !has_inout) {
+            if (!has_inout) {
                 found_valid_prim = true;
                 break;
             }
