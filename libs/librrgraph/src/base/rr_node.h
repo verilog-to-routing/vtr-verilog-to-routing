@@ -2,7 +2,7 @@
 #define RR_NODE_H
 
 #include "rr_node_fwd.h"
-#include "vpr_types.h"
+#include "rr_node_types.h"
 
 #include "vtr_range.h"
 
