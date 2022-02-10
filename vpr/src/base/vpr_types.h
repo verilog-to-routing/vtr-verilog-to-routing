@@ -231,37 +231,6 @@ class t_pack_high_fanout_thresholds {
     std::map<std::string, int> overrides_;
 };
 
-///@brief Type used to express rr_node edge index.
-typedef uint16_t t_edge_size;
-
-/**
- * @brief An iterator that dereferences to an edge index
- *
- * Used inconjunction with vtr::Range to return ranges of edge indices
- */
-class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, t_edge_size> {
-  public:
-    edge_idx_iterator(value_type init)
-        : value_(init) {}
-    iterator operator++() {
-        value_ += 1;
-        return *this;
-    }
-    iterator operator--() {
-        value_ -= 1;
-        return *this;
-    }
-    reference operator*() { return value_; }
-    pointer operator->() { return &value_; }
-
-    friend bool operator==(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return lhs.value_ == rhs.value_; }
-    friend bool operator!=(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return !(lhs == rhs); }
-
-  private:
-    value_type value_;
-};
-
-typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
@@ -1156,12 +1125,6 @@ enum e_router_algorithm {
     TIMING_DRIVEN,
 };
 
-// Node reordering algorithms for rr_nodes
-enum e_rr_node_reorder_algorithm {
-    DONT_REORDER,
-    DEGREE_BFS,
-    RANDOM_SHUFFLE,
-};
 
 enum e_base_cost_type {
     DELAY_NORMALIZED,
@@ -1357,24 +1320,6 @@ struct t_det_routing_arch {
     std::string read_rr_graph_filename;
     std::string write_rr_graph_filename;
 };
-/*
- * Direction::INC: wire driver is positioned at the low-coordinate end of the wire.
- * Direction::DEC: wire_driver is positioned at the high-coordinate end of the wire.
- * Direction::BIDIR: wire has multiple drivers, so signals can travel either way along the wire
- * Direction::NONE: node does not have a direction, such as IPIN/OPIN
- */
-enum class Direction : unsigned char {
-    INC = 0,
-    DEC = 1,
-    BIDIR = 2,
-    NONE = 3,
-    NUM_DIRECTIONS
-};
-
-constexpr std::array<const char*, static_cast<int>(Direction::NUM_DIRECTIONS)> DIRECTION_STRING = {{"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NONE"}};
-
-//this array is used in rr_graph_storage.cpp so that node_direction_string() can return a const std::string&
-const std::array<std::string, static_cast<int>(Direction::NUM_DIRECTIONS)> CONST_DIRECTION_STRING = {{"INC_DIR", "DEC_DIR", "BI_DIR", "NONE"}};
 
 /**
  * @brief Lists detailed information about segmentation.  [0 .. W-1].
@@ -1497,9 +1442,6 @@ struct t_linked_f_pointer {
 constexpr bool is_pin(e_rr_type type) { return (type == IPIN || type == OPIN); }
 constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY); }
 constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == SINK); }
-
-//[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
-typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_indices;
 
 /**
  * @brief Basic element used to store the traceback (routing) of each net.
@@ -1712,7 +1654,5 @@ class RouteStatus {
 };
 
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
-
-typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 
 #endif

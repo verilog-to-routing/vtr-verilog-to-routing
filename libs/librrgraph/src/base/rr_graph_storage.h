@@ -1,17 +1,19 @@
-#ifndef _RR_GRAPH_STORAGE_
-#define _RR_GRAPH_STORAGE_
+#ifndef RR_GRAPH_STORAGE
+#define RR_GRAPH_STORAGE
 
 #include <exception>
 #include <bitset>
 
+#include "physical_types.h"
+#include "rr_node_types.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_fwd.h"
 #include "rr_edge.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
-#include "vpr_utils.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
+#include "rr_graph_utils.h"
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -593,9 +595,8 @@ class t_rr_graph_storage {
         RRNodeId id) {
         auto& node_data = node_storage[id];
         if (node_data.type_ != CHANX && node_data.type_ != CHANY) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Attempted to access RR node 'direction' for non-channel type '%s'",
-                            rr_node_typename[node_data.type_]);
+            VTR_LOG_ERROR("Attempted to access RR node 'direction' for non-channel type '%s'",
+                          rr_node_typename[node_data.type_]);
         }
         return node_storage[id].dir_side_.direction;
     }
@@ -607,9 +608,8 @@ class t_rr_graph_storage {
         const e_side& side) {
         auto& node_data = node_storage[id];
         if (node_data.type_ != IPIN && node_data.type_ != OPIN) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
-                            rr_node_typename[node_data.type_]);
+            VTR_LOG_ERROR("Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
+                          rr_node_typename[node_data.type_]);
         }
         // Return a vector showing only the sides that the node appears
         std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
