@@ -373,8 +373,5 @@ Fracturable Multiplier Bus-Based Complete Example
         <loc side="right" offset="2">out[63:40]</loc>
       </pinlocations>
 
-      <gridlocations>
-        <loc type="col" start="4" repeat="5" priority="2"/>
-      </gridlocations>
     </pb_type>
 
