@@ -4717,9 +4717,9 @@ static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& l
     // store the router information from the attributes
     router_info.id = pugiutil::get_attribute(router_tag, "id", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
 
-    router_info.device_x_position = pugiutil::get_attribute(router_tag, "positionx", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+    router_info.device_x_position = pugiutil::get_attribute(router_tag, "positionx", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
 
-    router_info.device_y_position = pugiutil::get_attribute(router_tag, "positiony", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+    router_info.device_y_position = pugiutil::get_attribute(router_tag, "positiony", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
 
     // verify whether the attribute information was legal
     if ((router_info.id < 0) || (router_info.device_x_position < 0) || (router_info.device_y_position < 0)) {
@@ -4860,8 +4860,9 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::
             temp_router.id = (mesh_size * j) + i;
 
             // calculate router position
-            temp_router.device_x_position = (i + 1)* horizontal_router_seperation;
-            temp_router.device_y_position = (j + 1) * vertical_router_seperation;
+            // the first router will always start at the coordinate (mesh_region_startx, mesh_region_start_y). Then the other routers will use the first router as reference and be positioned a specific distance from it.
+            temp_router.device_x_position = (i + 1)* horizontal_router_seperation + mesh_region_start_x;
+            temp_router.device_y_position = (j + 1) * vertical_router_seperation + mesh_region_start_y;
 
             // assign connections
             // check if there is a router to the left
