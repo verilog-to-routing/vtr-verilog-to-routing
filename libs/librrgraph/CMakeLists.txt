@@ -23,9 +23,7 @@ set_target_properties(librrgraph PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 #Specify link-time dependancies
 target_link_libraries(librrgraph
                       libvtrutil
-                      libpugixml
-                      libpugiutil
-                      libvtrcapnproto
+                      libarchfpga
 )
 
 target_compile_definitions(librrgraph PUBLIC ${INTERCHANGE_SCHEMA_HEADERS})
