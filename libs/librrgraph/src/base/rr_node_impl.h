@@ -3,6 +3,7 @@
 // This file provides the inline proxy implemenation for t_rr_node.
 // See the t_rr_node class comment for additional details.
 
+#include "rr_node_types.h"
 #include "rr_node.h"
 #include "rr_graph_storage.h"
 

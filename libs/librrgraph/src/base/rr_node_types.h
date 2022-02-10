@@ -1,6 +1,11 @@
 #ifndef RR_NODE_TYPES_H
 #define RR_NODE_TYPES_H
 
+#include <string>
+#include <array>
+#include <map>
+#include "vtr_range.h"
+
 /* Ensure no gain can ever be this negative! */
 #ifndef UNDEFINED
 #    define UNDEFINED -1
