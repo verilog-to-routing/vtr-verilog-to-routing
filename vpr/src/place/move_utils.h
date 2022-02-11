@@ -102,7 +102,8 @@ ClusterBlockId pick_from_block();
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc from,
-                         t_pl_loc& to);
+                         t_pl_loc& to,
+						 ClusterBlockId b_from);
 
 // Accessor f_placer_breakpoint_reached
 // return true when a placer breakpoint is reached
@@ -125,7 +126,7 @@ void set_placer_breakpoint_reached(bool);
  *  @param limit_coords: the region where I can move the block to
  *  @param to_loc: the new location that the function picked for the block
  */
-bool find_to_loc_median(t_logical_block_type_ptr blk_type, const t_pl_loc& from_loc, const t_bb* limit_coords, t_pl_loc& to_loc);
+bool find_to_loc_median(t_logical_block_type_ptr blk_type, const t_pl_loc& from_loc, const t_bb* limit_coords, t_pl_loc& to_loc, ClusterBlockId b_from);
 
 /**
  * @brief Find a legal swap to location for the given type in a range around a specific location.
@@ -145,7 +146,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_pl_loc& from_loc,
                           const t_pl_loc& centeroid,
                           const t_range_limiters& range_limiters,
-                          t_pl_loc& to_loc);
+                          t_pl_loc& to_loc,
+						  ClusterBlockId b_from);
 
 std::string move_type_to_string(e_move_type);
 
