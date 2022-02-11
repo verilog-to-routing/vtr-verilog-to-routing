@@ -487,6 +487,84 @@ void t_rr_graph_storage::mark_edges_as_rr_switch_ids() {
     remapped_edges_ = true;
 }
 
+void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) {
+    if (partitioned_) {
+        return;
+    }
+
+    edges_read_ = true;
+    VTR_ASSERT(remapped_edges_);
+    // This sort ensures two things:
+    //  - Edges are stored in ascending source node order.  This is required
+    //    by assign_first_edges()
+    //  - Edges within a source node have the configurable edges before the
+    //    non-configurable edges.
+    std::sort(
+        edge_sort_iterator(this, 0),
+        edge_sort_iterator(this, edge_src_node_.size()),
+        edge_compare_src_node_and_configurable_first(rr_switches));
+
+    partitioned_ = true;
+
+    assign_first_edges();
+
+    VTR_ASSERT_SAFE(validate(rr_switches));
+}
+
+t_edge_size t_rr_graph_storage::num_configurable_edges(RRNodeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+    VTR_ASSERT(!node_first_edge_.empty() && remapped_edges_);
+
+    auto first_id = size_t(node_first_edge_[id]);
+    auto last_id = size_t((&node_first_edge_[id])[1]);
+    for (size_t idx = first_id; idx < last_id; ++idx) {
+        auto switch_idx = edge_switch_[RREdgeId(idx)];
+        if (!rr_switches[RRSwitchId(switch_idx)].configurable()) {
+            return idx - first_id;
+        }
+    }
+
+    return last_id - first_id;
+}
+
+t_edge_size t_rr_graph_storage::num_non_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+    return num_edges(node) - num_configurable_edges(node, rr_switches);
+}
+
+bool t_rr_graph_storage::edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+  auto iswitch = edge_switch(id, iedge);
+  return rr_switches[RRSwitchId(iswitch)].configurable();
+}
+
+bool t_rr_graph_storage::validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+   t_edge_size iedge = 0;
+   for (auto edge : edges(node_id)) {
+       if (edge < num_configurable_edges(node_id, rr_switches)) {
+           if (!edge_is_configurable(node_id, edge, rr_switches)) {
+               VTR_LOG_ERROR("RR Node non-configurable edge found in configurable edge list");
+           }
+       } else {
+           if (edge_is_configurable(node_id, edge, rr_switches)) {
+               VTR_LOG_ERROR("RR Node configurable edge found in non-configurable edge list");
+           }
+       }
+       ++iedge;
+   }
+
+   if (iedge != num_edges(node_id)) {
+       VTR_LOG_ERROR("RR Node Edge iteration does not match edge size");
+   }
+
+   return true;
+}
+
+bool t_rr_graph_storage::validate(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+    bool all_valid = verify_first_edges();
+    for (size_t inode = 0; inode < size(); ++inode) {
+        all_valid = validate_node(RRNodeId(inode), rr_switches) || all_valid;
+    }
+    return all_valid;
+}
+
 const char* t_rr_graph_storage::node_type_string(RRNodeId id) const {
     return rr_node_typename[node_type(id)];
 }

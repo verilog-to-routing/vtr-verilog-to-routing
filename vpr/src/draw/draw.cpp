@@ -1694,7 +1694,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
         to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
         to_type = rr_graph.node_type(RRNodeId(to_node));
         to_ptc_num = rr_graph.node_ptc_num(RRNodeId(to_node));
-        bool edge_configurable = rr_graph.edge_is_configurable(inode, iedge);
+        bool edge_configurable = rr_graph.edge_is_configurable(RRNodeId(inode), iedge);
 
         switch (from_type) {
             case OPIN:
@@ -2829,7 +2829,7 @@ void draw_expand_non_configurable_rr_nodes_recurr(int from_node,
 
     for (t_edge_size iedge = 0;
          iedge < rr_graph.num_edges(RRNodeId(from_node)); ++iedge) {
-        bool edge_configurable = rr_graph.edge_is_configurable(from_node, iedge);
+        bool edge_configurable = rr_graph.edge_is_configurable(RRNodeId(from_node), iedge);
         int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iedge));
 
         if (!edge_configurable && !expanded_nodes.count(to_node)) {

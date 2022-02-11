@@ -4,6 +4,7 @@
 #include <exception>
 #include <bitset>
 
+#include "vtr_vector.h"
 #include "physical_types.h"
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
@@ -258,9 +259,19 @@ class t_rr_graph_storage {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
+    edge_idx_range configurable_edges(const RRNodeId& id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id, rr_switches)));
+    }
+    edge_idx_range non_configurable_edges(const RRNodeId& id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+        return vtr::make_range(edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id, rr_switches)), edge_idx_iterator(num_edges(id)));
+    }
+
     t_edge_size num_edges(const RRNodeId& id) const {
         return size_t(last_edge(id)) - size_t(first_edge(id));
     }
+    bool edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
+    t_edge_size num_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
+    t_edge_size num_non_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
 
     // Get the first and last RREdgeId for the specified RRNodeId.
     //
@@ -561,6 +572,14 @@ class t_rr_graph_storage {
     // This must be called before partition_edges if edges were created with
     // rr_switch_inf indicies.
     void mark_edges_as_rr_switch_ids();
+
+    // Sorts edge data such that configurable edges appears before
+    // non-configurable edges.
+    void partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches);
+
+    // Validate that edge data is partitioned correctly.
+    bool validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
+    bool validate(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
 
     /******************
      * Fan-in methods *

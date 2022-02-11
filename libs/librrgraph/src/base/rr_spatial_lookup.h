@@ -230,8 +230,6 @@ class RRSpatialLookup {
 
     /* -- Internal data storage -- */
   private:
-    //[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
-    typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_indices;
     /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional arrqay mater where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
     t_rr_node_indices rr_node_indices_;
 };

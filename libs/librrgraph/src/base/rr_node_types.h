@@ -94,4 +94,29 @@ typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 
+/*
+ * Reistance/Capacitance data for an RR Nodes
+ *
+ * In practice many RR nodes have the same values, so they are fly-weighted
+ * to keep t_rr_node small. Each RR node holds an rc_index which allows
+ * retrieval of it's RC data.
+ *
+ * R:  Resistance to go through an RR node.  This is only metal
+ *     resistance (end to end, so conservative) -- it doesn't include the
+ *     switch that leads to another rr_node.
+ * C:  Total capacitance of an RR node.  Includes metal capacitance, the
+ *     input capacitance of all switches hanging off the node, the
+ *     output capacitance of all switches to the node, and the connection
+ *     box buffer capacitances hanging off it.
+ */
+struct t_rr_rc_data {
+    t_rr_rc_data(float Rval, float Cval) noexcept;
+
+    float R;
+    float C;
+};
+
+//[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
+typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_indices;
+
 #endif
