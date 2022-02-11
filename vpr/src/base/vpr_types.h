@@ -231,7 +231,6 @@ class t_pack_high_fanout_thresholds {
     std::map<std::string, int> overrides_;
 };
 
-
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
 class t_pack_molecule;
@@ -1124,7 +1123,6 @@ enum e_router_algorithm {
     BREADTH_FIRST,
     TIMING_DRIVEN,
 };
-
 
 enum e_base_cost_type {
     DELAY_NORMALIZED,

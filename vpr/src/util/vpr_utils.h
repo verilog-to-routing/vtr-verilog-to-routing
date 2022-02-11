@@ -171,5 +171,4 @@ void print_timing_stats(std::string name,
                         const t_timing_analysis_profile_info& current,
                         const t_timing_analysis_profile_info& past = t_timing_analysis_profile_info());
 
-
 #endif
