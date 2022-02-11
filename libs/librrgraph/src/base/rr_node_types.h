@@ -6,11 +6,7 @@
 #include <array>
 #include <map>
 #include "vtr_range.h"
-
-/* Ensure no gain can ever be this negative! */
-#ifndef UNDEFINED
-#    define UNDEFINED -1
-#endif
+#include "vtr_ndmatrix.h"
 
 /**
  * @brief Type of a routing resource node.

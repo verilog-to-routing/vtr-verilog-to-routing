@@ -1,4 +1,5 @@
 #include <climits>
+#include "arch_types.h"
 #include "rr_graph_storage.h"
 
 #include <algorithm>
