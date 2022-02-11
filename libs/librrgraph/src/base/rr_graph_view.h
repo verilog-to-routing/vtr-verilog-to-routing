@@ -498,13 +498,13 @@ class RRGraphView {
     /* rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string() */
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
 
+    /* RC data for nodes. This is a flyweight data */ 
+    const std::vector<t_rr_rc_data>& rr_rc_data_;
+
     /* Segment info for rr nodes */
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
     /* switch info for rr nodes */
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
-
-    /* RC data for nodes. This is a flyweight data */ 
-    const std::vector<t_rr_rc_data>& rr_rc_data_;
 };
 
 #endif
