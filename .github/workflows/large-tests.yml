@@ -1,0 +1,62 @@
+name: CI tests
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+
+  Run-tests:
+    container: ubuntu:bionic
+
+    runs-on: [self-hosted, Linux, X64]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {test: "vtr_reg_nightly_test1", options: "",           cmake: ""                                             }
+          - {test: "vtr_reg_nightly_test2", options: "",           cmake: ""                                             }
+          - {test: "vtr_reg_nightly_test3", options: "",           cmake: ""                                             }
+          - {test: "vtr_reg_nightly_test4", options: "",           cmake: ""                                             }
+          - {test: "vtr_reg_strong",        options: "",           cmake: "-DVTR_ASSERT_LEVEL=3"                         }
+          - {test: "vtr_reg_strong",        options: "-skip_qor",  cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON"}
+          - {test: "vtr_reg_yosys",         options: "",           cmake: "-DWITH_YOSYS=ON"                              }
+          - {test: "vtr_reg_yosys_odin",    options: "",           cmake: "-DODIN_USE_YOSYS=ON"                          }
+          - {test: "odin_tech_strong",      options: "",           cmake: "-DODIN_USE_YOSYS=ON"                          }
+          - {test: "odin_reg_strong",       options: "",           cmake: ""                                             }
+
+    env:
+      DEBIAN_FRONTEND: "noninteractive"
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Setup
+      run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
+
+    - name: Execute test script
+      run: stdbuf -i0 -o0 -e0 ./.github/scripts/run-vtr.sh
+      env:
+        VTR_TEST: ${{ matrix.test }}
+        VTR_TEST_OPTIONS: ${{ matrix.options }}
+        VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
+        NUM_CORES: 16
+
+    - uses: actions/upload-artifact@v2
+      if: ${{ always() }}
+      with:
+        path: |
+          **/results*.gz
+          **/plot_*.svg
+          **/*.out.gz
+          **/vpr_stdout.log.gz
+          **/parse_results.txt.gz
+          **/qor_results.txt.gz
+          **/pack.log.gz
+          **/place.log.gz
+          **/route.log.gz
+          **/*_qor.csv.gz
