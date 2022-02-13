@@ -331,14 +331,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - { name: 'GCC 7 (Ubuntu Bionic - 18.04)',    eval: 'CC=gcc-7 && CXX=g++-7',           build: ''               }
-        - { name: 'GCC 8 (Debian Buster)',            eval: 'CC=gcc-8 && CXX=g++-8',           build: ''               }
-        - { name: 'GCC 9 (Ubuntu Focal - 20.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           build: ''               }
-        - { name: 'GCC 10 (Ubuntu Hirsute - 21.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         build: ''               }
-        - { name: 'GCC 11 (Latest)',                  eval: 'CC=gcc-11 && CXX=g++-11',         build: ''               }
-        - { name: 'Clang 6 (Ubuntu Bionic - 18.04)',  eval: 'CC=clang-6.0 && CXX=clang++-6.0', build: ''               }
-        - { name: 'Clang 7 (Debian Buster)',          eval: 'CC=clang-7 && CXX=clang++-7',     build: ''               }
-        - { name: 'Clang 10 (Ubuntu Focal - 20.04)',  eval: 'CC=clang-10 && CXX=clang++-10',   build: ''               }
+        - { name: 'GCC 7 (Ubuntu Bionic - 18.04)',    eval: 'CC=gcc-7 && CXX=g++-7',           }
+        - { name: 'GCC 8 (Debian Buster)',            eval: 'CC=gcc-8 && CXX=g++-8',           }
+        - { name: 'GCC 9 (Ubuntu Focal - 20.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           }
+        - { name: 'GCC 10 (Ubuntu Hirsute - 21.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         }
+        - { name: 'GCC 11 (Latest)',                  eval: 'CC=gcc-11 && CXX=g++-11',         }
+        - { name: 'Clang 6 (Ubuntu Bionic - 18.04)',  eval: 'CC=clang-6.0 && CXX=clang++-6.0', }
+        - { name: 'Clang 7 (Debian Buster)',          eval: 'CC=clang-7 && CXX=clang++-7',     }
+        - { name: 'Clang 10 (Ubuntu Focal - 20.04)',  eval: 'CC=clang-10 && CXX=clang++-10',   }
     name: 'B: ${{ matrix.name }}'
     steps:
 
@@ -354,7 +354,7 @@ jobs:
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
         MATRIX_EVAL: ${{ matrix.eval }}
-        BUILD_TYPE: ${{ matrix.build }}
+        BUILD_TYPE: release
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
