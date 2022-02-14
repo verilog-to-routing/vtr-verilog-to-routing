@@ -52,11 +52,4 @@ jobs:
         path: |
           **/results*.gz
           **/plot_*.svg
-          **/*.out.gz
-          **/vpr_stdout.log.gz
-          **/parse_results.txt.gz
-          **/qor_results.txt.gz
-          **/pack.log.gz
-          **/place.log.gz
-          **/route.log.gz
-          **/*_qor.csv.gz
+          **/qor_results.tar.gz

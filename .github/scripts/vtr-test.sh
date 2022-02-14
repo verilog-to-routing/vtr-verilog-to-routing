@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set +x
 if [ -z ${VTR_TEST+x} ]; then
 	echo "Missing $$VTR_TEST value"
 	exit 1
@@ -36,6 +37,13 @@ pwd -P
 ) &
 MONITOR=$!
 
+if [[ $VTR_CMAKE_PARAMS == *"-DVTR_ENABLE_SANITIZE=ON"*  ]]; then
+  echo "Setting LD_PRELOAD to /usr/lib/gcc/x86_64-linux-gnu/9/libasan.so"
+  export LD_PRELOAD=/usr/lib/gcc/x86_64-linux-gnu/9/libasan.so
+fi
+
+set +e
+
 echo "========================================"
 echo "VPR Build Info"
 echo "========================================"
@@ -46,39 +54,18 @@ echo "Running Tests"
 echo "========================================"
 export VPR_NUM_WORKERS=1
 
-set +e
 ./run_reg_test.py $VTR_TEST $VTR_TEST_OPTIONS -j$NUM_CORES
 TEST_RESULT=$?
 set -e
 kill $MONITOR
 
 echo "========================================"
-echo "Cleaning benchmarks files"
+echo "Packing benchmarks files"
 echo "========================================"
-# Removing Symbiflow archs and benchmarks
-find vtr_flow/arch/symbiflow/ -type f -not -name 'README.*' -delete
-find vtr_flow/benchmarks/symbiflow/ -type f -not -name 'README.*' -delete
 
-# Removing ISPD benchmarks
-find vtr_flow/benchmarks/ispd_blif/ -type f -not -name 'README.*' -delete
-
-# Removing Titan benchmarks
-find vtr_flow/benchmarks/titan_blif/ -type f -not -name 'README.*' -delete
-
-# Removing ISPD, Titan and Symbiflow tarballs
-find . -type f -regex ".*\.tar\.\(gz\|xz\)" -delete
-
-#Gzip output files from vtr_reg_nightly tests to lower working directory disk space
-find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test1/ -type f -print0 | xargs -0 -P $(nproc) gzip
-find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test2/ -type f -print0 | xargs -0 -P $(nproc) gzip
-find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3/ -type f -print0 | xargs -0 -P $(nproc) gzip
-find vtr_flow/tasks/regression_tests/vtr_reg_nightly_test4/ -type f -print0 | xargs -0 -P $(nproc) gzip
-
-# Make sure working directory doesn't exceed disk space limit!
-echo "Working directory size: $(du -sh)"
-if [[ $(du -s | cut -d $'\t' -f 1) -gt $(expr 1024 \* 1024 \* 90) ]]; then
-    echo "Working directory too large!"
-    exit 1
-fi
+results=qor_results.tar
+# Create archive with output files from the test
+find vtr_flow -type f \( -name "*.txt" -o -name "*.log" -o -name "*.txt" -o -name "*.csv" \) -exec tar -rf $results {} \;
+gzip $results
 
 exit $TEST_RESULT

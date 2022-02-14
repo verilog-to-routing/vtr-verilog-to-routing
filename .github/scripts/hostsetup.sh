@@ -39,6 +39,7 @@ apt install -y \
   gdb \
   git \
   gperf \
+  gzip \
   libcairo2-dev \
   libcapnp-dev \
   libgtk-3-dev \
