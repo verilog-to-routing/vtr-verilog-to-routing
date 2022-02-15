@@ -46,12 +46,12 @@ To verfiy that VTR has been installed correctly run::
 
 The expected output is::
     
-k6_N10_mem32K_40nm/single_ff            OK
-k6_N10_mem32K_40nm/single_ff            OK
-k6_N10_mem32K_40nm/single_wire          OK
-k6_N10_mem32K_40nm/single_wire          OK
-k6_N10_mem32K_40nm/diffeq1              OK
-k6_N10_mem32K_40nm/diffeq1              OK
-k6_N10_mem32K_40nm/ch_intrinsics                OK
-k6_N10_mem32K_40nm/ch_intrinsics                OK
+    k6_N10_mem32K_40nm/single_ff            OK
+    k6_N10_mem32K_40nm/single_ff            OK
+    k6_N10_mem32K_40nm/single_wire          OK
+    k6_N10_mem32K_40nm/single_wire          OK
+    k6_N10_mem32K_40nm/diffeq1              OK
+    k6_N10_mem32K_40nm/diffeq1              OK
+    k6_N10_mem32K_40nm/ch_intrinsics                OK
+    k6_N10_mem32K_40nm/ch_intrinsics                OK
 
