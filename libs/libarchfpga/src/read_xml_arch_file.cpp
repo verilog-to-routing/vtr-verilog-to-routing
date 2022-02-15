@@ -274,7 +274,7 @@ e_side string_to_side(std::string side_str);
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types);
 
-static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, int mesh_region_start_x, int mesh_region_end_x, int mesh_region_start_y, int mesh_region_end_y, int mesh_size);
+static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size);
 
 static bool parse_noc_router_connection_list(std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>&routers_in_arch_info);
 
@@ -4616,10 +4616,10 @@ static void processMeshTopology(pugi::xml_node mesh_topology_tag, const pugiutil
 {
 
     // noc mesh topology properties
-    int mesh_region_start_x = 0;
-    int mesh_region_end_x = 0;
-    int mesh_region_start_y = 0;
-    int mesh_region_end_y = 0;
+    double mesh_region_start_x = 0;
+    double mesh_region_end_x = 0;
+    double mesh_region_start_y = 0;
+    double mesh_region_end_y = 0;
     int mesh_size = 0;
 
     // identifier that lets us know when we could not properly convert an attribute value to a integer
@@ -4632,13 +4632,13 @@ static void processMeshTopology(pugi::xml_node mesh_topology_tag, const pugiutil
     pugiutil::expect_only_attributes(mesh_topology_tag, expected_router_attributes, loc_data);
 
     // go through the attributes and store their values
-    mesh_region_start_x = pugiutil::get_attribute(mesh_topology_tag, "startx", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+    mesh_region_start_x = pugiutil::get_attribute(mesh_topology_tag, "startx", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
 
-    mesh_region_end_x = pugiutil::get_attribute(mesh_topology_tag, "endx", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+    mesh_region_end_x = pugiutil::get_attribute(mesh_topology_tag, "endx", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
 
-    mesh_region_start_y = pugiutil::get_attribute(mesh_topology_tag, "starty", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+    mesh_region_start_y = pugiutil::get_attribute(mesh_topology_tag, "starty", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
 
-    mesh_region_end_y = pugiutil::get_attribute(mesh_topology_tag, "endy", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+    mesh_region_end_y = pugiutil::get_attribute(mesh_topology_tag, "endy", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
 
     mesh_size = pugiutil::get_attribute(mesh_topology_tag, "size", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
 
@@ -4825,7 +4825,7 @@ static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
                    "Could not find type: %s\n", type_name);
 }
 
-static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, int mesh_region_start_x, int mesh_region_end_x, int mesh_region_start_y, int mesh_region_end_y, int mesh_size)
+static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size)
 {
 
     // check that the mesh size of the router is not 0
@@ -4837,9 +4837,23 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::
 
 
     // calculating the vertical horizontal distances between routers in the supplied region
-    // we don't want to use decimals
-    int vertical_router_seperation = (mesh_region_end_y - mesh_region_start_y)/mesh_size;
-    int horizontal_router_seperation = (mesh_region_end_x - mesh_region_start_x)/mesh_size;
+    // we decrease the mesh size by 1 when calculating the spacing so that the first and last routers of each row or column are positioned on the mesh boundary
+    /*
+        For example:
+            - If we had a mesh size of 3, then using 3 would result in a spacing that would result in one router positions being placed in either the start of the reigion or end of the region. This is because the distance calculation resulted in having 3 spaces between the ends of the region 
+            
+            start              end
+             ***   ***   ***   ***
+
+            - if we instead used 2 in the distance calculation, the the resulting positions would result in having 2 routers positioned on the start and end of the region. This is beacuse we now specified 2 spaces between the region and this allows us to place 2 routers on the regions edges and one router in the center.
+
+            start        end
+             ***   ***   ***
+
+        THe reasoning for this is to reduce the number of calculated router positions.
+    */
+    double vertical_router_seperation = (mesh_region_end_y - mesh_region_start_y)/(mesh_size - 1);
+    double horizontal_router_seperation = (mesh_region_end_x - mesh_region_start_x)/(mesh_size - 1);
 
     t_router temp_router;
 
@@ -4852,17 +4866,18 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::
 
     // create routers and their connections
     // start with router id 0 (bottom left of the chip) to the maximum router id (top right of the chip)
-    for (int i = 0; i < mesh_size; i++)
+    for (int j = 0; j < mesh_size; j++)
     {
-        for (int j = 0; j < mesh_size; j++)
+        for (int i = 0; i < mesh_size; i++)
         {
             // assign router id
             temp_router.id = (mesh_size * j) + i;
 
             // calculate router position
-            // the first router will always start at the coordinate (mesh_region_startx, mesh_region_start_y). Then the other routers will use the first router as reference and be positioned a specific distance from it.
-            temp_router.device_x_position = (i + 1)* horizontal_router_seperation + mesh_region_start_x;
-            temp_router.device_y_position = (j + 1) * vertical_router_seperation + mesh_region_start_y;
+            /* The first and last router of each column or row will be located on the mesh region boundary, the remaining routers will be placed within the region and seperated from other routers using the distance calculated previously.
+            */
+            temp_router.device_x_position = (i * horizontal_router_seperation) + mesh_region_start_x;
+            temp_router.device_y_position = (j * vertical_router_seperation) + mesh_region_start_y;
 
             // assign connections
             // check if there is a router to the left
