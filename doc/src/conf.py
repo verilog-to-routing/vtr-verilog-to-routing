@@ -92,7 +92,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Verilog-to-Routing"
-copyright = "2016, VTR Developers"
+copyright = "2012-2022, VTR Developers"
 author = "VTR Developers"
 
 # The version info for the project you're documenting, acts as replacement for
