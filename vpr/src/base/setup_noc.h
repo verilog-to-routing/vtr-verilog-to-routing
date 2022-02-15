@@ -12,6 +12,9 @@
 #include "noc_storage.h"
 #include "vpr_error.h"
 
+#define PHYSICAL_ROUTER_NOT_ASSIGNED -1
+#define INVALID_PHYSICAL_ROUTER_INDEX -1
+
 
 
 // a data structure to store the position information of a noc router in the FPGA device

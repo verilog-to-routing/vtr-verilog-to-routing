@@ -63,7 +63,7 @@ class NocStorage
         int get_noc_link_number_of_connections(NocLinkId id) const;
 
         // setters for the NoC
-        bool add_router(int id, int grid_position_x, int grid_position_y);
+        void add_router(int id, int grid_position_x, int grid_position_y);
         void add_link(NocRouterId source, NocRouterId sink);
 
         // setters for the noc router
