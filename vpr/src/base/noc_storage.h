@@ -40,6 +40,7 @@ class NocStorage
         // prevent "copying" of this object
         NocStorage(const NocStorage&) = delete;
         void operator=(const NocStorage&) = delete;
+    
     public:
 
         // default contructor (cleare all the elements in the vectors)
@@ -62,7 +63,7 @@ class NocStorage
         int get_noc_link_number_of_connections(NocLinkId id) const;
 
         // setters for the NoC
-        void add_router(int id, int grid_position_x, int grid_position_y);
+        bool add_router(int id, int grid_position_x, int grid_position_y);
         void add_link(NocRouterId source, NocRouterId sink);
 
         // setters for the noc router
