@@ -6,6 +6,7 @@
 
 #include "vtr_assert.h"
 #include "vpr_error.h"
+#include "vtr_math.h"
 
 
 void setup_noc(const t_arch& arch, std::string noc_router_tile_name)
@@ -194,7 +195,7 @@ void create_noc_routers(t_noc_inf noc_info, NocStorage* noc_model , std::vector<
                                         pow(abs(curr_physical_router_pos_y - curr_logical_router_position_y),2.0));
             
             // if the current distance is the same as the previous shortest distance
-            if (curr_calculated_distance == shortest_distance)
+            if (vtr::isclose(curr_calculated_distance, shortest_distance))
             {   
                 // store the ids of the two physical routers
                 error_case_physical_router_index_1 = closest_physical_router;
