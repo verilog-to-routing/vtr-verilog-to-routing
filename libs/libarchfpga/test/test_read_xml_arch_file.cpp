@@ -5,6 +5,9 @@
 // testting statuc functions so include whole source file it is in
 #include "read_xml_arch_file.cpp"
 
+// for comparing floats
+#include "vtr_math.h"
+
 TEST_CASE( "Updating router info in arch", "[NoC Arch Tests]" ) {
 
     std::map<int, std::pair<int, int>> test_router_list;
@@ -150,5 +153,144 @@ TEST_CASE( "Verifying a parsed NoC topology", "[NoC Arch Tests]" ) {
 
         REQUIRE_THROWS_WITH(verify_noc_topology(test_router_list), "The router with id:'4' was included more than once in the architecture file. Routers should only be declared once.");
 
+    }
+}
+
+TEST_CASE ("Verifying mesh topology creation", "[NoC Arch Tests]") {
+
+    // data for the xml parsing
+    pugi::xml_node test;
+    pugiutil::loc_data test_location;
+
+    // the noc storage
+    t_noc_inf test_noc;
+
+
+    // mesh parameters
+    double mesh_start_x = 10;
+    double mesh_start_y = 10;
+    double mesh_end_x = 5;
+    double mesh_end_y = 56;
+    double mesh_size = 0;
+
+    SECTION( "Check the error where a mesh size was illegal." ) {
+
+        REQUIRE_THROWS_WITH(generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_size), "The NoC mesh size cannot be 0.");
+    
+    }
+    SECTION( "Check the error where a mesh region size was invalid." ) {
+
+        mesh_size = 3;
+
+        REQUIRE_THROWS_WITH(generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_size), "The NoC region is invalid.");
+    }
+    SECTION( "Check the mesh creation for integer precision coordinates." ) {
+
+        // define test parameters
+        mesh_size = 3;
+
+        mesh_start_x = 0;
+        mesh_start_y = 0;
+
+        mesh_end_x = 4;
+        mesh_end_y = 4;
+
+        // create the golden golden results
+        double golden_results_x[9];
+        double golden_results_y[9];
+
+        // first row of the mesh
+        golden_results_x[0] = 0;
+        golden_results_y[0] = 0;
+        golden_results_x[1] = 2;
+        golden_results_y[1] = 0;
+        golden_results_x[2] = 4;
+        golden_results_y[2] = 0;
+
+        // second row of the mesh
+        golden_results_x[3] = 0;
+        golden_results_y[3] = 2;
+        golden_results_x[4] = 2;
+        golden_results_y[4] = 2;
+        golden_results_x[5] = 4;
+        golden_results_y[5] = 2;
+
+        // third row of the mesh
+        golden_results_x[6] = 0;
+        golden_results_y[6] = 4;
+        golden_results_x[7] = 2;
+        golden_results_y[7] = 4;
+        golden_results_x[8] = 4;
+        golden_results_y[8] = 4;
+
+        generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_size);
+
+        // go through all the expected routers
+        for (int expected_router_id = 0; expected_router_id < (mesh_size * mesh_size); expected_router_id++)
+        {   
+            // make sure the router ids match
+            REQUIRE(test_noc.router_list[expected_router_id].id == expected_router_id);
+
+            // make sure the position of the routers are correct
+            // x position
+            REQUIRE(golden_results_x[expected_router_id] == test_noc.router_list[expected_router_id].device_x_position);
+            // y position
+            REQUIRE(golden_results_y[expected_router_id] == test_noc.router_list[expected_router_id].device_y_position);
+        }
+    }
+    SECTION( "Check the mesh creation for double precision coordinates." ) {
+
+        // define test parameters
+        mesh_size = 3;
+
+        mesh_start_x = 3.5;
+        mesh_start_y = 5.7;
+
+        mesh_end_x = 10.8;
+        mesh_end_y = 6.4;
+
+
+        // create the golden golden results
+        double golden_results_x[9];
+        double golden_results_y[9];
+
+        // first row of the mesh
+        golden_results_x[0] = 3.5;
+        golden_results_y[0] = 5.7;
+        golden_results_x[1] = 7.15;
+        golden_results_y[1] = 5.7;
+        golden_results_x[2] = 10.8;
+        golden_results_y[2] = 5.7;
+
+        // second row of the mesh
+        golden_results_x[3] = 3.5;
+        golden_results_y[3] = 6.05;
+        golden_results_x[4] = 7.15;
+        golden_results_y[4] = 6.05;
+        golden_results_x[5] = 10.8;
+        golden_results_y[5] = 6.05;
+
+        // third row of the mesh
+        golden_results_x[6] = 3.5;
+        golden_results_y[6] = 6.4;
+        golden_results_x[7] = 7.15;
+        golden_results_y[7] = 6.4;
+        golden_results_x[8] = 10.8;
+        golden_results_y[8] = 6.4;
+
+        generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_size);
+
+        // go through all the expected routers
+        for (int expected_router_id = 0; expected_router_id < (mesh_size * mesh_size); expected_router_id++)
+        {   
+            // make sure the router ids match
+            REQUIRE(test_noc.router_list[expected_router_id].id == expected_router_id);
+
+            // make sure the position of the routers are correct
+            // x position
+            REQUIRE(vtr::isclose(golden_results_x[expected_router_id], test_noc.router_list[expected_router_id].device_x_position));
+            // y position
+            REQUIRE(vtr::isclose(golden_results_y[expected_router_id], test_noc.router_list[expected_router_id].device_y_position));
+        }
     }
 }
