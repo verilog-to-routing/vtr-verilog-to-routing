@@ -72,6 +72,7 @@ extensions = [
 
 if have_sphinxcontrib_bibtex:
     extensions.append("sphinxcontrib.bibtex")
+    bibtex_bibfiles = ["z_references.bib"]
 else:
     print(
         "Warning: Could not find sphinxcontrib.bibtex for managing citations, attempting to build anyway..."
