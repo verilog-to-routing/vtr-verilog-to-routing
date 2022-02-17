@@ -124,6 +124,7 @@ static void print_stats() {
     }
     VTR_LOG("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
             total_nets_absorbed, (int)atom_ctx.nlist.nets().size(), (int)atom_ctx.nlist.nets().size() - total_nets_absorbed);
+    VTR_LOG("Netlist num_blocks: %d \n", cluster_ctx.clb_nlist.blocks().size());
     free(num_clb_types);
     free(num_clb_inputs_used);
     free(num_clb_outputs_used);

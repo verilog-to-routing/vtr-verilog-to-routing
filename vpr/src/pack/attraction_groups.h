@@ -52,6 +52,8 @@ class AttractionInfo {
 
     void create_att_groups_for_overfull_regions();
 
+    void create_att_groups_for_all_regions();
+
     //Setters and getters for the class
     AttractGroupId get_atom_attraction_group(const AtomBlockId atom_id);
 

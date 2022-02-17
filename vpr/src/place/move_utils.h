@@ -173,6 +173,15 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median);
 
+/*
+ * If the block to be moved (b_from) has a floorplan constraint, this routine changes the max and min coords
+ * in the compressed grid (min_cx, min_cy, max_cx, max_cy) to make sure the range limit is within the floorplan constraint.
+ *
+ * Returns false if there is no intersection between the range limit and the floorplan constraint,
+ * true otherwise.
+ */
+bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type, ClusterBlockId b_from, int& min_cx, int& min_cy, int& max_cx, int& max_cy, int& delta_cx);
+
 std::string e_move_result_to_string(e_move_result move_outcome);
 
 #endif
