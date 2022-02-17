@@ -2774,7 +2774,7 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
         //Only consider molecules that are unpacked and of the correct type
         if (atom_ctx.lookup.atom_clb(atom_id) == ClusterBlockId::INVALID()
             && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
-        	available_atoms.push_back(atom_id);
+            available_atoms.push_back(atom_id);
         }
     }
 

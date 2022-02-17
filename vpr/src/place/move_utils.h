@@ -103,7 +103,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc from,
                          t_pl_loc& to,
-						 ClusterBlockId b_from);
+                         ClusterBlockId b_from);
 
 // Accessor f_placer_breakpoint_reached
 // return true when a placer breakpoint is reached
@@ -147,7 +147,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_pl_loc& centeroid,
                           const t_range_limiters& range_limiters,
                           t_pl_loc& to_loc,
-						  ClusterBlockId b_from);
+                          ClusterBlockId b_from);
 
 std::string move_type_to_string(e_move_type);
 

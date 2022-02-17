@@ -535,7 +535,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc from,
                          t_pl_loc& to,
-						 ClusterBlockId b_from) {
+                         ClusterBlockId b_from) {
     //Finds a legal swap to location for the given type, starting from 'from.x' and 'from.y'
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
@@ -570,10 +570,10 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     bool legal = false;
 
     if (is_cluster_constrained(b_from)) {
-    	bool intersect = intersect_range_limit_with_floorplan_constraints(type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
-    	if (!intersect) {
-    		return false;
-    	}
+        bool intersect = intersect_range_limit_with_floorplan_constraints(type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
+        if (!intersect) {
+            return false;
+        }
     }
 
     legal = find_compatible_compressed_loc_in_range(type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
@@ -612,7 +612,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                         const t_pl_loc& from_loc,
                         const t_bb* limit_coords,
                         t_pl_loc& to_loc,
-						ClusterBlockId b_from) {
+                        ClusterBlockId b_from) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
 
     //Determine the coordinates in the compressed grid space of the current block
@@ -642,10 +642,10 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     bool legal = false;
 
     if (is_cluster_constrained(b_from)) {
-    	bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
-    	if (!intersect) {
-    		return false;
-    	}
+        bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
+        if (!intersect) {
+            return false;
+        }
     }
 
     legal = find_compatible_compressed_loc_in_range(blk_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, true);
@@ -676,7 +676,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_pl_loc& centroid,
                           const t_range_limiters& range_limiters,
                           t_pl_loc& to_loc,
-						  ClusterBlockId b_from) {
+                          ClusterBlockId b_from) {
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
 
@@ -727,10 +727,10 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     bool legal = false;
 
     if (is_cluster_constrained(b_from)) {
-    	bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
-    	if (!intersect) {
-    		return false;
-    	}
+        bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
+        if (!intersect) {
+            return false;
+        }
     }
 
     legal = find_compatible_compressed_loc_in_range(blk_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
@@ -875,41 +875,40 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
 }
 
 bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type, ClusterBlockId b_from, int& min_cx, int& min_cy, int& max_cx, int& max_cy, int& delta_cx) {
-	//Retrieve the compressed block grid for this block type
-	const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
+    //Retrieve the compressed block grid for this block type
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
 
-	int min_x = compressed_block_grid.compressed_to_grid_x[min_cx];
-	int max_x = compressed_block_grid.compressed_to_grid_x[max_cx];
-	int min_y = compressed_block_grid.compressed_to_grid_y[min_cy];
-	int max_y = compressed_block_grid.compressed_to_grid_y[max_cy];
-	Region range_reg;
-	range_reg.set_region_rect(min_x, min_y, max_x, max_y);
+    int min_x = compressed_block_grid.compressed_to_grid_x[min_cx];
+    int max_x = compressed_block_grid.compressed_to_grid_x[max_cx];
+    int min_y = compressed_block_grid.compressed_to_grid_y[min_cy];
+    int max_y = compressed_block_grid.compressed_to_grid_y[max_cy];
+    Region range_reg;
+    range_reg.set_region_rect(min_x, min_y, max_x, max_y);
 
-	auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
-	PartitionRegion pr = floorplanning_ctx.cluster_constraints[b_from];
-	std::vector<Region> regions;
-	if (!pr.empty()) {
-		regions = pr.get_partition_region();
-	}
-	Region intersect_reg;
-	if (regions.size() == 1) {
-		intersect_reg = intersection(regions[0], range_reg);
+    PartitionRegion pr = floorplanning_ctx.cluster_constraints[b_from];
+    std::vector<Region> regions;
+    if (!pr.empty()) {
+        regions = pr.get_partition_region();
+    }
+    Region intersect_reg;
+    if (regions.size() == 1) {
+        intersect_reg = intersection(regions[0], range_reg);
 
-		if (intersect_reg.empty()) {
-			return false;
-		} else {
-			vtr::Rect<int> rect = intersect_reg.get_region_rect();
-			min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
-			max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
-			min_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymin());
-			max_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymax());
-			delta_cx = max_cx - min_cx;
-		}
-	}
+        if (intersect_reg.empty()) {
+            return false;
+        } else {
+            vtr::Rect<int> rect = intersect_reg.get_region_rect();
+            min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
+            max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
+            min_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymin());
+            max_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymax());
+            delta_cx = max_cx - min_cx;
+        }
+    }
 
-	return true;
-
+    return true;
 }
 
 std::string e_move_result_to_string(e_move_result move_outcome) {
