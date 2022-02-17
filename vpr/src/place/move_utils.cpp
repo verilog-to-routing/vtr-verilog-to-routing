@@ -569,40 +569,6 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     int cy_to = OPEN;
     bool legal = false;
 
-    /**TURN THIS INTO A HELPER FUNCTION**/
-    /*if (is_cluster_constrained(b_from)) {
-		int min_x = compressed_block_grid.compressed_to_grid_x[min_cx];
-		int max_x = compressed_block_grid.compressed_to_grid_x[max_cx];
-		int min_y = compressed_block_grid.compressed_to_grid_y[min_cy];
-		int max_y = compressed_block_grid.compressed_to_grid_y[max_cy];
-		Region range_reg;
-		range_reg.set_region_rect(min_x, min_y, max_x, max_y);
-
-		auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-
-		PartitionRegion pr = floorplanning_ctx.cluster_constraints[b_from];
-		std::vector<Region> regions;
-		if (!pr.empty()) {
-			regions = pr.get_partition_region();
-		}
-		Region intersect_reg;
-		if (regions.size() == 1) {
-			intersect_reg = intersection(regions[0], range_reg);
-
-			if (intersect_reg.empty()) {
-				return false;
-			} else {
-				vtr::Rect<int> rect = intersect_reg.get_region_rect();
-				min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
-				max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
-				min_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymin());
-				max_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymax());
-				delta_cx = max_cx - min_cx;
-			}
-		}
-
-    }*/
-    /**TURN THIS INTO A HELPER FUNCTION**/
     if (is_cluster_constrained(b_from)) {
     	bool intersect = intersect_range_limit_with_floorplan_constraints(type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
     	if (!intersect) {
@@ -675,40 +641,6 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     int cy_to = OPEN;
     bool legal = false;
 
-    /**TURN THIS INTO A HELPER FUNCTION**/
-    /*if (is_cluster_constrained(b_from)) {
-		int min_x = compressed_block_grid.compressed_to_grid_x[min_cx];
-		int max_x = compressed_block_grid.compressed_to_grid_x[max_cx];
-		int min_y = compressed_block_grid.compressed_to_grid_y[min_cy];
-		int max_y = compressed_block_grid.compressed_to_grid_y[max_cy];
-		Region range_reg;
-		range_reg.set_region_rect(min_x, min_y, max_x, max_y);
-
-		auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-
-		PartitionRegion pr = floorplanning_ctx.cluster_constraints[b_from];
-		std::vector<Region> regions;
-		if (!pr.empty()) {
-			regions = pr.get_partition_region();
-		}
-		Region intersect_reg;
-		if (regions.size() == 1) {
-			intersect_reg = intersection(regions[0], range_reg);
-
-			if (intersect_reg.empty()) {
-				return false;
-			} else {
-				vtr::Rect<int> rect = intersect_reg.get_region_rect();
-				min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
-				max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
-				min_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymin());
-				max_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymax());
-				delta_cx = max_cx - min_cx;
-			}
-		}
-
-    }*/
-    /**TURN THIS INTO A HELPER FUNCTION**/
     if (is_cluster_constrained(b_from)) {
     	bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
     	if (!intersect) {
@@ -794,40 +726,6 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     int cy_to = OPEN;
     bool legal = false;
 
-    /**TURN THIS INTO A HELPER FUNCTION**/
-    /*if (is_cluster_constrained(b_from)) {
-		int min_x = compressed_block_grid.compressed_to_grid_x[min_cx];
-		int max_x = compressed_block_grid.compressed_to_grid_x[max_cx];
-		int min_y = compressed_block_grid.compressed_to_grid_y[min_cy];
-		int max_y = compressed_block_grid.compressed_to_grid_y[max_cy];
-		Region range_reg;
-		range_reg.set_region_rect(min_x, min_y, max_x, max_y);
-
-		auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
-
-		PartitionRegion pr = floorplanning_ctx.cluster_constraints[b_from];
-		std::vector<Region> regions;
-		if (!pr.empty()) {
-			regions = pr.get_partition_region();
-		}
-		Region intersect_reg;
-		if (regions.size() == 1) {
-			intersect_reg = intersection(regions[0], range_reg);
-
-			if (intersect_reg.empty()) {
-				return false;
-			} else {
-				vtr::Rect<int> rect = intersect_reg.get_region_rect();
-				min_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmin());
-				max_cx = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, rect.xmax());
-				min_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymin());
-				max_cy = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, rect.ymax());
-				delta_cx = max_cx - min_cx;
-			}
-		}
-
-    }*/
-    /**TURN THIS INTO A HELPER FUNCTION**/
     if (is_cluster_constrained(b_from)) {
     	bool intersect = intersect_range_limit_with_floorplan_constraints(blk_type, b_from, min_cx, min_cy, max_cx, max_cy, delta_cx);
     	if (!intersect) {
