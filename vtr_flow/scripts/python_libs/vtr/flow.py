@@ -149,7 +149,14 @@ def run(
     power_tech_file = vtr.util.verify_file(power_tech_file, "Power") if power_tech_file else None
     temp_dir = Path(temp_dir)
     temp_dir.mkdir(parents=True, exist_ok=True)
-    netlist_ext = ".blif" if ".eblif" not in circuit_file.suffixes else ".eblif"
+    if ".edif" in circuit_file.suffixes:
+        netlist_ext = ".edif"
+    elif ".eblif" in circuit_file.suffixes:
+        netlist_ext = ".eblif"
+    elif ".edn" in circuit_file.suffixes:
+        netlist_ext = ".edn"
+    else:
+        netlist_ext = ".blif"
 
     # Define useful filenames
     post_odin_netlist = temp_dir / (circuit_file.stem + ".odin" + netlist_ext)
