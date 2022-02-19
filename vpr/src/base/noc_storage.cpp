@@ -68,7 +68,7 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y){
        in the NoC are added.
     */
     NocRouterId converted_id((int)(router_storage.size() - 1));
-    router_id_conversion_table.emplace(id, convert_router_id);
+    router_id_conversion_table.emplace(id, converted_id);
 
     return;
 }
