@@ -20,10 +20,10 @@
 typedef enum e_rr_type : unsigned char {
     SOURCE = 0, ///<A dummy node that is a logical output within a block -- i.e., the gate that generates a signal.
     SINK,       ///<A dummy node that is a logical input within a block -- i.e. the gate that needs a signal.
-    IPIN,
-    OPIN,
-    CHANX,
-    CHANY,
+    IPIN,       ///Input pin to a block
+    OPIN,       ///Output pin of a block
+    CHANX,      ///x-directed routing wire, or an x-directed segment of a channel for global routing
+    CHANY,      ///y-directed routing wire, or a y-directed segment of a channel for global routing
     NUM_RR_TYPES
 } t_rr_type;
 
@@ -112,6 +112,7 @@ struct t_rr_rc_data {
     float C;
 };
 
+// This is the data type of fast lookups of an rr-node given an (rr_type, x, y, and the side)
 //[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
 typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_indices;
 
