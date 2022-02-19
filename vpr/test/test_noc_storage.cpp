@@ -7,6 +7,10 @@
 // controls how many routers are in the noc storage, when testing it
 #define NUM_OF_ROUTERS 100
 
+// defines the number of links each router has
+// range [1, NUM_OF_ROUTERS - 1]
+#define NOC_CONNECTIVITY 10
+
 
 namespace {
 
@@ -111,6 +115,166 @@ namespace {
             REQUIRE(golden_set[router_number].get_router_grid_position_x() == test_noc.get_noc_router_grid_position_x(converted_id));
 
             REQUIRE(golden_set[router_number].get_router_grid_position_y() == test_noc.get_noc_router_grid_position_y(converted_id));
+        }
+
+    }
+    TEST_CASE("test_add_link", "[vpr_noc]") {
+
+        // create a vector to store the golden links
+        std::vector<NocLink> golden_set;
+
+        // temp variables that hold the noc link properties
+        NocRouterId source;
+        NocRouterId sink;
+
+        NocLinkId link_id;
+
+        // testing datastructure
+        NocStorage test_noc;
+
+        int total_num_of_links = NUM_OF_ROUTERS * NOC_CONNECTIVITY;
+
+        // noc router stuff (we need routers before being able to add links)
+        int router_id = 0;
+        int curr_router_x_pos = 0;
+        int curr_router_y_pos = 0;
+
+         // add all the routers to noc_storage and populate the golden router set
+        for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++)
+        {
+            // determine the current router parameters
+            router_id = router_number;
+
+            // add tje router to the noc
+            test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos);
+
+        }
+
+        // allocate the size for the links
+        test_noc.make_room_for_noc_router_link_list();
+
+        for (int source_router_id = 0; source_router_id < NUM_OF_ROUTERS; source_router_id++)
+        {
+            source = (NocRouterId)source_router_id;
+
+
+            for (int sink_router_id = 0; sink_router_id < NOC_CONNECTIVITY; sink_router_id++)
+            {
+                sink = (NocRouterId)sink_router_id;
+
+                // makes sure we do not create a link for a router who acts as a sink and source
+                if (source_router_id != sink_router_id)
+                {   
+                    // add link to the golden reference
+                    golden_set.emplace_back(source, sink);
+
+                    // add the link to the NoC
+                    test_noc.add_link(source, sink);
+                }
+
+            }
+        }
+
+        // verify that the links were added properly to the NoC
+        for (int link_number = 0; link_number < total_num_of_links; link_number++)
+        {
+            link_id = (NocLinkId)link_number;
+
+            // verify the link by checking its properties
+            REQUIRE(golden_set[link_number].get_source_router() == test_noc.get_noc_link_source_router(link_id));
+
+            REQUIRE(golden_set[link_number].get_sink_router() == test_noc.get_noc_link_sink_router(link_id));
+        }
+
+    }
+    TEST_CASE("test_router_link_list", "[vpr_noc]")
+    {
+        // create a vector to store the golden links
+        vtr::vector<NocRouterId, std::vector<NocLinkId>> golden_set;
+
+        // list of router connections returned from the NoC
+        std::vector<NocLinkId> router_links;
+
+        golden_set.resize(NUM_OF_ROUTERS);
+
+        // temp variables that hold the noc link properties
+        NocRouterId source;
+        NocRouterId sink;
+
+        NocLinkId link_id;
+
+        // testing datastructure
+        NocStorage test_noc;
+
+        // need to assign 
+
+        int curr_link_number = 0;
+
+        int connection_size;
+
+        // noc router stuff (we need routers before being able to add links)
+        int router_id = 0;
+        int curr_router_x_pos = 0;
+        int curr_router_y_pos = 0;
+
+         // add all the routers to noc_storage and populate the golden router set
+        for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++)
+        {
+            // determine the current router parameters
+            router_id = router_number;
+
+            // add tje router to the noc
+            test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos);
+
+        }
+
+        // allocate the size for the links
+        test_noc.make_room_for_noc_router_link_list();
+
+        for (int source_router_id = 0; source_router_id < NUM_OF_ROUTERS; source_router_id++)
+        {
+            source = (NocRouterId)source_router_id;
+
+            for (int sink_router_id = 0; sink_router_id < NOC_CONNECTIVITY; sink_router_id++)
+            {
+                sink = (NocRouterId)sink_router_id;
+
+                // makes sure we do not create a link for a router who acts as a sink and source
+                if (source_router_id != sink_router_id)
+                {   
+                    // add the link to the NoC
+                    test_noc.add_link(source, sink);
+
+                    // add the link id to the golden set
+                    golden_set[source].push_back((NocLinkId)curr_link_number);
+
+                    curr_link_number++;
+                }
+
+                                
+
+            }
+        }
+
+        // now verify that the connection lists were created correctly
+        for (int id = 0; id < NUM_OF_ROUTERS; id++)
+        {   
+            // get the current router id
+            source = (NocRouterId)id;
+
+            // get the router connections from the 
+            router_links = test_noc.get_noc_router_connections(source);
+            
+            // get the size of the current router connection list
+            connection_size = golden_set[source].size();
+
+            // go through the links from the noc and make sure they match the golden set
+            for (int link_index = 0; link_index < connection_size; link_index++)
+            {
+                REQUIRE(golden_set[source][link_index] == router_links[link_index]);
+
+            }
+
         }
 
     }
