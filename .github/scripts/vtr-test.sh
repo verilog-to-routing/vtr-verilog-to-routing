@@ -37,11 +37,6 @@ pwd -P
 ) &
 MONITOR=$!
 
-if [[ $VTR_CMAKE_PARAMS == *"-DVTR_ENABLE_SANITIZE=ON"*  ]]; then
-  echo "Setting LD_PRELOAD to /usr/lib/gcc/x86_64-linux-gnu/9/libasan.so"
-  export LD_PRELOAD=/usr/lib/gcc/x86_64-linux-gnu/9/libasan.so
-fi
-
 set +e
 
 echo "========================================"
@@ -65,7 +60,7 @@ echo "========================================"
 
 results=qor_results.tar
 # Create archive with output files from the test
-find vtr_flow -type f \( -name "*.txt" -o -name "*.log" -o -name "*.txt" -o -name "*.csv" \) -exec tar -rf $results {} \;
+find vtr_flow -type f \( -name "*.out" -o -name "*.log" -o -name "*.txt" -o -name "*.csv" \) -exec tar -rf $results {} \;
 gzip $results
 
 exit $TEST_RESULT
