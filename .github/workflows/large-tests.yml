@@ -17,16 +17,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {test: "vtr_reg_nightly_test1", options: "",           cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test2", options: "",           cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test3", options: "",           cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test4", options: "",           cmake: ""                                             }
-          - {test: "vtr_reg_strong",        options: "",           cmake: "-DVTR_ASSERT_LEVEL=3"                         }
-          - {test: "vtr_reg_strong",        options: "-skip_qor",  cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON"}
-          - {test: "vtr_reg_yosys",         options: "",           cmake: "-DWITH_YOSYS=ON"                              }
-          - {test: "vtr_reg_yosys_odin",    options: "",           cmake: "-DODIN_USE_YOSYS=ON"                          }
-          - {test: "odin_tech_strong",      options: "",           cmake: "-DODIN_USE_YOSYS=ON"                          }
-          - {test: "odin_reg_strong",       options: "",           cmake: ""                                             }
+          - {test: "vtr_reg_nightly_test1", cores: "8",  options: "",          cmake: ""                                             }
+          - {test: "vtr_reg_nightly_test2", cores: "16", options: "",          cmake: ""                                             }
+          - {test: "vtr_reg_nightly_test3", cores: "16", options: "",          cmake: ""                                             }
+          - {test: "vtr_reg_nightly_test4", cores: "16", options: "",          cmake: ""                                             }
+          - {test: "vtr_reg_strong",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3"                         }
+          - {test: "vtr_reg_strong",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON"}
+          - {test: "vtr_reg_yosys",         cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON"                              }
+          - {test: "vtr_reg_yosys_odin",    cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON"                          }
+          - {test: "odin_tech_strong",      cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON"                          }
+          - {test: "odin_reg_strong",       cores: "16", options: "",          cmake: ""                                             }
 
     env:
       DEBIAN_FRONTEND: "noninteractive"
@@ -44,7 +44,7 @@ jobs:
         VTR_TEST: ${{ matrix.test }}
         VTR_TEST_OPTIONS: ${{ matrix.options }}
         VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
-        NUM_CORES: 16
+        NUM_CORES: ${{ matrix.cores }}
 
     - uses: actions/upload-artifact@v2
       if: ${{ always() }}
@@ -52,4 +52,4 @@ jobs:
         path: |
           **/results*.gz
           **/plot_*.svg
-          **/qor_results.tar.gz
+          **/qor_results*.tar.gz

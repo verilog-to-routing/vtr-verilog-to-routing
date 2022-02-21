@@ -58,7 +58,7 @@ echo "========================================"
 echo "Packing benchmarks files"
 echo "========================================"
 
-results=qor_results.tar
+results=qor_results_$VTR_TEST.tar
 # Create archive with output files from the test
 find vtr_flow -type f \( -name "*.out" -o -name "*.log" -o -name "*.txt" -o -name "*.csv" \) -exec tar -rf $results {} \;
 gzip $results
