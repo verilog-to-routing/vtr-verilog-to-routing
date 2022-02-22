@@ -1,12 +1,11 @@
-#ifndef _RR_NODE_IMPL_H_
-#define _RR_NODE_IMPL_H_
+#ifndef RR_NODE_IMPL_H
+#define RR_NODE_IMPL_H
 // This file provides the inline proxy implemenation for t_rr_node.
 // See the t_rr_node class comment for additional details.
 
+#include "rr_node_types.h"
 #include "rr_node.h"
 #include "rr_graph_storage.h"
-
-#include "vpr_error.h"
 
 class node_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, const t_rr_node> {
   public:
@@ -77,10 +76,6 @@ inline t_edge_size t_rr_node::num_edges() const {
 
 inline edge_idx_range t_rr_node::edges() const {
     return storage_->edges(id_);
-}
-
-inline t_edge_size t_rr_node::num_configurable_edges() const {
-    return storage_->num_configurable_edges(id_);
 }
 
 #endif /* _RR_NODE_IMPL_H_ */

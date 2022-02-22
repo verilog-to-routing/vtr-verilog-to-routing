@@ -12,6 +12,7 @@
 
 #include "arch_util.h"
 #include "physical_types_util.h"
+#include "rr_graph_utils.h"
 
 class DeviceGrid;
 
@@ -170,25 +171,4 @@ void print_timing_stats(std::string name,
                         const t_timing_analysis_profile_info& current,
                         const t_timing_analysis_profile_info& past = t_timing_analysis_profile_info());
 
-// Make room in a vector, with amortized O(1) time by using a pow2 growth pattern.
-//
-// This enables potentially random insertion into a vector with amortized O(1)
-// time.
-template<typename T>
-void make_room_in_vector(T* vec, size_t elem_position) {
-    if (elem_position < vec->size()) {
-        return;
-    }
-
-    size_t capacity = std::max(vec->capacity(), size_t(16));
-    while (elem_position >= capacity) {
-        capacity *= 2;
-    }
-
-    if (capacity >= vec->capacity()) {
-        vec->reserve(capacity);
-    }
-
-    vec->resize(elem_position + 1);
-}
 #endif

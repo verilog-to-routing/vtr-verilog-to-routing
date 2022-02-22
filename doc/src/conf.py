@@ -358,6 +358,7 @@ if shutil.which("doxygen"):
         "ace2": "../_build/doxygen/ace2/xml",
         "ODIN_II": "../_build/doxygen/ODIN_II/xml",
         "blifexplorer": "../_build/doxygen/blifexplorer/xml",
+        "librrgraph": "../_build/doxygen/librrgraph/xml",
     }
     breathe_default_project = "vpr"
 
