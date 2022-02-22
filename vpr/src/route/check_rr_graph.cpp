@@ -58,7 +58,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
     for (const RRNodeId& rr_node : rr_graph.nodes()) {
         size_t inode = (size_t)rr_node;
-        rr_graph.rr_nodes()[inode].validate();
+        rr_graph.validate_node(rr_node);
 
         /* Ignore any uninitialized rr_graph nodes */
         if (!rr_graph.node_is_initialized(rr_node)) {
@@ -185,14 +185,14 @@ void check_rr_graph(const t_graph_type graph_type,
 
         //Check that all config/non-config edges are appropriately organized
         for (auto edge : rr_graph.configurable_edges(RRNodeId(inode))) {
-            if (!rr_graph.rr_nodes()[inode].edge_is_configurable(edge)) {
+            if (!rr_graph.edge_is_configurable(RRNodeId(inode), edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is non-configurable, but in configurable edges",
                                 inode, edge);
             }
         }
 
         for (auto edge : rr_graph.non_configurable_edges(RRNodeId(inode))) {
-            if (rr_graph.rr_nodes()[inode].edge_is_configurable(edge)) {
+            if (rr_graph.edge_is_configurable(RRNodeId(inode), edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is configurable, but in non-configurable edges",
                                 inode, edge);
             }

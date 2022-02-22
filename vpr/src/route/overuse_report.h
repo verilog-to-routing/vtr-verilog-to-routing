@@ -2,7 +2,9 @@
 
 #include "rr_graph_storage.h"
 #include "rr_graph_view.h"
+#include "clustered_netlist_fwd.h"
 #include <map>
+#include <set>
 
 /**
  * @brief Global routines related to displaying RR node overuse info.

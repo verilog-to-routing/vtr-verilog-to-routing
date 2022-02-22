@@ -285,19 +285,19 @@ class RRGraphBuilder {
         rr_switch_inf_.resize(size);
     }
 
-    /** brief Validate that edge data is partitioned correctly
+    /** @brief Validate that edge data is partitioned correctly
      * @note This function is used to validate the correctness of the routing resource graph in terms
      * of graph attributes. Strongly recommend to call it when you finish the building a routing resource
      * graph. If you need more advance checks, which are related to architecture features, you should
      * consider to use the check_rr_graph() function or build your own check_rr_graph() function. */
     inline bool validate() const {
-        return node_storage_.validate();
+        return node_storage_.validate(rr_switch_inf_);
     }
 
     /** @brief Sorts edge data such that configurable edges appears before
      *  non-configurable edges. */
     inline void partition_edges() {
-        node_storage_.partition_edges();
+        return node_storage_.partition_edges(rr_switch_inf_);
     }
 
     /** @brief Init per node fan-in data.  Should only be called after all edges have

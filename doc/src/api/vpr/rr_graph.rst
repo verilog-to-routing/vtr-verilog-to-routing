@@ -6,32 +6,32 @@ RRGraphView
 -----------
 
 .. doxygenfile:: rr_graph_view.h
-   :project: vpr
+   :project: librrgraph
    :sections: detaileddescription
 
 .. doxygenclass:: RRGraphView
-   :project: vpr
+   :project: librrgraph
    :members:
 
 RRGraphBuilder
 --------------
 
 .. doxygenfile:: rr_graph_builder.h
-   :project: vpr
+   :project: librrgraph
    :sections: detaileddescription
 
 .. doxygenclass:: RRGraphBuilder
-   :project: vpr
+   :project: librrgraph
    :members:
 
 RRSpatialLookup
 ---------------
 
 .. doxygenfile:: rr_spatial_lookup.h
-   :project: vpr
+   :project: librrgraph
    :sections: detaileddescription
 
 .. doxygenclass:: RRSpatialLookup
-   :project: vpr
+   :project: librrgraph
    :members:
 
