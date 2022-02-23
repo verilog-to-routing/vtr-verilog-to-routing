@@ -82,6 +82,7 @@ struct NetlistReader {
 
     std::unordered_map<size_t, std::unordered_map<std::pair<size_t, size_t>, std::string, vtr::hash_pair>> port_net_maps_;
 
+    /** @brief Preprocesses the port net maps, populating the port_net_maps_ hash map to be later accessed for faster lookups */
     void prepare_port_net_maps() {
         auto inst_list = nr_.getInstList();
         auto decl_list = nr_.getCellDecls();

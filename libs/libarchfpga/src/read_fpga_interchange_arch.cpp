@@ -448,6 +448,18 @@ struct ArchReader {
         return pad_bels_.count(name) != 0;
     }
 
+    /** @brief Utility function to fill in all the necessary information for the sub_tile
+     *
+     *  Given a physical tile type and a corresponding sub tile with additional information on the IO pin count
+     *  this function populates all the data structures corresponding to the sub tile, and modifies also the parent
+     *  physical tile type, updating the pin numberings as  well as the directs pin mapping for the equivalent sites
+     *
+     *  Affected data structures:
+     *      - pinloc
+     *      - fc_specs
+     *      - equivalent_sites
+     *      - tile_block_pin_directs_map
+     **/
     void fill_sub_tile(t_physical_tile_type& type, t_sub_tile& sub_tile, int num_pins, int input_count, int output_count) {
         sub_tile.num_phy_pins += num_pins;
         type.num_pins += num_pins;
@@ -2040,6 +2052,31 @@ struct ArchReader {
         }
     }
 
+    /** @brief The constant block is a synthetic tile which is used to assign a virtual
+     *         location in the grid to the constant signals which are than driven to
+     *         all the real constant wires.
+     *
+     * The block's diagram can be seen below. The port names are specified in
+     * the interchange device database, therefore GND and VCC are mainly
+     * examples in this case.
+     *
+     * +---------------+
+     * |               |
+     * |  +-------+    |
+     * |  |       |    |
+     * |  |  GND  +----+--> RR Graph node
+     * |  |       |    |
+     * |  +-------+    |
+     * |               |
+     * |               |
+     * |  +-------+    |
+     * |  |       |    |
+     * |  |  VCC  +----+--> RR Graph node
+     * |  |       |    |
+     * |  +-------+    |
+     * |               |
+     * +---------------+
+     */
     void process_constant_block() {
         std::vector<std::pair<std::string, std::string>> const_cells{arch_->gnd_cell, arch_->vcc_cell};
 
@@ -2121,6 +2158,7 @@ struct ArchReader {
         ltypes_.push_back(block);
     }
 
+    /** @brief Creates the models corresponding to the constant cells that are used in a given interchange device */
     void process_constant_model() {
         std::vector<std::pair<std::string, std::string>> const_cells{arch_->gnd_cell, arch_->vcc_cell};
 
@@ -2146,6 +2184,11 @@ struct ArchReader {
         }
     }
 
+    /** @brief Creates a synthetic constant tile that will be located in the external layer of the device.
+     *
+     *  The constant tile has two output ports, one for GND and the other for VCC. The constant tile hosts
+     *  the constant pb type that is generated as well. See process_constant_model and process_constant_block.
+     */
     void process_constant_tile() {
         std::vector<std::pair<std::string, std::string>> const_cells{arch_->gnd_cell, arch_->vcc_cell};
         // Create constant tile
