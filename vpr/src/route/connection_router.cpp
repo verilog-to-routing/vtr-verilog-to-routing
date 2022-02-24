@@ -393,7 +393,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
     //For each node associated with the current heap element, expand all of it's neighbors
     int from_node_int = current->index;
     RRNodeId from_node(from_node_int);
-    auto edges = rr_nodes_.edge_range(from_node);
+    // auto edges = rr_nodes_.edge_range(from_node);
 
     // This is a simple prefetch that prefetches:
     //  - RR node data reachable from this node
@@ -412,25 +412,53 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
     //  - directrf_stratixiv_arch_timing.blif
     //  - gsm_switch_stratixiv_arch_timing.blif
     //
-    for (RREdgeId from_edge : edges) {
-        RRNodeId to_node = rr_graph_->edge_sink_node(from_edge);
-        rr_nodes_.prefetch_node(to_node);
 
-        int switch_idx = rr_graph_->edge_switch(from_edge);
-        VTR_PREFETCH(&rr_switch_inf_[switch_idx], 0, 0);
-    }
+    // auto edges = rr_nodes_.edge_range(from_node);
+    // for (RREdgeId from_edge : edges) {
+    //     RRNodeId to_node = rr_graph_->edge_sink_node(from_edge);
+    //     rr_nodes_.prefetch_node(to_node);
 
-    for (RREdgeId from_edge : edges) {
-        RRNodeId to_node = rr_graph_->edge_sink_node(from_edge);
-        timing_driven_expand_neighbour(current,
-                                       from_node_int,
-                                       from_edge,
-                                       size_t(to_node),
-                                       cost_params,
-                                       bounding_box,
-                                       target_node,
-                                       target_bb);
-    }
+    //     int switch_idx = rr_graph_->edge_switch(from_edge);
+    //     VTR_PREFETCH(&rr_switch_inf_[switch_idx], 0, 0);
+    // }
+
+        int first_dest = rr_graph_->node_first_dest(from_node);
+        size_t first_edge = (size_t)rr_graph_->node_first_edge(from_node);
+        int k = 0;
+        int rel = 0;
+        short cur_switch;
+        for (const auto& ptn : rr_graph_->node_to_edge_ptns(from_node)){
+            const auto& p = rr_graph_->edge_ptn(ptn);
+            cur_switch = p.switch_id;
+            while (k < p.edge_count){
+                RRNodeId to_node = RRNodeId(first_dest+rr_graph_->edge_ptn_data(p.ptn_idx+k));
+                timing_driven_expand_neighbour(current,
+                                            from_node_int,
+                                            RREdgeId(first_edge+rel),
+                                            size_t(to_node),
+                                            cost_params,
+                                            bounding_box,
+                                            target_node,
+                                            target_bb,
+                                            cur_switch);
+                k++;
+                rel++;
+            }
+            k = 0;
+        }
+
+
+    // for (RREdgeId from_edge : edges) {
+    //     RRNodeId to_node = rr_graph_->edge_sink_node(from_edge);
+    //     timing_driven_expand_neighbour(current,
+    //                                    from_node_int,
+    //                                    from_edge,
+    //                                    size_t(to_node),
+    //                                    cost_params,
+    //                                    bounding_box,
+    //                                    target_node,
+    //                                    target_bb);
+    // }
 }
 
 //Conditionally adds to_node to the router heap (via path from from_node via from_edge).
@@ -444,7 +472,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                                             const t_conn_cost_params cost_params,
                                                             const t_bb bounding_box,
                                                             int target_node,
-                                                            const t_bb target_bb) {
+                                                            const t_bb target_bb,
+                                                            const short switch_id) {
     RRNodeId to_node(to_node_int);
     int to_xlow = rr_graph_->node_xlow(to_node);
     int to_ylow = rr_graph_->node_ylow(to_node);
@@ -511,7 +540,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                   from_node,
                                   to_node_int,
                                   from_edge,
-                                  target_node);
+                                  target_node,
+                                  switch_id);
     }
 }
 
@@ -522,7 +552,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
                                                        const int from_node,
                                                        const int to_node,
                                                        const RREdgeId from_edge,
-                                                       const int target_node) {
+                                                       const int target_node,
+                                                       const short switch_id) {
     t_heap next;
 
     // Initalize RCV data struct if needed, otherwise it's set to nullptr
@@ -547,7 +578,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
                                       from_node,
                                       to_node,
                                       from_edge,
-                                      target_node);
+                                      target_node,
+                                      switch_id);
 
     float best_total_cost = rr_node_route_inf_[to_node].path_cost;
     float best_back_cost = rr_node_route_inf_[to_node].backward_path_cost;
@@ -667,7 +699,8 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
                                                                const int from_node,
                                                                const int to_node,
                                                                const RREdgeId from_edge,
-                                                               const int target_node) {
+                                                               const int target_node,
+                                                               const short iswitch) {
     /* new_costs.backward_cost: is the "known" part of the cost to this node -- the
      * congestion cost of all the routing resources back to the existing route
      * plus the known delay of the total path back to the source.
@@ -678,7 +711,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
      */
 
     //Info for the switch connecting from_node to_node
-    int iswitch = rr_graph_->edge_switch(from_edge);
+    // int iswitch = rr_graph_->edge_switch(from_edge);
     bool switch_buffered = rr_switch_inf_[iswitch].buffered();
     bool reached_configurably = rr_switch_inf_[iswitch].configurable();
     float switch_R = rr_switch_inf_[iswitch].R;
@@ -774,7 +807,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
 
 template<typename Heap>
 void ConnectionRouter<Heap>::empty_heap_annotating_node_route_inf() {
-    //Pop any remaining nodes in the heap and annotate their costs
+    //Pop any remaining nodes in the heap and annotaFte their costs
     //
     //Useful for visualizing router expansion in graphics, as it shows
     //the cost of all nodes considered by the router (e.g. nodes never

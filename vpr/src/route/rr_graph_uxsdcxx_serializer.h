@@ -974,6 +974,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 }
             }
         }
+        VTR_ASSERT(wire_to_rr_ipin_switch_ != nullptr);
+        *wire_to_rr_ipin_switch_ = most_frequent_switch.first;
     }
     
 	inline int get_rr_graph_rr_edge_ptns(void*& /*ctx*/){
@@ -1781,8 +1783,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     void finish_load() final {
         process_rr_node_indices();
-
         rr_graph_builder_->init_fan_in();
+        // rr_graph_builder_->remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin)
         /* Create a temp copy to convert from vtr::vector to std::vector
          * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data
          * type for ``rr_segments``

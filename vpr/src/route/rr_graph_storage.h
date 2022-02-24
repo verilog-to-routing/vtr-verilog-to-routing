@@ -349,6 +349,24 @@ class t_rr_graph_storage {
         return get_t_dest_switch(edge).dest;
         // return edge_dest_node_[edge];
     }
+    int node_first_dest(RRNodeId node) const {
+        return node_first_dest_[node];
+    }
+
+    inline std::vector<int> node_to_edge_ptns(RRNodeId node) const {
+        return node_to_edge_ptns_[node];
+    }
+
+    inline t_switch_edge_ptn edge_ptn(int ptn) const {
+        return edge_ptn_[ptn];
+    }
+
+    inline int edge_ptn_data(int ptn) const {
+        return edge_ptn_data_[ptn];
+    }
+
+
+
 
     t_dest_switch kth_edge_for_node(RRNodeId node, int kth_edge) const {
         std::vector<t_dest_switch> edges;
@@ -907,11 +925,13 @@ class t_rr_graph_view {
 
     // Get the destination node for the specified edge.
     RRNodeId edge_sink_node(RREdgeId edge) const {
+        VTR_ASSERT(false);
         return edge_dest_node_[edge];
     }
 
     // Get the switch used for the specified edge.
     short edge_switch(RREdgeId edge) const {
+        VTR_ASSERT(false);
         return edge_switch_[edge];
     }
 

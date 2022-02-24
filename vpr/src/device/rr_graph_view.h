@@ -145,9 +145,25 @@ class RRGraphView {
         return node_storage_.node_yhigh(node);
     }
 
+    inline std::vector<int> node_to_edge_ptns(RRNodeId node) const {
+        return node_storage_.node_to_edge_ptns(node);
+    }
+
+    inline t_switch_edge_ptn edge_ptn(int ptn) const {
+        return node_storage_.edge_ptn(ptn);
+    }
+
+    inline int edge_ptn_data(int ptn) const {
+        return node_storage_.edge_ptn_data(ptn);
+    }
+      
+
     /** @brief Get the first out coming edge of resource node. This function is inlined for runtime optimization. */
     inline RREdgeId node_first_edge(RRNodeId node) const {
         return node_storage_.first_edge(node);
+    }
+    inline int node_first_dest(RRNodeId node) const {
+        return node_storage_.node_first_dest(node);
     }
 
     /** @brief Get the last out coming edge of resource node. This function is inlined for runtime optimization. */
