@@ -247,6 +247,18 @@ struct RrGraphContextTypes : public uxsd::DefaultRrGraphContextTypes {
     using MetadataWriteContext = MetadataBind;
     using NodeWriteContext = int;
     using EdgeWriteContext = MetadataBind;
+    using EPtnReadContext = int;
+    using EPtnWriteContext = int;
+    using NodeEPtnReadContext = int;
+    using NodeEPtnWriteContext = int;
+    using RrNodeEPtnsReadContext = int;
+    using RrNodeEPtnsWriteContext = int;
+    using EdgePtnReadContext = int;
+    using EdgePtnWriteContext = int;
+    using RrEdgePtnsReadContext = int;
+    using RrEdgePtnsWriteContext = int;
+    using DdiffReadContext = int;
+    using DdiffWriteContext = int;
 };
 
 class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
@@ -749,6 +761,225 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return itr != rr_node_metadata_->end();
     }
 
+    /* --- Added for edge_switch_subsets folded routing resource graph --- */
+
+    /** Generated for complex type "e_ptn":
+	 * <xs:complexType name="e_ptn">
+	 *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
+	 * </xs:complexType>
+	*/
+	inline unsigned int get_e_ptn_id(int &ctx){
+        return ctx;
+    }
+
+	/** Generated for complex type "node_e_ptn":
+	 * <xs:complexType name="node_e_ptn">
+	 *   <xs:choice maxOccurs="unbounded">
+	 *     <xs:element name="e_ptn" type="e_ptn" />
+	 *   </xs:choice>
+	 *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
+	 *   <xs:attribute name="dest" type="xs:unsignedInt" use="required" />
+	 * </xs:complexType>
+	*/
+	inline unsigned int get_node_e_ptn_dest(int &ctx){
+        return ctx;
+    }
+	inline unsigned int get_node_e_ptn_id(int &ctx){
+        return ctx;
+    }
+	inline void preallocate_node_e_ptn_e_ptn(int &ctx, size_t size){
+        (void) ctx;
+        (void) size;
+        return;
+    }
+	inline int add_node_e_ptn_e_ptn(int &ctx, unsigned int id){
+        (void) id;
+        rr_graph_builder_->add_node_to_edge_ptn(id);
+        return ctx;
+    }
+	inline void finish_node_e_ptn_e_ptn(int &ctx){
+        (void) ctx;
+        return;
+    }
+	inline size_t num_node_e_ptn_e_ptn(int &ctx){
+        return ctx;
+    }
+	inline int get_node_e_ptn_e_ptn(int n, int &ctx){
+        (void) n;
+        return ctx;
+    }
+
+	/** Generated for complex type "rr_node_e_ptns":
+	 * <xs:complexType name="rr_node_e_ptns">
+	 *   <xs:choice maxOccurs="unbounded">
+	 *     <xs:element name="node_e_ptn" type="node_e_ptn" />
+	 *   </xs:choice>
+	 * </xs:complexType>
+	*/
+	inline void preallocate_rr_node_e_ptns_node_e_ptn(int &ctx, size_t size){
+        (void) size;
+        (void) ctx;
+        return;
+    }
+	inline int add_rr_node_e_ptns_node_e_ptn(int &ctx, unsigned int dest, unsigned int id){
+        (void) ctx;
+        rr_graph_builder_->add_node_first_dest(RRNodeId(id), dest); //    vtr::vector<RRNodeId, int> node_first_dest_;
+        return id;
+    }
+	inline void finish_rr_node_e_ptns_node_e_ptn(int &ctx){
+        (void) ctx;
+        return;
+    }
+	inline size_t num_rr_node_e_ptns_node_e_ptn(int &ctx){
+        return ctx;
+    }
+	inline int get_rr_node_e_ptns_node_e_ptn(int n, int &ctx){
+        (void) ctx;
+        return n;
+    }
+
+	/** Generated for complex type "ddiff":
+	 * <xs:complexType name="ddiff">
+	 *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
+	 * </xs:complexType>
+	*/
+	inline unsigned int get_ddiff_id(int &ctx){
+        return ctx;
+    }
+
+	/** Generated for complex type "edge_ptn":
+	 * <xs:complexType name="edge_ptn">
+	 *   <xs:choice maxOccurs="unbounded">
+	 *     <xs:element name="ddiff" type="ddiff" />
+	 *   </xs:choice>
+	 *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
+	 *   <xs:attribute name="switch_id" type="xs:unsignedInt" use="required" />
+	 * </xs:complexType>
+	*/
+	inline unsigned int get_edge_ptn_id(int &ctx){
+        return ctx;
+    }
+	inline unsigned int get_edge_ptn_switch_id(int &ctx){
+        return ctx;
+    }
+	inline void preallocate_edge_ptn_ddiff(int &ctx, size_t size){
+        (void) ctx;
+        (void) size;
+        return;
+    }
+	inline int add_edge_ptn_ddiff(int &ctx, unsigned int id){
+        (void) ctx;
+        rr_graph_builder_->add_edge_ddiff(id); //ddiff is the difference between that node's starting dest_node_id and this node id
+        return id;
+    }
+	inline void finish_edge_ptn_ddiff(int &ctx){
+        (void) ctx;
+        return;
+    }
+	inline size_t num_edge_ptn_ddiff(int &ctx){
+        return ctx;
+    }
+	inline int get_edge_ptn_ddiff(int n, int &ctx){
+        (void) ctx;
+        return n;
+    }
+
+	/** Generated for complex type "rr_edge_ptns":
+	 * <xs:complexType name="rr_edge_ptns">
+	 *   <xs:choice maxOccurs="unbounded">
+	 *     <xs:element name="edge_ptn" type="edge_ptn" />
+	 *   </xs:choice>
+	 * </xs:complexType>
+	*/
+	inline void preallocate_rr_edge_ptns_edge_ptn(int &ctx, size_t size){
+        (void) ctx;
+        (void) size;
+        return;
+    }
+	inline int add_rr_edge_ptns_edge_ptn(int &ctx, unsigned int id, unsigned int switch_id){
+        (void) ctx;
+        rr_graph_builder_->add_edge_ptn(switch_id);
+        return id;
+    }
+	inline void finish_rr_edge_ptns_edge_ptn(int &ctx){
+        (void) ctx;
+        return;
+    }
+	inline size_t num_rr_edge_ptns_edge_ptn(int &ctx){
+        return ctx;
+    }
+	inline int get_rr_edge_ptns_edge_ptn(int n, int &ctx){
+        (void) ctx;
+        return n;
+    }
+
+    inline int init_rr_graph_rr_node_e_ptns(void*& /*ctx*/){
+        return 0;
+    }
+	inline void finish_rr_graph_rr_node_e_ptns(int &ctx){
+        (void) ctx;
+        return;
+    }
+
+	inline int get_rr_graph_rr_node_e_ptns(void*& /*ctx*/){
+        return 0;
+    }
+	inline int init_rr_graph_rr_edge_ptns(void*& /*ctx*/){
+        return 0;
+    }
+	inline void finish_rr_graph_rr_edge_ptns(int &ctx){
+        /*initialize a vector that keeps track of the number of wire to ipin switches
+         * There should be only one wire to ipin switch. In case there are more, make sure to
+         * store the most frequent switch */
+        const auto& rr_graph = (*rr_graph_);
+        std::vector<int> count_for_wire_to_ipin_switches;
+        count_for_wire_to_ipin_switches.resize(rr_switch_inf_->size(), 0);
+        //first is index, second is count
+        std::pair<int, int> most_frequent_switch(-1, 0);
+
+        // Partition the rr graph edges for efficient access to
+        // configurable/non-configurable edge subsets. Must be done after RR
+        // switches have been allocated.
+        rr_graph_builder_->mark_edges_as_rr_switch_ids();
+        rr_graph_builder_->partition_edges();
+
+        for (int source_node = 0; source_node < (ssize_t)rr_nodes_->size(); ++source_node) {
+            int num_edges = rr_nodes_->num_edges(RRNodeId(source_node));
+            for (int iconn = 0; iconn < num_edges; ++iconn) {
+                size_t sink_node = size_t(rr_nodes_->edge_sink_node(RRNodeId(source_node), iconn));
+                size_t switch_id = rr_nodes_->edge_switch(RRNodeId(source_node), iconn);
+                if (sink_node >= rr_nodes_->size()) {
+                    report_error(
+                        "sink_node %zu is larger than rr_nodes.size() %zu",
+                        sink_node, rr_nodes_->size());
+                }
+
+                if (switch_id >= rr_switch_inf_->size()) {
+                    report_error(
+                        "switch_id %zu is larger than num_rr_switches %zu",
+                        switch_id, rr_switch_inf_->size());
+                }
+                auto node = (*rr_nodes_)[source_node];
+
+                /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
+                 * use the pair data structure to keep the maximum*/
+                if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
+                    if (rr_graph.node_type(RRNodeId(sink_node)) == IPIN) {
+                        count_for_wire_to_ipin_switches[switch_id]++;
+                        if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
+                            most_frequent_switch.first = switch_id;
+                            most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+	inline int get_rr_graph_rr_edge_ptns(void*& /*ctx*/){
+        return 0;
+    }
+
     /** Generated for complex type "rr_nodes":
      * <xs:complexType name="rr_nodes">
      *   <xs:choice maxOccurs="unbounded">
@@ -873,137 +1104,137 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   <xs:attribute name="switch_id" type="xs:unsignedInt" use="required" />
      * </xs:complexType>
      */
-    inline void preallocate_rr_edges_edge(void*& /*ctx*/, size_t size) final {
-        rr_graph_builder_->reserve_edges(size);
-        if (read_edge_metadata_) {
-            rr_edge_metadata_->reserve(size);
-        }
-    }
-    inline MetadataBind add_rr_edges_edge(void*& /*ctx*/, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) final {
-        if (src_node >= rr_nodes_->size()) {
-            report_error(
-                "source_node %d is larger than rr_nodes.size() %d",
-                src_node, rr_nodes_->size());
-        }
+    // inline void preallocate_rr_edges_edge(void*& /*ctx*/, size_t size) final {
+    //     rr_graph_builder_->reserve_edges(size);
+    //     if (read_edge_metadata_) {
+    //         rr_edge_metadata_->reserve(size);
+    //     }
+    // }
+    // inline MetadataBind add_rr_edges_edge(void*& /*ctx*/, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) final {
+    //     if (src_node >= rr_nodes_->size()) {
+    //         report_error(
+    //             "source_node %d is larger than rr_nodes.size() %d",
+    //             src_node, rr_nodes_->size());
+    //     }
 
-        MetadataBind bind(strings_, empty_);
-        if (read_edge_metadata_) {
-            bind.set_edge_target(src_node, sink_node, switch_id);
-        } else {
-            bind.set_ignore();
-        }
+    //     MetadataBind bind(strings_, empty_);
+    //     if (read_edge_metadata_) {
+    //         bind.set_edge_target(src_node, sink_node, switch_id);
+    //     } else {
+    //         bind.set_ignore();
+    //     }
 
-        rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id);
-        return bind;
-    }
-    inline void finish_rr_edges_edge(MetadataBind& bind) final {
-        bind.finish();
-    }
-    inline size_t num_rr_edges_edge(EdgeWalker& walker) final {
-        return walker.num_edges();
-    }
-    inline const EdgeWalker* get_rr_edges_edge(int n, EdgeWalker& walker) final {
-        size_t cur = walker.advance(n);
-        if ((ssize_t)cur != n) {
-            report_error("Incorrect edge index %zu != %d", cur, n);
-        }
-        return &walker;
-    }
+    //     rr_graph_builder_->emplace_back_edge(RRNodeId(src_node), RRNodeId(sink_node), switch_id);
+    //     return bind;
+    // }
+    // inline void finish_rr_edges_edge(MetadataBind& bind) final {
+    //     bind.finish();
+    // }
+    // inline size_t num_rr_edges_edge(EdgeWalker& walker) final {
+    //     return walker.num_edges();
+    // }
+    // inline const EdgeWalker* get_rr_edges_edge(int n, EdgeWalker& walker) final {
+    //     size_t cur = walker.advance(n);
+    //     if ((ssize_t)cur != n) {
+    //         report_error("Incorrect edge index %zu != %d", cur, n);
+    //     }
+    //     return &walker;
+    // }
 
-    inline unsigned int get_edge_sink_node(const EdgeWalker*& walker) final {
-        return walker->current_sink_node();
-    }
-    inline unsigned int get_edge_src_node(const EdgeWalker*& walker) final {
-        return walker->current_src_node();
-    }
-    inline unsigned int get_edge_switch_id(const EdgeWalker*& walker) final {
-        return walker->current_switch_id_node();
-    }
+    // inline unsigned int get_edge_sink_node(const EdgeWalker*& walker) final {
+    //     return walker->current_sink_node();
+    // }
+    // inline unsigned int get_edge_src_node(const EdgeWalker*& walker) final {
+    //     return walker->current_src_node();
+    // }
+    // inline unsigned int get_edge_switch_id(const EdgeWalker*& walker) final {
+    //     return walker->current_switch_id_node();
+    // }
 
-    inline MetadataBind init_edge_metadata(MetadataBind& bind) final {
-        return bind;
-    }
-    inline void finish_edge_metadata(MetadataBind& bind) final {
-        bind.finish();
-    }
-    inline t_metadata_dict_iterator get_edge_metadata(const EdgeWalker*& walker) final {
-        return t_metadata_dict_iterator(&rr_edge_metadata_->find(
-                                                              std::make_tuple(
-                                                                  walker->current_src_node(),
-                                                                  walker->current_sink_node(),
-                                                                  walker->current_switch_id_node()))
-                                             ->second,
-                                        report_error_);
-    }
-    inline bool has_edge_metadata(const EdgeWalker*& walker) final {
-        return rr_edge_metadata_->find(
-                   std::make_tuple(
-                       walker->current_src_node(),
-                       walker->current_sink_node(),
-                       walker->current_switch_id_node()))
-               != rr_edge_metadata_->end();
-    }
+    // inline MetadataBind init_edge_metadata(MetadataBind& bind) final {
+    //     return bind;
+    // }
+    // inline void finish_edge_metadata(MetadataBind& bind) final {
+    //     bind.finish();
+    // }
+    // inline t_metadata_dict_iterator get_edge_metadata(const EdgeWalker*& walker) final {
+    //     return t_metadata_dict_iterator(&rr_edge_metadata_->find(
+    //                                                           std::make_tuple(
+    //                                                               walker->current_src_node(),
+    //                                                               walker->current_sink_node(),
+    //                                                               walker->current_switch_id_node()))
+    //                                          ->second,
+    //                                     report_error_);
+    // }
+    // inline bool has_edge_metadata(const EdgeWalker*& walker) final {
+    //     return rr_edge_metadata_->find(
+    //                std::make_tuple(
+    //                    walker->current_src_node(),
+    //                    walker->current_sink_node(),
+    //                    walker->current_switch_id_node()))
+    //            != rr_edge_metadata_->end();
+    // }
 
-    inline void* init_rr_graph_rr_edges(void*& /*ctx*/) final {
-        return nullptr;
-    }
-    inline void finish_rr_graph_rr_edges(void*& /*ctx*/) final {
-        /*initialize a vector that keeps track of the number of wire to ipin switches
-         * There should be only one wire to ipin switch. In case there are more, make sure to
-         * store the most frequent switch */
-        const auto& rr_graph = (*rr_graph_);
-        std::vector<int> count_for_wire_to_ipin_switches;
-        count_for_wire_to_ipin_switches.resize(rr_switch_inf_->size(), 0);
-        //first is index, second is count
-        std::pair<int, int> most_frequent_switch(-1, 0);
+    // inline void* init_rr_graph_rr_edges(void*& /*ctx*/) final {
+    //     return nullptr;
+    // }
+    // inline void finish_rr_graph_rr_edges(void*& /*ctx*/) final {
+    //     /*initialize a vector that keeps track of the number of wire to ipin switches
+    //      * There should be only one wire to ipin switch. In case there are more, make sure to
+    //      * store the most frequent switch */
+    //     const auto& rr_graph = (*rr_graph_);
+    //     std::vector<int> count_for_wire_to_ipin_switches;
+    //     count_for_wire_to_ipin_switches.resize(rr_switch_inf_->size(), 0);
+    //     //first is index, second is count
+    //     std::pair<int, int> most_frequent_switch(-1, 0);
 
-        // Partition the rr graph edges for efficient access to
-        // configurable/non-configurable edge subsets. Must be done after RR
-        // switches have been allocated.
-        rr_graph_builder_->mark_edges_as_rr_switch_ids();
-        rr_graph_builder_->partition_edges();
+    //     // Partition the rr graph edges for efficient access to
+    //     // configurable/non-configurable edge subsets. Must be done after RR
+    //     // switches have been allocated.
+    //     rr_graph_builder_->mark_edges_as_rr_switch_ids();
+    //     rr_graph_builder_->partition_edges();
 
-        for (int source_node = 0; source_node < (ssize_t)rr_nodes_->size(); ++source_node) {
-            int num_edges = rr_nodes_->num_edges(RRNodeId(source_node));
-            for (int iconn = 0; iconn < num_edges; ++iconn) {
-                size_t sink_node = size_t(rr_nodes_->edge_sink_node(RRNodeId(source_node), iconn));
-                size_t switch_id = rr_nodes_->edge_switch(RRNodeId(source_node), iconn);
-                if (sink_node >= rr_nodes_->size()) {
-                    report_error(
-                        "sink_node %zu is larger than rr_nodes.size() %zu",
-                        sink_node, rr_nodes_->size());
-                }
+    //     for (int source_node = 0; source_node < (ssize_t)rr_nodes_->size(); ++source_node) {
+    //         int num_edges = rr_nodes_->num_edges(RRNodeId(source_node));
+    //         for (int iconn = 0; iconn < num_edges; ++iconn) {
+    //             size_t sink_node = size_t(rr_nodes_->edge_sink_node(RRNodeId(source_node), iconn));
+    //             size_t switch_id = rr_nodes_->edge_switch(RRNodeId(source_node), iconn);
+    //             if (sink_node >= rr_nodes_->size()) {
+    //                 report_error(
+    //                     "sink_node %zu is larger than rr_nodes.size() %zu",
+    //                     sink_node, rr_nodes_->size());
+    //             }
 
-                if (switch_id >= rr_switch_inf_->size()) {
-                    report_error(
-                        "switch_id %zu is larger than num_rr_switches %zu",
-                        switch_id, rr_switch_inf_->size());
-                }
-                auto node = (*rr_nodes_)[source_node];
+    //             if (switch_id >= rr_switch_inf_->size()) {
+    //                 report_error(
+    //                     "switch_id %zu is larger than num_rr_switches %zu",
+    //                     switch_id, rr_switch_inf_->size());
+    //             }
+    //             auto node = (*rr_nodes_)[source_node];
 
-                /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
-                 * use the pair data structure to keep the maximum*/
-                if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
-                    if (rr_graph.node_type(RRNodeId(sink_node)) == IPIN) {
-                        count_for_wire_to_ipin_switches[switch_id]++;
-                        if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
-                            most_frequent_switch.first = switch_id;
-                            most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
-                        }
-                    }
-                }
-            }
-        }
+    //             /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
+    //              * use the pair data structure to keep the maximum*/
+    //             if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
+    //                 if (rr_graph.node_type(RRNodeId(sink_node)) == IPIN) {
+    //                     count_for_wire_to_ipin_switches[switch_id]++;
+    //                     if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
+    //                         most_frequent_switch.first = switch_id;
+    //                         most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        VTR_ASSERT(wire_to_rr_ipin_switch_ != nullptr);
-        *wire_to_rr_ipin_switch_ = most_frequent_switch.first;
-    }
+    //     VTR_ASSERT(wire_to_rr_ipin_switch_ != nullptr);
+    //     *wire_to_rr_ipin_switch_ = most_frequent_switch.first;
+    // }
 
-    inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
-        EdgeWalker walker;
-        walker.initialize(rr_nodes_, rr_graph_);
-        return walker;
-    }
+    // inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
+    //     EdgeWalker walker;
+    //     walker.initialize(rr_nodes_, rr_graph_);
+    //     return walker;
+    // }
 
     /** Generated for complex type "channels":
      * <xs:complexType name="channels">

@@ -413,15 +413,15 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
     //  - gsm_switch_stratixiv_arch_timing.blif
     //
     for (RREdgeId from_edge : edges) {
-        RRNodeId to_node = rr_nodes_.edge_sink_node(from_edge);
+        RRNodeId to_node = rr_graph_->edge_sink_node(from_edge);
         rr_nodes_.prefetch_node(to_node);
 
-        int switch_idx = rr_nodes_.edge_switch(from_edge);
+        int switch_idx = rr_graph_->edge_switch(from_edge);
         VTR_PREFETCH(&rr_switch_inf_[switch_idx], 0, 0);
     }
 
     for (RREdgeId from_edge : edges) {
-        RRNodeId to_node = rr_nodes_.edge_sink_node(from_edge);
+        RRNodeId to_node = rr_graph_->edge_sink_node(from_edge);
         timing_driven_expand_neighbour(current,
                                        from_node_int,
                                        from_edge,
@@ -678,7 +678,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
      */
 
     //Info for the switch connecting from_node to_node
-    int iswitch = rr_nodes_.edge_switch(from_edge);
+    int iswitch = rr_graph_->edge_switch(from_edge);
     bool switch_buffered = rr_switch_inf_[iswitch].buffered();
     bool reached_configurably = rr_switch_inf_[iswitch].configurable();
     float switch_R = rr_switch_inf_[iswitch].R;

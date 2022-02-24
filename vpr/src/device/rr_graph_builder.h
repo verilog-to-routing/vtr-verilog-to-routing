@@ -128,6 +128,23 @@ class RRGraphBuilder {
     inline void set_node_direction(RRNodeId id, Direction new_direction) {
         node_storage_.set_node_direction(id, new_direction);
     }
+    
+    inline void add_node_first_dest(RRNodeId id, int dest){
+        node_storage_.add_node_first_dest(id, dest);
+    }
+    inline void add_edge_ddiff(int id){
+        node_storage_.add_edge_ddiff(id);
+    }
+    inline void add_edge_ptn(int switch_id){
+        node_storage_.add_edge_ptn(switch_id);
+    }
+    inline void add_node_to_edge_ptn(int edge_ptn_idx){
+        node_storage_.add_node_to_edge_ptn(edge_ptn_idx);
+    }
+
+
+
+
 
     /** @brief Reserve the lists of edges to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,

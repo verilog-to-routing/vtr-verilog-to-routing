@@ -451,7 +451,6 @@ static void load_rr_indexed_data_T_values() {
 static void calculate_average_switch(int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    const auto& rr_nodes = device_ctx.rr_nodes.view();
 
     auto node = RRNodeId(inode);
 
@@ -463,7 +462,7 @@ static void calculate_average_switch(int inode, double& avg_switch_R, double& av
     for (const auto& edge : fan_in_list[node]) {
         /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
         if (rr_graph.node_type(node) == CHANX || rr_graph.node_type(node) == CHANY) {
-            int switch_index = rr_nodes.edge_switch(edge);
+            int switch_index = rr_graph.edge_switch(edge);
 
             if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::SHORT) continue;
 

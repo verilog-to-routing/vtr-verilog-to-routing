@@ -319,47 +319,83 @@ class edge_compare_dest_node {
 void t_rr_graph_storage::assign_first_edges() {
     VTR_ASSERT(node_first_edge_.empty());
 
+    
     // Last element is a dummy element
     node_first_edge_.resize(node_storage_.size() + 1);
 
-    VTR_ASSERT(std::is_sorted(
-        edge_src_node_.begin(),
-        edge_src_node_.end()));
-
-    size_t node_id = 0;
-    size_t first_id = 0;
-    size_t second_id = 0;
-    size_t num_edges = edge_src_node_.size();
-    VTR_ASSERT(edge_dest_node_.size() == num_edges);
-    VTR_ASSERT(edge_switch_.size() == num_edges);
-    while (true) {
-        VTR_ASSERT(first_id < num_edges);
-        VTR_ASSERT(second_id < num_edges);
-        size_t current_node_id = size_t(edge_src_node_[RREdgeId(second_id)]);
-        if (node_id < current_node_id) {
-            // All edges belonging to node_id are assigned.
-            while (node_id < current_node_id) {
-                // Store any edges belongs to node_id.
-                node_first_edge_[RRNodeId(node_id)] = RREdgeId(first_id);
-                first_id = second_id;
-                node_id += 1;
-                VTR_ASSERT(node_first_edge_.size());
-            }
-
-            VTR_ASSERT(node_id == current_node_id);
-            node_first_edge_[RRNodeId(node_id)] = RREdgeId(second_id);
-        } else {
-            second_id += 1;
-            if (second_id == num_edges) {
-                break;
-            }
+    int edge_number = 0;
+    for (int i=0; i < node_storage_.size(); i++){
+        RRNodeId node = RRNodeId(i);
+        node_first_edge_[node] = RREdgeId(edge_number);
+        int edge_count = 0;
+        for (auto ptn : node_to_edge_ptns_[node]){
+            edge_number += edge_ptn_[ptn].edge_count;
         }
     }
+    node_first_edge_[(RRNodeId)node_storage_.size()] = RREdgeId(edge_number);
 
-    // All remaining nodes have no edges, set as such.
-    for (size_t inode = node_id + 1; inode < node_first_edge_.size(); ++inode) {
-        node_first_edge_[RRNodeId(inode)] = RREdgeId(second_id);
-    }
+    // vtr::vector<RRNodeId, std::vector<int>> node_to_edge_ptns_;
+
+    // /* Vector from node to the destination node of its first edge */
+
+    // vtr::vector<RRNodeId, int> node_first_dest_;
+
+    // /* Vector from edge_ptn_idx to switch, starting idx, and count */
+
+    // std::vector<t_switch_edge_ptn> edge_ptn_;
+
+    // std::vector<int> edge_ptn_data_;
+
+    // short switch_id;
+    // uint16_t edge_count; // up to 65,536 edges per pattern
+    // int ptn_idx;
+
+
+
+
+
+
+    // Last element is a dummy element
+    // node_first_edge_.resize(node_storage_.size() + 1);
+
+    // VTR_ASSERT(std::is_sorted(
+    //     edge_src_node_.begin(),
+    //     edge_src_node_.end()));
+
+    // size_t node_id = 0;
+    // size_t first_id = 0;
+    // size_t second_id = 0;
+    // size_t num_edges = edge_src_node_.size();
+    // VTR_ASSERT(edge_dest_node_.size() == num_edges);
+    // VTR_ASSERT(edge_switch_.size() == num_edges);
+    // while (true) {
+    //     VTR_ASSERT(first_id < num_edges);
+    //     VTR_ASSERT(second_id < num_edges);
+    //     size_t current_node_id = size_t(edge_src_node_[RREdgeId(second_id)]);
+    //     if (node_id < current_node_id) {
+    //         // All edges belonging to node_id are assigned.
+    //         while (node_id < current_node_id) {
+    //             // Store any edges belongs to node_id.
+    //             node_first_edge_[RRNodeId(node_id)] = RREdgeId(first_id);
+    //             first_id = second_id;
+    //             node_id += 1;
+    //             VTR_ASSERT(node_first_edge_.size());
+    //         }
+
+    //         VTR_ASSERT(node_id == current_node_id);
+    //         node_first_edge_[RRNodeId(node_id)] = RREdgeId(second_id);
+    //     } else {
+    //         second_id += 1;
+    //         if (second_id == num_edges) {
+    //             break;
+    //         }
+    //     }
+    // }
+
+    // // All remaining nodes have no edges, set as such.
+    // for (size_t inode = node_id + 1; inode < node_first_edge_.size(); ++inode) {
+    //     node_first_edge_[RRNodeId(inode)] = RREdgeId(second_id);
+    // }
 
     VTR_ASSERT_SAFE(verify_first_edges());
 }
@@ -388,9 +424,26 @@ void t_rr_graph_storage::init_fan_in() {
     node_fan_in_.shrink_to_fit();
 
     //Walk the graph and increment fanin on all downstream nodes
-    for (const auto& dest_node : edge_dest_node_) {
-        node_fan_in_[dest_node] += 1;
+    // for (const auto& dest_node : edge_dest_node_) {
+    //     node_fan_in_[dest_node] += 1;
+    // }
+    for (size_t i=0; i < node_storage_.size(); i++){
+        RRNodeId node = RRNodeId(i);
+        size_t dest = (size_t)node_first_dest_[node];
+        int k = 0;
+        short cur_switch;
+        for (auto ptn : node_to_edge_ptns_[node]){
+            const auto p = edge_ptn_[ptn];
+            cur_switch = p.switch_id;
+            while (k < p.edge_count){
+                node_fan_in_[RRNodeId(dest+edge_ptn_data_[p.ptn_idx+k])] += 1;
+                k++;
+            }
+            k = 0;
+        }
     }
+    
+
 }
 
 size_t t_rr_graph_storage::count_rr_switches(
@@ -516,19 +569,23 @@ void t_rr_graph_storage::partition_edges() {
 
 t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const {
     VTR_ASSERT(!node_first_edge_.empty() && remapped_edges_);
-
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-    auto first_id = size_t(node_first_edge_[id]);
-    auto last_id = size_t((&node_first_edge_[id])[1]);
-    for (size_t idx = first_id; idx < last_id; ++idx) {
-        auto switch_idx = edge_switch_[RREdgeId(idx)];
-        if (!rr_graph.rr_switch_inf(RRSwitchId(switch_idx)).configurable()) {
-            return idx - first_id;
-        }
+    int edge_count = 0;
+    short cur_switch;
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    for (auto ptn : node_to_edge_ptns_[id]){
+        const auto p = edge_ptn_[ptn];
+        edge_count += rr_graph.rr_switch_inf(RRSwitchId(p.switch_id)).configurable()*p.edge_count;
     }
+    return edge_count;
 
-    return last_id - first_id;
+    // for (size_t idx = first_id; idx < last_id; ++idx) {
+    //     auto switch_idx = edge_switch_[RREdgeId(idx)];
+    //     if (!rr_graph.rr_switch_inf(RRSwitchId(switch_idx)).configurable()) {
+    //         return idx - first_id;
+    //     }
+    // }
+
+    // return last_id - first_id;
 }
 
 t_edge_size t_rr_graph_storage::num_non_configurable_edges(const RRNodeId& id) const {

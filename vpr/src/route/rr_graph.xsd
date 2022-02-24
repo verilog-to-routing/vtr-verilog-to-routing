@@ -288,14 +288,47 @@
     <xs:attribute name="capacity" type="xs:unsignedInt" use="required"/>
   </xs:complexType>
 
-  <xs:complexType name="edge">
+<!-- # </edge_ptn>
+# <edge_ptn id="7939" switch_id="2">
+# <ddiff id="3155">
+# <ddiff id="6409">
+# </edge_ptn> -->
+  <xs:complexType name="edge_ptn">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="ddiff" type="ddiff"/>
+    </xs:choice>
+    <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
+    <xs:attribute name="switch_id" type="xs:unsignedInt" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="ddiff">
+    <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
+  </xs:complexType>
+
+<!-- # <node_e_ptn id="1" dest="25">
+  # <ptn id="0"/>
+  # </node_e_ptn> -->
+
+  <xs:complexType name="node_e_ptn">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="e_ptn" type="e_ptn"/>
+    </xs:choice>
+    <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
+    <xs:attribute name="dest" type="xs:unsignedInt" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="e_ptn">
+    <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
+  </xs:complexType>
+
+  <!-- <xs:complexType name="edge">
     <xs:all>
       <xs:element name="metadata" type="metadata" minOccurs="0"/>
     </xs:all>
     <xs:attribute name="src_node" type="xs:unsignedInt" use="required"/>
     <xs:attribute name="sink_node" type="xs:unsignedInt" use="required"/>
     <xs:attribute name="switch_id" type="xs:unsignedInt" use="required"/>
-  </xs:complexType>
+  </xs:complexType> -->
 
   <xs:complexType name="switches">
     <xs:sequence>
@@ -327,11 +360,30 @@
     </xs:choice>
   </xs:complexType>
 
-  <xs:complexType name="rr_edges">
+
+  <!-- <rr_node_e_ptns>
+  <node_e_ptn id="1" dest="25">
+  <e_ptn id="0"/>
+  </node_e_ptn> -->
+  <xs:complexType name="rr_node_e_ptns">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="node_e_ptn" type="node_e_ptn"/>
+    </xs:choice>
+  </xs:complexType>
+
+  <xs:complexType name="rr_edge_ptns">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="edge_ptn" type="edge_ptn"/>
+    </xs:choice>
+  </xs:complexType>
+
+
+
+  <!-- <xs:complexType name="rr_edges">
     <xs:choice maxOccurs="unbounded">
       <xs:element name="edge" type="edge"/>
     </xs:choice>
-  </xs:complexType>
+  </xs:complexType> -->
 
   <!-- This last definition is the root tag definition.  The name of the
        xs:element is the root tag, and the contents of the xs:complexType
@@ -346,7 +398,9 @@
         <xs:element name="block_types" type="block_types"/>
         <xs:element name="grid" type="grid_locs"/>
         <xs:element name="rr_nodes" type="rr_nodes"/>
-        <xs:element name="rr_edges" type="rr_edges"/>
+        <xs:element name="rr_node_e_ptns" type="rr_node_e_ptns"/>
+        <xs:element name="rr_edge_ptns" type="rr_edge_ptns"/>
+        <!-- <xs:element name="rr_edges" type="rr_edges"/> -->
       </xs:all>
 
       <xs:attribute name="tool_name" type="xs:string"/>

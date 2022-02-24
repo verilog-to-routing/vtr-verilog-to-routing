@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
-# Input file: /research/ece/lnis/USERS/tang/github/vtr-verilog-to-routing/vpr/src/route/rr_graph.xsd
-# md5sum of input file: cd57d47fc9dfa62c7030397ca759217e
+# Cmdline: uxsdcxx/uxsdcap.py /home/ethan/workspaces/ethanroj23/vtr/vpr/src/route/rr_graph.xsd
+# Input file: /home/ethan/workspaces/ethanroj23/vtr/vpr/src/route/rr_graph.xsd
+# md5sum of input file: 5c529f385cc39043f69229d620e94c98
 
-@0xe4650d345d47589d;
+@0xcf38b97e680e90dd;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -202,15 +202,32 @@ struct RrNodes {
 	nodes @0 :List(Node);
 }
 
-struct Edge {
-	sinkNode @0 :UInt32;
-	srcNode @1 :UInt32;
-	switchId @2 :UInt32;
-	metadata @3 :Metadata;
+struct EPtn {
+	id @0 :UInt32;
 }
 
-struct RrEdges {
-	edges @0 :List(Edge);
+struct NodeEPtn {
+	dest @0 :UInt32;
+	id @1 :UInt32;
+	ePtns @2 :List(EPtn);
+}
+
+struct RrNodeEPtns {
+	nodeEPtns @0 :List(NodeEPtn);
+}
+
+struct Ddiff {
+	id @0 :UInt32;
+}
+
+struct EdgePtn {
+	id @0 :UInt32;
+	switchId @1 :UInt32;
+	ddiffs @2 :List(Ddiff);
+}
+
+struct RrEdgePtns {
+	edgePtns @0 :List(EdgePtn);
 }
 
 struct RrGraph {
@@ -223,5 +240,6 @@ struct RrGraph {
 	blockTypes @6 :BlockTypes;
 	grid @7 :GridLocs;
 	rrNodes @8 :RrNodes;
-	rrEdges @9 :RrEdges;
+	rrNodeEPtns @9 :RrNodeEPtns;
+	rrEdgePtns @10 :RrEdgePtns;
 }
