@@ -71,6 +71,8 @@
 #include "tatum/report/graphviz_dot_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
+#include "re_cluster_util.h"
+
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 40  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
 
@@ -3795,4 +3797,17 @@ static t_pb* get_top_level_pb(t_pb* pb) {
     VTR_ASSERT(top_level_pb != nullptr);
 
     return top_level_pb;
+}
+
+/*********** Re-packing API functions **********************************/
+
+void move_atom_to_new_cluster(const AtomBlockId& moving_atom) {
+    
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    ClusterBlockId old_cluster = atom_to_cluster(moving_atom);
+    bool remove_sucess = remove_atom_from_cluster(moving_atom);
 }
