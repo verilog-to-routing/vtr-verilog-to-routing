@@ -50,8 +50,15 @@ class AttractionInfo {
     //If no constraints were specified, then no attraction groups will be created.
     AttractionInfo(bool attraction_groups_on);
 
+    /*
+     * Create attraction groups for the partitions that contain overfull regions (i.e.
+     * The region has more blocks of a certain type assigned to than are actually available).
+     */
     void create_att_groups_for_overfull_regions();
 
+    /*
+     * Create attraction groups for all partitions.
+     */
     void create_att_groups_for_all_regions();
 
     void assign_atom_attraction_ids();

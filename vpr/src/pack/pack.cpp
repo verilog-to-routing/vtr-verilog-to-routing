@@ -178,6 +178,16 @@ bool try_pack(t_packer_opts* packer_opts,
             VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s\n",
                     (allow_unrelated_clustering ? "true" : "false"),
                     (balance_block_type_util ? "true" : "false"));
+            /*
+             * When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
+             * the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
+             * cluster more densely to be able to adhere to the floorplan constraints. However, we do not want to cluster more
+             * densely unnecessarily, as this can negatively impact wirelength. So, we have iterative approach. We check at the end
+             * of every iteration if any floorplan regions are overfull. In the first iteration, we run
+             * with no attraction groups (not packing more densely). If regions are overfull at the end of the first iteration,
+             * we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
+             * until the last iteration, when we create attraction groups for every partition, if needed.
+             */
         } else if (pack_iteration == 1 && floorplan_not_fitting) {
             VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
             attraction_groups.create_att_groups_for_overfull_regions();
