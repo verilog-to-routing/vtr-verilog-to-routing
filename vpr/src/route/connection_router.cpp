@@ -427,8 +427,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
         int k = 0;
         int rel = 0;
         short cur_switch;
-        for (const auto& ptn : rr_graph_->node_to_edge_ptns(from_node)){
-            const auto& p = rr_graph_->edge_ptn(ptn);
+        for (const auto& p : rr_graph_->node_to_edge_ptns(from_node)){
+            // const auto& p = rr_graph_->edge_ptn(ptn);
             cur_switch = p.switch_id;
             while (k < p.edge_count){
                 RRNodeId to_node = RRNodeId(first_dest+rr_graph_->edge_ptn_data(p.ptn_idx+k));

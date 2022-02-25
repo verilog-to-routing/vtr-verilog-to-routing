@@ -4,9 +4,9 @@
 #
 # Cmdline: uxsdcxx/uxsdcap.py /home/ethan/workspaces/ethanroj23/vtr/vpr/src/route/rr_graph.xsd
 # Input file: /home/ethan/workspaces/ethanroj23/vtr/vpr/src/route/rr_graph.xsd
-# md5sum of input file: 5c529f385cc39043f69229d620e94c98
+# md5sum of input file: f70492b177e0daf17b52aa153b3fae93
 
-@0xcf38b97e680e90dd;
+@0xba70c56446959ad0;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -202,20 +202,6 @@ struct RrNodes {
 	nodes @0 :List(Node);
 }
 
-struct EPtn {
-	id @0 :UInt32;
-}
-
-struct NodeEPtn {
-	dest @0 :UInt32;
-	id @1 :UInt32;
-	ePtns @2 :List(EPtn);
-}
-
-struct RrNodeEPtns {
-	nodeEPtns @0 :List(NodeEPtn);
-}
-
 struct Ddiff {
 	id @0 :UInt32;
 }
@@ -230,6 +216,20 @@ struct RrEdgePtns {
 	edgePtns @0 :List(EdgePtn);
 }
 
+struct EPtn {
+	id @0 :UInt32;
+}
+
+struct NodeEPtn {
+	dest @0 :UInt32;
+	id @1 :UInt32;
+	ePtns @2 :List(EPtn);
+}
+
+struct RrNodeEPtns {
+	nodeEPtns @0 :List(NodeEPtn);
+}
+
 struct RrGraph {
 	toolComment @0 :Text;
 	toolName @1 :Text;
@@ -240,6 +240,6 @@ struct RrGraph {
 	blockTypes @6 :BlockTypes;
 	grid @7 :GridLocs;
 	rrNodes @8 :RrNodes;
-	rrNodeEPtns @9 :RrNodeEPtns;
-	rrEdgePtns @10 :RrEdgePtns;
+	rrEdgePtns @9 :RrEdgePtns;
+	rrNodeEPtns @10 :RrNodeEPtns;
 }

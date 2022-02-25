@@ -916,10 +916,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int init_rr_graph_rr_node_e_ptns(void*& /*ctx*/){
         return 0;
     }
-	inline void finish_rr_graph_rr_node_e_ptns(int &ctx){
-        (void) ctx;
-        return;
-    }
+	
 
 	inline int get_rr_graph_rr_node_e_ptns(void*& /*ctx*/){
         return 0;
@@ -927,7 +924,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 	inline int init_rr_graph_rr_edge_ptns(void*& /*ctx*/){
         return 0;
     }
-	inline void finish_rr_graph_rr_edge_ptns(int &ctx){
+    inline void finish_rr_graph_rr_edge_ptns(int &ctx){
+        (void) ctx;
+        return;
+    }
+	inline void finish_rr_graph_rr_node_e_ptns(int &ctx){
         /*initialize a vector that keeps track of the number of wire to ipin switches
          * There should be only one wire to ipin switch. In case there are more, make sure to
          * store the most frequent switch */

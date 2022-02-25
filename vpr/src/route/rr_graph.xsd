@@ -398,8 +398,9 @@
         <xs:element name="block_types" type="block_types"/>
         <xs:element name="grid" type="grid_locs"/>
         <xs:element name="rr_nodes" type="rr_nodes"/>
-        <xs:element name="rr_node_e_ptns" type="rr_node_e_ptns"/>
+        <!-- <xs:element name="rr_node_e_ptns" type="rr_node_e_ptns"/> -->
         <xs:element name="rr_edge_ptns" type="rr_edge_ptns"/>
+        <xs:element name="rr_node_e_ptns" type="rr_node_e_ptns"/>
         <!-- <xs:element name="rr_edges" type="rr_edges"/> -->
       </xs:all>
 

@@ -652,8 +652,8 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNode
     int first_dest = rr_graph.node_first_dest(parent);
     int k = 0;
     short switch_ind;
-    for (const auto& ptn : rr_graph.node_to_edge_ptns(parent)){
-        const auto& p = rr_graph.edge_ptn(ptn);
+    for (const auto& p : rr_graph.node_to_edge_ptns(parent)){
+        // const auto& p = rr_graph.edge_ptn(ptn);
         switch_ind = p.switch_id;
         while (k < p.edge_count){
             RRNodeId child_node = RRNodeId(first_dest+rr_graph.edge_ptn_data(p.ptn_idx+k));

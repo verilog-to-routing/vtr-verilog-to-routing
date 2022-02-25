@@ -248,7 +248,7 @@ class t_rr_graph_storage {
         cur_node_ = id;
     }
     inline void add_node_to_edge_ptn(int edge_ptn_idx){
-        node_to_edge_ptns_[cur_node_].push_back(edge_ptn_idx);
+        node_to_edge_ptns_[cur_node_].push_back(edge_ptn_[edge_ptn_idx]);
     }
 
     inline void add_edge_ddiff(int id){
@@ -353,7 +353,7 @@ class t_rr_graph_storage {
         return node_first_dest_[node];
     }
 
-    inline std::vector<int> node_to_edge_ptns(RRNodeId node) const {
+    inline std::vector<t_switch_edge_ptn> node_to_edge_ptns(RRNodeId node) const {
         return node_to_edge_ptns_[node];
     }
 
@@ -373,8 +373,8 @@ class t_rr_graph_storage {
         size_t dest = (size_t)node_first_dest_[node];
         int k = 0;
         short cur_switch;
-        for (auto ptn : node_to_edge_ptns_[node]){
-            const auto p = edge_ptn_[ptn];
+        for (auto p : node_to_edge_ptns_[node]){
+            // const auto p = edge_ptn_[ptn];
             cur_switch = p.switch_id;
             while (k < p.edge_count){
                 edges.push_back({RRNodeId(dest+edge_ptn_data_[p.ptn_idx+k]), cur_switch});
@@ -427,8 +427,8 @@ class t_rr_graph_storage {
             RRNodeId node = RRNodeId(i);
             size_t dest = (size_t)node_first_dest_[node];
             int k = 0;
-            for (auto ptn : node_to_edge_ptns_[node]){
-                const auto p = edge_ptn_[ptn];
+            for (auto p : node_to_edge_ptns_[node]){
+                // const auto p = edge_ptn_[ptn];
                 while (k < p.edge_count){
                     apply(RREdgeId(edge), node, RRNodeId(dest+edge_ptn_data_[p.ptn_idx+k]));
                     k++;
@@ -788,7 +788,7 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, short> edge_switch_;
 
     /* Vector from node to list of edge pattern idxs */
-    vtr::vector<RRNodeId, std::vector<int>> node_to_edge_ptns_;
+    vtr::vector<RRNodeId, std::vector<t_switch_edge_ptn>> node_to_edge_ptns_;
 
     /* Vector from node to the destination node of its first edge */
     vtr::vector<RRNodeId, int> node_first_dest_;

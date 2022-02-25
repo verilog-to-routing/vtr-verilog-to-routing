@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcap.py /home/ethan/workspaces/ethanroj23/vtr/vpr/src/route/rr_graph.xsd
  * Input file: /home/ethan/workspaces/ethanroj23/vtr/vpr/src/route/rr_graph.xsd
- * md5sum of input file: 5c529f385cc39043f69229d620e94c98
+ * md5sum of input file: f70492b177e0daf17b52aa153b3fae93
  */
 
 #include <functional>
@@ -72,17 +72,17 @@ void load_node_capnp_type(const ucap::Node::Reader &root, T &out, Context &conte
 template <class T, typename Context>
 void load_rr_nodes_capnp_type(const ucap::RrNodes::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack);
 template <class T, typename Context>
-void load_e_ptn_capnp_type(const ucap::EPtn::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack);
-template <class T, typename Context>
-void load_node_e_ptn_capnp_type(const ucap::NodeEPtn::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack);
-template <class T, typename Context>
-void load_rr_node_e_ptns_capnp_type(const ucap::RrNodeEPtns::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack);
-template <class T, typename Context>
 void load_ddiff_capnp_type(const ucap::Ddiff::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack);
 template <class T, typename Context>
 void load_edge_ptn_capnp_type(const ucap::EdgePtn::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack);
 template <class T, typename Context>
 void load_rr_edge_ptns_capnp_type(const ucap::RrEdgePtns::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack);
+template <class T, typename Context>
+void load_e_ptn_capnp_type(const ucap::EPtn::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack);
+template <class T, typename Context>
+void load_node_e_ptn_capnp_type(const ucap::NodeEPtn::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack);
+template <class T, typename Context>
+void load_rr_node_e_ptns_capnp_type(const ucap::RrNodeEPtns::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack);
 template <class T, typename Context>
 void load_rr_graph_capnp_type(const ucap::RrGraph::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack);
 
@@ -116,13 +116,13 @@ inline void write_node_capnp_type(T &in, ucap::Node::Builder &root, Context &con
 template <class T, typename Context>
 inline void write_rr_nodes_capnp_type(T &in, ucap::RrNodes::Builder &root, Context &context);
 template <class T, typename Context>
-inline void write_node_e_ptn_capnp_type(T &in, ucap::NodeEPtn::Builder &root, Context &context);
-template <class T, typename Context>
-inline void write_rr_node_e_ptns_capnp_type(T &in, ucap::RrNodeEPtns::Builder &root, Context &context);
-template <class T, typename Context>
 inline void write_edge_ptn_capnp_type(T &in, ucap::EdgePtn::Builder &root, Context &context);
 template <class T, typename Context>
 inline void write_rr_edge_ptns_capnp_type(T &in, ucap::RrEdgePtns::Builder &root, Context &context);
+template <class T, typename Context>
+inline void write_node_e_ptn_capnp_type(T &in, ucap::NodeEPtn::Builder &root, Context &context);
+template <class T, typename Context>
+inline void write_rr_node_e_ptns_capnp_type(T &in, ucap::RrNodeEPtns::Builder &root, Context &context);
 template <class T, typename Context>
 inline void write_rr_graph_capnp_type(T &in, ucap::RrGraph::Builder &root, Context &context);
 
@@ -841,60 +841,6 @@ inline void load_rr_nodes_capnp_type(const ucap::RrNodes::Reader &root, T &out, 
 }
 
 template<class T, typename Context>
-inline void load_e_ptn_capnp_type(const ucap::EPtn::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack){
-	(void)root;
-	(void)out;
-	(void)context;
-	(void)report_error;
-	(void)stack;
-
-}
-
-template<class T, typename Context>
-inline void load_node_e_ptn_capnp_type(const ucap::NodeEPtn::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack){
-	(void)root;
-	(void)out;
-	(void)context;
-	(void)report_error;
-	(void)stack;
-
-	stack->push_back(std::make_pair("getEPtn", 0));
-	{
-		auto data = root.getEPtns();
-		out.preallocate_node_e_ptn_e_ptn(context, data.size());
-		for(const auto & el : data) {
-			auto child_context = out.add_node_e_ptn_e_ptn(context, el.getId());
-			load_e_ptn_capnp_type(el, out, child_context, report_error, stack);
-			out.finish_node_e_ptn_e_ptn(child_context);
-			stack->back().second += 1;
-		}
-	}
-	stack->pop_back();
-}
-
-template<class T, typename Context>
-inline void load_rr_node_e_ptns_capnp_type(const ucap::RrNodeEPtns::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack){
-	(void)root;
-	(void)out;
-	(void)context;
-	(void)report_error;
-	(void)stack;
-
-	stack->push_back(std::make_pair("getNodeEPtn", 0));
-	{
-		auto data = root.getNodeEPtns();
-		out.preallocate_rr_node_e_ptns_node_e_ptn(context, data.size());
-		for(const auto & el : data) {
-			auto child_context = out.add_rr_node_e_ptns_node_e_ptn(context, el.getDest(), el.getId());
-			load_node_e_ptn_capnp_type(el, out, child_context, report_error, stack);
-			out.finish_rr_node_e_ptns_node_e_ptn(child_context);
-			stack->back().second += 1;
-		}
-	}
-	stack->pop_back();
-}
-
-template<class T, typename Context>
 inline void load_ddiff_capnp_type(const ucap::Ddiff::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack){
 	(void)root;
 	(void)out;
@@ -942,6 +888,60 @@ inline void load_rr_edge_ptns_capnp_type(const ucap::RrEdgePtns::Reader &root, T
 			auto child_context = out.add_rr_edge_ptns_edge_ptn(context, el.getId(), el.getSwitchId());
 			load_edge_ptn_capnp_type(el, out, child_context, report_error, stack);
 			out.finish_rr_edge_ptns_edge_ptn(child_context);
+			stack->back().second += 1;
+		}
+	}
+	stack->pop_back();
+}
+
+template<class T, typename Context>
+inline void load_e_ptn_capnp_type(const ucap::EPtn::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack){
+	(void)root;
+	(void)out;
+	(void)context;
+	(void)report_error;
+	(void)stack;
+
+}
+
+template<class T, typename Context>
+inline void load_node_e_ptn_capnp_type(const ucap::NodeEPtn::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack){
+	(void)root;
+	(void)out;
+	(void)context;
+	(void)report_error;
+	(void)stack;
+
+	stack->push_back(std::make_pair("getEPtn", 0));
+	{
+		auto data = root.getEPtns();
+		out.preallocate_node_e_ptn_e_ptn(context, data.size());
+		for(const auto & el : data) {
+			auto child_context = out.add_node_e_ptn_e_ptn(context, el.getId());
+			load_e_ptn_capnp_type(el, out, child_context, report_error, stack);
+			out.finish_node_e_ptn_e_ptn(child_context);
+			stack->back().second += 1;
+		}
+	}
+	stack->pop_back();
+}
+
+template<class T, typename Context>
+inline void load_rr_node_e_ptns_capnp_type(const ucap::RrNodeEPtns::Reader &root, T &out, Context &context, const std::function<void(const char*)> * report_error, std::vector<std::pair<const char *, size_t>> * stack){
+	(void)root;
+	(void)out;
+	(void)context;
+	(void)report_error;
+	(void)stack;
+
+	stack->push_back(std::make_pair("getNodeEPtn", 0));
+	{
+		auto data = root.getNodeEPtns();
+		out.preallocate_rr_node_e_ptns_node_e_ptn(context, data.size());
+		for(const auto & el : data) {
+			auto child_context = out.add_rr_node_e_ptns_node_e_ptn(context, el.getDest(), el.getId());
+			load_node_e_ptn_capnp_type(el, out, child_context, report_error, stack);
+			out.finish_rr_node_e_ptns_node_e_ptn(child_context);
 			stack->back().second += 1;
 		}
 	}
@@ -1007,20 +1007,20 @@ inline void load_rr_graph_capnp_type(const ucap::RrGraph::Reader &root, T &out, 
 		out.finish_rr_graph_rr_nodes(child_context);
 	}
 	stack->pop_back();
-	stack->push_back(std::make_pair("getRrNodeEPtns", 0));
-	if (root.hasRrNodeEPtns()) {
-		auto child_el = root.getRrNodeEPtns();
-		auto child_context = out.init_rr_graph_rr_node_e_ptns(context);
-		load_rr_node_e_ptns_capnp_type(child_el, out, child_context, report_error, stack);
-		out.finish_rr_graph_rr_node_e_ptns(child_context);
-	}
-	stack->pop_back();
 	stack->push_back(std::make_pair("getRrEdgePtns", 0));
 	if (root.hasRrEdgePtns()) {
 		auto child_el = root.getRrEdgePtns();
 		auto child_context = out.init_rr_graph_rr_edge_ptns(context);
 		load_rr_edge_ptns_capnp_type(child_el, out, child_context, report_error, stack);
 		out.finish_rr_graph_rr_edge_ptns(child_context);
+	}
+	stack->pop_back();
+	stack->push_back(std::make_pair("getRrNodeEPtns", 0));
+	if (root.hasRrNodeEPtns()) {
+		auto child_el = root.getRrNodeEPtns();
+		auto child_context = out.init_rr_graph_rr_node_e_ptns(context);
+		load_rr_node_e_ptns_capnp_type(child_el, out, child_context, report_error, stack);
+		out.finish_rr_graph_rr_node_e_ptns(child_context);
 	}
 	stack->pop_back();
 }
@@ -1290,36 +1290,6 @@ inline void write_rr_nodes_capnp_type(T &in, ucap::RrNodes::Builder &root, Conte
 }
 
 template<class T, typename Context>
-inline void write_node_e_ptn_capnp_type(T &in, ucap::NodeEPtn::Builder &root, Context &context) {
-	(void)in;
-	(void)root;
-
-	size_t num_node_e_ptn_e_ptns = in.num_node_e_ptn_e_ptn(context);
-	auto node_e_ptn_e_ptns = root.initEPtns(num_node_e_ptn_e_ptns);
-	for(size_t i = 0; i < num_node_e_ptn_e_ptns; i++) {
-		auto node_e_ptn_e_ptn = node_e_ptn_e_ptns[i];
-		auto child_context = in.get_node_e_ptn_e_ptn(i, context);
-		node_e_ptn_e_ptn.setId(in.get_e_ptn_id(child_context));
-	}
-}
-
-template<class T, typename Context>
-inline void write_rr_node_e_ptns_capnp_type(T &in, ucap::RrNodeEPtns::Builder &root, Context &context) {
-	(void)in;
-	(void)root;
-
-	size_t num_rr_node_e_ptns_node_e_ptns = in.num_rr_node_e_ptns_node_e_ptn(context);
-	auto rr_node_e_ptns_node_e_ptns = root.initNodeEPtns(num_rr_node_e_ptns_node_e_ptns);
-	for(size_t i = 0; i < num_rr_node_e_ptns_node_e_ptns; i++) {
-		auto rr_node_e_ptns_node_e_ptn = rr_node_e_ptns_node_e_ptns[i];
-		auto child_context = in.get_rr_node_e_ptns_node_e_ptn(i, context);
-		rr_node_e_ptns_node_e_ptn.setDest(in.get_node_e_ptn_dest(child_context));
-		rr_node_e_ptns_node_e_ptn.setId(in.get_node_e_ptn_id(child_context));
-		write_node_e_ptn_capnp_type(in, rr_node_e_ptns_node_e_ptn, child_context);
-	}
-}
-
-template<class T, typename Context>
 inline void write_edge_ptn_capnp_type(T &in, ucap::EdgePtn::Builder &root, Context &context) {
 	(void)in;
 	(void)root;
@@ -1346,6 +1316,36 @@ inline void write_rr_edge_ptns_capnp_type(T &in, ucap::RrEdgePtns::Builder &root
 		rr_edge_ptns_edge_ptn.setId(in.get_edge_ptn_id(child_context));
 		rr_edge_ptns_edge_ptn.setSwitchId(in.get_edge_ptn_switch_id(child_context));
 		write_edge_ptn_capnp_type(in, rr_edge_ptns_edge_ptn, child_context);
+	}
+}
+
+template<class T, typename Context>
+inline void write_node_e_ptn_capnp_type(T &in, ucap::NodeEPtn::Builder &root, Context &context) {
+	(void)in;
+	(void)root;
+
+	size_t num_node_e_ptn_e_ptns = in.num_node_e_ptn_e_ptn(context);
+	auto node_e_ptn_e_ptns = root.initEPtns(num_node_e_ptn_e_ptns);
+	for(size_t i = 0; i < num_node_e_ptn_e_ptns; i++) {
+		auto node_e_ptn_e_ptn = node_e_ptn_e_ptns[i];
+		auto child_context = in.get_node_e_ptn_e_ptn(i, context);
+		node_e_ptn_e_ptn.setId(in.get_e_ptn_id(child_context));
+	}
+}
+
+template<class T, typename Context>
+inline void write_rr_node_e_ptns_capnp_type(T &in, ucap::RrNodeEPtns::Builder &root, Context &context) {
+	(void)in;
+	(void)root;
+
+	size_t num_rr_node_e_ptns_node_e_ptns = in.num_rr_node_e_ptns_node_e_ptn(context);
+	auto rr_node_e_ptns_node_e_ptns = root.initNodeEPtns(num_rr_node_e_ptns_node_e_ptns);
+	for(size_t i = 0; i < num_rr_node_e_ptns_node_e_ptns; i++) {
+		auto rr_node_e_ptns_node_e_ptn = rr_node_e_ptns_node_e_ptns[i];
+		auto child_context = in.get_rr_node_e_ptns_node_e_ptn(i, context);
+		rr_node_e_ptns_node_e_ptn.setDest(in.get_node_e_ptn_dest(child_context));
+		rr_node_e_ptns_node_e_ptn.setId(in.get_node_e_ptn_id(child_context));
+		write_node_e_ptn_capnp_type(in, rr_node_e_ptns_node_e_ptn, child_context);
 	}
 }
 
@@ -1391,15 +1391,15 @@ inline void write_rr_graph_capnp_type(T &in, ucap::RrGraph::Builder &root, Conte
 	}
 
 	{
-		auto child_context = in.get_rr_graph_rr_node_e_ptns(context);
-		auto rr_graph_rr_node_e_ptns = root.initRrNodeEPtns();
-		write_rr_node_e_ptns_capnp_type(in, rr_graph_rr_node_e_ptns, child_context);
-	}
-
-	{
 		auto child_context = in.get_rr_graph_rr_edge_ptns(context);
 		auto rr_graph_rr_edge_ptns = root.initRrEdgePtns();
 		write_rr_edge_ptns_capnp_type(in, rr_graph_rr_edge_ptns, child_context);
+	}
+
+	{
+		auto child_context = in.get_rr_graph_rr_node_e_ptns(context);
+		auto rr_graph_rr_node_e_ptns = root.initRrNodeEPtns();
+		write_rr_node_e_ptns_capnp_type(in, rr_graph_rr_node_e_ptns, child_context);
 	}
 }
 

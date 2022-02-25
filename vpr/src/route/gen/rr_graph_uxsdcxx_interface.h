@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcxx.py /home/ethan/workspaces/ethanroj23/vtr/vpr/src/route/rr_graph.xsd
  * Input file: /home/ethan/workspaces/ethanroj23/vtr/vpr/src/route/rr_graph.xsd
- * md5sum of input file: 5c529f385cc39043f69229d620e94c98
+ * md5sum of input file: f70492b177e0daf17b52aa153b3fae93
  */
 
 #include <functional>
@@ -57,12 +57,12 @@ using ChannelReadContext = void *;
 	using MetadataReadContext = void *;
 	using NodeReadContext = void *;
 	using RrNodesReadContext = void *;
-	using EPtnReadContext = void *;
-	using NodeEPtnReadContext = void *;
-	using RrNodeEPtnsReadContext = void *;
 	using DdiffReadContext = void *;
 	using EdgePtnReadContext = void *;
 	using RrEdgePtnsReadContext = void *;
+	using EPtnReadContext = void *;
+	using NodeEPtnReadContext = void *;
+	using RrNodeEPtnsReadContext = void *;
 	using RrGraphReadContext = void *;
 using ChannelWriteContext = void *;
 	using XListWriteContext = void *;
@@ -88,12 +88,12 @@ using ChannelWriteContext = void *;
 	using MetadataWriteContext = void *;
 	using NodeWriteContext = void *;
 	using RrNodesWriteContext = void *;
-	using EPtnWriteContext = void *;
-	using NodeEPtnWriteContext = void *;
-	using RrNodeEPtnsWriteContext = void *;
 	using DdiffWriteContext = void *;
 	using EdgePtnWriteContext = void *;
 	using RrEdgePtnsWriteContext = void *;
+	using EPtnWriteContext = void *;
+	using NodeEPtnWriteContext = void *;
+	using RrNodeEPtnsWriteContext = void *;
 	using RrGraphWriteContext = void *;
 };
 
@@ -473,43 +473,6 @@ public:
 	virtual inline size_t num_rr_nodes_node(typename ContextTypes::RrNodesReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::NodeReadContext get_rr_nodes_node(int n, typename ContextTypes::RrNodesReadContext &ctx) = 0;
 
-	/** Generated for complex type "e_ptn":
-	 * <xs:complexType name="e_ptn">
-	 *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
-	 * </xs:complexType>
-	*/
-	virtual inline unsigned int get_e_ptn_id(typename ContextTypes::EPtnReadContext &ctx) = 0;
-
-	/** Generated for complex type "node_e_ptn":
-	 * <xs:complexType name="node_e_ptn">
-	 *   <xs:choice maxOccurs="unbounded">
-	 *     <xs:element name="e_ptn" type="e_ptn" />
-	 *   </xs:choice>
-	 *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
-	 *   <xs:attribute name="dest" type="xs:unsignedInt" use="required" />
-	 * </xs:complexType>
-	*/
-	virtual inline unsigned int get_node_e_ptn_dest(typename ContextTypes::NodeEPtnReadContext &ctx) = 0;
-	virtual inline unsigned int get_node_e_ptn_id(typename ContextTypes::NodeEPtnReadContext &ctx) = 0;
-	virtual inline void preallocate_node_e_ptn_e_ptn(typename ContextTypes::NodeEPtnWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::EPtnWriteContext add_node_e_ptn_e_ptn(typename ContextTypes::NodeEPtnWriteContext &ctx, unsigned int id) = 0;
-	virtual inline void finish_node_e_ptn_e_ptn(typename ContextTypes::EPtnWriteContext &ctx) = 0;
-	virtual inline size_t num_node_e_ptn_e_ptn(typename ContextTypes::NodeEPtnReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::EPtnReadContext get_node_e_ptn_e_ptn(int n, typename ContextTypes::NodeEPtnReadContext &ctx) = 0;
-
-	/** Generated for complex type "rr_node_e_ptns":
-	 * <xs:complexType name="rr_node_e_ptns">
-	 *   <xs:choice maxOccurs="unbounded">
-	 *     <xs:element name="node_e_ptn" type="node_e_ptn" />
-	 *   </xs:choice>
-	 * </xs:complexType>
-	*/
-	virtual inline void preallocate_rr_node_e_ptns_node_e_ptn(typename ContextTypes::RrNodeEPtnsWriteContext &ctx, size_t size) = 0;
-	virtual inline typename ContextTypes::NodeEPtnWriteContext add_rr_node_e_ptns_node_e_ptn(typename ContextTypes::RrNodeEPtnsWriteContext &ctx, unsigned int dest, unsigned int id) = 0;
-	virtual inline void finish_rr_node_e_ptns_node_e_ptn(typename ContextTypes::NodeEPtnWriteContext &ctx) = 0;
-	virtual inline size_t num_rr_node_e_ptns_node_e_ptn(typename ContextTypes::RrNodeEPtnsReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::NodeEPtnReadContext get_rr_node_e_ptns_node_e_ptn(int n, typename ContextTypes::RrNodeEPtnsReadContext &ctx) = 0;
-
 	/** Generated for complex type "ddiff":
 	 * <xs:complexType name="ddiff">
 	 *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
@@ -547,6 +510,43 @@ public:
 	virtual inline size_t num_rr_edge_ptns_edge_ptn(typename ContextTypes::RrEdgePtnsReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::EdgePtnReadContext get_rr_edge_ptns_edge_ptn(int n, typename ContextTypes::RrEdgePtnsReadContext &ctx) = 0;
 
+	/** Generated for complex type "e_ptn":
+	 * <xs:complexType name="e_ptn">
+	 *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
+	 * </xs:complexType>
+	*/
+	virtual inline unsigned int get_e_ptn_id(typename ContextTypes::EPtnReadContext &ctx) = 0;
+
+	/** Generated for complex type "node_e_ptn":
+	 * <xs:complexType name="node_e_ptn">
+	 *   <xs:choice maxOccurs="unbounded">
+	 *     <xs:element name="e_ptn" type="e_ptn" />
+	 *   </xs:choice>
+	 *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
+	 *   <xs:attribute name="dest" type="xs:unsignedInt" use="required" />
+	 * </xs:complexType>
+	*/
+	virtual inline unsigned int get_node_e_ptn_dest(typename ContextTypes::NodeEPtnReadContext &ctx) = 0;
+	virtual inline unsigned int get_node_e_ptn_id(typename ContextTypes::NodeEPtnReadContext &ctx) = 0;
+	virtual inline void preallocate_node_e_ptn_e_ptn(typename ContextTypes::NodeEPtnWriteContext &ctx, size_t size) = 0;
+	virtual inline typename ContextTypes::EPtnWriteContext add_node_e_ptn_e_ptn(typename ContextTypes::NodeEPtnWriteContext &ctx, unsigned int id) = 0;
+	virtual inline void finish_node_e_ptn_e_ptn(typename ContextTypes::EPtnWriteContext &ctx) = 0;
+	virtual inline size_t num_node_e_ptn_e_ptn(typename ContextTypes::NodeEPtnReadContext &ctx) = 0;
+	virtual inline typename ContextTypes::EPtnReadContext get_node_e_ptn_e_ptn(int n, typename ContextTypes::NodeEPtnReadContext &ctx) = 0;
+
+	/** Generated for complex type "rr_node_e_ptns":
+	 * <xs:complexType name="rr_node_e_ptns">
+	 *   <xs:choice maxOccurs="unbounded">
+	 *     <xs:element name="node_e_ptn" type="node_e_ptn" />
+	 *   </xs:choice>
+	 * </xs:complexType>
+	*/
+	virtual inline void preallocate_rr_node_e_ptns_node_e_ptn(typename ContextTypes::RrNodeEPtnsWriteContext &ctx, size_t size) = 0;
+	virtual inline typename ContextTypes::NodeEPtnWriteContext add_rr_node_e_ptns_node_e_ptn(typename ContextTypes::RrNodeEPtnsWriteContext &ctx, unsigned int dest, unsigned int id) = 0;
+	virtual inline void finish_rr_node_e_ptns_node_e_ptn(typename ContextTypes::NodeEPtnWriteContext &ctx) = 0;
+	virtual inline size_t num_rr_node_e_ptns_node_e_ptn(typename ContextTypes::RrNodeEPtnsReadContext &ctx) = 0;
+	virtual inline typename ContextTypes::NodeEPtnReadContext get_rr_node_e_ptns_node_e_ptn(int n, typename ContextTypes::RrNodeEPtnsReadContext &ctx) = 0;
+
 	/** Generated for complex type "rr_graph":
 	 * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
 	 *     <xs:all>
@@ -556,8 +556,9 @@ public:
 	 *       <xs:element name="block_types" type="block_types" />
 	 *       <xs:element name="grid" type="grid_locs" />
 	 *       <xs:element name="rr_nodes" type="rr_nodes" />
-	 *       <xs:element name="rr_node_e_ptns" type="rr_node_e_ptns" />
+	 *       
 	 *       <xs:element name="rr_edge_ptns" type="rr_edge_ptns" />
+	 *       <xs:element name="rr_node_e_ptns" type="rr_node_e_ptns" />
 	 *       
 	 *     </xs:all>
 	 *     <xs:attribute name="tool_name" type="xs:string" />
@@ -589,12 +590,12 @@ public:
 	virtual inline typename ContextTypes::RrNodesWriteContext init_rr_graph_rr_nodes(typename ContextTypes::RrGraphWriteContext &ctx) = 0;
 	virtual inline void finish_rr_graph_rr_nodes(typename ContextTypes::RrNodesWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::RrNodesReadContext get_rr_graph_rr_nodes(typename ContextTypes::RrGraphReadContext &ctx) = 0;
-	virtual inline typename ContextTypes::RrNodeEPtnsWriteContext init_rr_graph_rr_node_e_ptns(typename ContextTypes::RrGraphWriteContext &ctx) = 0;
-	virtual inline void finish_rr_graph_rr_node_e_ptns(typename ContextTypes::RrNodeEPtnsWriteContext &ctx) = 0;
-	virtual inline typename ContextTypes::RrNodeEPtnsReadContext get_rr_graph_rr_node_e_ptns(typename ContextTypes::RrGraphReadContext &ctx) = 0;
 	virtual inline typename ContextTypes::RrEdgePtnsWriteContext init_rr_graph_rr_edge_ptns(typename ContextTypes::RrGraphWriteContext &ctx) = 0;
 	virtual inline void finish_rr_graph_rr_edge_ptns(typename ContextTypes::RrEdgePtnsWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::RrEdgePtnsReadContext get_rr_graph_rr_edge_ptns(typename ContextTypes::RrGraphReadContext &ctx) = 0;
+	virtual inline typename ContextTypes::RrNodeEPtnsWriteContext init_rr_graph_rr_node_e_ptns(typename ContextTypes::RrGraphWriteContext &ctx) = 0;
+	virtual inline void finish_rr_graph_rr_node_e_ptns(typename ContextTypes::RrNodeEPtnsWriteContext &ctx) = 0;
+	virtual inline typename ContextTypes::RrNodeEPtnsReadContext get_rr_graph_rr_node_e_ptns(typename ContextTypes::RrGraphReadContext &ctx) = 0;
 };
 
 } /* namespace uxsd */
