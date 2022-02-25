@@ -26,17 +26,7 @@ AttractionInfo::AttractionInfo(bool attraction_groups_on) {
         }
 
         //Then, fill in the group id for the atoms that do have an attraction group
-        int num_att_grps = attraction_groups.size();
-
-        for (int igroup = 0; igroup < num_att_grps; igroup++) {
-            AttractGroupId group_id(igroup);
-
-            AttractionGroup att_group = attraction_groups[group_id];
-
-            for (unsigned int iatom = 0; iatom < att_group.group_atoms.size(); iatom++) {
-                atom_attraction_group[att_group.group_atoms[iatom]] = group_id;
-            }
-        }
+        assign_atom_attraction_ids();
 
         att_group_pulls = 1;
     }
@@ -90,21 +80,11 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
     }
 
     //Then, fill in the group id for the atoms that do have an attraction group
-    int num_att_grps = attraction_groups.size();
-
-    for (int igroup = 0; igroup < num_att_grps; igroup++) {
-        AttractGroupId group_id(igroup);
-
-        AttractionGroup att_group = attraction_groups[group_id];
-
-        for (unsigned int iatom = 0; iatom < att_group.group_atoms.size(); iatom++) {
-            atom_attraction_group[att_group.group_atoms[iatom]] = group_id;
-        }
-    }
+    assign_atom_attraction_ids();
 
     att_group_pulls = 1;
 
-    VTR_LOG("%d clustering attraction groups created. \n", num_att_grps);
+    VTR_LOG("%d clustering attraction groups created. \n", attraction_groups.size());
 }
 
 void AttractionInfo::create_att_groups_for_all_regions() {
@@ -141,6 +121,15 @@ void AttractionInfo::create_att_groups_for_all_regions() {
     }
 
     //Then, fill in the group id for the atoms that do have an attraction group
+    assign_atom_attraction_ids();
+
+    att_group_pulls = 1;
+
+    VTR_LOG("%d clustering attraction groups created. \n", attraction_groups.size());
+}
+
+void AttractionInfo::assign_atom_attraction_ids() {
+    //Fill in the group id for the atoms that do have an attraction group
     int num_att_grps = attraction_groups.size();
 
     for (int igroup = 0; igroup < num_att_grps; igroup++) {
@@ -152,10 +141,6 @@ void AttractionInfo::create_att_groups_for_all_regions() {
             atom_attraction_group[att_group.group_atoms[iatom]] = group_id;
         }
     }
-
-    att_group_pulls = 1;
-
-    VTR_LOG("%d clustering attraction groups created. \n", num_att_grps);
 }
 
 void AttractionInfo::set_attraction_group_info(AttractGroupId group_id, const AttractionGroup& group_info) {
