@@ -2764,13 +2764,29 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
     }
 
     AttractionGroup& group = attraction_groups.get_attraction_group_info(grp_id);
-    int num_available_atoms = group.group_atoms.size();
+    std::vector<AtomBlockId> available_atoms;
+    for (AtomBlockId atom_id : group.group_atoms) {
+        const auto& atom_model = atom_ctx.nlist.block_model(atom_id);
+        auto itr = primitive_candidate_block_types.find(atom_model);
+        VTR_ASSERT(itr != primitive_candidate_block_types.end());
+        std::vector<t_logical_block_type_ptr>& candidate_types = itr->second;
+
+        //Only consider molecules that are unpacked and of the correct type
+        if (atom_ctx.lookup.atom_clb(atom_id) == ClusterBlockId::INVALID()
+            && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
+            available_atoms.push_back(atom_id);
+        }
+    }
+
+    //int num_available_atoms = group.group_atoms.size();
+    int num_available_atoms = available_atoms.size();
     if (num_available_atoms == 0) {
         return;
     }
 
     if (num_available_atoms < 500) {
-        for (AtomBlockId atom_id : group.group_atoms) {
+        //for (AtomBlockId atom_id : group.group_atoms) {
+        for (AtomBlockId atom_id : available_atoms) {
             const auto& atom_model = atom_ctx.nlist.block_model(atom_id);
             auto itr = primitive_candidate_block_types.find(atom_model);
             VTR_ASSERT(itr != primitive_candidate_block_types.end());
@@ -2804,7 +2820,8 @@ static void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
         std::uniform_int_distribution<> distr(min, max);
         int selected_atom = distr(gen);
 
-        AtomBlockId blk_id = group.group_atoms[selected_atom];
+        //AtomBlockId blk_id = group.group_atoms[selected_atom];
+        AtomBlockId blk_id = available_atoms[selected_atom];
         const auto& atom_model = atom_ctx.nlist.block_model(blk_id);
         auto itr = primitive_candidate_block_types.find(atom_model);
         VTR_ASSERT(itr != primitive_candidate_block_types.end());
