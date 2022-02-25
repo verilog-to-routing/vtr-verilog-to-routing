@@ -179,6 +179,14 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int 
  *
  * Returns false if there is no intersection between the range limit and the floorplan constraint,
  * true otherwise.
+ *
+ *
+ * If region size of the block's floorplan constraints is greater than 1, the block is constrained to more than one rectangular region.
+ * In this case, we return true (i.e. the range limit intersects with
+ * the floorplan constraints) to simplify the problem. This simplification can be done because
+ * this routine is done for cpu time optimization, so we do not have to necessarily check each
+ * complicated case to get correct functionality during place moves.
+ *
  */
 bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type, ClusterBlockId b_from, int& min_cx, int& min_cy, int& max_cx, int& max_cy, int& delta_cx);
 

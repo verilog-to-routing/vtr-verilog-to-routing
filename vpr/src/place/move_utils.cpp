@@ -893,6 +893,13 @@ bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr t
         regions = pr.get_partition_region();
     }
     Region intersect_reg;
+    /*
+     * If region size is greater than 1, the block is constrained to more than one rectangular region.
+     * In this case, we return true (i.e. the range limit intersects with
+     * the floorplan constraints) to simplify the problem. This simplification can be done because
+     * this routine is done for cpu time optimization, so we do not have to necessarily check each
+     * complicated case to get correct functionality during place moves.
+     */
     if (regions.size() == 1) {
         intersect_reg = intersection(regions[0], range_reg);
 
