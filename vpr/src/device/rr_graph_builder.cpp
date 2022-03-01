@@ -92,7 +92,7 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
                 que.pop();
                 degree[u] += node_storage_.num_edges(u);
                 for (RREdgeId edge = node_storage_.first_edge(u); edge < node_storage_.last_edge(u); edge = RREdgeId(size_t(edge) + 1)) {
-                    RRNodeId v = node_storage_.edge_sink_node(edge);
+                    RRNodeId v = node_storage_.edge_sink_node_abs(u, edge);
                     degree[v]++;
                     if (bfs_idx[v]) continue;
                     bfs_idx[v] = cur_idx++;

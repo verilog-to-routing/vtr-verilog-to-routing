@@ -513,12 +513,12 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
 
     for (RREdgeId edge : rr_graph.edge_range(prev_node)) {
         //If the sink node is reachable by previous node return true
-        if (rr_graph.edge_sink_node(edge) == node) {
+        if (rr_graph.edge_sink_node_abs(prev_node, edge) == node) {
             return true;
         }
 
         // If there are any non-configurable branches return true
-        short edge_switch = rr_graph.edge_switch(edge);
+        short edge_switch = rr_graph.edge_switch_abs(prev_node, edge);
         if (!(temp_rr_graph.rr_switch_inf(RRSwitchId(edge_switch)).configurable())) return true;
     }
 

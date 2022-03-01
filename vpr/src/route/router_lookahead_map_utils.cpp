@@ -499,7 +499,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
                 int iswitch = rr_graph.edge_switch(edge);
                 float incr_delay = temp_rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
 
-                RRNodeId next_node = rr_graph.edge_sink_node(edge);
+                RRNodeId next_node = rr_graph.edge_sink_node_abs(curr.node, edge);
 
                 t_pq_entry next;
                 next.congestion = curr.congestion + incr_cong; //Of current node
@@ -591,10 +591,10 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
             float new_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
-                int iswitch = rr_graph.edge_switch(edge);
+                int iswitch = rr_graph.edge_switch_abs(curr.node, edge);
                 float new_delay = temp_rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
 
-                RRNodeId next_node = rr_graph.edge_sink_node(edge);
+                RRNodeId next_node = rr_graph.edge_sink_node_abs(curr.node, edge);
 
                 t_pq_entry next;
                 next.congestion = new_cong; //Of current node

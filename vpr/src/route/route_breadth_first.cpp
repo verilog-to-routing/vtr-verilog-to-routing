@@ -388,7 +388,7 @@ static void breadth_first_expand_neighbours(BinaryHeap& heap, int inode, float p
     auto& route_ctx = g_vpr_ctx.routing();
 
     for (RREdgeId from_edge : device_ctx.rr_nodes.edge_range(RRNodeId(inode))) {
-        RRNodeId to_node = device_ctx.rr_nodes.edge_sink_node(from_edge);
+        RRNodeId to_node = device_ctx.rr_nodes.edge_sink_node_abs(RRNodeId(inode), from_edge);
 
         vtr::Point<int> lower_left(route_ctx.route_bb[net_id].xmin, route_ctx.route_bb[net_id].ymin);
         vtr::Point<int> upper_right(route_ctx.route_bb[net_id].xmax, route_ctx.route_bb[net_id].ymax);

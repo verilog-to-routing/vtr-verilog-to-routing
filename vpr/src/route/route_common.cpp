@@ -568,7 +568,7 @@ static t_trace_branch traceback_branch(int node, int target_net_pin_index, std::
         t_trace* prev_ptr = alloc_trace_data();
         prev_ptr->index = inode;
         prev_ptr->net_pin_index = OPEN; //Net pin index is invalid for Non-SINK nodes
-        prev_ptr->iswitch = device_ctx.rr_nodes.edge_switch(iedge);
+        prev_ptr->iswitch = device_ctx.rr_nodes.edge_switch_abs(RRNodeId(inode), iedge);
         prev_ptr->next = branch_head;
         branch_head = prev_ptr;
 
@@ -1638,7 +1638,7 @@ void print_rr_node_route_inf() {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
             RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
-            auto switch_id = device_ctx.rr_nodes.edge_switch(prev_edge);
+            auto switch_id = device_ctx.rr_nodes.edge_switch_abs(RRNodeId(prev_node), prev_edge);
             VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu",
                     inode, prev_node, (size_t)prev_edge);
 
@@ -1672,7 +1672,7 @@ void print_rr_node_route_inf_dot() {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
             RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
-            auto switch_id = device_ctx.rr_nodes.edge_switch(prev_edge);
+            auto switch_id = device_ctx.rr_nodes.edge_switch_abs(RRNodeId(prev_node), prev_edge);
 
             if (prev_node != OPEN && bool(prev_edge)) {
                 VTR_LOG("\tnode%d -> node%zu [", prev_node, inode);

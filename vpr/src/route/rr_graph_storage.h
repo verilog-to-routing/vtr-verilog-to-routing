@@ -82,11 +82,11 @@ struct alignas(16) t_rr_node_data {
 static_assert(sizeof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 static_assert(alignof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 
-struct t_switch_edge_ptn {
-    short switch_id;
-    uint16_t edge_count; // up to 65,536 edges per pattern
-    int ptn_idx;
-};
+// struct t_switch_edge_ptn {
+//     short switch_id;
+//     uint16_t edge_count; // up to 65,536 edges per pattern
+//     int ptn_idx;
+// };
 struct t_dest_switch {
     RRNodeId dest;
     short switch_id;
@@ -249,6 +249,13 @@ class t_rr_graph_storage {
     }
     inline void add_node_to_edge_ptn(int edge_ptn_idx){
         node_to_edge_ptns_[cur_node_].push_back(edge_ptn_[edge_ptn_idx]);
+
+        // new
+        if (node_to_edge_ptns_new_[cur_node_] == 0){
+            node_to_edge_ptns_new_[cur_node_] = edge_ptns_.size();
+        }
+        node_num_edge_patterns_[cur_node_] += 1;
+        edge_ptns_.push_back(edge_ptn_[edge_ptn_idx]);
     }
 
     inline void add_edge_ddiff(int id){
@@ -349,13 +356,20 @@ class t_rr_graph_storage {
         return get_t_dest_switch(edge).dest;
         // return edge_dest_node_[edge];
     }
-    int node_first_dest(RRNodeId node) const {
+    inline int node_first_dest(RRNodeId node) const {
         return node_first_dest_[node];
     }
 
     inline std::vector<t_switch_edge_ptn> node_to_edge_ptns(RRNodeId node) const {
         return node_to_edge_ptns_[node];
     }
+    inline int node_to_edge_ptns_new(RRNodeId node) const {
+        return node_to_edge_ptns_new_[node];
+    }
+    inline t_switch_edge_ptn edge_ptns(int node) const {
+        return edge_ptns_[node];
+    }
+
 
     inline t_switch_edge_ptn edge_ptn(int ptn) const {
         return edge_ptn_[ptn];
@@ -385,6 +399,68 @@ class t_rr_graph_storage {
         return edges[kth_edge];
     }
 
+    t_dest_switch kth_edge_for_node_new(RRNodeId node, int kth_edge) const {
+        std::vector<t_dest_switch> edges;
+        size_t dest = (size_t)node_first_dest_[node]; // vector from RRNodeId -> int (RRNodeId)
+        int edges_num = num_edges(node);
+        edges.reserve(edges_num);
+
+        // First Edge
+        int e_ptn_idx = node_to_edge_ptns_new_[node]; 
+        int edges_added = 0;
+        t_switch_edge_ptn p;
+        while (edges_added < 1*(edges_num>0)){
+            p = edge_ptns_[e_ptn_idx];
+            edges.push_back({RRNodeId(dest), p.switch_id}); // first edge
+            edges_added++;
+        }
+
+        int k = 1; // skip the first edge
+        while (edges_added < edges_num) { // only for nodes with more than one edge
+            while (k < p.edge_count){
+                edges.push_back({RRNodeId(dest+edge_ptn_data_[p.ptn_idx+k]), p.switch_id}); // edge_ptn_data_ is vector of ints
+                k++;
+                edges_added++;
+            }
+            k = 0;
+            e_ptn_idx++;
+            p = edge_ptns_[e_ptn_idx];
+        }
+        return edges[kth_edge];
+    }
+
+    t_dest_switch abs_edge_for_node(RRNodeId node, RREdgeId abs_edge) const {
+        std::vector<t_dest_switch> edges;
+        size_t dest = (size_t)node_first_dest_[node]; // vector from RRNodeId -> int (RRNodeId)
+        size_t first_edge = (size_t)node_first_edge_[node];
+        int edges_num = num_edges(node);
+        edges.reserve(edges_num);
+
+        // First Edge
+        int e_ptn_idx = node_to_edge_ptns_new_[node]; 
+        int edges_added = 0;
+        t_switch_edge_ptn p;
+        while (edges_added < 1*(edges_num>0)){
+            p = edge_ptns_[e_ptn_idx];
+            edges.push_back({RRNodeId(dest), p.switch_id}); // first edge
+            edges_added++;
+        }
+
+        int k = 1; // skip the first edge
+        while (edges_added < edges_num) { // only for nodes with more than one edge
+            while (k < p.edge_count){
+                edges.push_back({RRNodeId(dest+edge_ptn_data_[p.ptn_idx+k]), p.switch_id}); // edge_ptn_data_ is vector of ints
+                k++;
+                edges_added++;
+            }
+            k = 0;
+            e_ptn_idx++;
+            p = edge_ptns_[e_ptn_idx];
+        }
+        return edges[(size_t)abs_edge-first_edge];
+    }
+
+
     inline t_dest_switch get_t_dest_switch(RREdgeId edge_id) const {
         // optimized this to be a binary search
         size_t edge_id_size = size_t(edge_id);
@@ -402,7 +478,7 @@ class t_rr_graph_storage {
                 l = mid + 1;
             else if (first != last) { // edge is a part of this node
                 int edge_idx = edge_id_size - first;
-                return kth_edge_for_node(node, edge_idx);
+                return kth_edge_for_node_new(node, edge_idx);
             }
         }
         return {RRNodeId(0), 0}; // INVALID
@@ -421,23 +497,66 @@ class t_rr_graph_storage {
     // }
 
     // Call the `apply` function with the edge id, source, and sink nodes of every edge.
+    // void for_each_edge(std::function<void(RREdgeId, RRNodeId, RRNodeId)> apply) const {
+    //     int edge = 0;
+    //     for (size_t i=0; i < node_storage_.size(); i++){
+    //         RRNodeId node = RRNodeId(i);
+    //         size_t dest = (size_t)node_first_dest_[node];
+    //         int k = 0;
+    //         for (auto p : node_to_edge_ptns_[node]){
+    //             // const auto p = edge_ptn_[ptn];
+    //             while (k < p.edge_count){
+    //                 apply(RREdgeId(edge), node, RRNodeId(dest+edge_ptn_data_[p.ptn_idx+k]));
+    //                 k++;
+    //                 edge++;
+    //             }
+    //             k = 0;
+    //         }
+    //     }
+    // }
+
     void for_each_edge(std::function<void(RREdgeId, RRNodeId, RRNodeId)> apply) const {
         int edge = 0;
         for (size_t i=0; i < node_storage_.size(); i++){
+
             RRNodeId node = RRNodeId(i);
             size_t dest = (size_t)node_first_dest_[node];
-            int k = 0;
-            for (auto p : node_to_edge_ptns_[node]){
-                // const auto p = edge_ptn_[ptn];
+            int edges_num = num_edges(node);
+            // First Edge
+            int e_ptn_idx = node_to_edge_ptns_new_[node]; 
+            int edges_added = 0;
+            t_switch_edge_ptn p;
+            while (edges_added < 1*(edges_num>0)){
+                p = edge_ptns_[e_ptn_idx];
+                apply(RREdgeId(edge), node, RRNodeId(dest));
+                edge++;
+                edges_added++;
+            }
+
+            int k = 1; // skip the first edge
+            while (edges_added < edges_num) { // only for nodes with more than one edge
                 while (k < p.edge_count){
                     apply(RREdgeId(edge), node, RRNodeId(dest+edge_ptn_data_[p.ptn_idx+k]));
+                    
                     k++;
+                    edges_added++;
                     edge++;
                 }
                 k = 0;
+                e_ptn_idx++;
+                p = edge_ptns_[e_ptn_idx];
             }
         }
     }
+
+    
+
+
+
+
+
+
+
 
     // Get the destination node for the iedge'th edge from specified RRNodeId.
     //
@@ -451,6 +570,15 @@ class t_rr_graph_storage {
     short edge_switch(const RREdgeId& edge) const {
         return get_t_dest_switch(edge).switch_id;
         // return edge_switch_[edge];
+    }
+
+    // returns switch id given a node id and edge id
+    short edge_switch_abs(const RRNodeId& id, RREdgeId edge) const {
+        return abs_edge_for_node(id, edge).switch_id;
+    }
+    // returns switch id given a node id and edge id
+    RRNodeId edge_sink_node_abs(const RRNodeId& id, RREdgeId edge) const {
+        return abs_edge_for_node(id, edge).dest;
     }
 
     // Get the switch used for the iedge'th edge from specified RRNodeId.
@@ -509,6 +637,8 @@ class t_rr_graph_storage {
         make_room_in_vector(&node_storage_, size_t(elem_position));
         make_room_in_vector(&node_first_dest_, size_t(elem_position));
         make_room_in_vector(&node_to_edge_ptns_, size_t(elem_position));
+        make_room_in_vector(&node_to_edge_ptns_new_, size_t(elem_position));
+        make_room_in_vector(&node_num_edge_patterns_, size_t(elem_position));
         node_ptc_.reserve(node_storage_.capacity());
         node_ptc_.resize(node_storage_.size());
     }
@@ -789,14 +919,17 @@ class t_rr_graph_storage {
 
     /* Vector from node to list of edge pattern idxs */
     vtr::vector<RRNodeId, std::vector<t_switch_edge_ptn>> node_to_edge_ptns_;
+    vtr::vector<RRNodeId, int> node_to_edge_ptns_new_;
 
     /* Vector from node to the destination node of its first edge */
     vtr::vector<RRNodeId, int> node_first_dest_;
+    vtr::vector<RRNodeId, int> node_num_edge_patterns_;
 
     RRNodeId cur_node_; // used during reading of rr_graph
 
     /* Vector from edge_ptn_idx to switch, starting idx, and count */
     std::vector<t_switch_edge_ptn> edge_ptn_;
+    std::vector<t_switch_edge_ptn> edge_ptns_;
     std::vector<int> edge_ptn_data_;
 
 

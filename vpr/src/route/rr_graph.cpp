@@ -2986,7 +2986,7 @@ static void create_edge_groups(EdgeGroups* groups) {
     const auto& rr_graph = device_ctx.rr_graph;
     rr_nodes.for_each_edge(
         [&](RREdgeId edge, RRNodeId src, RRNodeId sink) {
-            if (!rr_graph.rr_switch_inf(RRSwitchId(rr_graph.edge_switch(edge))).configurable()) {
+            if (!rr_graph.rr_switch_inf(RRSwitchId(rr_graph.edge_switch_abs(src, edge))).configurable()) {
                 groups->add_non_config_edge(size_t(src), size_t(sink));
             }
         });

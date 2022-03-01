@@ -1482,6 +1482,12 @@ struct t_linked_f_pointer {
     float* fptr;
 };
 
+struct t_switch_edge_ptn {
+    short switch_id;
+    uint16_t edge_count; // up to 65,536 edges per pattern
+    int ptn_idx;
+};
+
 /**
  * @brief Type of a routing resource node.
  *

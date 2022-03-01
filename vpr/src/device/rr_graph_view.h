@@ -148,6 +148,13 @@ class RRGraphView {
     inline std::vector<t_switch_edge_ptn> node_to_edge_ptns(RRNodeId node) const {
         return node_storage_.node_to_edge_ptns(node);
     }
+    inline t_switch_edge_ptn edge_ptns(int node) const {
+        return node_storage_.edge_ptns(node);
+    }
+
+    inline int node_to_edge_ptns_new(RRNodeId node) const {
+        return node_storage_.node_to_edge_ptns_new(node);
+    }
 
     inline t_switch_edge_ptn edge_ptn(int ptn) const {
         return node_storage_.edge_ptn(ptn);
@@ -156,6 +163,15 @@ class RRGraphView {
     inline int edge_ptn_data(int ptn) const {
         return node_storage_.edge_ptn_data(ptn);
     }
+
+    short edge_switch_abs(const RRNodeId& id, RREdgeId edge) const {
+        return node_storage_.edge_switch_abs(id, edge);
+    }
+
+    RRNodeId edge_sink_node_abs(const RRNodeId& id, RREdgeId edge) const {
+        return node_storage_.edge_sink_node_abs(id, edge);
+    }
+
       
 
     /** @brief Get the first out coming edge of resource node. This function is inlined for runtime optimization. */
