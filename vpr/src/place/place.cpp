@@ -58,6 +58,8 @@
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
 
+#include "re_cluster_util.h"
+
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
@@ -1057,6 +1059,15 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, move_type_stat, place_algorithm, timing_bb_factor, manual_move_enabled);
 
+
+/*
+        ClusterBlockId cluster = blocks_affected.moved_blocks[0].block_num;
+        std::vector<AtomBlockId> atoms = cluster_to_atoms(cluster);
+        ClusterBlockId cluster2 = atom_to_cluster(atoms[0]);
+        VTR_LOG("### %d, %d \n", cluster, cluster2);
+        //check_cluster_atoms(blocks_affected.moved_blocks[0].block_num);
+*/
+        
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
             stats->single_swap_update(*costs);
