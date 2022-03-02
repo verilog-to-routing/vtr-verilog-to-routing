@@ -127,7 +127,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
 
 bool highlight_rr_nodes(int hit_node) {
     t_draw_state* draw_state = get_draw_state_vars();
-
+    auto& device_ctx = g_vpr_ctx.device();
     char message[250] = "";
 
     if (hit_node != OPEN) {
@@ -147,11 +147,11 @@ bool highlight_rr_nodes(int hit_node) {
                 draw_state->draw_rr_node[node].node_highlighted = false;
             }
             //Print info about all nodes to terminal
-            VTR_LOG("%s\n", describe_rr_node(node).c_str());
+            VTR_LOG("%s\n", describe_rr_node(node, device_ctx).c_str());
         }
 
         //Show info about *only* hit node to graphics
-        std::string info = describe_rr_node(hit_node);
+        std::string info = describe_rr_node(hit_node, device_ctx);
 
         sprintf(message, "Selected %s", info.c_str());
         rr_highlight_message = message;

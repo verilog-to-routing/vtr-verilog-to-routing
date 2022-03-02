@@ -8,7 +8,7 @@
 
 #include "device_grid.h"
 #include "vpr_types.h"
-
+#include "vpr_context.h"
 enum e_graph_type {
     GRAPH_GLOBAL, /* One node per channel with wire capacity > 1 and full connectivity */
     GRAPH_BIDIR,  /* Detailed bidirectional graph */
@@ -41,7 +41,7 @@ void create_rr_graph(const t_graph_type graph_type,
 void free_rr_graph();
 
 //Returns a brief one-line summary of an RR node
-std::string describe_rr_node(int inode);
+std::string describe_rr_node(int inode, const DeviceContext& device_ctx);
 
 t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
                                                   const float R_minW_nmos,

@@ -500,7 +500,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             }
 
             if (check_for_out_edges) {
-                std::string info = describe_rr_node(inode);
+                std::string info = describe_rr_node(inode, device_ctx);
                 VTR_LOG_WARN("in check_rr_node: %s has no out-going edges.\n", info.c_str());
             }
         }
@@ -617,7 +617,7 @@ static void check_rr_edge(int from_node, int iedge, int to_node) {
                 std::string msg = "Non-configurable BUFFER type switch must have only one driver. ";
                 msg += vtr::string_fmt(" Actual fan-in was %d (expected 1).\n", to_fanin);
                 msg += "  Possible cause is complex block output pins connecting to:\n";
-                msg += "    " + describe_rr_node(to_node);
+                msg += "    " + describe_rr_node(to_node, device_ctx);
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }

@@ -2943,7 +2943,7 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
 
 void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, double y) {
     //  std::cout << "Mouse move at coordinates (" << x << "," << y << ") "<< std::endl;
-
+    auto& device_ctx = g_vpr_ctx.device();
     // user has clicked the window button, in window mode
     if (window_point_1_collected) {
         // draw a grey, dashed-line box to indicate the zoom-in region
@@ -2965,7 +2965,7 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
         if (hit_node != OPEN) {
             //Update message
 
-            std::string info = describe_rr_node(hit_node);
+            std::string info = describe_rr_node(hit_node, device_ctx);
             std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
             app->update_message(msg.c_str());
         } else {

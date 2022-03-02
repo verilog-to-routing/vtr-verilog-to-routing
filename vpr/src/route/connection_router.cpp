@@ -204,7 +204,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
     }
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-
+    auto& device_ctx = g_vpr_ctx.device();
     t_heap* cheapest = nullptr;
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
@@ -224,7 +224,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
                 rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost, cheapest->backward_path_cost, route_ctx);
             }
 
-            VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(inode).c_str());
+            VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(inode, device_ctx).c_str());
             break;
         }
 
@@ -524,7 +524,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
                                                        const RREdgeId from_edge,
                                                        const int target_node) {
     t_heap next;
-
+    auto& device_ctx = g_vpr_ctx.device();
     // Initalize RCV data struct if needed, otherwise it's set to nullptr
     rcv_path_manager.alloc_path_struct(next.path_data);
 
@@ -540,7 +540,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
 
     next.R_upstream = current->R_upstream;
 
-    VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node, describe_rr_node(to_node).c_str());
+    VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node, describe_rr_node(to_node, device_ctx).c_str());
 
     evaluate_timing_driven_node_costs(&next,
                                       cost_params,
@@ -676,7 +676,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
      *
      * new_costs.R_upstream: is the upstream resistance at the end of this node
      */
-
+    auto& device_ctx = g_vpr_ctx.device();
     //Info for the switch connecting from_node to_node
     int iswitch = rr_nodes_.edge_switch(from_edge);
     bool switch_buffered = rr_switch_inf_[iswitch].buffered();
@@ -764,8 +764,8 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         float expected_cost = router_lookahead_.get_expected_cost(RRNodeId(to_node), RRNodeId(target_node), cost_params, to->R_upstream);
         VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
                        "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
-                       rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node).c_str(),
-                       rr_node_arch_name(target_node).c_str(), describe_rr_node(target_node).c_str(),
+                       rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node, device_ctx).c_str(),
+                       rr_node_arch_name(target_node).c_str(), describe_rr_node(target_node, device_ctx).c_str(),
                        expected_cost, to->R_upstream);
         total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
     }
@@ -835,7 +835,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     const t_conn_cost_params cost_params) {
     int inode = rt_node->inode;
     float backward_path_cost = cost_params.criticality * rt_node->Tdel;
-
+    auto& device_ctx = g_vpr_ctx.device();
     float R_upstream = rt_node->R_upstream;
 
     //after budgets are loaded, calculate delay cost as described by RCV paper
@@ -849,7 +849,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
         float tot_cost = backward_path_cost
                          + cost_params.astar_fac
                                * router_lookahead_.get_expected_cost(RRNodeId(inode), RRNodeId(target_node), cost_params, R_upstream);
-        VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode).c_str());
+        VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode, device_ctx).c_str());
 
         push_back_node(&heap_, rr_node_route_inf_,
                        inode, tot_cost, NO_PREVIOUS, RREdgeId::INVALID(),

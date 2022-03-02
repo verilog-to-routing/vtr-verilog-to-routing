@@ -213,7 +213,9 @@ void profiling_initialization(unsigned max_fanout) {
 void conn_start() {
     conn_start_time = clock();
 }
+
 void conn_finish(int src_rr, int sink_rr, float criticality) {
+    auto& device_ctx = g_vpr_ctx.device();
     float route_time = static_cast<float>(clock() - conn_start_time) / CLOCKS_PER_SEC;
     if (route_time > worst_conn_time) {
         worst_src_rr = src_rr;
@@ -223,16 +225,17 @@ void conn_finish(int src_rr, int sink_rr, float criticality) {
     }
 
     VTR_LOG("%s to %s (crit: %f) took %f\n",
-            describe_rr_node(src_rr).c_str(),
-            describe_rr_node(sink_rr).c_str(),
+            describe_rr_node(src_rr, device_ctx).c_str(),
+            describe_rr_node(sink_rr, device_ctx).c_str(),
             criticality,
             route_time);
 }
 void net_finish() {
     if (worst_conn_time > 0.f) {
+        auto& device_ctx = g_vpr_ctx.device();
         VTR_LOG("Worst conn was %s to %s (crit: %f) took %f\n",
-                describe_rr_node(worst_src_rr).c_str(),
-                describe_rr_node(worst_sink_rr).c_str(),
+                describe_rr_node(worst_src_rr, device_ctx).c_str(),
+                describe_rr_node(worst_sink_rr, device_ctx).c_str(),
                 worst_crit,
                 worst_conn_time);
     }

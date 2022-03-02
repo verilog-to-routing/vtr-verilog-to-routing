@@ -1187,10 +1187,11 @@ static bool timing_driven_pre_route_to_clock_root(
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& m_route_ctx = g_vpr_ctx.mutable_routing();
+    auto& device_ctx = g_vpr_ctx.device();
 
     bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold);
 
-    VTR_LOGV_DEBUG(f_router_debug, "Net %zu pre-route to (%s)\n", size_t(net_id), describe_rr_node(sink_node).c_str());
+    VTR_LOGV_DEBUG(f_router_debug, "Net %zu pre-route to (%s)\n", size_t(net_id), describe_rr_node(sink_node, device_ctx).c_str());
 
     profiling::sink_criticality_start();
 
@@ -1214,7 +1215,7 @@ static bool timing_driven_pre_route_to_clock_root(
         ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
         VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s' (#%zu)\n",
                 cluster_ctx.clb_nlist.block_name(src_block).c_str(),
-                describe_rr_node(sink_node).c_str(),
+                describe_rr_node(sink_node, device_ctx).c_str(),
                 cluster_ctx.clb_nlist.net_name(net_id).c_str(),
                 size_t(net_id));
         if (f_router_debug) {
@@ -1286,11 +1287,11 @@ static bool timing_driven_route_sink(
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-
+    auto& device_ctx = g_vpr_ctx.device();
     profiling::sink_criticality_start();
 
     int sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
-    VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(sink_node).c_str());
+    VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(sink_node, device_ctx).c_str());
 
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
