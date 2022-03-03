@@ -657,7 +657,8 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
               arch.Directs,
-              arch.num_directs);
+              arch.num_directs,
+              vpr_setup.PackerRRGraph);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -844,7 +845,8 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                                               vpr_setup.Segments,
                                               net_delay,
                                               timing_info,
-                                              delay_calc);
+                                              delay_calc,
+                                              vpr_setup.PackerRRGraph);
 
     bool status = (min_W > 0);
     return RouteStatus(status, min_W);

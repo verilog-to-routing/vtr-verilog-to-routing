@@ -61,6 +61,9 @@ struct AtomContext : public Context {
 
     ///@brief Mappings to/from the Atom Netlist to physically described .blif models
     AtomLookup lookup;
+
+    ///@brief The molecules associated with each atom block
+    std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;
 };
 
 /**

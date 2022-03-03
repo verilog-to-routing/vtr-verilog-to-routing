@@ -15,7 +15,7 @@ std::vector<AtomBlockId> cluster_to_atoms(const ClusterBlockId& cluster) {
     return (cluster_lookup.atoms_in_cluster(cluster));
 }
 
-bool remove_mol_from_cluster(const t_pack_molecule* molecule, std::vector<t_lb_type_rr_node>* lb_type_rr_graphs, std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules) {
+bool remove_mol_from_cluster(const t_pack_molecule* molecule, std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
 
 	//Function limitions are to remove single atom molecules only
 	//TODO: remove the function limitations
@@ -41,7 +41,7 @@ bool remove_mol_from_cluster(const t_pack_molecule* molecule, std::vector<t_lb_t
 	bool is_cluster_legal = check_cluster_legality(0, E_DETAILED_ROUTE_FOR_EACH_ATOM, router_data);
 
 	if(is_cluster_legal) {
-		revert_place_atom_block(molecule->atom_block_ids[0], router_data, atom_molecules);
+		revert_place_atom_block(molecule->atom_block_ids[0], router_data);
         VTR_LOG("re-cluster: Cluster is illegal after removing an atom\n");
     }
 

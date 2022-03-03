@@ -42,7 +42,6 @@ bool try_pack(t_packer_opts* packer_opts,
               float interc_delay,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
     std::unordered_set<AtomNetId> is_clock;
-    std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;                     //The molecules associated with each atom block
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
     const t_model* cur_model;
     int num_models;
@@ -66,6 +65,7 @@ bool try_pack(t_packer_opts* packer_opts,
     is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
 
     size_t num_p_inputs = 0;
     size_t num_p_outputs = 0;
@@ -96,7 +96,6 @@ bool try_pack(t_packer_opts* packer_opts,
                                                                                                                                      list_of_packing_patterns_deleter);
 
     list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
-                                                               atom_molecules,
                                                                expected_lowest_cost_pb_gnode,
                                                                list_of_packing_patterns.size()));
 
@@ -138,7 +137,6 @@ bool try_pack(t_packer_opts* packer_opts,
             *analysis_opts,
             arch, list_of_pack_molecules.get(), num_models,
             is_clock,
-            atom_molecules,
             expected_lowest_cost_pb_gnode,
             allow_unrelated_clustering,
             balance_block_type_util,

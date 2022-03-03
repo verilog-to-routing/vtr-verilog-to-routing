@@ -91,7 +91,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          t_pack_molecule* molecule_head,
                                                          int num_models,
                                                          const std::unordered_set<AtomNetId>& is_clock,
-                                                         std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                                          const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
                                                          bool allow_unrelated_clustering,
                                                          bool balance_block_type_utilization,
@@ -123,8 +122,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     const int verbosity = packer_opts.pack_verbosity;
 
-    t_molecule_link* memory_pool;
-    t_molecule_link* unclustered_list_head;
+    t_molecule_link* memory_pool = nullptr;
+    t_molecule_link* unclustered_list_head = nullptr;
     int unclustered_list_head_size;
     std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
 
@@ -218,9 +217,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  clustering_delay_calc, timing_info, atom_criticality);
     }
 
-    auto seed_atoms = initialize_seed_atoms(packer_opts.cluster_seed_type, atom_molecules, max_molecule_stats, atom_criticality);
+    auto seed_atoms = initialize_seed_atoms(packer_opts.cluster_seed_type, max_molecule_stats, atom_criticality);
 
-    istart = get_highest_gain_seed_molecule(&seedindex, atom_molecules, seed_atoms);
+    istart = get_highest_gain_seed_molecule(&seedindex, seed_atoms);
 
     print_pack_status_header();
 
@@ -242,7 +241,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             PartitionRegion temp_cluster_pr;
 
             start_new_cluster(cluster_placement_stats, primitives_list,
-                              atom_molecules, clb_index, istart,
+                              clb_index, istart,
                               num_used_type_instances,
                               packer_opts.target_device_utilization,
                               num_models, max_cluster_size,
@@ -296,7 +295,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             cur_cluster_placement_stats_ptr = &cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index];
             cluster_stats.num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
-                                                     atom_molecules,
                                                      attraction_groups,
                                                      allow_unrelated_clustering,
                                                      packer_opts.prioritize_transitive_connectivity,
@@ -315,7 +313,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
                 try_fill_cluster(packer_opts,
                                  cur_cluster_placement_stats_ptr,
-                                 atom_molecules,
                                  next_molecule,
                                  primitives_list,
                                  cluster_stats,
@@ -342,10 +339,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             is_cluster_legal = check_cluster_legality(verbosity, detailed_routing_stage, router_data);
 
             if (is_cluster_legal) {
-                istart = save_cluster_routing_and_pick_new_seed(packer_opts, atom_molecules, num_clb, seed_atoms, num_blocks_hill_added, intra_lb_routing, seedindex, cluster_stats, router_data);
+                istart = save_cluster_routing_and_pick_new_seed(packer_opts, num_clb, seed_atoms, num_blocks_hill_added, intra_lb_routing, seedindex, cluster_stats, router_data);
                 store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, le_count, clb_inter_blk_nets);
             } else {
-                free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, atom_molecules, num_used_type_instances, num_clb, seedindex);
+                free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, num_used_type_instances, num_clb, seedindex);
             }
             free_router_data(router_data);
             router_data = nullptr;

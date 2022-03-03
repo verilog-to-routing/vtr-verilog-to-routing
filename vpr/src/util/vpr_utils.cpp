@@ -1332,7 +1332,7 @@ void free_pb(t_pb* pb) {
     free_pb_stats(pb);
 }
 
-void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules) {
+void revalid_molecules(const t_pb* pb) {
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
     if (pb_type->blif_model == nullptr) {
@@ -1340,7 +1340,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId, t_pack_m
         for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
             for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
                 if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
-                    revalid_molecules(&pb->child_pbs[i][j], atom_molecules);
+                    revalid_molecules(&pb->child_pbs[i][j]);
                 }
             }
         }
@@ -1356,7 +1356,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId, t_pack_m
             atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
             atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 
-            auto rng = atom_molecules.equal_range(blk_id);
+            auto rng = atom_ctx.atom_molecules.equal_range(blk_id);
             for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
                 t_pack_molecule* cur_molecule = kv.second;
                 if (cur_molecule->valid == false) {
