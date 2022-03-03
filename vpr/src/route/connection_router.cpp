@@ -450,58 +450,41 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
 
 
         size_t first_edge = (size_t)rr_graph_->node_first_edge(from_node);
-        int rel = 1;
         int first_dest = rr_graph_->node_first_dest(from_node);
-        int edges_num = rr_graph_->num_edges(from_node);
-
-        // First Edge
         int e_ptn_idx = rr_graph_->node_to_edge_ptns_new(from_node); 
-        int edges_added = 0;
-        t_switch_edge_ptn p;
-        while (edges_added < 1*(edges_num>0)){
+        int edges_num = rr_graph_->num_edges(from_node);
+        int edges_count = 0;
 
-            
-            p = rr_graph_->edge_ptns(e_ptn_idx);
-
-            RRNodeId to_node = RRNodeId(first_dest);
-            timing_driven_expand_neighbour(current,
-                                        from_node_int,
-                                        RREdgeId(first_edge),
-                                        size_t(to_node),
-                                        cost_params,
-                                        bounding_box,
-                                        target_node,
-                                        target_bb,
-                                        p.switch_id);
-
-            edges_added++;
-        }
-
-        int k = 1; // skip the first edge
-        while (edges_added < edges_num) { // only for nodes with more than one edge
-            while (k < p.edge_count){
-
+        t_switch_edge_ptn p = rr_graph_->edge_ptns(e_ptn_idx);
+        int k = 0;
+        // while (edges_count < edges_num){
+        int num_ptns = rr_graph_->num_edge_ptns(from_node);
+        for (int j=0; j<num_ptns; j++){
+            const int p_edge_count = p.edge_count;
+            for (int i=0; i<p_edge_count; i++){
                 RRNodeId to_node = RRNodeId(first_dest+rr_graph_->edge_ptn_data(p.ptn_idx+k));
                 timing_driven_expand_neighbour(current,
-                                        from_node_int,
-                                        RREdgeId(first_edge+rel),
-                                        size_t(to_node),
-                                        cost_params,
-                                        bounding_box,
-                                        target_node,
-                                        target_bb,
-                                        p.switch_id);
-
+                                    from_node_int,
+                                    RREdgeId(first_edge+edges_count),
+                                    size_t(to_node),
+                                    cost_params,
+                                    bounding_box,
+                                    target_node,
+                                    target_bb,
+                                    p.switch_id);
+                edges_count += 1;
                 k++;
-                rel++;
-                edges_added++;
             }
             k = 0;
             e_ptn_idx++;
             p = rr_graph_->edge_ptns(e_ptn_idx);
         }
 
-
+// if (k == p.edge_count){
+//                 k = 0;
+//                 e_ptn_idx++;
+//                 p = rr_graph_->edge_ptns(e_ptn_idx);
+//             }
 
 
 

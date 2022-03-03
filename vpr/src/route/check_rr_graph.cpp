@@ -79,8 +79,11 @@ void check_rr_graph(const t_graph_type graph_type,
         edges.resize(0);
         edges.reserve(num_edges);
 
-        for (int iedge = 0; iedge < num_edges; iedge++) {
-            int to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
+        std::vector<t_dest_switch> rr_edges;
+        g_vpr_ctx.mutable_device().rr_graph.get_edges(RRNodeId(inode), rr_edges);
+        int rr_i_edge = 0;
+        for (auto rr_edge : rr_edges) {  
+            int to_node = size_t(rr_edge.dest);
 
             if (to_node < 0 || to_node >= (int)device_ctx.rr_nodes.size()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -89,12 +92,13 @@ void check_rr_graph(const t_graph_type graph_type,
                                 inode, to_node);
             }
 
-            check_rr_edge(inode, iedge, to_node);
+            check_rr_edge(inode, rr_edge.switch_id, to_node);
 
-            edges.emplace_back(to_node, iedge);
+            edges.emplace_back(to_node, rr_i_edge);
+            rr_i_edge++;
             total_edges_to_node[to_node]++;
 
-            auto switch_type = rr_graph.edge_switch(rr_node, iedge);
+            auto switch_type = rr_edge.switch_id;
 
             if (switch_type < 0 || switch_type >= num_rr_switches) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -109,8 +113,10 @@ void check_rr_graph(const t_graph_type graph_type,
         });
 
         //Check that multiple edges between the same from/to nodes make sense
-        for (int iedge = 0; iedge < num_edges; iedge++) {
-            int to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
+        std::vector<t_dest_switch> rr_edges2;
+        g_vpr_ctx.mutable_device().rr_graph.get_edges(RRNodeId(inode), rr_edges2);
+        for (auto rr_edge : rr_edges2) {  
+            int to_node = size_t(rr_edge.dest);
 
             auto range = std::equal_range(edges.begin(), edges.end(),
                                           to_node, node_edge_sorter());
@@ -546,14 +552,17 @@ static void check_unbuffered_edges(int from_node) {
 
     from_num_edges = rr_graph.num_edges(RRNodeId(from_node));
 
-    for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
-        to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), from_edge));
+    std::vector<t_dest_switch> rr_edges;
+    g_vpr_ctx.mutable_device().rr_graph.get_edges(RRNodeId(from_node), rr_edges);
+    for (auto rr_edge : rr_edges) {  
+    // for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
+        to_node = size_t(rr_edge.dest);
         to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
         if (to_rr_type != CHANX && to_rr_type != CHANY)
             continue;
 
-        from_switch_type = rr_graph.edge_switch(RRNodeId(from_node), from_edge);
+        from_switch_type = rr_edge.switch_id;
 
         if (rr_graph.rr_switch_inf(RRSwitchId(from_switch_type)).buffered())
             continue;
@@ -565,9 +574,12 @@ static void check_unbuffered_edges(int from_node) {
         to_num_edges = rr_graph.num_edges(RRNodeId(to_node));
         trans_matched = false;
 
-        for (to_edge = 0; to_edge < to_num_edges; to_edge++) {
-            if (size_t(rr_graph.edge_sink_node(RRNodeId(to_node), to_edge)) == size_t(from_node)
-                && rr_graph.edge_switch(RRNodeId(to_node), to_edge) == from_switch_type) {
+        std::vector<t_dest_switch> to_rr_edges;
+        g_vpr_ctx.mutable_device().rr_graph.get_edges(RRNodeId(to_node), to_rr_edges);
+        for (auto to_rr_edge : to_rr_edges) { 
+        // for (to_edge = 0; to_edge < to_num_edges; to_edge++) {
+            if (size_t(to_rr_edge.dest) == size_t(from_node)
+                && to_rr_edge.switch_id == from_switch_type) {
                 trans_matched = true;
                 break;
             }
@@ -601,12 +613,11 @@ static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid) 
     return true; //All other blocks will be surrounded on all sides by channels
 }
 
-static void check_rr_edge(int from_node, int iedge, int to_node) {
+static void check_rr_edge(int from_node, int iswitch, int to_node) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     //Check that to to_node's fan-in is correct, given the switch type
-    int iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
     auto switch_type = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).type();
 
     int to_fanin = rr_graph.node_fan_in(RRNodeId(to_node));

@@ -262,9 +262,13 @@ void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                                     std::greater<Entry>>* pq) {
     RRNodeId parent = parent_entry.rr_node;
 
-    for (int iedge = 0; iedge < rr_graph.num_edges(parent); iedge++) {
-        int child_node_ind = size_t(rr_graph.edge_sink_node(RRNodeId(parent), iedge));
-        int switch_ind = rr_graph.edge_switch(parent, iedge);
+    std::vector<t_dest_switch> rr_edges;
+    g_vpr_ctx.mutable_device().rr_graph.get_edges(parent, rr_edges);
+    int iedge = 0;
+    for (auto rr_edge : rr_edges) {  
+    // for (int iedge = 0; iedge < rr_graph.num_edges(parent); iedge++) {
+        int child_node_ind = size_t(rr_edge.dest);
+        int switch_ind = rr_edge.switch_id;
 
         /* skip this child if it has already been expanded from */
         if ((*node_expanded)[child_node_ind]) {
@@ -277,6 +281,7 @@ void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
         /* Create (if it doesn't exist) or update (if the new cost is lower)
          * to specified node */
         Search_Path path_entry = {child_entry.cost(), size_t(parent), iedge};
+        iedge++;
         auto& path = (*paths)[child_node_ind];
         if (path_entry.cost < path.cost) {
             pq->push(child_entry);
@@ -494,12 +499,15 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
             //We allow expansion through SOURCE/OPIN/IPIN types
             auto cost_index = temp_rr_graph.node_cost_index(curr.node);
             float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
-
-            for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
-                int iswitch = rr_graph.edge_switch(edge);
+            
+            std::vector<t_dest_switch> rr_edges;
+            g_vpr_ctx.mutable_device().rr_graph.get_edges(curr.node, rr_edges);
+            for (auto rr_edge : rr_edges) {  
+            // for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
+                int iswitch = rr_edge.switch_id;
                 float incr_delay = temp_rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
 
-                RRNodeId next_node = rr_graph.edge_sink_node_abs(curr.node, edge);
+                RRNodeId next_node = rr_edge.dest;
 
                 t_pq_entry next;
                 next.congestion = curr.congestion + incr_cong; //Of current node

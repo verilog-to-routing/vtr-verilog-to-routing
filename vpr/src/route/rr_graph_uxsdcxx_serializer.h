@@ -945,10 +945,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         rr_graph_builder_->partition_edges();
 
         for (int source_node = 0; source_node < (ssize_t)rr_nodes_->size(); ++source_node) {
-            int num_edges = rr_nodes_->num_edges(RRNodeId(source_node));
-            for (int iconn = 0; iconn < num_edges; ++iconn) {
-                size_t sink_node = size_t(rr_nodes_->edge_sink_node(RRNodeId(source_node), iconn));
-                size_t switch_id = rr_nodes_->edge_switch(RRNodeId(source_node), iconn);
+            // int num_edges = rr_nodes_->num_edges(RRNodeId(source_node));
+            std::vector<t_dest_switch> rr_edges;
+            (*rr_graph_).get_edges(RRNodeId(source_node), rr_edges);
+            for (auto rr_edge : rr_edges) { 
+            // for (int iconn = 0; iconn < num_edges; ++iconn) {
+                size_t sink_node = size_t(rr_edge.dest);
+                size_t switch_id = rr_edge.switch_id;
                 if (sink_node >= rr_nodes_->size()) {
                     report_error(
                         "sink_node %zu is larger than rr_nodes.size() %zu",

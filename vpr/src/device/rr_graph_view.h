@@ -35,7 +35,7 @@ class RRGraphView {
     /* -- Constructors -- */
   public:
     /* See detailed comments about the data structures in the internal data storage section of this file */
-    RRGraphView(const t_rr_graph_storage& node_storage,
+    RRGraphView(t_rr_graph_storage& node_storage,
                 const RRSpatialLookup& node_lookup,
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
@@ -155,6 +155,18 @@ class RRGraphView {
     inline int node_to_edge_ptns_new(RRNodeId node) const {
         return node_storage_.node_to_edge_ptns_new(node);
     }
+    
+    inline int num_edge_ptns(const RRNodeId& id) const {
+        return node_storage_.num_edge_ptns(id);
+    }
+
+    inline void get_edges(RRNodeId id, std::vector<t_dest_switch> &edges)  {
+        node_storage_.get_edges(id, edges);
+    }
+    inline void get_non_configurable_edges(RRNodeId id, std::vector<t_dest_switch> &edges)  {
+        node_storage_.get_non_configurable_edges(id, edges);
+    }
+
 
     inline t_switch_edge_ptn edge_ptn(int ptn) const {
         return node_storage_.edge_ptn(ptn);
@@ -376,6 +388,10 @@ class RRGraphView {
         return node_storage_.num_edges(node);
     }
 
+    inline vtr::StrongIdRange<RREdgeId> int_range(const int id) const {
+        return node_storage_.int_range(id);
+    }
+
     /** @brief The ptc_num carries different meanings for different node types 
      * (true in VPR RRG that is currently supported, may not be true in customized RRG) 
      * CHANX or CHANY: the track id in routing channels 
@@ -446,7 +462,7 @@ class RRGraphView {
     /* Note: only read-only object or data structures are allowed!!! */
   private:
     /* node-level storage including edge storages */
-    const t_rr_graph_storage& node_storage_;
+    t_rr_graph_storage& node_storage_;
     /* Fast look-up for rr nodes */
     const RRSpatialLookup& node_lookup_;
 

@@ -319,7 +319,15 @@ class edge_compare_dest_node {
 void t_rr_graph_storage::assign_first_edges() {
     VTR_ASSERT(node_first_edge_.empty());
 
-    
+    int cur_idx = 0;
+    for (int i=0; i < node_storage_.size(); i++){
+        RRNodeId node = RRNodeId(i);
+        node_to_edge_ptns_new_[node] = cur_idx;
+        cur_idx += node_num_edge_patterns_[node];
+    }
+    node_to_edge_ptns_new_.push_back(cur_idx);
+
+
     // Last element is a dummy element
     node_first_edge_.resize(node_storage_.size() + 1);
 
@@ -591,6 +599,10 @@ t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const
 
 t_edge_size t_rr_graph_storage::num_non_configurable_edges(const RRNodeId& id) const {
     return num_edges(id) - num_configurable_edges(id);
+}
+
+bool t_rr_graph_storage::switch_is_configurable(short switch_id) const {
+    return g_vpr_ctx.device().rr_graph.rr_switch_inf(RRSwitchId(switch_id)).configurable();
 }
 
 bool t_rr_graph_storage::validate() const {

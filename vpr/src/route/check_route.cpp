@@ -309,8 +309,11 @@ static bool check_adjacent(int from_node, int to_node) {
 
     reached = false;
 
-    for (t_edge_size iconn = 0; iconn < rr_graph.num_edges(RRNodeId(from_node)); iconn++) {
-        if (size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iconn)) == size_t(to_node)) {
+    std::vector<t_dest_switch> rr_edges;
+    g_vpr_ctx.mutable_device().rr_graph.get_edges(RRNodeId(from_node), rr_edges);
+    for (auto rr_edge : rr_edges) { 
+    // for (t_edge_size iconn = 0; iconn < rr_graph.num_edges(RRNodeId(from_node)); iconn++) {
+        if (size_t(rr_edge.dest) == size_t(to_node)) {
             reached = true;
             break;
         }

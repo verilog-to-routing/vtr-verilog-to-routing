@@ -1165,17 +1165,26 @@ bool directconnect_exists(int src_rr_node, int sink_rr_node) {
     VTR_ASSERT(rr_graph.node_type(RRNodeId(src_rr_node)) == SOURCE && rr_graph.node_type(RRNodeId(sink_rr_node)) == SINK);
 
     //TODO: This is a constant depth search, but still may be too slow
-    for (t_edge_size i_src_edge = 0; i_src_edge < rr_graph.num_edges(RRNodeId(src_rr_node)); ++i_src_edge) {
-        int opin_rr_node = size_t(rr_graph.edge_sink_node(RRNodeId(src_rr_node), i_src_edge));
+    std::vector<t_dest_switch> rr_edges;
+    g_vpr_ctx.mutable_device().rr_graph.get_edges(RRNodeId(src_rr_node), rr_edges);
+    for (auto rr_edge : rr_edges) { 
+    // for (t_edge_size i_src_edge = 0; i_src_edge < rr_graph.num_edges(RRNodeId(src_rr_node)); ++i_src_edge) {
+        int opin_rr_node = size_t(rr_edge.dest);
 
         if (rr_graph.node_type(RRNodeId(opin_rr_node)) != OPIN) continue;
 
-        for (t_edge_size i_opin_edge = 0; i_opin_edge < rr_graph.num_edges(RRNodeId(opin_rr_node)); ++i_opin_edge) {
-            int ipin_rr_node = size_t(rr_graph.edge_sink_node(RRNodeId(opin_rr_node), i_opin_edge));
+        std::vector<t_dest_switch> rr_edges2;
+        g_vpr_ctx.mutable_device().rr_graph.get_edges(RRNodeId(opin_rr_node), rr_edges2);
+        for (auto rr_edge2 : rr_edges2) {
+        // for (t_edge_size i_opin_edge = 0; i_opin_edge < rr_graph.num_edges(RRNodeId(opin_rr_node)); ++i_opin_edge) {
+            int ipin_rr_node = size_t(rr_edge2.dest);
             if (rr_graph.node_type(RRNodeId(ipin_rr_node)) != IPIN) continue;
 
-            for (t_edge_size i_ipin_edge = 0; i_ipin_edge < rr_graph.num_edges(RRNodeId(ipin_rr_node)); ++i_ipin_edge) {
-                if (size_t(sink_rr_node) == size_t(rr_graph.edge_sink_node(RRNodeId(ipin_rr_node), i_ipin_edge))) {
+            std::vector<t_dest_switch> rr_edges3;
+            g_vpr_ctx.mutable_device().rr_graph.get_edges(RRNodeId(ipin_rr_node), rr_edges3);
+            for (auto rr_edge3 : rr_edges3) {
+            // for (t_edge_size i_ipin_edge = 0; i_ipin_edge < rr_graph.num_edges(RRNodeId(ipin_rr_node)); ++i_ipin_edge) {
+                if (size_t(sink_rr_node) == size_t(rr_edge3.dest)) {
                     return true;
                 }
             }

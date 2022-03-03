@@ -255,9 +255,12 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         auto &device_ctx = g_vpr_ctx.mutable_device();
         const auto& rr_graph = device_ctx.rr_graph;
         for (const RRNodeId& inode : rr_graph.nodes()){
-            for(t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); ++iedge) {
-                auto sink_inode = size_t(rr_graph.edge_sink_node(inode, iedge));
-                auto switch_id = rr_graph.edge_switch(inode, iedge);
+
+            std::vector<t_dest_switch> rr_edges;
+            g_vpr_ctx.mutable_device().rr_graph.get_edges(inode, rr_edges);
+            for (auto edge : rr_edges) {                
+                auto sink_inode = size_t(edge.dest);
+                auto switch_id = edge.switch_id;
                 auto value = vtr::string_fmt("%d_%d_%zu",
                             (size_t)inode, sink_inode, switch_id);
 

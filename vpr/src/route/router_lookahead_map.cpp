@@ -688,51 +688,94 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNode
 
 
 
-    size_t first_edge = (size_t)rr_graph.node_first_edge(parent);
-    int rel = 1;
+    // size_t first_edge = (size_t)rr_graph.node_first_edge(parent);
+    // int rel = 1;
+    // int first_dest = rr_graph.node_first_dest(parent);
+    // int edges_num = rr_graph.num_edges(parent);
+
+    // // First Edge
+    // int e_ptn_idx = rr_graph.node_to_edge_ptns_new(parent); 
+    // int edges_added = 0;
+    // t_switch_edge_ptn p;
+    // while (edges_added < 1*(edges_num>0)){
+    //     p = rr_graph.edge_ptns(e_ptn_idx);
+    //     edges_added++;
+
+    //     RRNodeId child_node = RRNodeId(first_dest);
+    //     if (rr_graph.node_type(child_node) == SINK) return;
+
+    //     /* skip this child if it has already been expanded from */
+    //     if (node_expanded[child_node]) {
+    //         continue;
+    //     }
+
+    //     PQ_Entry child_entry(child_node, p.switch_id, parent_entry.delay,
+    //                         parent_entry.R_upstream, parent_entry.congestion_upstream, false);
+
+    //     //VTR_ASSERT(child_entry.cost >= 0); //Asertion fails in practise. TODO: debug
+
+    //     /* skip this child if it has been visited with smaller cost */
+    //     if (node_visited_costs[child_node] >= 0 && node_visited_costs[child_node] < child_entry.cost) {
+    //         continue;
+    //     }
+
+    //     /* finally, record the cost with which the child was visited and put the child entry on the queue */
+    //     node_visited_costs[child_node] = child_entry.cost;
+    //     pq.push(child_entry);
+
+    // }
+
+    // int k = 1; // skip the first edge
+    // while (edges_added < edges_num) { // only for nodes with more than one edge
+    //     while (k < p.edge_count){
+
+    //         RRNodeId child_node = RRNodeId(first_dest+rr_graph.edge_ptn_data(p.ptn_idx+k));
+    //         k++;
+    //         rel++;
+    //         edges_added++;
+    //         if (rr_graph.node_type(child_node) == SINK) return;
+
+    //         /* skip this child if it has already been expanded from */
+    //         if (node_expanded[child_node]) {
+    //             continue;
+    //         }
+
+    //         PQ_Entry child_entry(child_node, p.switch_id, parent_entry.delay,
+    //                             parent_entry.R_upstream, parent_entry.congestion_upstream, false);
+
+    //         //VTR_ASSERT(child_entry.cost >= 0); //Asertion fails in practise. TODO: debug
+
+    //         /* skip this child if it has been visited with smaller cost */
+    //         if (node_visited_costs[child_node] >= 0 && node_visited_costs[child_node] < child_entry.cost) {
+    //             continue;
+    //         }
+
+    //         /* finally, record the cost with which the child was visited and put the child entry on the queue */
+    //         node_visited_costs[child_node] = child_entry.cost;
+    //         pq.push(child_entry);
+
+    //     }
+    //     k = 0;
+    //     e_ptn_idx++;
+    //     p = rr_graph.edge_ptns(e_ptn_idx);
+    // }
+
+
     int first_dest = rr_graph.node_first_dest(parent);
-    int edges_num = rr_graph.num_edges(parent);
-
-    // First Edge
     int e_ptn_idx = rr_graph.node_to_edge_ptns_new(parent); 
-    int edges_added = 0;
-    t_switch_edge_ptn p;
-    while (edges_added < 1*(edges_num>0)){
-        p = rr_graph.edge_ptns(e_ptn_idx);
-        edges_added++;
+    int edges_num = rr_graph.num_edges(parent);
+    int edges_count = 0;
 
-        RRNodeId child_node = RRNodeId(first_dest);
-        if (rr_graph.node_type(child_node) == SINK) return;
-
-        /* skip this child if it has already been expanded from */
-        if (node_expanded[child_node]) {
-            continue;
-        }
-
-        PQ_Entry child_entry(child_node, p.switch_id, parent_entry.delay,
-                            parent_entry.R_upstream, parent_entry.congestion_upstream, false);
-
-        //VTR_ASSERT(child_entry.cost >= 0); //Asertion fails in practise. TODO: debug
-
-        /* skip this child if it has been visited with smaller cost */
-        if (node_visited_costs[child_node] >= 0 && node_visited_costs[child_node] < child_entry.cost) {
-            continue;
-        }
-
-        /* finally, record the cost with which the child was visited and put the child entry on the queue */
-        node_visited_costs[child_node] = child_entry.cost;
-        pq.push(child_entry);
-
-    }
-
-    int k = 1; // skip the first edge
-    while (edges_added < edges_num) { // only for nodes with more than one edge
-        while (k < p.edge_count){
-
+    t_switch_edge_ptn p = rr_graph.edge_ptns(e_ptn_idx);
+    int k = 0;
+    // while (edges_count < edges_num){
+    int num_ptns = rr_graph.num_edge_ptns(parent);
+    for (int j=0; j<num_ptns; j++){
+        const int p_edge_count = p.edge_count;
+        for (int i=0; i<p_edge_count; i++){
             RRNodeId child_node = RRNodeId(first_dest+rr_graph.edge_ptn_data(p.ptn_idx+k));
+            edges_count += 1;
             k++;
-            rel++;
-            edges_added++;
             if (rr_graph.node_type(child_node) == SINK) return;
 
             /* skip this child if it has already been expanded from */
@@ -753,16 +796,11 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNode
             /* finally, record the cost with which the child was visited and put the child entry on the queue */
             node_visited_costs[child_node] = child_entry.cost;
             pq.push(child_entry);
-
         }
         k = 0;
         e_ptn_idx++;
         p = rr_graph.edge_ptns(e_ptn_idx);
     }
-
-
-
-
 
 
 
