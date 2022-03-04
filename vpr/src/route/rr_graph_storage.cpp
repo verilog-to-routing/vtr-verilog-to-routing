@@ -335,15 +335,19 @@ void t_rr_graph_storage::assign_first_edges() {
     for (int i=0; i < node_storage_.size(); i++){
         RRNodeId node = RRNodeId(i);
         node_first_edge_[node] = RREdgeId(edge_number);
-        int edge_count = 0;
-        for (auto p : node_to_edge_ptns_[node]){
-            // edge_number += edge_ptn_[ptn].edge_count;
+
+        int e_ptn_idx = node_to_edge_ptns_new_[node]; 
+        t_switch_edge_ptn p = edge_ptns_[e_ptn_idx];
+        int num_ptns = num_edge_ptns(node);
+        for (int j=0; j<num_ptns; j++){
             edge_number += p.edge_count;
+            e_ptn_idx++;
+            p = edge_ptns_[e_ptn_idx];
         }
     }
+
     node_first_edge_[(RRNodeId)node_storage_.size()] = RREdgeId(edge_number);
 
-    // vtr::vector<RRNodeId, std::vector<int>> node_to_edge_ptns_;
 
     // /* Vector from node to the destination node of its first edge */
 
@@ -438,22 +442,32 @@ void t_rr_graph_storage::init_fan_in() {
     // }
     for (size_t i=0; i < node_storage_.size(); i++){
         RRNodeId node = RRNodeId(i);
-        size_t dest = (size_t)node_first_dest_[node];
+
+        int first_dest = node_first_dest(node);
+        int e_ptn_idx = node_to_edge_ptns_new(node); 
+
+        t_switch_edge_ptn p = edge_ptns(e_ptn_idx);
         int k = 0;
-        short cur_switch;
-        for (auto p : node_to_edge_ptns_[node]){
-            // const auto p = edge_ptn_[ptn];
-            cur_switch = p.switch_id;
-            while (k < p.edge_count){
-                node_fan_in_[RRNodeId(dest+edge_ptn_data_[p.ptn_idx+k])] += 1;
+        int num_ptns = num_edge_ptns(node);
+        for (int j=0; j<num_ptns; j++){
+            const int p_edge_count = p.edge_count;
+            for (int i=0; i<p_edge_count; i++){
+                node_fan_in_[RRNodeId(first_dest+edge_ptn_data(p.ptn_idx+k))] += 1;
                 k++;
             }
             k = 0;
+            e_ptn_idx++;
+            p = edge_ptns(e_ptn_idx);
         }
     }
     
-
 }
+
+        
+
+
+
+
 
 size_t t_rr_graph_storage::count_rr_switches(
     size_t num_arch_switches,
@@ -581,10 +595,15 @@ t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const
     int edge_count = 0;
     short cur_switch;
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
-    for (auto p : node_to_edge_ptns_[id]){
-        // const auto p = edge_ptn_[ptn];
+    int e_ptn_idx = node_to_edge_ptns_new(id); 
+    t_switch_edge_ptn p = edge_ptns(e_ptn_idx);
+    int num_ptns = num_edge_ptns(id);
+    for (int j=0; j<num_ptns; j++){
         edge_count += rr_graph.rr_switch_inf(RRSwitchId(p.switch_id)).configurable()*p.edge_count;
+        e_ptn_idx++;
+        p = edge_ptns(e_ptn_idx);
     }
+
     return edge_count;
 
     // for (size_t idx = first_id; idx < last_id; ++idx) {

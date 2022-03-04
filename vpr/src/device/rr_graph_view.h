@@ -145,9 +145,7 @@ class RRGraphView {
         return node_storage_.node_yhigh(node);
     }
 
-    inline std::vector<t_switch_edge_ptn> node_to_edge_ptns(RRNodeId node) const {
-        return node_storage_.node_to_edge_ptns(node);
-    }
+
     inline t_switch_edge_ptn edge_ptns(int node) const {
         return node_storage_.edge_ptns(node);
     }
