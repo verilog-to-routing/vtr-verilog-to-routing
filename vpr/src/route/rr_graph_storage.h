@@ -399,6 +399,9 @@ class t_rr_graph_storage {
     }
 
 
+    /*
+        Fills a vector with the edges of the input node
+    */
     inline void get_edges(RRNodeId id, std::vector<t_dest_switch> &edges)  {
         edges.reserve(num_edges(id));
         int first_dest = node_first_dest(id);
@@ -923,13 +926,20 @@ class t_rr_graph_storage {
 
     /* Vector from node to the destination node of its first edge */
     vtr::vector<RRNodeId, int> node_first_dest_;
+
+    /* Vector from node to number of edge patterns it has.
+       This is only used while reading in the routing resource graph */
     vtr::vector<RRNodeId, int> node_num_edge_patterns_;
 
     RRNodeId cur_node_; // used during reading of rr_graph
 
     /* Vector from edge_ptn_idx to switch, starting idx, and count */
     std::vector<t_switch_edge_ptn> edge_ptn_;
+
+    /* Vector of t_switch_edge_ptn for all patterns of a node */
     std::vector<t_switch_edge_ptn> edge_ptns_;
+
+    /* Vector of differences between given node and starting dest node */
     std::vector<int> edge_ptn_data_;
 
 
