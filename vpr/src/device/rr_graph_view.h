@@ -150,8 +150,8 @@ class RRGraphView {
         return node_storage_.edge_ptns(node);
     }
 
-    inline int node_to_edge_ptns_new(RRNodeId node) const {
-        return node_storage_.node_to_edge_ptns_new(node);
+    inline int node_to_edge_ptns(RRNodeId node) const {
+        return node_storage_.node_to_edge_ptns(node);
     }
     
     inline int num_edge_ptns(const RRNodeId& id) const {

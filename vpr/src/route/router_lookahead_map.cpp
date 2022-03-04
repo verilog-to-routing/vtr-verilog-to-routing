@@ -650,7 +650,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNode
     RRNodeId parent = parent_entry.rr_node;
 
     int first_dest = rr_graph.node_first_dest(parent);
-    int e_ptn_idx = rr_graph.node_to_edge_ptns_new(parent); 
+    int e_ptn_idx = rr_graph.node_to_edge_ptns(parent); 
     int edges_num = rr_graph.num_edges(parent);
     int edges_count = 0;
 

@@ -420,10 +420,10 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
     //     int switch_idx = rr_graph_->edge_switch(from_edge);
     //     VTR_PREFETCH(&rr_switch_inf_[switch_idx], 0, 0);
     // }
-    
+
     size_t first_edge = (size_t)rr_graph_->node_first_edge(from_node);
     int first_dest = rr_graph_->node_first_dest(from_node);
-    int e_ptn_idx = rr_graph_->node_to_edge_ptns_new(from_node); 
+    int e_ptn_idx = rr_graph_->node_to_edge_ptns(from_node); 
     int edges_num = rr_graph_->num_edges(from_node);
     int edges_count = 0;
 

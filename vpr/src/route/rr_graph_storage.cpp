@@ -322,10 +322,10 @@ void t_rr_graph_storage::assign_first_edges() {
     int cur_idx = 0;
     for (int i=0; i < node_storage_.size(); i++){
         RRNodeId node = RRNodeId(i);
-        node_to_edge_ptns_new_[node] = cur_idx;
+        node_to_edge_ptns_[node] = cur_idx;
         cur_idx += node_num_edge_patterns_[node];
     }
-    node_to_edge_ptns_new_.push_back(cur_idx);
+    node_to_edge_ptns_.push_back(cur_idx);
 
 
     // Last element is a dummy element
@@ -336,7 +336,7 @@ void t_rr_graph_storage::assign_first_edges() {
         RRNodeId node = RRNodeId(i);
         node_first_edge_[node] = RREdgeId(edge_number);
 
-        int e_ptn_idx = node_to_edge_ptns_new_[node]; 
+        int e_ptn_idx = node_to_edge_ptns_[node]; 
         t_switch_edge_ptn p = edge_ptns_[e_ptn_idx];
         int num_ptns = num_edge_ptns(node);
         for (int j=0; j<num_ptns; j++){
@@ -444,7 +444,7 @@ void t_rr_graph_storage::init_fan_in() {
         RRNodeId node = RRNodeId(i);
 
         int first_dest = node_first_dest(node);
-        int e_ptn_idx = node_to_edge_ptns_new(node); 
+        int e_ptn_idx = node_to_edge_ptns(node); 
 
         t_switch_edge_ptn p = edge_ptns(e_ptn_idx);
         int k = 0;
@@ -595,7 +595,7 @@ t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const
     int edge_count = 0;
     short cur_switch;
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
-    int e_ptn_idx = node_to_edge_ptns_new(id); 
+    int e_ptn_idx = node_to_edge_ptns(id); 
     t_switch_edge_ptn p = edge_ptns(e_ptn_idx);
     int num_ptns = num_edge_ptns(id);
     for (int j=0; j<num_ptns; j++){
