@@ -49,3 +49,12 @@ if(${VTR_ENABLE_CAPNPROTO})
       $<INSTALL_INTERFACE:include>
     )
 endif()
+
+# Some catch2 headers generate warnings, so treat them as system headers to suppress warnings
+target_include_directories(Catch2
+  SYSTEM
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libcatch2/src>
+    $<INSTALL_INTERFACE:include>
+)
+
