@@ -1,0 +1,18 @@
+# Benchmark "multibitand" written by ABC on Wed Mar  9 12:44:33 2022
+.model multibitand
+.inputs multibitand^a~0 multibitand^a~1 multibitand^a~2 multibitand^b~0 \
+ multibitand^b~1 multibitand^b~2
+.outputs multibitand^c~0 multibitand^c~1 multibitand^c~2
+.names multibitand^a~0 multibitand^b~0 multibitand^bAND~0^lAND~4
+11 1
+.names multibitand^a~1 multibitand^b~1 multibitand^bAND~0^lAND~5
+11 1
+.names multibitand^a~2 multibitand^b~2 multibitand^bAND~0^lAND~6
+11 1
+.names multibitand^bAND~0^lAND~4 multibitand^c~0
+1 1
+.names multibitand^bAND~0^lAND~5 multibitand^c~1
+1 1
+.names multibitand^bAND~0^lAND~6 multibitand^c~2
+1 1
+.end

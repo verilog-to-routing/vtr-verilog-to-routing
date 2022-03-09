@@ -1,0 +1,7 @@
+# Benchmark "test1" written by ABC on Wed Mar  9 12:45:02 2022
+.model test1
+.inputs test1^a
+.outputs test1^b
+.names test1^a test1^b
+1 1
+.end

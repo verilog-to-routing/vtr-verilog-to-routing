@@ -1,0 +1,11 @@
+# Benchmark "test4" written by ABC on Wed Mar  9 12:43:51 2022
+.model test4
+.inputs test4^a~0 test4^a~1 test4^a~2
+.outputs test4^b~0 test4^b~1 test4^b~2
+.names test4^a~0 test4^b~0
+1 1
+.names test4^a~1 test4^b~1
+1 1
+.names test4^a~2 test4^b~2
+1 1
+.end

@@ -1,0 +1,4 @@
+ 
+1. The directory RTL_FILES contains the  *.v files. 
+2. The Directory edif_files contains *.edif files, generated using yosys "write_edif nogndgcc  <outputfile.edif>" command.
+3. The directory blif_files contains *.blif files, generated using ODINII "./odin -V <input_file> -o <outputfile.blif>".

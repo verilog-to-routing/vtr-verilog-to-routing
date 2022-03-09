@@ -1,0 +1,11 @@
+# Benchmark "test2" written by ABC on Wed Mar  9 12:43:11 2022
+.model test2
+.inputs test2^a~0 test2^a~1 test2^a~2
+.outputs test2^b~0 test2^b~1 test2^b~2
+.names test2^a~0 test2^b~0
+1 1
+.names test2^a~1 test2^b~1
+1 1
+.names test2^a~2 test2^b~2
+1 1
+.end

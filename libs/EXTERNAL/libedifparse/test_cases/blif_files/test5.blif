@@ -1,0 +1,9 @@
+# Benchmark "andgate" written by ABC on Wed Mar  9 12:44:15 2022
+.model andgate
+.inputs andgate^a andgate^b
+.outputs andgate^c
+.names andgate^a andgate^b andgate^bAND~0^lAND~2
+11 1
+.names andgate^bAND~0^lAND~2 andgate^c
+1 1
+.end

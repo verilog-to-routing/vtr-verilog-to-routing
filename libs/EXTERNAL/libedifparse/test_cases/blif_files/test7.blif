@@ -1,0 +1,29 @@
+# Benchmark "top" written by ABC on Wed Mar  9 12:44:47 2022
+.model top
+.inputs top^a top^b top^c top^d top^e top^f
+.outputs top^out
+.names top^a top^b top.i1.m1.b^bAND~0^lAND~21
+11 1
+.names top.i1.m1.b^bAND~0^lAND~21 top.i1.m2.b^bAND~2^lAND~24 \
+ top.i1.m3.b^bAND~4^lAND~20
+11 1
+.names top.i1.m3.b^bAND~4^lAND~20 top.i2.m3.b^bAND~10^lAND~22 \
+ top.i3.m1.b^bAND~12^lAND~19
+11 1
+.names top.i3.m1.b^bAND~12^lAND~19 top.i3.m2.b^bAND~14^lAND~26 \
+ top.i3.m3.b^bAND~16^lAND~18
+11 1
+.names top^a top^d top.i2.m1.b^bAND~6^lAND~23
+11 1
+.names top.i2.m1.b^bAND~6^lAND~23 top.i2.m2.b^bAND~8^lAND~25 \
+ top.i2.m3.b^bAND~10^lAND~22
+11 1
+.names top^c top^d top.i1.m2.b^bAND~2^lAND~24
+11 1
+.names top^e top^f top.i2.m2.b^bAND~8^lAND~25
+11 1
+.names top^e top^f top.i3.m2.b^bAND~14^lAND~26
+11 1
+.names top.i3.m3.b^bAND~16^lAND~18 top^out
+1 1
+.end
