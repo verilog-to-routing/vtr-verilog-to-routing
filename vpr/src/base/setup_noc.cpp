@@ -81,11 +81,11 @@ void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
                 Only store the tile position if it is a noc router.
                 Additionally, since a router tile can span multiple grid locations, we only add the tile if the height and width offset are zero (this prevents the router from being added multiple times for each grid location it spans).
             */
-            if (!((noc_router_tile_name.compare(curr_tile_name)) && curr_tile_width_offset && curr_tile_height_offset))
+            if (!(noc_router_tile_name.compare(curr_tile_name)) && !curr_tile_width_offset && !curr_tile_height_offset)
             {
                 // calculating the centroid position of the current tile
-                curr_tile_centroid_x = curr_tile_width/(double)2 + i;
-                curr_tile_centroid_y = curr_tile_height/(double)2 + j;
+                curr_tile_centroid_x = (curr_tile_width - 1)/(double)2 + i;
+                curr_tile_centroid_y = (curr_tile_height - 1)/(double)2 + j;
 
                 list_of_noc_router_tiles.push_back({i,j,curr_tile_centroid_x, curr_tile_centroid_y});
             }
