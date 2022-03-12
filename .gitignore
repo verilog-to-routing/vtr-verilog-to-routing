@@ -134,3 +134,8 @@ tags
 .history
 #eclipse project
 .project
+
+#
+# Clion
+#
+.idea
