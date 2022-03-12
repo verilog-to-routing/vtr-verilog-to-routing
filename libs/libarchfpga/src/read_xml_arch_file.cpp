@@ -4646,7 +4646,7 @@ static void processMeshTopology(pugi::xml_node mesh_topology_tag, const pugiutil
     if (( mesh_region_start_x < 0) || (mesh_region_end_x < 0) || (mesh_region_start_y < 0) || (mesh_region_end_y < 0) || (mesh_size < 0))
     {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
-                               "The parameters for the mesh topology have to be positive integers.");
+                               "The parameters for the mesh topology have to be positive values.");
     }
 
     // now create the mesh topology for the noc
