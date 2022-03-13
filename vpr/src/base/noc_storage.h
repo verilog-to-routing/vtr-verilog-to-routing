@@ -48,6 +48,8 @@ class NocStorage
 
         // getters for the NoC
         const std::vector<NocLinkId>& get_noc_router_connections(NocRouterId id) const;
+        const vtr::vector<NocRouterId, NocRouter>& get_noc_routers(void) const;
+        const vtr::vector<NocLinkId, NocLink>& get_noc_links(void) const;
 
         // getters for  routers
         int get_noc_router_grid_position_x(NocRouterId id) const;
@@ -78,6 +80,9 @@ class NocStorage
         void clear_noc();
         NocRouterId convert_router_id(int id) const;
         void make_room_for_noc_router_link_list();
+
+        
+
 
 };
 
