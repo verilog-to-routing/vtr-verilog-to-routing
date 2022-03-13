@@ -15,6 +15,16 @@ const std::vector<NocLinkId>& NocStorage::get_noc_router_connections(NocRouterId
 
 }
 
+const vtr::vector<NocRouterId, NocRouter>& NocStorage::get_noc_routers(void) const{
+
+    return router_storage;
+}
+
+const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links(void) const{
+
+    return link_storage;
+}
+
 int NocStorage::get_noc_router_grid_position_x(NocRouterId id) const{
 
     return router_storage[id].get_router_grid_position_x();
