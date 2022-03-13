@@ -129,7 +129,7 @@ void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_noc_rou
 
 }
 
-void create_noc_routers(t_noc_inf noc_info, NocStorage* noc_model , std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles)
+void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model , std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles)
 {
     // keep track of the shortest distance between a logical router and the curren physical router tile
     // also keep track of the corresponding physical router tile index (within the list)
