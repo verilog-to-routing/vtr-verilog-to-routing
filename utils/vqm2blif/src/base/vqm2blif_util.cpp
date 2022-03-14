@@ -217,6 +217,8 @@ string get_wire_name(t_pin_def* net, int index){
 string generate_opname (t_node* vqm_node, t_model* arch_models){
     //Add support for different architectures here.
     // Currently only support Stratix IV
+    std::cout << " ########################################______####################################" << std::endl;
+    string mode_hash1 = generate_opname_stratix10(vqm_node, arch_models);    
     string mode_hash = generate_opname_stratixiv(vqm_node, arch_models);
     
     //Final sanity check
@@ -645,6 +647,65 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
     }
 }
 
+string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
+/*  Generates a mode-hash string based on a node's name and parameter set
+ *
+ *	ARGUMENTS
+ *  vqm_node:
+ *	the particular node in the VQM file to be translated
+ */
+    string mode_hash;	//temporary container for the mode-hashed block name
+    mode_hash = (string)vqm_node->type;	//begin by copying the entire block name
+    t_node_parameter* temp_param;	//temporary container for the node's parameters
+
+    //The blocks operation mode
+    t_node_parameter* operation_mode = NULL;
+    
+    for (int i = 0; i < vqm_node->number_of_params; i++){
+        //Each parameter specifies a configuration of the node in the circuit.
+        temp_param = vqm_node->array_of_params[i];
+
+        //Save the operation mode parameter
+        if (strcmp (temp_param->name, "operation_mode") == 0){
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            operation_mode = temp_param;
+            break;
+	} 
+    }
+    std::cout << "operation mode is ************** : " << (operation_mode->value.string_value) << std::endl;  
+    //Simple opmode name appended
+    //    NOTE: this applies to all blocks
+    if (operation_mode != NULL) {
+        //Copy the string
+        char* temp_string_value = vtr::strdup(operation_mode->value.string_value);
+
+        //Remove characters that are invalid in blif
+        clean_name(temp_string_value);
+
+        //Add the opmode
+        mode_hash.append(".opmode{" + (string)temp_string_value + "}");
+
+        free(temp_string_value);
+    }
+
+    /*
+     * DSP Block 
+     */
+    std::cout << (vqm_node->type) << std::endl;
+    if(strcmp(vqm_node->type, "fourteennm_mac") == 0) {
+       // generate_opname_stratix10_dsp_mult(vqm_node, arch_models, mode_hash);
+        
+    }
+
+    /*
+     * RAM Blocks
+     */
+    /*if(strcmp(vqm_node->type, "") == 0) {
+        generate_opname_stratixiv_ram(vqm_node, arch_models, mode_hash);
+    }*/
+
+    return mode_hash;
+}
 //============================================================================================
 //============================================================================================
 void clean_name(char* name) {
