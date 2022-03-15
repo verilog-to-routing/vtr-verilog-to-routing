@@ -689,10 +689,18 @@ string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
     }
 
     /*
-     * DSP Block 
+     * DSP Block - fixed point
      */
     if(strcmp(vqm_node->type, "fourteennm_mac") == 0) {
-       // generate_opname_stratix10_dsp_mult(vqm_node, arch_models, mode_hash);
+        generate_opname_stratix10_dsp(vqm_node, arch_models, mode_hash);
+        
+    }
+
+    /*
+     * DSP Block - floating point
+     */
+    if(strcmp(vqm_node->type, "fourteennm_fp_mac") == 0) {
+        generate_opname_stratix10_fp_dsp(vqm_node, arch_models, mode_hash);
         
     }
 
@@ -770,167 +778,37 @@ void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* /*arch_models*/, 
             //Check the parameter indicating the source of output clock
             if (strcmp (temp_param->name, "output_clock") == 0){
                 VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
-                if(strcmp(temp_param->value.string_value, "none") == 0) {
-                    dataa_input_reg = false;
-                }
-                continue;
-            }
-
-            if (strcmp (temp_param->name, "datab_clock") == 0){
-                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
-                if(strcmp(temp_param->value.string_value, "none") == 0) {
-                    datab_input_reg = false;
-                }
-                continue;
-            }
-            if (strcmp (temp_param->name, "signa_clock") == 0){
-
-                if(strcmp(temp_param->value.string_value, "none") == 0) {
-                    signa_input_reg = false;
-                }
-                continue;
-            }
-            if (strcmp (temp_param->name, "signb_clock") == 0){
-                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
-                if(strcmp(temp_param->value.string_value, "none") == 0) {
-                    signb_input_reg = false;
-                }
-                continue;
-            }
-            if (strcmp (temp_param->name, "scanouta_clock") == 0){
-                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
-                if(strcmp(temp_param->value.string_value, "none") == 0) {
-                    scanouta_output_reg = false;
-                }
-                continue;
-            }
-        }
-
-        //If ANY of the input ports are registered, we model all input ports as registered
-        if(dataa_input_reg || datab_input_reg || signa_input_reg || signb_input_reg) {
-
-            //In the unsual case of only some inputs being registered, print a warning to the user
-            //if(verbose_mode) {
-                //if(!dataa_input_reg || !datab_input_reg || !signa_input_reg || !signb_input_reg) {
-                    //cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
-                    //cout << " Approximating as all inputs registered." << endl; 
-                //}
-            //}
-
-            //Mark this pimitive instance as having registered inputs
-            //cout << "DSP mac_mult '" << vqm_node->name << "' with REG inputs" << endl;
-            mode_hash.append(".input_type{reg}");
-
-        } else {
-            //Mark this primitive instance as having unregistered inputs
-            //cout << "DSP mac_mult '" << vqm_node->name << "' with COMB inputs" << endl;
-            mode_hash.append(".input_type{comb}");
-        }
-
-        //Check if we are approximating the registered scanouta port
-        if(verbose_mode) {
-            if(scanouta_output_reg) {
-                //cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has registered 'scanouta' port.";
-                //cout << " Approximating as combinational." << endl; 
-            }
-        }
-    }
-}
-
-void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* /*arch_models*/, string& mode_hash) {
-
-    VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_mac_out") == 0);
-    if(elab_mode == MODES_TIMING) {
-        //Only elaborate registered/combinational behaviour if in timing accurate
-        // mode elaboration
-    
-        //Assume all registered inputs/outputs are registered
-        //  Note that the mac_out has many possibly clocked inputs and outputs.
-        //  Most would never be on the critical path, so we do not check those.
-        bool first_adder0_reg = true;
-        bool first_adder1_reg = true;
-        bool second_adder_reg = true; //Note to give a warning
-        bool output_reg = true;
-
-
-        for (int i = 0; i < vqm_node->number_of_params; i++){
-            //Each parameter specifies a configuration of the node in the circuit.
-            t_node_parameter* temp_param = vqm_node->array_of_params[i];
-
-            //Check the clocking related parameters
-            if (strcmp (temp_param->name, "first_adder0_clock") == 0){
-                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
-                if(strcmp(temp_param->value.string_value, "none") == 0) {
-                    first_adder0_reg = false;
-                }
-                continue;
-            }
-            if (strcmp (temp_param->name, "first_adder1_clock") == 0){
-                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
-                if(strcmp(temp_param->value.string_value, "none") == 0) {
-                    first_adder1_reg = false;
-                }
-                continue;
-            }
-            if (strcmp (temp_param->name, "second_adder_clock") == 0){
-                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
-                if(strcmp(temp_param->value.string_value, "none") == 0) {
-                    second_adder_reg = false;
-                }
-                continue;
-            }
-            if (strcmp (temp_param->name, "output_clock") == 0){
-                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+                // if the output clock source is none set the output reg to false
                 if(strcmp(temp_param->value.string_value, "none") == 0) {
                     output_reg = false;
                 }
-                continue;
+                break;
             }
         }
-
+        
         //Check for input registers
-        if(first_adder0_reg || first_adder1_reg) {
-
-            //In nearly all reasonable usage modes, both adders should be using the same clock,
-            // Print a warning if they are not
-            //if(verbose_mode) {
-                //if(!first_adder0_reg || !first_adder1_reg) {
-                    //cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
-                    //cout << " Approximating as all inputs registered." << endl; 
-                //}
-            //}
+        if(input_reg) {
             //Mark this pimitive instance as having registered inputs
-            //cout << "DSP mac_out '" << vqm_node->name << "' with REG inputs" << endl;
             mode_hash.append(".input_type{reg}");
 
         } else {
             //Mark this primitive instance as having unregistered inputs
-            //cout << "DSP mac_out '" << vqm_node->name << "' with COMB inputs" << endl;
             mode_hash.append(".input_type{comb}");
         }
 
         //Check for output registers
         if(output_reg) {
             //Mark this pimitive instance as having registered outputs
-            //cout << "DSP mac_out '" << vqm_node->name << "' with REG outputs" << endl;
             mode_hash.append(".output_type{reg}");
 
         } else {
             //Mark this primitive instance as having unregistered outputs
-            //cout << "DSP mac_out '" << vqm_node->name << "' with COMB outputs" << endl;
             mode_hash.append(".output_type{comb}");
-        }
-
-        //Print a warning if second stage adder reg was not used
-        if(verbose_mode) {
-            if(!second_adder_reg) {
-                //cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' does not use second stage register.";
-                //cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
-            }
-        }
+        }   
     }
-
 }
+
+
 //============================================================================================
 //============================================================================================
 void clean_name(char* name) {

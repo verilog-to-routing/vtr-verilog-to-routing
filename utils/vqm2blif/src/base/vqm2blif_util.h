@@ -151,8 +151,7 @@ void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, 
 
 string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models); //mode-hash for Stratix 10
 void generate_opname_stratix10_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix 10 RAM blocks
-void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix 10 DSP Multiplers
-
+void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix 10 DSP fixed point Multiplers
 
 t_model* find_arch_model_by_name(string model_name, t_model* arch_models); //returns the pointer to a module from the arch file, searches by name
 
