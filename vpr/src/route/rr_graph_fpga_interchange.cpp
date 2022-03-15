@@ -87,11 +87,13 @@ struct RR_Graph_Builder {
     RR_Graph_Builder(Device::Reader& arch_reader,
                      const DeviceGrid& grid,
                      DeviceContext& device_ctx,
-                     const std::vector<t_physical_tile_type>& physical_tile_types,
+                     t_rr_graph_storage& rr_nodes,
                      const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
+                     const std::vector<t_physical_tile_type>& physical_tile_types,
                      const enum e_base_cost_type base_cost_type)
         : ar_(arch_reader)
         , device_ctx_(device_ctx)
+        , rr_nodes_(rr_nodes)
         , segment_inf_(segment_inf)
         , grid_(grid)
         , base_cost_type_(base_cost_type) {
@@ -137,6 +139,7 @@ struct RR_Graph_Builder {
   private:
     Device::Reader& ar_;
     DeviceContext& device_ctx_;
+    t_rr_graph_storage& rr_nodes_;
     const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf_;
     const DeviceGrid& grid_;
     const enum e_base_cost_type base_cost_type_;
@@ -288,7 +291,7 @@ struct RR_Graph_Builder {
 
         int it = 0;
 
-        for (auto const& switch_id : device_ctx_.rr_switch_inf) {
+        for (auto const& switch_id : device_ctx_.rr_graph.rr_switch()) {
             VTR_LOG("Switch: %d Name:%s\n", it++, switch_id.name);
         }
 
@@ -361,13 +364,20 @@ struct RR_Graph_Builder {
         std::set<std::tuple<int /*timing*/, bool /*buffered*/>> seen;
         pip_types(seen, ar_);
 
-        device_ctx_.rr_switch_inf.resize(seen.size() + 2);
+        std::vector<t_rr_switch_inf> switches;
+        switches.resize(seen.size() + 2);
 
         std::vector<std::tuple<std::tuple<int, bool>, int>> temp_;
-        process_switches_array<t_rr_switch_inf*, int>(ar_, seen, device_ctx_.rr_switch_inf.data(), temp_);
-        for (auto i : temp_) {
+        process_switches_array<std::vector<t_rr_switch_inf>&, int>(ar_, seen, switches, temp_);
+
+        auto& rr_switches = device_ctx_.rr_graph_builder.rr_switch();
+        rr_switches.resize(seen.size() + 2);
+
+        for (int i = 0; i < (int)switches.size(); i++)
+            rr_switches[RRSwitchId(i)] = switches[i];
+
+        for (auto i : temp_)
             pips_models_[std::get<0>(i)] = std::get<1>(i);
-        }
     }
 
     /*
@@ -1327,9 +1337,9 @@ struct RR_Graph_Builder {
                     chan_loc_map_[std::make_tuple(track_loc, track_type)][track_idx] = std::make_tuple(track_seg, track_R, track_C, end);
                 }
 
-                device_ctx_.rr_nodes.make_room_for_node(RRNodeId(rr_idx));
+                rr_nodes_.make_room_for_node(RRNodeId(rr_idx));
                 loc_type_idx_to_rr_idx_[std::make_tuple(loc, pin, j)] = rr_idx;
-                auto node = device_ctx_.rr_nodes[rr_idx];
+                auto node = rr_nodes_[rr_idx];
                 RRNodeId node_id = node.id();
                 device_ctx_.rr_graph_builder.set_node_type(node_id, pin);
                 device_ctx_.rr_graph_builder.set_node_capacity(node_id, 1);
@@ -1351,9 +1361,9 @@ struct RR_Graph_Builder {
                     continue;
                 e_rr_type pin = input ? e_rr_type::IPIN : e_rr_type::OPIN;
 
-                device_ctx_.rr_nodes.make_room_for_node(RRNodeId(rr_idx));
+                rr_nodes_.make_room_for_node(RRNodeId(rr_idx));
                 loc_type_idx_to_rr_idx_[std::make_tuple(loc, pin, j)] = rr_idx;
-                auto node = device_ctx_.rr_nodes[rr_idx];
+                auto node = rr_nodes_[rr_idx];
                 RRNodeId node_id = node.id();
                 device_ctx_.rr_graph_builder.set_node_type(node_id, pin);
                 device_ctx_.rr_graph_builder.set_node_capacity(node_id, 1);
@@ -1387,9 +1397,9 @@ struct RR_Graph_Builder {
                 std::tie(seg, R, C, end) = track.second;
                 std::tie(x1, y1) = end;
 
-                device_ctx_.rr_nodes.make_room_for_node(RRNodeId(rr_idx));
+                rr_nodes_.make_room_for_node(RRNodeId(rr_idx));
                 loc_type_idx_to_rr_idx_[std::make_tuple(loc, type, track.first)] = rr_idx;
-                auto node = device_ctx_.rr_nodes[rr_idx];
+                auto node = rr_nodes_[rr_idx];
                 RRNodeId node_id = node.id();
 
                 device_ctx_.rr_graph_builder.set_node_type(node_id, type);
@@ -1413,11 +1423,11 @@ struct RR_Graph_Builder {
     }
 
     void pack_rr_nodes() {
-        device_ctx_.rr_nodes.clear();
+        rr_nodes_.clear();
         seg_index_.resize(CHANX_COST_INDEX_START + 2 * segment_inf_.size(), -1);
         pack_tiles();
         pack_chans();
-        device_ctx_.rr_nodes.shrink_to_fit();
+        rr_nodes_.shrink_to_fit();
     }
 
     void pack_tiles_edges() {
@@ -1553,8 +1563,8 @@ struct RR_Graph_Builder {
                 device_ctx_.rr_graph_builder.node_lookup().resize_nodes(grid_.width(), grid_.height(), rr_type, NUM_SIDES);
             }
         }
-        for (size_t node = 0; node < device_ctx_.rr_nodes.size(); node++) {
-            auto rr_node = device_ctx_.rr_nodes[node];
+        for (size_t node = 0; node < rr_nodes_.size(); node++) {
+            auto rr_node = rr_nodes_[node];
             device_ctx_.rr_graph_builder.add_node_to_all_locs(rr_node.id());
         }
 
@@ -1595,9 +1605,11 @@ void build_rr_graph_fpga_interchange(const t_graph_type graph_type,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     size_t num_segments = segment_inf.size();
-    device_ctx.rr_segments.reserve(num_segments);
+
+    auto& rr_segments = device_ctx.rr_graph_builder.rr_segments();
+    rr_segments.reserve(num_segments);
     for (long unsigned int iseg = 0; iseg < num_segments; ++iseg) {
-        device_ctx.rr_segments.push_back(segment_inf[(iseg)]);
+        rr_segments.push_back(segment_inf[(iseg)]);
     }
 
     // Decompress GZipped capnproto device file
@@ -1636,7 +1648,14 @@ void build_rr_graph_fpga_interchange(const t_graph_type graph_type,
 
     auto device_reader = message_reader.getRoot<DeviceResources::Device>();
 
-    RR_Graph_Builder builder(device_reader, grid, device_ctx, device_ctx.physical_tile_types, device_ctx.rr_segments, base_cost_type);
+    RR_Graph_Builder builder(
+        device_reader,
+        grid,
+        device_ctx,
+        device_ctx.rr_graph_builder.rr_nodes(),
+        device_ctx.rr_graph.rr_segments(),
+        device_ctx.physical_tile_types,
+        base_cost_type);
     builder.build_rr_graph();
     *wire_to_rr_ipin_switch = 0;
     device_ctx.read_rr_graph_filename.assign(get_arch_file_name());
