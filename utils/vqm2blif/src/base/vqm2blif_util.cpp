@@ -692,7 +692,7 @@ string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
      * DSP Block - fixed point
      */
     if(strcmp(vqm_node->type, "fourteennm_mac") == 0) {
-        generate_opname_stratix10_dsp(vqm_node, arch_models, mode_hash);
+        generate_opname_stratix10_dsp(vqm_node, arch_models, mode_hash, 0);
         
     }
 
@@ -700,7 +700,7 @@ string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
      * DSP Block - floating point
      */
     if(strcmp(vqm_node->type, "fourteennm_fp_mac") == 0) {
-        generate_opname_stratix10_fp_dsp(vqm_node, arch_models, mode_hash);
+        generate_opname_stratix10_dsp(vqm_node, arch_models, mode_hash, 1);
         
     }
 
@@ -715,7 +715,7 @@ string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
 }
 
 
-void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* /*arch_models*/, string& mode_hash) {
+void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* /*arch_models*/, string& mode_hash, bool dsp_mode) {
     //
     // It is not practical to model all of the internal registers of the mac block, as this
     // would significantly increase the size of the architecture description.  As a result, we
@@ -739,8 +739,11 @@ void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* /*arch_models*/, 
     //
     // Provided that an input/outputs clock parameter value is 'none', then it is combinational (doesn't use the register)
     //
-
-    VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_mac=") == 0);
+    // The boolean variable dsp_mode indicates wether the dsp block is in fixed point mode (dsp_mode = 0) or floating point mode (dsp_mode = 1)
+    if(dsp_mode == 0)
+        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_mac=") == 0);
+    else
+        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_fp_mac=") == 0);
 
     if(elab_mode == MODES_TIMING) {
         //Only elaborate registered/combinational behaviour if in timing accurate
@@ -749,8 +752,13 @@ void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* /*arch_models*/, 
         //an array of all the input clocks
         // if one of the following clocks are active then all inputs are assumed to be registered
         const char *input_regs [6] = {"ax_clock", "ay_clock", "az_clock", "bx_clock", "by_clock", "bz_clock"};
-        const inputs_regs_size = 6;
-
+        int inputs_regs_size;
+        
+        // in fixed point mode there are can be up to six data inputs while in floating point mode there are up to three inputs only
+        if(dsp_mode == 0)
+            inputs_regs_size = 6;
+        else
+            inputs_regs_size = 3;
         //Variables indicating whether input or output ports are registered
         bool input_reg = false;
         bool output_reg = true;
