@@ -5,7 +5,10 @@ project("librrgraph")
 # Source file and library
 file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*/*.h)
+#file(GLOB_RECURSE VPR_SOURCES src/*/*.cpp)
+#file(GLOB_RECURSE VPR_HEADERS src/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
+#files_to_dirs(VPR_HEADERS VPR_INCLUDE_DIRS)
 
 #Create the library
 add_library(librrgraph STATIC
@@ -13,16 +16,22 @@ add_library(librrgraph STATIC
     ${LIB_SOURCES}
 )
 
-target_include_directories(librrgraph PUBLIC ${LIB_INCLUDE_DIRS})
+#target_include_directories(librrgraph PUBLIC  ${PROJECT_SOURCE_DIR}/../../vpr )
+#target_link_directories (librrgraph PUBLIC  ${PROJECT_SOURCE_DIR}/../../vpr)
+#target_include_directories(librrgraph PUBLIC  ${PROJECT_SOURCE_DIR}/../../vpr/src/base/ )
+#target_link_directories (librrgraph PUBLIC  ${PROJECT_SOURCE_DIR}/../../vpr/src/base/)
+
 
 set_target_properties(librrgraph PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
-
+message(STATUS "**********************************************going through librrgraph*****************************************************")
 #Specify link-time dependancies
-target_link_libraries(librrgraph
+target_link_libraries(librrgraph 
                       libvtrutil
                       libarchfpga
+                      libvpr
+                     
 )
-
+#target_link_libraries(librrgraph  PUBLIC libvpr)
 target_compile_definitions(librrgraph PUBLIC ${INTERCHANGE_SCHEMA_HEADERS})
 
 # Unit tests
