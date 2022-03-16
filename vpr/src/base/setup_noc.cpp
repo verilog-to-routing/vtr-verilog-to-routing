@@ -24,17 +24,17 @@ void setup_noc(const t_arch& arch, std::string noc_router_tile_name)
     identify_and_store_noc_router_tile_positions(device_ctx.grid,list_of_noc_router_tiles, noc_router_tile_name);
 
     // check whether the noc topology information provided uses more than the number of available routers in the FPGA
-    if (list_of_noc_router_tiles.size() > arch.noc->router_list.size())
+    if (list_of_noc_router_tiles.size() < arch.noc->router_list.size())
     {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Provided NoC topology information in the architecture file has more routers that what is available in the FPGA.");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "The Provided NoC topology information in the architecture file has more number of routers than what is available in the FPGA device.");
     }
-    else if (list_of_noc_router_tiles.size() < arch.noc->router_list.size()) // check whether the noc topology information provided is using all the routers in the FPGA
+    else if (list_of_noc_router_tiles.size() > arch.noc->router_list.size()) // check whether the noc topology information provided is using all the routers in the FPGA
     {
-        VTR_LOG_WARN("Provided NoC topology information in the architecture file has more routers that what is available in the FPGA.");
+        VTR_LOG_WARN("The Provided NoC topology information in the architecture file has less number of routers than what is available in the FPGA device.");
     }
     else if (list_of_noc_router_tiles.size() == 0) // case where no physical router tiles were found
     {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No physical routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
     }
 
     // generate noc model
