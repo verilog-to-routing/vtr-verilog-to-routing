@@ -21,10 +21,20 @@ using namespace DeviceResources;
 using namespace LogicalNetlist;
 using namespace capnp;
 
-typedef std::pair<int, int> location;
+// Helper types definitions
 
-//<switch_id, tile_id, <name, wire0, wire1, forward>>
-typedef std::tuple<int, int, std::tuple<int, int, int, bool>> pip_;
+// t_location in the grid: <x, y>
+typedef std::pair<int, int> t_location;
+
+// edge between two wires: <switch_id, tile_id, <name, wire0, wire1, forward>>
+typedef std::tuple<int, int, std::tuple<int, int, int, bool>> t_pip;
+
+// Helper enumerations
+
+enum constant {
+    GND = 0,
+    VCC,
+};
 
 enum node_sides {
     LEFT_EDGE = 0,
@@ -33,64 +43,48 @@ enum node_sides {
     BOTTOM_EDGE,
 };
 
-auto NODESIDES = {LEFT_EDGE, TOP_EDGE, RIGHT_EDGE, BOTTOM_EDGE};
-enum node_sides OPPOSITE_SIDE[] = {RIGHT_EDGE, BOTTOM_EDGE, LEFT_EDGE, TOP_EDGE};
-enum constant {
-    GND = 0,
-    VCC,
-};
+const std::vector<node_sides> NODE_SIDES = {LEFT_EDGE, TOP_EDGE, RIGHT_EDGE, BOTTOM_EDGE};
+const std::vector<node_sides> OPPOSITE_NODE_SIDES = {RIGHT_EDGE, BOTTOM_EDGE, LEFT_EDGE, TOP_EDGE};
 
-/*
- * Intermediate data type.
- * It is used to build and explore FPGA Interchange
- * nodes graph and later convert them to rr_nodes.
+/** @brief Intermediate data type used to build and explore FPGA Interchange
+ *         nodes graph and later convert them to VTR RR Nodes.
  */
 struct intermediate_node {
   public:
-    location loc;
-    int segment_id;
-    std::vector<bool> links; //left, up, right, down
-    intermediate_node* visited;
-    bool back_bone;
-    bool on_route;
-    bool has_pins;
+    t_location loc;
+    int segment_id = -1;
+    std::vector<bool> links{false, false, false, false}; // left, up, right, down
+    intermediate_node* visited = nullptr;
+    bool back_bone = false; // Indicates whether the node is in the connecting line between two ends
+    bool on_route = false;
+    bool has_pins = false;
+
     intermediate_node() = delete;
+
     intermediate_node(int x, int y)
-        : loc{x, y} {
-        links.resize(4);
-        for (auto i : NODESIDES)
-            links[i] = false;
-        visited = nullptr;
-        on_route = false;
-        has_pins = false;
-        back_bone = false;
-        segment_id = -1;
-    }
-    intermediate_node(location loc_)
-        : loc(loc_) {
-        links.resize(4);
-        for (auto i : NODESIDES)
-            links[i] = false;
-        visited = nullptr;
-        on_route = false;
-        has_pins = false;
-        back_bone = false;
-        segment_id = -1;
-    }
+        : loc{x, y} {}
+
+    intermediate_node(t_location loc_)
+        : loc(loc_) {}
 };
 
-/*
- * Main class for FPGA Interchange device to rr_graph flow
+/** @brief Interchange RR Graph builder class
+ *
+ *  This class contains methods and attributes to translate from the Interchange
+ *  RR graph collection of nodes and wires to the VTR RR Graph representation.
+ *
+ *  First it builds an intermediate representation, which is necessary to store all the
+ *  information in a convenient way to use the VTR RR Graph builder API.
  */
-struct RR_Graph_Builder {
+struct InterchangeRRGraphBuilder {
   public:
-    RR_Graph_Builder(Device::Reader& arch_reader,
-                     const DeviceGrid& grid,
-                     DeviceContext& device_ctx,
-                     t_rr_graph_storage& rr_nodes,
-                     const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
-                     const std::vector<t_physical_tile_type>& physical_tile_types,
-                     const enum e_base_cost_type base_cost_type)
+    InterchangeRRGraphBuilder(Device::Reader& arch_reader,
+                              const DeviceGrid& grid,
+                              DeviceContext& device_ctx,
+                              t_rr_graph_storage& rr_nodes,
+                              const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
+                              const std::vector<t_physical_tile_type>& physical_tile_types,
+                              const enum e_base_cost_type base_cost_type)
         : ar_(arch_reader)
         , device_ctx_(device_ctx)
         , rr_nodes_(rr_nodes)
@@ -111,7 +105,7 @@ struct RR_Graph_Builder {
             wire_name_to_seg_idx_[segment_inf_[RRSegmentId(i)].name] = i;
 
         std::unordered_map<uint32_t, std::set<t_bel_cell_mapping>> temp_;
-        auto func = std::bind(&RR_Graph_Builder::str, this, std::placeholders::_1);
+        auto func = std::bind(&InterchangeRRGraphBuilder::str, this, std::placeholders::_1);
         process_cell_bel_mappings(ar_, temp_, func);
 
         for (auto i : temp_)
@@ -126,12 +120,12 @@ struct RR_Graph_Builder {
         create_pips();
         process_nodes();
 #ifdef DEBUG
-        print_virtual();
+        print_virtual_rr_graph();
 #endif
         virtual_to_real();
         pack_to_rr_graph();
 #ifdef DEBUG
-        print();
+        print_real_rr_graph();
 #endif
         finish_rr_generation();
     }
@@ -150,72 +144,68 @@ struct RR_Graph_Builder {
 
     std::set<uint32_t> bel_cell_mappings_;
 
-    std::unordered_map<int /*tile_id(name)*/, location> tile_to_loc_;
-    std::unordered_map<location, int /*tile_id(name)*/, hash_tuple::hash<location>> loc_to_tile_;
+    // Tile location maps
+    vtr::bimap<int /*tile_id*/, t_location> tile_loc_bimap_;
 
+    // PIP maps
     std::unordered_map<std::tuple<int /*timing_model*/, bool /*buffered*/>, int /*idx*/, hash_tuple::hash<std::tuple<int, bool>>> pips_models_;
-    std::unordered_map<std::tuple<int /*node_id*/, int /*node_id*/>, pip_, hash_tuple::hash<std::tuple<int, int>>> pips_;
+    std::unordered_map<std::tuple<int /*node_id*/, int /*node_id*/>, t_pip, hash_tuple::hash<std::tuple<int, int>>> pips_;
 
-    std::unordered_map<std::tuple<int, int>,
-                       int,
-                       hash_tuple::hash<std::tuple<int, int>>>
-        wire_to_node_;
-    std::unordered_map<int, std::set<location>> node_to_locs_;
-    std::unordered_map<std::tuple<int, int> /*<node, tile_id>*/,
-                       int /*segment type*/,
-                       hash_tuple::hash<std::tuple<int, int>>>
-        node_tile_to_segment_;
+    // Node maps
+    std::unordered_map<std::tuple<int, int>, int, hash_tuple::hash<std::tuple<int, int>>> wire_to_node_;
+    std::unordered_map<int, std::set<t_location>> node_to_locs_;
+    std::unordered_map<std::tuple<int, int> /*<node, tile_id>*/, int /*segment type*/, hash_tuple::hash<std::tuple<int, int>>> node_tile_to_segment_;
     std::unordered_map<int, std::pair<float, float>> node_to_RC_;
     int total_node_count_;
 
     /*
      * Offsets for FPGA Interchange node processing
      */
-    location offsets[4] = {location(-1, 0), location(0, 1), location(1, 0), location(0, -1)};
+    t_location offsets[4] = {t_location(-1, 0), t_location(0, 1), t_location(1, 0), t_location(0, -1)};
 
     /*
      * Intermediate data storage.
-     * - virtual_shorts_ represent connections between rr_nodes in a single FPGA Interchange node.
-     * - virtual_redirect_ is map from node_id at location to location channel and index of virtual_track in that channel.
+     * - virtual_shorts_ represents connections between rr_nodes in a single FPGA Interchange node.
+     * - virtual_redirect_ is map from node_id at t_location to t_location channel and index of virtual_track in that channel.
      * It's useful for ends of the nodes (FPGA Interchange) that don't have representation in CHANS.
-     * - virtual_chan_loc_map maps from location and CHAN to vector containing virtual_tracks description.
+     * - virtual_chan_loc_map maps from t_location and CHAN to vector containing virtual_tracks description.
      * - virtual_beg_to_real_ maps from virtual track to physical one
-     * - chan_loc_map maps from location and CHAN to vector containing tracks description.
+     * - chan_loc_map_ maps from t_location and CHAN to vector containing tracks description.
      * - node_id_count_ maps from node_id to its tile count
      */
-    std::vector<std::tuple<location, e_rr_type, int /*idx*/, location, e_rr_type, int /*idx*/>> virtual_shorts_;
-    std::unordered_map<std::tuple<int /*node_id*/, location>,
-                       std::tuple<location, e_rr_type /*CHANX/CHANY*/, int /*idx*/>,
-                       hash_tuple::hash<std::tuple<int, location>>>
+    std::vector<std::tuple<t_location, e_rr_type, int /*idx*/, t_location, e_rr_type, int /*idx*/>> virtual_shorts_;
+    std::unordered_map<std::tuple<int /*node_id*/, t_location>,
+                       std::tuple<t_location, e_rr_type /*CHANX/CHANY*/, int /*idx*/>,
+                       hash_tuple::hash<std::tuple<int, t_location>>>
         virtual_redirect_;
 
-    std::unordered_map<std::tuple<location, e_rr_type, int>,
+    std::unordered_map<std::tuple<t_location, e_rr_type, int>,
                        int,
-                       hash_tuple::hash<std::tuple<location, e_rr_type, int>>>
+                       hash_tuple::hash<std::tuple<t_location, e_rr_type, int>>>
         virtual_beg_to_real_;
 
-    std::unordered_map<std::tuple<location, e_rr_type>,
-                       std::vector<std::tuple<int, float, float, location>>,
-                       hash_tuple::hash<std::tuple<location, e_rr_type>>>
+    std::unordered_map<std::tuple<t_location, e_rr_type>,
+                       std::vector<std::tuple<int, float, float, t_location>>,
+                       hash_tuple::hash<std::tuple<t_location, e_rr_type>>>
         virtual_chan_loc_map_;
 
-    std::unordered_map<std::tuple<location, e_rr_type>,
-                       std::unordered_map<int, std::tuple<int, float, float, location>>,
-                       hash_tuple::hash<std::tuple<location, e_rr_type>>>
+    std::unordered_map<std::tuple<t_location, e_rr_type>,
+                       std::unordered_map<int, std::tuple<int, float, float, t_location>>,
+                       hash_tuple::hash<std::tuple<t_location, e_rr_type>>>
         chan_loc_map_;
 
     std::unordered_map<int, int> node_id_count_;
 
     /*
-     * Sets contain tuples of node ids and location.
-     * Each value <n,l> correspondence to node id n being used by either pip or pin at location l.
+     * Sets contain tuples of node ids and t_location.
+     * Each value <n,l> correspondence to node id n being used by either pip or pin at t_location l.
      */
-    std::unordered_set<std::tuple<int /*node_id*/, location>,
-                       hash_tuple::hash<std::tuple<int, location>>>
+    std::unordered_set<std::tuple<int /*node_id*/, t_location>,
+                       hash_tuple::hash<std::tuple<int, t_location>>>
         used_by_pip_;
 
-    std::unordered_set<std::tuple<int /*node_id*/, location>,
-                       hash_tuple::hash<std::tuple<int, location>>>
+    std::unordered_set<std::tuple<int /*node_id*/, t_location>,
+                       hash_tuple::hash<std::tuple<int, t_location>>>
         used_by_pin_;
 
     std::unordered_set<int /* node_id*/> useful_node_;
@@ -230,20 +220,23 @@ struct RR_Graph_Builder {
      * RR generation stuff
      */
     vtr::vector<RRIndexedDataId, short> seg_index_;
-    std::unordered_map<std::tuple<location, e_rr_type, int>,
+    std::unordered_map<std::tuple<t_location, e_rr_type, int>,
                        int,
-                       hash_tuple::hash<std::tuple<location, e_rr_type, int>>>
+                       hash_tuple::hash<std::tuple<t_location, e_rr_type, int>>>
         loc_type_idx_to_rr_idx_;
     int rr_idx = 0; // Do not decrement!
 
-    location add_vec(location x, location dx) {
-        return location(x.first + dx.first, x.second + dx.second);
+    /// @brief Returns the sum of a location and a vector, resulting in a new location
+    t_location add_vec(t_location x, t_location dx) {
+        return t_location(x.first + dx.first, x.second + dx.second);
     }
 
-    location mul_vec_scal(location x, int s) {
-        return location(x.first * s, x.second * s);
+    /// @brief Returns the multiplication of a location and a scalar
+    t_location mul_vec_scal(t_location x, int s) {
+        return t_location(x.first * s, x.second * s);
     }
 
+    /// @brief Returns the string corresponding to an entry in the string list of the interchange database
     std::string str(int idx) {
         if (idx == -1)
             return std::string("constant_block");
@@ -251,32 +244,34 @@ struct RR_Graph_Builder {
     }
 
     /*
-     * This code iterates over each node independently when transforming
+     * The following code iterates over each node independently when transforming
      * an FPGA Interchange device resource into a VTR RR Graph.
-     * During the transformation, segments are created and they require
-     * a starting and ending coordinates as well as their track location.
+     *
+     * During the transformation, segments are created, which require
+     * starting and ending coordinates, as well as their track location.
      * At any given time only one segment can occupy a single physical track.
-     * Solving the track assignment with an online algorithm would yield a huge
-     * slow down with a suboptimal maximal number of tracks in a single channel.
+     * Solving the track assignment with an online algorithm would greatly impact
+     * on runtime, achieving a suboptimal maximal number of tracks in a single channel.
+     *
      * This is solved by only storing a starting and ending location and
      * the track number in the starting position, thus it is named "virtual".
      * Then, when all FPGA Interchange nodes are taken care of,
      * the physical track placement is computed.
+     *
      * Much of the code runs on virtual assignment, as it's fast to create,
-     * use and is only translated when creating the final rr_graph.
+     * use and is only translated when creating the final RR Graph.
      */
 
-    /*
-     * Debug print function
+    /** @brief Debug print function to output the virtual RR graph information
      */
-    void print_virtual() {
+    void print_virtual_rr_graph() {
         VTR_LOG("Virtual\n");
         for (const auto& entry : sink_source_loc_map_) {
             const auto& key = entry.first;
             const auto& value = entry.second;
             int x, y;
-            std::tie(x, y) = tile_to_loc_[key];
-            VTR_LOG("Location x:%d y:%d Name:%s\n", x, y, str(key).c_str());
+            std::tie(x, y) = tile_loc_bimap_[key];
+            VTR_LOG("t_location x:%d y:%d Name:%s\n", x, y, str(key).c_str());
             int it = 0;
             for (const auto& pin : value) {
                 bool dir;
@@ -296,7 +291,7 @@ struct RR_Graph_Builder {
         }
 
         for (auto& entry : virtual_chan_loc_map_) {
-            location loc, loc2;
+            t_location loc, loc2;
             e_rr_type type;
             std::tie(loc, type) = entry.first;
             VTR_LOG("CHAN%c X:%d Y:%d\n", type == e_rr_type::CHANX ? 'X' : 'Y', loc.first, loc.second);
@@ -309,10 +304,10 @@ struct RR_Graph_Builder {
         VTR_LOG("Redirects:\n");
         for (auto& entry : virtual_redirect_) {
             int node;
-            location loc;
+            t_location loc;
             std::tie(node, loc) = entry.first;
 
-            location new_loc;
+            t_location new_loc;
             e_rr_type new_type;
             int new_idx;
             std::tie(new_loc, new_type, new_idx) = entry.second;
@@ -322,7 +317,7 @@ struct RR_Graph_Builder {
 
         VTR_LOG("Shorts:\n");
         for (auto& entry : virtual_shorts_) {
-            location loc1, loc2;
+            t_location loc1, loc2;
             e_rr_type type1, type2;
             int id1, id2;
             std::tie(loc1, type1, id1, loc2, type2, id2) = entry;
@@ -335,30 +330,28 @@ struct RR_Graph_Builder {
         }
     }
 
-    void print() {
-        VTR_LOG("Real\n");
-
+    void print_real_rr_graph() {
+        VTR_LOG("Printing real RR graph\n");
         VTR_LOG("Virtual to real mapping:\n");
         for (auto i : virtual_beg_to_real_) {
             e_rr_type type;
-            location loc;
+            t_location loc;
             int virt_idx;
             std::tie(loc, type, virt_idx) = i.first;
             VTR_LOG("CHAN%c X:%d Y:%d virt_idx:%d -> idx:%d\n", type == CHANX ? 'X' : 'Y', loc.first, loc.second, virt_idx, i.second);
         }
 
-        VTR_LOG("RR_Nodes\n");
+        VTR_LOG("RR Nodes\n");
         for (auto i : loc_type_idx_to_rr_idx_) {
-            location loc;
+            t_location loc;
             e_rr_type type;
             int idx;
             std::tie(loc, type, idx) = i.first;
-            VTR_LOG("\t X:%d Y:%d type:%d idx:%d->rr_node:%d\n", loc.first, loc.second, type, idx, i.second);
+            VTR_LOG("\t X:%d Y:%d type:%d idx:%d -> rr_node:%d\n", loc.first, loc.second, type, idx, i.second);
         }
     }
 
-    /*
-     * Fill device_ctx rr_switch_inf structure and store id of each PIP type for future use
+    /** @brief Fill device_ctx rr_switch_inf structure and store id of each PIP type for future use
      */
     void create_switch_inf() {
         std::set<std::tuple<int /*timing*/, bool /*buffered*/>> seen;
@@ -380,25 +373,29 @@ struct RR_Graph_Builder {
             pips_models_[std::get<0>(i)] = std::get<1>(i);
     }
 
-    /*
-     * Create mapping form tile_id to its location
+    /** @brief Creates mapping from tile_id to its location
      */
     void create_tile_id_to_loc() {
         int max_height = 0;
-        tile_to_loc_.reserve(ar_.getTileList().size() + 1);
-        loc_to_tile_.reserve(ar_.getTileList().size() + 1);
         for (const auto& tile : ar_.getTileList()) {
-            tile_to_loc_[tile.getName()] = location(tile.getCol() + 1, tile.getRow() + 1);
+            tile_loc_bimap_.insert(tile.getName(), t_location(tile.getCol() + 1, tile.getRow() + 1));
             max_height = std::max(max_height, (int)(tile.getRow() + 1));
-            loc_to_tile_[location(tile.getCol() + 1, tile.getRow() + 1)] = tile.getName();
         }
-        /* tile with name -1 is assosiated with constant source tile */
-        tile_to_loc_[-1] = location(1, max_height + 1);
-        loc_to_tile_[location(1, max_height + 1)] = -1;
+        /* tile with id name -1 is assosiated with constant source tile */
+        tile_loc_bimap_.insert(-1, t_location(1, max_height + 1));
     }
 
-    /*
-     * Helper function for create_uniq_node_ids. It process constant sources into single node.
+    void fill_node_mappings(int tile_id, int wire_id, int node_id) {
+        wire_to_node_[std::make_tuple(tile_id, wire_id)] = node_id;
+        node_to_locs_[node_id].insert(tile_loc_bimap_[tile_id]);
+
+        if (wire_name_to_seg_idx_.find(str(wire_id)) == wire_name_to_seg_idx_.end())
+            wire_name_to_seg_idx_[str(wire_id)] = -1;
+
+        node_tile_to_segment_[std::make_tuple(node_id, tile_id)] = wire_name_to_seg_idx_[str(wire_id)];
+    }
+
+    /** @brief Helper function for create_uniq_node_ids. It process constant sources into single node.
      */
     void process_const_nodes() {
         for (const auto& tile : ar_.getTileList()) {
@@ -407,110 +404,109 @@ struct RR_Graph_Builder {
             auto wires = tile_type.getWires();
             for (const auto& constant : tile_type.getConstants()) {
                 int const_id = constant.getConstant() == Device::ConstantType::VCC ? VCC : GND;
-                for (const auto wire_id : constant.getWires()) {
-                    wire_to_node_[std::make_tuple(tile_id, wires[wire_id])] = const_id;
-                    node_to_locs_[const_id].insert(tile_to_loc_[tile_id]);
-                    if (wire_name_to_seg_idx_.find(str(wires[wire_id])) == wire_name_to_seg_idx_.end())
-                        wire_name_to_seg_idx_[str(wires[wire_id])] = -1;
-                    node_tile_to_segment_[std::make_tuple(const_id, tile_id)] = wire_name_to_seg_idx_[str(wires[wire_id])];
-                }
+
+                for (const auto wire_id : constant.getWires())
+                    fill_node_mappings(tile_id, wires[wire_id], const_id);
             }
         }
+
         for (const auto& node_source : ar_.getConstants().getNodeSources()) {
             int tile_id = node_source.getTile();
             int wire_id = node_source.getWire();
             int const_id = node_source.getConstant() == Device::ConstantType::VCC ? VCC : GND;
-            wire_to_node_[std::make_tuple(tile_id, wire_id)] = const_id;
-            node_to_locs_[const_id].insert(tile_to_loc_[tile_id]);
-            if (wire_name_to_seg_idx_.find(str(wire_id)) == wire_name_to_seg_idx_.end())
-                wire_name_to_seg_idx_[str(wire_id)] = -1;
-            node_tile_to_segment_[std::make_tuple(const_id, tile_id)] = wire_name_to_seg_idx_[str(wire_id)];
+            fill_node_mappings(tile_id, wire_id, const_id);
         }
-        for (auto const i : {GND, VCC}) {
-            wire_to_node_[std::make_tuple(-1, i)] = i;
-            node_to_locs_[i].insert(tile_to_loc_[-1]);
-            node_tile_to_segment_[std::make_tuple(i, -1)] = -1;
+
+        for (auto const const_node : {GND, VCC}) {
+            wire_to_node_[std::make_tuple(-1, const_node)] = const_node;
+            node_to_locs_[const_node].insert(tile_loc_bimap_[-1]);
+            node_tile_to_segment_[std::make_tuple(const_node, -1)] = -1;
         }
     }
 
-    /*
-     * Create uniq id for each FPGA Interchange node.
-     * Create mapping from wire to node id and from node id to its locations
-     * These ids are used later for site pins and pip conections (rr_edges)
+    /** @brief Create unique IDs for each FPGA Interchange node.
+     *
+     * In addition it creates mappings from wire to node ID and from node ID to its locations.
+     * These ids are used later in the RR graph generation for site pins and pip conections (rr_edges)
      */
     void create_uniq_node_ids() {
         process_const_nodes();
 
         // Process nodes
         int id = 2; // ids 0 and 1 are reserved respectively for GND and VCC constants
-        bool constant_node;
-        int node_id;
         for (const auto& node : ar_.getNodes()) {
-            constant_node = false;
+            bool is_constant_node = false;
+            int node_id = OPEN;
+
             // Nodes connected to constant sources should be combined into single constant node
             for (const auto& wire_id_ : node.getWires()) {
                 const auto& wire = ar_.getWires()[wire_id_];
                 int tile_id = wire.getTile();
                 int wire_id = wire.getWire();
                 if (wire_to_node_.find(std::make_tuple(tile_id, wire_id)) != wire_to_node_.end() && wire_to_node_[std::make_tuple(tile_id, wire_id)] < 2) {
-                    /*
-                     * At least one of node wires is marked as constant source, that make whole node constant source.
-                     * Give this node id equal to const source type.
-                     */
-                    constant_node = true;
+                    // At least one of node wires is marked as constant source, that make whole node constant source.
+                    // Give this node id equal to const source type.
+                    is_constant_node = true;
                     node_id = wire_to_node_[std::make_tuple(tile_id, wire_id)];
                 }
             }
 
-            //If node is not part of constant network give it uniq id.
-            if (!constant_node) {
+            // If the node is not part of constant network give it unique ID
+            if (!is_constant_node)
                 node_id = id++;
-            }
+
+            VTR_ASSERT(node_id != OPEN);
+
             float capacitance = 0.0, resistance = 0.0;
             if (node_to_RC_.find(node_id) == node_to_RC_.end()) {
                 node_to_RC_[node_id] = std::pair<float, float>(0, 0);
-                // Some random data
+                // TODO: these values are only temporarily hard-coded in case there is no timing information.
+                //       Need to handle this better.
                 capacitance = 0.000000001;
                 resistance = 5.7;
             }
 
-            // Check if device has timing model. If it does, use it
+            // Use timing model if present
             if (ar_.hasNodeTimings()) {
                 auto model = ar_.getNodeTimings()[node.getNodeTiming()];
                 capacitance = get_corner_value(model.getCapacitance(), "slow", "typ");
                 resistance = get_corner_value(model.getResistance(), "slow", "typ");
             }
+
             node_to_RC_[node_id].first += resistance;
             node_to_RC_[node_id].second += capacitance;
+
             for (const auto& wire_id_ : node.getWires()) {
                 const auto& wire = ar_.getWires()[wire_id_];
                 int tile_id = wire.getTile();
                 int wire_id = wire.getWire();
-                wire_to_node_[std::make_tuple(tile_id, wire_id)] = node_id;
-                node_to_locs_[node_id].insert(tile_to_loc_[tile_id]);
-                if (wire_name_to_seg_idx_.find(str(wire_id)) == wire_name_to_seg_idx_.end())
-                    wire_name_to_seg_idx_[str(wire_id)] = -1;
-                node_tile_to_segment_[std::make_tuple(node_id, tile_id)] = wire_name_to_seg_idx_[str(wire_id)];
+
+                fill_node_mappings(tile_id, wire_id, node_id);
             }
         }
         total_node_count_ = id;
     }
 
-    /*
-     * Create entry for each pip in device architecture,
-     * also store meta data related to that pip such as: tile_name, wire names, and its direction.
+    /** @brief Creates an entry for each pip in the FPGA device architecture,
+     *
+     *  Additionally, it stores the following metadata for later physical netlist writing:
+     *      - tile name
+     *      - wire names
+     *      - direction
      */
     void create_pips() {
         int pip_count = 0;
+
         for (const auto& tile : ar_.getTileList()) {
             const auto& tile_type = ar_.getTileTypeList()[tile.getType()];
             pip_count += tile_type.getPips().size();
         }
+
         pips_.reserve((int)(pip_count * 1.05));
 
         for (const auto& tile : ar_.getTileList()) {
             int tile_id = tile.getName();
-            location loc = tile_to_loc_[tile_id];
+            t_location loc = tile_loc_bimap_[tile_id];
             const auto& tile_type = ar_.getTileTypeList()[tile.getType()];
 
             for (const auto& pip : tile_type.getPips()) {
@@ -520,22 +516,19 @@ struct RR_Graph_Builder {
 
                 wire0_name = tile_type.getWires()[pip.getWire0()];
                 wire1_name = tile_type.getWires()[pip.getWire1()];
+
                 if (wire_to_node_.find(std::make_tuple(tile_id, wire0_name)) == wire_to_node_.end())
                     continue;
                 if (wire_to_node_.find(std::make_tuple(tile_id, wire1_name)) == wire_to_node_.end())
                     continue;
+
                 node0 = wire_to_node_[std::make_tuple(tile_id, wire0_name)];
                 node1 = wire_to_node_[std::make_tuple(tile_id, wire1_name)];
-                /*
-                 * Allow for pseudopips that connect from/to VCC/GND.
-                 * Temporary workaround for nexus family.
-                 */
-                /*
-                 * FIXME
-                 * right now we allow for pseudo pips even tho we don't check if they are avaiable
-                 * if (pip.isPseudoCells() && (node0 > 1 && node1 > 1))
-                 * continue;
-                 */
+
+                // FIXME: Right now we allow for pseudo pips even tho we don't check if they are avaiable
+                //if (pip.isPseudoCells() && (node0 > 1 && node1 > 1))
+                //    continue;
+
                 used_by_pip_.emplace(node0, loc);
                 used_by_pip_.emplace(node1, loc);
 
@@ -547,46 +540,66 @@ struct RR_Graph_Builder {
                     name = tile.getSubTilesPrefices()[pip.getSubTile()];
 
                 VTR_ASSERT(pips_models_.find(std::make_tuple(pip.getTiming(), pip.getBuffered21())) != pips_models_.end());
+
                 switch_id = pips_models_[std::make_tuple(pip.getTiming(), pip.getBuffered21())];
-                std::tuple<int, int> source_sink;
-                source_sink = std::make_tuple(node0, node1);
-                pips_.emplace(source_sink, pip_(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
+
+                auto source_sink = std::make_tuple(node0, node1);
+                auto edge = t_pip(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true));
+                pips_.emplace(source_sink, edge);
+
                 if (!pip.getBuffered21() && (pip.getDirectional() || pip.getBuffered20())) {
                     source_sink = std::make_tuple(node1, node0);
-                    pips_.emplace(source_sink, pip_(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
+                    pips_.emplace(source_sink, t_pip(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
                 }
+
                 if (!pip.getDirectional()) {
                     switch_id = pips_models_[std::make_tuple(pip.getTiming(), pip.getBuffered20())];
                     source_sink = std::make_tuple(node1, node0);
-                    pips_.emplace(source_sink, pip_(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
+                    pips_.emplace(source_sink, t_pip(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
                     if (!pip.getBuffered20() && pip.getBuffered21()) {
                         source_sink = std::make_tuple(node0, node1);
-                        pips_.emplace(source_sink, pip_(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
+                        pips_.emplace(source_sink, t_pip(switch_id, tile_id, std::make_tuple(name, wire0_name, wire1_name, true)));
                     }
                 }
             }
         }
     }
 
-    bool pip_uses_node_loc(int node_id, location loc) {
+    bool pip_uses_node_loc(int node_id, t_location loc) {
         return used_by_pip_.find(std::make_tuple(node_id, loc)) != used_by_pip_.end();
     }
 
-    bool pin_uses_node_loc(int node_id, location loc) {
+    bool pin_uses_node_loc(int node_id, t_location loc) {
         return used_by_pin_.find(std::make_tuple(node_id, loc)) != used_by_pin_.end();
     }
 
-    /*
-     * Build graph of FPGA Interchange node for further computations
+    /** @brief Builds graph of FPGA Interchange node for further computations
+     *
+     * An FPGA Interchange node graph can be interpreted as a set of wires
+     * that are electrically connected by non-configurable shorts.
+     *
+     * A direct translation of nodes from the Interchange Format to the VTR RR graph
+     * format is not possible, and some extra computation is required to build a node's
+     * representation suitable fro the RR graph.
+     *
+     * The node graph may be split in multiple unconnected sub-graphs, each with its own root nodes,
+     * and each sub-graph will need to be connected to each other, forming a single final node graph.
+     *
+     * The reason why a node graph is a forest, rather than a single tree (e.g. has multiple roots hence
+     * multiple unconnected sub-graphs), is that with absent information on the location of the various wires
+     * in the interchange format, the exact structure of the graph is not available and needs to be
+     * reconstructed to suite the VTR RR graph representation.
+     *
+     * All this procedure is to allow having nodes that represent complex-shaped wires, namely L-wires or U-wires.
      */
     std::set<intermediate_node*> build_node_graph(int node_id,
-                                                  std::set<location> nodes,
-                                                  std::map<location, intermediate_node*>& existing_nodes,
+                                                  std::set<t_location> nodes,
+                                                  std::map<t_location, intermediate_node*>& existing_nodes,
                                                   int& seg_id) {
         std::set<intermediate_node*> roots;
         do {
             intermediate_node* root_node = nullptr;
-            location key;
+            t_location key;
             for (const auto& it : nodes) {
                 if (pip_uses_node_loc(node_id, it) || pin_uses_node_loc(node_id, it)) {
                     root_node = new intermediate_node(it);
@@ -600,8 +613,8 @@ struct RR_Graph_Builder {
                 break;
             }
 
-            if (node_tile_to_segment_[std::make_tuple(node_id, loc_to_tile_[key])] != -1)
-                seg_id = node_tile_to_segment_[std::make_tuple(node_id, loc_to_tile_[key])];
+            if (node_tile_to_segment_[std::make_tuple(node_id, tile_loc_bimap_[key])] != -1)
+                seg_id = node_tile_to_segment_[std::make_tuple(node_id, tile_loc_bimap_[key])];
 
             nodes.erase(key);
 
@@ -614,17 +627,19 @@ struct RR_Graph_Builder {
                 intermediate_node* vertex;
                 vertex = builder.front();
                 builder.pop();
-                location loc = vertex->loc;
-                for (auto i : NODESIDES) {
-                    location other_loc = add_vec(loc, offsets[i]);
+                t_location loc = vertex->loc;
+                for (auto i : NODE_SIDES) {
+                    t_location other_loc = add_vec(loc, offsets[i]);
                     bool temp = false;
                     if (existing_nodes.find(other_loc) != existing_nodes.end()) {
                         temp = true;
                     } else if (nodes.find(other_loc) != nodes.end()) {
                         intermediate_node* new_node = new intermediate_node(other_loc);
                         temp = true;
-                        if (node_tile_to_segment_[std::make_tuple(node_id, loc_to_tile_[other_loc])] != -1)
-                            seg_id = node_tile_to_segment_[std::make_tuple(node_id, loc_to_tile_[other_loc])];
+
+                        if (node_tile_to_segment_[std::make_tuple(node_id, tile_loc_bimap_[other_loc])] != -1)
+                            seg_id = node_tile_to_segment_[std::make_tuple(node_id, tile_loc_bimap_[other_loc])];
+
                         nodes.erase(other_loc);
                         existing_nodes.emplace(other_loc, new_node);
                         builder.push(new_node);
@@ -632,24 +647,29 @@ struct RR_Graph_Builder {
                     vertex->links[i] = temp;
                 }
             }
+
             roots.insert(root_node);
         } while (!nodes.empty());
 
         for (auto& node : existing_nodes) {
-            if (pip_uses_node_loc(node_id, node.second->loc)) {
+            if (pip_uses_node_loc(node_id, node.second->loc))
                 node.second->on_route = true;
-            }
+
             if (pin_uses_node_loc(node_id, node.second->loc)) {
                 node.second->has_pins = true;
                 node.second->on_route = true;
             }
         }
+
         return roots;
     }
 
-    /*
-     * Given end, node and side check if node is more to the given side than end,
-     * if so it updates end. It's used to create bounding boxes for FPGA Interchange nodes.
+    /** @brief This function is used to update the bounding box of a node graph.
+     *
+     * parameters:
+     *      - end: node at a side's frontier
+     *      - node: node that might replace the end node
+     *      - side: side where to check the bounding box expansion
      */
     intermediate_node* update_end(intermediate_node* end, intermediate_node* node, enum node_sides side) {
         intermediate_node* res = end;
@@ -677,102 +697,166 @@ struct RR_Graph_Builder {
                 VTR_ASSERT(false);
                 break;
         }
+
         return res;
     }
 
-    /*
-     * Given start, end, existing nodes and connections (list of sides that line uses)
-     * it creates straight line connections from start to end.
-     * If there are missing nodes on the way, it will create new nodes and store them in
-     * existing nodes.
+    /** @brief Creates a line of nodes connecting two points.
+     *
+     * parameters:
+     *      - existing_nodes: mapping of nodes at locations
+     *      - start: starting location
+     *      - end: ending location
+     *      - connections: sides that are used for this line
+     *
+     *  If intermediate nodes are missing, they will be created.
+     *
+     *  TODO: consider using segments of length > 1 and create one node only
+     *        instead of multiple nodes on a straight line.
      */
-
-    void add_line(std::map<location, intermediate_node*>& existing_nodes,
-                  location start,
-                  location end,
+    void add_line(std::map<t_location, intermediate_node*>& existing_nodes,
+                  t_location start,
+                  t_location end,
                   std::initializer_list<enum node_sides> connections) {
-        int range_start, range_end;
-        bool horizontal;
-        if (start.second == end.second) {
-            range_start = start.first + 1;
-            range_end = end.first;
-            horizontal = true;
-        } else {
-            range_start = start.second + 1;
-            range_end = end.second;
-            horizontal = false;
-        }
+        bool horizontal = start.second == end.second;
+        VTR_ASSERT(horizontal || start.first == end.first);
+
+        int range_start = horizontal ? start.first + 1 : start.second + 1;
+        int range_end = horizontal ? end.first : end.second;
+
         for (int i = range_start; i < range_end; i++) {
-            location temp;
-            if (horizontal)
-                temp = location(i, end.second);
-            else
-                temp = location(end.first, i);
-            if (existing_nodes.find(temp) == existing_nodes.end())
-                existing_nodes[temp] = new intermediate_node(temp);
-            intermediate_node* temp_ = existing_nodes[temp];
-            temp_->back_bone = true;
+            t_location loc = horizontal ? t_location(i, end.second) : t_location(end.first, i);
+
+            if (existing_nodes.find(loc) == existing_nodes.end())
+                existing_nodes[loc] = new intermediate_node(loc);
+
+            intermediate_node* loc_ = existing_nodes[loc];
+            loc_->back_bone = true;
+
             for (auto j : connections)
-                temp_->links[j] = true;
+                loc_->links[j] = true;
         }
     }
 
-    void add_comb_node(std::map<location, intermediate_node*>& existing_nodes,
-                       intermediate_node* ends[],
-                       location node,
-                       bool up,
-                       enum node_sides node_side,
-                       enum node_sides end_side) {
-        intermediate_node* temp;
-        if (existing_nodes.find(node) == existing_nodes.end())
-            existing_nodes[node] = new intermediate_node(node);
-        temp = existing_nodes[node];
-        temp->back_bone = true;
-        if (temp != ends[node_side]) {
-            temp->links[node_side] = true;
+    /** @brief Adds a middle node to allow connecting end nodes that would form a non-straight
+     *         line of nodes.
+     *
+     *  +----------+
+     *  |          |          +--------+
+     *  | End Node +----------+ Middle |
+     *  |          |          |  Node  |
+     *  +----------+          +---+----+
+     *                            |
+     *                            |
+     *                            |
+     *                       +----+-----+
+     *                       |          |
+     *                       | End Node |
+     *                       |          |
+     *                       +----------+
+     */
+    void add_middle_node(std::map<t_location, intermediate_node*>& existing_nodes,
+                         intermediate_node* ends[],
+                         t_location node_loc,
+                         bool is_up,
+                         enum node_sides node_side,
+                         enum node_sides end_side) {
+        if (existing_nodes.find(node_loc) == existing_nodes.end())
+            existing_nodes[node_loc] = new intermediate_node(node_loc);
+
+        intermediate_node* node = existing_nodes[node_loc];
+        node->back_bone = true;
+
+        if (node != ends[node_side]) {
+            node->links[node_side] = true;
             ends[node_side]->links[end_side] = true;
-            if (temp->loc.first < ends[node_side]->loc.first)
-                add_line(existing_nodes, temp->loc, ends[node_side]->loc, {RIGHT_EDGE, LEFT_EDGE});
+
+            if (node->loc.first < ends[node_side]->loc.first)
+                add_line(existing_nodes, node->loc, ends[node_side]->loc, {RIGHT_EDGE, LEFT_EDGE});
             else
-                add_line(existing_nodes, ends[node_side]->loc, temp->loc, {RIGHT_EDGE, LEFT_EDGE});
+                add_line(existing_nodes, ends[node_side]->loc, node->loc, {RIGHT_EDGE, LEFT_EDGE});
         }
-        if (up && temp->loc.second != ends[TOP_EDGE]->loc.second) {
-            temp->links[TOP_EDGE] = true;
+
+        if (is_up && node->loc.second != ends[TOP_EDGE]->loc.second) {
+            node->links[TOP_EDGE] = true;
             ends[TOP_EDGE]->links[BOTTOM_EDGE] = true;
-            add_line(existing_nodes, temp->loc, ends[TOP_EDGE]->loc, {TOP_EDGE, BOTTOM_EDGE});
-        } else if (!up && temp->loc.second != ends[BOTTOM_EDGE]->loc.second) {
-            temp->links[BOTTOM_EDGE] = true;
+            add_line(existing_nodes, node->loc, ends[TOP_EDGE]->loc, {TOP_EDGE, BOTTOM_EDGE});
+        } else if (!is_up && node->loc.second != ends[BOTTOM_EDGE]->loc.second) {
+            node->links[BOTTOM_EDGE] = true;
             ends[BOTTOM_EDGE]->links[TOP_EDGE] = true;
-            add_line(existing_nodes, ends[BOTTOM_EDGE]->loc, temp->loc, {TOP_EDGE, BOTTOM_EDGE});
+            add_line(existing_nodes, ends[BOTTOM_EDGE]->loc, node->loc, {TOP_EDGE, BOTTOM_EDGE});
         }
     }
 
-    intermediate_node* create_final_root_node(std::map<location, intermediate_node*>& existing_nodes,
+    /** @brief Creates the final root node that will be used to represent an Interchange node graph
+     *
+     * Given that there may be different root nodes for the same node graph, we need to elect one to
+     * be the new final root, so that we can than build the RR graph connections between all the
+     * generated nodes reliably.
+     */
+    intermediate_node* create_final_root_node(std::map<t_location, intermediate_node*>& existing_nodes,
                                               bool left_node,
-                                              location root_node_,
-                                              location up_node_,
-                                              location comb_node_,
+                                              t_location root_node,
+                                              t_location up_node,
+                                              t_location middle_node,
                                               enum node_sides side) {
-        intermediate_node* temp;
-        if (existing_nodes.find(root_node_) == existing_nodes.end())
-            existing_nodes[root_node_] = new intermediate_node(root_node_);
-        temp = existing_nodes[root_node_];
+        if (existing_nodes.find(root_node) == existing_nodes.end())
+            existing_nodes[root_node] = new intermediate_node(root_node);
+
+        intermediate_node* temp = existing_nodes[root_node];
+
         temp->back_bone = true;
         temp->links[side] = true;
         temp->links[BOTTOM_EDGE] = true;
-        add_line(existing_nodes, up_node_, root_node_, {TOP_EDGE, BOTTOM_EDGE});
-        existing_nodes[up_node_]->links[TOP_EDGE] = true;
-        existing_nodes[comb_node_]->links[OPPOSITE_SIDE[side]] = true;
-        if (left_node) {
-            add_line(existing_nodes, root_node_, comb_node_, {RIGHT_EDGE, LEFT_EDGE});
-        } else {
-            add_line(existing_nodes, comb_node_, root_node_, {RIGHT_EDGE, LEFT_EDGE});
-        }
+
+        add_line(existing_nodes, up_node, root_node, {TOP_EDGE, BOTTOM_EDGE});
+
+        existing_nodes[up_node]->links[TOP_EDGE] = true;
+        existing_nodes[middle_node]->links[OPPOSITE_NODE_SIDES[side]] = true;
+
+        if (left_node)
+            add_line(existing_nodes, root_node, middle_node, {RIGHT_EDGE, LEFT_EDGE});
+        else
+            add_line(existing_nodes, middle_node, root_node, {RIGHT_EDGE, LEFT_EDGE});
+
         return temp;
     }
 
+    /** @brief Connect all the remaining root nodes that are not yet connected to the corresponding
+     *         node graph.
+     *
+     *  This is to connect all the nodes that may be in the current situation:
+     *
+     *                          +---------+
+     *                          |         |
+     *                          | Node    |
+     *                          |         |
+     *                          +----+----+
+     *                               |
+     *                               |          +-------------+
+     *                               |          |  Dangling   |
+     *                               +----------+             |
+     *                               |          | Root Node   |
+     *                               |          +-------------+
+     *                               |
+     *   +---------+            +----+----+
+     *   |         |            |  Final  |
+     *   |  Node   +------------+         |
+     *   |         |            |  Root   |
+     *   +---------+            +----+----+
+     *                               |
+     *                               |
+     *                               |
+     *                               |
+     *                               |
+     *                          +----+----+
+     *                          |         |
+     *                          |  Node   |
+     *                          |         |
+     *                          +---------+
+     */
     void connect_dangling_roots(std::set<intermediate_node*>& roots,
-                                std::map<location, intermediate_node*>& existing_nodes,
+                                std::map<t_location, intermediate_node*>& existing_nodes,
                                 intermediate_node* ends[]) {
         /* connect not yet connected roots */
         std::vector<intermediate_node*> del_list;
@@ -783,95 +867,108 @@ struct RR_Graph_Builder {
 
         int max_length = std::max(x_, y_);
 
-        for (const auto& i : roots) {
-            bool done = i->back_bone;
+        for (const auto& root : roots) {
+            bool done = root->back_bone;
             for (int j = 1; j < max_length; j++) {
                 if (done) {
-                    del_list.push_back(i);
+                    del_list.push_back(root);
                     break;
                 }
-                for (const auto& k : NODESIDES) {
-                    location offset = mul_vec_scal(offsets[k], j);
-                    location other_node_loc = add_vec(i->loc, offset);
+
+                for (const auto& k : NODE_SIDES) {
+                    t_location offset = mul_vec_scal(offsets[k], j);
+                    t_location other_node_loc = add_vec(root->loc, offset);
                     if (existing_nodes.find(other_node_loc) == existing_nodes.end())
                         continue;
                     intermediate_node* other_node;
                     other_node = existing_nodes[other_node_loc];
                     if (!other_node->back_bone)
                         continue;
-                    i->links[k] = true;
-                    i->back_bone = true;
-                    other_node->links[OPPOSITE_SIDE[k]] = true;
+                    root->links[k] = true;
+                    root->back_bone = true;
+                    other_node->links[OPPOSITE_NODE_SIDES[k]] = true;
+
                     if (0 < k && k < 3)
-                        add_line(existing_nodes, i->loc, other_node_loc, {k, OPPOSITE_SIDE[k]});
+                        add_line(existing_nodes, root->loc, other_node_loc, {k, OPPOSITE_NODE_SIDES[k]});
                     else
-                        add_line(existing_nodes, other_node_loc, i->loc, {k, OPPOSITE_SIDE[k]});
+                        add_line(existing_nodes, other_node_loc, root->loc, {k, OPPOSITE_NODE_SIDES[k]});
+
                     done = true;
                     break;
                 }
             }
         }
 
-        /* remove already done roots */
+        // Remove roots that have already been processed
         for (const auto& i : del_list) {
             if (roots.find(i) != roots.end())
                 roots.erase(i);
         }
+
         del_list.clear();
     }
 
+    /** @brief Connects to unconnected graphs into a single node graph.
+     *
+     * If the node graph is composed of multiple unconnected trees, this procedure will connect all
+     * of the various roots of the sub-trees together, so that a single node graph is present.
+     */
     intermediate_node* connect_roots(std::set<intermediate_node*>& roots,
-                                     std::map<location, intermediate_node*>& existing_nodes) {
+                                     std::map<t_location, intermediate_node*>& existing_nodes) {
+        // The node graph is fully connected, therefore no extra computation is required
         if (roots.size() == 1) {
             intermediate_node* root = *roots.begin();
             root->back_bone = true;
             roots.clear();
             return root;
         }
+
         intermediate_node* ends[4];
         ends[0] = ends[1] = ends[2] = ends[3] = *roots.begin();
 
-        for (auto root : roots) {
-            for (auto const& i : NODESIDES)
-                ends[i] = update_end(ends[i], root, i);
-        }
+        for (auto root : roots)
+            for (auto const& side : NODE_SIDES)
+                ends[side] = update_end(ends[side], root, side);
 
-        for (auto const& i : NODESIDES) {
-            ends[i]->back_bone = true;
-            if (roots.find(ends[i]) != roots.end())
-                roots.erase(ends[i]);
+        for (auto const& side : NODE_SIDES) {
+            ends[side]->back_bone = true;
+            if (roots.find(ends[side]) != roots.end())
+                roots.erase(ends[side]);
         }
 
         bool right_to_top = ends[TOP_EDGE]->loc.first >= ends[BOTTOM_EDGE]->loc.first;
         bool left_to_top = ends[TOP_EDGE]->loc.first < ends[BOTTOM_EDGE]->loc.first;
 
-        location right_comb_node(right_to_top ? ends[TOP_EDGE]->loc.first : ends[BOTTOM_EDGE]->loc.first, ends[RIGHT_EDGE]->loc.second);
-        location left_comb_node(left_to_top ? ends[TOP_EDGE]->loc.first : ends[BOTTOM_EDGE]->loc.first, ends[LEFT_EDGE]->loc.second);
+        t_location right_middle_node(right_to_top ? ends[TOP_EDGE]->loc.first : ends[BOTTOM_EDGE]->loc.first, ends[RIGHT_EDGE]->loc.second);
+        t_location left_middle_node(left_to_top ? ends[TOP_EDGE]->loc.first : ends[BOTTOM_EDGE]->loc.first, ends[LEFT_EDGE]->loc.second);
 
-        add_comb_node(existing_nodes, ends, right_comb_node, right_to_top, RIGHT_EDGE, LEFT_EDGE);
-        add_comb_node(existing_nodes, ends, left_comb_node, left_to_top, LEFT_EDGE, RIGHT_EDGE);
+        add_middle_node(existing_nodes, ends, right_middle_node, right_to_top, RIGHT_EDGE, LEFT_EDGE);
+        add_middle_node(existing_nodes, ends, left_middle_node, left_to_top, LEFT_EDGE, RIGHT_EDGE);
 
-        int y = std::max(right_comb_node.second, left_comb_node.second);
-        location loc1(left_comb_node.first, y);
-        location loc2(right_comb_node.first, y);
+        int y = std::max(right_middle_node.second, left_middle_node.second);
+        t_location loc1(left_middle_node.first, y);
+        t_location loc2(right_middle_node.first, y);
 
         intermediate_node* true_root = nullptr;
 
-        if (loc1 != left_comb_node && loc1 != loc2) {
-            true_root = create_final_root_node(existing_nodes, true, loc1, left_comb_node, right_comb_node, RIGHT_EDGE);
-        } else if (loc2 != right_comb_node && loc1 != loc2) {
-            true_root = create_final_root_node(existing_nodes, false, loc2, right_comb_node, left_comb_node, LEFT_EDGE);
+        // The final root node is chosen among the possible different ones, depending on the various intermediate nodes
+        // locations.
+        if (loc1 != left_middle_node && loc1 != loc2) {
+            true_root = create_final_root_node(existing_nodes, true, loc1, left_middle_node, right_middle_node, RIGHT_EDGE);
+        } else if (loc2 != right_middle_node && loc1 != loc2) {
+            true_root = create_final_root_node(existing_nodes, false, loc2, right_middle_node, left_middle_node, LEFT_EDGE);
         } else if (loc1 != loc2) {
             add_line(existing_nodes, loc1, loc2, {RIGHT_EDGE, LEFT_EDGE});
             existing_nodes[loc1]->links[RIGHT_EDGE] = true;
             existing_nodes[loc2]->links[LEFT_EDGE] = true;
             true_root = existing_nodes[loc1];
         } else {
-            loc1 = right_comb_node;
-            loc2 = left_comb_node;
-            if (right_comb_node.second > left_comb_node.second) {
+            loc1 = right_middle_node;
+            loc2 = left_middle_node;
+
+            if (right_middle_node.second > left_middle_node.second)
                 std::swap(loc1, loc2);
-            }
+
             add_line(existing_nodes, loc1, loc2, {TOP_EDGE, BOTTOM_EDGE});
             existing_nodes[loc1]->links[TOP_EDGE] = true;
             existing_nodes[loc2]->links[BOTTOM_EDGE] = true;
@@ -884,28 +981,30 @@ struct RR_Graph_Builder {
         return true_root;
     }
 
-    /*
-     * Removes dangling nodes from a graph represented by the root node.
-     * Dangling nodes are nodes that do not connect to a pin, a pip or other non-dangling node.
+    /** @brief Removes dangling nodes from a graph represented by the root node.
+     *
+     *  Dangling nodes are nodes that do not connect to a pin, a pip or other non-dangling node.
      */
     int reduce_graph_and_count_nodes_left(intermediate_node* root,
-                                          std::map<location, intermediate_node*>& existing_nodes,
+                                          std::map<t_location, intermediate_node*>& existing_nodes,
                                           int seg_id) {
         int cnt = 0;
         std::queue<intermediate_node*> walker;
         std::stack<intermediate_node*> back_walker;
+
         walker.push(root);
         root->visited = root;
-        bool has_chanx;
-        bool single_node;
+
         while (!walker.empty()) {
             intermediate_node* vertex = walker.front();
             walker.pop();
             back_walker.push(vertex);
             vertex->segment_id = seg_id;
-            single_node = true;
-            has_chanx = false;
-            for (auto i : NODESIDES) {
+
+            bool single_node = true;
+            bool has_chanx = false;
+
+            for (auto i : NODE_SIDES) {
                 if (vertex->links[i]) {
                     single_node = false;
                     intermediate_node* other_node = existing_nodes[add_vec(vertex->loc, offsets[i])];
@@ -916,6 +1015,7 @@ struct RR_Graph_Builder {
                         } else if (i == node_sides::TOP_EDGE) {
                             cnt++;
                         }
+
                         if (other_node->visited == nullptr) {
                             other_node->visited = vertex;
                             walker.push(other_node);
@@ -925,26 +1025,28 @@ struct RR_Graph_Builder {
                     }
                 }
             }
+
             if ((vertex->has_pins && !has_chanx) || single_node)
                 cnt++;
         }
+
         while (!back_walker.empty()) {
             intermediate_node* vertex = back_walker.top();
             back_walker.pop();
-            single_node = true;
-            has_chanx = false;
+
+            bool single_node = true;
+
             if (!vertex->has_pins && !vertex->on_route) {
-                for (auto i : NODESIDES) {
-                    if (vertex->links[i]) {
+                for (auto i : NODE_SIDES)
+                    if (vertex->links[i])
                         if (i == node_sides::LEFT_EDGE || i == node_sides::TOP_EDGE)
                             cnt--;
-                    }
-                }
+
                 existing_nodes.erase(vertex->loc);
                 delete vertex;
             } else {
                 vertex->visited->on_route = true;
-                for (auto i : NODESIDES) {
+                for (auto i : NODE_SIDES) {
                     if (vertex->links[i]) {
                         if (existing_nodes.find(add_vec(vertex->loc, offsets[i])) == existing_nodes.end()) {
                             vertex->links[i] = false;
@@ -953,143 +1055,191 @@ struct RR_Graph_Builder {
                         }
                     }
                 }
-                for (auto i : NODESIDES)
+
+                for (auto i : NODE_SIDES)
                     single_node &= !vertex->links[i];
+
                 if (!vertex->has_pins && single_node)
                     cnt++;
             }
         }
+
         return cnt;
     }
 
+    /** @brief Processes the set of nodes to populate the virtual CHAN loation maps
+     */
     void process_set(std::unordered_set<intermediate_node*>& set,
-                     std::unordered_set<location, hash_tuple::hash<location>>& nodes_used,
-                     std::map<location, intermediate_node*>& existing_nodes,
-                     std::map<location, std::tuple<location, e_rr_type, int>>& local_redirect,
+                     std::unordered_set<t_location, hash_tuple::hash<t_location>>& nodes_used,
+                     std::map<t_location, intermediate_node*>& existing_nodes,
+                     std::map<t_location, std::tuple<t_location, e_rr_type, int>>& local_redirect,
                      float R,
                      float C,
-                     location offset,
+                     t_location offset,
                      node_sides side,
                      e_rr_type chan_type) {
-        int len;
-        int idx;
-        intermediate_node *start, *end;
-        for (auto const i : set) {
-            len = 0;
-            start = i;
-            end = i;
+        for (auto const inode : set) {
+            int len = 0;
+            intermediate_node* start = inode;
+            intermediate_node* end = inode;
             auto key = std::make_tuple(add_vec(start->loc, offset), chan_type);
-            idx = virtual_chan_loc_map_[key].size();
+            int idx = virtual_chan_loc_map_[key].size();
             do {
                 nodes_used.insert(end->loc);
                 len++;
                 local_redirect.emplace(end->loc, std::make_tuple(add_vec(start->loc, offset), chan_type, idx));
+
                 if (!end->links[side])
+                    // Reached the end of this set of nodes exiting the loop
                     break;
+
                 intermediate_node* neighbour = existing_nodes[add_vec(end->loc, offsets[side])];
+
                 if (set.find(neighbour) != set.end())
                     break;
+
                 end = neighbour;
             } while (true);
+
             virtual_chan_loc_map_[key].emplace_back(start->segment_id, R * len, C * len, add_vec(end->loc, offset));
         }
     }
 
-    void add_short(location n1,
-                   location n2,
-                   std::map<location, std::tuple<location, e_rr_type, int>>& r1,
-                   std::map<location, std::tuple<location, e_rr_type, int>>& r2) {
+    /** @brief Adds a short between two node locations between two nodes existing in the
+     *         same Interchange node graph. This populates the virtual shorts map.
+     */
+    void add_short(t_location n1,
+                   t_location n2,
+                   std::map<t_location, std::tuple<t_location, e_rr_type, int>>& r1,
+                   std::map<t_location, std::tuple<t_location, e_rr_type, int>>& r2) {
         auto red1 = r1[n1];
         auto red2 = r2[n2];
         virtual_shorts_.emplace_back(std::get<0>(red1), std::get<1>(red1), std::get<2>(red1),
                                      std::get<0>(red2), std::get<1>(red2), std::get<2>(red2));
     }
 
+    /** @brief Adds connections between nodes belonging to the same Interchange node graph
+     */
     void connect_base_on_redirects(std::unordered_set<intermediate_node*>& set,
                                    node_sides side,
-                                   std::map<location, std::tuple<location, e_rr_type, int>>& src,
-                                   std::map<location, std::tuple<location, e_rr_type, int>>& dist) {
+                                   std::map<t_location, std::tuple<t_location, e_rr_type, int>>& src,
+                                   std::map<t_location, std::tuple<t_location, e_rr_type, int>>& dist) {
         for (auto const node : set) {
             if (!node->links[side])
                 continue;
-            location other_node = add_vec(node->loc, offsets[side]);
+
+            t_location other_node = add_vec(node->loc, offsets[side]);
+
             if (dist.find(other_node) == dist.end())
                 continue;
+
             add_short(node->loc, other_node, src, dist);
         }
     }
 
+    /** @brief Translates the Interchange node graph representation in a format suitable
+     *         to be translated into the VTR RR graph representation.
+     *
+     *         In practice this means populating the mappings to better access data in the
+     *         real RR graph building stage.
+     */
     void graph_reduction_stage2(int node_id,
-                                std::map<location, intermediate_node*>& existing_nodes,
+                                std::map<t_location, intermediate_node*>& existing_nodes,
                                 float R,
                                 float C) {
         std::unordered_set<intermediate_node*> chanxs, chanys;
-        std::unordered_set<location, hash_tuple::hash<location>> nodes_in_chanxs, nodes_in_chanys;
-        bool chanx_start, chany_start, single_node;
-        for (auto const& i : existing_nodes) {
-            single_node = true;
-            for (auto j : NODESIDES)
-                single_node &= !i.second->links[j];
-            chanx_start = chany_start = false;
-            if (i.second->links[LEFT_EDGE]) {
-                intermediate_node* left_node = existing_nodes[add_vec(i.second->loc, offsets[LEFT_EDGE])];
+        std::unordered_set<t_location, hash_tuple::hash<t_location>> nodes_in_chanxs, nodes_in_chanys;
+
+        // Populate sets containing starting point where horizontal (CHANX) or vertical (CHANY) lines of
+        // nodes are linked together.
+        //
+        // In the following there will be four sets of nodes:
+        //      - three sets for CHANY to build the three veritcal sets of nodes
+        //      - one set for CHANX to connect together all the bottom nodes
+        //
+        //    +---+                    +---+                    +---+
+        //    |   |                    |   |                    |   |
+        //    +-+-+                    +-+-+                    +-+-+
+        //      |                        |                        |
+        //      |                        |                        |
+        //      |                        |                        |
+        //      |                        |                        |
+        //    +-+-+                    +-+-+                    +-+-+
+        //    |   +--------------------+   +--------------------+   |
+        //    +---+                    +---+                    +---+
+        //
+        for (auto const& node : existing_nodes) {
+            bool single_node = true;
+            for (auto side : NODE_SIDES)
+                single_node &= !node.second->links[side];
+
+            bool chanx_start = false;
+            bool chany_start = false;
+
+            if (node.second->links[LEFT_EDGE]) {
+                intermediate_node* left_node = existing_nodes[add_vec(node.second->loc, offsets[LEFT_EDGE])];
                 chanx_start = pip_uses_node_loc(node_id, left_node->loc) || left_node->links[TOP_EDGE] || left_node->links[BOTTOM_EDGE];
             } else {
-                chanx_start = i.second->has_pins || single_node;
-                if (i.second->links[RIGHT_EDGE])
-                    nodes_in_chanxs.insert(i.first);
+                chanx_start = node.second->has_pins || single_node;
+                if (node.second->links[RIGHT_EDGE])
+                    nodes_in_chanxs.insert(node.first);
             }
-            if (i.second->links[TOP_EDGE]) {
-                intermediate_node* top_node = existing_nodes[add_vec(i.second->loc, offsets[TOP_EDGE])];
+            if (node.second->links[TOP_EDGE]) {
+                intermediate_node* top_node = existing_nodes[add_vec(node.second->loc, offsets[TOP_EDGE])];
                 chany_start = pip_uses_node_loc(node_id, top_node->loc) || pin_uses_node_loc(node_id, top_node->loc);
                 chany_start |= top_node->links[LEFT_EDGE] || top_node->links[RIGHT_EDGE];
-            } else if (i.second->links[BOTTOM_EDGE]) {
-                nodes_in_chanys.insert(i.first);
+            } else if (node.second->links[BOTTOM_EDGE]) {
+                nodes_in_chanys.insert(node.first);
             }
+
             if (chanx_start)
-                chanxs.insert(i.second);
+                chanxs.insert(node.second);
             if (chany_start)
-                chanys.insert(i.second);
+                chanys.insert(node.second);
         }
 
-        std::map<location, std::tuple<location, e_rr_type, int>> local_redirect_x, local_redirect_y;
+        std::map<t_location, std::tuple<t_location, e_rr_type, int>> local_redirect_x, local_redirect_y;
 
-        process_set(chanys, nodes_in_chanys, existing_nodes, local_redirect_y, R, C, location(0, 0), BOTTOM_EDGE, CHANY);
+        process_set(chanys, nodes_in_chanys, existing_nodes, local_redirect_y, R, C, t_location(0, 0), BOTTOM_EDGE, CHANY);
         process_set(chanxs, nodes_in_chanxs, existing_nodes, local_redirect_x, R, C, offsets[BOTTOM_EDGE], RIGHT_EDGE, CHANX);
+
         connect_base_on_redirects(chanys, TOP_EDGE, local_redirect_y, local_redirect_y);
         connect_base_on_redirects(chanxs, LEFT_EDGE, local_redirect_x, local_redirect_x);
 
-        bool ry, rx;
+        // Connect CHANY with CHANX nodes
         for (auto i : nodes_in_chanys) {
-            location node = i;
+            t_location node = i;
             if (nodes_in_chanxs.find(i) != nodes_in_chanxs.end()) {
-                ry = local_redirect_y.find(node) != local_redirect_y.end();
-                rx = local_redirect_x.find(node) != local_redirect_x.end();
-                location x, y;
+                bool ry = local_redirect_y.find(node) != local_redirect_y.end();
+                bool rx = local_redirect_x.find(node) != local_redirect_x.end();
+                t_location x, y;
                 if (rx)
                     x = node;
                 else
                     x = add_vec(node, offsets[RIGHT_EDGE]);
+
                 if (ry)
                     y = node;
                 else
                     y = add_vec(node, offsets[BOTTOM_EDGE]);
+
                 add_short(y, x, local_redirect_y, local_redirect_x);
             }
         }
 
         for (auto const& node : existing_nodes) {
-            ry = local_redirect_y.find(node.first) != local_redirect_y.end();
-            rx = local_redirect_x.find(node.first) != local_redirect_x.end();
+            bool ry = local_redirect_y.find(node.first) != local_redirect_y.end();
+            bool rx = local_redirect_x.find(node.first) != local_redirect_x.end();
+
             if (rx) {
                 virtual_redirect_.emplace(std::make_tuple(node_id, node.first), local_redirect_x[node.first]);
             } else if (ry) {
                 virtual_redirect_.emplace(std::make_tuple(node_id, node.first), local_redirect_y[node.first]);
             } else if (node.second->links[RIGHT_EDGE]) {
-                location right_node = add_vec(node.first, offsets[RIGHT_EDGE]);
+                t_location right_node = add_vec(node.first, offsets[RIGHT_EDGE]);
                 virtual_redirect_.emplace(std::make_tuple(node_id, node.first), local_redirect_x[right_node]);
             } else if (node.second->links[BOTTOM_EDGE]) {
-                location bottom_node = add_vec(node.first, offsets[BOTTOM_EDGE]);
+                t_location bottom_node = add_vec(node.first, offsets[BOTTOM_EDGE]);
                 virtual_redirect_.emplace(std::make_tuple(node_id, node.first), local_redirect_y[bottom_node]);
             } else {
                 VTR_ASSERT(false);
@@ -1097,19 +1247,20 @@ struct RR_Graph_Builder {
         }
     }
 
-    /*
-     * Remove a graph represented by a root node.
-     * Clean up of earlier stages
+    /** @brief Removes a node graph represented by a root node.
+     *
+     * This step is used to clean up of earlier intermediate stages.
      */
-    void delete_nodes(std::map<location, intermediate_node*>& existing_nodes) {
+    void delete_nodes(std::map<t_location, intermediate_node*>& existing_nodes) {
         for (auto i : existing_nodes) {
             delete i.second;
         }
         existing_nodes.clear();
     }
 
-    /*
-     * Process FPGA Interchange nodes
+    /** @brief Process FPGA Interchange nodes.
+     *
+     * This function processes all the wires that are connected together and are part of the same node graph.
      */
     void process_nodes() {
         for (int node_id = 0; node_id < total_node_count_; ++node_id) {
@@ -1117,9 +1268,9 @@ struct RR_Graph_Builder {
             if (useful_node_.find(node_id) == useful_node_.end()) {
                 continue;
             }
-            std::set<location> all_possible_tiles = node_to_locs_[node_id];
+            std::set<t_location> all_possible_tiles = node_to_locs_[node_id];
 
-            std::map<location, intermediate_node*> existing_nodes;
+            std::map<t_location, intermediate_node*> existing_nodes;
 
             std::set<intermediate_node*> roots = build_node_graph(node_id, all_possible_tiles, existing_nodes, seg_id);
             intermediate_node* root = connect_roots(roots, existing_nodes);
@@ -1127,11 +1278,17 @@ struct RR_Graph_Builder {
             VTR_ASSERT(roots.empty());
 
             int div = reduce_graph_and_count_nodes_left(root, existing_nodes, seg_id);
-            if (existing_nodes.empty()) {
+
+            if (existing_nodes.empty())
                 continue;
-            }
+
             node_id_count_[node_id] = div;
             VTR_ASSERT(div > 0);
+
+            // Given that an Interchange graph node is composed of many electrically connected wires
+            // where each one is a separate VTR RR graph node, the resistance and capacitance values
+            // need to be split among all of the different nodes, as in the end, they are all part of
+            // the same Interchange "node".
             float resistance = node_to_RC_[node_id].first / div;
             float capacitance = node_to_RC_[node_id].second / div;
             graph_reduction_stage2(node_id, existing_nodes, resistance, capacitance);
@@ -1139,44 +1296,51 @@ struct RR_Graph_Builder {
         }
     }
 
+    /** @brief Finds the next suitable site index to create SINK and SOURCE nodes
+     */
     int next_good_site(int first_idx, const Device::Tile::Reader tile) {
         auto tile_type = ar_.getTileTypeList()[tile.getType()];
         size_t ans = first_idx;
         for (; ans < tile.getSites().size(); ans++) {
             auto site = tile.getSites()[ans];
             auto site_type = ar_.getSiteTypeList()[tile_type.getSiteTypes()[site.getType()].getPrimaryType()];
+
             bool found = false;
-            for (auto bel : site_type.getBels()) {
-                bool res = bel_cell_mappings_.find(bel.getName()) != bel_cell_mappings_.end();
-                found |= res;
-            }
+            for (auto bel : site_type.getBels())
+                found |= bel_cell_mappings_.find(bel.getName()) != bel_cell_mappings_.end();
+
             if (found)
                 break;
         }
+
         return ans;
     }
 
-    /*
-     * Create site sink/source ipin/opin mappins.
+    /** @brief Creates site SINK/SOURCE IPIN/OPIN mappings.
      */
     void create_sink_source_nodes() {
         const auto& tile_types = ar_.getTileTypeList();
         std::map<std::tuple<int /*tile type id*/, int, std::string>, std::tuple<float, int>> tile_type_site_num_pin_name_model;
+
+        // Fill tile pin to wire map
         for (const auto& tileType : tile_types) {
             int it = 0;
-            if (tile_type_to_pb_type_.find(str(tileType.getName())) == tile_type_to_pb_type_.end())
+
+            if (!tile_type_to_pb_type_.count(str(tileType.getName())))
                 continue;
+
             for (const auto& siteType : tileType.getSiteTypes()) {
                 int pin_count = 0;
                 for (const auto& pin_ : ar_.getSiteTypeList()[siteType.getPrimaryType()].getPins()) {
                     std::tuple<int, int, std::string> pin(tileType.getName(), it, str(pin_.getName()));
                     const auto& model = pin_.getModel();
                     float value = 0.0;
-                    if (pin_.getDir() == LogicalNetlist::Netlist::Direction::OUTPUT && model.hasResistance()) {
+
+                    if (pin_.getDir() == LogicalNetlist::Netlist::Direction::OUTPUT && model.hasResistance())
                         value = get_corner_value(model.getResistance(), "slow", "max");
-                    } else if (pin_.getDir() == LogicalNetlist::Netlist::Direction::INPUT && model.hasCapacitance()) {
+                    else if (pin_.getDir() == LogicalNetlist::Netlist::Direction::INPUT && model.hasCapacitance())
                         value = get_corner_value(model.getCapacitance(), "slow", "max");
-                    }
+
                     int wire_id = siteType.getPrimaryPinsToTileWires()[pin_count];
                     tile_type_site_num_pin_name_model[pin] = std::tuple<float, int>(value, wire_id);
                     pin_count++;
@@ -1184,29 +1348,35 @@ struct RR_Graph_Builder {
                 it++;
             }
         }
+
         for (const auto& tile : ar_.getTileList()) {
             const auto& tile_type_id = tile_types[tile.getType()].getName();
             const auto& tile_type_name = str(tile_type_id);
             const auto& tile_id = tile.getName();
-            if (tile_type_to_pb_type_.find(tile_type_name) == tile_type_to_pb_type_.end())
+
+            if (!tile_type_to_pb_type_.count(tile_type_name))
                 continue;
-            sink_source_loc_map_[tile_id].resize(tile_type_to_pb_type_[tile_type_name]->num_pins);
+
             int it = next_good_site(0, tile);
+
+            sink_source_loc_map_[tile_id].resize(tile_type_to_pb_type_[tile_type_name]->num_pins);
             for (const auto& sub_tile : tile_type_to_pb_type_[tile_type_name]->sub_tiles) {
                 for (const auto& port : sub_tile.ports) {
+                    int pin_id = sub_tile.sub_tile_to_tile_pin_indices[port.index];
+
+                    std::tuple<int, int, std::string> key{tile_type_id, it, std::string(port.name)};
+
                     float value;
                     int wire_id;
-                    int node_id;
-                    int pin_id = sub_tile.sub_tile_to_tile_pin_indices[port.index];
-                    std::tuple<int, int, std::string> key{tile_type_id, it, std::string(port.name)};
                     std::tie<float, int>(value, wire_id) = tile_type_site_num_pin_name_model[key];
-                    if (wire_to_node_.find(std::make_tuple(tile_id, wire_id)) == wire_to_node_.end()) {
-                        node_id = -1;
-                    } else {
-                        node_id = wire_to_node_[std::make_tuple(tile_id, wire_id)];
-                    }
 
-                    location loc = tile_to_loc_[tile_id];
+                    int node_id;
+                    if (!wire_to_node_.count(std::make_tuple(tile_id, wire_id)))
+                        node_id = -1;
+                    else
+                        node_id = wire_to_node_[std::make_tuple(tile_id, wire_id)];
+
+                    t_location loc = tile_loc_bimap_[tile_id];
 
                     used_by_pin_.insert(std::make_tuple(node_id, loc));
                     useful_node_.insert(node_id);
@@ -1215,48 +1385,54 @@ struct RR_Graph_Builder {
                 it = next_good_site(it + 1, tile);
             }
         }
-        /*
-         * Add constant source
-         */
+
+        // Add constant sources. Tile ID "-1" corresponds to the constant synthetic tile
         sink_source_loc_map_[-1].resize(2);
-        for (auto i : {0, 1}) {
-            location loc = tile_to_loc_[-1];
-            used_by_pin_.insert(std::make_tuple(i, loc));
-            useful_node_.insert(i);
-            sink_source_loc_map_[-1][i] = std::make_tuple(false, 0, i);
+        for (auto pin_id : {0, 1}) {
+            t_location loc = tile_loc_bimap_[-1];
+            used_by_pin_.insert(std::make_tuple(pin_id, loc));
+            useful_node_.insert(pin_id);
+            sink_source_loc_map_[-1][pin_id] = std::make_tuple(false, 0, pin_id);
         }
     }
 
-    void sweep(location loc,
+    void sweep(t_location loc,
                e_rr_type type,
                int& used_tracks,
                std::unordered_map<int, std::list<int>>& sweeper,
                std::list<int>& avaiable_tracks) {
-        for (size_t k = 0; k < virtual_chan_loc_map_[std::make_tuple(loc, type)].size(); ++k) {
-            auto track = virtual_chan_loc_map_[std::make_tuple(loc, type)][k];
+        auto loc_type_tuple = std::make_tuple(loc, type);
+        for (size_t k = 0; k < virtual_chan_loc_map_[loc_type_tuple].size(); ++k) {
+            auto track = virtual_chan_loc_map_[loc_type_tuple][k];
             int new_id;
+
             if (!avaiable_tracks.empty()) {
                 new_id = avaiable_tracks.front();
                 avaiable_tracks.pop_front();
             } else {
                 new_id = used_tracks++;
             }
+
             virtual_beg_to_real_[std::make_tuple(loc, type, k)] = new_id;
-            chan_loc_map_[std::make_tuple(loc, type)][new_id] = track;
+            chan_loc_map_[loc_type_tuple][new_id] = track;
             int stop = type == CHANX ? std::get<3>(track).first : std::get<3>(track).second;
             sweeper[stop].push_back(new_id);
         }
+
         int pos = type == CHANX ? loc.first : loc.second;
+
         while (!sweeper[pos].empty()) {
             avaiable_tracks.push_back(sweeper[pos].front());
             sweeper[pos].pop_front();
         }
-        virtual_chan_loc_map_[std::make_tuple(loc, type)].clear();
+
+        virtual_chan_loc_map_[loc_type_tuple].clear();
     }
 
-    /*
-     * Create mapping from virtual to physical tracks.
-     * It should work in O(N*M + L), where n,m are device dims and l is number of used segments in CHANs
+    /** @brief Creates the mapping from the virtual to physical tracks.
+     *
+     * It works in O(N*M + L), where N and M are the device dimensions
+     * and L is the number of used segments in the various CHANs
      */
     void virtual_to_real() {
         device_ctx_.chan_width.x_list.resize(grid_.height(), 0);
@@ -1268,12 +1444,15 @@ struct RR_Graph_Builder {
 
         std::unordered_map<int, std::list<int>> sweeper;
         std::list<int> avaiable_tracks;
+
         int used_tracks;
         for (size_t i = 0; i < grid_.height(); ++i) {
             used_tracks = 0;
             avaiable_tracks.clear();
+
             for (size_t j = 0; j < grid_.width(); ++j)
-                sweep(location(j, i), CHANX, used_tracks, sweeper, avaiable_tracks);
+                sweep(t_location(j, i), CHANX, used_tracks, sweeper, avaiable_tracks);
+
             min_x = std::min(min_x, used_tracks);
             max_x = std::max(max_x, used_tracks);
             device_ctx_.chan_width.x_list[i] = used_tracks;
@@ -1282,8 +1461,10 @@ struct RR_Graph_Builder {
         for (size_t i = 0; i < grid_.width(); ++i) {
             used_tracks = 0;
             avaiable_tracks.clear();
+
             for (size_t j = grid_.height() - 1; j < (size_t)-1; --j)
-                sweep(location(i, j), CHANY, used_tracks, sweeper, avaiable_tracks);
+                sweep(t_location(i, j), CHANY, used_tracks, sweeper, avaiable_tracks);
+
             min_y = std::min(min_y, used_tracks);
             max_y = std::max(max_y, used_tracks);
             device_ctx_.chan_width.y_list[i] = used_tracks;
@@ -1297,85 +1478,96 @@ struct RR_Graph_Builder {
     }
 
     void pack_tiles() {
-        for (auto& i : sink_source_loc_map_) {
-            int tile_id = i.first;
+        for (auto& node_loc : sink_source_loc_map_) {
+            int tile_id = node_loc.first;
             int x, y;
-            location loc = tile_to_loc_[tile_id];
+            t_location loc = tile_loc_bimap_[tile_id];
             std::tie(x, y) = loc;
-            auto pin_vec = i.second;
-            for (size_t j = 0; j < pin_vec.size(); ++j) {
+
+            auto pin_vec = node_loc.second;
+            for (size_t pin_id = 0; pin_id < pin_vec.size(); ++pin_id) {
                 bool input;
                 float RC;
-                int FPGA_Interchange_node_id;
-                std::tie(input, RC, FPGA_Interchange_node_id) = pin_vec[j];
+                int interchange_node_id;
+                std::tie(input, RC, interchange_node_id) = pin_vec[pin_id];
+
                 e_rr_type pin = input ? e_rr_type::SINK : e_rr_type::SOURCE;
 
                 float R, C;
                 std::tie(R, C) = input ? std::tuple<float, float>(0, RC) : std::tuple<float, float>(RC, 0);
 
-                if (FPGA_Interchange_node_id != -1) {
-                    location track_loc;
+                if (interchange_node_id != -1) {
+                    t_location track_loc;
                     e_rr_type track_type;
                     int track_idx;
-                    if (virtual_redirect_.find(std::make_tuple(FPGA_Interchange_node_id, loc)) == virtual_redirect_.end()) {
-                        VTR_LOG("node_id:%d, loc->X:%d Y:%d\n", FPGA_Interchange_node_id, loc.first, loc.second);
+                    if (virtual_redirect_.find(std::make_tuple(interchange_node_id, loc)) == virtual_redirect_.end()) {
+                        VTR_LOG("node_id:%d, loc->X:%d Y:%d\n", interchange_node_id, loc.first, loc.second);
                         VTR_ASSERT(false);
                     }
-                    auto virtual_key = virtual_redirect_[std::make_tuple(FPGA_Interchange_node_id, loc)];
+                    auto virtual_key = virtual_redirect_[std::make_tuple(interchange_node_id, loc)];
                     track_idx = virtual_beg_to_real_[virtual_key];
                     std::tie(track_loc, track_type, std::ignore) = virtual_key;
 
                     auto val = chan_loc_map_[std::make_tuple(track_loc, track_type)][track_idx];
                     int track_seg;
                     float track_R, track_C;
-                    location end;
+                    t_location end;
                     std::tie(track_seg, track_R, track_C, end) = val;
                     track_R += R;
                     track_C += C;
-                    if (node_id_count_[FPGA_Interchange_node_id] == 1)
+
+                    if (node_id_count_[interchange_node_id] == 1)
                         track_seg = 0; //set __generic__ segment type for wires going to/from site and that have pips in tile
+
                     chan_loc_map_[std::make_tuple(track_loc, track_type)][track_idx] = std::make_tuple(track_seg, track_R, track_C, end);
                 }
 
                 rr_nodes_.make_room_for_node(RRNodeId(rr_idx));
-                loc_type_idx_to_rr_idx_[std::make_tuple(loc, pin, j)] = rr_idx;
+                loc_type_idx_to_rr_idx_[std::make_tuple(loc, pin, pin_id)] = rr_idx;
                 auto node = rr_nodes_[rr_idx];
                 RRNodeId node_id = node.id();
+
                 device_ctx_.rr_graph_builder.set_node_type(node_id, pin);
                 device_ctx_.rr_graph_builder.set_node_capacity(node_id, 1);
-                if (pin == e_rr_type::SOURCE) {
-                    device_ctx_.rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(SOURCE_COST_INDEX));
-                } else {
-                    device_ctx_.rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(SINK_COST_INDEX));
-                }
                 device_ctx_.rr_graph_builder.set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0, 0)));
                 device_ctx_.rr_graph_builder.set_node_coordinates(node_id, x, y, x, y);
-                device_ctx_.rr_graph_builder.set_node_ptc_num(node_id, j);
+                device_ctx_.rr_graph_builder.set_node_ptc_num(node_id, pin_id);
+
+                if (pin == e_rr_type::SOURCE)
+                    device_ctx_.rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(SOURCE_COST_INDEX));
+                else
+                    device_ctx_.rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(SINK_COST_INDEX));
+
                 rr_idx++;
             }
-            for (size_t j = 0; j < pin_vec.size(); ++j) {
+
+            for (size_t pin_id = 0; pin_id < pin_vec.size(); ++pin_id) {
                 bool input;
-                int FPGA_Interchange_node_id;
-                std::tie(input, std::ignore, FPGA_Interchange_node_id) = pin_vec[j];
-                if (FPGA_Interchange_node_id == -1)
+                int interchange_node_id;
+                std::tie(input, std::ignore, interchange_node_id) = pin_vec[pin_id];
+
+                if (interchange_node_id == -1)
                     continue;
+
                 e_rr_type pin = input ? e_rr_type::IPIN : e_rr_type::OPIN;
 
                 rr_nodes_.make_room_for_node(RRNodeId(rr_idx));
-                loc_type_idx_to_rr_idx_[std::make_tuple(loc, pin, j)] = rr_idx;
+                loc_type_idx_to_rr_idx_[std::make_tuple(loc, pin, pin_id)] = rr_idx;
                 auto node = rr_nodes_[rr_idx];
                 RRNodeId node_id = node.id();
+
                 device_ctx_.rr_graph_builder.set_node_type(node_id, pin);
                 device_ctx_.rr_graph_builder.set_node_capacity(node_id, 1);
-                if (pin == e_rr_type::IPIN) {
-                    device_ctx_.rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(IPIN_COST_INDEX));
-                } else {
-                    device_ctx_.rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(OPIN_COST_INDEX));
-                }
                 device_ctx_.rr_graph_builder.set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0, 0)));
                 device_ctx_.rr_graph_builder.set_node_coordinates(node_id, x, y, x, y);
-                device_ctx_.rr_graph_builder.set_node_ptc_num(node_id, j);
+                device_ctx_.rr_graph_builder.set_node_ptc_num(node_id, pin_id);
                 device_ctx_.rr_graph_builder.add_node_side(node_id, e_side::BOTTOM);
+
+                if (pin == e_rr_type::IPIN)
+                    device_ctx_.rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(IPIN_COST_INDEX));
+                else
+                    device_ctx_.rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(OPIN_COST_INDEX));
+
                 rr_idx++;
             }
         }
@@ -1383,16 +1575,17 @@ struct RR_Graph_Builder {
 
     void pack_chans() {
         for (auto i : chan_loc_map_) {
-            location loc;
+            t_location loc;
             e_rr_type type;
             std::tie(loc, type) = i.first;
             int x, y;
             std::tie(x, y) = loc;
+
             auto tracks = i.second;
             for (auto track : tracks) {
                 int seg;
                 float R, C;
-                location end;
+                t_location end;
                 int x1, y1;
                 std::tie(seg, R, C, end) = track.second;
                 std::tie(x1, y1) = end;
@@ -1410,11 +1603,11 @@ struct RR_Graph_Builder {
                 device_ctx_.rr_graph_builder.set_node_coordinates(node_id, x, y, x1, y1);
                 device_ctx_.rr_graph_builder.set_node_ptc_num(node_id, track.first);
 
-                if (type == e_rr_type::CHANX) {
+                if (type == e_rr_type::CHANX)
                     device_ctx_.rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + seg));
-                } else {
+                else
                     device_ctx_.rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_.size() + seg));
-                }
+
                 seg_index_[device_ctx_.rr_graph.node_cost_index(node_id)] = seg;
 
                 rr_idx++;
@@ -1434,15 +1627,17 @@ struct RR_Graph_Builder {
         for (auto& i : sink_source_loc_map_) {
             int tile_id = i.first;
             int x, y;
-            location loc = tile_to_loc_[tile_id];
+            t_location loc = tile_loc_bimap_[tile_id];
             std::tie(x, y) = loc;
             auto pin_vec = i.second;
-            for (size_t j = 0; j < pin_vec.size(); ++j) {
+            for (size_t ipin = 0; ipin < pin_vec.size(); ++ipin) {
                 bool input;
                 int node_id;
-                std::tie(input, std::ignore, node_id) = pin_vec[j];
+                std::tie(input, std::ignore, node_id) = pin_vec[ipin];
+
                 if (node_id == -1)
                     continue;
+
                 auto virtual_chan_key = virtual_redirect_[std::make_tuple(node_id, loc)];
                 e_rr_type pin = input ? e_rr_type::SINK : e_rr_type::SOURCE;
                 e_rr_type mux = input ? e_rr_type::IPIN : e_rr_type::OPIN;
@@ -1451,8 +1646,8 @@ struct RR_Graph_Builder {
                                                 virtual_beg_to_real_[virtual_chan_key]);
 
                 int pin_id, mux_id, track_id;
-                pin_id = loc_type_idx_to_rr_idx_[std::make_tuple(loc, pin, j)];
-                mux_id = loc_type_idx_to_rr_idx_[std::make_tuple(loc, mux, j)];
+                pin_id = loc_type_idx_to_rr_idx_[std::make_tuple(loc, pin, ipin)];
+                mux_id = loc_type_idx_to_rr_idx_[std::make_tuple(loc, mux, ipin)];
                 track_id = loc_type_idx_to_rr_idx_[chan_key];
 
                 int sink, sink_src, src;
@@ -1472,14 +1667,14 @@ struct RR_Graph_Builder {
 
     void pack_chans_edges() {
         for (auto& i : virtual_shorts_) {
-            location l1, l2;
+            t_location l1, l2;
             e_rr_type t1, t2;
             int virtual_idx1, idx1, virtual_idx2, idx2;
             std::tie(l1, t1, virtual_idx1, l2, t2, virtual_idx2) = i;
             idx1 = virtual_beg_to_real_[std::make_tuple(l1, t1, virtual_idx1)];
             idx2 = virtual_beg_to_real_[std::make_tuple(l2, t2, virtual_idx2)];
 
-            std::tuple<location, e_rr_type, int> key1(l1, t1, idx1), key2(l2, t2, idx2);
+            std::tuple<t_location, e_rr_type, int> key1(l1, t1, idx1), key2(l2, t2, idx2);
 
             int src, sink;
             src = loc_type_idx_to_rr_idx_[key1];
@@ -1501,7 +1696,7 @@ struct RR_Graph_Builder {
             int name, wire0, wire1;
             bool forward;
             std::tie(name, wire0, wire1, forward) = metadata;
-            location loc = tile_to_loc_[tile_id];
+            t_location loc = tile_loc_bimap_[tile_id];
             auto virtual_key1 = virtual_redirect_[std::make_tuple(node1, loc)];
             auto virtual_key2 = virtual_redirect_[std::make_tuple(node2, loc)];
 
@@ -1517,6 +1712,8 @@ struct RR_Graph_Builder {
             sink = loc_type_idx_to_rr_idx_[key2];
             device_ctx_.rr_graph_builder.emplace_back_edge(RRNodeId(src), RRNodeId(sink), sw_id);
 
+            // TODO: find a more efficient way to pack PIP information to build the physical netlist out
+            //       of a routed design
             char metadata_[100];
             char* temp = int_to_string(metadata_, name);
             *temp++ = '.';
@@ -1539,30 +1736,26 @@ struct RR_Graph_Builder {
         device_ctx_.rr_graph_builder.partition_edges();
     }
 
-    /*
-     * Fill device rr_graph informations.
+    /** @brief Fills the device RR graph.
      */
     void pack_to_rr_graph() {
-        // switches are already packed
-        // segments are already packed before rr_generation
-        // physical_tile_types are already packed before rr_generation
-        // grid is already packed before rr_generation
         pack_rr_nodes();
         pack_rr_edges();
     }
 
-    /*
-     * Finish rr_graph generation.
-     * Build node_lookup, inito fan_ins, load indexed data
+    /** @brief Finilizes the RR graph generation.
+     *
+     *      - Builds the node lookup
+     *      - Inits fan_ins
+     *      - Loads indexed data
      */
     void finish_rr_generation() {
-        for (t_rr_type rr_type : RR_TYPES) {
-            if (rr_type == CHANX) {
+        for (t_rr_type rr_type : RR_TYPES)
+            if (rr_type == CHANX)
                 device_ctx_.rr_graph_builder.node_lookup().resize_nodes(grid_.height(), grid_.width(), rr_type, NUM_SIDES);
-            } else {
+            else
                 device_ctx_.rr_graph_builder.node_lookup().resize_nodes(grid_.width(), grid_.height(), rr_type, NUM_SIDES);
-            }
-        }
+
         for (size_t node = 0; node < rr_nodes_.size(); node++) {
             auto rr_node = rr_nodes_[node];
             device_ctx_.rr_graph_builder.add_node_to_all_locs(rr_node.id());
@@ -1570,12 +1763,12 @@ struct RR_Graph_Builder {
 
         device_ctx_.rr_graph_builder.init_fan_in();
 
-        /* Create a temp copy to convert from vtr::vector to std::vector
-         * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data
-         * type for ``rr_segments``
-         * Note that this is a dirty fix (to avoid massive code changes)
-         * TODO: The ``alloc_and_load_rr_indexed_data()`` function should embrace ``vtr::vector`` for ``rr_segments``
-         */
+        // Creates a temporary copy to convert from vtr::vector to sitd::vector.
+        //
+        // This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data
+        // type for ``rr_segments``
+        // Note that this is a dirty fix (to avoid massive code changes)
+        // TODO: The ``alloc_and_load_rr_indexed_data()`` function should embrace ``vtr::vector`` for ``rr_segments``
         std::vector<t_segment_inf> temp_rr_segs;
         temp_rr_segs.reserve(segment_inf_.size());
         for (auto& rr_seg : segment_inf_) {
@@ -1588,9 +1781,9 @@ struct RR_Graph_Builder {
             base_cost_type_);
 
         VTR_ASSERT(device_ctx_.rr_indexed_data.size() == seg_index_.size());
-        for (size_t i = 0; i < seg_index_.size(); ++i) {
+
+        for (size_t i = 0; i < seg_index_.size(); ++i)
             device_ctx_.rr_indexed_data[RRIndexedDataId(i)].seg_index = seg_index_[RRIndexedDataId(i)];
-        }
     }
 };
 
@@ -1648,7 +1841,7 @@ void build_rr_graph_fpga_interchange(const t_graph_type graph_type,
 
     auto device_reader = message_reader.getRoot<DeviceResources::Device>();
 
-    RR_Graph_Builder builder(
+    InterchangeRRGraphBuilder builder(
         device_reader,
         grid,
         device_ctx,
