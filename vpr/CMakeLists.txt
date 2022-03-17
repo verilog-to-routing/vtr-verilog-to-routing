@@ -73,7 +73,7 @@ if(${VPR_ANALYTIC_PLACE})
 endif()
 
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
-
+target_include_directories(libvpr PUBLIC  ${PROJECT_SOURCE_DIR}/../libs/librrgraph/src/base/ )
 #Specify link-time dependancies
 target_link_libraries(libvpr
                         libvtrutil
