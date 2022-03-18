@@ -819,8 +819,8 @@ static void build_rr_graph(const t_graph_type graph_type,
         sb_conn_map = nullptr;
     }
 
-    free_type_track_to_pin_map(track_to_pin_lookup_x, types, nodes_per_chan.x_max);
-    free_type_track_to_pin_map(track_to_pin_lookup_y, types, nodes_per_chan.y_max);
+    track_to_pin_lookup_x.clear();
+    track_to_pin_lookup_y.clear();
     if (clb_to_clb_directs != nullptr) {
         free(clb_to_clb_directs);
     }
