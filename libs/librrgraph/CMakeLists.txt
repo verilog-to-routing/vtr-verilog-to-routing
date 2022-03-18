@@ -14,8 +14,19 @@ add_library(librrgraph STATIC
     ${LIB_SOURCES}
 )
 
-
+target_include_directories(librrgraph PUBLIC  ${PROJECT_SOURCE_DIR}/../../vpr/ )
+target_include_directories(librrgraph PUBLIC  ${PROJECT_SOURCE_DIR}/../EXTERNAL/ )
 set_target_properties(librrgraph PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
+
+
+if(${VTR_ENABLE_CAPNPROTO})
+    target_link_libraries(librrgraph libvtrcapnproto)
+endif()
+
+if(${VTR_ENABLE_CAPNPROTO})
+    add_definitions("-DVTR_ENABLE_CAPNPROTO")
+endif()
+
 
 #Specify link-time dependancies
 target_link_libraries(librrgraph 
