@@ -1,5 +1,5 @@
 vpr_status=success
 vpr_seconds=0
-rundir=/home/vm/VTR-Tools/Workspace_Victor/Basic_Architecture
+rundir=/home/vm/VTR-Tools/workspace/Basic_Architecture
 hostname=vm-VirtualBox
 error=

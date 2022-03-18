@@ -80,7 +80,7 @@
             {
             "name": "VTR Run",
             "commands": [
-                "cd ~/VTR-Tools/Workspace_Victor/Test_Folder",
+                "cd ~/VTR-Tools/workspace/Test_Folder",
                 ]
             },
             {
@@ -96,7 +96,7 @@
             {
             "name": "TB Run",
             "commands": [
-                "cd ~/VTR-Tools/build/Workspace_Victor/scripts/testbench",
+                "cd ~/VTR-Tools/build/workspace/scripts/testbench",
                 ]
             },
             {
@@ -112,7 +112,7 @@
             {
             "name": "Scripts Run",
             "commands": [
-                "cd ~/VTR-Tools/Workspace_Victor/scripts",
+                "cd ~/VTR-Tools/workspace/scripts",
                 ]
             } 
             ]

@@ -399,11 +399,11 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                         // }
                     }
                 }
-                // if (!fs::exists("~/VTR-Tools/Workspace_Victor/Test_Folder/SB_Out"))
+                // if (!fs::exists("~/VTR-Tools/workspace/Test_Folder/SB_Out"))
                 // {
-                //     //fs::create_directory("~/VTR-Tools/Workspace_Victor/SB_Out");
+                //     //fs::create_directory("~/VTR-Tools/workspace/SB_Out");
                 // }
-                // else if (!fs::exists("~/VTR-Tools/Workspace_Victor/SB_Out/x-y.txt"))
+                // else if (!fs::exists("~/VTR-Tools/workspace/SB_Out/x-y.txt"))
                 // {
                     
                     // for (int i = 0; i < ;i++)    

@@ -10,8 +10,8 @@ import argparse
 
 # Arguments
 ap = argparse.ArgumentParser(description='Give internal switch position for different topologies')
-ap.add_argument('-route', required=False, default='/home/vm/VTR-Tools/Workspace_Victor/scripts/switchbox_routing.csv', help='Location of input file containing routing info')
-ap.add_argument('-sbu', required=False, default='/home/vm/VTR-Tools/Workspace_Victor/scripts/SB-U_Positions.csv', help='Location of output file containing SB-U info')
+ap.add_argument('-route', required=False, default='/home/vm/VTR-Tools/workspace/scripts/switchbox_routing.csv', help='Location of input file containing routing info')
+ap.add_argument('-sbu', required=False, default='/home/vm/VTR-Tools/workspace/scripts/SB-U_Positions.csv', help='Location of output file containing SB-U info')
 ap.add_argument('-ld', required=False, action="store_true", help='Use -sbu to load previous file')
 args = ap.parse_args()
 

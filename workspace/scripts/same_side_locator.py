@@ -9,8 +9,8 @@ from xml.etree.ElementTree import tostring
 
 # Arguments
 ap = argparse.ArgumentParser(description='Parse information on internal connection of Switchbox')
-ap.add_argument('-route_file', required=False, default='/home/vm/VTR-Tools/Workspace_Victor/Test_Folder/Reference/blink/Reference_Arch/rr_graph2.xml', help='Location of input file containing routing info')
-ap.add_argument('-out_file', required=False, default='/home/vm/VTR-Tools/Workspace_Victor/Test_Folder/Reference/blink/Reference_Arch', help='Location of output file containing match info')
+ap.add_argument('-route_file', required=False, default='/home/vm/VTR-Tools/workspace/Test_Folder/Reference/blink/Reference_Arch/rr_graph2.xml', help='Location of input file containing routing info')
+ap.add_argument('-out_file', required=False, default='/home/vm/VTR-Tools/workspace/Test_Folder/Reference/blink/Reference_Arch', help='Location of output file containing match info')
 ap.add_argument('-help', required=False, help='List necessary arguments')
 args = ap.parse_args()
 

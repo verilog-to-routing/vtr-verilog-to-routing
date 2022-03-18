@@ -1,5 +1,5 @@
 vpr_status=success
 vpr_seconds=1
-rundir=/home/vm/VTR-Tools/Workspace_Victor/Test_Folder
+rundir=/home/vm/VTR-Tools/workspace/Test_Folder
 hostname=vm-VirtualBox
 error=

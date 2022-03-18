@@ -13,7 +13,7 @@ openlist = []
 
 side = ['lt','lr','lb','tr','tb','rb']
 W = 100
-filename = "/home/vm/VTR-Tools/Workspace_Victor/Basic_Architecture/switchbox_out.xml"
+filename = "/home/vm/VTR-Tools/workspace/Basic_Architecture/switchbox_out.xml"
 
 #<func type="lr" formula="t"/>
 
