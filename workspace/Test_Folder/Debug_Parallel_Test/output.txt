@@ -1,0 +1,5 @@
+vpr_status=success
+vpr_seconds=1
+rundir=/home/vm/VTR-Tools/Workspace_Victor/Test_Folder/Debug_Parallel_Test
+hostname=vm-VirtualBox
+error=

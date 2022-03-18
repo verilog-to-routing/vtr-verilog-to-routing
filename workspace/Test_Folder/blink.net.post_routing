@@ -1,0 +1,408 @@
+<?xml version="1.0"?>
+<block name="blink.net.post_routing" instance="FPGA_packed_netlist[0]" architecture_id="SHA256:24a30dea024c54ab203db38a7b73bd4425c4e5def21d9618a032202d7425a8d2" atom_netlist_id="SHA256:debf7ea747a95d5524fd0d1881b9898c3bf074914f0b3b294706e88192e4e319">
+	<inputs>blink^clk blink^i_reset</inputs>
+	<outputs>out:blink^o_led</outputs>
+	<clocks>blink^clk</clocks>
+	<block name="n17" instance="clb[0]" mode="default">
+		<inputs>
+			<port name="I0">open blink^r_counter~4_FF open open</port>
+			<port name="I1">open blink^r_counter~4_FF n27_1 blink^i_reset</port>
+			<port name="I2">blink^r_counter~3_FF blink^r_counter~0_FF blink^r_counter~1_FF blink^r_counter~2_FF</port>
+			<port name="I3">n25 open blink^i_reset blink^r_counter~3_FF</port>
+			<port name="I4">open blink^r_counter~0_FF blink^r_counter~1_FF blink^r_counter~2_FF</port>
+			<port name="I5">open blink^r_counter~0_FF open blink^i_reset</port>
+			<port name="I6">open blink^r_counter~0_FF blink^i_reset blink^r_counter~1_FF</port>
+			<port name="I7">blink^i_reset blink^r_counter~0_FF blink^r_counter~1_FF blink^r_counter~2_FF</port>
+		</inputs>
+		<outputs>
+			<port name="O">ble4[0].out[0]-&gt;directO ble4[1].out[0]-&gt;directO ble4[2].out[0]-&gt;directO ble4[3].out[0]-&gt;directO ble4[4].out[0]-&gt;directO ble4[5].out[0]-&gt;directO ble4[6].out[0]-&gt;directO ble4[7].out[0]-&gt;directO</port>
+		</outputs>
+		<clocks>
+			<port name="clk">blink^clk</port>
+		</clocks>
+		<block name="blink^o_led" instance="ble4[0]" mode="default">
+			<inputs>
+				<port name="in">open open clb.I0[1]-&gt;completeI0 open</port>
+			</inputs>
+			<outputs>
+				<port name="out">lut4[0].out[0]-&gt;mux1</port>
+			</outputs>
+			<clocks>
+				<port name="clk">open</port>
+			</clocks>
+			<block name="blink^o_led" instance="lut4[0]" mode="lut4">
+				<inputs>
+					<port name="in">open open ble4.in[2]-&gt;direct1 open</port>
+				</inputs>
+				<outputs>
+					<port name="out">lut[0].out[0]-&gt;direct:lut4</port>
+				</outputs>
+				<clocks />
+				<block name="blink^o_led" instance="lut[0]">
+					<attributes />
+					<parameters />
+					<inputs>
+						<port name="in">open open lut4.in[2]-&gt;direct:lut4 open</port>
+						<port_rotation_map name="in">open open 0 open</port_rotation_map>
+					</inputs>
+					<outputs>
+						<port name="out">blink^o_led</port>
+					</outputs>
+					<clocks />
+				</block>
+			</block>
+			<block name="open" instance="ff[0]" />
+		</block>
+		<block name="n27" instance="ble4[1]" mode="default">
+			<inputs>
+				<port name="in">open clb.I1[3]-&gt;completeI1 clb.I1[2]-&gt;completeI1 clb.I1[1]-&gt;completeI1</port>
+			</inputs>
+			<outputs>
+				<port name="out">ff[0].Q[0]-&gt;mux1</port>
+			</outputs>
+			<clocks>
+				<port name="clk">clb.clk[0]-&gt;clks</port>
+			</clocks>
+			<block name="n27" instance="lut4[0]" mode="lut4">
+				<inputs>
+					<port name="in">open ble4.in[1]-&gt;direct1 ble4.in[2]-&gt;direct1 ble4.in[3]-&gt;direct1</port>
+				</inputs>
+				<outputs>
+					<port name="out">lut[0].out[0]-&gt;direct:lut4</port>
+				</outputs>
+				<clocks />
+				<block name="n27" instance="lut[0]">
+					<attributes />
+					<parameters />
+					<inputs>
+						<port name="in">open lut4.in[1]-&gt;direct:lut4 lut4.in[2]-&gt;direct:lut4 lut4.in[3]-&gt;direct:lut4</port>
+						<port_rotation_map name="in">open 0 1 2</port_rotation_map>
+					</inputs>
+					<outputs>
+						<port name="out">n27</port>
+					</outputs>
+					<clocks />
+				</block>
+			</block>
+			<block name="blink^r_counter~4_FF" instance="ff[0]">
+				<attributes />
+				<parameters />
+				<inputs>
+					<port name="D">lut4[0].out[0]-&gt;direct2</port>
+				</inputs>
+				<outputs>
+					<port name="Q">blink^r_counter~4_FF</port>
+				</outputs>
+				<clocks>
+					<port name="clk">ble4.clk[0]-&gt;direct3</port>
+				</clocks>
+			</block>
+		</block>
+		<block name="n27_1" instance="ble4[2]" mode="default">
+			<inputs>
+				<port name="in">clb.I2[3]-&gt;completeI2 clb.I2[1]-&gt;completeI2 clb.I2[2]-&gt;completeI2 clb.I2[0]-&gt;completeI2</port>
+			</inputs>
+			<outputs>
+				<port name="out">lut4[0].out[0]-&gt;mux1</port>
+			</outputs>
+			<clocks>
+				<port name="clk">open</port>
+			</clocks>
+			<block name="n27_1" instance="lut4[0]" mode="lut4">
+				<inputs>
+					<port name="in">ble4.in[0]-&gt;direct1 ble4.in[1]-&gt;direct1 ble4.in[2]-&gt;direct1 ble4.in[3]-&gt;direct1</port>
+				</inputs>
+				<outputs>
+					<port name="out">lut[0].out[0]-&gt;direct:lut4</port>
+				</outputs>
+				<clocks />
+				<block name="n27_1" instance="lut[0]">
+					<attributes />
+					<parameters />
+					<inputs>
+						<port name="in">lut4.in[0]-&gt;direct:lut4 lut4.in[1]-&gt;direct:lut4 lut4.in[2]-&gt;direct:lut4 lut4.in[3]-&gt;direct:lut4</port>
+						<port_rotation_map name="in">2 0 1 3</port_rotation_map>
+					</inputs>
+					<outputs>
+						<port name="out">n27_1</port>
+					</outputs>
+					<clocks />
+				</block>
+			</block>
+			<block name="open" instance="ff[0]" />
+		</block>
+		<block name="n22" instance="ble4[3]" mode="default">
+			<inputs>
+				<port name="in">clb.I3[3]-&gt;completeI3 clb.I3[2]-&gt;completeI3 open clb.I3[0]-&gt;completeI3</port>
+			</inputs>
+			<outputs>
+				<port name="out">ff[0].Q[0]-&gt;mux1</port>
+			</outputs>
+			<clocks>
+				<port name="clk">clb.clk[0]-&gt;clks</port>
+			</clocks>
+			<block name="n22" instance="lut4[0]" mode="lut4">
+				<inputs>
+					<port name="in">ble4.in[0]-&gt;direct1 ble4.in[1]-&gt;direct1 open ble4.in[3]-&gt;direct1</port>
+				</inputs>
+				<outputs>
+					<port name="out">lut[0].out[0]-&gt;direct:lut4</port>
+				</outputs>
+				<clocks />
+				<block name="n22" instance="lut[0]">
+					<attributes />
+					<parameters />
+					<inputs>
+						<port name="in">lut4.in[0]-&gt;direct:lut4 lut4.in[1]-&gt;direct:lut4 open lut4.in[3]-&gt;direct:lut4</port>
+						<port_rotation_map name="in">2 0 open 1</port_rotation_map>
+					</inputs>
+					<outputs>
+						<port name="out">n22</port>
+					</outputs>
+					<clocks />
+				</block>
+			</block>
+			<block name="blink^r_counter~3_FF" instance="ff[0]">
+				<attributes />
+				<parameters />
+				<inputs>
+					<port name="D">lut4[0].out[0]-&gt;direct2</port>
+				</inputs>
+				<outputs>
+					<port name="Q">blink^r_counter~3_FF</port>
+				</outputs>
+				<clocks>
+					<port name="clk">ble4.clk[0]-&gt;direct3</port>
+				</clocks>
+			</block>
+		</block>
+		<block name="n25" instance="ble4[4]" mode="default">
+			<inputs>
+				<port name="in">clb.I4[1]-&gt;completeI4 clb.I4[3]-&gt;completeI4 open clb.I4[2]-&gt;completeI4</port>
+			</inputs>
+			<outputs>
+				<port name="out">lut4[0].out[0]-&gt;mux1</port>
+			</outputs>
+			<clocks>
+				<port name="clk">open</port>
+			</clocks>
+			<block name="n25" instance="lut4[0]" mode="lut4">
+				<inputs>
+					<port name="in">ble4.in[0]-&gt;direct1 ble4.in[1]-&gt;direct1 open ble4.in[3]-&gt;direct1</port>
+				</inputs>
+				<outputs>
+					<port name="out">lut[0].out[0]-&gt;direct:lut4</port>
+				</outputs>
+				<clocks />
+				<block name="n25" instance="lut[0]">
+					<attributes />
+					<parameters />
+					<inputs>
+						<port name="in">lut4.in[0]-&gt;direct:lut4 lut4.in[1]-&gt;direct:lut4 open lut4.in[3]-&gt;direct:lut4</port>
+						<port_rotation_map name="in">0 2 open 1</port_rotation_map>
+					</inputs>
+					<outputs>
+						<port name="out">n25</port>
+					</outputs>
+					<clocks />
+				</block>
+			</block>
+			<block name="open" instance="ff[0]" />
+		</block>
+		<block name="n7" instance="ble4[5]" mode="default">
+			<inputs>
+				<port name="in">clb.I5[1]-&gt;completeI5 open open clb.I5[3]-&gt;completeI5</port>
+			</inputs>
+			<outputs>
+				<port name="out">ff[0].Q[0]-&gt;mux1</port>
+			</outputs>
+			<clocks>
+				<port name="clk">clb.clk[0]-&gt;clks</port>
+			</clocks>
+			<block name="n7" instance="lut4[0]" mode="lut4">
+				<inputs>
+					<port name="in">ble4.in[0]-&gt;direct1 open open ble4.in[3]-&gt;direct1</port>
+				</inputs>
+				<outputs>
+					<port name="out">lut[0].out[0]-&gt;direct:lut4</port>
+				</outputs>
+				<clocks />
+				<block name="n7" instance="lut[0]">
+					<attributes />
+					<parameters />
+					<inputs>
+						<port name="in">lut4.in[0]-&gt;direct:lut4 open open lut4.in[3]-&gt;direct:lut4</port>
+						<port_rotation_map name="in">1 open open 0</port_rotation_map>
+					</inputs>
+					<outputs>
+						<port name="out">n7</port>
+					</outputs>
+					<clocks />
+				</block>
+			</block>
+			<block name="blink^r_counter~0_FF" instance="ff[0]">
+				<attributes />
+				<parameters />
+				<inputs>
+					<port name="D">lut4[0].out[0]-&gt;direct2</port>
+				</inputs>
+				<outputs>
+					<port name="Q">blink^r_counter~0_FF</port>
+				</outputs>
+				<clocks>
+					<port name="clk">ble4.clk[0]-&gt;direct3</port>
+				</clocks>
+			</block>
+		</block>
+		<block name="n12" instance="ble4[6]" mode="default">
+			<inputs>
+				<port name="in">clb.I6[2]-&gt;completeI6 clb.I6[3]-&gt;completeI6 clb.I6[1]-&gt;completeI6 open</port>
+			</inputs>
+			<outputs>
+				<port name="out">ff[0].Q[0]-&gt;mux1</port>
+			</outputs>
+			<clocks>
+				<port name="clk">clb.clk[0]-&gt;clks</port>
+			</clocks>
+			<block name="n12" instance="lut4[0]" mode="lut4">
+				<inputs>
+					<port name="in">ble4.in[0]-&gt;direct1 ble4.in[1]-&gt;direct1 ble4.in[2]-&gt;direct1 open</port>
+				</inputs>
+				<outputs>
+					<port name="out">lut[0].out[0]-&gt;direct:lut4</port>
+				</outputs>
+				<clocks />
+				<block name="n12" instance="lut[0]">
+					<attributes />
+					<parameters />
+					<inputs>
+						<port name="in">lut4.in[0]-&gt;direct:lut4 lut4.in[1]-&gt;direct:lut4 lut4.in[2]-&gt;direct:lut4 open</port>
+						<port_rotation_map name="in">0 2 1 open</port_rotation_map>
+					</inputs>
+					<outputs>
+						<port name="out">n12</port>
+					</outputs>
+					<clocks />
+				</block>
+			</block>
+			<block name="blink^r_counter~1_FF" instance="ff[0]">
+				<attributes />
+				<parameters />
+				<inputs>
+					<port name="D">lut4[0].out[0]-&gt;direct2</port>
+				</inputs>
+				<outputs>
+					<port name="Q">blink^r_counter~1_FF</port>
+				</outputs>
+				<clocks>
+					<port name="clk">ble4.clk[0]-&gt;direct3</port>
+				</clocks>
+			</block>
+		</block>
+		<block name="n17" instance="ble4[7]" mode="default">
+			<inputs>
+				<port name="in">clb.I7[3]-&gt;completeI7 clb.I7[1]-&gt;completeI7 clb.I7[0]-&gt;completeI7 clb.I7[2]-&gt;completeI7</port>
+			</inputs>
+			<outputs>
+				<port name="out">ff[0].Q[0]-&gt;mux1</port>
+			</outputs>
+			<clocks>
+				<port name="clk">clb.clk[0]-&gt;clks</port>
+			</clocks>
+			<block name="n17" instance="lut4[0]" mode="lut4">
+				<inputs>
+					<port name="in">ble4.in[0]-&gt;direct1 ble4.in[1]-&gt;direct1 ble4.in[2]-&gt;direct1 ble4.in[3]-&gt;direct1</port>
+				</inputs>
+				<outputs>
+					<port name="out">lut[0].out[0]-&gt;direct:lut4</port>
+				</outputs>
+				<clocks />
+				<block name="n17" instance="lut[0]">
+					<attributes />
+					<parameters />
+					<inputs>
+						<port name="in">lut4.in[0]-&gt;direct:lut4 lut4.in[1]-&gt;direct:lut4 lut4.in[2]-&gt;direct:lut4 lut4.in[3]-&gt;direct:lut4</port>
+						<port_rotation_map name="in">3 0 2 1</port_rotation_map>
+					</inputs>
+					<outputs>
+						<port name="out">n17</port>
+					</outputs>
+					<clocks />
+				</block>
+			</block>
+			<block name="blink^r_counter~2_FF" instance="ff[0]">
+				<attributes />
+				<parameters />
+				<inputs>
+					<port name="D">lut4[0].out[0]-&gt;direct2</port>
+				</inputs>
+				<outputs>
+					<port name="Q">blink^r_counter~2_FF</port>
+				</outputs>
+				<clocks>
+					<port name="clk">ble4.clk[0]-&gt;direct3</port>
+				</clocks>
+			</block>
+		</block>
+	</block>
+	<block name="out:blink^o_led" instance="io[1]" mode="outpad">
+		<inputs>
+			<port name="outpad">blink^o_led</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">open</port>
+		</outputs>
+		<clocks>
+			<port name="clock">open</port>
+		</clocks>
+		<block name="out:blink^o_led" instance="outpad[0]">
+			<attributes />
+			<parameters />
+			<inputs>
+				<port name="outpad">io.outpad[0]-&gt;outpad</port>
+			</inputs>
+			<outputs />
+			<clocks />
+		</block>
+	</block>
+	<block name="blink^clk" instance="io[2]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks>
+			<port name="clock">open</port>
+		</clocks>
+		<block name="blink^clk" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">blink^clk</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="blink^i_reset" instance="io[3]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks>
+			<port name="clock">open</port>
+		</clocks>
+		<block name="blink^i_reset" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">blink^i_reset</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+</block>

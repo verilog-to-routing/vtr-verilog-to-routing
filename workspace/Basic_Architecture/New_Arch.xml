@@ -1,0 +1,1121 @@
+<architecture>
+    
+<!-- Subcircuit Specification -->
+    <models>
+        <!-- Multiplier Model -->
+        <!--model name="multiply">
+            <input_ports>
+              <port name="a" combinational_sink_ports="out"/>
+              <port name="b" combinational_sink_ports="out"/>
+            </input_ports>
+            <output_ports>
+              <port name="out"/>
+            </output_ports>
+        </model-->
+        
+        <!-- RAM Model -->
+        <model name="single_port_ram">
+            <input_ports>
+              <port name="we" clock="clk"/>
+              <port name="addr" clock="clk"/>
+              <port name="data" clock="clk"/>
+              <port name="clk" is_clock="1"/>
+            </input_ports>
+            <output_ports>
+              <port name="out" clock="clk"/>
+            </output_ports>
+        </model>
+    </models>
+
+<!-- Functional Blocks Specification -->
+    <tiles>
+        <!-- IO Block Specification -->
+        <tile name="io">
+            <!-- IO Block Internal Block Specification -->
+            <sub_tile name="io" capacity="8">
+                <!-- Maps Complex Block To Tile -->
+                <equivalent_sites>
+                    <site pb_type="io" pin_mapping="direct"/>
+                </equivalent_sites>
+                <!-- IO Pad Ports Specification -->
+                <input name="outpad" num_pins="1"/>
+                <output name="inpad" num_pins="1"/>
+                <clock name="clock" num_pins="1"/>
+                <!-- CB Connection Density Specification -->
+                <fc in_type="frac" in_val="1.000000" out_type="frac" out_val="1.000000"/>
+<!--                 <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
+                  <fc_override port_name="outpad" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="inpad" segment_name="tristate_switch" fc_type="frac" fc_val="0.200000"/>
+                  <fc_override port_name="clock" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                </fc> -->
+                <!-- Pin Location Specification -->
+                <pinlocations pattern="custom">
+                    <loc side="left">io.outpad io.inpad io.clock</loc>
+                    <loc side="top">io.outpad io.inpad io.clock</loc>
+                    <loc side="right">io.outpad io.inpad io.clock</loc>
+                    <loc side="bottom">io.outpad io.inpad io.clock</loc>
+                </pinlocations>
+            </sub_tile>
+        </tile>
+        <!-- CLB Block Specification -->
+        <tile name="clb" area="3900">
+            <sub_tile name="clb">
+                <equivalent_sites>
+                  <site pb_type="clb" pin_mapping="direct"/>
+                </equivalent_sites>
+                <input name="I0" num_pins="4" equivalent="full"/>
+                <input name="I1" num_pins="4" equivalent="full"/>
+                <input name="I2" num_pins="4" equivalent="full"/>
+                <input name="I3" num_pins="4" equivalent="full"/>
+                <input name="I4" num_pins="4" equivalent="full"/>
+                <input name="I5" num_pins="4" equivalent="full"/>
+                <input name="I6" num_pins="4" equivalent="full"/>
+                <input name="I7" num_pins="4" equivalent="full"/>
+                <output name="O" num_pins="8" equivalent="none"/>
+                <clock name="clk" num_pins="1"/>
+                <fc in_type="frac" in_val="0.300000" out_type="frac" out_val="0.300000"/>
+<!--                 <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
+                  <fc_override port_name="I0" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="I1" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="I2" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="I3" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="I4" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="I5" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="I6" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="I7" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="clk" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="O" segment_name="tristate_switch" fc_type="frac" fc_val="0.200000"/>
+                </fc> -->
+                <pinlocations pattern="spread"/>
+              </sub_tile>
+        </tile>
+        <!-- Memory Block Specification -->
+        <tile name="memory">
+            <sub_tile name="memory">
+                <equivalent_sites>
+                  <site pb_type="memory" pin_mapping="direct"/>
+                </equivalent_sites>
+                <input name="addr" num_pins="14"/>
+                <input name="data" num_pins="36"/>
+                <input name="we" num_pins="1"/>
+                <output name="out" num_pins="36"/>
+                <clock name="clk" num_pins="1"/>
+                <fc in_type="frac" in_val="1.000000" out_type="frac" out_val="1.000000"/>
+                <!-- <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
+                  <fc_override port_name="addr" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="data" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="we" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="clk" segment_name="tristate_switch" fc_type="frac" fc_val="0"/>
+                  <fc_override port_name="out" segment_name="tristate_switch" fc_type="frac" fc_val="0.200000"/>
+                </fc> -->
+                <pinlocations pattern="spread"/>
+              </sub_tile>
+        </tile>
+    </tiles>
+
+<!-- Grid Layout Specification -->
+    <layout>
+        <!-- Fixed Size Device Specification -->
+         <!-- <fixed_layout name="test_layout" width="9" height="9">
+            Fills Design With CLB
+            <fill type="clb" priority="1"/>
+            Adds IO On the Side
+            <perimeter type="io" priority="100"/>
+            Empties Corners
+            <corners type="EMPTY" priority="101"/>
+            Add RAM block
+            <col type="memory" startx="2" starty="1" repeatx="7" priority="20"/>
+            Adds empty block when RAM doesn't fit
+            <col type="EMPTY" startx="2" repeatx="7" starty="1" priority="19"/>
+        </fixed_layout>  -->
+        
+        <!-- Scalable Device Specification -->
+        <auto_layout aspect_ratio="1.0">
+            
+            <!-- Adds IO On the Side -->
+            <perimeter type="io" priority="100"/>
+            <!-- Empties Corners -->
+            <corners type="EMPTY" priority="101"/>
+            <!-- Add RAM block -->
+            <col type="memory" startx="2" starty="1" repeatx="7" priority="20"/>
+            <!-- Adds empty block when RAM doesn't fit -->
+            <col type="EMPTY" startx="2" repeatx="7" starty="1" priority="19"/>
+
+            <fill type="clb" priority="1"/>
+        </auto_layout>
+
+    </layout>
+
+<!-- Device Specification -->
+    <device>
+        <!-- NMOS/PMOS Size Specification -->
+        <sizing R_minW_nmos="13090.00000" R_minW_pmos="19086.831111"/>
+        <!-- CB Switch Name -->
+        <connection_block input_switch_name="ipin_cblock"/>
+        <!-- SB Type -->
+        <switch_block type="custom"/>
+        <!-- Block Area Specification -->
+        <area grid_logic_tile_area="30000"/>
+    </device>
+
+<!-- Switch Type Specification -->
+    <switchlist>
+        <!-- <switch type="tristate" name="tristate_switch" R="1431.71752925" Cout="0." Cin="1.191000e-14" Tdel="1.482000e-10" buf_size="auto"/>
+        <switch type="pass_gate" name="ipin_cblock" R="1431.71752925" Cout="0." Cin="1.191000e-14" Tdel="1.482000e-10"/> -->
+        <!-- <switch type="tristate" name="opin_cblock" R="1431.71752925" Cout="0." Cin="1.191000e-14" Tdel="1.482000e-10" buf_size="auto"/> -->
+
+        <switch type="tristate" name="tristate_switch" R="1431.71752925" Cout="0." Cin="1.191000e-14" Tdel="1.482000e-10" buf_size="auto"/>
+        <switch type="tristate" name="opin_cblock" R="1431.71752925" Cout="0." Cin="1.191000e-14" Tdel="1.482000e-10" buf_size="auto"/>
+        <switch type="mux" name="ipin_cblock" R="1431.71752925" Cout="0." Cin="1.191000e-14" Tdel="1.482000e-10" mux_trans_size="1.000000" buf_size="auto"/>
+
+    </switchlist>
+
+<!-- Wire Segment Type Specification -->
+    <segmentlist>
+        <segment name="tristate_switch" freq="100.00000" length="4" type="bidir" Rmetal="11.064550" Cmetal="4.727860e-14">
+            <wire_switch name="tristate_switch"/>            
+            <sb type="pattern">1 1 1 1 1</sb>
+            <cb type="pattern">1 1 1 1</cb>
+            <opin_switch name="opin_cblock"/>
+            </segment>
+    </segmentlist>
+
+<!-- Switchblocks Specification -->
+    <switchblocklist>
+        <!-- Default SB Pattern -->
+        <switchblock name="custom" type="bidir">
+            <!-- Location Specification -->
+            <switchblock_location type="EVERYWHERE"/>
+            <!-- Pattern Specification -->
+            <switchfuncs>
+                <func type="lt" formula="t+0"/>
+                <func type="lt" formula="t+1"/>
+                <func type="lt" formula="t+2"/>
+                <func type="lt" formula="t+3"/>
+                <func type="lt" formula="t+4"/>
+                <func type="lt" formula="t+5"/>
+                <func type="lt" formula="t+6"/>
+                <func type="lt" formula="t+7"/>
+                <func type="lt" formula="t+8"/>
+                <func type="lt" formula="t+9"/>
+                <func type="lt" formula="t+10"/>
+                <func type="lt" formula="t+11"/>
+                <func type="lt" formula="t+12"/>
+                <func type="lt" formula="t+13"/>
+                <func type="lt" formula="t+14"/>
+                <func type="lt" formula="t+15"/>
+                <func type="lt" formula="t+16"/>
+                <func type="lt" formula="t+17"/>
+                <func type="lt" formula="t+18"/>
+                <func type="lt" formula="t+19"/>
+                <func type="lt" formula="t+20"/>
+                <func type="lt" formula="t+21"/>
+                <func type="lt" formula="t+22"/>
+                <func type="lt" formula="t+23"/>
+                <func type="lt" formula="t+24"/>
+                <func type="lt" formula="t+25"/>
+                <func type="lt" formula="t+26"/>
+                <func type="lt" formula="t+27"/>
+                <func type="lt" formula="t+28"/>
+                <func type="lt" formula="t+29"/>
+                <func type="lt" formula="t+30"/>
+                <func type="lt" formula="t+31"/>
+                <func type="lt" formula="t+32"/>
+                <func type="lt" formula="t+33"/>
+                <func type="lt" formula="t+34"/>
+                <func type="lt" formula="t+35"/>
+                <func type="lt" formula="t+36"/>
+                <func type="lt" formula="t+37"/>
+                <func type="lt" formula="t+38"/>
+                <func type="lt" formula="t+39"/>
+                <func type="lt" formula="t+40"/>
+                <func type="lt" formula="t+41"/>
+                <func type="lt" formula="t+42"/>
+                <func type="lt" formula="t+43"/>
+                <func type="lt" formula="t+44"/>
+                <func type="lt" formula="t+45"/>
+                <func type="lt" formula="t+46"/>
+                <func type="lt" formula="t+47"/>
+                <func type="lt" formula="t+48"/>
+                <func type="lt" formula="t+49"/>
+                <func type="lt" formula="t+50"/>
+                <func type="lt" formula="t+51"/>
+                <func type="lt" formula="t+52"/>
+                <func type="lt" formula="t+53"/>
+                <func type="lt" formula="t+54"/>
+                <func type="lt" formula="t+55"/>
+                <func type="lt" formula="t+56"/>
+                <func type="lt" formula="t+57"/>
+                <func type="lt" formula="t+58"/>
+                <func type="lt" formula="t+59"/>
+                <func type="lt" formula="t+60"/>
+                <func type="lt" formula="t+61"/>
+                <func type="lt" formula="t+62"/>
+                <func type="lt" formula="t+63"/>
+                <func type="lt" formula="t+64"/>
+                <func type="lt" formula="t+65"/>
+                <func type="lt" formula="t+66"/>
+                <func type="lt" formula="t+67"/>
+                <func type="lt" formula="t+68"/>
+                <func type="lt" formula="t+69"/>
+                <func type="lt" formula="t+70"/>
+                <func type="lt" formula="t+71"/>
+                <func type="lt" formula="t+72"/>
+                <func type="lt" formula="t+73"/>
+                <func type="lt" formula="t+74"/>
+                <func type="lt" formula="t+75"/>
+                <func type="lt" formula="t+76"/>
+                <func type="lt" formula="t+77"/>
+                <func type="lt" formula="t+78"/>
+                <func type="lt" formula="t+79"/>
+                <func type="lt" formula="t+80"/>
+                <func type="lt" formula="t+81"/>
+                <func type="lt" formula="t+82"/>
+                <func type="lt" formula="t+83"/>
+                <func type="lt" formula="t+84"/>
+                <func type="lt" formula="t+85"/>
+                <func type="lt" formula="t+86"/>
+                <func type="lt" formula="t+87"/>
+                <func type="lt" formula="t+88"/>
+                <func type="lt" formula="t+89"/>
+                <func type="lt" formula="t+90"/>
+                <func type="lt" formula="t+91"/>
+                <func type="lt" formula="t+92"/>
+                <func type="lt" formula="t+93"/>
+                <func type="lt" formula="t+94"/>
+                <func type="lt" formula="t+95"/>
+                <func type="lt" formula="t+96"/>
+                <func type="lt" formula="t+97"/>
+                <func type="lt" formula="t+98"/>
+                <func type="lt" formula="t+99"/>
+                <func type="lr" formula="t+0"/>
+                <func type="lr" formula="t+1"/>
+                <func type="lr" formula="t+2"/>
+                <func type="lr" formula="t+3"/>
+                <func type="lr" formula="t+4"/>
+                <func type="lr" formula="t+5"/>
+                <func type="lr" formula="t+6"/>
+                <func type="lr" formula="t+7"/>
+                <func type="lr" formula="t+8"/>
+                <func type="lr" formula="t+9"/>
+                <func type="lr" formula="t+10"/>
+                <func type="lr" formula="t+11"/>
+                <func type="lr" formula="t+12"/>
+                <func type="lr" formula="t+13"/>
+                <func type="lr" formula="t+14"/>
+                <func type="lr" formula="t+15"/>
+                <func type="lr" formula="t+16"/>
+                <func type="lr" formula="t+17"/>
+                <func type="lr" formula="t+18"/>
+                <func type="lr" formula="t+19"/>
+                <func type="lr" formula="t+20"/>
+                <func type="lr" formula="t+21"/>
+                <func type="lr" formula="t+22"/>
+                <func type="lr" formula="t+23"/>
+                <func type="lr" formula="t+24"/>
+                <func type="lr" formula="t+25"/>
+                <func type="lr" formula="t+26"/>
+                <func type="lr" formula="t+27"/>
+                <func type="lr" formula="t+28"/>
+                <func type="lr" formula="t+29"/>
+                <func type="lr" formula="t+30"/>
+                <func type="lr" formula="t+31"/>
+                <func type="lr" formula="t+32"/>
+                <func type="lr" formula="t+33"/>
+                <func type="lr" formula="t+34"/>
+                <func type="lr" formula="t+35"/>
+                <func type="lr" formula="t+36"/>
+                <func type="lr" formula="t+37"/>
+                <func type="lr" formula="t+38"/>
+                <func type="lr" formula="t+39"/>
+                <func type="lr" formula="t+40"/>
+                <func type="lr" formula="t+41"/>
+                <func type="lr" formula="t+42"/>
+                <func type="lr" formula="t+43"/>
+                <func type="lr" formula="t+44"/>
+                <func type="lr" formula="t+45"/>
+                <func type="lr" formula="t+46"/>
+                <func type="lr" formula="t+47"/>
+                <func type="lr" formula="t+48"/>
+                <func type="lr" formula="t+49"/>
+                <func type="lr" formula="t+50"/>
+                <func type="lr" formula="t+51"/>
+                <func type="lr" formula="t+52"/>
+                <func type="lr" formula="t+53"/>
+                <func type="lr" formula="t+54"/>
+                <func type="lr" formula="t+55"/>
+                <func type="lr" formula="t+56"/>
+                <func type="lr" formula="t+57"/>
+                <func type="lr" formula="t+58"/>
+                <func type="lr" formula="t+59"/>
+                <func type="lr" formula="t+60"/>
+                <func type="lr" formula="t+61"/>
+                <func type="lr" formula="t+62"/>
+                <func type="lr" formula="t+63"/>
+                <func type="lr" formula="t+64"/>
+                <func type="lr" formula="t+65"/>
+                <func type="lr" formula="t+66"/>
+                <func type="lr" formula="t+67"/>
+                <func type="lr" formula="t+68"/>
+                <func type="lr" formula="t+69"/>
+                <func type="lr" formula="t+70"/>
+                <func type="lr" formula="t+71"/>
+                <func type="lr" formula="t+72"/>
+                <func type="lr" formula="t+73"/>
+                <func type="lr" formula="t+74"/>
+                <func type="lr" formula="t+75"/>
+                <func type="lr" formula="t+76"/>
+                <func type="lr" formula="t+77"/>
+                <func type="lr" formula="t+78"/>
+                <func type="lr" formula="t+79"/>
+                <func type="lr" formula="t+80"/>
+                <func type="lr" formula="t+81"/>
+                <func type="lr" formula="t+82"/>
+                <func type="lr" formula="t+83"/>
+                <func type="lr" formula="t+84"/>
+                <func type="lr" formula="t+85"/>
+                <func type="lr" formula="t+86"/>
+                <func type="lr" formula="t+87"/>
+                <func type="lr" formula="t+88"/>
+                <func type="lr" formula="t+89"/>
+                <func type="lr" formula="t+90"/>
+                <func type="lr" formula="t+91"/>
+                <func type="lr" formula="t+92"/>
+                <func type="lr" formula="t+93"/>
+                <func type="lr" formula="t+94"/>
+                <func type="lr" formula="t+95"/>
+                <func type="lr" formula="t+96"/>
+                <func type="lr" formula="t+97"/>
+                <func type="lr" formula="t+98"/>
+                <func type="lr" formula="t+99"/>
+                <func type="lb" formula="t+0"/>
+                <func type="lb" formula="t+1"/>
+                <func type="lb" formula="t+2"/>
+                <func type="lb" formula="t+3"/>
+                <func type="lb" formula="t+4"/>
+                <func type="lb" formula="t+5"/>
+                <func type="lb" formula="t+6"/>
+                <func type="lb" formula="t+7"/>
+                <func type="lb" formula="t+8"/>
+                <func type="lb" formula="t+9"/>
+                <func type="lb" formula="t+10"/>
+                <func type="lb" formula="t+11"/>
+                <func type="lb" formula="t+12"/>
+                <func type="lb" formula="t+13"/>
+                <func type="lb" formula="t+14"/>
+                <func type="lb" formula="t+15"/>
+                <func type="lb" formula="t+16"/>
+                <func type="lb" formula="t+17"/>
+                <func type="lb" formula="t+18"/>
+                <func type="lb" formula="t+19"/>
+                <func type="lb" formula="t+20"/>
+                <func type="lb" formula="t+21"/>
+                <func type="lb" formula="t+22"/>
+                <func type="lb" formula="t+23"/>
+                <func type="lb" formula="t+24"/>
+                <func type="lb" formula="t+25"/>
+                <func type="lb" formula="t+26"/>
+                <func type="lb" formula="t+27"/>
+                <func type="lb" formula="t+28"/>
+                <func type="lb" formula="t+29"/>
+                <func type="lb" formula="t+30"/>
+                <func type="lb" formula="t+31"/>
+                <func type="lb" formula="t+32"/>
+                <func type="lb" formula="t+33"/>
+                <func type="lb" formula="t+34"/>
+                <func type="lb" formula="t+35"/>
+                <func type="lb" formula="t+36"/>
+                <func type="lb" formula="t+37"/>
+                <func type="lb" formula="t+38"/>
+                <func type="lb" formula="t+39"/>
+                <func type="lb" formula="t+40"/>
+                <func type="lb" formula="t+41"/>
+                <func type="lb" formula="t+42"/>
+                <func type="lb" formula="t+43"/>
+                <func type="lb" formula="t+44"/>
+                <func type="lb" formula="t+45"/>
+                <func type="lb" formula="t+46"/>
+                <func type="lb" formula="t+47"/>
+                <func type="lb" formula="t+48"/>
+                <func type="lb" formula="t+49"/>
+                <func type="lb" formula="t+50"/>
+                <func type="lb" formula="t+51"/>
+                <func type="lb" formula="t+52"/>
+                <func type="lb" formula="t+53"/>
+                <func type="lb" formula="t+54"/>
+                <func type="lb" formula="t+55"/>
+                <func type="lb" formula="t+56"/>
+                <func type="lb" formula="t+57"/>
+                <func type="lb" formula="t+58"/>
+                <func type="lb" formula="t+59"/>
+                <func type="lb" formula="t+60"/>
+                <func type="lb" formula="t+61"/>
+                <func type="lb" formula="t+62"/>
+                <func type="lb" formula="t+63"/>
+                <func type="lb" formula="t+64"/>
+                <func type="lb" formula="t+65"/>
+                <func type="lb" formula="t+66"/>
+                <func type="lb" formula="t+67"/>
+                <func type="lb" formula="t+68"/>
+                <func type="lb" formula="t+69"/>
+                <func type="lb" formula="t+70"/>
+                <func type="lb" formula="t+71"/>
+                <func type="lb" formula="t+72"/>
+                <func type="lb" formula="t+73"/>
+                <func type="lb" formula="t+74"/>
+                <func type="lb" formula="t+75"/>
+                <func type="lb" formula="t+76"/>
+                <func type="lb" formula="t+77"/>
+                <func type="lb" formula="t+78"/>
+                <func type="lb" formula="t+79"/>
+                <func type="lb" formula="t+80"/>
+                <func type="lb" formula="t+81"/>
+                <func type="lb" formula="t+82"/>
+                <func type="lb" formula="t+83"/>
+                <func type="lb" formula="t+84"/>
+                <func type="lb" formula="t+85"/>
+                <func type="lb" formula="t+86"/>
+                <func type="lb" formula="t+87"/>
+                <func type="lb" formula="t+88"/>
+                <func type="lb" formula="t+89"/>
+                <func type="lb" formula="t+90"/>
+                <func type="lb" formula="t+91"/>
+                <func type="lb" formula="t+92"/>
+                <func type="lb" formula="t+93"/>
+                <func type="lb" formula="t+94"/>
+                <func type="lb" formula="t+95"/>
+                <func type="lb" formula="t+96"/>
+                <func type="lb" formula="t+97"/>
+                <func type="lb" formula="t+98"/>
+                <func type="lb" formula="t+99"/>
+                <func type="tr" formula="t+0"/>
+                <func type="tr" formula="t+1"/>
+                <func type="tr" formula="t+2"/>
+                <func type="tr" formula="t+3"/>
+                <func type="tr" formula="t+4"/>
+                <func type="tr" formula="t+5"/>
+                <func type="tr" formula="t+6"/>
+                <func type="tr" formula="t+7"/>
+                <func type="tr" formula="t+8"/>
+                <func type="tr" formula="t+9"/>
+                <func type="tr" formula="t+10"/>
+                <func type="tr" formula="t+11"/>
+                <func type="tr" formula="t+12"/>
+                <func type="tr" formula="t+13"/>
+                <func type="tr" formula="t+14"/>
+                <func type="tr" formula="t+15"/>
+                <func type="tr" formula="t+16"/>
+                <func type="tr" formula="t+17"/>
+                <func type="tr" formula="t+18"/>
+                <func type="tr" formula="t+19"/>
+                <func type="tr" formula="t+20"/>
+                <func type="tr" formula="t+21"/>
+                <func type="tr" formula="t+22"/>
+                <func type="tr" formula="t+23"/>
+                <func type="tr" formula="t+24"/>
+                <func type="tr" formula="t+25"/>
+                <func type="tr" formula="t+26"/>
+                <func type="tr" formula="t+27"/>
+                <func type="tr" formula="t+28"/>
+                <func type="tr" formula="t+29"/>
+                <func type="tr" formula="t+30"/>
+                <func type="tr" formula="t+31"/>
+                <func type="tr" formula="t+32"/>
+                <func type="tr" formula="t+33"/>
+                <func type="tr" formula="t+34"/>
+                <func type="tr" formula="t+35"/>
+                <func type="tr" formula="t+36"/>
+                <func type="tr" formula="t+37"/>
+                <func type="tr" formula="t+38"/>
+                <func type="tr" formula="t+39"/>
+                <func type="tr" formula="t+40"/>
+                <func type="tr" formula="t+41"/>
+                <func type="tr" formula="t+42"/>
+                <func type="tr" formula="t+43"/>
+                <func type="tr" formula="t+44"/>
+                <func type="tr" formula="t+45"/>
+                <func type="tr" formula="t+46"/>
+                <func type="tr" formula="t+47"/>
+                <func type="tr" formula="t+48"/>
+                <func type="tr" formula="t+49"/>
+                <func type="tr" formula="t+50"/>
+                <func type="tr" formula="t+51"/>
+                <func type="tr" formula="t+52"/>
+                <func type="tr" formula="t+53"/>
+                <func type="tr" formula="t+54"/>
+                <func type="tr" formula="t+55"/>
+                <func type="tr" formula="t+56"/>
+                <func type="tr" formula="t+57"/>
+                <func type="tr" formula="t+58"/>
+                <func type="tr" formula="t+59"/>
+                <func type="tr" formula="t+60"/>
+                <func type="tr" formula="t+61"/>
+                <func type="tr" formula="t+62"/>
+                <func type="tr" formula="t+63"/>
+                <func type="tr" formula="t+64"/>
+                <func type="tr" formula="t+65"/>
+                <func type="tr" formula="t+66"/>
+                <func type="tr" formula="t+67"/>
+                <func type="tr" formula="t+68"/>
+                <func type="tr" formula="t+69"/>
+                <func type="tr" formula="t+70"/>
+                <func type="tr" formula="t+71"/>
+                <func type="tr" formula="t+72"/>
+                <func type="tr" formula="t+73"/>
+                <func type="tr" formula="t+74"/>
+                <func type="tr" formula="t+75"/>
+                <func type="tr" formula="t+76"/>
+                <func type="tr" formula="t+77"/>
+                <func type="tr" formula="t+78"/>
+                <func type="tr" formula="t+79"/>
+                <func type="tr" formula="t+80"/>
+                <func type="tr" formula="t+81"/>
+                <func type="tr" formula="t+82"/>
+                <func type="tr" formula="t+83"/>
+                <func type="tr" formula="t+84"/>
+                <func type="tr" formula="t+85"/>
+                <func type="tr" formula="t+86"/>
+                <func type="tr" formula="t+87"/>
+                <func type="tr" formula="t+88"/>
+                <func type="tr" formula="t+89"/>
+                <func type="tr" formula="t+90"/>
+                <func type="tr" formula="t+91"/>
+                <func type="tr" formula="t+92"/>
+                <func type="tr" formula="t+93"/>
+                <func type="tr" formula="t+94"/>
+                <func type="tr" formula="t+95"/>
+                <func type="tr" formula="t+96"/>
+                <func type="tr" formula="t+97"/>
+                <func type="tr" formula="t+98"/>
+                <func type="tr" formula="t+99"/>
+                <func type="tb" formula="t+0"/>
+                <func type="tb" formula="t+1"/>
+                <func type="tb" formula="t+2"/>
+                <func type="tb" formula="t+3"/>
+                <func type="tb" formula="t+4"/>
+                <func type="tb" formula="t+5"/>
+                <func type="tb" formula="t+6"/>
+                <func type="tb" formula="t+7"/>
+                <func type="tb" formula="t+8"/>
+                <func type="tb" formula="t+9"/>
+                <func type="tb" formula="t+10"/>
+                <func type="tb" formula="t+11"/>
+                <func type="tb" formula="t+12"/>
+                <func type="tb" formula="t+13"/>
+                <func type="tb" formula="t+14"/>
+                <func type="tb" formula="t+15"/>
+                <func type="tb" formula="t+16"/>
+                <func type="tb" formula="t+17"/>
+                <func type="tb" formula="t+18"/>
+                <func type="tb" formula="t+19"/>
+                <func type="tb" formula="t+20"/>
+                <func type="tb" formula="t+21"/>
+                <func type="tb" formula="t+22"/>
+                <func type="tb" formula="t+23"/>
+                <func type="tb" formula="t+24"/>
+                <func type="tb" formula="t+25"/>
+                <func type="tb" formula="t+26"/>
+                <func type="tb" formula="t+27"/>
+                <func type="tb" formula="t+28"/>
+                <func type="tb" formula="t+29"/>
+                <func type="tb" formula="t+30"/>
+                <func type="tb" formula="t+31"/>
+                <func type="tb" formula="t+32"/>
+                <func type="tb" formula="t+33"/>
+                <func type="tb" formula="t+34"/>
+                <func type="tb" formula="t+35"/>
+                <func type="tb" formula="t+36"/>
+                <func type="tb" formula="t+37"/>
+                <func type="tb" formula="t+38"/>
+                <func type="tb" formula="t+39"/>
+                <func type="tb" formula="t+40"/>
+                <func type="tb" formula="t+41"/>
+                <func type="tb" formula="t+42"/>
+                <func type="tb" formula="t+43"/>
+                <func type="tb" formula="t+44"/>
+                <func type="tb" formula="t+45"/>
+                <func type="tb" formula="t+46"/>
+                <func type="tb" formula="t+47"/>
+                <func type="tb" formula="t+48"/>
+                <func type="tb" formula="t+49"/>
+                <func type="tb" formula="t+50"/>
+                <func type="tb" formula="t+51"/>
+                <func type="tb" formula="t+52"/>
+                <func type="tb" formula="t+53"/>
+                <func type="tb" formula="t+54"/>
+                <func type="tb" formula="t+55"/>
+                <func type="tb" formula="t+56"/>
+                <func type="tb" formula="t+57"/>
+                <func type="tb" formula="t+58"/>
+                <func type="tb" formula="t+59"/>
+                <func type="tb" formula="t+60"/>
+                <func type="tb" formula="t+61"/>
+                <func type="tb" formula="t+62"/>
+                <func type="tb" formula="t+63"/>
+                <func type="tb" formula="t+64"/>
+                <func type="tb" formula="t+65"/>
+                <func type="tb" formula="t+66"/>
+                <func type="tb" formula="t+67"/>
+                <func type="tb" formula="t+68"/>
+                <func type="tb" formula="t+69"/>
+                <func type="tb" formula="t+70"/>
+                <func type="tb" formula="t+71"/>
+                <func type="tb" formula="t+72"/>
+                <func type="tb" formula="t+73"/>
+                <func type="tb" formula="t+74"/>
+                <func type="tb" formula="t+75"/>
+                <func type="tb" formula="t+76"/>
+                <func type="tb" formula="t+77"/>
+                <func type="tb" formula="t+78"/>
+                <func type="tb" formula="t+79"/>
+                <func type="tb" formula="t+80"/>
+                <func type="tb" formula="t+81"/>
+                <func type="tb" formula="t+82"/>
+                <func type="tb" formula="t+83"/>
+                <func type="tb" formula="t+84"/>
+                <func type="tb" formula="t+85"/>
+                <func type="tb" formula="t+86"/>
+                <func type="tb" formula="t+87"/>
+                <func type="tb" formula="t+88"/>
+                <func type="tb" formula="t+89"/>
+                <func type="tb" formula="t+90"/>
+                <func type="tb" formula="t+91"/>
+                <func type="tb" formula="t+92"/>
+                <func type="tb" formula="t+93"/>
+                <func type="tb" formula="t+94"/>
+                <func type="tb" formula="t+95"/>
+                <func type="tb" formula="t+96"/>
+                <func type="tb" formula="t+97"/>
+                <func type="tb" formula="t+98"/>
+                <func type="tb" formula="t+99"/>
+                <func type="rb" formula="t+0"/>
+                <func type="rb" formula="t+1"/>
+                <func type="rb" formula="t+2"/>
+                <func type="rb" formula="t+3"/>
+                <func type="rb" formula="t+4"/>
+                <func type="rb" formula="t+5"/>
+                <func type="rb" formula="t+6"/>
+                <func type="rb" formula="t+7"/>
+                <func type="rb" formula="t+8"/>
+                <func type="rb" formula="t+9"/>
+                <func type="rb" formula="t+10"/>
+                <func type="rb" formula="t+11"/>
+                <func type="rb" formula="t+12"/>
+                <func type="rb" formula="t+13"/>
+                <func type="rb" formula="t+14"/>
+                <func type="rb" formula="t+15"/>
+                <func type="rb" formula="t+16"/>
+                <func type="rb" formula="t+17"/>
+                <func type="rb" formula="t+18"/>
+                <func type="rb" formula="t+19"/>
+                <func type="rb" formula="t+20"/>
+                <func type="rb" formula="t+21"/>
+                <func type="rb" formula="t+22"/>
+                <func type="rb" formula="t+23"/>
+                <func type="rb" formula="t+24"/>
+                <func type="rb" formula="t+25"/>
+                <func type="rb" formula="t+26"/>
+                <func type="rb" formula="t+27"/>
+                <func type="rb" formula="t+28"/>
+                <func type="rb" formula="t+29"/>
+                <func type="rb" formula="t+30"/>
+                <func type="rb" formula="t+31"/>
+                <func type="rb" formula="t+32"/>
+                <func type="rb" formula="t+33"/>
+                <func type="rb" formula="t+34"/>
+                <func type="rb" formula="t+35"/>
+                <func type="rb" formula="t+36"/>
+                <func type="rb" formula="t+37"/>
+                <func type="rb" formula="t+38"/>
+                <func type="rb" formula="t+39"/>
+                <func type="rb" formula="t+40"/>
+                <func type="rb" formula="t+41"/>
+                <func type="rb" formula="t+42"/>
+                <func type="rb" formula="t+43"/>
+                <func type="rb" formula="t+44"/>
+                <func type="rb" formula="t+45"/>
+                <func type="rb" formula="t+46"/>
+                <func type="rb" formula="t+47"/>
+                <func type="rb" formula="t+48"/>
+                <func type="rb" formula="t+49"/>
+                <func type="rb" formula="t+50"/>
+                <func type="rb" formula="t+51"/>
+                <func type="rb" formula="t+52"/>
+                <func type="rb" formula="t+53"/>
+                <func type="rb" formula="t+54"/>
+                <func type="rb" formula="t+55"/>
+                <func type="rb" formula="t+56"/>
+                <func type="rb" formula="t+57"/>
+                <func type="rb" formula="t+58"/>
+                <func type="rb" formula="t+59"/>
+                <func type="rb" formula="t+60"/>
+                <func type="rb" formula="t+61"/>
+                <func type="rb" formula="t+62"/>
+                <func type="rb" formula="t+63"/>
+                <func type="rb" formula="t+64"/>
+                <func type="rb" formula="t+65"/>
+                <func type="rb" formula="t+66"/>
+                <func type="rb" formula="t+67"/>
+                <func type="rb" formula="t+68"/>
+                <func type="rb" formula="t+69"/>
+                <func type="rb" formula="t+70"/>
+                <func type="rb" formula="t+71"/>
+                <func type="rb" formula="t+72"/>
+                <func type="rb" formula="t+73"/>
+                <func type="rb" formula="t+74"/>
+                <func type="rb" formula="t+75"/>
+                <func type="rb" formula="t+76"/>
+                <func type="rb" formula="t+77"/>
+                <func type="rb" formula="t+78"/>
+                <func type="rb" formula="t+79"/>
+                <func type="rb" formula="t+80"/>
+                <func type="rb" formula="t+81"/>
+                <func type="rb" formula="t+82"/>
+                <func type="rb" formula="t+83"/>
+                <func type="rb" formula="t+84"/>
+                <func type="rb" formula="t+85"/>
+                <func type="rb" formula="t+86"/>
+                <func type="rb" formula="t+87"/>
+                <func type="rb" formula="t+88"/>
+                <func type="rb" formula="t+89"/>
+                <func type="rb" formula="t+90"/>
+                <func type="rb" formula="t+91"/>
+                <func type="rb" formula="t+92"/>
+                <func type="rb" formula="t+93"/>
+                <func type="rb" formula="t+94"/>
+                <func type="rb" formula="t+95"/>
+                <func type="rb" formula="t+96"/>
+                <func type="rb" formula="t+97"/>
+                <func type="rb" formula="t+98"/>
+                <func type="rb" formula="t+99"/>
+            </switchfuncs>
+            <!-- <wireconn from_type="tristate_switch" to_type="tristate_switch" from_switchpoint="0" to_switchpoint="1" num_conns="from"/> -->
+        </switchblock>    
+    </switchblocklist>
+
+<!-- Functional Blocks Type Specification -->
+    <complexblocklist>
+        
+        <pb_type name="io">
+            <!-- Defines PB wide pins -->
+            <input name="outpad" num_pins="1"/>
+            <output name="inpad" num_pins="1"/>
+            <clock name="clock" num_pins="1"/>
+            
+            <!-- Inpad Mode Specification (when IO is used as input) -->
+            <mode name="inpad">
+
+                <!-- Defines Child PB Pins -->
+                <pb_type name="inpad" blif_model=".input" num_pb="1">
+                  <output name="inpad" num_pins="1"/>
+                </pb_type>
+
+                <!-- Maps Child Pins to Top Level Pins -->
+                <interconnect>
+                  <direct name="inpad" input="inpad.inpad" output="io.inpad">
+                    <delay_constant max="4.243e-11" in_port="inpad.inpad" out_port="io.inpad"/>
+                  </direct>
+                </interconnect>
+            </mode>
+
+            <!-- Outpad Mode Specification (when IO is used as output) -->
+            <mode name="outpad">
+                <!-- Defines Child PB Pins -->
+                <pb_type name="outpad" blif_model=".output" num_pb="1">
+                  <input name="outpad" num_pins="1"/>
+                </pb_type>
+                <!-- Maps Child Pins to Top Level Pins -->
+                <interconnect>
+                  <direct name="outpad" input="io.outpad" output="outpad.outpad">
+                    <delay_constant max="1.394e-11" in_port="io.outpad" out_port="outpad.outpad"/>
+                  </direct>
+                </interconnect>
+            </mode>
+        </pb_type>
+
+        <pb_type name="clb">
+            <!-- Defines PB wide pins (4 per BLE) -->
+            <input name="I0" num_pins="4" equivalent="full"/>
+            <input name="I1" num_pins="4" equivalent="full"/>
+            <input name="I2" num_pins="4" equivalent="full"/>
+            <input name="I3" num_pins="4" equivalent="full"/>
+            <input name="I4" num_pins="4" equivalent="full"/>
+            <input name="I5" num_pins="4" equivalent="full"/>
+            <input name="I6" num_pins="4" equivalent="full"/>
+            <input name="I7" num_pins="4" equivalent="full"/>
+            <output name="O" num_pins="8" equivalent="none"/>
+            <clock name="clk" num_pins="1"/>
+
+            <!-- CLB Internal Operation Specification -->
+
+            <!-- BLE Specification -->
+            <pb_type name="ble4" num_pb="8">
+              <input name="in" num_pins="4"/>
+              <output name="out" num_pins="1"/>
+              <clock name="clk" num_pins="1"/>
+              <!-- LUT Specification -->
+              <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
+                <!-- Define Child PB Pins (4 input LUT) -->
+                <input name="in" num_pins="4" port_class="lut_in"/>
+                <output name="out" num_pins="1" port_class="lut_out"/>
+                <!-- Input Timing Matrix -->
+                <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
+                      1.145e-10
+                      1.145e-10
+                      1.145e-10
+                      1.145e-10
+                </delay_matrix>
+              </pb_type>
+
+              <!-- FF Specification -->
+              <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+                <input name="D" num_pins="1" port_class="D"/>
+                <output name="Q" num_pins="1" port_class="Q"/>
+                <clock name="clk" num_pins="1" port_class="clock"/>
+                <T_setup value="1.891e-11" port="ff.D" clock="clk"/>
+                <T_clock_to_Q max="6.032e-11" port="ff.Q" clock="clk"/>
+              </pb_type>
+
+              <interconnect>
+                <direct name="direct1" input="ble4.in" output="lut4[0:0].in"/>
+                <direct name="direct2" input="lut4.out" output="ff.D">
+                  <!-- Advanced user option that tells CAD tool to find LUT+FF pairs in netlist -->
+                  <pack_pattern name="ble4" in_port="lut4.out" out_port="ff.D"/>
+                </direct>
+                <direct name="direct3" input="ble4.clk" output="ff.clk"/>
+                <mux name="mux1" input="ff.Q lut4.out" output="ble4.out">
+                  <delay_constant max="16.6e-12" in_port="lut4.out[0:0]" out_port="ble4.out[0:0]"/>
+                  <delay_constant max="30e-12" in_port="ff[0:0].Q" out_port="ble4.out[0:0]"/>
+                </mux>
+              </interconnect>
+            </pb_type>
+
+            <!-- Maps Child Pins to Top Level Pins -->
+            <interconnect>
+              <complete name="completeI0" input="clb.I0" output="ble4[0].in"/>
+              <complete name="completeI1" input="clb.I1" output="ble4[1].in"/>
+              <complete name="completeI2" input="clb.I2" output="ble4[2].in"/>
+              <complete name="completeI3" input="clb.I3" output="ble4[3].in"/>
+              <complete name="completeI4" input="clb.I4" output="ble4[4].in"/>
+              <complete name="completeI5" input="clb.I5" output="ble4[5].in"/>
+              <complete name="completeI6" input="clb.I6" output="ble4[6].in"/>
+              <complete name="completeI7" input="clb.I7" output="ble4[7].in"/>
+
+              <complete name="clks" input="clb.clk" output="ble4[7:0].clk"/>
+              <direct name="directO" input="ble4[7:0].out" output="clb.O"/>
+            </interconnect>
+        </pb_type>
+
+        <pb_type name="memory">
+            <!-- Defines PB wide pins -->
+            <input name="addr" num_pins="14"/>
+            <input name="data" num_pins="36"/>
+            <input name="we" num_pins="1"/>
+            <output name="out" num_pins="36"/>
+            <clock name="clk" num_pins="1"/>
+            <!-- Memory Mode Specification -->
+            <mode name="mem_512x36">
+              <pb_type name="mem_512x36" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+                <input name="addr" num_pins="9" port_class="address"/>
+                <input name="data" num_pins="36" port_class="data_in"/>
+                <input name="we" num_pins="1" port_class="write_en"/>
+                <output name="out" num_pins="36" port_class="data_out"/>
+                <clock name="clk" num_pins="1" port_class="clock"/>
+                <T_setup value="509e-12" port="mem_512x36.addr" clock="clk"/>
+                <T_setup value="509e-12" port="mem_512x36.data" clock="clk"/>
+                <T_setup value="509e-12" port="mem_512x36.we" clock="clk"/>
+                <T_clock_to_Q max="1.234e-9" port="mem_512x36.out" clock="clk"/>
+                <power method="pin-toggle">
+                  <port name="clk" energy_per_toggle="9.0e-12"/>
+                  <static_power power_per_instance="0.0"/>
+                </power>
+              </pb_type>
+              <interconnect>
+                <direct name="address" input="memory.addr[8:0]" output="mem_512x36.addr">
+                  <delay_constant max="132e-12" in_port="memory.addr[8:0]" out_port="mem_512x36.addr"/>
+                </direct>
+                <direct name="data" input="memory.data[35:0]" output="mem_512x36.data">
+                  <delay_constant max="132e-12" in_port="memory.data[35:0]" out_port="mem_512x36.data"/>
+                </direct>
+                <direct name="writeen" input="memory.we" output="mem_512x36.we">
+                  <delay_constant max="132e-12" in_port="memory.we" out_port="mem_512x36.we"/>
+                </direct>
+                <direct name="dataout" input="mem_512x36.out" output="memory.out[35:0]">
+                  <delay_constant max="40e-12" in_port="mem_512x36.out" out_port="memory.out[35:0]"/>
+                </direct>
+                <direct name="clk" input="memory.clk" output="mem_512x36.clk">
+                </direct>
+              </interconnect>
+            </mode>
+            <mode name="mem_1024x18">
+              <pb_type name="mem_1024x18" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+                <input name="addr" num_pins="10" port_class="address"/>
+                <input name="data" num_pins="18" port_class="data_in"/>
+                <input name="we" num_pins="1" port_class="write_en"/>
+                <output name="out" num_pins="18" port_class="data_out"/>
+                <clock name="clk" num_pins="1" port_class="clock"/>
+                <T_setup value="509e-12" port="mem_1024x18.addr" clock="clk"/>
+                <T_setup value="509e-12" port="mem_1024x18.data" clock="clk"/>
+                <T_setup value="509e-12" port="mem_1024x18.we" clock="clk"/>
+                <T_clock_to_Q max="1.234e-9" port="mem_1024x18.out" clock="clk"/>
+                <power method="pin-toggle">
+                  <port name="clk" energy_per_toggle="9.0e-12"/>
+                  <static_power power_per_instance="0.0"/>
+                </power>
+              </pb_type>
+              <interconnect>
+                <direct name="address" input="memory.addr[9:0]" output="mem_1024x18.addr">
+                  <delay_constant max="132e-12" in_port="memory.addr[9:0]" out_port="mem_1024x18.addr"/>
+                </direct>
+                <direct name="data" input="memory.data[17:0]" output="mem_1024x18.data">
+                  <delay_constant max="132e-12" in_port="memory.data[17:0]" out_port="mem_1024x18.data"/>
+                </direct>
+                <direct name="writeen" input="memory.we" output="mem_1024x18.we">
+                  <delay_constant max="132e-12" in_port="memory.we" out_port="mem_1024x18.we"/>
+                </direct>
+                <direct name="dataout" input="mem_1024x18.out" output="memory.out[17:0]">
+                  <delay_constant max="40e-12" in_port="mem_1024x18.out" out_port="memory.out[17:0]"/>
+                </direct>
+                <direct name="clk" input="memory.clk" output="mem_1024x18.clk">
+                </direct>
+              </interconnect>
+            </mode>
+            <mode name="mem_2048x9">
+              <pb_type name="mem_2048x9" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+                <input name="addr" num_pins="11" port_class="address"/>
+                <input name="data" num_pins="9" port_class="data_in"/>
+                <input name="we" num_pins="1" port_class="write_en"/>
+                <output name="out" num_pins="9" port_class="data_out"/>
+                <clock name="clk" num_pins="1" port_class="clock"/>
+                <T_setup value="509e-12" port="mem_2048x9.addr" clock="clk"/>
+                <T_setup value="509e-12" port="mem_2048x9.data" clock="clk"/>
+                <T_setup value="509e-12" port="mem_2048x9.we" clock="clk"/>
+                <T_clock_to_Q max="1.234e-9" port="mem_2048x9.out" clock="clk"/>
+                <power method="pin-toggle">
+                  <port name="clk" energy_per_toggle="9.0e-12"/>
+                  <static_power power_per_instance="0.0"/>
+                </power>
+              </pb_type>
+              <interconnect>
+                <direct name="address" input="memory.addr[10:0]" output="mem_2048x9.addr">
+                  <delay_constant max="132e-12" in_port="memory.addr[10:0]" out_port="mem_2048x9.addr"/>
+                </direct>
+                <direct name="data" input="memory.data[8:0]" output="mem_2048x9.data">
+                  <delay_constant max="132e-12" in_port="memory.data[8:0]" out_port="mem_2048x9.data"/>
+                </direct>
+                <direct name="writeen" input="memory.we" output="mem_2048x9.we">
+                  <delay_constant max="132e-12" in_port="memory.we" out_port="mem_2048x9.we"/>
+                </direct>
+                <direct name="dataout" input="mem_2048x9.out" output="memory.out[8:0]">
+                  <delay_constant max="40e-12" in_port="mem_2048x9.out" out_port="memory.out[8:0]"/>
+                </direct>
+                <direct name="clk" input="memory.clk" output="mem_2048x9.clk">
+                </direct>
+              </interconnect>
+            </mode>
+            <mode name="mem_4096x4">
+              <pb_type name="mem_4096x4" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+                <input name="addr" num_pins="12" port_class="address"/>
+                <input name="data" num_pins="4" port_class="data_in"/>
+                <input name="we" num_pins="1" port_class="write_en"/>
+                <output name="out" num_pins="4" port_class="data_out"/>
+                <clock name="clk" num_pins="1" port_class="clock"/>
+                <T_setup value="509e-12" port="mem_4096x4.addr" clock="clk"/>
+                <T_setup value="509e-12" port="mem_4096x4.data" clock="clk"/>
+                <T_setup value="509e-12" port="mem_4096x4.we" clock="clk"/>
+                <T_clock_to_Q max="1.234e-9" port="mem_4096x4.out" clock="clk"/>
+                <power method="pin-toggle">
+                  <port name="clk" energy_per_toggle="9.0e-12"/>
+                  <static_power power_per_instance="0.0"/>
+                </power>
+              </pb_type>
+              <interconnect>
+                <direct name="address" input="memory.addr[11:0]" output="mem_4096x4.addr">
+                  <delay_constant max="132e-12" in_port="memory.addr[11:0]" out_port="mem_4096x4.addr"/>
+                </direct>
+                <direct name="data" input="memory.data[3:0]" output="mem_4096x4.data">
+                  <delay_constant max="132e-12" in_port="memory.data[3:0]" out_port="mem_4096x4.data"/>
+                </direct>
+                <direct name="writeen" input="memory.we" output="mem_4096x4.we">
+                  <delay_constant max="132e-12" in_port="memory.we" out_port="mem_4096x4.we"/>
+                </direct>
+                <direct name="dataout" input="mem_4096x4.out" output="memory.out[3:0]">
+                  <delay_constant max="40e-12" in_port="mem_4096x4.out" out_port="memory.out[3:0]"/>
+                </direct>
+                <direct name="clk" input="memory.clk" output="mem_4096x4.clk">
+                </direct>
+              </interconnect>
+            </mode>
+            <mode name="mem_8192x2">
+              <pb_type name="mem_8192x2" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+                <input name="addr" num_pins="13" port_class="address"/>
+                <input name="data" num_pins="2" port_class="data_in"/>
+                <input name="we" num_pins="1" port_class="write_en"/>
+                <output name="out" num_pins="2" port_class="data_out"/>
+                <clock name="clk" num_pins="1" port_class="clock"/>
+                <T_setup value="509e-12" port="mem_8192x2.addr" clock="clk"/>
+                <T_setup value="509e-12" port="mem_8192x2.data" clock="clk"/>
+                <T_setup value="509e-12" port="mem_8192x2.we" clock="clk"/>
+                <T_clock_to_Q max="1.234e-9" port="mem_8192x2.out" clock="clk"/>
+                <power method="pin-toggle">
+                  <port name="clk" energy_per_toggle="9.0e-12"/>
+                  <static_power power_per_instance="0.0"/>
+                </power>
+              </pb_type>
+              <interconnect>
+                <direct name="address" input="memory.addr[12:0]" output="mem_8192x2.addr">
+                  <delay_constant max="132e-12" in_port="memory.addr[12:0]" out_port="mem_8192x2.addr"/>
+                </direct>
+                <direct name="data" input="memory.data[1:0]" output="mem_8192x2.data">
+                  <delay_constant max="132e-12" in_port="memory.data[1:0]" out_port="mem_8192x2.data"/>
+                </direct>
+                <direct name="writeen" input="memory.we" output="mem_8192x2.we">
+                  <delay_constant max="132e-12" in_port="memory.we" out_port="mem_8192x2.we"/>
+                </direct>
+                <direct name="dataout" input="mem_8192x2.out" output="memory.out[1:0]">
+                  <delay_constant max="40e-12" in_port="mem_8192x2.out" out_port="memory.out[1:0]"/>
+                </direct>
+                <direct name="clk" input="memory.clk" output="mem_8192x2.clk">
+                </direct>
+              </interconnect>
+            </mode>
+            <mode name="mem_16384x1">
+              <pb_type name="mem_16384x1" blif_model=".subckt single_port_ram" class="memory" num_pb="1">
+                <input name="addr" num_pins="14" port_class="address"/>
+                <input name="data" num_pins="1" port_class="data_in"/>
+                <input name="we" num_pins="1" port_class="write_en"/>
+                <output name="out" num_pins="1" port_class="data_out"/>
+                <clock name="clk" num_pins="1" port_class="clock"/>
+                <T_setup value="509e-12" port="mem_16384x1.addr" clock="clk"/>
+                <T_setup value="509e-12" port="mem_16384x1.data" clock="clk"/>
+                <T_setup value="509e-12" port="mem_16384x1.we" clock="clk"/>
+                <T_clock_to_Q max="1.234e-9" port="mem_16384x1.out" clock="clk"/>
+                <power method="pin-toggle">
+                  <port name="clk" energy_per_toggle="9.0e-12"/>
+                  <static_power power_per_instance="0.0"/>
+                </power>
+              </pb_type>
+              <interconnect>
+                <direct name="address" input="memory.addr[13:0]" output="mem_16384x1.addr">
+                  <delay_constant max="132e-12" in_port="memory.addr[13:0]" out_port="mem_16384x1.addr"/>
+                </direct>
+                <direct name="data" input="memory.data[0:0]" output="mem_16384x1.data">
+                  <delay_constant max="132e-12" in_port="memory.data[0:0]" out_port="mem_16384x1.data"/>
+                </direct>
+                <direct name="writeen" input="memory.we" output="mem_16384x1.we">
+                  <delay_constant max="132e-12" in_port="memory.we" out_port="mem_16384x1.we"/>
+                </direct>
+                <direct name="dataout" input="mem_16384x1.out" output="memory.out[0:0]">
+                  <delay_constant max="40e-12" in_port="mem_16384x1.out" out_port="memory.out[0:0]"/>
+                </direct>
+                <direct name="clk" input="memory.clk" output="mem_16384x1.clk">
+                </direct>
+              </interconnect>
+            </mode>
+            
+            <power method="sum-of-children"/>
+        </pb_type>
+
+    </complexblocklist>
+
+</architecture>

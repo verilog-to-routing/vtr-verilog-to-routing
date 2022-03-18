@@ -1,0 +1,48 @@
+x: 2 y: 2 SB Name: wilton_turn_core SB Type: 3
+
+x: 2 y: 3 SB Name: wilton_turn_core SB Type: 3
+
+x: 0 y: 0 SB Name: wilton_turn_perimeter SB Type: 0
+
+x: 0 y: 1 SB Name: wilton_turn_perimeter SB Type: 0
+
+x: 0 y: 2 SB Name: wilton_turn_perimeter SB Type: 0
+
+x: 0 y: 3 SB Name: wilton_turn_perimeter SB Type: 0
+
+x: 1 y: 0 SB Name: wilton_turn_perimeter SB Type: 0
+
+x: 1 y: 1 SB Name: wilton_turn_perimeter SB Type: 0
+
+x: 1 y: 2 SB Name: wilton_turn_perimeter SB Type: 0
+
+x: 1 y: 3 SB Name: wilton_turn_perimeter SB Type: 0
+
+x: 2 y: 0 SB Name: wilton_turn_perimeter SB Type: 0
+
+x: 2 y: 1 SB Name: wilton_turn_perimeter SB Type: 0
+
+x: 0 y: 0 SB Name: wilton_straight SB Type: 4
+
+x: 0 y: 1 SB Name: wilton_straight SB Type: 4
+
+x: 0 y: 2 SB Name: wilton_straight SB Type: 4
+
+x: 0 y: 3 SB Name: wilton_straight SB Type: 4
+
+x: 1 y: 0 SB Name: wilton_straight SB Type: 4
+
+x: 1 y: 1 SB Name: wilton_straight SB Type: 4
+
+x: 1 y: 2 SB Name: wilton_straight SB Type: 4
+
+x: 1 y: 3 SB Name: wilton_straight SB Type: 4
+
+x: 2 y: 0 SB Name: wilton_straight SB Type: 4
+
+x: 2 y: 1 SB Name: wilton_straight SB Type: 4
+
+x: 2 y: 2 SB Name: wilton_straight SB Type: 4
+
+x: 2 y: 3 SB Name: wilton_straight SB Type: 4
+

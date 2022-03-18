@@ -1,0 +1,1102 @@
+# Benchmark "memset" written by ABC on Tue Mar 15 16:10:23 2022 
+
+.model memset 
+
+.inputs memset^clk memset^reset memset^start memset^m~0 memset^m~1 memset^m~2 memset^m~3 memset^m~4 memset^m~5 memset^m~6 \
+ memset^m~7 memset^m~8 memset^m~9 memset^m~10 memset^m~11 memset^m~12 memset^m~13 memset^m~14 memset^m~15 memset^m~16 \
+ memset^m~17 memset^m~18 memset^m~19 memset^m~20 memset^m~21 memset^m~22 memset^m~23 memset^m~24 memset^m~25 memset^m~26 \
+ memset^m~27 memset^m~28 memset^m~29 memset^m~30 memset^m~31 memset^c~0 memset^c~1 memset^c~2 memset^c~3 memset^c~4 memset^c~5 \
+ memset^c~6 memset^c~7 memset^c~8 memset^c~9 memset^c~10 memset^c~11 memset^c~12 memset^c~13 memset^c~14 memset^c~15 \
+ memset^c~16 memset^c~17 memset^c~18 memset^c~19 memset^c~20 memset^c~21 memset^c~22 memset^c~23 memset^c~24 memset^c~25 \
+ memset^c~26 memset^c~27 memset^c~28 memset^c~29 memset^c~30 memset^c~31 memset^n~0 memset^n~1 memset^n~2 memset^n~3 \
+ memset^n~4 memset^n~5 memset^n~6 memset^n~7 memset^n~8 memset^n~9 memset^n~10 memset^n~11 memset^n~12 memset^n~13 memset^n~14 \
+ memset^n~15 memset^n~16 memset^n~17 memset^n~18 memset^n~19 memset^n~20 memset^n~21 memset^n~22 memset^n~23 memset^n~24 \
+ memset^n~25 memset^n~26 memset^n~27 memset^n~28 memset^n~29 memset^n~30 memset^n~31 
+
+.outputs memset^return_val~0 memset^return_val~1 memset^return_val~2 memset^return_val~3 memset^return_val~4 \
+ memset^return_val~5 memset^return_val~6 memset^return_val~7 memset^return_val~8 memset^return_val~9 memset^return_val~10 \
+ memset^return_val~11 memset^return_val~12 memset^return_val~13 memset^return_val~14 memset^return_val~15 memset^return_val~16 \
+ memset^return_val~17 memset^return_val~18 memset^return_val~19 memset^return_val~20 memset^return_val~21 memset^return_val~22 \
+ memset^return_val~23 memset^return_val~24 memset^return_val~25 memset^return_val~26 memset^return_val~27 memset^return_val~28 \
+ memset^return_val~29 memset^return_val~30 memset^return_val~31 memset^finish memset^memory_controller_address~0 \
+ memset^memory_controller_address~1 memset^memory_controller_address~2 memset^memory_controller_address~3 \
+ memset^memory_controller_address~4 memset^memory_controller_address~5 memset^memory_controller_address~6 \
+ memset^memory_controller_address~7 memset^memory_controller_address~8 memset^memory_controller_address~9 \
+ memset^memory_controller_address~10 memset^memory_controller_address~11 memset^memory_controller_address~12 \
+ memset^memory_controller_address~13 memset^memory_controller_address~14 memset^memory_controller_address~15 \
+ memset^memory_controller_address~16 memset^memory_controller_address~17 memset^memory_controller_address~18 \
+ memset^memory_controller_address~19 memset^memory_controller_address~20 memset^memory_controller_address~21 \
+ memset^memory_controller_address~22 memset^memory_controller_address~23 memset^memory_controller_address~24 \
+ memset^memory_controller_address~25 memset^memory_controller_address~26 memset^memory_controller_address~27 \
+ memset^memory_controller_address~28 memset^memory_controller_address~29 memset^memory_controller_address~30 \
+ memset^memory_controller_address~31 memset^memory_controller_write_enable memset^memory_controller_in~0 \
+ memset^memory_controller_in~1 memset^memory_controller_in~2 memset^memory_controller_in~3 memset^memory_controller_in~4 \
+ memset^memory_controller_in~5 memset^memory_controller_in~6 memset^memory_controller_in~7 memset^memory_controller_in~8 \
+ memset^memory_controller_in~9 memset^memory_controller_in~10 memset^memory_controller_in~11 memset^memory_controller_in~12 \
+ memset^memory_controller_in~13 memset^memory_controller_in~14 memset^memory_controller_in~15 memset^memory_controller_in~16 \
+ memset^memory_controller_in~17 memset^memory_controller_in~18 memset^memory_controller_in~19 memset^memory_controller_in~20 \
+ memset^memory_controller_in~21 memset^memory_controller_in~22 memset^memory_controller_in~23 memset^memory_controller_in~24 \
+ memset^memory_controller_in~25 memset^memory_controller_in~26 memset^memory_controller_in~27 memset^memory_controller_in~28 \
+ memset^memory_controller_in~29 memset^memory_controller_in~30 memset^memory_controller_in~31 memset^memory_controller_out~0 \
+ memset^memory_controller_out~1 memset^memory_controller_out~2 memset^memory_controller_out~3 memset^memory_controller_out~4 \
+ memset^memory_controller_out~5 memset^memory_controller_out~6 memset^memory_controller_out~7 memset^memory_controller_out~8 \
+ memset^memory_controller_out~9 memset^memory_controller_out~10 memset^memory_controller_out~11 \
+ memset^memory_controller_out~12 memset^memory_controller_out~13 memset^memory_controller_out~14 \
+ memset^memory_controller_out~15 memset^memory_controller_out~16 memset^memory_controller_out~17 \
+ memset^memory_controller_out~18 memset^memory_controller_out~19 memset^memory_controller_out~20 \
+ memset^memory_controller_out~21 memset^memory_controller_out~22 memset^memory_controller_out~23 \
+ memset^memory_controller_out~24 memset^memory_controller_out~25 memset^memory_controller_out~26 \
+ memset^memory_controller_out~27 memset^memory_controller_out~28 memset^memory_controller_out~29 \
+ memset^memory_controller_out~30 memset^memory_controller_out~31 
+
+
+.latch n338 memset^cur_state~0_FF re memset^clk 0 
+
+.latch n343 memset^cur_state~1_FF re memset^clk 0 
+
+.latch n348 memset^cur_state~2_FF re memset^clk 0 
+
+.latch n353 memset^cur_state~3_FF re memset^clk 0 
+
+.latch n358 memset^exitcond_FF re memset^clk 0 
+
+.latch n1168 memset^finish_FF re memset^clk 0 
+
+.latch n1173 memset^return_val~0_FF re memset^clk 0 
+
+.latch n1178 memset^return_val~1_FF re memset^clk 0 
+
+.latch n1183 memset^return_val~10_FF re memset^clk 0 
+
+.latch n1188 memset^return_val~11_FF re memset^clk 0 
+
+.latch n1193 memset^return_val~12_FF re memset^clk 0 
+
+.latch n1198 memset^return_val~13_FF re memset^clk 0 
+
+.latch n1203 memset^return_val~14_FF re memset^clk 0 
+
+.latch n1208 memset^return_val~15_FF re memset^clk 0 
+
+.latch n1213 memset^return_val~16_FF re memset^clk 0 
+
+.latch n1218 memset^return_val~17_FF re memset^clk 0 
+
+.latch n1223 memset^return_val~18_FF re memset^clk 0 
+
+.latch n1228 memset^return_val~19_FF re memset^clk 0 
+
+.latch n1233 memset^return_val~2_FF re memset^clk 0 
+
+.latch n1238 memset^return_val~20_FF re memset^clk 0 
+
+.latch n1243 memset^return_val~21_FF re memset^clk 0 
+
+.latch n1248 memset^return_val~22_FF re memset^clk 0 
+
+.latch n1253 memset^return_val~23_FF re memset^clk 0 
+
+.latch n1258 memset^return_val~24_FF re memset^clk 0 
+
+.latch n1263 memset^return_val~25_FF re memset^clk 0 
+
+.latch n1268 memset^return_val~26_FF re memset^clk 0 
+
+.latch n1273 memset^return_val~27_FF re memset^clk 0 
+
+.latch n1278 memset^return_val~28_FF re memset^clk 0 
+
+.latch n1283 memset^return_val~29_FF re memset^clk 0 
+
+.latch n1288 memset^return_val~3_FF re memset^clk 0 
+
+.latch n1293 memset^return_val~30_FF re memset^clk 0 
+
+.latch n1298 memset^return_val~31_FF re memset^clk 0 
+
+.latch n1303 memset^return_val~4_FF re memset^clk 0 
+
+.latch n1308 memset^return_val~5_FF re memset^clk 0 
+
+.latch n1313 memset^return_val~6_FF re memset^clk 0 
+
+.latch n1318 memset^return_val~7_FF re memset^clk 0 
+
+.latch n1323 memset^return_val~8_FF re memset^clk 0 
+
+.latch n1328 memset^return_val~9_FF re memset^clk 0 
+
+.latch n1333 memset^tmp~0_FF re memset^clk 0 
+
+.latch n1338 memset^tmp~1_FF re memset^clk 0 
+
+.latch n1343 memset^tmp~10_FF re memset^clk 0 
+
+.latch n1348 memset^tmp~11_FF re memset^clk 0 
+
+.latch n1353 memset^tmp~12_FF re memset^clk 0 
+
+.latch n1358 memset^tmp~13_FF re memset^clk 0 
+
+.latch n1363 memset^tmp~14_FF re memset^clk 0 
+
+.latch n1368 memset^tmp~15_FF re memset^clk 0 
+
+.latch n1373 memset^tmp~16_FF re memset^clk 0 
+
+.latch n1378 memset^tmp~17_FF re memset^clk 0 
+
+.latch n1383 memset^tmp~18_FF re memset^clk 0 
+
+.latch n1388 memset^tmp~19_FF re memset^clk 0 
+
+.latch n1393 memset^tmp~2_FF re memset^clk 0 
+
+.latch n1398 memset^tmp~20_FF re memset^clk 0 
+
+.latch n1403 memset^tmp~21_FF re memset^clk 0 
+
+.latch n1408 memset^tmp~22_FF re memset^clk 0 
+
+.latch n1413 memset^tmp~23_FF re memset^clk 0 
+
+.latch n1418 memset^tmp~24_FF re memset^clk 0 
+
+.latch n1423 memset^tmp~25_FF re memset^clk 0 
+
+.latch n1428 memset^tmp~26_FF re memset^clk 0 
+
+.latch n1433 memset^tmp~27_FF re memset^clk 0 
+
+.latch n1438 memset^tmp~28_FF re memset^clk 0 
+
+.latch n1443 memset^tmp~29_FF re memset^clk 0 
+
+.latch n1448 memset^tmp~3_FF re memset^clk 0 
+
+.latch n1453 memset^tmp~30_FF re memset^clk 0 
+
+.latch n1458 memset^tmp~31_FF re memset^clk 0 
+
+.latch n1463 memset^tmp~4_FF re memset^clk 0 
+
+.latch n1468 memset^tmp~5_FF re memset^clk 0 
+
+.latch n1473 memset^tmp~6_FF re memset^clk 0 
+
+.latch n1478 memset^tmp~7_FF re memset^clk 0 
+
+.latch n1483 memset^tmp~8_FF re memset^clk 0 
+
+.latch n1488 memset^tmp~9_FF re memset^clk 0 
+
+.latch n1498 memset^var2_FF re memset^clk 0 
+
+
+
+.subckt single_port_ram clk=memset^clk data=memset.memtroll^nMUX~7^MUX_2~288 addr[0]=memset.memtroll^nMUX~7^MUX_2~276 \
+ addr[1]=memset.memtroll^nMUX~7^MUX_2~277 addr[2]=memset.memtroll^nMUX~7^MUX_2~278 addr[3]=memset.memtroll^nMUX~7^MUX_2~279 \
+ addr[4]=memset.memtroll^nMUX~7^MUX_2~280 addr[5]=unconn addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn \
+ addr[10]=unconn addr[11]=unconn addr[12]=unconn addr[13]=unconn we=memset.memtroll^nMUX~7^MUX_2~289 \
+ out=memset.memtroll._str^out~7 
+
+.subckt single_port_ram clk=memset^clk data=memset.memtroll^nMUX~7^MUX_2~281 addr[0]=memset.memtroll^nMUX~7^MUX_2~276 \
+ addr[1]=memset.memtroll^nMUX~7^MUX_2~277 addr[2]=memset.memtroll^nMUX~7^MUX_2~278 addr[3]=memset.memtroll^nMUX~7^MUX_2~279 \
+ addr[4]=memset.memtroll^nMUX~7^MUX_2~280 addr[5]=unconn addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn \
+ addr[10]=unconn addr[11]=unconn addr[12]=unconn addr[13]=unconn we=memset.memtroll^nMUX~7^MUX_2~289 \
+ out=memset.memtroll._str^out~0 
+
+.subckt single_port_ram clk=memset^clk data=memset.memtroll^nMUX~7^MUX_2~282 addr[0]=memset.memtroll^nMUX~7^MUX_2~276 \
+ addr[1]=memset.memtroll^nMUX~7^MUX_2~277 addr[2]=memset.memtroll^nMUX~7^MUX_2~278 addr[3]=memset.memtroll^nMUX~7^MUX_2~279 \
+ addr[4]=memset.memtroll^nMUX~7^MUX_2~280 addr[5]=unconn addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn \
+ addr[10]=unconn addr[11]=unconn addr[12]=unconn addr[13]=unconn we=memset.memtroll^nMUX~7^MUX_2~289 \
+ out=memset.memtroll._str^out~1 
+
+.subckt single_port_ram clk=memset^clk data=memset.memtroll^nMUX~7^MUX_2~283 addr[0]=memset.memtroll^nMUX~7^MUX_2~276 \
+ addr[1]=memset.memtroll^nMUX~7^MUX_2~277 addr[2]=memset.memtroll^nMUX~7^MUX_2~278 addr[3]=memset.memtroll^nMUX~7^MUX_2~279 \
+ addr[4]=memset.memtroll^nMUX~7^MUX_2~280 addr[5]=unconn addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn \
+ addr[10]=unconn addr[11]=unconn addr[12]=unconn addr[13]=unconn we=memset.memtroll^nMUX~7^MUX_2~289 \
+ out=memset.memtroll._str^out~2 
+
+.subckt single_port_ram clk=memset^clk data=memset.memtroll^nMUX~7^MUX_2~284 addr[0]=memset.memtroll^nMUX~7^MUX_2~276 \
+ addr[1]=memset.memtroll^nMUX~7^MUX_2~277 addr[2]=memset.memtroll^nMUX~7^MUX_2~278 addr[3]=memset.memtroll^nMUX~7^MUX_2~279 \
+ addr[4]=memset.memtroll^nMUX~7^MUX_2~280 addr[5]=unconn addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn \
+ addr[10]=unconn addr[11]=unconn addr[12]=unconn addr[13]=unconn we=memset.memtroll^nMUX~7^MUX_2~289 \
+ out=memset.memtroll._str^out~3 
+
+.subckt single_port_ram clk=memset^clk data=memset.memtroll^nMUX~7^MUX_2~285 addr[0]=memset.memtroll^nMUX~7^MUX_2~276 \
+ addr[1]=memset.memtroll^nMUX~7^MUX_2~277 addr[2]=memset.memtroll^nMUX~7^MUX_2~278 addr[3]=memset.memtroll^nMUX~7^MUX_2~279 \
+ addr[4]=memset.memtroll^nMUX~7^MUX_2~280 addr[5]=unconn addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn \
+ addr[10]=unconn addr[11]=unconn addr[12]=unconn addr[13]=unconn we=memset.memtroll^nMUX~7^MUX_2~289 \
+ out=memset.memtroll._str^out~4 
+
+.subckt single_port_ram clk=memset^clk data=memset.memtroll^nMUX~7^MUX_2~286 addr[0]=memset.memtroll^nMUX~7^MUX_2~276 \
+ addr[1]=memset.memtroll^nMUX~7^MUX_2~277 addr[2]=memset.memtroll^nMUX~7^MUX_2~278 addr[3]=memset.memtroll^nMUX~7^MUX_2~279 \
+ addr[4]=memset.memtroll^nMUX~7^MUX_2~280 addr[5]=unconn addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn \
+ addr[10]=unconn addr[11]=unconn addr[12]=unconn addr[13]=unconn we=memset.memtroll^nMUX~7^MUX_2~289 \
+ out=memset.memtroll._str^out~5 
+
+.subckt single_port_ram clk=memset^clk data=memset.memtroll^nMUX~7^MUX_2~287 addr[0]=memset.memtroll^nMUX~7^MUX_2~276 \
+ addr[1]=memset.memtroll^nMUX~7^MUX_2~277 addr[2]=memset.memtroll^nMUX~7^MUX_2~278 addr[3]=memset.memtroll^nMUX~7^MUX_2~279 \
+ addr[4]=memset.memtroll^nMUX~7^MUX_2~280 addr[5]=unconn addr[6]=unconn addr[7]=unconn addr[8]=unconn addr[9]=unconn \
+ addr[10]=unconn addr[11]=unconn addr[12]=unconn addr[13]=unconn we=memset.memtroll^nMUX~7^MUX_2~289 \
+ out=memset.memtroll._str^out~6 
+
+
+
+.names memset^cur_state~1_FF memset^cur_state~0_FF memset^cur_state~2_FF memset^cur_state~3_FF \
+ memset^memory_controller_write_enable 
+0111 1 
+
+.names memset^memory_controller_write_enable memset^c~0 memset^memory_controller_in~0 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~1 memset^memory_controller_in~1 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~2 memset^memory_controller_in~2 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~3 memset^memory_controller_in~3 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~4 memset^memory_controller_in~4 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~5 memset^memory_controller_in~5 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~6 memset^memory_controller_in~6 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~7 memset^memory_controller_in~7 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~8 memset^memory_controller_in~8 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~9 memset^memory_controller_in~9 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~10 memset^memory_controller_in~10 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~11 memset^memory_controller_in~11 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~12 memset^memory_controller_in~12 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~13 memset^memory_controller_in~13 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~14 memset^memory_controller_in~14 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~15 memset^memory_controller_in~15 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~16 memset^memory_controller_in~16 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~17 memset^memory_controller_in~17 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~18 memset^memory_controller_in~18 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~19 memset^memory_controller_in~19 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~20 memset^memory_controller_in~20 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~21 memset^memory_controller_in~21 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~22 memset^memory_controller_in~22 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~23 memset^memory_controller_in~23 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~24 memset^memory_controller_in~24 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~25 memset^memory_controller_in~25 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~26 memset^memory_controller_in~26 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~27 memset^memory_controller_in~27 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~28 memset^memory_controller_in~28 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~29 memset^memory_controller_in~29 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~30 memset^memory_controller_in~30 
+11 1 
+
+.names memset^memory_controller_write_enable memset^c~31 memset^memory_controller_in~31 
+11 1 
+
+.names memset^exitcond_FF memset^memory_controller_write_enable n502 memset^reset n338 
+--00 1 
+01-0 1 
+
+.names n505 n504 n503 memset^cur_state~3_FF n502 
+1-00 1 
+-001 1 
+
+.names memset^cur_state~0_FF memset^cur_state~1_FF memset^cur_state~2_FF n503 
+001 1 
+
+.names memset^cur_state~0_FF memset^cur_state~2_FF n504 
+00 1 
+
+.names memset^start memset^cur_state~1_FF memset^cur_state~0_FF n505 
+--1 1 
+00- 1 
+
+.names n507 memset^reset n343 
+00 1 
+
+.names memset^cur_state~2_FF memset^cur_state~0_FF memset^cur_state~1_FF n508 n507 
+---0 0 
+010- 0 
+001- 0 
+
+.names n509 memset^cur_state~2_FF memset^memory_controller_write_enable memset^exitcond_FF n508 
+--11 0 
+01-- 0 
+
+.names memset^var2_FF memset^cur_state~3_FF memset^cur_state~0_FF memset^cur_state~1_FF n509 
+-010 0 
+-001 0 
+1-11 0 
+
+.names n503 n511 n508 memset^reset n348 
+---1 0 
+001- 0 
+
+.names memset^cur_state~2_FF memset^cur_state~1_FF memset^cur_state~0_FF n511 
+011 1 
+
+.names memset^cur_state~3_FF memset^cur_state~0_FF memset^reset n513 n353 
+1-00 1 
+-101 1 
+
+.names memset^cur_state~1_FF memset^cur_state~2_FF n513 
+11 1 
+
+.names n516 n521 memset^exitcond_FF n515 n358 
+--10 1 
+11-1 1 
+
+.names memset^reset n511 memset^cur_state~3_FF n515 
+011 1 
+
+.names n517 n518 n519 n520 n516 
+1111 1 
+
+.names memset^tmp~23_FF memset^tmp~24_FF memset^tmp~25_FF memset^tmp~26_FF n517 
+0000 1 
+
+.names memset^tmp~27_FF memset^tmp~28_FF memset^tmp~29_FF memset^tmp~3_FF n518 
+0000 1 
+
+.names memset^tmp~6_FF memset^tmp~7_FF memset^tmp~8_FF memset^tmp~9_FF n519 
+0000 1 
+
+.names memset^tmp~30_FF memset^tmp~31_FF memset^tmp~4_FF memset^tmp~5_FF n520 
+0000 1 
+
+.names n522 n523 n524 n525 n521 
+1111 1 
+
+.names memset^tmp~12_FF memset^tmp~13_FF memset^tmp~14_FF memset^tmp~15_FF n522 
+0000 1 
+
+.names memset^tmp~0_FF memset^tmp~1_FF memset^tmp~10_FF memset^tmp~11_FF n523 
+0000 1 
+
+.names memset^tmp~16_FF memset^tmp~17_FF memset^tmp~18_FF memset^tmp~19_FF n524 
+0000 1 
+
+.names memset^tmp~2_FF memset^tmp~20_FF memset^tmp~21_FF memset^tmp~22_FF n525 
+0000 1 
+
+.names memset^reset memset^finish_FF n527 n1168 
+--1 1 
+11- 1 
+
+.names memset^reset n528 memset^cur_state~3_FF n527 
+011 1 
+
+.names memset^cur_state~0_FF n513 n528 
+01 1 
+
+.names memset^return_val~0_FF memset^m~0 n527 n1173 
+1-0 1 
+-11 1 
+
+.names memset^return_val~1_FF memset^m~1 n527 n1178 
+1-0 1 
+-11 1 
+
+.names memset^return_val~10_FF memset^m~10 n527 n1183 
+1-0 1 
+-11 1 
+
+.names memset^return_val~11_FF memset^m~11 n527 n1188 
+1-0 1 
+-11 1 
+
+.names memset^return_val~12_FF memset^m~12 n527 n1193 
+1-0 1 
+-11 1 
+
+.names memset^return_val~13_FF memset^m~13 n527 n1198 
+1-0 1 
+-11 1 
+
+.names memset^return_val~14_FF memset^m~14 n527 n1203 
+1-0 1 
+-11 1 
+
+.names memset^return_val~15_FF memset^m~15 n527 n1208 
+1-0 1 
+-11 1 
+
+.names memset^return_val~16_FF memset^m~16 n527 n1213 
+1-0 1 
+-11 1 
+
+.names memset^return_val~17_FF memset^m~17 n527 n1218 
+1-0 1 
+-11 1 
+
+.names memset^return_val~18_FF memset^m~18 n527 n1223 
+1-0 1 
+-11 1 
+
+.names memset^return_val~19_FF memset^m~19 n527 n1228 
+1-0 1 
+-11 1 
+
+.names memset^return_val~2_FF memset^m~2 n527 n1233 
+1-0 1 
+-11 1 
+
+.names memset^return_val~20_FF memset^m~20 n527 n1238 
+1-0 1 
+-11 1 
+
+.names memset^return_val~21_FF memset^m~21 n527 n1243 
+1-0 1 
+-11 1 
+
+.names memset^return_val~22_FF memset^m~22 n527 n1248 
+1-0 1 
+-11 1 
+
+.names memset^return_val~23_FF memset^m~23 n527 n1253 
+1-0 1 
+-11 1 
+
+.names memset^return_val~24_FF memset^m~24 n527 n1258 
+1-0 1 
+-11 1 
+
+.names memset^return_val~25_FF memset^m~25 n527 n1263 
+1-0 1 
+-11 1 
+
+.names memset^return_val~26_FF memset^m~26 n527 n1268 
+1-0 1 
+-11 1 
+
+.names memset^return_val~27_FF memset^m~27 n527 n1273 
+1-0 1 
+-11 1 
+
+.names memset^return_val~28_FF memset^m~28 n527 n1278 
+1-0 1 
+-11 1 
+
+.names memset^return_val~29_FF memset^m~29 n527 n1283 
+1-0 1 
+-11 1 
+
+.names memset^return_val~3_FF memset^m~3 n527 n1288 
+1-0 1 
+-11 1 
+
+.names memset^return_val~30_FF memset^m~30 n527 n1293 
+1-0 1 
+-11 1 
+
+.names memset^return_val~31_FF memset^m~31 n527 n1298 
+1-0 1 
+-11 1 
+
+.names memset^return_val~4_FF memset^m~4 n527 n1303 
+1-0 1 
+-11 1 
+
+.names memset^return_val~5_FF memset^m~5 n527 n1308 
+1-0 1 
+-11 1 
+
+.names memset^return_val~6_FF memset^m~6 n527 n1313 
+1-0 1 
+-11 1 
+
+.names memset^return_val~7_FF memset^m~7 n527 n1318 
+1-0 1 
+-11 1 
+
+.names memset^return_val~8_FF memset^m~8 n527 n1323 
+1-0 1 
+-11 1 
+
+.names memset^return_val~9_FF memset^m~9 n527 n1328 
+1-0 1 
+-11 1 
+
+.names memset^tmp~0_FF memset^n~0 n562 n1333 
+1-0 1 
+-11 1 
+
+.names memset^reset memset^cur_state~1_FF n504 memset^cur_state~3_FF n562 
+0011 1 
+
+.names memset^tmp~1_FF memset^n~1 n562 n1338 
+1-0 1 
+-11 1 
+
+.names memset^tmp~10_FF memset^n~10 n562 n1343 
+1-0 1 
+-11 1 
+
+.names memset^tmp~11_FF memset^n~11 n562 n1348 
+1-0 1 
+-11 1 
+
+.names memset^tmp~12_FF memset^n~12 n562 n1353 
+1-0 1 
+-11 1 
+
+.names memset^tmp~13_FF memset^n~13 n562 n1358 
+1-0 1 
+-11 1 
+
+.names memset^tmp~14_FF memset^n~14 n562 n1363 
+1-0 1 
+-11 1 
+
+.names memset^tmp~15_FF memset^n~15 n562 n1368 
+1-0 1 
+-11 1 
+
+.names memset^tmp~16_FF memset^n~16 n562 n1373 
+1-0 1 
+-11 1 
+
+.names memset^tmp~17_FF memset^n~17 n562 n1378 
+1-0 1 
+-11 1 
+
+.names memset^tmp~18_FF memset^n~18 n562 n1383 
+1-0 1 
+-11 1 
+
+.names memset^tmp~19_FF memset^n~19 n562 n1388 
+1-0 1 
+-11 1 
+
+.names memset^tmp~2_FF memset^n~2 n562 n1393 
+1-0 1 
+-11 1 
+
+.names memset^tmp~20_FF memset^n~20 n562 n1398 
+1-0 1 
+-11 1 
+
+.names memset^tmp~21_FF memset^n~21 n562 n1403 
+1-0 1 
+-11 1 
+
+.names memset^tmp~22_FF memset^n~22 n562 n1408 
+1-0 1 
+-11 1 
+
+.names memset^tmp~23_FF memset^n~23 n562 n1413 
+1-0 1 
+-11 1 
+
+.names memset^tmp~24_FF memset^n~24 n562 n1418 
+1-0 1 
+-11 1 
+
+.names memset^tmp~25_FF memset^n~25 n562 n1423 
+1-0 1 
+-11 1 
+
+.names memset^tmp~26_FF memset^n~26 n562 n1428 
+1-0 1 
+-11 1 
+
+.names memset^tmp~27_FF memset^n~27 n562 n1433 
+1-0 1 
+-11 1 
+
+.names memset^tmp~28_FF memset^n~28 n562 n1438 
+1-0 1 
+-11 1 
+
+.names memset^tmp~29_FF memset^n~29 n562 n1443 
+1-0 1 
+-11 1 
+
+.names memset^tmp~3_FF memset^n~3 n562 n1448 
+1-0 1 
+-11 1 
+
+.names memset^tmp~30_FF memset^n~30 n562 n1453 
+1-0 1 
+-11 1 
+
+.names memset^tmp~31_FF memset^n~31 n562 n1458 
+1-0 1 
+-11 1 
+
+.names memset^tmp~4_FF memset^n~4 n562 n1463 
+1-0 1 
+-11 1 
+
+.names memset^tmp~5_FF memset^n~5 n562 n1468 
+1-0 1 
+-11 1 
+
+.names memset^tmp~6_FF memset^n~6 n562 n1473 
+1-0 1 
+-11 1 
+
+.names memset^tmp~7_FF memset^n~7 n562 n1478 
+1-0 1 
+-11 1 
+
+.names memset^tmp~8_FF memset^n~8 n562 n1483 
+1-0 1 
+-11 1 
+
+.names memset^tmp~9_FF memset^n~9 n562 n1488 
+1-0 1 
+-11 1 
+
+.names n606 n595 memset^reset n605 n1498 
+--10 1 
+00-0 1 
+
+.names n528 n596 n598 n600 n595 
+1111 1 
+
+.names memset^n~30 memset^n~31 memset^cur_state~3_FF n597 n596 
+0001 1 
+
+.names memset^n~26 memset^n~27 memset^n~28 memset^n~29 n597 
+0000 1 
+
+.names memset^n~4 memset^n~5 n599 n598 
+001 1 
+
+.names memset^n~6 memset^n~7 memset^n~8 memset^n~9 n599 
+0000 1 
+
+.names n601 n602 n603 n604 n600 
+1111 1 
+
+.names memset^n~14 memset^n~15 memset^n~16 memset^n~17 n601 
+0000 1 
+
+.names memset^n~10 memset^n~11 memset^n~12 memset^n~13 n602 
+0000 1 
+
+.names memset^n~22 memset^n~23 memset^n~24 memset^n~25 n603 
+0000 1 
+
+.names memset^n~18 memset^n~19 memset^n~20 memset^n~21 n604 
+0000 1 
+
+.names memset^reset memset^cur_state~3_FF n528 memset^var2_FF n605 
+---1 0 
+001- 0 
+
+.names n513 memset^cur_state~3_FF n606 
+01 1 
+
+.names memset^memory_controller_address~0 
+0 
+
+.names memset^memory_controller_address~1 
+0 
+
+.names memset^memory_controller_address~2 
+0 
+
+.names memset^memory_controller_address~3 
+0 
+
+.names memset^memory_controller_address~4 
+0 
+
+.names memset^memory_controller_address~5 
+0 
+
+.names memset^memory_controller_address~6 
+0 
+
+.names memset^memory_controller_address~7 
+0 
+
+.names memset^memory_controller_address~8 
+0 
+
+.names memset^memory_controller_address~9 
+0 
+
+.names memset^memory_controller_address~10 
+0 
+
+.names memset^memory_controller_address~11 
+0 
+
+.names memset^memory_controller_address~12 
+0 
+
+.names memset^memory_controller_address~13 
+0 
+
+.names memset^memory_controller_address~14 
+0 
+
+.names memset^memory_controller_address~15 
+0 
+
+.names memset^memory_controller_address~16 
+0 
+
+.names memset^memory_controller_address~17 
+0 
+
+.names memset^memory_controller_address~18 
+0 
+
+.names memset^memory_controller_address~19 
+0 
+
+.names memset^memory_controller_address~20 
+0 
+
+.names memset^memory_controller_address~21 
+0 
+
+.names memset^memory_controller_address~22 
+0 
+
+.names memset^memory_controller_address~23 
+0 
+
+.names memset^memory_controller_address~24 
+0 
+
+.names memset^memory_controller_address~25 
+0 
+
+.names memset^memory_controller_address~26 
+0 
+
+.names memset^memory_controller_address~27 
+0 
+
+.names memset^memory_controller_address~28 
+0 
+
+.names memset^memory_controller_address~29 
+0 
+
+.names memset^memory_controller_address~30 
+0 
+
+.names memset^memory_controller_address~31 
+0 
+
+.names memset^memory_controller_out~8 
+0 
+
+.names memset^memory_controller_out~9 
+0 
+
+.names memset^memory_controller_out~10 
+0 
+
+.names memset^memory_controller_out~11 
+0 
+
+.names memset^memory_controller_out~12 
+0 
+
+.names memset^memory_controller_out~13 
+0 
+
+.names memset^memory_controller_out~14 
+0 
+
+.names memset^memory_controller_out~15 
+0 
+
+.names memset^memory_controller_out~16 
+0 
+
+.names memset^memory_controller_out~17 
+0 
+
+.names memset^memory_controller_out~18 
+0 
+
+.names memset^memory_controller_out~19 
+0 
+
+.names memset^memory_controller_out~20 
+0 
+
+.names memset^memory_controller_out~21 
+0 
+
+.names memset^memory_controller_out~22 
+0 
+
+.names memset^memory_controller_out~23 
+0 
+
+.names memset^memory_controller_out~24 
+0 
+
+.names memset^memory_controller_out~25 
+0 
+
+.names memset^memory_controller_out~26 
+0 
+
+.names memset^memory_controller_out~27 
+0 
+
+.names memset^memory_controller_out~28 
+0 
+
+.names memset^memory_controller_out~29 
+0 
+
+.names memset^memory_controller_out~30 
+0 
+
+.names memset^memory_controller_out~31 
+0 
+
+.names memset.memtroll^nMUX~7^MUX_2~276 
+0 
+
+.names memset.memtroll^nMUX~7^MUX_2~277 
+0 
+
+.names memset.memtroll^nMUX~7^MUX_2~278 
+0 
+
+.names memset.memtroll^nMUX~7^MUX_2~279 
+0 
+
+.names memset.memtroll^nMUX~7^MUX_2~280 
+0 
+
+.names unconn 
+0 
+
+.names memset^return_val~0_FF memset^return_val~0 
+1 1 
+
+.names memset^return_val~1_FF memset^return_val~1 
+1 1 
+
+.names memset^return_val~2_FF memset^return_val~2 
+1 1 
+
+.names memset^return_val~3_FF memset^return_val~3 
+1 1 
+
+.names memset^return_val~4_FF memset^return_val~4 
+1 1 
+
+.names memset^return_val~5_FF memset^return_val~5 
+1 1 
+
+.names memset^return_val~6_FF memset^return_val~6 
+1 1 
+
+.names memset^return_val~7_FF memset^return_val~7 
+1 1 
+
+.names memset^return_val~8_FF memset^return_val~8 
+1 1 
+
+.names memset^return_val~9_FF memset^return_val~9 
+1 1 
+
+.names memset^return_val~10_FF memset^return_val~10 
+1 1 
+
+.names memset^return_val~11_FF memset^return_val~11 
+1 1 
+
+.names memset^return_val~12_FF memset^return_val~12 
+1 1 
+
+.names memset^return_val~13_FF memset^return_val~13 
+1 1 
+
+.names memset^return_val~14_FF memset^return_val~14 
+1 1 
+
+.names memset^return_val~15_FF memset^return_val~15 
+1 1 
+
+.names memset^return_val~16_FF memset^return_val~16 
+1 1 
+
+.names memset^return_val~17_FF memset^return_val~17 
+1 1 
+
+.names memset^return_val~18_FF memset^return_val~18 
+1 1 
+
+.names memset^return_val~19_FF memset^return_val~19 
+1 1 
+
+.names memset^return_val~20_FF memset^return_val~20 
+1 1 
+
+.names memset^return_val~21_FF memset^return_val~21 
+1 1 
+
+.names memset^return_val~22_FF memset^return_val~22 
+1 1 
+
+.names memset^return_val~23_FF memset^return_val~23 
+1 1 
+
+.names memset^return_val~24_FF memset^return_val~24 
+1 1 
+
+.names memset^return_val~25_FF memset^return_val~25 
+1 1 
+
+.names memset^return_val~26_FF memset^return_val~26 
+1 1 
+
+.names memset^return_val~27_FF memset^return_val~27 
+1 1 
+
+.names memset^return_val~28_FF memset^return_val~28 
+1 1 
+
+.names memset^return_val~29_FF memset^return_val~29 
+1 1 
+
+.names memset^return_val~30_FF memset^return_val~30 
+1 1 
+
+.names memset^return_val~31_FF memset^return_val~31 
+1 1 
+
+.names memset^finish_FF memset^finish 
+1 1 
+
+.names memset.memtroll._str^out~0 memset^memory_controller_out~0 
+1 1 
+
+.names memset.memtroll._str^out~1 memset^memory_controller_out~1 
+1 1 
+
+.names memset.memtroll._str^out~2 memset^memory_controller_out~2 
+1 1 
+
+.names memset.memtroll._str^out~3 memset^memory_controller_out~3 
+1 1 
+
+.names memset.memtroll._str^out~4 memset^memory_controller_out~4 
+1 1 
+
+.names memset.memtroll._str^out~5 memset^memory_controller_out~5 
+1 1 
+
+.names memset.memtroll._str^out~6 memset^memory_controller_out~6 
+1 1 
+
+.names memset.memtroll._str^out~7 memset^memory_controller_out~7 
+1 1 
+
+.names memset^memory_controller_in~7 memset.memtroll^nMUX~7^MUX_2~288 
+1 1 
+
+.names memset^memory_controller_write_enable memset.memtroll^nMUX~7^MUX_2~289 
+1 1 
+
+.names memset^memory_controller_in~0 memset.memtroll^nMUX~7^MUX_2~281 
+1 1 
+
+.names memset^memory_controller_in~1 memset.memtroll^nMUX~7^MUX_2~282 
+1 1 
+
+.names memset^memory_controller_in~2 memset.memtroll^nMUX~7^MUX_2~283 
+1 1 
+
+.names memset^memory_controller_in~3 memset.memtroll^nMUX~7^MUX_2~284 
+1 1 
+
+.names memset^memory_controller_in~4 memset.memtroll^nMUX~7^MUX_2~285 
+1 1 
+
+.names memset^memory_controller_in~5 memset.memtroll^nMUX~7^MUX_2~286 
+1 1 
+
+.names memset^memory_controller_in~6 memset.memtroll^nMUX~7^MUX_2~287 
+1 1 
+
+
+.end 
+
+
+
+.model single_port_ram 
+
+.inputs clk data addr[0] addr[1] addr[2] addr[3] addr[4] addr[5] addr[6] addr[7] addr[8] addr[9] addr[10] addr[11] addr[12] \
+ addr[13] we 
+
+.outputs out 
+
+.blackbox 
+
+
+.end 
+
+
+
+.model CLOCK_GATING
+.inputs I
+.blackbox
+.end
+

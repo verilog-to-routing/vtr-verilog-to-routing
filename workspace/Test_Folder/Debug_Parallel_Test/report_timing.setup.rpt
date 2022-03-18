@@ -1,0 +1,192 @@
+#Timing report of worst 6 path(s)
+# Unit scale: 1e-09 seconds
+# Output precision: 3
+
+#Path 1
+Startpoint: blink^r_counter~3_FF.Q[0] (.latch clocked by blink^clk)
+Endpoint  : blink^r_counter~4_FF.D[0] (.latch clocked by blink^clk)
+Path Type : setup
+
+Point                                                             Incr      Path
+--------------------------------------------------------------------------------
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+blink^clk.inpad[0] (.input)                                      0.000     0.000
+blink^r_counter~3_FF.clk[0] (.latch)                             0.042     0.042
+blink^r_counter~3_FF.Q[0] (.latch) [clock-to-output]             0.060     0.103
+n27_1.in[3] (.names)                                             0.230     0.333
+n27_1.out[0] (.names)                                            0.114     0.447
+n27.in[1] (.names)                                               0.156     0.603
+n27.out[0] (.names)                                              0.115     0.718
+blink^r_counter~4_FF.D[0] (.latch)                               0.000     0.718
+data arrival time                                                          0.718
+
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+blink^clk.inpad[0] (.input)                                      0.000     0.000
+blink^r_counter~4_FF.clk[0] (.latch)                             0.042     0.042
+clock uncertainty                                                0.000     0.042
+cell setup time                                                 -0.019     0.024
+data required time                                                         0.024
+--------------------------------------------------------------------------------
+data required time                                                         0.024
+data arrival time                                                         -0.718
+--------------------------------------------------------------------------------
+slack (VIOLATED)                                                          -0.694
+
+
+#Path 2
+Startpoint: blink^r_counter~4_FF.Q[0] (.latch clocked by blink^clk)
+Endpoint  : out:blink^o_led.outpad[0] (.output clocked by blink^clk)
+Path Type : setup
+
+Point                                                             Incr      Path
+--------------------------------------------------------------------------------
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+blink^clk.inpad[0] (.input)                                      0.000     0.000
+blink^r_counter~4_FF.clk[0] (.latch)                             0.042     0.042
+blink^r_counter~4_FF.Q[0] (.latch) [clock-to-output]             0.060     0.103
+blink^o_led.in[0] (.names)                                       0.169     0.272
+blink^o_led.out[0] (.names)                                      0.114     0.386
+out:blink^o_led.outpad[0] (.output)                              0.282     0.668
+data arrival time                                                          0.668
+
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+clock uncertainty                                                0.000     0.000
+output external delay                                            0.000     0.000
+data required time                                                         0.000
+--------------------------------------------------------------------------------
+data required time                                                         0.000
+data arrival time                                                         -0.668
+--------------------------------------------------------------------------------
+slack (VIOLATED)                                                          -0.668
+
+
+#Path 3
+Startpoint: blink^r_counter~0_FF.Q[0] (.latch clocked by blink^clk)
+Endpoint  : blink^r_counter~3_FF.D[0] (.latch clocked by blink^clk)
+Path Type : setup
+
+Point                                                             Incr      Path
+--------------------------------------------------------------------------------
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+blink^clk.inpad[0] (.input)                                      0.000     0.000
+blink^r_counter~0_FF.clk[0] (.latch)                             0.042     0.042
+blink^r_counter~0_FF.Q[0] (.latch) [clock-to-output]             0.060     0.103
+n25.in[0] (.names)                                               0.167     0.270
+n25.out[0] (.names)                                              0.114     0.384
+n22.in[1] (.names)                                               0.152     0.536
+n22.out[0] (.names)                                              0.115     0.651
+blink^r_counter~3_FF.D[0] (.latch)                               0.000     0.651
+data arrival time                                                          0.651
+
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+blink^clk.inpad[0] (.input)                                      0.000     0.000
+blink^r_counter~3_FF.clk[0] (.latch)                             0.042     0.042
+clock uncertainty                                                0.000     0.042
+cell setup time                                                 -0.019     0.024
+data required time                                                         0.024
+--------------------------------------------------------------------------------
+data required time                                                         0.024
+data arrival time                                                         -0.651
+--------------------------------------------------------------------------------
+slack (VIOLATED)                                                          -0.627
+
+
+#Path 4
+Startpoint: blink^i_reset.inpad[0] (.input clocked by blink^clk)
+Endpoint  : blink^r_counter~2_FF.D[0] (.latch clocked by blink^clk)
+Path Type : setup
+
+Point                                                             Incr      Path
+--------------------------------------------------------------------------------
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+input external delay                                             0.000     0.000
+blink^i_reset.inpad[0] (.input)                                  0.000     0.000
+n17.in[2] (.names)                                               0.306     0.306
+n17.out[0] (.names)                                              0.114     0.421
+blink^r_counter~2_FF.D[0] (.latch)                               0.000     0.421
+data arrival time                                                          0.421
+
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+blink^clk.inpad[0] (.input)                                      0.000     0.000
+blink^r_counter~2_FF.clk[0] (.latch)                             0.042     0.042
+clock uncertainty                                                0.000     0.042
+cell setup time                                                 -0.019     0.024
+data required time                                                         0.024
+--------------------------------------------------------------------------------
+data required time                                                         0.024
+data arrival time                                                         -0.421
+--------------------------------------------------------------------------------
+slack (VIOLATED)                                                          -0.397
+
+
+#Path 5
+Startpoint: blink^r_counter~0_FF.Q[0] (.latch clocked by blink^clk)
+Endpoint  : blink^r_counter~1_FF.D[0] (.latch clocked by blink^clk)
+Path Type : setup
+
+Point                                                             Incr      Path
+--------------------------------------------------------------------------------
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+blink^clk.inpad[0] (.input)                                      0.000     0.000
+blink^r_counter~0_FF.clk[0] (.latch)                             0.042     0.042
+blink^r_counter~0_FF.Q[0] (.latch) [clock-to-output]             0.060     0.103
+n12.in[1] (.names)                                               0.169     0.272
+n12.out[0] (.names)                                              0.114     0.386
+blink^r_counter~1_FF.D[0] (.latch)                               0.000     0.386
+data arrival time                                                          0.386
+
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+blink^clk.inpad[0] (.input)                                      0.000     0.000
+blink^r_counter~1_FF.clk[0] (.latch)                             0.042     0.042
+clock uncertainty                                                0.000     0.042
+cell setup time                                                 -0.019     0.024
+data required time                                                         0.024
+--------------------------------------------------------------------------------
+data required time                                                         0.024
+data arrival time                                                         -0.386
+--------------------------------------------------------------------------------
+slack (VIOLATED)                                                          -0.363
+
+
+#Path 6
+Startpoint: blink^r_counter~0_FF.Q[0] (.latch clocked by blink^clk)
+Endpoint  : blink^r_counter~0_FF.D[0] (.latch clocked by blink^clk)
+Path Type : setup
+
+Point                                                             Incr      Path
+--------------------------------------------------------------------------------
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+blink^clk.inpad[0] (.input)                                      0.000     0.000
+blink^r_counter~0_FF.clk[0] (.latch)                             0.042     0.042
+blink^r_counter~0_FF.Q[0] (.latch) [clock-to-output]             0.060     0.103
+n7.in[1] (.names)                                                0.167     0.270
+n7.out[0] (.names)                                               0.114     0.384
+blink^r_counter~0_FF.D[0] (.latch)                               0.000     0.384
+data arrival time                                                          0.384
+
+clock blink^clk (rise edge)                                      0.000     0.000
+clock source latency                                             0.000     0.000
+blink^clk.inpad[0] (.input)                                      0.000     0.000
+blink^r_counter~0_FF.clk[0] (.latch)                             0.042     0.042
+clock uncertainty                                                0.000     0.042
+cell setup time                                                 -0.019     0.024
+data required time                                                         0.024
+--------------------------------------------------------------------------------
+data required time                                                         0.024
+data arrival time                                                         -0.384
+--------------------------------------------------------------------------------
+slack (VIOLATED)                                                          -0.361
+
+
+#End of timing report

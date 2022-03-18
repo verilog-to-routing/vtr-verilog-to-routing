@@ -1,0 +1,40 @@
+# of pack patterns 1
+pack pattern index 0 block count 2 name ble4 root lut
+
+molecule type: atom
+	pattern index 1: atom block blink^o_led
+
+molecule type: atom
+	pattern index 1: atom block n27_1
+
+molecule type: atom
+	pattern index 1: atom block n25
+
+molecule type: atom
+	pattern index 1: atom block out:blink^o_led
+
+molecule type: atom
+	pattern index 1: atom block blink^i_reset
+
+molecule type: atom
+	pattern index 1: atom block blink^clk
+
+molecule type: ble4
+	pattern index 0: atom block n27 root node
+	pattern index 1: atom block blink^r_counter~4_FF
+
+molecule type: ble4
+	pattern index 0: atom block n22 root node
+	pattern index 1: atom block blink^r_counter~3_FF
+
+molecule type: ble4
+	pattern index 0: atom block n17 root node
+	pattern index 1: atom block blink^r_counter~2_FF
+
+molecule type: ble4
+	pattern index 0: atom block n12 root node
+	pattern index 1: atom block blink^r_counter~1_FF
+
+molecule type: ble4
+	pattern index 0: atom block n7 root node
+	pattern index 1: atom block blink^r_counter~0_FF

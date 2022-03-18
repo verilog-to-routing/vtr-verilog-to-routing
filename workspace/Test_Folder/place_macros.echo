@@ -1,0 +1,6 @@
+#Identified Placement macros
+Num_Macros: 0
+
+#Macro-related direct connections
+type      type_pin  is_direct direct_type
+------------------------------------------

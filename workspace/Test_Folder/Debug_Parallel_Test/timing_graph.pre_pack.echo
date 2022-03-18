@@ -1,0 +1,757 @@
+timing_graph:
+ node: 0 \
+  type: SOURCE \
+  in_edges: \
+  out_edges: 0 1 2 3 4
+ node: 1 \
+  type: SOURCE \
+  in_edges: \
+  out_edges: 5 6 7 8 9
+ node: 2 \
+  type: CPIN \
+  in_edges: 0 \
+  out_edges: 10 56
+ node: 3 \
+  type: CPIN \
+  in_edges: 1 \
+  out_edges: 11 58
+ node: 4 \
+  type: CPIN \
+  in_edges: 2 \
+  out_edges: 12 60
+ node: 5 \
+  type: CPIN \
+  in_edges: 3 \
+  out_edges: 13 63
+ node: 6 \
+  type: CPIN \
+  in_edges: 4 \
+  out_edges: 14 65
+ node: 7 \
+  type: IPIN \
+  in_edges: 5 \
+  out_edges: 31
+ node: 8 \
+  type: IPIN \
+  in_edges: 6 \
+  out_edges: 33
+ node: 9 \
+  type: IPIN \
+  in_edges: 7 \
+  out_edges: 38
+ node: 10 \
+  type: IPIN \
+  in_edges: 8 \
+  out_edges: 50
+ node: 11 \
+  type: IPIN \
+  in_edges: 9 \
+  out_edges: 53
+ node: 12 \
+  type: SOURCE \
+  in_edges: 10 \
+  out_edges: 15 16 17 18 19
+ node: 13 \
+  type: SOURCE \
+  in_edges: 11 \
+  out_edges: 20 21 22 23
+ node: 14 \
+  type: SOURCE \
+  in_edges: 12 \
+  out_edges: 24 25 26
+ node: 15 \
+  type: SOURCE \
+  in_edges: 13 \
+  out_edges: 27 28
+ node: 16 \
+  type: SOURCE \
+  in_edges: 14 \
+  out_edges: 29 30
+ node: 17 \
+  type: IPIN \
+  in_edges: 15 \
+  out_edges: 32
+ node: 18 \
+  type: IPIN \
+  in_edges: 16 \
+  out_edges: 34
+ node: 19 \
+  type: IPIN \
+  in_edges: 17 \
+  out_edges: 36
+ node: 20 \
+  type: IPIN \
+  in_edges: 18 \
+  out_edges: 40
+ node: 21 \
+  type: IPIN \
+  in_edges: 19 \
+  out_edges: 43
+ node: 22 \
+  type: IPIN \
+  in_edges: 20 \
+  out_edges: 35
+ node: 23 \
+  type: IPIN \
+  in_edges: 21 \
+  out_edges: 37
+ node: 24 \
+  type: IPIN \
+  in_edges: 22 \
+  out_edges: 41
+ node: 25 \
+  type: IPIN \
+  in_edges: 23 \
+  out_edges: 44
+ node: 26 \
+  type: IPIN \
+  in_edges: 24 \
+  out_edges: 39
+ node: 27 \
+  type: IPIN \
+  in_edges: 25 \
+  out_edges: 42
+ node: 28 \
+  type: IPIN \
+  in_edges: 26 \
+  out_edges: 45
+ node: 29 \
+  type: IPIN \
+  in_edges: 27 \
+  out_edges: 52
+ node: 30 \
+  type: IPIN \
+  in_edges: 28 \
+  out_edges: 46
+ node: 31 \
+  type: IPIN \
+  in_edges: 29 \
+  out_edges: 55
+ node: 32 \
+  type: IPIN \
+  in_edges: 30 \
+  out_edges: 47
+ node: 33 \
+  type: OPIN \
+  in_edges: 31 32 \
+  out_edges: 57
+ node: 34 \
+  type: OPIN \
+  in_edges: 33 34 35 \
+  out_edges: 59
+ node: 35 \
+  type: OPIN \
+  in_edges: 36 37 38 39 \
+  out_edges: 61
+ node: 36 \
+  type: OPIN \
+  in_edges: 40 41 42 \
+  out_edges: 48
+ node: 37 \
+  type: OPIN \
+  in_edges: 43 44 45 46 \
+  out_edges: 49
+ node: 38 \
+  type: OPIN \
+  in_edges: 47 \
+  out_edges: 62
+ node: 39 \
+  type: IPIN \
+  in_edges: 48 \
+  out_edges: 51
+ node: 40 \
+  type: IPIN \
+  in_edges: 49 \
+  out_edges: 54
+ node: 41 \
+  type: OPIN \
+  in_edges: 50 51 52 \
+  out_edges: 64
+ node: 42 \
+  type: OPIN \
+  in_edges: 53 54 55 \
+  out_edges: 66
+ node: 43 \
+  type: SINK \
+  in_edges: 56 57 \
+  out_edges:
+ node: 44 \
+  type: SINK \
+  in_edges: 58 59 \
+  out_edges:
+ node: 45 \
+  type: SINK \
+  in_edges: 60 61 \
+  out_edges:
+ node: 46 \
+  type: SINK \
+  in_edges: 62 \
+  out_edges:
+ node: 47 \
+  type: SINK \
+  in_edges: 63 64 \
+  out_edges:
+ node: 48 \
+  type: SINK \
+  in_edges: 65 66 \
+  out_edges:
+ edge: 0 \
+  type: INTERCONNECT \
+  src_node: 0 \
+  sink_node: 2 \
+  disabled: false
+ edge: 1 \
+  type: INTERCONNECT \
+  src_node: 0 \
+  sink_node: 3 \
+  disabled: false
+ edge: 2 \
+  type: INTERCONNECT \
+  src_node: 0 \
+  sink_node: 4 \
+  disabled: false
+ edge: 3 \
+  type: INTERCONNECT \
+  src_node: 0 \
+  sink_node: 5 \
+  disabled: false
+ edge: 4 \
+  type: INTERCONNECT \
+  src_node: 0 \
+  sink_node: 6 \
+  disabled: false
+ edge: 5 \
+  type: INTERCONNECT \
+  src_node: 1 \
+  sink_node: 7 \
+  disabled: false
+ edge: 6 \
+  type: INTERCONNECT \
+  src_node: 1 \
+  sink_node: 8 \
+  disabled: false
+ edge: 7 \
+  type: INTERCONNECT \
+  src_node: 1 \
+  sink_node: 9 \
+  disabled: false
+ edge: 8 \
+  type: INTERCONNECT \
+  src_node: 1 \
+  sink_node: 10 \
+  disabled: false
+ edge: 9 \
+  type: INTERCONNECT \
+  src_node: 1 \
+  sink_node: 11 \
+  disabled: false
+ edge: 10 \
+  type: PRIMITIVE_CLOCK_LAUNCH \
+  src_node: 2 \
+  sink_node: 12 \
+  disabled: false
+ edge: 11 \
+  type: PRIMITIVE_CLOCK_LAUNCH \
+  src_node: 3 \
+  sink_node: 13 \
+  disabled: false
+ edge: 12 \
+  type: PRIMITIVE_CLOCK_LAUNCH \
+  src_node: 4 \
+  sink_node: 14 \
+  disabled: false
+ edge: 13 \
+  type: PRIMITIVE_CLOCK_LAUNCH \
+  src_node: 5 \
+  sink_node: 15 \
+  disabled: false
+ edge: 14 \
+  type: PRIMITIVE_CLOCK_LAUNCH \
+  src_node: 6 \
+  sink_node: 16 \
+  disabled: false
+ edge: 15 \
+  type: INTERCONNECT \
+  src_node: 12 \
+  sink_node: 17 \
+  disabled: false
+ edge: 16 \
+  type: INTERCONNECT \
+  src_node: 12 \
+  sink_node: 18 \
+  disabled: false
+ edge: 17 \
+  type: INTERCONNECT \
+  src_node: 12 \
+  sink_node: 19 \
+  disabled: false
+ edge: 18 \
+  type: INTERCONNECT \
+  src_node: 12 \
+  sink_node: 20 \
+  disabled: false
+ edge: 19 \
+  type: INTERCONNECT \
+  src_node: 12 \
+  sink_node: 21 \
+  disabled: false
+ edge: 20 \
+  type: INTERCONNECT \
+  src_node: 13 \
+  sink_node: 22 \
+  disabled: false
+ edge: 21 \
+  type: INTERCONNECT \
+  src_node: 13 \
+  sink_node: 23 \
+  disabled: false
+ edge: 22 \
+  type: INTERCONNECT \
+  src_node: 13 \
+  sink_node: 24 \
+  disabled: false
+ edge: 23 \
+  type: INTERCONNECT \
+  src_node: 13 \
+  sink_node: 25 \
+  disabled: false
+ edge: 24 \
+  type: INTERCONNECT \
+  src_node: 14 \
+  sink_node: 26 \
+  disabled: false
+ edge: 25 \
+  type: INTERCONNECT \
+  src_node: 14 \
+  sink_node: 27 \
+  disabled: false
+ edge: 26 \
+  type: INTERCONNECT \
+  src_node: 14 \
+  sink_node: 28 \
+  disabled: false
+ edge: 27 \
+  type: INTERCONNECT \
+  src_node: 15 \
+  sink_node: 29 \
+  disabled: false
+ edge: 28 \
+  type: INTERCONNECT \
+  src_node: 15 \
+  sink_node: 30 \
+  disabled: false
+ edge: 29 \
+  type: INTERCONNECT \
+  src_node: 16 \
+  sink_node: 31 \
+  disabled: false
+ edge: 30 \
+  type: INTERCONNECT \
+  src_node: 16 \
+  sink_node: 32 \
+  disabled: false
+ edge: 31 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 7 \
+  sink_node: 33 \
+  disabled: false
+ edge: 32 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 17 \
+  sink_node: 33 \
+  disabled: false
+ edge: 33 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 8 \
+  sink_node: 34 \
+  disabled: false
+ edge: 34 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 18 \
+  sink_node: 34 \
+  disabled: false
+ edge: 35 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 22 \
+  sink_node: 34 \
+  disabled: false
+ edge: 36 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 19 \
+  sink_node: 35 \
+  disabled: false
+ edge: 37 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 23 \
+  sink_node: 35 \
+  disabled: false
+ edge: 38 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 9 \
+  sink_node: 35 \
+  disabled: false
+ edge: 39 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 26 \
+  sink_node: 35 \
+  disabled: false
+ edge: 40 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 20 \
+  sink_node: 36 \
+  disabled: false
+ edge: 41 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 24 \
+  sink_node: 36 \
+  disabled: false
+ edge: 42 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 27 \
+  sink_node: 36 \
+  disabled: false
+ edge: 43 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 21 \
+  sink_node: 37 \
+  disabled: false
+ edge: 44 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 25 \
+  sink_node: 37 \
+  disabled: false
+ edge: 45 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 28 \
+  sink_node: 37 \
+  disabled: false
+ edge: 46 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 30 \
+  sink_node: 37 \
+  disabled: false
+ edge: 47 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 32 \
+  sink_node: 38 \
+  disabled: false
+ edge: 48 \
+  type: INTERCONNECT \
+  src_node: 36 \
+  sink_node: 39 \
+  disabled: false
+ edge: 49 \
+  type: INTERCONNECT \
+  src_node: 37 \
+  sink_node: 40 \
+  disabled: false
+ edge: 50 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 10 \
+  sink_node: 41 \
+  disabled: false
+ edge: 51 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 39 \
+  sink_node: 41 \
+  disabled: false
+ edge: 52 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 29 \
+  sink_node: 41 \
+  disabled: false
+ edge: 53 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 11 \
+  sink_node: 42 \
+  disabled: false
+ edge: 54 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 40 \
+  sink_node: 42 \
+  disabled: false
+ edge: 55 \
+  type: PRIMITIVE_COMBINATIONAL \
+  src_node: 31 \
+  sink_node: 42 \
+  disabled: false
+ edge: 56 \
+  type: PRIMITIVE_CLOCK_CAPTURE \
+  src_node: 2 \
+  sink_node: 43 \
+  disabled: false
+ edge: 57 \
+  type: INTERCONNECT \
+  src_node: 33 \
+  sink_node: 43 \
+  disabled: false
+ edge: 58 \
+  type: PRIMITIVE_CLOCK_CAPTURE \
+  src_node: 3 \
+  sink_node: 44 \
+  disabled: false
+ edge: 59 \
+  type: INTERCONNECT \
+  src_node: 34 \
+  sink_node: 44 \
+  disabled: false
+ edge: 60 \
+  type: PRIMITIVE_CLOCK_CAPTURE \
+  src_node: 4 \
+  sink_node: 45 \
+  disabled: false
+ edge: 61 \
+  type: INTERCONNECT \
+  src_node: 35 \
+  sink_node: 45 \
+  disabled: false
+ edge: 62 \
+  type: INTERCONNECT \
+  src_node: 38 \
+  sink_node: 46 \
+  disabled: false
+ edge: 63 \
+  type: PRIMITIVE_CLOCK_CAPTURE \
+  src_node: 5 \
+  sink_node: 47 \
+  disabled: false
+ edge: 64 \
+  type: INTERCONNECT \
+  src_node: 41 \
+  sink_node: 47 \
+  disabled: false
+ edge: 65 \
+  type: PRIMITIVE_CLOCK_CAPTURE \
+  src_node: 6 \
+  sink_node: 48 \
+  disabled: false
+ edge: 66 \
+  type: INTERCONNECT \
+  src_node: 42 \
+  sink_node: 48 \
+  disabled: false
+
+timing_constraints:
+ type: CLOCK domain: 0 name: "blink^clk"
+ type: CLOCK_SOURCE node: 0 domain: 0
+ type: MAX_INPUT_CONSTRAINT node: 0 domain: 0 constraint: 0
+ type: MAX_INPUT_CONSTRAINT node: 1 domain: 0 constraint: 0
+ type: MIN_INPUT_CONSTRAINT node: 0 domain: 0 constraint: 0
+ type: MIN_INPUT_CONSTRAINT node: 1 domain: 0 constraint: 0
+ type: MAX_OUTPUT_CONSTRAINT node: 46 domain: 0 constraint: 0
+ type: MIN_OUTPUT_CONSTRAINT node: 46 domain: 0 constraint: 0
+ type: SETUP_CONSTRAINT launch_domain: 0 capture_domain: 0 capture_node: -1 constraint: 0
+ type: HOLD_CONSTRAINT launch_domain: 0 capture_domain: 0 capture_node: -1 constraint: 0
+
+delay_model:
+ edge: 0 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 1 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 2 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 3 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 4 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 5 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 6 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 7 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 8 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 9 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 10 min_delay: 6.032e-11 max_delay: 6.032e-11
+ edge: 11 min_delay: 6.032e-11 max_delay: 6.032e-11
+ edge: 12 min_delay: 6.032e-11 max_delay: 6.032e-11
+ edge: 13 min_delay: 6.032e-11 max_delay: 6.032e-11
+ edge: 14 min_delay: 6.032e-11 max_delay: 6.032e-11
+ edge: 15 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 16 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 17 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 18 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 19 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 20 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 21 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 22 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 23 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 24 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 25 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 26 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 27 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 28 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 29 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 30 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 31 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 32 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 33 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 34 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 35 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 36 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 37 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 38 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 39 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 40 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 41 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 42 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 43 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 44 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 45 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 46 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 47 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 48 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 49 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 50 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 51 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 52 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 53 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 54 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 55 min_delay: 1.145e-10 max_delay: 1.145e-10
+ edge: 56 setup_time: 1.891e-11 hold_time: 1.891e-11
+ edge: 57 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 58 setup_time: 1.891e-11 hold_time: 1.891e-11
+ edge: 59 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 60 setup_time: 1.891e-11 hold_time: 1.891e-11
+ edge: 61 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 62 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 63 setup_time: 1.891e-11 hold_time: 1.891e-11
+ edge: 64 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+ edge: 65 setup_time: 1.891e-11 hold_time: 1.891e-11
+ edge: 66 min_delay: 7.75636e-10 max_delay: 7.75636e-10
+
+analysis_result:
+ type: SETUP_DATA_ARRIVAL node: 1 launch_domain: 0 capture_domain: -1 time: 0
+ type: SETUP_DATA_ARRIVAL node: 7 launch_domain: 0 capture_domain: -1 time: 7.75636e-10
+ type: SETUP_DATA_ARRIVAL node: 8 launch_domain: 0 capture_domain: -1 time: 7.75636e-10
+ type: SETUP_DATA_ARRIVAL node: 9 launch_domain: 0 capture_domain: -1 time: 7.75636e-10
+ type: SETUP_DATA_ARRIVAL node: 10 launch_domain: 0 capture_domain: -1 time: 7.75636e-10
+ type: SETUP_DATA_ARRIVAL node: 11 launch_domain: 0 capture_domain: -1 time: 7.75636e-10
+ type: SETUP_DATA_ARRIVAL node: 12 launch_domain: 0 capture_domain: -1 time: 8.35956e-10
+ type: SETUP_DATA_ARRIVAL node: 13 launch_domain: 0 capture_domain: -1 time: 8.35956e-10
+ type: SETUP_DATA_ARRIVAL node: 14 launch_domain: 0 capture_domain: -1 time: 8.35956e-10
+ type: SETUP_DATA_ARRIVAL node: 15 launch_domain: 0 capture_domain: -1 time: 8.35956e-10
+ type: SETUP_DATA_ARRIVAL node: 16 launch_domain: 0 capture_domain: -1 time: 8.35956e-10
+ type: SETUP_DATA_ARRIVAL node: 17 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 18 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 19 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 20 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 21 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 22 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 23 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 24 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 25 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 26 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 27 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 28 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 29 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 30 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 31 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 32 launch_domain: 0 capture_domain: -1 time: 1.61159e-09
+ type: SETUP_DATA_ARRIVAL node: 33 launch_domain: 0 capture_domain: -1 time: 1.72609e-09
+ type: SETUP_DATA_ARRIVAL node: 34 launch_domain: 0 capture_domain: -1 time: 1.72609e-09
+ type: SETUP_DATA_ARRIVAL node: 35 launch_domain: 0 capture_domain: -1 time: 1.72609e-09
+ type: SETUP_DATA_ARRIVAL node: 36 launch_domain: 0 capture_domain: -1 time: 1.72609e-09
+ type: SETUP_DATA_ARRIVAL node: 37 launch_domain: 0 capture_domain: -1 time: 1.72609e-09
+ type: SETUP_DATA_ARRIVAL node: 38 launch_domain: 0 capture_domain: -1 time: 1.72609e-09
+ type: SETUP_DATA_ARRIVAL node: 39 launch_domain: 0 capture_domain: -1 time: 2.50173e-09
+ type: SETUP_DATA_ARRIVAL node: 40 launch_domain: 0 capture_domain: -1 time: 2.50173e-09
+ type: SETUP_DATA_ARRIVAL node: 41 launch_domain: 0 capture_domain: -1 time: 2.61623e-09
+ type: SETUP_DATA_ARRIVAL node: 42 launch_domain: 0 capture_domain: -1 time: 2.61623e-09
+ type: SETUP_DATA_ARRIVAL node: 43 launch_domain: 0 capture_domain: -1 time: 2.50173e-09
+ type: SETUP_DATA_ARRIVAL node: 44 launch_domain: 0 capture_domain: -1 time: 2.50173e-09
+ type: SETUP_DATA_ARRIVAL node: 45 launch_domain: 0 capture_domain: -1 time: 2.50173e-09
+ type: SETUP_DATA_ARRIVAL node: 46 launch_domain: 0 capture_domain: -1 time: 2.50173e-09
+ type: SETUP_DATA_ARRIVAL node: 47 launch_domain: 0 capture_domain: -1 time: 3.39186e-09
+ type: SETUP_DATA_ARRIVAL node: 48 launch_domain: 0 capture_domain: -1 time: 3.39186e-09
+ type: SETUP_DATA_REQUIRED node: 1 launch_domain: 0 capture_domain: 0 time: -9.09046e-10
+ type: SETUP_DATA_REQUIRED node: 7 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 8 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 9 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 10 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 11 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 12 launch_domain: 0 capture_domain: 0 time: -1.79918e-09
+ type: SETUP_DATA_REQUIRED node: 13 launch_domain: 0 capture_domain: 0 time: -1.79918e-09
+ type: SETUP_DATA_REQUIRED node: 14 launch_domain: 0 capture_domain: 0 time: -1.79918e-09
+ type: SETUP_DATA_REQUIRED node: 15 launch_domain: 0 capture_domain: 0 time: -1.79918e-09
+ type: SETUP_DATA_REQUIRED node: 16 launch_domain: 0 capture_domain: 0 time: -1.66577e-09
+ type: SETUP_DATA_REQUIRED node: 17 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 18 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 19 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 20 launch_domain: 0 capture_domain: 0 time: -1.02355e-09
+ type: SETUP_DATA_REQUIRED node: 21 launch_domain: 0 capture_domain: 0 time: -1.02355e-09
+ type: SETUP_DATA_REQUIRED node: 22 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 23 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 24 launch_domain: 0 capture_domain: 0 time: -1.02355e-09
+ type: SETUP_DATA_REQUIRED node: 25 launch_domain: 0 capture_domain: 0 time: -1.02355e-09
+ type: SETUP_DATA_REQUIRED node: 26 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 27 launch_domain: 0 capture_domain: 0 time: -1.02355e-09
+ type: SETUP_DATA_REQUIRED node: 28 launch_domain: 0 capture_domain: 0 time: -1.02355e-09
+ type: SETUP_DATA_REQUIRED node: 29 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 30 launch_domain: 0 capture_domain: 0 time: -1.02355e-09
+ type: SETUP_DATA_REQUIRED node: 31 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 32 launch_domain: 0 capture_domain: 0 time: -8.90136e-10
+ type: SETUP_DATA_REQUIRED node: 33 launch_domain: 0 capture_domain: 0 time: -1.891e-11
+ type: SETUP_DATA_REQUIRED node: 34 launch_domain: 0 capture_domain: 0 time: -1.891e-11
+ type: SETUP_DATA_REQUIRED node: 35 launch_domain: 0 capture_domain: 0 time: -1.891e-11
+ type: SETUP_DATA_REQUIRED node: 36 launch_domain: 0 capture_domain: 0 time: -9.09046e-10
+ type: SETUP_DATA_REQUIRED node: 37 launch_domain: 0 capture_domain: 0 time: -9.09046e-10
+ type: SETUP_DATA_REQUIRED node: 38 launch_domain: 0 capture_domain: 0 time: -7.75636e-10
+ type: SETUP_DATA_REQUIRED node: 39 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 40 launch_domain: 0 capture_domain: 0 time: -1.3341e-10
+ type: SETUP_DATA_REQUIRED node: 41 launch_domain: 0 capture_domain: 0 time: -1.891e-11
+ type: SETUP_DATA_REQUIRED node: 42 launch_domain: 0 capture_domain: 0 time: -1.891e-11
+ type: SETUP_DATA_REQUIRED node: 43 launch_domain: 0 capture_domain: 0 time: 7.56726e-10
+ type: SETUP_DATA_REQUIRED node: 44 launch_domain: 0 capture_domain: 0 time: 7.56726e-10
+ type: SETUP_DATA_REQUIRED node: 45 launch_domain: 0 capture_domain: 0 time: 7.56726e-10
+ type: SETUP_DATA_REQUIRED node: 46 launch_domain: 0 capture_domain: 0 time: 0
+ type: SETUP_DATA_REQUIRED node: 47 launch_domain: 0 capture_domain: 0 time: 7.56726e-10
+ type: SETUP_DATA_REQUIRED node: 48 launch_domain: 0 capture_domain: 0 time: 7.56726e-10
+ type: SETUP_LAUNCH_CLOCK node: 0 launch_domain: 0 capture_domain: -1 time: 0
+ type: SETUP_LAUNCH_CLOCK node: 2 launch_domain: 0 capture_domain: -1 time: 7.75636e-10
+ type: SETUP_LAUNCH_CLOCK node: 3 launch_domain: 0 capture_domain: -1 time: 7.75636e-10
+ type: SETUP_LAUNCH_CLOCK node: 4 launch_domain: 0 capture_domain: -1 time: 7.75636e-10
+ type: SETUP_LAUNCH_CLOCK node: 5 launch_domain: 0 capture_domain: -1 time: 7.75636e-10
+ type: SETUP_LAUNCH_CLOCK node: 6 launch_domain: 0 capture_domain: -1 time: 7.75636e-10
+ type: SETUP_CAPTURE_CLOCK node: 0 launch_domain: 0 capture_domain: 0 time: 0
+ type: SETUP_CAPTURE_CLOCK node: 2 launch_domain: 0 capture_domain: 0 time: 7.75636e-10
+ type: SETUP_CAPTURE_CLOCK node: 3 launch_domain: 0 capture_domain: 0 time: 7.75636e-10
+ type: SETUP_CAPTURE_CLOCK node: 4 launch_domain: 0 capture_domain: 0 time: 7.75636e-10
+ type: SETUP_CAPTURE_CLOCK node: 5 launch_domain: 0 capture_domain: 0 time: 7.75636e-10
+ type: SETUP_CAPTURE_CLOCK node: 6 launch_domain: 0 capture_domain: 0 time: 7.75636e-10
+ type: SETUP_SLACK node: 1 launch_domain: 0 capture_domain: 0 slack: -9.09046e-10
+ type: SETUP_SLACK node: 7 launch_domain: 0 capture_domain: 0 slack: -9.09046e-10
+ type: SETUP_SLACK node: 8 launch_domain: 0 capture_domain: 0 slack: -9.09046e-10
+ type: SETUP_SLACK node: 9 launch_domain: 0 capture_domain: 0 slack: -9.09046e-10
+ type: SETUP_SLACK node: 10 launch_domain: 0 capture_domain: 0 slack: -9.09046e-10
+ type: SETUP_SLACK node: 11 launch_domain: 0 capture_domain: 0 slack: -9.09046e-10
+ type: SETUP_SLACK node: 12 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 13 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 14 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 15 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 16 launch_domain: 0 capture_domain: 0 slack: -2.50173e-09
+ type: SETUP_SLACK node: 17 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 18 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 19 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 20 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 21 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 22 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 23 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 24 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 25 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 26 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 27 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 28 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 29 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 30 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 31 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 32 launch_domain: 0 capture_domain: 0 slack: -2.50173e-09
+ type: SETUP_SLACK node: 33 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 34 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 35 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 36 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 37 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 38 launch_domain: 0 capture_domain: 0 slack: -2.50173e-09
+ type: SETUP_SLACK node: 39 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 40 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 41 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 42 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 43 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 44 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 45 launch_domain: 0 capture_domain: 0 slack: -1.745e-09
+ type: SETUP_SLACK node: 46 launch_domain: 0 capture_domain: 0 slack: -2.50173e-09
+ type: SETUP_SLACK node: 47 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+ type: SETUP_SLACK node: 48 launch_domain: 0 capture_domain: 0 slack: -2.63514e-09
+

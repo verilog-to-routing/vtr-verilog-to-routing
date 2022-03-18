@@ -1,0 +1,30 @@
+--------------------------------------------------------------
+Clusters
+--------------------------------------------------------------
+
+Cluster n17 Id: 0 
+	Atoms in cluster: 
+	 blink^r_counter~0_FF 
+	 blink^r_counter~1_FF 
+	 blink^r_counter~2_FF 
+	 blink^r_counter~3_FF 
+	 blink^r_counter~4_FF 
+	 n7 
+	 n12 
+	 n17 
+	 n22 
+	 n25 
+	 n27 
+	 n27_1 
+	 blink^o_led 
+Cluster out:blink^o_led Id: 1 
+	Atoms in cluster: 
+	 out:blink^o_led 
+Cluster blink^clk Id: 2 
+	Atoms in cluster: 
+	 blink^clk 
+Cluster blink^i_reset Id: 3 
+	Atoms in cluster: 
+	 blink^i_reset 
+
+Cluster Floorplanning Constraints:

@@ -1,0 +1,1424 @@
+Printing architecture... 
+
+*************************************************
+Layout: 'auto' Type: auto Aspect_Ratio: 1.000000
+*************************************************
+
+*************************************************
+Device Info:
+	Sizing: R_minW_nmos 1.309000e+04 R_minW_pmos 1.908683e+04
+	Area: grid_logic_tile_area 0.000000e+00
+	Channel Width Distribution:
+		x: type uniform peak 1.000000e+00
+		y: type uniform peak 1.000000e+00
+	Input Connect Block Switch Name: ipin_cblock
+*************************************************
+
+*************************************************
+Switch List:
+	Switch[1]: name l2s_mux type mux
+				R 8.780000e+02 Cin 2.000000e-15 Cout 0.000000e+00
+				#Tdel values 2 buf_size 1.420000e+01 mux_trans_size 1.500000e+00
+				power_buffer_size auto
+	Switch[2]: name l4g_mux type mux
+				R 4.480000e+02 Cin 1.800000e-15 Cout 0.000000e+00
+				#Tdel values 2 buf_size 2.000000e+01 mux_trans_size 1.500000e+00
+				power_buffer_size auto
+	Switch[3]: name ipin_cblock type mux
+				R 3.272500e+03 Cin 2.000000e-15 Cout 0.000000e+00
+				#Tdel values 1 buf_size 0.000000e+00 mux_trans_size 1.200000e+00
+				power_buffer_size auto
+*************************************************
+
+*************************************************
+Segment List:
+	Segment[1]: frequency 8000 length 2 R_metal 1.740000e+02 C_metal 0.000000e+00
+				type unidir mux_name l2s_mux
+				cb 1 1 
+				sb 1 1 1 
+	Segment[2]: frequency 1200 length 4 R_metal 2.300000e+01 C_metal 0.000000e+00
+				type unidir mux_name l4g_mux
+				cb 1 0 0 0 
+				sb 1 1 1 1 1 
+*************************************************
+
+*************************************************
+Direct List:
+*************************************************
+
+*************************************************
+Power:
+*************************************************
+
+*************************************************
+Clock:
+*************************************************
+
+*************************************************
+Printing user models 
+Model: "dual_port_ram"
+	Input Ports: "clk" "1" min_size="0"
+	Input Ports: "data2" "1" min_size="0"
+	Input Ports: "data1" "1" min_size="0"
+	Input Ports: "addr2" "14" min_size="0"
+	Input Ports: "addr1" "14" min_size="0"
+	Input Ports: "we2" "1" min_size="0"
+	Input Ports: "we1" "1" min_size="0"
+	Output Ports: "out2" "1" min_size="0"
+	Output Ports: "out1" "1" min_size="0"
+	pb_type 0: "memory_slice"
+	pb_type 1: "memory_slice"
+	pb_type 2: "memory_slice"
+	pb_type 3: "memory_slice"
+	pb_type 4: "memory_slice"
+Model: "single_port_ram"
+	Input Ports: "clk" "1" min_size="0"
+	Input Ports: "data" "1" min_size="0"
+	Input Ports: "addr" "14" min_size="0"
+	Input Ports: "we" "1" min_size="0"
+	Output Ports: "out" "1" min_size="0"
+	pb_type 0: "memory_slice"
+	pb_type 1: "memory_slice"
+	pb_type 2: "memory_slice"
+	pb_type 3: "memory_slice"
+	pb_type 4: "memory_slice"
+	pb_type 5: "memory_slice"
+Model: "multiply"
+	Input Ports: "b" "36" min_size="0"
+	Input Ports: "a" "36" min_size="0"
+	Output Ports: "out" "72" min_size="0"
+	pb_type 0: "mult_36x36"
+	pb_type 1: "mult_18x18"
+	pb_type 2: "mult_9x9"
+Printing library models 
+Model: ".input"
+	Output Ports: "inpad" "1" min_size="1"
+	pb_type 0: "inpad"
+Model: ".output"
+	Input Ports: "outpad" "1" min_size="1"
+	pb_type 0: "outpad"
+Model: ".latch"
+	Input Ports: "D" "1" min_size="1"
+	Input Ports: "clk" "1" min_size="1"
+	Output Ports: "Q" "1" min_size="1"
+	pb_type 0: "ff"
+Model: ".names"
+	Input Ports: "in" "4" min_size="1"
+	Output Ports: "out" "1" min_size="1"
+	pb_type 0: "lut"
+*************************************************
+
+*************************************************
+Type: "EMPTY"
+	capacity: 0
+	width: 1
+	height: 1
+	num_drivers: 0
+	num_receivers: 0
+	index: 0
+
+Type: "io"
+	capacity: 8
+	width: 1
+	height: 1
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 0
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 1
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 2
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 3
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 4
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 5
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 6
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 7
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 8
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 9
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 10
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 11
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 12
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 13
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 14
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 15
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 16
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 17
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 18
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 19
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 20
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 21
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 22
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 23
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 0
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l4g pins: 1
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 2
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 3
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l4g pins: 4
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 5
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 6
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l4g pins: 7
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 8
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 9
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l4g pins: 10
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 11
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 12
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l4g pins: 13
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 14
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 15
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l4g pins: 16
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 17
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 18
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l4g pins: 19
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 20
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 21
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l4g pins: 22
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 23
+	num_drivers: 8
+	num_receivers: 8
+	index: 1
+
+Equivalent Site: io
+
+Type: "clb"
+	capacity: 1
+	width: 1
+	height: 1
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 0 1 2 3
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 4 5 6 7
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 8 9 10 11
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 12 13 14 15
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 16 17 18 19
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 20 21 22 23
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 24 25 26 27
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 28 29 30 31
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 32 33 34 35 36 37 38 39
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 40
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 0 1 2 3
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 4 5 6 7
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 8 9 10 11
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 12 13 14 15
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 16 17 18 19
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 20 21 22 23
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 24 25 26 27
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 28 29 30 31
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l4g pins: 32 33 34 35 36 37 38 39
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 40
+	num_drivers: 8
+	num_receivers: 32
+	index: 2
+
+Equivalent Site: clb
+
+Type: "mult_36"
+	capacity: 1
+	width: 1
+	height: 4
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l4g pins: 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143
+	num_drivers: 72
+	num_receivers: 72
+	index: 3
+
+Equivalent Site: mult_36
+
+Type: "memory"
+	capacity: 1
+	width: 1
+	height: 4
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 0 1 2 3 4 5 6 7 8 9 10 11 12 13
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 14 15 16 17 18 19 20 21 22 23 24 25 26 27
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 64
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 65
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l2s pins: 102
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 0 1 2 3 4 5 6 7 8 9 10 11 12 13
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 14 15 16 17 18 19 20 21 22 23 24 25 26 27
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 64
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 65
+fc_value_type: FRACTIONAL fc_value: 0.200000 segment: l4g pins: 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101
+fc_value_type: FRACTIONAL fc_value: 0.000000 segment: l4g pins: 102
+	num_drivers: 36
+	num_receivers: 66
+	index: 4
+
+Equivalent Site: memory
+
+*************************************************
+
+*************************************************
+
+		pb_type name: io
+			blif_model: (null)
+			class_type: 0
+			num_modes: 2
+			num_ports: 3
+			port outpad type 0 num_pins 1
+			port inpad type 1 num_pins 1
+			port clock type 0 num_pins 1
+			mode inpad:
+				pb_type name: inpad
+					blif_model: .input
+					class_type: 0
+					num_modes: 0
+					num_ports: 1
+					port inpad type 1 num_pins 1
+				interconnect 2 inpad.inpad io.inpad
+					annotation inpad.inpad io.inpad 1: 4.243e-11
+			mode outpad:
+				pb_type name: outpad
+					blif_model: .output
+					class_type: 0
+					num_modes: 0
+					num_ports: 1
+					port outpad type 0 num_pins 1
+				interconnect 2 io.outpad outpad.outpad
+					annotation io.outpad outpad.outpad 1: 1.394e-11
+			power method: auto-size
+
+		pb_type name: clb
+			blif_model: (null)
+			class_type: 0
+			num_modes: 1
+			num_ports: 10
+			port I0 type 0 num_pins 4
+			port I1 type 0 num_pins 4
+			port I2 type 0 num_pins 4
+			port I3 type 0 num_pins 4
+			port I4 type 0 num_pins 4
+			port I5 type 0 num_pins 4
+			port I6 type 0 num_pins 4
+			port I7 type 0 num_pins 4
+			port O type 1 num_pins 8
+			port clk type 0 num_pins 1
+			mode default:
+				pb_type name: ble4
+					blif_model: (null)
+					class_type: 0
+					num_modes: 1
+					num_ports: 3
+					port in type 0 num_pins 4
+					port out type 1 num_pins 1
+					port clk type 0 num_pins 1
+					mode default:
+						pb_type name: lut4
+							blif_model: (null)
+							class_type: 1
+							num_modes: 2
+							num_ports: 2
+							port in type 0 num_pins 4
+							port out type 1 num_pins 1
+							mode wire:
+								interconnect 1 lut4.in lut4.out
+									annotation lut4.in lut4.out 0: 
+                1.145e-10
+                1.145e-10
+                1.145e-10
+                1.145e-10
+              
+							mode lut4:
+								pb_type name: lut
+									blif_model: .names
+									class_type: 1
+									num_modes: 0
+									num_ports: 2
+									port in type 0 num_pins 4
+									port out type 1 num_pins 1
+								interconnect 2 lut4.in lut.in
+								interconnect 2 lut.out lut4.out
+						pb_type name: ff
+							blif_model: .latch
+							class_type: 2
+							num_modes: 0
+							num_ports: 3
+							port D type 0 num_pins 1
+							port Q type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk ff.D (null) 1: 1.891e-11
+									annotation clk ff.Q (null) 1: 6.032e-11
+						interconnect 2 ble4.in lut4[0:0].in
+						interconnect 2 lut4.out ff.D
+							annotation lut4.out ff.D 1: ble4
+						interconnect 2 ble4.clk ff.clk
+						interconnect 3 ff.Q lut4.out ble4.out
+							annotation lut4.out[0:0] ble4.out[0:0] 1: 16.6e-12
+							annotation ff[0:0].Q ble4.out[0:0] 1: 30e-12
+				interconnect 1 clb.I0 ble4[0].in
+				interconnect 1 clb.I1 ble4[1].in
+				interconnect 1 clb.I2 ble4[2].in
+				interconnect 1 clb.I3 ble4[3].in
+				interconnect 1 clb.I4 ble4[4].in
+				interconnect 1 clb.I5 ble4[5].in
+				interconnect 1 clb.I6 ble4[6].in
+				interconnect 1 clb.I7 ble4[7].in
+				interconnect 1 clb.clk ble4[7:0].clk
+				interconnect 2 ble4[7:0].out clb.O
+			power method: auto-size
+
+		pb_type name: mult_36
+			blif_model: (null)
+			class_type: 0
+			num_modes: 2
+			num_ports: 3
+			port a type 0 num_pins 36
+			port b type 0 num_pins 36
+			port out type 1 num_pins 72
+			mode two_divisible_mult_18x18:
+				pb_type name: divisible_mult_18x18
+					blif_model: (null)
+					class_type: 0
+					num_modes: 2
+					num_ports: 3
+					port a type 0 num_pins 18
+					port b type 0 num_pins 18
+					port out type 1 num_pins 36
+					mode two_mult_9x9:
+						pb_type name: mult_9x9_slice
+							blif_model: (null)
+							class_type: 0
+							num_modes: 1
+							num_ports: 3
+							port A_cfg type 0 num_pins 9
+							port B_cfg type 0 num_pins 9
+							port OUT_cfg type 1 num_pins 18
+							mode default:
+								pb_type name: mult_9x9
+									blif_model: .subckt multiply
+									class_type: 0
+									num_modes: 0
+									num_ports: 3
+									port a type 0 num_pins 9
+									port b type 0 num_pins 9
+									port out type 1 num_pins 18
+											annotation (null) mult_9x9.a mult_9x9.out 1: 1.523e-9
+											annotation (null) mult_9x9.b mult_9x9.out 1: 1.523e-9
+								interconnect 2 mult_9x9_slice.A_cfg mult_9x9.a
+								interconnect 2 mult_9x9_slice.B_cfg mult_9x9.b
+								interconnect 2 mult_9x9.out mult_9x9_slice.OUT_cfg
+							power method: pin-toggle
+								port A_cfg type 0 num_pins 9
+									energy_per_toggle 1.450000e-12
+								port B_cfg type 0 num_pins 9
+									energy_per_toggle 1.450000e-12
+						interconnect 2 divisible_mult_18x18.a mult_9x9_slice[1:0].A_cfg
+						interconnect 2 divisible_mult_18x18.b mult_9x9_slice[1:0].B_cfg
+						interconnect 2 mult_9x9_slice[1:0].OUT_cfg divisible_mult_18x18.out
+					mode mult_18x18:
+						pb_type name: mult_18x18_slice
+							blif_model: (null)
+							class_type: 0
+							num_modes: 1
+							num_ports: 3
+							port A_cfg type 0 num_pins 18
+							port B_cfg type 0 num_pins 18
+							port OUT_cfg type 1 num_pins 36
+							mode default:
+								pb_type name: mult_18x18
+									blif_model: .subckt multiply
+									class_type: 0
+									num_modes: 0
+									num_ports: 3
+									port a type 0 num_pins 18
+									port b type 0 num_pins 18
+									port out type 1 num_pins 36
+											annotation (null) mult_18x18.a mult_18x18.out 1: 1.523e-9
+											annotation (null) mult_18x18.b mult_18x18.out 1: 1.523e-9
+								interconnect 2 mult_18x18_slice.A_cfg mult_18x18.a
+								interconnect 2 mult_18x18_slice.B_cfg mult_18x18.b
+								interconnect 2 mult_18x18.out mult_18x18_slice.OUT_cfg
+							power method: pin-toggle
+								port A_cfg type 0 num_pins 18
+									energy_per_toggle 1.090000e-12
+								port B_cfg type 0 num_pins 18
+									energy_per_toggle 1.090000e-12
+						interconnect 2 divisible_mult_18x18.a mult_18x18_slice.A_cfg
+						interconnect 2 divisible_mult_18x18.b mult_18x18_slice.B_cfg
+						interconnect 2 mult_18x18_slice.OUT_cfg divisible_mult_18x18.out
+					power method: sum-of-children
+				interconnect 2 mult_36.a divisible_mult_18x18[1:0].a
+					annotation mult_36.a divisible_mult_18x18[1:0].a 1: 134e-12
+				interconnect 2 mult_36.b divisible_mult_18x18[1:0].b
+					annotation mult_36.b divisible_mult_18x18[1:0].b 1: 134e-12
+				interconnect 2 divisible_mult_18x18[1:0].out mult_36.out
+					annotation divisible_mult_18x18[1:0].out mult_36.out 1: 1.09e-9
+			mode mult_36x36:
+				pb_type name: mult_36x36_slice
+					blif_model: (null)
+					class_type: 0
+					num_modes: 1
+					num_ports: 3
+					port A_cfg type 0 num_pins 36
+					port B_cfg type 0 num_pins 36
+					port OUT_cfg type 1 num_pins 72
+					mode default:
+						pb_type name: mult_36x36
+							blif_model: .subckt multiply
+							class_type: 0
+							num_modes: 0
+							num_ports: 3
+							port a type 0 num_pins 36
+							port b type 0 num_pins 36
+							port out type 1 num_pins 72
+									annotation (null) mult_36x36.a mult_36x36.out 1: 1.523e-9
+									annotation (null) mult_36x36.b mult_36x36.out 1: 1.523e-9
+						interconnect 2 mult_36x36_slice.A_cfg mult_36x36.a
+						interconnect 2 mult_36x36_slice.B_cfg mult_36x36.b
+						interconnect 2 mult_36x36.out mult_36x36_slice.OUT_cfg
+					power method: pin-toggle
+						port A_cfg type 0 num_pins 36
+							energy_per_toggle 2.130000e-12
+						port B_cfg type 0 num_pins 36
+							energy_per_toggle 2.130000e-12
+				interconnect 2 mult_36.a mult_36x36_slice.A_cfg
+					annotation mult_36.a mult_36x36_slice.A_cfg 1: 134e-12
+				interconnect 2 mult_36.b mult_36x36_slice.B_cfg
+					annotation mult_36.b mult_36x36_slice.B_cfg 1: 134e-12
+				interconnect 2 mult_36x36_slice.OUT_cfg mult_36.out
+					annotation mult_36x36_slice.OUT_cfg mult_36.out 1: 1.93e-9
+			power method: sum-of-children
+
+		pb_type name: memory
+			blif_model: (null)
+			class_type: 0
+			num_modes: 11
+			num_ports: 7
+			port addr1 type 0 num_pins 14
+			port addr2 type 0 num_pins 14
+			port data type 0 num_pins 36
+			port we1 type 0 num_pins 1
+			port we2 type 0 num_pins 1
+			port out type 1 num_pins 36
+			port clk type 0 num_pins 1
+			mode mem_512x36_sp:
+				pb_type name: mem_512x36_sp
+					blif_model: (null)
+					class_type: 3
+					num_modes: 1
+					num_ports: 5
+					port addr type 0 num_pins 9
+					port data type 0 num_pins 36
+					port we type 0 num_pins 1
+					port out type 1 num_pins 36
+					port clk type 0 num_pins 1
+					mode memory_slice:
+						pb_type name: memory_slice
+							blif_model: .subckt single_port_ram
+							class_type: 3
+							num_modes: 0
+							num_ports: 5
+							port addr type 0 num_pins 9
+							port data type 0 num_pins 1
+							port we type 0 num_pins 1
+							port out type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk memory_slice.addr (null) 1: 509e-12
+									annotation clk memory_slice.data (null) 1: 509e-12
+									annotation clk memory_slice.we (null) 1: 509e-12
+									annotation clk memory_slice.out (null) 1: 1.234e-9
+						interconnect 2 mem_512x36_sp.addr memory_slice[0:0].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[1:1].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[2:2].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[3:3].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[4:4].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[5:5].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[6:6].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[7:7].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[8:8].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[9:9].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[10:10].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[11:11].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[12:12].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[13:13].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[14:14].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[15:15].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[16:16].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[17:17].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[18:18].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[19:19].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[20:20].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[21:21].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[22:22].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[23:23].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[24:24].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[25:25].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[26:26].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[27:27].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[28:28].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[29:29].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[30:30].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[31:31].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[32:32].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[33:33].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[34:34].addr
+						interconnect 2 mem_512x36_sp.addr memory_slice[35:35].addr
+						interconnect 2 mem_512x36_sp.data memory_slice[35:0].data
+						interconnect 2 mem_512x36_sp.we memory_slice[0:0].we
+						interconnect 2 mem_512x36_sp.we memory_slice[1:1].we
+						interconnect 2 mem_512x36_sp.we memory_slice[2:2].we
+						interconnect 2 mem_512x36_sp.we memory_slice[3:3].we
+						interconnect 2 mem_512x36_sp.we memory_slice[4:4].we
+						interconnect 2 mem_512x36_sp.we memory_slice[5:5].we
+						interconnect 2 mem_512x36_sp.we memory_slice[6:6].we
+						interconnect 2 mem_512x36_sp.we memory_slice[7:7].we
+						interconnect 2 mem_512x36_sp.we memory_slice[8:8].we
+						interconnect 2 mem_512x36_sp.we memory_slice[9:9].we
+						interconnect 2 mem_512x36_sp.we memory_slice[10:10].we
+						interconnect 2 mem_512x36_sp.we memory_slice[11:11].we
+						interconnect 2 mem_512x36_sp.we memory_slice[12:12].we
+						interconnect 2 mem_512x36_sp.we memory_slice[13:13].we
+						interconnect 2 mem_512x36_sp.we memory_slice[14:14].we
+						interconnect 2 mem_512x36_sp.we memory_slice[15:15].we
+						interconnect 2 mem_512x36_sp.we memory_slice[16:16].we
+						interconnect 2 mem_512x36_sp.we memory_slice[17:17].we
+						interconnect 2 mem_512x36_sp.we memory_slice[18:18].we
+						interconnect 2 mem_512x36_sp.we memory_slice[19:19].we
+						interconnect 2 mem_512x36_sp.we memory_slice[20:20].we
+						interconnect 2 mem_512x36_sp.we memory_slice[21:21].we
+						interconnect 2 mem_512x36_sp.we memory_slice[22:22].we
+						interconnect 2 mem_512x36_sp.we memory_slice[23:23].we
+						interconnect 2 mem_512x36_sp.we memory_slice[24:24].we
+						interconnect 2 mem_512x36_sp.we memory_slice[25:25].we
+						interconnect 2 mem_512x36_sp.we memory_slice[26:26].we
+						interconnect 2 mem_512x36_sp.we memory_slice[27:27].we
+						interconnect 2 mem_512x36_sp.we memory_slice[28:28].we
+						interconnect 2 mem_512x36_sp.we memory_slice[29:29].we
+						interconnect 2 mem_512x36_sp.we memory_slice[30:30].we
+						interconnect 2 mem_512x36_sp.we memory_slice[31:31].we
+						interconnect 2 mem_512x36_sp.we memory_slice[32:32].we
+						interconnect 2 mem_512x36_sp.we memory_slice[33:33].we
+						interconnect 2 mem_512x36_sp.we memory_slice[34:34].we
+						interconnect 2 mem_512x36_sp.we memory_slice[35:35].we
+						interconnect 2 memory_slice[35:0].out mem_512x36_sp.out
+						interconnect 2 mem_512x36_sp.clk memory_slice[0:0].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[1:1].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[2:2].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[3:3].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[4:4].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[5:5].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[6:6].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[7:7].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[8:8].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[9:9].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[10:10].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[11:11].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[12:12].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[13:13].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[14:14].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[15:15].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[16:16].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[17:17].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[18:18].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[19:19].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[20:20].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[21:21].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[22:22].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[23:23].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[24:24].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[25:25].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[26:26].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[27:27].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[28:28].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[29:29].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[30:30].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[31:31].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[32:32].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[33:33].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[34:34].clk
+						interconnect 2 mem_512x36_sp.clk memory_slice[35:35].clk
+					power method: pin-toggle
+						port clk type 0 num_pins 1
+							energy_per_toggle 9.000000e-12
+				interconnect 2 memory.addr1[8:0] mem_512x36_sp.addr
+					annotation memory.addr1[8:0] mem_512x36_sp.addr 1: 132e-12
+				interconnect 2 memory.data[35:0] mem_512x36_sp.data
+					annotation memory.data[35:0] mem_512x36_sp.data 1: 132e-12
+				interconnect 2 memory.we1 mem_512x36_sp.we
+					annotation memory.we1 mem_512x36_sp.we 1: 132e-12
+				interconnect 2 mem_512x36_sp.out memory.out[35:0]
+					annotation mem_512x36_sp.out memory.out[35:0] 1: 40e-12
+				interconnect 2 memory.clk mem_512x36_sp.clk
+			mode mem_1024x18_sp:
+				pb_type name: mem_1024x18_sp
+					blif_model: (null)
+					class_type: 3
+					num_modes: 1
+					num_ports: 5
+					port addr type 0 num_pins 10
+					port data type 0 num_pins 18
+					port we type 0 num_pins 1
+					port out type 1 num_pins 18
+					port clk type 0 num_pins 1
+					mode memory_slice:
+						pb_type name: memory_slice
+							blif_model: .subckt single_port_ram
+							class_type: 3
+							num_modes: 0
+							num_ports: 5
+							port addr type 0 num_pins 10
+							port data type 0 num_pins 1
+							port we type 0 num_pins 1
+							port out type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk memory_slice.addr (null) 1: 509e-12
+									annotation clk memory_slice.data (null) 1: 509e-12
+									annotation clk memory_slice.we (null) 1: 509e-12
+									annotation clk memory_slice.out (null) 1: 1.234e-9
+						interconnect 2 mem_1024x18_sp.addr memory_slice[0:0].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[1:1].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[2:2].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[3:3].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[4:4].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[5:5].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[6:6].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[7:7].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[8:8].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[9:9].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[10:10].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[11:11].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[12:12].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[13:13].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[14:14].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[15:15].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[16:16].addr
+						interconnect 2 mem_1024x18_sp.addr memory_slice[17:17].addr
+						interconnect 2 mem_1024x18_sp.data memory_slice[17:0].data
+						interconnect 2 mem_1024x18_sp.we memory_slice[0:0].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[1:1].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[2:2].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[3:3].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[4:4].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[5:5].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[6:6].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[7:7].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[8:8].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[9:9].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[10:10].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[11:11].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[12:12].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[13:13].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[14:14].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[15:15].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[16:16].we
+						interconnect 2 mem_1024x18_sp.we memory_slice[17:17].we
+						interconnect 2 memory_slice[17:0].out mem_1024x18_sp.out
+						interconnect 2 mem_1024x18_sp.clk memory_slice[0:0].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[1:1].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[2:2].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[3:3].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[4:4].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[5:5].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[6:6].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[7:7].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[8:8].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[9:9].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[10:10].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[11:11].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[12:12].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[13:13].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[14:14].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[15:15].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[16:16].clk
+						interconnect 2 mem_1024x18_sp.clk memory_slice[17:17].clk
+					power method: pin-toggle
+						port clk type 0 num_pins 1
+							energy_per_toggle 9.000000e-12
+				interconnect 2 memory.addr1[9:0] mem_1024x18_sp.addr
+					annotation memory.addr1[9:0] mem_1024x18_sp.addr 1: 132e-12
+				interconnect 2 memory.data[17:0] mem_1024x18_sp.data
+					annotation memory.data[17:0] mem_1024x18_sp.data 1: 132e-12
+				interconnect 2 memory.we1 mem_1024x18_sp.we
+					annotation memory.we1 mem_1024x18_sp.we 1: 132e-12
+				interconnect 2 mem_1024x18_sp.out memory.out[17:0]
+					annotation mem_1024x18_sp.out memory.out[17:0] 1: 40e-12
+				interconnect 2 memory.clk mem_1024x18_sp.clk
+			mode mem_2048x9_sp:
+				pb_type name: mem_2048x9_sp
+					blif_model: (null)
+					class_type: 3
+					num_modes: 1
+					num_ports: 5
+					port addr type 0 num_pins 11
+					port data type 0 num_pins 9
+					port we type 0 num_pins 1
+					port out type 1 num_pins 9
+					port clk type 0 num_pins 1
+					mode memory_slice:
+						pb_type name: memory_slice
+							blif_model: .subckt single_port_ram
+							class_type: 3
+							num_modes: 0
+							num_ports: 5
+							port addr type 0 num_pins 11
+							port data type 0 num_pins 1
+							port we type 0 num_pins 1
+							port out type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk memory_slice.addr (null) 1: 509e-12
+									annotation clk memory_slice.data (null) 1: 509e-12
+									annotation clk memory_slice.we (null) 1: 509e-12
+									annotation clk memory_slice.out (null) 1: 1.234e-9
+						interconnect 2 mem_2048x9_sp.addr memory_slice[0:0].addr
+						interconnect 2 mem_2048x9_sp.addr memory_slice[1:1].addr
+						interconnect 2 mem_2048x9_sp.addr memory_slice[2:2].addr
+						interconnect 2 mem_2048x9_sp.addr memory_slice[3:3].addr
+						interconnect 2 mem_2048x9_sp.addr memory_slice[4:4].addr
+						interconnect 2 mem_2048x9_sp.addr memory_slice[5:5].addr
+						interconnect 2 mem_2048x9_sp.addr memory_slice[6:6].addr
+						interconnect 2 mem_2048x9_sp.addr memory_slice[7:7].addr
+						interconnect 2 mem_2048x9_sp.addr memory_slice[8:8].addr
+						interconnect 2 mem_2048x9_sp.data memory_slice[8:0].data
+						interconnect 2 mem_2048x9_sp.we memory_slice[0:0].we
+						interconnect 2 mem_2048x9_sp.we memory_slice[1:1].we
+						interconnect 2 mem_2048x9_sp.we memory_slice[2:2].we
+						interconnect 2 mem_2048x9_sp.we memory_slice[3:3].we
+						interconnect 2 mem_2048x9_sp.we memory_slice[4:4].we
+						interconnect 2 mem_2048x9_sp.we memory_slice[5:5].we
+						interconnect 2 mem_2048x9_sp.we memory_slice[6:6].we
+						interconnect 2 mem_2048x9_sp.we memory_slice[7:7].we
+						interconnect 2 mem_2048x9_sp.we memory_slice[8:8].we
+						interconnect 2 memory_slice[8:0].out mem_2048x9_sp.out
+						interconnect 2 mem_2048x9_sp.clk memory_slice[0:0].clk
+						interconnect 2 mem_2048x9_sp.clk memory_slice[1:1].clk
+						interconnect 2 mem_2048x9_sp.clk memory_slice[2:2].clk
+						interconnect 2 mem_2048x9_sp.clk memory_slice[3:3].clk
+						interconnect 2 mem_2048x9_sp.clk memory_slice[4:4].clk
+						interconnect 2 mem_2048x9_sp.clk memory_slice[5:5].clk
+						interconnect 2 mem_2048x9_sp.clk memory_slice[6:6].clk
+						interconnect 2 mem_2048x9_sp.clk memory_slice[7:7].clk
+						interconnect 2 mem_2048x9_sp.clk memory_slice[8:8].clk
+					power method: pin-toggle
+						port clk type 0 num_pins 1
+							energy_per_toggle 9.000000e-12
+				interconnect 2 memory.addr1[10:0] mem_2048x9_sp.addr
+					annotation memory.addr1[10:0] mem_2048x9_sp.addr 1: 132e-12
+				interconnect 2 memory.data[8:0] mem_2048x9_sp.data
+					annotation memory.data[8:0] mem_2048x9_sp.data 1: 132e-12
+				interconnect 2 memory.we1 mem_2048x9_sp.we
+					annotation memory.we1 mem_2048x9_sp.we 1: 132e-12
+				interconnect 2 mem_2048x9_sp.out memory.out[8:0]
+					annotation mem_2048x9_sp.out memory.out[8:0] 1: 40e-12
+				interconnect 2 memory.clk mem_2048x9_sp.clk
+			mode mem_4096x4_sp:
+				pb_type name: mem_4096x4_sp
+					blif_model: (null)
+					class_type: 3
+					num_modes: 1
+					num_ports: 5
+					port addr type 0 num_pins 12
+					port data type 0 num_pins 4
+					port we type 0 num_pins 1
+					port out type 1 num_pins 4
+					port clk type 0 num_pins 1
+					mode memory_slice:
+						pb_type name: memory_slice
+							blif_model: .subckt single_port_ram
+							class_type: 3
+							num_modes: 0
+							num_ports: 5
+							port addr type 0 num_pins 12
+							port data type 0 num_pins 1
+							port we type 0 num_pins 1
+							port out type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk memory_slice.addr (null) 1: 509e-12
+									annotation clk memory_slice.data (null) 1: 509e-12
+									annotation clk memory_slice.we (null) 1: 509e-12
+									annotation clk memory_slice.out (null) 1: 1.234e-9
+						interconnect 2 mem_4096x4_sp.addr memory_slice[0:0].addr
+						interconnect 2 mem_4096x4_sp.addr memory_slice[1:1].addr
+						interconnect 2 mem_4096x4_sp.addr memory_slice[2:2].addr
+						interconnect 2 mem_4096x4_sp.addr memory_slice[3:3].addr
+						interconnect 2 mem_4096x4_sp.data memory_slice[3:0].data
+						interconnect 2 mem_4096x4_sp.we memory_slice[0:0].we
+						interconnect 2 mem_4096x4_sp.we memory_slice[1:1].we
+						interconnect 2 mem_4096x4_sp.we memory_slice[2:2].we
+						interconnect 2 mem_4096x4_sp.we memory_slice[3:3].we
+						interconnect 2 memory_slice[3:0].out mem_4096x4_sp.out
+						interconnect 2 mem_4096x4_sp.clk memory_slice[0:0].clk
+						interconnect 2 mem_4096x4_sp.clk memory_slice[1:1].clk
+						interconnect 2 mem_4096x4_sp.clk memory_slice[2:2].clk
+						interconnect 2 mem_4096x4_sp.clk memory_slice[3:3].clk
+					power method: pin-toggle
+						port clk type 0 num_pins 1
+							energy_per_toggle 9.000000e-12
+				interconnect 2 memory.addr1[11:0] mem_4096x4_sp.addr
+					annotation memory.addr1[11:0] mem_4096x4_sp.addr 1: 132e-12
+				interconnect 2 memory.data[3:0] mem_4096x4_sp.data
+					annotation memory.data[3:0] mem_4096x4_sp.data 1: 132e-12
+				interconnect 2 memory.we1 mem_4096x4_sp.we
+					annotation memory.we1 mem_4096x4_sp.we 1: 132e-12
+				interconnect 2 mem_4096x4_sp.out memory.out[3:0]
+					annotation mem_4096x4_sp.out memory.out[3:0] 1: 40e-12
+				interconnect 2 memory.clk mem_4096x4_sp.clk
+			mode mem_8192x2_sp:
+				pb_type name: mem_8192x2_sp
+					blif_model: (null)
+					class_type: 3
+					num_modes: 1
+					num_ports: 5
+					port addr type 0 num_pins 13
+					port data type 0 num_pins 2
+					port we type 0 num_pins 1
+					port out type 1 num_pins 2
+					port clk type 0 num_pins 1
+					mode memory_slice:
+						pb_type name: memory_slice
+							blif_model: .subckt single_port_ram
+							class_type: 3
+							num_modes: 0
+							num_ports: 5
+							port addr type 0 num_pins 13
+							port data type 0 num_pins 1
+							port we type 0 num_pins 1
+							port out type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk memory_slice.addr (null) 1: 509e-12
+									annotation clk memory_slice.data (null) 1: 509e-12
+									annotation clk memory_slice.we (null) 1: 509e-12
+									annotation clk memory_slice.out (null) 1: 1.234e-9
+						interconnect 2 mem_8192x2_sp.addr memory_slice[0:0].addr
+						interconnect 2 mem_8192x2_sp.addr memory_slice[1:1].addr
+						interconnect 2 mem_8192x2_sp.data memory_slice[1:0].data
+						interconnect 2 mem_8192x2_sp.we memory_slice[0:0].we
+						interconnect 2 mem_8192x2_sp.we memory_slice[1:1].we
+						interconnect 2 memory_slice[1:0].out mem_8192x2_sp.out
+						interconnect 2 mem_8192x2_sp.clk memory_slice[0:0].clk
+						interconnect 2 mem_8192x2_sp.clk memory_slice[1:1].clk
+					power method: pin-toggle
+						port clk type 0 num_pins 1
+							energy_per_toggle 9.000000e-12
+				interconnect 2 memory.addr1[12:0] mem_8192x2_sp.addr
+					annotation memory.addr1[12:0] mem_8192x2_sp.addr 1: 132e-12
+				interconnect 2 memory.data[1:0] mem_8192x2_sp.data
+					annotation memory.data[1:0] mem_8192x2_sp.data 1: 132e-12
+				interconnect 2 memory.we1 mem_8192x2_sp.we
+					annotation memory.we1 mem_8192x2_sp.we 1: 132e-12
+				interconnect 2 mem_8192x2_sp.out memory.out[1:0]
+					annotation mem_8192x2_sp.out memory.out[1:0] 1: 40e-12
+				interconnect 2 memory.clk mem_8192x2_sp.clk
+			mode mem_16384x1_sp:
+				pb_type name: mem_16384x1_sp
+					blif_model: (null)
+					class_type: 3
+					num_modes: 1
+					num_ports: 5
+					port addr type 0 num_pins 14
+					port data type 0 num_pins 1
+					port we type 0 num_pins 1
+					port out type 1 num_pins 1
+					port clk type 0 num_pins 1
+					mode memory_slice:
+						pb_type name: memory_slice
+							blif_model: .subckt single_port_ram
+							class_type: 3
+							num_modes: 0
+							num_ports: 5
+							port addr type 0 num_pins 14
+							port data type 0 num_pins 1
+							port we type 0 num_pins 1
+							port out type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk memory_slice.addr (null) 1: 509e-12
+									annotation clk memory_slice.data (null) 1: 509e-12
+									annotation clk memory_slice.we (null) 1: 509e-12
+									annotation clk memory_slice.out (null) 1: 1.234e-9
+						interconnect 2 mem_16384x1_sp.addr memory_slice[0:0].addr
+						interconnect 2 mem_16384x1_sp.data memory_slice[0:0].data
+						interconnect 2 mem_16384x1_sp.we memory_slice[0:0].we
+						interconnect 2 memory_slice[0:0].out mem_16384x1_sp.out
+						interconnect 2 mem_16384x1_sp.clk memory_slice[0:0].clk
+					power method: pin-toggle
+						port clk type 0 num_pins 1
+							energy_per_toggle 9.000000e-12
+				interconnect 2 memory.addr1[13:0] mem_16384x1_sp.addr
+					annotation memory.addr1[13:0] mem_16384x1_sp.addr 1: 132e-12
+				interconnect 2 memory.data[0:0] mem_16384x1_sp.data
+					annotation memory.data[0:0] mem_16384x1_sp.data 1: 132e-12
+				interconnect 2 memory.we1 mem_16384x1_sp.we
+					annotation memory.we1 mem_16384x1_sp.we 1: 132e-12
+				interconnect 2 mem_16384x1_sp.out memory.out[0:0]
+					annotation mem_16384x1_sp.out memory.out[0:0] 1: 40e-12
+				interconnect 2 memory.clk mem_16384x1_sp.clk
+			mode mem_1024x18_dp:
+				pb_type name: mem_1024x18_dp
+					blif_model: (null)
+					class_type: 3
+					num_modes: 1
+					num_ports: 9
+					port addr1 type 0 num_pins 10
+					port addr2 type 0 num_pins 10
+					port data1 type 0 num_pins 18
+					port data2 type 0 num_pins 18
+					port we1 type 0 num_pins 1
+					port we2 type 0 num_pins 1
+					port out1 type 1 num_pins 18
+					port out2 type 1 num_pins 18
+					port clk type 0 num_pins 1
+					mode memory_slice:
+						pb_type name: memory_slice
+							blif_model: .subckt dual_port_ram
+							class_type: 3
+							num_modes: 0
+							num_ports: 9
+							port addr1 type 0 num_pins 10
+							port addr2 type 0 num_pins 10
+							port data1 type 0 num_pins 1
+							port data2 type 0 num_pins 1
+							port we1 type 0 num_pins 1
+							port we2 type 0 num_pins 1
+							port out1 type 1 num_pins 1
+							port out2 type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk memory_slice.addr1 (null) 1: 509e-12
+									annotation clk memory_slice.data1 (null) 1: 509e-12
+									annotation clk memory_slice.we1 (null) 1: 509e-12
+									annotation clk memory_slice.addr2 (null) 1: 509e-12
+									annotation clk memory_slice.data2 (null) 1: 509e-12
+									annotation clk memory_slice.we2 (null) 1: 509e-12
+									annotation clk memory_slice.out1 (null) 1: 1.234e-9
+									annotation clk memory_slice.out2 (null) 1: 1.234e-9
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[0:0].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[1:1].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[2:2].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[3:3].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[4:4].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[5:5].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[6:6].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[7:7].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[8:8].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[9:9].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[10:10].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[11:11].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[12:12].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[13:13].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[14:14].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[15:15].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[16:16].addr1
+						interconnect 2 mem_1024x18_dp.addr1 memory_slice[17:17].addr1
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[0:0].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[1:1].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[2:2].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[3:3].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[4:4].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[5:5].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[6:6].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[7:7].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[8:8].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[9:9].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[10:10].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[11:11].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[12:12].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[13:13].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[14:14].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[15:15].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[16:16].addr2
+						interconnect 2 mem_1024x18_dp.addr2 memory_slice[17:17].addr2
+						interconnect 2 mem_1024x18_dp.data1 memory_slice[17:0].data1
+						interconnect 2 mem_1024x18_dp.data2 memory_slice[17:0].data2
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[0:0].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[1:1].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[2:2].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[3:3].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[4:4].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[5:5].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[6:6].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[7:7].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[8:8].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[9:9].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[10:10].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[11:11].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[12:12].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[13:13].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[14:14].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[15:15].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[16:16].we1
+						interconnect 2 mem_1024x18_dp.we1 memory_slice[17:17].we1
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[0:0].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[1:1].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[2:2].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[3:3].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[4:4].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[5:5].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[6:6].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[7:7].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[8:8].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[9:9].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[10:10].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[11:11].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[12:12].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[13:13].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[14:14].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[15:15].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[16:16].we2
+						interconnect 2 mem_1024x18_dp.we2 memory_slice[17:17].we2
+						interconnect 2 memory_slice[17:0].out1 mem_1024x18_dp.out1
+						interconnect 2 memory_slice[17:0].out2 mem_1024x18_dp.out2
+						interconnect 2 mem_1024x18_dp.clk memory_slice[0:0].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[1:1].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[2:2].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[3:3].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[4:4].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[5:5].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[6:6].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[7:7].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[8:8].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[9:9].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[10:10].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[11:11].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[12:12].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[13:13].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[14:14].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[15:15].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[16:16].clk
+						interconnect 2 mem_1024x18_dp.clk memory_slice[17:17].clk
+					power method: pin-toggle
+						port clk type 0 num_pins 1
+							energy_per_toggle 1.790000e-11
+				interconnect 2 memory.addr1[9:0] mem_1024x18_dp.addr1
+					annotation memory.addr1[9:0] mem_1024x18_dp.addr1 1: 132e-12
+				interconnect 2 memory.addr2[9:0] mem_1024x18_dp.addr2
+					annotation memory.addr2[9:0] mem_1024x18_dp.addr2 1: 132e-12
+				interconnect 2 memory.data[17:0] mem_1024x18_dp.data1
+					annotation memory.data[17:0] mem_1024x18_dp.data1 1: 132e-12
+				interconnect 2 memory.data[35:18] mem_1024x18_dp.data2
+					annotation memory.data[35:18] mem_1024x18_dp.data2 1: 132e-12
+				interconnect 2 memory.we1 mem_1024x18_dp.we1
+					annotation memory.we1 mem_1024x18_dp.we1 1: 132e-12
+				interconnect 2 memory.we2 mem_1024x18_dp.we2
+					annotation memory.we2 mem_1024x18_dp.we2 1: 132e-12
+				interconnect 2 mem_1024x18_dp.out1 memory.out[17:0]
+					annotation mem_1024x18_dp.out1 memory.out[17:0] 1: 40e-12
+				interconnect 2 mem_1024x18_dp.out2 memory.out[35:18]
+					annotation mem_1024x18_dp.out2 memory.out[35:18] 1: 40e-12
+				interconnect 2 memory.clk mem_1024x18_dp.clk
+			mode mem_2048x9_dp:
+				pb_type name: mem_2048x9_dp
+					blif_model: (null)
+					class_type: 3
+					num_modes: 1
+					num_ports: 9
+					port addr1 type 0 num_pins 11
+					port addr2 type 0 num_pins 11
+					port data1 type 0 num_pins 9
+					port data2 type 0 num_pins 9
+					port we1 type 0 num_pins 1
+					port we2 type 0 num_pins 1
+					port out1 type 1 num_pins 9
+					port out2 type 1 num_pins 9
+					port clk type 0 num_pins 1
+					mode memory_slice:
+						pb_type name: memory_slice
+							blif_model: .subckt dual_port_ram
+							class_type: 3
+							num_modes: 0
+							num_ports: 9
+							port addr1 type 0 num_pins 11
+							port addr2 type 0 num_pins 11
+							port data1 type 0 num_pins 1
+							port data2 type 0 num_pins 1
+							port we1 type 0 num_pins 1
+							port we2 type 0 num_pins 1
+							port out1 type 1 num_pins 1
+							port out2 type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk memory_slice.addr1 (null) 1: 509e-12
+									annotation clk memory_slice.data1 (null) 1: 509e-12
+									annotation clk memory_slice.we1 (null) 1: 509e-12
+									annotation clk memory_slice.addr2 (null) 1: 509e-12
+									annotation clk memory_slice.data2 (null) 1: 509e-12
+									annotation clk memory_slice.we2 (null) 1: 509e-12
+									annotation clk memory_slice.out1 (null) 1: 1.234e-9
+									annotation clk memory_slice.out2 (null) 1: 1.234e-9
+						interconnect 2 mem_2048x9_dp.addr1 memory_slice[0:0].addr1
+						interconnect 2 mem_2048x9_dp.addr1 memory_slice[1:1].addr1
+						interconnect 2 mem_2048x9_dp.addr1 memory_slice[2:2].addr1
+						interconnect 2 mem_2048x9_dp.addr1 memory_slice[3:3].addr1
+						interconnect 2 mem_2048x9_dp.addr1 memory_slice[4:4].addr1
+						interconnect 2 mem_2048x9_dp.addr1 memory_slice[5:5].addr1
+						interconnect 2 mem_2048x9_dp.addr1 memory_slice[6:6].addr1
+						interconnect 2 mem_2048x9_dp.addr1 memory_slice[7:7].addr1
+						interconnect 2 mem_2048x9_dp.addr1 memory_slice[8:8].addr1
+						interconnect 2 mem_2048x9_dp.addr2 memory_slice[0:0].addr2
+						interconnect 2 mem_2048x9_dp.addr2 memory_slice[1:1].addr2
+						interconnect 2 mem_2048x9_dp.addr2 memory_slice[2:2].addr2
+						interconnect 2 mem_2048x9_dp.addr2 memory_slice[3:3].addr2
+						interconnect 2 mem_2048x9_dp.addr2 memory_slice[4:4].addr2
+						interconnect 2 mem_2048x9_dp.addr2 memory_slice[5:5].addr2
+						interconnect 2 mem_2048x9_dp.addr2 memory_slice[6:6].addr2
+						interconnect 2 mem_2048x9_dp.addr2 memory_slice[7:7].addr2
+						interconnect 2 mem_2048x9_dp.addr2 memory_slice[8:8].addr2
+						interconnect 2 mem_2048x9_dp.data1 memory_slice[8:0].data1
+						interconnect 2 mem_2048x9_dp.data2 memory_slice[8:0].data2
+						interconnect 2 mem_2048x9_dp.we1 memory_slice[0:0].we1
+						interconnect 2 mem_2048x9_dp.we1 memory_slice[1:1].we1
+						interconnect 2 mem_2048x9_dp.we1 memory_slice[2:2].we1
+						interconnect 2 mem_2048x9_dp.we1 memory_slice[3:3].we1
+						interconnect 2 mem_2048x9_dp.we1 memory_slice[4:4].we1
+						interconnect 2 mem_2048x9_dp.we1 memory_slice[5:5].we1
+						interconnect 2 mem_2048x9_dp.we1 memory_slice[6:6].we1
+						interconnect 2 mem_2048x9_dp.we1 memory_slice[7:7].we1
+						interconnect 2 mem_2048x9_dp.we1 memory_slice[8:8].we1
+						interconnect 2 mem_2048x9_dp.we2 memory_slice[0:0].we2
+						interconnect 2 mem_2048x9_dp.we2 memory_slice[1:1].we2
+						interconnect 2 mem_2048x9_dp.we2 memory_slice[2:2].we2
+						interconnect 2 mem_2048x9_dp.we2 memory_slice[3:3].we2
+						interconnect 2 mem_2048x9_dp.we2 memory_slice[4:4].we2
+						interconnect 2 mem_2048x9_dp.we2 memory_slice[5:5].we2
+						interconnect 2 mem_2048x9_dp.we2 memory_slice[6:6].we2
+						interconnect 2 mem_2048x9_dp.we2 memory_slice[7:7].we2
+						interconnect 2 mem_2048x9_dp.we2 memory_slice[8:8].we2
+						interconnect 2 memory_slice[8:0].out1 mem_2048x9_dp.out1
+						interconnect 2 memory_slice[8:0].out2 mem_2048x9_dp.out2
+						interconnect 2 mem_2048x9_dp.clk memory_slice[0:0].clk
+						interconnect 2 mem_2048x9_dp.clk memory_slice[1:1].clk
+						interconnect 2 mem_2048x9_dp.clk memory_slice[2:2].clk
+						interconnect 2 mem_2048x9_dp.clk memory_slice[3:3].clk
+						interconnect 2 mem_2048x9_dp.clk memory_slice[4:4].clk
+						interconnect 2 mem_2048x9_dp.clk memory_slice[5:5].clk
+						interconnect 2 mem_2048x9_dp.clk memory_slice[6:6].clk
+						interconnect 2 mem_2048x9_dp.clk memory_slice[7:7].clk
+						interconnect 2 mem_2048x9_dp.clk memory_slice[8:8].clk
+					power method: pin-toggle
+						port clk type 0 num_pins 1
+							energy_per_toggle 1.790000e-11
+				interconnect 2 memory.addr1[10:0] mem_2048x9_dp.addr1
+					annotation memory.addr1[10:0] mem_2048x9_dp.addr1 1: 132e-12
+				interconnect 2 memory.addr2[10:0] mem_2048x9_dp.addr2
+					annotation memory.addr2[10:0] mem_2048x9_dp.addr2 1: 132e-12
+				interconnect 2 memory.data[8:0] mem_2048x9_dp.data1
+					annotation memory.data[8:0] mem_2048x9_dp.data1 1: 132e-12
+				interconnect 2 memory.data[17:9] mem_2048x9_dp.data2
+					annotation memory.data[17:9] mem_2048x9_dp.data2 1: 132e-12
+				interconnect 2 memory.we1 mem_2048x9_dp.we1
+					annotation memory.we1 mem_2048x9_dp.we1 1: 132e-12
+				interconnect 2 memory.we2 mem_2048x9_dp.we2
+					annotation memory.we2 mem_2048x9_dp.we2 1: 132e-12
+				interconnect 2 mem_2048x9_dp.out1 memory.out[8:0]
+					annotation mem_2048x9_dp.out1 memory.out[8:0] 1: 40e-12
+				interconnect 2 mem_2048x9_dp.out2 memory.out[17:9]
+					annotation mem_2048x9_dp.out2 memory.out[17:9] 1: 40e-12
+				interconnect 2 memory.clk mem_2048x9_dp.clk
+			mode mem_4096x4_dp:
+				pb_type name: mem_4096x4_dp
+					blif_model: (null)
+					class_type: 3
+					num_modes: 1
+					num_ports: 9
+					port addr1 type 0 num_pins 12
+					port addr2 type 0 num_pins 12
+					port data1 type 0 num_pins 4
+					port data2 type 0 num_pins 4
+					port we1 type 0 num_pins 1
+					port we2 type 0 num_pins 1
+					port out1 type 1 num_pins 4
+					port out2 type 1 num_pins 4
+					port clk type 0 num_pins 1
+					mode memory_slice:
+						pb_type name: memory_slice
+							blif_model: .subckt dual_port_ram
+							class_type: 3
+							num_modes: 0
+							num_ports: 9
+							port addr1 type 0 num_pins 12
+							port addr2 type 0 num_pins 12
+							port data1 type 0 num_pins 1
+							port data2 type 0 num_pins 1
+							port we1 type 0 num_pins 1
+							port we2 type 0 num_pins 1
+							port out1 type 1 num_pins 1
+							port out2 type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk memory_slice.addr1 (null) 1: 509e-12
+									annotation clk memory_slice.data1 (null) 1: 509e-12
+									annotation clk memory_slice.we1 (null) 1: 509e-12
+									annotation clk memory_slice.addr2 (null) 1: 509e-12
+									annotation clk memory_slice.data2 (null) 1: 509e-12
+									annotation clk memory_slice.we2 (null) 1: 509e-12
+									annotation clk memory_slice.out1 (null) 1: 1.234e-9
+									annotation clk memory_slice.out2 (null) 1: 1.234e-9
+						interconnect 2 mem_4096x4_dp.addr1 memory_slice[0:0].addr1
+						interconnect 2 mem_4096x4_dp.addr1 memory_slice[1:1].addr1
+						interconnect 2 mem_4096x4_dp.addr1 memory_slice[2:2].addr1
+						interconnect 2 mem_4096x4_dp.addr1 memory_slice[3:3].addr1
+						interconnect 2 mem_4096x4_dp.addr2 memory_slice[0:0].addr2
+						interconnect 2 mem_4096x4_dp.addr2 memory_slice[1:1].addr2
+						interconnect 2 mem_4096x4_dp.addr2 memory_slice[2:2].addr2
+						interconnect 2 mem_4096x4_dp.addr2 memory_slice[3:3].addr2
+						interconnect 2 mem_4096x4_dp.data1 memory_slice[3:0].data1
+						interconnect 2 mem_4096x4_dp.data2 memory_slice[3:0].data2
+						interconnect 2 mem_4096x4_dp.we1 memory_slice[0:0].we1
+						interconnect 2 mem_4096x4_dp.we1 memory_slice[1:1].we1
+						interconnect 2 mem_4096x4_dp.we1 memory_slice[2:2].we1
+						interconnect 2 mem_4096x4_dp.we1 memory_slice[3:3].we1
+						interconnect 2 mem_4096x4_dp.we2 memory_slice[0:0].we2
+						interconnect 2 mem_4096x4_dp.we2 memory_slice[1:1].we2
+						interconnect 2 mem_4096x4_dp.we2 memory_slice[2:2].we2
+						interconnect 2 mem_4096x4_dp.we2 memory_slice[3:3].we2
+						interconnect 2 memory_slice[3:0].out1 mem_4096x4_dp.out1
+						interconnect 2 memory_slice[3:0].out2 mem_4096x4_dp.out2
+						interconnect 2 mem_4096x4_dp.clk memory_slice[0:0].clk
+						interconnect 2 mem_4096x4_dp.clk memory_slice[1:1].clk
+						interconnect 2 mem_4096x4_dp.clk memory_slice[2:2].clk
+						interconnect 2 mem_4096x4_dp.clk memory_slice[3:3].clk
+					power method: pin-toggle
+						port clk type 0 num_pins 1
+							energy_per_toggle 1.790000e-11
+				interconnect 2 memory.addr1[11:0] mem_4096x4_dp.addr1
+					annotation memory.addr1[11:0] mem_4096x4_dp.addr1 1: 132e-12
+				interconnect 2 memory.addr2[11:0] mem_4096x4_dp.addr2
+					annotation memory.addr2[11:0] mem_4096x4_dp.addr2 1: 132e-12
+				interconnect 2 memory.data[3:0] mem_4096x4_dp.data1
+					annotation memory.data[3:0] mem_4096x4_dp.data1 1: 132e-12
+				interconnect 2 memory.data[7:4] mem_4096x4_dp.data2
+					annotation memory.data[7:4] mem_4096x4_dp.data2 1: 132e-12
+				interconnect 2 memory.we1 mem_4096x4_dp.we1
+					annotation memory.we1 mem_4096x4_dp.we1 1: 132e-12
+				interconnect 2 memory.we2 mem_4096x4_dp.we2
+					annotation memory.we2 mem_4096x4_dp.we2 1: 132e-12
+				interconnect 2 mem_4096x4_dp.out1 memory.out[3:0]
+					annotation mem_4096x4_dp.out1 memory.out[3:0] 1: 40e-12
+				interconnect 2 mem_4096x4_dp.out2 memory.out[7:4]
+					annotation mem_4096x4_dp.out2 memory.out[7:4] 1: 40e-12
+				interconnect 2 memory.clk mem_4096x4_dp.clk
+			mode mem_8192x2_dp:
+				pb_type name: mem_8192x2_dp
+					blif_model: (null)
+					class_type: 3
+					num_modes: 1
+					num_ports: 9
+					port addr1 type 0 num_pins 13
+					port addr2 type 0 num_pins 13
+					port data1 type 0 num_pins 2
+					port data2 type 0 num_pins 2
+					port we1 type 0 num_pins 1
+					port we2 type 0 num_pins 1
+					port out1 type 1 num_pins 2
+					port out2 type 1 num_pins 2
+					port clk type 0 num_pins 1
+					mode memory_slice:
+						pb_type name: memory_slice
+							blif_model: .subckt dual_port_ram
+							class_type: 3
+							num_modes: 0
+							num_ports: 9
+							port addr1 type 0 num_pins 13
+							port addr2 type 0 num_pins 13
+							port data1 type 0 num_pins 1
+							port data2 type 0 num_pins 1
+							port we1 type 0 num_pins 1
+							port we2 type 0 num_pins 1
+							port out1 type 1 num_pins 1
+							port out2 type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk memory_slice.addr1 (null) 1: 509e-12
+									annotation clk memory_slice.data1 (null) 1: 509e-12
+									annotation clk memory_slice.we1 (null) 1: 509e-12
+									annotation clk memory_slice.addr2 (null) 1: 509e-12
+									annotation clk memory_slice.data2 (null) 1: 509e-12
+									annotation clk memory_slice.we2 (null) 1: 509e-12
+									annotation clk memory_slice.out1 (null) 1: 1.234e-9
+									annotation clk memory_slice.out2 (null) 1: 1.234e-9
+						interconnect 2 mem_8192x2_dp.addr1 memory_slice[0:0].addr1
+						interconnect 2 mem_8192x2_dp.addr1 memory_slice[1:1].addr1
+						interconnect 2 mem_8192x2_dp.addr2 memory_slice[0:0].addr2
+						interconnect 2 mem_8192x2_dp.addr2 memory_slice[1:1].addr2
+						interconnect 2 mem_8192x2_dp.data1 memory_slice[1:0].data1
+						interconnect 2 mem_8192x2_dp.data2 memory_slice[1:0].data2
+						interconnect 2 mem_8192x2_dp.we1 memory_slice[0:0].we1
+						interconnect 2 mem_8192x2_dp.we1 memory_slice[1:1].we1
+						interconnect 2 mem_8192x2_dp.we2 memory_slice[0:0].we2
+						interconnect 2 mem_8192x2_dp.we2 memory_slice[1:1].we2
+						interconnect 2 memory_slice[1:0].out1 mem_8192x2_dp.out1
+						interconnect 2 memory_slice[1:0].out2 mem_8192x2_dp.out2
+						interconnect 2 mem_8192x2_dp.clk memory_slice[0:0].clk
+						interconnect 2 mem_8192x2_dp.clk memory_slice[1:1].clk
+					power method: pin-toggle
+						port clk type 0 num_pins 1
+							energy_per_toggle 1.790000e-11
+				interconnect 2 memory.addr1[12:0] mem_8192x2_dp.addr1
+					annotation memory.addr1[12:0] mem_8192x2_dp.addr1 1: 132e-12
+				interconnect 2 memory.addr2[12:0] mem_8192x2_dp.addr2
+					annotation memory.addr2[12:0] mem_8192x2_dp.addr2 1: 132e-12
+				interconnect 2 memory.data[1:0] mem_8192x2_dp.data1
+					annotation memory.data[1:0] mem_8192x2_dp.data1 1: 132e-12
+				interconnect 2 memory.data[3:2] mem_8192x2_dp.data2
+					annotation memory.data[3:2] mem_8192x2_dp.data2 1: 132e-12
+				interconnect 2 memory.we1 mem_8192x2_dp.we1
+					annotation memory.we1 mem_8192x2_dp.we1 1: 132e-12
+				interconnect 2 memory.we2 mem_8192x2_dp.we2
+					annotation memory.we2 mem_8192x2_dp.we2 1: 132e-12
+				interconnect 2 mem_8192x2_dp.out1 memory.out[1:0]
+					annotation mem_8192x2_dp.out1 memory.out[1:0] 1: 40e-12
+				interconnect 2 mem_8192x2_dp.out2 memory.out[3:2]
+					annotation mem_8192x2_dp.out2 memory.out[3:2] 1: 40e-12
+				interconnect 2 memory.clk mem_8192x2_dp.clk
+			mode mem_16384x1_dp:
+				pb_type name: mem_16384x1_dp
+					blif_model: (null)
+					class_type: 3
+					num_modes: 1
+					num_ports: 9
+					port addr1 type 0 num_pins 14
+					port addr2 type 0 num_pins 14
+					port data1 type 0 num_pins 1
+					port data2 type 0 num_pins 1
+					port we1 type 0 num_pins 1
+					port we2 type 0 num_pins 1
+					port out1 type 1 num_pins 1
+					port out2 type 1 num_pins 1
+					port clk type 0 num_pins 1
+					mode memory_slice:
+						pb_type name: memory_slice
+							blif_model: .subckt dual_port_ram
+							class_type: 3
+							num_modes: 0
+							num_ports: 9
+							port addr1 type 0 num_pins 14
+							port addr2 type 0 num_pins 14
+							port data1 type 0 num_pins 1
+							port data2 type 0 num_pins 1
+							port we1 type 0 num_pins 1
+							port we2 type 0 num_pins 1
+							port out1 type 1 num_pins 1
+							port out2 type 1 num_pins 1
+							port clk type 0 num_pins 1
+									annotation clk memory_slice.addr1 (null) 1: 509e-12
+									annotation clk memory_slice.data1 (null) 1: 509e-12
+									annotation clk memory_slice.we1 (null) 1: 509e-12
+									annotation clk memory_slice.addr2 (null) 1: 509e-12
+									annotation clk memory_slice.data2 (null) 1: 509e-12
+									annotation clk memory_slice.we2 (null) 1: 509e-12
+									annotation clk memory_slice.out1 (null) 1: 1.234e-9
+									annotation clk memory_slice.out2 (null) 1: 1.234e-9
+						interconnect 2 mem_16384x1_dp.addr1 memory_slice[0:0].addr1
+						interconnect 2 mem_16384x1_dp.addr2 memory_slice[0:0].addr2
+						interconnect 2 mem_16384x1_dp.data1 memory_slice[0:0].data1
+						interconnect 2 mem_16384x1_dp.data2 memory_slice[0:0].data2
+						interconnect 2 mem_16384x1_dp.we1 memory_slice[0:0].we1
+						interconnect 2 mem_16384x1_dp.we2 memory_slice[0:0].we2
+						interconnect 2 memory_slice[0:0].out1 mem_16384x1_dp.out1
+						interconnect 2 memory_slice[0:0].out2 mem_16384x1_dp.out2
+						interconnect 2 mem_16384x1_dp.clk memory_slice[0:0].clk
+					power method: pin-toggle
+						port clk type 0 num_pins 1
+							energy_per_toggle 1.790000e-11
+				interconnect 2 memory.addr1[13:0] mem_16384x1_dp.addr1
+					annotation memory.addr1[13:0] mem_16384x1_dp.addr1 1: 132e-12
+				interconnect 2 memory.addr2[13:0] mem_16384x1_dp.addr2
+					annotation memory.addr2[13:0] mem_16384x1_dp.addr2 1: 132e-12
+				interconnect 2 memory.data[0:0] mem_16384x1_dp.data1
+					annotation memory.data[0:0] mem_16384x1_dp.data1 1: 132e-12
+				interconnect 2 memory.data[1:1] mem_16384x1_dp.data2
+					annotation memory.data[1:1] mem_16384x1_dp.data2 1: 132e-12
+				interconnect 2 memory.we1 mem_16384x1_dp.we1
+					annotation memory.we1 mem_16384x1_dp.we1 1: 132e-12
+				interconnect 2 memory.we2 mem_16384x1_dp.we2
+					annotation memory.we2 mem_16384x1_dp.we2 1: 132e-12
+				interconnect 2 mem_16384x1_dp.out1 memory.out[0:0]
+					annotation mem_16384x1_dp.out1 memory.out[0:0] 1: 40e-12
+				interconnect 2 mem_16384x1_dp.out2 memory.out[1:1]
+					annotation mem_16384x1_dp.out2 memory.out[1:1] 1: 40e-12
+				interconnect 2 memory.clk mem_16384x1_dp.clk
+			power method: sum-of-children
+

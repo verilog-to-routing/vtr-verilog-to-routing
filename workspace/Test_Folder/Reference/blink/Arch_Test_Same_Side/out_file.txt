@@ -1,0 +1,600 @@
+Match found with double coordinates at line: 1430
+id:250 type:CHANX ptc:0 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1434
+id:251 type:CHANX ptc:1 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1438
+id:252 type:CHANX ptc:2 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1442
+id:253 type:CHANX ptc:3 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1446
+id:254 type:CHANX ptc:4 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1450
+id:255 type:CHANX ptc:5 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1454
+id:256 type:CHANX ptc:6 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1458
+id:257 type:CHANX ptc:7 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1462
+id:258 type:CHANX ptc:8 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1466
+id:259 type:CHANX ptc:9 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1470
+id:260 type:CHANX ptc:10 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1474
+id:261 type:CHANX ptc:11 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1478
+id:262 type:CHANX ptc:12 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1482
+id:263 type:CHANX ptc:13 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1486
+id:264 type:CHANX ptc:14 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1490
+id:265 type:CHANX ptc:15 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1494
+id:266 type:CHANX ptc:16 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1498
+id:267 type:CHANX ptc:17 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1502
+id:268 type:CHANX ptc:18 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1506
+id:269 type:CHANX ptc:19 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1510
+id:270 type:CHANX ptc:20 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1514
+id:271 type:CHANX ptc:21 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1518
+id:272 type:CHANX ptc:22 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1522
+id:273 type:CHANX ptc:23 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1526
+id:274 type:CHANX ptc:24 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1530
+id:275 type:CHANX ptc:25 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1534
+id:276 type:CHANX ptc:26 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1538
+id:277 type:CHANX ptc:27 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1542
+id:278 type:CHANX ptc:28 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1546
+id:279 type:CHANX ptc:29 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1550
+id:280 type:CHANX ptc:30 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1554
+id:281 type:CHANX ptc:31 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1558
+id:282 type:CHANX ptc:32 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1562
+id:283 type:CHANX ptc:33 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1566
+id:284 type:CHANX ptc:34 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1570
+id:285 type:CHANX ptc:35 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1574
+id:286 type:CHANX ptc:36 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1578
+id:287 type:CHANX ptc:37 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1582
+id:288 type:CHANX ptc:38 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1586
+id:289 type:CHANX ptc:39 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1590
+id:290 type:CHANX ptc:40 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1594
+id:291 type:CHANX ptc:41 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1598
+id:292 type:CHANX ptc:42 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1602
+id:293 type:CHANX ptc:43 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1606
+id:294 type:CHANX ptc:44 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1610
+id:295 type:CHANX ptc:45 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1614
+id:296 type:CHANX ptc:46 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1618
+id:297 type:CHANX ptc:47 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1622
+id:298 type:CHANX ptc:48 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1626
+id:299 type:CHANX ptc:49 xh:1 xl:1 yh:0 yl:0
+
+Match found with double coordinates at line: 1630
+id:300 type:CHANX ptc:0 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1634
+id:301 type:CHANX ptc:1 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1638
+id:302 type:CHANX ptc:2 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1642
+id:303 type:CHANX ptc:3 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1646
+id:304 type:CHANX ptc:4 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1650
+id:305 type:CHANX ptc:5 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1654
+id:306 type:CHANX ptc:6 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1658
+id:307 type:CHANX ptc:7 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1662
+id:308 type:CHANX ptc:8 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1666
+id:309 type:CHANX ptc:9 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1670
+id:310 type:CHANX ptc:10 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1674
+id:311 type:CHANX ptc:11 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1678
+id:312 type:CHANX ptc:12 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1682
+id:313 type:CHANX ptc:13 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1686
+id:314 type:CHANX ptc:14 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1690
+id:315 type:CHANX ptc:15 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1694
+id:316 type:CHANX ptc:16 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1698
+id:317 type:CHANX ptc:17 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1702
+id:318 type:CHANX ptc:18 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1706
+id:319 type:CHANX ptc:19 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1710
+id:320 type:CHANX ptc:20 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1714
+id:321 type:CHANX ptc:21 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1718
+id:322 type:CHANX ptc:22 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1722
+id:323 type:CHANX ptc:23 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1726
+id:324 type:CHANX ptc:24 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1730
+id:325 type:CHANX ptc:25 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1734
+id:326 type:CHANX ptc:26 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1738
+id:327 type:CHANX ptc:27 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1742
+id:328 type:CHANX ptc:28 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1746
+id:329 type:CHANX ptc:29 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1750
+id:330 type:CHANX ptc:30 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1754
+id:331 type:CHANX ptc:31 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1758
+id:332 type:CHANX ptc:32 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1762
+id:333 type:CHANX ptc:33 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1766
+id:334 type:CHANX ptc:34 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1770
+id:335 type:CHANX ptc:35 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1774
+id:336 type:CHANX ptc:36 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1778
+id:337 type:CHANX ptc:37 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1782
+id:338 type:CHANX ptc:38 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1786
+id:339 type:CHANX ptc:39 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1790
+id:340 type:CHANX ptc:40 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1794
+id:341 type:CHANX ptc:41 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1798
+id:342 type:CHANX ptc:42 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1802
+id:343 type:CHANX ptc:43 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1806
+id:344 type:CHANX ptc:44 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1810
+id:345 type:CHANX ptc:45 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1814
+id:346 type:CHANX ptc:46 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1818
+id:347 type:CHANX ptc:47 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1822
+id:348 type:CHANX ptc:48 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1826
+id:349 type:CHANX ptc:49 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 1830
+id:350 type:CHANY ptc:0 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1834
+id:351 type:CHANY ptc:1 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1838
+id:352 type:CHANY ptc:2 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1842
+id:353 type:CHANY ptc:3 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1846
+id:354 type:CHANY ptc:4 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1850
+id:355 type:CHANY ptc:5 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1854
+id:356 type:CHANY ptc:6 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1858
+id:357 type:CHANY ptc:7 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1862
+id:358 type:CHANY ptc:8 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1866
+id:359 type:CHANY ptc:9 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1870
+id:360 type:CHANY ptc:10 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1874
+id:361 type:CHANY ptc:11 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1878
+id:362 type:CHANY ptc:12 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1882
+id:363 type:CHANY ptc:13 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1886
+id:364 type:CHANY ptc:14 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1890
+id:365 type:CHANY ptc:15 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1894
+id:366 type:CHANY ptc:16 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1898
+id:367 type:CHANY ptc:17 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1902
+id:368 type:CHANY ptc:18 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1906
+id:369 type:CHANY ptc:19 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1910
+id:370 type:CHANY ptc:20 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1914
+id:371 type:CHANY ptc:21 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1918
+id:372 type:CHANY ptc:22 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1922
+id:373 type:CHANY ptc:23 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1926
+id:374 type:CHANY ptc:24 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1930
+id:375 type:CHANY ptc:25 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1934
+id:376 type:CHANY ptc:26 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1938
+id:377 type:CHANY ptc:27 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1942
+id:378 type:CHANY ptc:28 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1946
+id:379 type:CHANY ptc:29 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1950
+id:380 type:CHANY ptc:30 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1954
+id:381 type:CHANY ptc:31 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1958
+id:382 type:CHANY ptc:32 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1962
+id:383 type:CHANY ptc:33 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1966
+id:384 type:CHANY ptc:34 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1970
+id:385 type:CHANY ptc:35 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1974
+id:386 type:CHANY ptc:36 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1978
+id:387 type:CHANY ptc:37 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1982
+id:388 type:CHANY ptc:38 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1986
+id:389 type:CHANY ptc:39 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1990
+id:390 type:CHANY ptc:40 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1994
+id:391 type:CHANY ptc:41 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 1998
+id:392 type:CHANY ptc:42 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 2002
+id:393 type:CHANY ptc:43 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 2006
+id:394 type:CHANY ptc:44 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 2010
+id:395 type:CHANY ptc:45 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 2014
+id:396 type:CHANY ptc:46 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 2018
+id:397 type:CHANY ptc:47 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 2022
+id:398 type:CHANY ptc:48 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 2026
+id:399 type:CHANY ptc:49 xh:0 xl:0 yh:1 yl:1
+
+Match found with double coordinates at line: 2030
+id:400 type:CHANY ptc:0 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2034
+id:401 type:CHANY ptc:1 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2038
+id:402 type:CHANY ptc:2 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2042
+id:403 type:CHANY ptc:3 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2046
+id:404 type:CHANY ptc:4 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2050
+id:405 type:CHANY ptc:5 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2054
+id:406 type:CHANY ptc:6 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2058
+id:407 type:CHANY ptc:7 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2062
+id:408 type:CHANY ptc:8 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2066
+id:409 type:CHANY ptc:9 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2070
+id:410 type:CHANY ptc:10 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2074
+id:411 type:CHANY ptc:11 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2078
+id:412 type:CHANY ptc:12 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2082
+id:413 type:CHANY ptc:13 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2086
+id:414 type:CHANY ptc:14 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2090
+id:415 type:CHANY ptc:15 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2094
+id:416 type:CHANY ptc:16 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2098
+id:417 type:CHANY ptc:17 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2102
+id:418 type:CHANY ptc:18 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2106
+id:419 type:CHANY ptc:19 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2110
+id:420 type:CHANY ptc:20 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2114
+id:421 type:CHANY ptc:21 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2118
+id:422 type:CHANY ptc:22 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2122
+id:423 type:CHANY ptc:23 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2126
+id:424 type:CHANY ptc:24 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2130
+id:425 type:CHANY ptc:25 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2134
+id:426 type:CHANY ptc:26 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2138
+id:427 type:CHANY ptc:27 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2142
+id:428 type:CHANY ptc:28 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2146
+id:429 type:CHANY ptc:29 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2150
+id:430 type:CHANY ptc:30 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2154
+id:431 type:CHANY ptc:31 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2158
+id:432 type:CHANY ptc:32 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2162
+id:433 type:CHANY ptc:33 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2166
+id:434 type:CHANY ptc:34 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2170
+id:435 type:CHANY ptc:35 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2174
+id:436 type:CHANY ptc:36 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2178
+id:437 type:CHANY ptc:37 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2182
+id:438 type:CHANY ptc:38 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2186
+id:439 type:CHANY ptc:39 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2190
+id:440 type:CHANY ptc:40 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2194
+id:441 type:CHANY ptc:41 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2198
+id:442 type:CHANY ptc:42 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2202
+id:443 type:CHANY ptc:43 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2206
+id:444 type:CHANY ptc:44 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2210
+id:445 type:CHANY ptc:45 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2214
+id:446 type:CHANY ptc:46 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2218
+id:447 type:CHANY ptc:47 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2222
+id:448 type:CHANY ptc:48 xh:1 xl:1 yh:1 yl:1
+
+Match found with double coordinates at line: 2226
+id:449 type:CHANY ptc:49 xh:1 xl:1 yh:1 yl:1
+
