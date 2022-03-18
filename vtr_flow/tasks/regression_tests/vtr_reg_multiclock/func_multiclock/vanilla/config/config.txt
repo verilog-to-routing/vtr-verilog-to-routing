@@ -16,7 +16,7 @@ circuit_list_add=multiclock_reader_writer.v
 circuit_list_add=multiclock_separate_and_latch.v
 
 # Add architectures to list to sweep
-arch_list_add=k6_frac_N10_mem32K_40nm.xml
+arch_list_add=k6_frac_N10_mem32K_40nm_2.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt

@@ -35,14 +35,15 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(const size_t
                                                                     const e_switch_block_type switch_block_type,
                                                                     const int Fs) {
     /* Currently Fs must be 3 since each track maps once to each other side */
-    VTR_ASSERT(3 == Fs);
+    VTR_ASSERT(4 == Fs);
 
     vtr::NdMatrix<std::vector<int>, 3> switch_block_conn({4, 4, nodes_per_chan});
 
     for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
         for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
             for (size_t from_track = 0; from_track < nodes_per_chan; from_track++) {
-                if (from_side != to_side) {
+                if (1) {
+                //if (from_side != to_side) {
                     switch_block_conn[from_side][to_side][from_track].resize(1);
 
                     switch_block_conn[from_side][to_side][from_track][0] = get_simple_switch_block_track(from_side, to_side,
@@ -187,9 +188,54 @@ int get_simple_switch_block_track(const enum e_side from_side,
 
     /* End switch_block_type == UNIVERSAL case. */
     /* UDSD Modification by WMF Begin */
-    if (switch_block_type == FULL) { /* Just a placeholder. No meaning in reality */
-        to_track = from_track;
-    }
+    else if (switch_block_type == FULL) { /* Just a placeholder. No meaning in reality */
+                if (from_side == LEFT) {
+            if (to_side == RIGHT) { /* CHANX to CHANX */
+                to_track = from_track + 1;
+            } else if (to_side == TOP) { /* from CHANX to CHANY */
+                to_track = from_track + 1;
+            } else if (to_side == BOTTOM) {
+                to_track = from_track + 1;
+            } else if (to_side == LEFT) {
+                to_track = from_track + 1;
+            }
+        }
+
+        else if (from_side == RIGHT) {
+            if (to_side == LEFT) { /* CHANX to CHANX */
+                to_track = from_track + 1;
+            } else if (to_side == TOP) { /* from CHANX to CHANY */
+                to_track = from_track + 1;
+            } else if (to_side == BOTTOM) {
+                to_track = from_track + 1;
+            } else if (to_side == RIGHT) {
+                to_track = from_track + 1;
+            }
+        }
+
+        else if (from_side == BOTTOM) {
+            if (to_side == TOP) { /* CHANY to CHANY */
+                to_track = from_track + 1;
+            } else if (to_side == LEFT) { /* from CHANY to CHANX */
+                to_track = from_track + 1;
+            } else if (to_side == RIGHT) {
+                to_track = from_track + 1;
+            } else if (to_side == BOTTOM) {
+                to_track = from_track + 1;
+            }
+        }
+
+        else if (from_side == TOP) {
+            if (to_side == BOTTOM) { /* CHANY to CHANY */
+                to_track = from_track + 1;
+            } else if (to_side == LEFT) { /* from CHANY to CHANX */
+                to_track = from_track + 1;
+            } else if (to_side == RIGHT) {
+                to_track = from_track + 1;
+            } else if (to_side == TOP) {
+                to_track = from_track + 1;
+            }
+    }}
     /* UDSD Modification by WMF End */
 
     return (to_track);

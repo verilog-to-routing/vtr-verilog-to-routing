@@ -30,7 +30,7 @@ option(VTR_ENABLE_STRICT_COMPILE "Specifies whether compiler warnings should be 
 option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
-option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
+option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" ON)
 
 #Allow the user to decide whether to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
@@ -46,7 +46,7 @@ option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
 option(WITH_ABC "Enable building abc" ON)
 option(WITH_ODIN "Enable building odin" ON)
-option(ODIN_DEBUG "Enable building odin with debug flags" OFF)
+option(ODIN_DEBUG "Enable building odin with debug flags" ON)
 option(ODIN_WARN "Enable building odin with extra warning flags" OFF)
 option(ODIN_COVERAGE "Enable building odin with coverage flags" OFF)
 option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
@@ -72,7 +72,7 @@ include(FilesToDirs)
 
 #Set the default build type if not specified
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING
         "Choose the type of build: None, Debug, Release, RelWithDebInfo, MinSizeRel"
         FORCE)
 endif()
@@ -427,6 +427,14 @@ CHECK_CXX_COMPILER_FLAG("-Wimplicit-fallthrough=0" CXX_COMPILER_SUPPORTS_-Wimpli
 if(CXX_COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
     target_compile_options(libpugixml PRIVATE "-Wimplicit-fallthrough=0")
 endif()
+
+#
+#
+# Workspace Directory
+#
+#
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/workspace/scripts/testbench")
+#test
 
 #
 #

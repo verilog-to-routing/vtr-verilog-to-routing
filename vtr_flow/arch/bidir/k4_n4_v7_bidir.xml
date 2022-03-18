@@ -85,7 +85,7 @@ Architecture based off Stratix IV
       <wire_switch name="0"/>
       <sb type="pattern">1 1 1 1 1</sb>
       <cb type="pattern">1 1 1 1</cb>
-      <opin_switch name="0"/>
+      <opin_switch name="opin_cblock"/>
     </segment>
   </segmentlist>
   <complexblocklist>

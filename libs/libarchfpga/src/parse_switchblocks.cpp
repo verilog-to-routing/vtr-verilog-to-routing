@@ -314,6 +314,14 @@ void read_sb_switchfuncs(pugi::xml_node Node, t_switchblock_inf* sb, const pugiu
             conn.set_sides(BOTTOM, TOP);
         } else if (0 == strcmp(func_type, "br")) {
             conn.set_sides(BOTTOM, RIGHT);
+        } else if (0 == strcmp(func_type, "bb")) {
+            conn.set_sides(BOTTOM, BOTTOM);
+        } else if (0 == strcmp(func_type, "tt")) {
+            conn.set_sides(TOP, TOP);
+        } else if (0 == strcmp(func_type, "rr")) {
+            conn.set_sides(RIGHT, RIGHT);
+        } else if (0 == strcmp(func_type, "ll")) {
+            conn.set_sides(LEFT, LEFT);
         } else {
             /* unknown permutation function */
             archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified: %s\n", func_type);
@@ -379,9 +387,9 @@ static void check_bidir_switchblock(const t_permutation_map* permutation_map) {
     for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
         for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
             /* can't connect a switchblock side to itself */
-            if (from_side == to_side) {
-                continue;
-            }
+            //if (from_side == to_side) {
+            //    continue;
+            //}
 
             /* index into permutation map with this variable */
             conn.set_sides(from_side, to_side);

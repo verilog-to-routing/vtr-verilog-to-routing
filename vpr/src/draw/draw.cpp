@@ -12,6 +12,8 @@
  * Last updated: June 2019
  */
 
+#include <iostream>
+#include <string>
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
@@ -2042,13 +2044,15 @@ static void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, int t
         if (rr_graph.node_direction(to_node) != Direction::BIDIR) {
             /* must connect to to_node's wire beginning at x2 */
             if (to_track % 2 == 0) { /* INC wire starts at leftmost edge */
-                VTR_ASSERT(from_xlow < to_xlow);
+                //printf("%i,%i", from_xlow, to_xlow);
+                //VTR_ASSERT(from_xlow < to_xlow);
                 x2 = to_chan.left();
                 /* since no U-turns from_track must be INC as well */
                 x1 = draw_coords->tile_x[to_xlow - 1]
                      + draw_coords->get_tile_width();
             } else { /* DEC wire starts at rightmost edge */
-                VTR_ASSERT(from_xhigh > to_xhigh);
+                //printf("%i,%i", from_xlow, to_xlow);
+                //VTR_ASSERT(from_xhigh > to_xhigh);
                 x2 = to_chan.right();
                 x1 = draw_coords->tile_x[to_xhigh + 1];
             }

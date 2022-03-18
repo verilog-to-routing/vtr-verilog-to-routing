@@ -2699,6 +2699,8 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
         arch->SBType = UNIVERSAL;
     } else if (strcmp(Prop, "subset") == 0) {
         arch->SBType = SUBSET;
+    } else if (strcmp(Prop, "full") == 0) {
+        arch->SBType = FULL;
     } else if (strcmp(Prop, "custom") == 0) {
         arch->SBType = CUSTOM;
         custom_switch_block = true;
@@ -2708,7 +2710,7 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
     }
 
     ReqOpt CUSTOM_SWITCHBLOCK_REQD = BoolToReqOpt(!custom_switch_block);
-    arch->Fs = get_attribute(Cur, "fs", loc_data, CUSTOM_SWITCHBLOCK_REQD).as_int(3);
+    arch->Fs = get_attribute(Cur, "fs", loc_data, CUSTOM_SWITCHBLOCK_REQD).as_int(4);
 
     Cur = get_single_child(Node, "default_fc", loc_data, ReqOpt::OPTIONAL);
     if (Cur) {

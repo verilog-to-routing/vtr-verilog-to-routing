@@ -1,0 +1,61 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Launch read_arch",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/home/vm/VTR-Tools/build/libs/libarchfpga/read_arch",
+        "args": ["/home/vm/VTR-Tools/Workspace_Victor/Basic_Architecture/Arch_Test_Same_Side.xml", "0", "/home/vm/VTR-Tools/Workspace_Victor/Test_Folder/Testbench_Results/Arch_Test_Same_Side.out"],
+        "stopAtEntry": false,
+        "cwd": "/home/vm/VTR-Tools/build/libs/libarchfpga/",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "setupCommands": [
+          {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+          }
+        ]
+      },
+      {
+        "name": "Launch tb_build_switchblocks",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/home/vm/VTR-Tools/build/Workspace_Victor/scripts/testbench/tb_build_switchblocks",
+        "stopAtEntry": false,
+        "cwd": "/home/vm/VTR-Tools/build/Workspace_Victor/scripts/testbench/",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "setupCommands": [
+          {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+          }
+        ]
+      },
+      {
+        "name": "Launch vpr",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "/home/vm/VTR-Tools/build/vpr/vpr",
+        "args": ["/home/vm/VTR-Tools/Workspace_Victor/Basic_Architecture/Arch_Test_Same_Side.xml","/home/vm/VTR-Tools/Workspace_Victor/Test_Folder/blink.pre-vpr.blif"],
+        "stopAtEntry": false,
+        "cwd": "/home/vm/VTR-Tools/build/vpr",
+        "environment": [],
+        "externalConsole": false,
+        "MIMode": "gdb",
+        "setupCommands": [
+          {
+            "description": "Enable pretty-printing for gdb",
+            "text": "-enable-pretty-printing",
+            "ignoreFailures": true
+          }
+        ]
+      }
+    ]
+  }

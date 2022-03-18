@@ -12,6 +12,7 @@ bin/
 CMakeCache.txt
 CMakeFiles
 build
+debug
 
 #
 #VTR Flow/Tasks
@@ -130,7 +131,7 @@ tags
 #
 # VS Code
 #
-.vscode
+#.vscode
 .history
 #eclipse project
 .project

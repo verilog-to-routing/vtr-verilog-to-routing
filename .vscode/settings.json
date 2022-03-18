@@ -1,0 +1,121 @@
+{
+    "python.pythonPath": "/bin/python",
+    "files.associations": {
+        "set": "cpp",
+        "fstream": "cpp",
+        "array": "cpp",
+        "atomic": "cpp",
+        "bit": "cpp",
+        "*.tcc": "cpp",
+        "bitset": "cpp",
+        "cctype": "cpp",
+        "chrono": "cpp",
+        "clocale": "cpp",
+        "cmath": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "condition_variable": "cpp",
+        "cstdarg": "cpp",
+        "cstddef": "cpp",
+        "cstdint": "cpp",
+        "cstdio": "cpp",
+        "cstdlib": "cpp",
+        "cstring": "cpp",
+        "ctime": "cpp",
+        "cwchar": "cpp",
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "map": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "exception": "cpp",
+        "algorithm": "cpp",
+        "functional": "cpp",
+        "iterator": "cpp",
+        "memory": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "optional": "cpp",
+        "random": "cpp",
+        "ratio": "cpp",
+        "regex": "cpp",
+        "string": "cpp",
+        "string_view": "cpp",
+        "system_error": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "initializer_list": "cpp",
+        "iomanip": "cpp",
+        "iosfwd": "cpp",
+        "iostream": "cpp",
+        "istream": "cpp",
+        "limits": "cpp",
+        "mutex": "cpp",
+        "new": "cpp",
+        "numbers": "cpp",
+        "ostream": "cpp",
+        "ranges": "cpp",
+        "shared_mutex": "cpp",
+        "sstream": "cpp",
+        "stdexcept": "cpp",
+        "stop_token": "cpp",
+        "streambuf": "cpp",
+        "thread": "cpp",
+        "cinttypes": "cpp",
+        "typeinfo": "cpp",
+        "semaphore": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "Disabled",
+
+    "restoreTerminals.runOnStartup": true,   // true is the default
+          // set to false if using a keybinding or command palette
+
+    "restoreTerminals.keepExistingTerminalsOpen": false,
+    "restoreTerminals.terminals": [
+        {
+        "splitTerminals": [
+            {
+            "name": "VTR Run",
+            "commands": [
+                "cd ~/VTR-Tools/Workspace_Victor/Test_Folder",
+                ]
+            },
+            {
+                "name": "VTR Build",
+                "commands": [
+                    "cd ~/VTR-Tools/build",
+                ]
+            }   
+            ]
+        },
+        {
+        "splitTerminals": [
+            {
+            "name": "TB Run",
+            "commands": [
+                "cd ~/VTR-Tools/build/Workspace_Victor/scripts/testbench",
+                ]
+            },
+            {
+                "name": "TB Debug",
+                "commands": [
+                    "cd ~/VTR-Tools/debug",
+                ]
+            }   
+            ]
+        },
+        {
+        "splitTerminals": [
+            {
+            "name": "Scripts Run",
+            "commands": [
+                "cd ~/VTR-Tools/Workspace_Victor/scripts",
+                ]
+            } 
+            ]
+        }
+    ]
+}

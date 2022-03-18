@@ -1,0 +1,5 @@
+vpr_status=success
+vpr_seconds=1
+rundir=/home/vm/VTR-Tools/vtr_work/quickstart/basic_flow
+hostname=vm-VirtualBox
+error=

@@ -678,7 +678,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     *Fc_clipped = false;
 
     /* Fc is assigned in pairs so check it is even. */
-    VTR_ASSERT(Fc % 2 == 0);
+    //VTR_ASSERT(Fc % 2 == 0);
 
     /* get_rr_node_indices needs x and y coords. */
     x = ((CHANX == chan_type) ? seg : chan);
