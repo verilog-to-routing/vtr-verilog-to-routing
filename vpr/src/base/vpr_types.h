@@ -1269,6 +1269,11 @@ struct t_analysis_opts {
     e_timing_update_type timing_update_type;
 };
 
+struct t_noc_opts {
+    bool include_noc;                   ///<options to model the noc within the FPGA device
+    std::string noc_router_tile_name;   ///<name of the router tile located in the FPGA
+};
+
 /**
  * @brief Defines the detailed routing architecture of the FPGA.
  *
@@ -1616,6 +1621,7 @@ struct t_vpr_setup {
     t_annealing_sched AnnealSched;  ///<Placement option annealing schedule
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
+    t_noc_opts NocOpts;             ///<Options for the NoC
     t_det_routing_arch RoutingArch; ///<routing architecture
     std::vector<t_lb_type_rr_node>* PackerRRGraph;
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture
@@ -1631,8 +1637,6 @@ struct t_vpr_setup {
     e_clock_modeling clock_modeling;           ///<How clocks should be handled
     bool two_stage_clock_routing;              ///<How clocks should be routed in the presence of a dedicated clock network
     bool exit_before_pack;                     ///<Exits early before starting packing (useful for collecting statistics without running/loading any stages)
-    bool include_noc;                   ///<options to model the noc within the FPGA device
-    std::string noc_router_tile_name;   ///<name of the router tile located in the FPGA
 };
 
 class RouteStatus {
