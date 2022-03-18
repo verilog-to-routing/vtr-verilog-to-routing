@@ -260,10 +260,10 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                                enum e_base_cost_type base_cost_type);
 
 static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, const int delayless_switch);
-
+/*
 static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                                        const std::vector<t_physical_tile_type>& types,
-                                       int max_chan_width);
+                                       int max_chan_width);*/
 
 static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
                                                               int* num_seg_details = nullptr);
@@ -1177,6 +1177,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
 }
 
 /* frees the track to ipin mapping for each physical grid type */
+/*
 static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                                        const std::vector<t_physical_tile_type>& types,
                                        int max_chan_width) {
@@ -1198,7 +1199,7 @@ static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
         }
     }
 }
-
+*/
 /* Does the actual work of allocating the rr_graph and filling all the *
  * appropriate values.  Everything up to this was just a prelude!      */
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
