@@ -137,6 +137,10 @@ struct t_options {
     argparse::ArgValue<bool> place_constraint_subtile;
     argparse::ArgValue<int> floorplan_num_horizontal_partitions;
     argparse::ArgValue<int> floorplan_num_vertical_partitions;
+    
+    // NoC-driven placement
+    argparse::ArgValue<bool> include_noc;
+    argparse::ArgValue<std::string> noc_router_tile_name;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
