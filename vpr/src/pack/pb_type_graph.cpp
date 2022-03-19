@@ -50,6 +50,9 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster);
 
+static int get_max_num_primitive_pin_logical_block(const t_pb_graph_node* pb_graph_head,
+                                                   bool is_output);
+
 static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_node,
                                              t_pb_graph_node** pb_graph_children_nodes,
                                              const t_mode* mode,
@@ -334,6 +337,66 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
         }
         pb_graph_node->total_primitive_count = total_count;
     }
+
+    //Alloc and load number of pins for primitives inside the block
+    int max_input_num_pins = 0;
+    int max_output_num_pins = 0;
+    for (int mode_num = 0; mode_num < pb_type->num_modes; mode_num++) {
+        int mode_input_num_pins = 0;
+        int mode_output_num_pins = 0;
+        for (int pb_type_num = 0; pb_type_num < pb_type->modes[mode_num].num_pb_type_children; pb_type_num++) {
+            for (int pb_num = 0; pb_num < pb_type->modes[mode_num].pb_type_children[pb_type_num].num_pb; pb_num++) {
+                mode_input_num_pins += get_max_num_primitive_pin_logical_block(&(pb_graph_node->child_pb_graph_nodes[mode_num][pb_type_num][pb_num]),
+                                                                               false);
+                mode_output_num_pins += get_max_num_primitive_pin_logical_block(&(pb_graph_node->child_pb_graph_nodes[mode_num][pb_type_num][pb_num]),
+                                                                                true);
+            }
+        }
+        max_input_num_pins = std::max(mode_input_num_pins, max_input_num_pins);
+        max_output_num_pins = std::max(mode_output_num_pins, max_output_num_pins);
+    }
+    pb_graph_node->primitive_pins.resize(max_input_num_pins + max_output_num_pins);
+    pb_graph_node->num_primitive_input_pin = max_input_num_pins;
+    pb_graph_node->num_primitive_output_pin = max_output_num_pins;
+    std::fill(std::begin(pb_graph_node->primitive_pins),
+              std::end(pb_graph_node->primitive_pins) - max_output_num_pins, e_pin_type::RECEIVER);
+    std::fill(std::begin(pb_graph_node->primitive_pins) + max_input_num_pins,
+              std::end(pb_graph_node->primitive_pins), e_pin_type::DRIVER);
+
+}
+
+static int get_max_num_primitive_pin_logical_block(const t_pb_graph_node* pb_graph_head, bool is_output) {
+    int max_num_pins = 0;
+
+    const auto pb_type = pb_graph_head->pb_type;
+
+    if(pb_graph_head->is_primitive()) {
+        int* num_pins;
+        int num_ports;
+        if(is_output) {
+            num_pins = pb_graph_head->num_output_pins;
+            num_ports = pb_graph_head->num_output_ports;
+        }
+        else {
+            num_pins = pb_graph_head->num_input_pins;
+            num_ports = pb_graph_head->num_input_ports;
+        }
+
+        return max_num_pins = std::accumulate(num_pins, num_pins+num_ports, max_num_pins);
+    }
+
+
+    for(int mode_num = 0; mode_num < pb_type->num_modes; mode_num++) {
+        int mode_num_pins = 0;
+        for(int pb_type_num = 0; pb_type_num < pb_type->modes[mode_num].num_pb_type_children; pb_type_num++) {
+            for(int pb_num = 0; pb_num < pb_type->modes[mode_num].pb_type_children[pb_type_num].num_pb; pb_num++) {
+                mode_num_pins += get_max_num_primitive_pin_logical_block(&(pb_graph_head->child_pb_graph_nodes[mode_num][pb_type_num][pb_num]), is_output);
+
+            }
+        }
+        max_num_pins = std::max(mode_num_pins, max_num_pins);
+    }
+    return max_num_pins;
 }
 
 void free_pb_graph_edges() {
