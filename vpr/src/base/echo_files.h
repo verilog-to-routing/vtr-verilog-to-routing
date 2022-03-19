@@ -2,6 +2,7 @@
 #define ECHO_FILES_H
 
 enum e_echo_files {
+
     //Input netlist
     E_ECHO_ATOM_NETLIST_ORIG,
     E_ECHO_ATOM_NETLIST_CLEANED,

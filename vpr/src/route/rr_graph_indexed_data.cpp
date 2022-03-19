@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <queue> /* Needed for ortho_Cost_index calculation*/
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -36,7 +37,7 @@ static void fixup_rr_indexed_data_T_values(size_t num_segment);
 
 static std::vector<size_t> count_rr_segment_types();
 
-static void print_rr_index_info(const char* fname, const std::vector<t_segment_inf>& segment_inf);
+static void print_rr_index_info(const char* fname, const std::vector<t_segment_inf>& segment_inf, size_t y_chan_cost_offset);
 
 /******************** Subroutine definitions *********************************/
 
@@ -54,14 +55,19 @@ static void print_rr_index_info(const char* fname, const std::vector<t_segment_i
  * x-channel its own cost_index, and each segment type in a y-channel its    *
  * own cost_index.                                                           */
 void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_inf,
+                                    const std::vector<t_segment_inf>& segment_inf_x,
+                                    const std::vector<t_segment_inf>& segment_inf_y,
                                     int wire_to_ipin_switch,
                                     enum e_base_cost_type base_cost_type) {
-    int iseg, length, i, index;
+    int length, i, index;
 
+    (void)segment_inf;
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
-    int num_segment = segment_inf.size();
-    int num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment); //2x for CHANX & CHANY
+    int total_num_segment = segment_inf_x.size() + segment_inf_y.size();
+    /*CHAX & CHANY segment lsit sizes may differ. but if we're using uniform channels, they
+     * will each have size equal to segment_inf.size()*/
+    int num_rr_indexed_data = CHANX_COST_INDEX_START + total_num_segment;
     device_ctx.rr_indexed_data.resize(num_rr_indexed_data);
 
     /* For rr_types that aren't CHANX or CHANY, base_cost is valid, but most     *
@@ -80,54 +86,229 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
     }
     device_ctx.rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).Tdel;
 
-    /* X-directed segments. */
-    for (iseg = 0; iseg < num_segment; iseg++) {
-        index = CHANX_COST_INDEX_START + iseg;
+    /*  
+     * AA: ortho_cost_index is the index of the segment that this is a rr_node ca
+     * can connect to (see rr_node.h). If a segment is BOTH_AXIS specified, this means that 
+     * it's most likely to connect to it's perpendicular counter-part. If it is not, 
+     * then  we need to define a likelyhood estimate for all perpendicular segments. 
+     * One way we can do this is to look at the number of switch blocks... 
+     */
 
-        if ((index + num_segment) >= (int)device_ctx.rr_indexed_data.size()) {
-            device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index;
-        } else {
-            device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index + num_segment;
-        }
+    /* Lets walk through the second loop for CHAN_Y segmnets: 
+     * CHANX_COST_INDEX_START = 4, num_segment = 2
+     * 2 total segments -> 4+2*2=8 (size)
+     *
+     * 1) index=4+0=4 -> cost=4+2=6
+     * 2) index=4+1=5 -> cost=5+2=7
+     * 3) index=4+2+0=6 -> cost=6-2=4 
+     * 4) index=4+1+2=7 -> cost=7-2=5
+     * Note how the indeces are orthogonal... this is because here we assume that 
+     * the orthogonal segment that is most likely to connect to a segment, is itself but in the perpendicular direction.
+     * (this code doesn't consider different x & y channels)
+     *4+0 ... 4+1 ... 4+2 but size is 12*/
 
-        if (segment_inf[iseg].longline)
+    /* X-directed segments*/
+
+    auto perp_costs = find_ortho_cost_index(segment_inf_x, segment_inf_y, X_AXIS, CHANX_COST_INDEX_START);
+
+    for (int iseg = 0; iseg < (int)perp_costs.size(); ++iseg) {
+        index = iseg + CHANX_COST_INDEX_START;
+        device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = perp_costs[iseg];
+
+        if (segment_inf_x[iseg].longline)
             length = device_ctx.grid.width();
         else
-            length = std::min<int>(segment_inf[iseg].length, device_ctx.grid.width());
+            length = std::min<int>(segment_inf_x[iseg].length, device_ctx.grid.width());
 
         device_ctx.rr_indexed_data[RRIndexedDataId(index)].inv_length = 1. / length;
-        device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = iseg;
+        /*We use the index fo the segment in the **unified** seg_inf vector not iseg which is relative 
+         * to parallel axis segments vector */
+        device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = segment_inf_x[iseg].seg_index;
     }
 
-    /* Y-directed segments. */
-    for (iseg = 0; iseg < num_segment; iseg++) {
-        index = CHANX_COST_INDEX_START + num_segment + iseg;
+    /* Y-directed segments*/
+    perp_costs = find_ortho_cost_index(segment_inf_x, segment_inf_y, Y_AXIS, CHANX_COST_INDEX_START);
 
-        if ((index - num_segment) < CHANX_COST_INDEX_START) {
-            device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index;
-        } else {
-            device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index - num_segment;
-        }
+    for (int iseg = 0; iseg < (int)perp_costs.size(); ++iseg) {
+        index = iseg + CHANX_COST_INDEX_START + segment_inf_x.size();
+        device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = perp_costs[iseg];
 
-        if (segment_inf[iseg].longline)
-            length = device_ctx.grid.height();
+        if (segment_inf_y[iseg].longline)
+            length = device_ctx.grid.width();
         else
-            length = std::min<int>(segment_inf[iseg].length, device_ctx.grid.height());
+            length = std::min<int>(segment_inf_y[iseg].length, device_ctx.grid.width());
 
         device_ctx.rr_indexed_data[RRIndexedDataId(index)].inv_length = 1. / length;
-        device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = iseg;
+        device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = segment_inf_y[iseg].seg_index;
     }
 
+    /* X-directed segments */
+    /*
+     * for (iseg = 0; iseg < num_segment; iseg++) {
+     * index = CHANX_COST_INDEX_START + iseg;
+     *
+     * if ((index + num_segment) >= (int)device_ctx.rr_indexed_data.size()) {
+     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index;
+     * } else {
+     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index + num_segment;
+     * }
+     *
+     * if (segment_inf[iseg].longline)
+     * length = device_ctx.grid.width();
+     * else
+     * length = std::min<int>(segment_inf[iseg].length, device_ctx.grid.width());
+     *
+     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].inv_length = 1. / length;
+     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = iseg;
+     * }
+     *
+     * Y-directed segments. 
+     * for (iseg = 0; iseg < num_segment; iseg++) {
+     * index = CHANX_COST_INDEX_START + num_segment + iseg;
+     *
+     * if ((index - num_segment) < CHANX_COST_INDEX_START) {
+     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index;
+     * } else {
+     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index - num_segment;
+     * }
+     *
+     * if (segment_inf[iseg].longline)
+     * length = device_ctx.grid.height();
+     * else
+     * length = std::min<int>(segment_inf[iseg].length, device_ctx.grid.height());
+     *
+     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].inv_length = 1. / length;
+     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = iseg;
+     * }
+     */
     load_rr_indexed_data_T_values();
 
-    fixup_rr_indexed_data_T_values(num_segment);
+    fixup_rr_indexed_data_T_values(total_num_segment);
 
     load_rr_indexed_data_base_costs(base_cost_type);
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA)) {
         print_rr_index_info(getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA),
-                            segment_inf);
+                            segment_inf, segment_inf_x.size());
     }
+}
+
+/*  AA: We use a normalized product of frequency and length to find the segment that is most likely
+ * to connect to in the perpinduclar axis. Note that the size of segment_inf_x & segment_inf_y is not 
+ * the same necessarly. The result vector will contain the indeces in segment_inf_perp 
+ * of the most likely perp segments for each segment at index i in segment_inf_parallel.   
+ * 
+ * Note: We use the seg_index field of t_segment_inf to store the segment index  
+ * in the **unified** t_segment_inf vector. We will temporarly use this field in 
+ * a copy passed to the function to store the index w.r.t the parallel axis segment list.*/
+
+std::vector<int> find_ortho_cost_index(std::vector<t_segment_inf> segment_inf_x,
+                                       std::vector<t_segment_inf> segment_inf_y,
+                                       e_parallel_axis parallel_axis,
+                                       e_cost_indices start_channel_cost) {
+    auto segment_inf_parallel = parallel_axis == X_AXIS ? segment_inf_x : segment_inf_y;
+    auto segment_inf_perp = parallel_axis == X_AXIS ? segment_inf_y : segment_inf_x;
+
+    /*Update seg_index */
+
+    for (int i = 0; i < (int)segment_inf_perp.size(); ++i)
+        segment_inf_perp[i].seg_index = i;
+
+    std::vector<int> ortho_costs_indeces;
+    ortho_costs_indeces.resize(segment_inf_parallel.size());
+
+    int num_segments = (int)segment_inf_parallel.size();
+    for (int seg_index = 0; seg_index < num_segments; ++seg_index) {
+        auto segment = segment_inf_parallel[seg_index];
+        auto lambda_cmp = [&segment](t_segment_inf& a, t_segment_inf& b) {
+            float a_freq = a.frequency / (float)segment.frequency;
+            float b_freq = b.frequency / (float)segment.frequency;
+            float a_len = (float)segment.length / a.length;
+            float b_len = (float)segment.length / b.length;
+
+            float a_product = a_len * a_freq;
+            float b_product = b_len * b_freq;
+
+            if (std::abs(a_product - 1) < std::abs(b_product - 1))
+                return true;
+            else if (std::abs(a_product - 1) > std::abs(b_product - 1))
+                return false;
+            else {
+                if ((segment.name == a.name && segment.parallel_axis == BOTH_AXIS) || (segment.length == a.length && segment.frequency == a.frequency))
+                    return true;
+                else {
+                    if (a.frequency > b.frequency)
+                        return true;
+                    else if (a.frequency < b.frequency)
+                        return false;
+                    else
+                        return a.length < b.length;
+                }
+            }
+        };
+
+        std::sort(segment_inf_perp.begin(), segment_inf_perp.end(), lambda_cmp);
+
+        /* The compartor behaves as operator< mostly, so the first element in the 
+         * sorted vector will have the lowest cost difference from segment. */
+        ortho_costs_indeces[seg_index] = segment_inf_perp[0].seg_index + start_channel_cost;
+        ortho_costs_indeces[seg_index] = parallel_axis == X_AXIS ? ortho_costs_indeces[seg_index] + num_segments : ortho_costs_indeces[seg_index];
+    }
+
+/*Pertubate indeces to make sure all perp seg types have a corresponding perp segment.*/
+#ifdef PERTURB_ORTHO_COST_INDECES
+    std::vector<int> perp_segments;
+    std::unordered_multimap<int, int> indeces_map;
+    auto cmp_greater = [](std::pair<int, int> a, std::pair<int, int> b) {
+        return a.second < b.second;
+    };
+    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, decltype(cmp_greater)> indeces_q_greater(cmp_greater);
+
+    auto cmp_less = [](std::pair<int, int> a, std::pair<int, int> b) {
+        return a.second > b.second;
+    };
+
+    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, decltype(cmp_less)> indeces_q_less(cmp_less);
+
+    perp_segments.resize(segment_inf_perp.size(), 0);
+
+    for (int i = 0; i < num_segments; ++i) {
+        int index = parallel_axis == X_AXIS ? ortho_costs_indeces[i] - num_segments - start_channel_cost : ortho_costs_indeces[i] - start_channel_cost;
+        indeces_map.insert(std::make_pair(index, i));
+        perp_segments[index]++;
+    }
+
+    for (int i = 0; i < (int)perp_segments.size(); ++i) {
+        auto pair = std::make_pair(i, perp_segments[i]);
+        indeces_q_greater.push(pair);
+        indeces_q_less.push(pair);
+    }
+
+    while (!indeces_q_greater.empty()) {
+        auto g_index_pair = indeces_q_greater.top();
+        auto l_index_pair = indeces_q_less.top();
+
+        if (l_index_pair.second != 0)
+            break;
+
+        indeces_q_greater.pop();
+        indeces_q_less.pop();
+
+        g_index_pair.second--;
+        l_index_pair.second++;
+        auto itr_to_change = indeces_map.find(g_index_pair.first);
+        VTR_ASSERT(itr_to_change != indeces_map.end());
+        int index = l_index_pair.first + start_channel_cost;
+        index = parallel_axis == X_AXIS ? index + num_segments : index;
+        ortho_costs_indeces[itr_to_change->second] = index;
+        indeces_map.erase(itr_to_change);
+
+        indeces_q_greater.push(g_index_pair);
+        indeces_q_less.push(l_index_pair);
+    }
+#endif
+
+    return ortho_costs_indeces;
 }
 
 void load_rr_index_segments(const int num_segment) {
@@ -352,6 +533,8 @@ static void load_rr_indexed_data_T_values() {
 
         auto cost_index = rr_graph.node_cost_index(rr_id);
 
+        auto str = rr_graph.node_coordinate_to_string(RRNodeId(inode));
+
         /* get average switch parameters */
         double avg_switch_R = 0;
         double avg_switch_T = 0;
@@ -361,7 +544,8 @@ static void load_rr_indexed_data_T_values() {
         calculate_average_switch((size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered, fan_in_list);
 
         if (num_switches == 0) {
-            VTR_LOG_WARN("Node %d had no out-going switches\n", (size_t)rr_id);
+              VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", rr_id,
+                         rr_graph.node_type_string(rr_id, str.c_str());
             continue;
         }
         VTR_ASSERT(num_switches > 0);
@@ -501,7 +685,7 @@ static void calculate_average_switch(int inode, double& avg_switch_R, double& av
     VTR_ASSERT(std::isfinite(avg_switch_Cinternal));
 }
 
-static void fixup_rr_indexed_data_T_values(size_t num_segment) {
+static void fixup_rr_indexed_data_T_values(size_t total_num_segments) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     // Scan CHANX/CHANY indexed data and search for uninitialized costs.
@@ -513,7 +697,7 @@ static void fixup_rr_indexed_data_T_values(size_t num_segment) {
     // The primary reason for this fixup is to avoid propagating negative
     // values in cost functions.
     for (size_t cost_index = CHANX_COST_INDEX_START;
-         cost_index < CHANX_COST_INDEX_START + 2 * num_segment; cost_index++) {
+         cost_index < CHANX_COST_INDEX_START + total_num_segments; cost_index++) {
         int ortho_cost_index = device_ctx.rr_indexed_data[RRIndexedDataId(cost_index)].ortho_cost_index;
 
         auto& indexed_data = device_ctx.rr_indexed_data[RRIndexedDataId(cost_index)];
@@ -532,7 +716,9 @@ static void fixup_rr_indexed_data_T_values(size_t num_segment) {
     }
 }
 
-static void print_rr_index_info(const char* fname, const std::vector<t_segment_inf>& segment_inf) {
+static void print_rr_index_info(const char* fname,
+                                const std::vector<t_segment_inf>& segment_inf,
+                                size_t y_chan_cost_offset) {
     auto& device_ctx = g_vpr_ctx.device();
 
     std::ofstream out_file;
@@ -559,7 +745,7 @@ static void print_rr_index_info(const char* fname, const std::vector<t_segment_i
             string_stream << cost_index << " OPIN";
         } else if (cost_index == IPIN_COST_INDEX) {
             string_stream << cost_index << " IPIN";
-        } else if (cost_index <= IPIN_COST_INDEX + segment_inf.size()) {
+        } else if (cost_index <= IPIN_COST_INDEX + y_chan_cost_offset) {
             string_stream << cost_index << " CHANX " << segment_inf[index_data.seg_index].name.c_str();
         } else {
             string_stream << cost_index << " CHANY " << segment_inf[index_data.seg_index].name.c_str();

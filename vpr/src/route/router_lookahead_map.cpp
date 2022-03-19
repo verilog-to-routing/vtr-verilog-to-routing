@@ -441,7 +441,15 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     for (int iseg = 0; iseg < int(segment_inf.size()); iseg++) {
         //First try to pick good representative sample locations for each type
         std::map<t_rr_type, std::vector<RRNodeId>> sample_nodes;
-        for (e_rr_type chan_type : {CHANX, CHANY}) {
+        std::vector<e_rr_type> chan_types;
+        if (segment_inf[iseg].parallel_axis == X_AXIS)
+            chan_types.push_back(CHANX);
+        else if (segment_inf[iseg].parallel_axis == Y_AXIS)
+            chan_types.push_back(CHANY);
+        else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
+            chan_types.insert(chan_types.end(), {CHANX, CHANY});
+
+        for (e_rr_type chan_type : chan_types) {
             for (int ref_inc : ref_increments) {
                 int sample_x = ref_x + ref_inc;
                 int sample_y = ref_y + ref_inc;
@@ -468,7 +476,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
         //
         //This is to ensure we sample 'unusual' wire types which may not exist in all channels
         //(e.g. clock routing)
-        for (e_rr_type chan_type : {CHANX, CHANY}) {
+        for (e_rr_type chan_type : chan_types) {
             if (!sample_nodes[chan_type].empty()) continue;
 
             //Try an exhaustive search to find a suitable sample point
@@ -497,7 +505,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
         t_dijkstra_data dijkstra_data;
         t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
 
-        for (e_rr_type chan_type : {CHANX, CHANY}) {
+        for (e_rr_type chan_type : chan_types) {
             if (sample_nodes[chan_type].empty()) {
                 VTR_LOG_WARN("Unable to find any sample location for segment %s type '%s' (length %d)\n",
                              rr_node_typename[chan_type],

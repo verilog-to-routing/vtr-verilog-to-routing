@@ -66,7 +66,6 @@ void alloc_and_load_echo_file_info() {
     echoFileNames = (char**)vtr::calloc((int)E_ECHO_END_TOKEN, sizeof(char*));
 
     setAllEchoFileEnabled(getEchoEnabled());
-
     //User input nelist
     setEchoFileName(E_ECHO_ATOM_NETLIST_ORIG, "atom_netlist.orig.echo.blif");
     setEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED, "atom_netlist.cleaned.echo.blif");
