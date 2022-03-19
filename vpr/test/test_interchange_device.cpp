@@ -53,7 +53,7 @@ TEST_CASE("read_interchange_layout", "[vpr]") {
     REQUIRE(gd.height == 12);
     REQUIRE(gd.width == 12);
 
-    std::unordered_map<std::string, bool> tile_types({{"PWR", false}, {"IOB", false}, {"CLB", false}});
+    std::unordered_map<std::string, bool> tile_types({{"constant_block", false}, {"IB", false}, {"OB", false}, {"IOB", false}, {"CLB", false}});
     for (auto& loc : gd.loc_defs) {
         auto ret = tile_types.find(loc.block_type);
         REQUIRE(ret != tile_types.end());
@@ -91,7 +91,7 @@ TEST_CASE("read_interchange_luts", "[vpr]") {
         const auto& lut_elements = it.second;
 
         for (const auto& lut_element : lut_elements) {
-            REQUIRE(lut_element.lut_bels.size() == 2);
+            REQUIRE(lut_element.lut_bels.size() == 1);
 
             for (auto lut_bel : lut_element.lut_bels) {
                 CHECK(std::find(lut_bels.begin(), lut_bels.end(), lut_bel.name) != lut_bels.end());
@@ -110,7 +110,7 @@ TEST_CASE("read_interchange_tiles", "[vpr]") {
 
     FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
 
-    std::unordered_set<std::string> ptypes = {"EMPTY", "IOB", "PWR", "CLB"};
+    std::unordered_set<std::string> ptypes = {"EMPTY", "IOB", "IB", "OB", "CLB", "constant_block"};
 
     // Check that there are exactly the expected models
     for (auto ptype : physical_tile_types) {
@@ -134,7 +134,7 @@ TEST_CASE("read_interchange_pb_types", "[vpr]") {
 
     FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
 
-    std::unordered_set<std::string> ltypes = {"EMPTY", "IOPAD", "SLICE", "POWER"};
+    std::unordered_set<std::string> ltypes = {"EMPTY", "IOPAD", "IPAD", "OPAD", "SLICE", "constant_block"};
 
     std::unordered_map<std::string, PORTS> slice_ports = {
         {"L0_0", PORTS::IN_PORT},

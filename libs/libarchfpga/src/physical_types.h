@@ -795,11 +795,19 @@ struct t_physical_tile_port {
     bool is_clock;
     bool is_non_clock_global;
     int num_pins;
-    PortEquivalence equivalent = PortEquivalence::NONE;
+    PortEquivalence equivalent;
 
     int index;
     int absolute_first_pin_index;
     int port_index_by_type;
+
+    t_physical_tile_port() {
+        is_clock = false;
+        is_non_clock_global = false;
+
+        num_pins = 1;
+        equivalent = PortEquivalence::NONE;
+    }
 };
 
 /* Describes the type for a logical block
@@ -1810,8 +1818,8 @@ struct t_arch {
     // for the interchange netlist format, to determine which are the constants
     // net names and which virtual cell is responsible to generate them.
     // The information is present in the device database.
-    std::string gnd_cell;
-    std::string vcc_cell;
+    std::pair<std::string, std::string> gnd_cell;
+    std::pair<std::string, std::string> vcc_cell;
 
     std::string gnd_net = "$__gnd_net";
     std::string vcc_net = "$__vcc_net";
