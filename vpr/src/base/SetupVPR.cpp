@@ -98,6 +98,7 @@ void SetupVPR(const t_options* Options,
     FileNameOpts->out_file_prefix = Options->out_file_prefix;
     FileNameOpts->read_vpr_constraints_file = Options->read_vpr_constraints_file;
     FileNameOpts->write_vpr_constraints_file = Options->write_vpr_constraints_file;
+    FileNameOpts->write_block_usage = Options->write_block_usage;
 
     FileNameOpts->verify_file_digests = Options->verify_file_digests;
 
@@ -139,8 +140,9 @@ void SetupVPR(const t_options* Options,
     int num_inputs = 0;
     int num_outputs = 0;
     for (auto& type : device_ctx.physical_tile_types) {
-        if (strcmp(type.name, EMPTY_BLOCK_NAME) == 0) {
+        if (type.is_empty()) {
             VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE == nullptr);
+            VTR_ASSERT(type.num_pins == 0);
             device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &type;
         }
 
@@ -156,7 +158,9 @@ void SetupVPR(const t_options* Options,
     device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = nullptr;
     int max_equivalent_tiles = 0;
     for (const auto& type : device_ctx.logical_block_types) {
-        if (0 == strcmp(type.name, EMPTY_BLOCK_NAME)) {
+        if (type.is_empty()) {
+            VTR_ASSERT(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE == nullptr);
+            VTR_ASSERT(type.pb_type == nullptr);
             device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = &type;
         }
 
@@ -609,6 +613,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_agent_algorithm = Options.place_agent_algorithm;
     PlacerOpts->place_constraint_expand = Options.place_constraint_expand;
     PlacerOpts->place_constraint_subtile = Options.place_constraint_subtile;
+    PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
+    PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
@@ -623,7 +629,11 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
     analysis_opts.timing_report_skew = Options.timing_report_skew;
     analysis_opts.echo_dot_timing_graph_node = Options.echo_dot_timing_graph_node;
 
+    analysis_opts.post_synth_netlist_unconn_input_handling = Options.post_synth_netlist_unconn_input_handling;
+    analysis_opts.post_synth_netlist_unconn_output_handling = Options.post_synth_netlist_unconn_output_handling;
+
     analysis_opts.timing_update_type = Options.timing_update_type;
+    analysis_opts.write_timing_summary = Options.write_timing_summary;
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {

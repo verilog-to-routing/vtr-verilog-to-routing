@@ -626,6 +626,12 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default:** ``2``
 
+.. option:: --write_block_usage <file>
+
+    Writes out to the file under path <file> cluster-level block usage summary in machine
+    readable (JSON or XML) or human readable (TXT) format. Format is selected
+    based on the extension of <file>.
+
 .. _placer_options:
 
 Placer Options
@@ -1035,6 +1041,17 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``off``
 
+.. option:: --write_timing_summary <file>
+
+    Writes out to the file under path <file> final timing summary in machine
+    readable (JSON or XML) or human readable (TXT) format. Format is selected
+    based on the extension of <file>. The summary consists of parameters:
+
+    * `cpd` - Final critical path delay (least slack) [ns]
+    * `fmax` - Maximal frequency of the implemented circuit [MHz]
+    * `swns` - setup Worst Negative Slack (sWNS) [ns]
+    * `stns` - Setup Total Negative Slack (sTNS) [ns]
+
 .. _timing_driven_router_options:
 
 Timing-Driven Router Options
@@ -1236,6 +1253,26 @@ Analysis Options
     Furthermore to perform simulation on that circuit the Verilog description of that new primitive must be appended to the primitives.v file as a separate module.
 
     **Default:** ``off``
+
+.. option:: --post_synth_netlist_unconn_inputs { unconnected | nets | gnd | vcc }
+
+    Controls how unconnected input cell ports are handled in the post-synthesis netlist
+
+     * unconnected: leave unconnected
+     * nets: connect each unconnected input pin to its own separate undriven net named: ``__vpr__unconn<ID>``, where ``<ID>`` is index assigned to this occurrence of unconnected port in design
+     * gnd: tie all to ground (``1'b0``)
+     * vcc: tie all to VCC (``1'b1``)
+
+    **Default:** ``unconnected``
+
+.. option:: --post_synth_netlist_unconn_outputs { unconnected | nets }
+
+    Controls how unconnected output cell ports are handled in the post-synthesis netlist
+
+     * unconnected: leave unconnected
+     * nets: connect each unconnected output pin to its own separate undriven net named: ``__vpr__unconn<ID>``, where ``<ID>`` is index assigned to this occurrence of unconnected port in design
+
+    **Default:** ``unconnected``
 
 .. option:: --timing_report_npaths <int>
 

@@ -43,6 +43,7 @@
 #include "vtr_cache.h"
 #include "vtr_string_view.h"
 #include "vtr_dynamic_bitset.h"
+#include "rr_node_types.h"
 #include "rr_graph_fwd.h"
 
 /*******************************************************************************
@@ -89,8 +90,6 @@ enum class ScreenUpdatePriority {
 /* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
 constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
 constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
-
-constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 
 /*
  * Files
@@ -231,38 +230,6 @@ class t_pack_high_fanout_thresholds {
     int default_;
     std::map<std::string, int> overrides_;
 };
-
-///@brief Type used to express rr_node edge index.
-typedef uint16_t t_edge_size;
-
-/**
- * @brief An iterator that dereferences to an edge index
- *
- * Used inconjunction with vtr::Range to return ranges of edge indices
- */
-class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, t_edge_size> {
-  public:
-    edge_idx_iterator(value_type init)
-        : value_(init) {}
-    iterator operator++() {
-        value_ += 1;
-        return *this;
-    }
-    iterator operator--() {
-        value_ -= 1;
-        return *this;
-    }
-    reference operator*() { return value_; }
-    pointer operator->() { return &value_; }
-
-    friend bool operator==(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return lhs.value_ == rhs.value_; }
-    friend bool operator!=(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return !(lhs == rhs); }
-
-  private:
-    value_type value_;
-};
-
-typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
@@ -755,6 +722,7 @@ struct t_file_name_opts {
     std::string out_file_prefix;
     std::string read_vpr_constraints_file;
     std::string write_vpr_constraints_file;
+    std::string write_block_usage;
     bool verify_file_digests;
 };
 
@@ -1077,6 +1045,8 @@ struct t_placer_opts {
     float place_crit_limit;
     int place_constraint_expand;
     bool place_constraint_subtile;
+    int floorplan_num_horizontal_partitions;
+    int floorplan_num_vertical_partitions;
 
     /**
      * @brief Tile types that should be used during delay sampling.
@@ -1154,13 +1124,6 @@ enum e_router_algorithm {
     TIMING_DRIVEN,
 };
 
-// Node reordering algorithms for rr_nodes
-enum e_rr_node_reorder_algorithm {
-    DONT_REORDER,
-    DEGREE_BFS,
-    RANDOM_SHUFFLE,
-};
-
 enum e_base_cost_type {
     DELAY_NORMALIZED,
     DELAY_NORMALIZED_LENGTH,
@@ -1189,6 +1152,13 @@ enum class e_timing_report_detail {
     AGGREGATED,       //Show aggregated intra-block and inter-block delays
     DETAILED_ROUTING, //Show inter-block routing resources used
     DEBUG,            //Show additional internal debugging information
+};
+
+enum class e_post_synth_netlist_unconn_handling {
+    UNCONNECTED, // Leave unrouted ports unconnected
+    NETS,        // Leave unrouted ports unconnected but add new named nets to each of them
+    GND,         // Tie unrouted ports to ground (only for input ports)
+    VCC          // Tie unrouted ports to VCC (only for input ports)
 };
 
 struct t_timing_analysis_profile_info {
@@ -1286,11 +1256,14 @@ struct t_analysis_opts {
     e_stage_action doAnalysis;
 
     bool gen_post_synthesis_netlist;
+    e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_input_handling;
+    e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_output_handling;
 
     int timing_report_npaths;
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
     std::string echo_dot_timing_graph_node;
+    std::string write_timing_summary;
 
     e_timing_update_type timing_update_type;
 };
@@ -1345,24 +1318,6 @@ struct t_det_routing_arch {
     std::string read_rr_graph_filename;
     std::string write_rr_graph_filename;
 };
-/*
- * Direction::INC: wire driver is positioned at the low-coordinate end of the wire.
- * Direction::DEC: wire_driver is positioned at the high-coordinate end of the wire.
- * Direction::BIDIR: wire has multiple drivers, so signals can travel either way along the wire
- * Direction::NONE: node does not have a direction, such as IPIN/OPIN
- */
-enum class Direction : unsigned char {
-    INC = 0,
-    DEC = 1,
-    BIDIR = 2,
-    NONE = 3,
-    NUM_DIRECTIONS
-};
-
-constexpr std::array<const char*, static_cast<int>(Direction::NUM_DIRECTIONS)> DIRECTION_STRING = {{"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NONE"}};
-
-//this array is used in rr_graph_storage.cpp so that node_direction_string() can return a const std::string&
-const std::array<std::string, static_cast<int>(Direction::NUM_DIRECTIONS)> CONST_DIRECTION_STRING = {{"INC_DIR", "DEC_DIR", "BI_DIR", "NONE"}};
 
 /**
  * @brief Lists detailed information about segmentation.  [0 .. W-1].
@@ -1494,34 +1449,9 @@ struct t_linked_f_pointer {
     float* fptr;
 };
 
-/**
- * @brief Type of a routing resource node.
- *
- * x-directed channel segment, y-directed channel segment,
- * input pin to a clb to pad, output from a clb or pad
- * (i.e. output pin of a net) and:
- * - SOURCE
- * - SINK
- */
-typedef enum e_rr_type : unsigned char {
-    SOURCE = 0, ///<A dummy node that is a logical output within a block -- i.e., the gate that generates a signal.
-    SINK,       ///<A dummy node that is a logical input within a block -- i.e. the gate that needs a signal.
-    IPIN,
-    OPIN,
-    CHANX,
-    CHANY,
-    NUM_RR_TYPES
-} t_rr_type;
-
-constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}};
-constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
-
 constexpr bool is_pin(e_rr_type type) { return (type == IPIN || type == OPIN); }
 constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY); }
 constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == SINK); }
-
-//[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
-typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_indices;
 
 /**
  * @brief Basic element used to store the traceback (routing) of each net.
@@ -1744,7 +1674,5 @@ class RouteStatus {
 };
 
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
-
-typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 
 #endif

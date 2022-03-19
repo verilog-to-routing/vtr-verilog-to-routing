@@ -15,6 +15,6 @@
  * All written filenames end in {basename}_post_synthesis.{fmt} where {basename} is the
  * basename argument and {fmt} is the file format (e.g. v, blif, sdf)
  */
-void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc);
+void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts);
 
 #endif

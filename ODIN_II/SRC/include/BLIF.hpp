@@ -608,7 +608,7 @@ class BLIF {
         }
 
         void _write(const netlist_t* netlist);
-        void _create_file(const file_type_e file_type);
+        void _create_file(const char* file_name, const file_type_e file_type = _BLIF);
 
       protected:
         /**

@@ -435,13 +435,49 @@ def format_human_readable_memory(num_kbytes):
     return value
 
 
+def get_max_memory_usage(temp_dir):
+    """
+    Extracts the maximum memory usage of the VTR flow from generated .out files
+    """
+    cnt = 0
+    output_files = {
+        "yosys": Path(temp_dir / "yosys.out"),
+        "odin": Path(temp_dir / "odin.out"),
+        "abc": Path(temp_dir / "abc{}.out".format(cnt)),
+        "vpr": Path(temp_dir / "vpr.out"),
+    }
+    memory_usages = {"yosys": -1, "odin": -1, "abc": -1, "vpr": -1}
+
+    if output_files["yosys"].is_file():
+        memory_usages["yosys"] = get_memory_usage(output_files["yosys"])
+
+    if output_files["odin"].is_file():
+        memory_usages["odin"] = get_memory_usage(output_files["odin"])
+
+    while output_files["abc"].is_file():
+        new_abc_mem_usage = get_memory_usage(output_files["abc"])
+        if new_abc_mem_usage > memory_usages["abc"]:
+            memory_usages["abc"] = new_abc_mem_usage
+
+        cnt += 1
+        output_files["abc"] = Path(temp_dir / "abc{}.out".format(cnt))
+
+    if output_files["vpr"].is_file():
+        memory_usages["vpr"] = get_memory_usage(output_files["vpr"])
+
+    max_mem_key = max(memory_usages, key=memory_usages.get)
+    if memory_usages[max_mem_key] != -1:
+        return format_human_readable_memory(memory_usages[max_mem_key]), max_mem_key
+    return "-", "-"
+
+
 def get_memory_usage(logfile):
-    """Extrats the memory usage from the *.out log files"""
+    """Extracts the memory usage from the *.out log files"""
     with open(logfile, "r") as fpmem:
         for line in fpmem.readlines():
             if "Maximum resident set size" in line:
-                return format_human_readable_memory(int(line.split()[-1]))
-    return "--"
+                return int(line.split()[-1])
+    return -1
 
 
 # pylint: enable=too-many-statements
@@ -525,10 +561,11 @@ def vtr_command_main(arg_list, prog=None):
         seconds = datetime.now() - start
 
         print(
-            "{status} (took {time}, vpr run consumed {max_mem} memory)".format(
+            "{status} (took {time}, "
+            "overall memory peak {stage[0]} consumed by {stage[1]} run)".format(
                 status=error_status,
                 time=vtr.format_elapsed_time(seconds),
-                max_mem=get_memory_usage(temp_dir / "vpr.out"),
+                stage=get_max_memory_usage(temp_dir),
             )
         )
         temp_dir.mkdir(parents=True, exist_ok=True)

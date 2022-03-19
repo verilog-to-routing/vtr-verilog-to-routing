@@ -97,6 +97,33 @@ void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const
 static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              enum e_pad_loc_type pad_loc_type);
 
+/**
+ * @brief If any blocks are unplaced after initial placement, this routine
+ * prints an error message showing the names, types, and IDs of the unplaced blocks
+ */
+static void print_unplaced_blocks();
+
+static void print_unplaced_blocks() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    int unplaced_blocks = 0;
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        if (place_ctx.block_locs[blk_id].loc.x == INVALID_X) {
+            VTR_LOG("Block %s (# %d) of type %s could not be placed during initial placement\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id, cluster_ctx.clb_nlist.block_type(blk_id)->name);
+            unplaced_blocks++;
+        }
+    }
+
+    if (unplaced_blocks > 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                        "%d blocks could not be placed during initial placement, no spaces were available for them on the grid.\n"
+                        "If VPR was run with floorplan constraints, the constraints may be too tight.\n",
+                        unplaced_blocks);
+    }
+}
+
 static bool is_loc_on_chip(t_pl_loc& loc) {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -408,13 +435,7 @@ static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
                 tried_types.push_back(tile_type->name);
             }
             std::string tried_types_str = "{" + vtr::join(tried_types, ", ") + "}";
-
-            // Error out
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                            "Initial placement failed.\n"
-                            "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type(s) %s.\n"
-                            "Please manually size the FPGA because VPR can't do this yet.\n",
-                            pl_macro.members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), tried_types_str.c_str());
+            break;
         }
     }
 }
@@ -434,7 +455,6 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
 
     //GridTileLookup class provides info needed for calculating number of tiles covered by a region
     GridTileLookup grid_tiles;
-    grid_tiles.initialize_grid_tile_matrices();
 
     /*
      * For the blocks with no floorplan constraints, and the blocks that are not part of macros,
@@ -583,6 +603,9 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
 
     //Place the blocks in sorted order
     place_all_blocks(sorted_blocks, pad_loc_type);
+
+    //if any blocks remain unplaced, print an error
+    print_unplaced_blocks();
 
 #ifdef VERBOSE
     VTR_LOG("At end of initial_placement.\n");

@@ -48,9 +48,9 @@ void load_rr_file(const t_graph_type graph_type,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     size_t num_segments = segment_inf.size();
-    device_ctx.rr_segments.reserve(num_segments);
-    for (long unsigned int iseg = 0; iseg < num_segments; ++iseg) {
-        device_ctx.rr_segments.push_back(segment_inf[(iseg)]);
+    device_ctx.rr_graph_builder.reserve_segments(num_segments);
+    for (size_t iseg = 0; iseg < num_segments; ++iseg) {
+        device_ctx.rr_graph_builder.add_rr_segment(segment_inf[(iseg)]);
     }
 
     RrGraphSerializer reader(
@@ -62,18 +62,18 @@ void load_rr_file(const t_graph_type graph_type,
         &device_ctx.read_rr_graph_filename,
         read_edge_metadata,
         &device_ctx.chan_width,
-        &device_ctx.rr_nodes,
+        &device_ctx.rr_graph_builder.rr_nodes(),
         &device_ctx.rr_graph_builder,
         &device_ctx.rr_graph,
-        &device_ctx.rr_switch_inf,
+        &device_ctx.rr_graph_builder.rr_switch(),
         &device_ctx.rr_indexed_data,
         device_ctx.num_arch_switches,
         device_ctx.arch_switch_inf,
-        device_ctx.rr_segments,
+        device_ctx.rr_graph.rr_segments(),
         device_ctx.physical_tile_types,
         grid,
-        &device_ctx.rr_node_metadata,
-        &device_ctx.rr_edge_metadata,
+        &device_ctx.rr_graph_builder.rr_node_metadata(),
+        &device_ctx.rr_graph_builder.rr_edge_metadata(),
         &device_ctx.arch->strings);
 
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml")) {

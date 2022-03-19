@@ -929,7 +929,7 @@ void alloc_draw_structs(const t_arch* arch) {
     /* Space is allocated for draw_rr_node but not initialized because we do *
      * not yet know information about the routing resources.				  */
     draw_state->draw_rr_node = (t_draw_rr_node*)vtr::malloc(
-        device_ctx.rr_nodes.size() * sizeof(t_draw_rr_node));
+        device_ctx.rr_graph.num_nodes() * sizeof(t_draw_rr_node));
 
     draw_state->arch_info = arch;
 
@@ -973,19 +973,21 @@ void init_draw_coords(float width_val) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     if (!draw_state->show_graphics && !draw_state->save_graphics
         && draw_state->graphics_commands.empty())
         return; //do not initialize only if --disp off and --save_graphics off
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
-    if (device_ctx.rr_nodes.size() != 0) {
+    if (rr_graph.num_nodes() != 0) {
         draw_state->draw_rr_node = (t_draw_rr_node*)vtr::realloc(
             draw_state->draw_rr_node,
-            (device_ctx.rr_nodes.size()) * sizeof(t_draw_rr_node));
-        for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
-            draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
-            draw_state->draw_rr_node[i].node_highlighted = false;
+            (rr_graph.num_nodes()) * sizeof(t_draw_rr_node));
+        /*FIXME: the type cast should be eliminated by making draw_rr_node adapt RRNodeId */
+        for (const RRNodeId& rr_id : rr_graph.nodes()) {
+            draw_state->draw_rr_node[(size_t)rr_id].color = DEFAULT_RR_NODE_COLOR;
+            draw_state->draw_rr_node[(size_t)rr_id].node_highlighted = false;
         }
     }
     draw_coords->tile_width = width_val;
@@ -1308,30 +1310,30 @@ static void draw_routing_costs(ezgl::renderer* g) {
 
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
-    std::vector<float> rr_node_costs(device_ctx.rr_nodes.size(), 0.);
+    std::vector<float> rr_node_costs(device_ctx.rr_graph.num_nodes(), 0.);
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         float cost = 0.;
         if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS
             || draw_state->show_routing_costs
                    == DRAW_LOG_TOTAL_ROUTING_COSTS) {
-            cost = get_single_rr_cong_cost(inode,
+            cost = get_single_rr_cong_cost((size_t)rr_id,
                                            get_draw_state_vars()->pres_fac);
 
         } else if (draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
-            cost = get_single_rr_cong_base_cost(inode);
+            cost = get_single_rr_cong_base_cost((size_t)rr_id);
 
         } else if (draw_state->show_routing_costs == DRAW_ACC_ROUTING_COSTS
                    || draw_state->show_routing_costs
                           == DRAW_LOG_ACC_ROUTING_COSTS) {
-            cost = get_single_rr_cong_acc_cost(inode);
+            cost = get_single_rr_cong_acc_cost((size_t)rr_id);
 
         } else {
             VTR_ASSERT(
                 draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS
                 || draw_state->show_routing_costs
                        == DRAW_LOG_PRES_ROUTING_COSTS);
-            cost = get_single_rr_cong_pres_cost(inode,
+            cost = get_single_rr_cong_pres_cost((size_t)rr_id,
                                                 get_draw_state_vars()->pres_fac);
         }
 
@@ -1341,15 +1343,15 @@ static void draw_routing_costs(ezgl::renderer* g) {
                    == DRAW_LOG_PRES_ROUTING_COSTS) {
             cost = std::log(cost);
         }
-        rr_node_costs[inode] = cost;
+        rr_node_costs[(size_t)rr_id] = cost;
         min_cost = std::min(min_cost, cost);
         max_cost = std::max(max_cost, cost);
     }
 
     //Hide min value, draw_rr_costs() ignores NaN's
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        if (rr_node_costs[inode] == min_cost) {
-            rr_node_costs[inode] = NAN;
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        if (rr_node_costs[(size_t)rr_id] == min_cost) {
+            rr_node_costs[(size_t)rr_id] = NAN;
         }
     }
     char msg[vtr::bufsize];
@@ -1458,11 +1460,11 @@ void draw_rr(ezgl::renderer* g) {
 
     g->set_line_dash(ezgl::line_dash::none);
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        RRNodeId rr_node = RRNodeId(inode);
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)rr_id;
         if (!draw_state->draw_rr_node[inode].node_highlighted) {
             /* If not highlighted node, assign color based on type. */
-            switch (rr_graph.node_type(rr_node)) {
+            switch (rr_graph.node_type(rr_id)) {
                 case CHANX:
                 case CHANY:
                     draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
@@ -1485,7 +1487,7 @@ void draw_rr(ezgl::renderer* g) {
         }
 
         /* Now call drawing routines to draw the node. */
-        switch (rr_graph.node_type(rr_node)) {
+        switch (rr_graph.node_type(rr_id)) {
             case SINK:
                 draw_rr_src_sink(inode, draw_state->draw_rr_node[inode].color, g);
                 break;
@@ -1516,7 +1518,7 @@ void draw_rr(ezgl::renderer* g) {
 
             default:
                 vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                          "in draw_rr: Unexpected rr_node type: %d.\n", rr_graph.node_type(rr_node));
+                          "in draw_rr: Unexpected rr_node type: %d.\n", rr_graph.node_type(rr_id));
         }
     }
 
@@ -1692,7 +1694,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
         to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
         to_type = rr_graph.node_type(RRNodeId(to_node));
         to_ptc_num = rr_graph.node_ptc_num(RRNodeId(to_node));
-        bool edge_configurable = device_ctx.rr_nodes[inode].edge_is_configurable(iedge);
+        bool edge_configurable = rr_graph.edge_is_configurable(RRNodeId(inode), iedge);
 
         switch (from_type) {
             case OPIN:
@@ -2286,7 +2288,7 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g) 
  * the physical pin is on.                                                  */
 void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen, const e_side& pin_side) {
     auto& device_ctx = g_vpr_ctx.device();
-    draw_get_rr_pin_coords(device_ctx.rr_nodes[inode], xcen, ycen, pin_side);
+    draw_get_rr_pin_coords(device_ctx.rr_graph.rr_nodes()[inode], xcen, ycen, pin_side);
 }
 
 void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, const e_side& pin_side) {
@@ -2355,7 +2357,7 @@ static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer* g) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     float xcen, ycen;
-    draw_get_rr_src_sink_coords(device_ctx.rr_nodes[inode], &xcen, &ycen);
+    draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[inode], &xcen, &ycen);
 
     g->set_color(color);
 
@@ -2718,22 +2720,22 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
         }
 
         /* Highlight the nodes that can fanin to this node in blue. */
-        for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-            for (t_edge_size iedge = 0, l = rr_graph.num_edges(RRNodeId(inode)); iedge < l;
+        for (const RRNodeId& inode : rr_graph.nodes()) {
+            for (t_edge_size iedge = 0, l = rr_graph.num_edges(inode); iedge < l;
                  iedge++) {
-                int fanout_node = size_t(rr_graph.edge_sink_node(RRNodeId(node), iedge));
+                int fanout_node = size_t(rr_graph.edge_sink_node(inode, iedge));
                 if (fanout_node == node) {
                     if (draw_state->draw_rr_node[node].color == ezgl::MAGENTA
-                        && draw_state->draw_rr_node[inode].color
+                        && draw_state->draw_rr_node[size_t(inode)].color
                                != ezgl::MAGENTA) {
                         // If node is highlighted, highlight its fanin
-                        draw_state->draw_rr_node[inode].color = ezgl::BLUE;
-                        draw_state->draw_rr_node[inode].node_highlighted = true;
+                        draw_state->draw_rr_node[size_t(inode)].color = ezgl::BLUE;
+                        draw_state->draw_rr_node[size_t(inode)].node_highlighted = true;
                     } else if (draw_state->draw_rr_node[node].color
                                == ezgl::WHITE) {
                         // If node is de-highlighted, de-highlight its fanin
-                        draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
-                        draw_state->draw_rr_node[inode].node_highlighted = false;
+                        draw_state->draw_rr_node[size_t(inode)].color = DEFAULT_RR_NODE_COLOR;
+                        draw_state->draw_rr_node[size_t(inode)].node_highlighted = false;
                     }
                 }
             }
@@ -2755,17 +2757,17 @@ static int draw_check_rr_node_hit(float click_x, float click_y) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        RRNodeId rr_node = RRNodeId(inode);
-        switch (rr_graph.node_type(rr_node)) {
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)rr_id;
+        switch (rr_graph.node_type(rr_id)) {
             case IPIN:
             case OPIN: {
-                int i = rr_graph.node_xlow(rr_node);
-                int j = rr_graph.node_ylow(rr_node);
+                int i = rr_graph.node_xlow(rr_id);
+                int j = rr_graph.node_ylow(rr_id);
                 t_physical_tile_type_ptr type = device_ctx.grid[i][j].type;
                 int width_offset = device_ctx.grid[i][j].width_offset;
                 int height_offset = device_ctx.grid[i][j].height_offset;
-                int ipin = rr_graph.node_pin_num(rr_node);
+                int ipin = rr_graph.node_pin_num(rr_id);
                 float xcen, ycen;
                 for (const e_side& iside : SIDES) {
                     // If pin exists on this side of the block, then get pin coordinates
@@ -2784,7 +2786,7 @@ static int draw_check_rr_node_hit(float click_x, float click_y) {
             case SOURCE:
             case SINK: {
                 float xcen, ycen;
-                draw_get_rr_src_sink_coords(device_ctx.rr_nodes[inode], &xcen, &ycen);
+                draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[inode], &xcen, &ycen);
 
                 // Now check if we clicked on this pin
                 if (click_x >= xcen - draw_coords->pin_size && click_x <= xcen + draw_coords->pin_size && click_y >= ycen - draw_coords->pin_size && click_y <= ycen + draw_coords->pin_size) {
@@ -2827,7 +2829,7 @@ void draw_expand_non_configurable_rr_nodes_recurr(int from_node,
 
     for (t_edge_size iedge = 0;
          iedge < rr_graph.num_edges(RRNodeId(from_node)); ++iedge) {
-        bool edge_configurable = device_ctx.rr_nodes[from_node].edge_is_configurable(iedge);
+        bool edge_configurable = rr_graph.edge_is_configurable(RRNodeId(from_node), iedge);
         int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iedge));
 
         if (!edge_configurable && !expanded_nodes.count(to_node)) {
@@ -3053,7 +3055,8 @@ void deselect_all() {
     for (auto net_id : cluster_ctx.clb_nlist.nets())
         draw_state->net_color[net_id] = ezgl::BLACK;
 
-    for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        size_t i = (size_t)rr_id;
         draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
         draw_state->draw_rr_node[i].node_highlighted = false;
     }
@@ -3352,7 +3355,7 @@ static void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g) {
         draw_get_rr_pin_coords(ipin_node, &x1, &y1, pin_side);
 
         float x2 = 0, y2 = 0;
-        draw_get_rr_src_sink_coords(device_ctx.rr_nodes[sink_node], &x2, &y2);
+        draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[sink_node], &x2, &y2);
 
         g->draw_line({x1, y1}, {x2, y2});
 
@@ -3367,7 +3370,7 @@ static void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g
     const auto& rr_graph = device_ctx.rr_graph;
 
     float x1 = 0, y1 = 0;
-    draw_get_rr_src_sink_coords(device_ctx.rr_nodes[source_node], &x1, &y1);
+    draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[source_node], &x1, &y1);
 
     /* Draw the line for each ipin on different sides */
     for (const e_side& pin_side : SIDES) {
@@ -4138,19 +4141,19 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& routing_ctx = g_vpr_ctx.routing();
 
-    std::vector<float> rr_costs(device_ctx.rr_nodes.size());
+    std::vector<float> rr_costs(device_ctx.rr_graph.num_nodes());
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         float cost = get_router_expansion_cost(
-            routing_ctx.rr_node_route_inf[inode],
+            routing_ctx.rr_node_route_inf[(size_t)rr_id],
             draw_state->show_router_expansion_cost);
-        rr_costs[inode] = cost;
+        rr_costs[(size_t)rr_id] = cost;
     }
 
     bool all_nan = true;
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        if (std::isinf(rr_costs[inode])) {
-            rr_costs[inode] = NAN;
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        if (std::isinf(rr_costs[(size_t)rr_id])) {
+            rr_costs[(size_t)rr_id] = NAN;
         } else {
             all_nan = false;
         }
@@ -4195,15 +4198,15 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
                        || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES
                        || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES);
 
-    VTR_ASSERT(rr_costs.size() == device_ctx.rr_nodes.size());
+    VTR_ASSERT(rr_costs.size() == rr_graph.num_nodes());
 
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        if (std::isnan(rr_costs[inode])) continue;
+    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+        if (std::isnan(rr_costs[(size_t)rr_id])) continue;
 
-        min_cost = std::min(min_cost, rr_costs[inode]);
-        max_cost = std::max(max_cost, rr_costs[inode]);
+        min_cost = std::min(min_cost, rr_costs[(size_t)rr_id]);
+        max_cost = std::max(max_cost, rr_costs[(size_t)rr_id]);
     }
     if (min_cost == std::numeric_limits<float>::infinity()) min_cost = 0;
     if (max_cost == -std::numeric_limits<float>::infinity()) max_cost = 0;
@@ -4211,7 +4214,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
 
     //Draw the nodes in ascending order of value, this ensures high valued nodes
     //are not overdrawn by lower value ones (e.g-> when zoomed-out far)
-    std::vector<int> nodes(device_ctx.rr_nodes.size());
+    std::vector<int> nodes(rr_graph.num_nodes());
     std::iota(nodes.begin(), nodes.end(), 0);
     auto cmp_ascending_cost = [&](int lhs_node, int rhs_node) {
         if (lowest_cost_first) {

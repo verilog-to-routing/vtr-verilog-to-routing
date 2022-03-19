@@ -15,9 +15,9 @@ Welcome to Verilog-to-Routing's documentation!
 .. image:: https://www.verilogtorouting.org/img/des90_routing_util.gif
     :width: 30%
 
-Form more information on the Verilog-to-Routing (VTR) project see :ref:`vtr` and :ref:`vtr_cad_flow`.
+For more information on the Verilog-to-Routing (VTR) project see :ref:`vtr` and :ref:`vtr_cad_flow`.
 
-For documentation and tutorials on the FPGA architecture description langauge see: :ref:`fpga_architecture_description`.
+For documentation and tutorials on the FPGA architecture description language see: :ref:`fpga_architecture_description`.
 
 For more specific documentation about VPR see :ref:`vpr`.
 
@@ -32,7 +32,6 @@ For more specific documentation about VPR see :ref:`vpr`.
    :maxdepth: 2
    :caption: Usage
 
-   building/index
    vtr/index
    arch/index
    vpr/index

@@ -1,5 +1,6 @@
 #ifndef VTR_ND_MATRIX_H
 #define VTR_ND_MATRIX_H
+#include <algorithm>
 #include <array>
 #include <memory>
 

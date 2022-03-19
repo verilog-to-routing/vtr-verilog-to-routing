@@ -438,8 +438,8 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
         util::RoutingCosts delay_costs;
         util::RoutingCosts base_costs;
         int total_path_count = 0;
-        std::vector<bool> node_expanded(device_ctx.rr_nodes.size());
-        std::vector<util::Search_Path> paths(device_ctx.rr_nodes.size());
+        std::vector<bool> node_expanded(device_ctx.rr_graph.num_nodes());
+        std::vector<util::Search_Path> paths(device_ctx.rr_graph.num_nodes());
 
         // Each point in a sample region contains a set of nodes. Each node becomes a starting node
         // for the dijkstra expansions, and different paths are explored to reach different locations.

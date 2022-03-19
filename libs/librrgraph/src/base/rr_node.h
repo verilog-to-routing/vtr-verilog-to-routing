@@ -1,8 +1,11 @@
 #ifndef RR_NODE_H
 #define RR_NODE_H
 
+#include <limits>
+#include "physical_types.h"
 #include "rr_node_fwd.h"
-#include "vpr_types.h"
+#include "rr_graph_fwd.h"
+#include "rr_node_types.h"
 
 #include "vtr_range.h"
 
@@ -88,14 +91,10 @@ class t_rr_node {
     int edge_sink_node(t_edge_size iedge) const;
     short edge_switch(t_edge_size iedge) const;
 
-    bool edge_is_configurable(t_edge_size iedge) const;
-
     signed short length() const;
 
     RRIndexedDataId cost_index() const;
     short rc_index() const;
-
-    bool validate() const;
 
   public: //Mutators
     void set_side(e_side);

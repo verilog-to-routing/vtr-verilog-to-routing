@@ -6,7 +6,7 @@ yosys -import
 # Read the hardware decription Verilog
 read_verilog -nomem2reg -nolatches $env(TCL_CIRCUIT);
 # Check that cells match libraries and find top module
-hierarchy -check -auto-top;
+hierarchy -check -auto-top -purge_lib;
 
 # Make name convention more readable
 autoname;

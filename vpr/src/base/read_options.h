@@ -36,6 +36,8 @@ struct t_options {
     argparse::ArgValue<std::string> write_router_lookahead;
     argparse::ArgValue<std::string> read_router_lookahead;
 
+    argparse::ArgValue<std::string> write_block_usage;
+
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;
     argparse::ArgValue<bool> do_placement;
@@ -133,6 +135,8 @@ struct t_options {
     argparse::ArgValue<float> place_crit_limit;
     argparse::ArgValue<int> place_constraint_expand;
     argparse::ArgValue<bool> place_constraint_subtile;
+    argparse::ArgValue<int> floorplan_num_horizontal_partitions;
+    argparse::ArgValue<int> floorplan_num_vertical_partitions;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
@@ -208,6 +212,9 @@ struct t_options {
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;
     argparse::ArgValue<std::string> echo_dot_timing_graph_node;
+    argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_input_handling;
+    argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
+    argparse::ArgValue<std::string> write_timing_summary;
 };
 
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);

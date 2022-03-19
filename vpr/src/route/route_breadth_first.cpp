@@ -72,7 +72,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
     BinaryHeap heap;
     heap.init_heap(device_ctx.grid);
 
-    OveruseInfo overuse_info(device_ctx.rr_nodes.size());
+    OveruseInfo overuse_info(device_ctx.rr_graph.num_nodes());
 
     for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
         VTR_LOG("Routing Iteration %d\n", itry);
@@ -387,8 +387,8 @@ static void breadth_first_expand_neighbours(BinaryHeap& heap, int inode, float p
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
-    for (RREdgeId from_edge : device_ctx.rr_nodes.edge_range(RRNodeId(inode))) {
-        RRNodeId to_node = device_ctx.rr_nodes.edge_sink_node(from_edge);
+    for (RREdgeId from_edge : rr_graph.edge_range(RRNodeId(inode))) {
+        RRNodeId to_node = device_ctx.rr_graph.rr_nodes().edge_sink_node(from_edge);
 
         vtr::Point<int> lower_left(route_ctx.route_bb[net_id].xmin, route_ctx.route_bb[net_id].ymin);
         vtr::Point<int> upper_right(route_ctx.route_bb[net_id].xmax, route_ctx.route_bb[net_id].ymax);

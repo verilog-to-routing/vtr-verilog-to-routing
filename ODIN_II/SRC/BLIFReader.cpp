@@ -349,31 +349,36 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         char* subcircuit_stripped_name = get_stripped_name(subcircuit_name);
         /* check for coarse-grain configuration */
         if (configuration.coarsen) {
-            new_node->type = yosys_subckt_strmap[subcircuit_name];
+            if (yosys_subckt_strmap.find(subcircuit_name) != yosys_subckt_strmap.end())
+                new_node->type = yosys_subckt_strmap[subcircuit_name];
 
-            if (subcircuit_stripped_name && new_node->type == NO_OP)
+            if (new_node->type == NO_OP && yosys_subckt_strmap.find(subcircuit_stripped_name) != yosys_subckt_strmap.end())
                 new_node->type = yosys_subckt_strmap[subcircuit_stripped_name];
 
             if (new_node->type == NO_OP) {
                 char new_name[READ_BLIF_BUFFER];
                 vtr::free(new_node->name);
                 /* in case of weird names, need to add memories manually */
-                if (ports->count == 5) {
+                int sc_spot = -1;
+                char* yosys_subckt_str = NULL;
+                if ((yosys_subckt_str = retrieve_node_type_from_subckt_name(subcircuit_stripped_name)) != NULL) {
                     /* specify node type */
-                    new_node->type = yosys_subckt_strmap[SINGLE_PORT_RAM_string];
+                    new_node->type = yosys_subckt_strmap[yosys_subckt_str];
                     /* specify node name */
-                    odin_sprintf(new_name, "\\%s~%ld", SINGLE_PORT_RAM_string, hard_block_number - 1);
-                    new_node->name = make_full_ref_name(new_name, NULL, NULL, NULL, -1);
-                } else if (ports->count == 9) {
+                    odin_sprintf(new_name, "\\%s~%ld", yosys_subckt_str, hard_block_number - 1);
+                } else if ((sc_spot = sc_lookup_string(hard_block_names, subcircuit_stripped_name)) != -1) {
                     /* specify node type */
-                    new_node->type = yosys_subckt_strmap[DUAL_PORT_RAM_string];
+                    new_node->type = HARD_IP;
                     /* specify node name */
-                    odin_sprintf(new_name, "\\%s~%ld", DUAL_PORT_RAM_string, hard_block_number - 1);
-                    new_node->name = make_full_ref_name(new_name, NULL, NULL, NULL, -1);
+                    odin_sprintf(new_name, "\\%s~%ld", subcircuit_stripped_name, hard_block_number - 1);
                 } else {
                     error_message(PARSE_BLIF, unknown_location,
-                                  "Unsupported sub-circuit type (%s) in BLIF file.\n", subcircuit_name);
+                                  "Unsupported subcircuit type (%s) in BLIF file.\n", subcircuit_name);
                 }
+                new_node->name = make_full_ref_name(new_name, NULL, NULL, NULL, -1);
+
+                // CLEAN UP
+                vtr::free(yosys_subckt_str);
             }
 
             if (new_node->type == BRAM) {
@@ -410,7 +415,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
 
     if (!model)
         error_message(PARSE_BLIF, unknown_location,
-                      "Failed to retrieve sub-circuit model (%s)\n", subcircuit_name);
+                      "Failed to retrieve subcircuit model (%s)\n", subcircuit_name);
 
     /* Add input and output ports to the new node. */
     else {
@@ -481,7 +486,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         }
 
         // Create a fake ast node.
-        if (!configuration.coarsen) {
+        if (!configuration.coarsen || new_node->type == HARD_IP) {
             new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
             new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
             new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
@@ -2147,8 +2152,11 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
     char* ptr;
     char* buffer = NULL;
     attr_t* attributes = new_node->attributes;
+    operation_list op = (yosys_subckt_strmap.find(subckt_name) != yosys_subckt_strmap.end())
+                            ? yosys_subckt_strmap[subckt_name]
+                            : NO_OP;
 
-    if (need_params(yosys_subckt_strmap[subckt_name])) {
+    if (need_params(op)) {
         while (getbline(buffer, READ_BLIF_BUFFER, file)) {
             my_location.line += 1;
             ptr = vtr::strtok(buffer, TOKENS, file, buffer);

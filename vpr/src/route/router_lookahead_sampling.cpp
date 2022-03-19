@@ -24,7 +24,7 @@ static int manhattan_distance(const vtr::Point<int>& a, const vtr::Point<int>& b
 // This builds a rectangle from (x, y) to (x+1, y+1)
 static vtr::Rect<int> bounding_box_for_node(RRNodeId node) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
     int x = rr_graph.node_xlow(node);
     int y = rr_graph.node_ylow(node);
 
@@ -198,12 +198,11 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     std::vector<SampleRegion> sample_regions;
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& rr_nodes = device_ctx.rr_nodes;
     std::vector<vtr::Matrix<int>> segment_counts(num_segments);
 
     // compute bounding boxes for each segment type
     std::vector<vtr::Rect<int>> bounding_box_for_segment(num_segments, vtr::Rect<int>());
-    for (auto& node : rr_nodes) {
+    for (auto& node : rr_graph.rr_nodes()) {
         if (rr_graph.node_type(node.id()) != CHANX && rr_graph.node_type(node.id()) != CHANY) continue;
         if (rr_graph.node_capacity(node.id()) == 0 || rr_graph.num_edges(node.id()) == 0) continue;
         int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(node.id())].seg_index;
@@ -221,7 +220,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     }
 
     // count sample points
-    for (const auto& node : rr_nodes) {
+    for (const auto& node : rr_graph.rr_nodes()) {
         int seg_index, x, y;
         std::tie(seg_index, x, y) = get_node_info(node, num_segments);
 
@@ -247,7 +246,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     }
 
     // collect the node indices for each segment type at the selected sample points
-    for (const auto& node : rr_nodes) {
+    for (const auto& node : rr_graph.rr_nodes()) {
         int seg_index, x, y;
         std::tie(seg_index, x, y) = get_node_info(node, num_segments);
 

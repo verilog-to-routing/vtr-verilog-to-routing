@@ -59,8 +59,7 @@ vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     vtr::Matrix<float> avail({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        RRNodeId rr_node = RRNodeId(inode);
+    for (const RRNodeId& rr_node : rr_graph.nodes()) {
         const short& rr_node_capacity = rr_graph.node_capacity(rr_node);
 
         if (rr_graph.node_type(rr_node) == CHANX && rr_type == CHANX) {

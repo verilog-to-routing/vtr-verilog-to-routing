@@ -46,10 +46,10 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
     ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,
         *router_lookahead,
-        device_ctx.rr_nodes,
+        device_ctx.rr_graph.rr_nodes(),
         &device_ctx.rr_graph,
         device_ctx.rr_rc_data,
-        device_ctx.rr_switch_inf,
+        device_ctx.rr_graph.rr_switch(),
         g_vpr_ctx.mutable_routing().rr_node_route_inf);
 
     // Find the cheapest route if possible.
@@ -79,21 +79,21 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
 // Find a source and a sink by walking edges.
 std::tuple<size_t, size_t, int> find_source_and_sink() {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
 
     // Current longest walk
     std::tuple<size_t, size_t, int> longest = std::make_tuple(0, 0, 0);
 
     // Start from each RR node
-    for (size_t id = 0; id < rr_graph.size(); id++) {
+    for (size_t id = 0; id < rr_graph.num_nodes(); id++) {
         RRNodeId source(id), sink = source;
         for (int hops = 0; hops < kMaxHops; hops++) {
             // Take the first edge, if there is one.
-            auto edge = rr_graph.first_edge(sink);
-            if (edge == rr_graph.last_edge(sink)) {
+            auto edge = rr_graph.node_first_edge(sink);
+            if (edge == rr_graph.node_last_edge(sink)) {
                 break;
             }
-            sink = rr_graph.edge_sink_node(edge);
+            sink = rr_graph.rr_nodes().edge_sink_node(edge);
 
             // If this is the new longest walk, store it.
             if (hops > std::get<2>(longest)) {

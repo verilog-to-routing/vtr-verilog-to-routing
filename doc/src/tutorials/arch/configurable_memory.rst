@@ -258,14 +258,11 @@ A memory block with a reconfigurable aspect ratio.
           </interconnect>
         </mode>
 
-
-
       <fc_in type="frac"> 0.15</fc_in>
       <fc_out type="frac"> 0.125</fc_out>
+
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc type="col" start="2" repeat="5" priority="2"/>
-      </gridlocations>
+
     </pb_type>
 
 

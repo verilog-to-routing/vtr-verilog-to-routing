@@ -669,7 +669,38 @@ char* get_stripped_name(const char* subcircuit_name) {
         subcircuit_stripped_name[5] = '\0';
     }
 
+    if (subcircuit_stripped_name == NULL)
+        return (vtr::strdup(subcircuit_name));
+
     return (subcircuit_stripped_name);
+}
+
+/**
+ *---------------------------------------------------------------------------------------------
+ * (function: retrieve_node_type_from_subckt_name)
+ * 
+ * @brief to retrieve the actual node type from the subcircuit name 
+ * in cases where yosys generates a weird name, which includes port 
+ * widths and additional information in a subcircuit name 
+ * 
+ * @param stripped_name subcircuit irregular name
+ * 
+ * @return the actual subcircuit name if it was successfully 
+ * retrieved, otherwise NULL pointer
+ * -------------------------------------------------------------------------------------------
+ */
+char* retrieve_node_type_from_subckt_name(const char* subcircuit_name) {
+    /* validation */
+    oassert(subcircuit_name);
+
+    /* looking for Yosys style generated RTLIL module name */
+    if (true) {
+        for (auto pair : yosys_subckt_strmap)
+            if (std::string(subcircuit_name).find(pair.first, 0) != std::string::npos)
+                return vtr::strdup(pair.first.c_str());
+    }
+
+    return (NULL);
 }
 
 /*

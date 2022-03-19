@@ -74,8 +74,15 @@ inline void BLIF::Writer::_write(const netlist_t* netlist) {
     output_blif(this->output_file, netlist);
 }
 
-inline void BLIF::Writer::_create_file(const file_type_e /* file_type */) {
-    this->output_file = create_blif(global_args.output_file.value().c_str());
+inline void BLIF::Writer::_create_file(const char* file_name, const file_type_e file_type) {
+    // validate the file_name pionter
+    oassert(file_name);
+    // validate the file type
+    if (file_type != _BLIF)
+        error_message(UTIL, unknown_location,
+                      "BLIF back-end entity cannot create file types(%d) other than BLIF", file_type);
+    // create the BLIF file and set it as the output file
+    this->output_file = create_blif(file_name);
 }
 /**
  * ---------------------------------------------------------------------------------------------

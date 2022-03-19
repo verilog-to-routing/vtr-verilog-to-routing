@@ -56,7 +56,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    const int num_switches = device_ctx.rr_switch_inf.size();
+    const int num_switches = rr_graph.num_rr_switches();
 
     VTR_LOG("\n");
     VTR_LOG("Checking to ensure routing is legal...\n");
@@ -74,8 +74,8 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
 
     check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type);
 
-    auto connected_to_route = std::make_unique<bool[]>(device_ctx.rr_nodes.size());
-    std::fill_n(connected_to_route.get(), device_ctx.rr_nodes.size(), false);
+    auto connected_to_route = std::make_unique<bool[]>(rr_graph.num_nodes());
+    std::fill_n(connected_to_route.get(), rr_graph.num_nodes(), false);
 
     max_pins = 0;
     for (auto net_id : cluster_ctx.clb_nlist.nets())
@@ -499,9 +499,9 @@ void recompute_occupancy_from_scratch() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* First set the occupancy of everything to zero. */
-
-    for (size_t inode_idx = 0; inode_idx < device_ctx.rr_nodes.size(); inode_idx++)
-        route_ctx.rr_node_route_inf[inode_idx].set_occ(0);
+    /*FIXME: the type cast should be eliminated by making rr_node_route_inf adapt RRNodeId */
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes())
+        route_ctx.rr_node_route_inf[(size_t)rr_id].set_occ(0);
 
     /* Now go through each net and count the tracks and pins used everywhere */
 
@@ -536,7 +536,7 @@ void recompute_occupancy_from_scratch() {
             /* Will always be 0 for pads or SINK classes. */
             for (ipin = 0; ipin < num_local_opins; ipin++) {
                 inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
-                VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_nodes.size());
+                VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_graph.num_nodes());
                 route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
             }
         }
@@ -592,9 +592,9 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (inode < 0 || inode >= (int)device_ctx.rr_nodes.size()) {
+    if (inode < 0 || inode >= (int)device_ctx.rr_graph.num_nodes()) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_nodes.size() - 1);
+                        "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_graph.num_nodes() - 1);
     }
     check_rr_node(inode, route_type, device_ctx);
 }

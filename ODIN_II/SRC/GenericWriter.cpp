@@ -37,6 +37,7 @@ GenericWriter::GenericWriter()
     : GenericIO() {
     this->output_file = NULL;
     this->blif_writer = NULL;
+    this->verilog_writer = NULL;
 }
 
 GenericWriter::~GenericWriter() {
@@ -44,6 +45,8 @@ GenericWriter::~GenericWriter() {
         fclose(this->output_file);
     if (this->blif_writer)
         delete this->blif_writer;
+    if (this->verilog_writer)
+        delete this->verilog_writer;
 }
 
 inline void GenericWriter::_write(const netlist_t* netlist) {
@@ -52,12 +55,12 @@ inline void GenericWriter::_write(const netlist_t* netlist) {
             this->write_blif(netlist);
             break;
         }
+        case (file_type_e::_VERILOG): {
+            this->write_verilog(netlist);
+            break;
+        }
         /**
          * [TODO]
-         *  case (file_type_e::_VERILOG): {
-         * netlist = this->write_verilog();
-         * break;
-         * }
          *  case (file_type_e::_EBLIF): {
          * netlist = this->write_verilog();
          * break;
@@ -79,22 +82,30 @@ inline void GenericWriter::write_blif(const netlist_t* netlist) {
     this->blif_writer->_write(netlist);
 }
 
-inline void GenericWriter::_create_file(const file_type_e file_type) {
+inline void GenericWriter::write_verilog(const netlist_t* netlist) {
+    oassert(this->verilog_writer);
+    this->verilog_writer->_write(netlist);
+}
+
+inline void GenericWriter::_create_file(const char* file_name, const file_type_e file_type) {
+    // validate the file_name pointer
+    oassert(file_name);
+
     switch (file_type) {
         case (file_type_e::_BLIF): {
             if (!this->blif_writer) {
                 this->blif_writer = new BLIF::Writer();
-                this->blif_writer->_create_file(file_type);
+                this->blif_writer->_create_file(file_name, file_type);
             }
+            break;
+        }
+        case (file_type_e::_VERILOG): {
+            this->verilog_writer = new Verilog::Writer();
+            this->verilog_writer->_create_file(file_name, file_type);
             break;
         }
         /**
          * [TODO]
-         *  case (file_type_e::_VERILOG): {
-         * this->verilog_writer = new VERILOG::Writer();
-         * this->verilog_writer->_create_file();
-         * break;
-         * }
          *  case (file_type_e::_EBLIF): {
          * this->eblif_writer = new EBLIF::Writer();
          * this->eblif_writer->_create_file();

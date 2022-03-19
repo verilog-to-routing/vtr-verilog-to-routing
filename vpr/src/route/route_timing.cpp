@@ -322,7 +322,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
      */
     bool routing_is_successful = false;
     WirelengthInfo wirelength_info;
-    OveruseInfo overuse_info(device_ctx.rr_nodes.size());
+    OveruseInfo overuse_info(device_ctx.rr_graph.num_nodes());
     tatum::TimingPathInfo critical_path;
     int itry; //Routing iteration number
     int itry_conflicted_mode = 0;
@@ -339,10 +339,10 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     ConnectionRouter router(
         device_ctx.grid,
         *router_lookahead,
-        device_ctx.rr_nodes,
+        device_ctx.rr_graph.rr_nodes(),
         &device_ctx.rr_graph,
         device_ctx.rr_rc_data,
-        device_ctx.rr_switch_inf,
+        device_ctx.rr_graph.rr_switch(),
         route_ctx.rr_node_route_inf);
 
     // Make sure template type ConnectionRouter is a ConnectionRouterInterface.
@@ -1668,10 +1668,10 @@ static size_t calculate_wirelength_available() {
 
     size_t available_wirelength = 0;
     // But really what's happening is that this for loop iterates over every node and determines the available wirelength
-    for (size_t i = 0; i < device_ctx.rr_nodes.size(); ++i) {
-        const t_rr_type channel_type = rr_graph.node_type(RRNodeId(i));
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        const t_rr_type channel_type = rr_graph.node_type(rr_id);
         if (channel_type == CHANX || channel_type == CHANY) {
-            available_wirelength += rr_graph.node_capacity(RRNodeId(i)) * rr_graph.node_length(RRNodeId(i));
+            available_wirelength += rr_graph.node_capacity(rr_id) * rr_graph.node_length(rr_id);
         }
     }
     return available_wirelength;
@@ -1944,7 +1944,7 @@ static t_bb calc_current_bb(const t_trace* head) {
     bb.ymax = 0;
 
     for (const t_trace* elem = head; elem != nullptr; elem = elem->next) {
-        const t_rr_node& node = device_ctx.rr_nodes[elem->index];
+        const t_rr_node& node = device_ctx.rr_graph.rr_nodes()[elem->index];
         //The router interprets RR nodes which cross the boundary as being
         //'within' of the BB. Only those which are *strictly* out side the
         //box are excluded, hence we use the nodes xhigh/yhigh for xmin/xmax,

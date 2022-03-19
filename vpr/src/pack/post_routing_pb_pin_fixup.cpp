@@ -159,7 +159,7 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
             if (!rr_node) {
                 continue;
             }
-            VTR_ASSERT((size_t)rr_node < device_ctx.rr_nodes.size());
+            VTR_ASSERT((size_t)rr_node < device_ctx.rr_graph.num_nodes());
 
             /* If the node has been visited on the other side, we just skip it */
             if (visited_rr_nodes.end() != std::find(visited_rr_nodes.begin(), visited_rr_nodes.end(), RRNodeId(rr_node))) {

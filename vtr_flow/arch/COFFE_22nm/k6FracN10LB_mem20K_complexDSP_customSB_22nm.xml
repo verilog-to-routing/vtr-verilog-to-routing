@@ -423,7 +423,6 @@
     <model name="fp16_sop2_accum">
       <input_ports>
         <port name="clk" is_clock="1"/>  
-        <port name="reset" clock="clk" combinational_sink_ports="result chainout"/>
         <port name="mode_sigs" clock="clk" combinational_sink_ports="result chainout"/>
         <port name="reset" clock="clk" combinational_sink_ports="result chainout"/>
         <port name="top_a" clock="clk" combinational_sink_ports="result chainout"/>

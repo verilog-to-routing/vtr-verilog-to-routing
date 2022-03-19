@@ -246,7 +246,7 @@ set(SANITIZE_FLAGS "")
 if(VTR_ENABLE_SANITIZE)
     #Enable sanitizers
     # -fuse-ld=gold force the gold linker to be used (required for sanitizers, but not enabled by default on some systems)
-    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fsanitize=undefined -fuse-ld=gold")
+    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fsanitize=undefined -fuse-ld=gold -static-libasan")
     message(STATUS "SANITIZE_FLAGS: ${SANITIZE_FLAGS}")
 endif()
 
@@ -451,3 +451,9 @@ list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/vpr")
 list(APPEND DIRS_TO_FORMAT_PY "${CMAKE_CURRENT_SOURCE_DIR}/vtr_flow")
 
 include(AutoPyFormat)
+
+
+#
+# Python Environment setup
+#
+include(PyEnv)

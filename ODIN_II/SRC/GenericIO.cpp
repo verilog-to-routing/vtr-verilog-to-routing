@@ -44,7 +44,7 @@ void GenericIO::_write(const netlist_t* /* netlist */) {
                   "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
 }
 
-void GenericIO::_create_file(const file_type_e /* file_type */) {
+void GenericIO::_create_file(const char* /* file_name */, const file_type_e /* file_type */) {
     error_message(UTIL, unknown_location,
                   "Function \"%s\" is called for reading the input file without definition provided!\n", __PRETTY_FUNCTION__);
 }

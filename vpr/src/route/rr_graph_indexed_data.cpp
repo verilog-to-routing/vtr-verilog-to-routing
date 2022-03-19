@@ -424,10 +424,10 @@ static std::vector<size_t> count_rr_segment_types() {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        if (rr_graph.node_type(RRNodeId(inode)) != CHANX && rr_graph.node_type(RRNodeId(inode)) != CHANY) continue;
+    for (const RRNodeId& id : rr_graph.nodes()) {
+        if (rr_graph.node_type(id) != CHANX && rr_graph.node_type(id) != CHANY) continue;
 
-        auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
+        auto cost_index = rr_graph.node_cost_index(id);
 
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
@@ -497,7 +497,6 @@ static float get_delay_normalization_fac() {
 static void load_rr_indexed_data_T_values() {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& rr_nodes = device_ctx.rr_nodes;
     auto& rr_indexed_data = device_ctx.rr_indexed_data;
 
     auto fan_in_list = get_fan_in_list();
@@ -525,14 +524,14 @@ static void load_rr_indexed_data_T_values() {
      * The median of R and C values for each cost index is assigned to the indexed
      * data.
      */
-    for (size_t inode = 0; inode < rr_nodes.size(); inode++) {
-        t_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        t_rr_type rr_type = rr_graph.node_type(rr_id);
 
         if (rr_type != CHANX && rr_type != CHANY) {
             continue;
         }
 
-        auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
+        auto cost_index = rr_graph.node_cost_index(rr_id);
 
         auto str = rr_graph.node_coordinate_to_string(RRNodeId(inode));
 
@@ -542,17 +541,18 @@ static void load_rr_indexed_data_T_values() {
         double avg_switch_Cinternal = 0;
         int num_switches = 0;
         short buffered = UNDEFINED;
-        calculate_average_switch(inode, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered, fan_in_list);
+        calculate_average_switch((size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered, fan_in_list);
+
         if (num_switches == 0) {
-            VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", inode,
-                         rr_graph.node_type_string(RRNodeId(inode)), str.c_str());
+              VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", rr_id,
+                         rr_graph.node_type_string(rr_id, str.c_str());
             continue;
         }
         VTR_ASSERT(num_switches > 0);
 
         num_nodes_of_index[cost_index]++;
-        C_total[cost_index].push_back(rr_graph.node_C(RRNodeId(inode)));
-        R_total[cost_index].push_back(rr_graph.node_R(RRNodeId(inode)));
+        C_total[cost_index].push_back(rr_graph.node_C(rr_id));
+        R_total[cost_index].push_back(rr_graph.node_R(rr_id));
 
         switch_R_total[cost_index].push_back(avg_switch_R);
         switch_T_total[cost_index].push_back(avg_switch_T);
@@ -635,7 +635,6 @@ static void load_rr_indexed_data_T_values() {
 static void calculate_average_switch(int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    const auto& rr_nodes = device_ctx.rr_nodes.view();
 
     auto node = RRNodeId(inode);
 
@@ -647,7 +646,7 @@ static void calculate_average_switch(int inode, double& avg_switch_R, double& av
     for (const auto& edge : fan_in_list[node]) {
         /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
         if (rr_graph.node_type(node) == CHANX || rr_graph.node_type(node) == CHANY) {
-            int switch_index = rr_nodes.edge_switch(edge);
+            int switch_index = rr_graph.rr_nodes().edge_switch(edge);
 
             if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::SHORT) continue;
 
