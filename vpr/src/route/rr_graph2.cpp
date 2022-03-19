@@ -967,6 +967,9 @@ static void load_chan_rr_indices(const int max_chan_width,
     }
 }
 
+
+
+
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
  * TODO: these building functions should only talk to a RRGraphBuilder object
  */
@@ -974,6 +977,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
                                   int* index) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
+
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
             if (grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0) {
@@ -1046,7 +1050,32 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                     }
                 }
 
-                // Reserve nodes in lookup to save memory
+                /* #TODO:BUG PRONE: There maybe a case when the total number of pins of the mode(1) be higher than mode(2). However, the number of output pins of mode(2) be higher than mode(1) */
+                /* choose the pb_type with the highest number of pins */
+                const t_pb_graph_node* pb_graph_node = nullptr;
+                for(const auto& sub_tile : type->sub_tiles) {
+                    for(auto equivalent_site : sub_tile.equivalent_sites) {
+                        auto curr_pb_graph_node = equivalent_site->pb_graph_head;
+                        if(pb_graph_node == nullptr || ((pb_graph_node->primitive_pins).size() > (curr_pb_graph_node->primitive_pins).size())) {
+                            pb_graph_node = curr_pb_graph_node;
+                        }
+                    }
+                }
+                /* Reserve nodes for primitives in lookup */
+                for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+                    int x_tile = x + width_offset;
+                    for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                        int y_tile = y + height_offset;
+                        rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, PRIMITIVE_IPIN,
+                                                                     pb_graph_node->num_primitive_input_pin, e_side::TOP);
+                        rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, PRIMITIVE_OPIN,
+                                                                     pb_graph_node->num_primitive_output_pin, e_side::TOP);
+                    }
+                }
+
+
+
+                // Reserve nodes for top-level blocks in lookup to save memory
                 for (e_side side : wanted_sides) {
                     for (int width_offset = 0; width_offset < type->width; ++width_offset) {
                         int x_tile = x + width_offset;
@@ -1057,6 +1086,26 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                         }
                     }
                 }
+
+                //Assign indices for primitives
+                for(int ipin = 0; ipin < type->num_pins; ++ipin) {
+                    bool assigned_to_rr_node = false;
+                    for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+                        int x_tile = x + width_offset;
+                        for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                            int y_tile = y + height_offset;
+                            auto primitive_pin = pb_graph_node->primitive_pins[ipin];
+                            if(primitive_pin == RECEIVER)
+                                rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, PRIMITIVE_IPIN, ipin, e_side::TOP);
+                            else if(primitive_pin == DRIVER)
+                                rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, PRIMITIVE_OPIN, ipin, e_side::TOP);
+                        }
+                    }
+                    if(assigned_to_rr_node)
+                        ++(*index);
+                }
+
+
 
                 //Assign indices for IPINs and OPINs at all offsets from root
                 for (int ipin = 0; ipin < type->num_pins; ++ipin) {
@@ -1069,7 +1118,6 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                 if (type->pinloc[width_offset][height_offset][side][ipin]) {
                                     int iclass = type->pin_class[ipin];
                                     auto class_type = type->class_inf[iclass].type;
-
                                     if (class_type == DRIVER) {
                                         rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, OPIN, ipin, side);
                                         assigned_to_rr_node = true;
