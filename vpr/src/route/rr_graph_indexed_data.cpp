@@ -208,7 +208,37 @@ std::vector<int> find_ortho_cost_index(std::vector<t_segment_inf> segment_inf_x,
                                        e_cost_indices start_channel_cost) {
     auto segment_inf_parallel = parallel_axis == X_AXIS ? segment_inf_x : segment_inf_y;
     auto segment_inf_perp = parallel_axis == X_AXIS ? segment_inf_y : segment_inf_x;
+    /*EXPERIMENTAL*/ 
 
+    #ifdef MOST_COMMON_ORTHO_COST_INDECES
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    int num_segments = segment_inf_x.size() + segment_inf_y.size() ; 
+    std::vector<std::vector<size_t>> dest_nodes_count (num_segments,std::vector<size_t> (num_segments,0)); 
+
+    std::vector<int> ortho_cost_indeces (dest_nodes_count.size(),0); 
+
+    for (const RRNodeId& rr_node : rr_graph.nodes()){
+        for (size_t iedge = 0 ; iedge < rr_graph.num_edges(rr_node) ; ++iedge){
+            RRNodeId to_node = rr_graph.edge_sink_node(rr_node, iedge);
+            size_t from_node_cost_index = (size_t)rr_graph.node_cost_index(rr_node)-CHANX_COST_INDEX_START; 
+            size_t to_node_cost_index = (size_t)rr_graph.node_cost_index(to_node)-CHANX_COST_INDEX_START; 
+
+            dest_nodes_count[from_node_cost_index][to_node_cost_index]++; 
+
+        }
+    }
+
+    for (int cost_index=0 ; cost_index < dest_nodes_count.size(); cost_index++){
+        ortho_cost_indeces[cost_index] = *std::max_element(dest_nodes_count[cost_index].begin(),dest_nodes_count[cost_index].end()); 
+
+    }
+
+    return 
+    #endif    
+
+    
     /*Update seg_index */
 
     for (int i = 0; i < (int)segment_inf_perp.size(); ++i)
@@ -533,7 +563,7 @@ static void load_rr_indexed_data_T_values() {
 
         auto cost_index = rr_graph.node_cost_index(rr_id);
 
-        auto str = rr_graph.node_coordinate_to_string(RRNodeId(inode));
+        auto node_cords = rr_graph.node_coordinate_to_string(RRNodeId(rr_id));
 
         /* get average switch parameters */
         double avg_switch_R = 0;
@@ -545,7 +575,7 @@ static void load_rr_indexed_data_T_values() {
 
         if (num_switches == 0) {
               VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", rr_id,
-                         rr_graph.node_type_string(rr_id, str.c_str());
+                         rr_graph.node_type_string(rr_id), node_cords.c_str());
             continue;
         }
         VTR_ASSERT(num_switches > 0);
