@@ -65,7 +65,7 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width
         for (int l = 0; l < 4; ++l) {
             for (int k = 0; k < 4; ++k) {
                 fprintf(out, "Side %d to %d\n", l, k);
-                int chan_width = (k == 0 || k == 3) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
+                int chan_width = (l == 0 || l == 2) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
                 for (int j = 0; j < chan_width; ++j) {
                     fprintf(out, "%d: ", j);
                     for (unsigned i = 0; i < switch_block_conn[l][k][j].size(); ++i) {
@@ -156,7 +156,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             if (to_side == RIGHT) { /* CHANX to CHANX */
                 to_track = from_track;
             } else if (to_side == TOP) { /* from CHANX to CHANY */
-                to_track = to_chan_width - 1 - from_track % to_chan_width;
+                to_track = to_chan_width - 1 - from_track;
             } else if (to_side == BOTTOM) {
                 to_track = from_track;
             }
@@ -168,7 +168,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             } else if (to_side == TOP) { /* from CHANX to CHANY */
                 to_track = from_track;
             } else if (to_side == BOTTOM) {
-                to_track = to_chan_width - 1 - from_track % to_chan_width;
+                to_track = to_chan_width - 1 - from_track;
             }
         }
 
@@ -178,7 +178,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             } else if (to_side == LEFT) { /* from CHANY to CHANX */
                 to_track = from_track;
             } else if (to_side == RIGHT) {
-                to_track = to_chan_width - 1 - from_track % to_chan_width;
+                to_track = to_chan_width - 1 - from_track;
             }
         }
 
@@ -186,7 +186,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             if (to_side == BOTTOM) { /* CHANY to CHANY */
                 to_track = from_track;
             } else if (to_side == LEFT) { /* from CHANY to CHANX */
-                to_track = to_chan_width - 1 - from_track % to_chan_width;
+                to_track = to_chan_width - 1 - from_track;
             } else if (to_side == RIGHT) {
                 to_track = from_track;
             }

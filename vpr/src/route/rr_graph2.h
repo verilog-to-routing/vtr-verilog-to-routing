@@ -218,6 +218,13 @@ void dump_sblock_pattern(const t_sblock_pattern& sblock_pattern,
                          const DeviceGrid& grid,
                          const char* fname);
 
+
+void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
+                                       const std::vector<t_physical_tile_type>& types,
+                                       int max_chan_width,
+                                       FILE* fp);
+                
+
 void add_to_rr_node_indices(t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes, int inode);
 
 void insert_at_ptc_index(std::vector<int>& rr_indices, int ptc, int inode);

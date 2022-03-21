@@ -17,7 +17,6 @@
 #include "rr_types.h"
 
 constexpr short UN_SET = -1;
-
 /************************** Subroutines local to this module ****************/
 
 static void get_switch_type(bool is_from_sb,
@@ -1011,6 +1010,31 @@ void dump_sblock_pattern(const t_sblock_pattern& sblock_pattern,
     fclose(fp);
 }
 
+void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
+                                       const std::vector<t_physical_tile_type>& types,
+                                       int max_chan_width,FILE* fp) {
+    if (fp){
+        for (unsigned int i = 0; i < types.size(); i++) {
+            if (!track_to_pin_map[i].empty()) {
+                for (int track = 0; track < max_chan_width; ++track) {
+                    for (int width = 0; width < types[i].width; ++width) {
+                        for (int height = 0; height < types[i].height; ++height) {
+                            for (int side = 0; side < 4; ++side) {
+                                fprintf(fp,"\nTYPE:%s width:%d height:%d\n",types[i].name,width,height);
+                                fprintf(fp,"\nSIDE:%d TRACK:%d \n",side,track); 
+                                for (size_t con = 0; con < track_to_pin_map[i][track][width][height][side].size(); con++){
+                                    fprintf(fp,"%d ",track_to_pin_map[i][track][width][height][side][con]);
+
+                                }
+                                fprintf(fp,"=====================\n");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }                                     
+}
 static void load_chan_rr_indices(const int max_chan_width,
                                  const int chan_len,
                                  const int num_chans,
@@ -2319,7 +2343,7 @@ void load_sblock_pattern_lookup(const int i,
                                                             (enum e_side)to_side,
                                                             incoming_wire_label[side_cw][ichan],
                                                             switch_block_type,
-                                                            num_incoming_wires[side_cw],
+                                                            num_wire_muxes[to_side],
                                                             num_wire_muxes[to_side]);
 
                     if (sblock_pattern[i][j][side_cw][to_side][itrack][0] == UN_SET) {
@@ -2345,7 +2369,7 @@ void load_sblock_pattern_lookup(const int i,
                                                             (enum e_side)to_side,
                                                             incoming_wire_label[side_ccw][ichan],
                                                             switch_block_type,
-                                                            num_incoming_wires[side_ccw],
+                                                            num_wire_muxes[to_side],
                                                             num_wire_muxes[to_side]);
 
                     if (sblock_pattern[i][j][side_ccw][to_side][itrack][0] == UN_SET) {

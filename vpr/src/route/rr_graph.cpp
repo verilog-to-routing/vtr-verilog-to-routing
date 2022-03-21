@@ -39,7 +39,10 @@
 #include "rr_types.h"
 
 //#define VERBOSE
-extern int EDGES = 0; 
+//used for getting the exact count of each edge type and printing it to std out. 
+int RR_GRAPH_EDGES=0; 
+
+
 struct t_mux {
     int size;
     t_mux* next;
@@ -74,6 +77,9 @@ struct t_pin_loc {
 /********************* Subroutines local to this module. *******************/
 void print_rr_graph_stats();
 
+void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
+                                       const std::vector<t_physical_tile_type>& types,
+                                       int max_chan_width,FILE* fp);
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed);
 
 static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
@@ -261,10 +267,6 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                                enum e_base_cost_type base_cost_type);
 
 static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, const int delayless_switch);
-/*
-static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
-                                       const std::vector<t_physical_tile_type>& types,
-                                       int max_chan_width);*/
 
 static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
                                                               int* num_seg_details = nullptr);
@@ -735,6 +737,15 @@ static void build_rr_graph(const t_graph_type graph_type,
         track_to_pin_lookup_y[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_y[itype], Fc_in[itype], types[itype].width, types[itype].height,
                                                                           types[itype].num_pins, nodes_per_chan.y_max, segment_inf_y);
     }
+
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_TRACK_TO_PIN_MAP)) {
+        FILE* fp = vtr::fopen(getEchoFileName(E_ECHO_TRACK_TO_PIN_MAP),"w"); 
+        fprintf(fp,"X MAP:\n\n");
+        dump_track_to_pin_map(track_to_pin_lookup_y, types, nodes_per_chan.y_max, fp);
+        fprintf(fp,"\n\nY MAP:\n\n");
+        dump_track_to_pin_map(track_to_pin_lookup_x, types, nodes_per_chan.x_max, fp);
+        fclose(fp);
+    }
     /* END IPIN MAP */
 
     /* START OPIN MAP */
@@ -788,6 +799,8 @@ static void build_rr_graph(const t_graph_type graph_type,
         clock_modeling);
 
     // Verify no incremental node allocation.
+    /* AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks. 
+     * Thus this below error is logged; it's not actually an error, the node estimation needs to get fixed for dedicated clock networks. */ 
     if (rr_graph.num_nodes() > expected_node_count) {
         VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
                       expected_node_count, rr_graph.num_nodes());
@@ -1235,30 +1248,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
     return Fc;
 }
 
-/* frees the track to ipin mapping for each physical grid type */
-/*
-static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
-                                       const std::vector<t_physical_tile_type>& types,
-                                       int max_chan_width) {
-    auto& device_ctx = g_vpr_ctx.device();
 
-    for (unsigned int i = 0; i < device_ctx.physical_tile_types.size(); i++) {
-        if (!track_to_pin_map[i].empty()) {
-            for (int track = 0; track < max_chan_width; ++track) {
-                for (int width = 0; width < types[i].width; ++width) {
-                    for (int height = 0; height < types[i].height; ++height) {
-                        for (int side = 0; side < 4; ++side) {
-                            if (!track_to_pin_map[i][track][width][height][side].empty()) {
-                                track_to_pin_map[i][track][width][height][side].clear();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-*/
 /* Does the actual work of allocating the rr_graph and filling all the *
  * appropriate values.  Everything up to this was just a prelude!      */
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -1307,7 +1297,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
     /* If Fc gets clipped, this will be flagged to true */
     *Fc_clipped = false;
-    EDGES=0;
+    RR_GRAPH_EDGES=0;
 
     int num_edges = 0; 
     /* Connection SINKS and SOURCES to their pins. */
@@ -1323,7 +1313,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             rr_edges_to_create.clear();
         }
     }
-    VTR_LOG("%d SOURCE->OPIN + IPIN->SINK EDGES ACTUALLY CREATED\n",num_edges); 
+    VTR_LOG("SOURCE->OPIN and IPIN->SINK edge count:%d\n",num_edges); 
     num_edges = 0;
     /* Build opins */
     for (size_t i = 0; i < grid.width(); ++i) {
@@ -1354,8 +1344,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             }
         }
     }
-    VTR_LOG("%d OPIN->CHANX/CHANY EDGES ACTUALLY CREATED BEFORE DIRECTS\n",EDGES);
-    VTR_LOG("%d OPIN->CHANX/CHANY EDGES ACTUALLY CREATED AFTER DIRECTS\n",num_edges);
+    VTR_LOG("OPIN->CHANX/CHANY edge count before creating direct connections: %d\n",RR_GRAPH_EDGES);
+    VTR_LOG("OPIN->CHANX/CHANY edge count after creating direct connections: %d\n",num_edges);
     num_edges = 0;
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
@@ -1397,7 +1387,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             }
         }
     }
-    VTR_LOG("%d CHAN->CHAN EDGES ACTUALLY CREATED\n",num_edges);
+    VTR_LOG("CHAN->CHAN type edge count:%d\n",num_edges);
     num_edges=0;
     std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) {
     };
@@ -1412,7 +1402,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         update_chan_width = [builder](t_chan_width* c) {
             builder.update_chan_width(c);
         };
-        VTR_LOG("%d DEDICATED CLOCK NETWORK EDGES ACTUALLY CREATED\n",num_edges);
+        VTR_LOG("\n Dedicated clock network edge count: %d \n",num_edges);
     }
 
     rr_graph_builder.init_fan_in();
@@ -2769,7 +2759,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
             //VTR_ASSERT_MSG(seg_index == 0 || seg_index > 0,"seg_index map not working properly");
 
-            EDGES+=get_unidir_opin_connections(rr_graph_builder, chan, seg,
+            RR_GRAPH_EDGES+=get_unidir_opin_connections(rr_graph_builder, chan, seg,
                                         seg_type_Fc, seg_index, chan_type, seg_details,
                                         opin_node_index,
                                         rr_edges_to_create,
