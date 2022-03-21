@@ -39,7 +39,7 @@
 #include "rr_types.h"
 
 //#define VERBOSE
-
+extern int EDGES = 0; 
 struct t_mux {
     int size;
     t_mux* next;
@@ -1307,7 +1307,9 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
     /* If Fc gets clipped, this will be flagged to true */
     *Fc_clipped = false;
+    EDGES=0;
 
+    int num_edges = 0; 
     /* Connection SINKS and SOURCES to their pins. */
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
@@ -1317,10 +1319,12 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             //Create the actual SOURCE->OPIN, IPIN->SINK edges
             uniquify_edges(rr_edges_to_create);
             alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+            num_edges += rr_edges_to_create.size(); 
             rr_edges_to_create.clear();
         }
     }
-
+    VTR_LOG("%d SOURCE->OPIN + IPIN->SINK EDGES ACTUALLY CREATED\n",num_edges); 
+    num_edges = 0;
     /* Build opins */
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
@@ -1345,11 +1349,14 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                 //Create the actual OPIN->CHANX/CHANY edges
                 uniquify_edges(rr_edges_to_create);
                 alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+                num_edges += rr_edges_to_create.size(); 
                 rr_edges_to_create.clear();
             }
         }
     }
-
+    VTR_LOG("%d OPIN->CHANX/CHANY EDGES ACTUALLY CREATED BEFORE DIRECTS\n",EDGES);
+    VTR_LOG("%d OPIN->CHANX/CHANY EDGES ACTUALLY CREATED AFTER DIRECTS\n",num_edges);
+    num_edges = 0;
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
     for (size_t i = 0; i < grid.width() - 1; ++i) {
@@ -1364,9 +1371,11 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                               wire_to_ipin_switch,
                               directionality);
 
-                //Create the actual CHAN->CHAN edges
+                //Create the actual CHAN->CHAN edges           
                 uniquify_edges(rr_edges_to_create);
                 alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+                num_edges += rr_edges_to_create.size(); 
+
                 rr_edges_to_create.clear();
             }
             if (j > 0) {
@@ -1382,11 +1391,14 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                 //Create the actual CHAN->CHAN edges
                 uniquify_edges(rr_edges_to_create);
                 alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+                num_edges += rr_edges_to_create.size(); 
+
                 rr_edges_to_create.clear();
             }
         }
     }
-
+    VTR_LOG("%d CHAN->CHAN EDGES ACTUALLY CREATED\n",num_edges);
+    num_edges=0;
     std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) {
     };
     if (clock_modeling == DEDICATED_NETWORK) {
@@ -1394,10 +1406,13 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         builder.create_and_append_clock_rr_graph(num_seg_types_x, &rr_edges_to_create);
         uniquify_edges(rr_edges_to_create);
         alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+        num_edges += rr_edges_to_create.size(); 
+
         rr_edges_to_create.clear();
         update_chan_width = [builder](t_chan_width* c) {
             builder.update_chan_width(c);
         };
+        VTR_LOG("%d DEDICATED CLOCK NETWORK EDGES ACTUALLY CREATED\n",num_edges);
     }
 
     rr_graph_builder.init_fan_in();
@@ -1514,6 +1529,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
     const auto& rr_graph = device_ctx.rr_graph;
 
     /* SINK and SOURCE-to-OPIN edges */
+    //int edges_created =0; 
     for (int iclass = 0; iclass < num_class; ++iclass) {
         RRNodeId inode = RRNodeId::INVALID();
         if (class_inf[iclass].type == DRIVER) { /* SOURCE */
@@ -1534,6 +1550,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
             }
 
             //Connect the SOURCE to each OPIN
+            //edges_created += opin_nodes.size(); 
             for (size_t iedge = 0; iedge < opin_nodes.size(); ++iedge) {
                 rr_edges_to_create.emplace_back(inode, opin_nodes[iedge], delayless_switch);
             }
@@ -1569,6 +1586,9 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_class_num(inode, iclass);
     }
 
+    //VTR_LOG("%d SOURCE->OPIN EDGES CREATED\n",edges_created); 
+
+    //edges_created = 0; 
     /* Connect IPINS to SINKS and initialize OPINS */
     //We loop through all the pin locations on the block to initialize the IPINs/OPINs,
     //and hook-up the IPINs to sinks.
@@ -1590,7 +1610,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
 
                                 //Add info about the edge to be created
                                 rr_edges_to_create.emplace_back(inode, to_node, delayless_switch);
-
+                                //edges_created ++; 
                                 rr_graph_builder.set_node_cost_index(inode, RRIndexedDataId(IPIN_COST_INDEX));
                                 rr_graph_builder.set_node_type(inode, IPIN);
                             }
@@ -1633,6 +1653,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
             }
         }
     }
+    //VTR_LOG("%d IPIN->SOURCE EDGES CREATED\n",edges_created); 
 
     //Create the actual edges
 }
@@ -2748,21 +2769,27 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
             //VTR_ASSERT_MSG(seg_index == 0 || seg_index > 0,"seg_index map not working properly");
 
-            get_unidir_opin_connections(rr_graph_builder, chan, seg,
+            EDGES+=get_unidir_opin_connections(rr_graph_builder, chan, seg,
                                         seg_type_Fc, seg_index, chan_type, seg_details,
                                         opin_node_index,
                                         rr_edges_to_create,
                                         Fc_ofs, max_len, nodes_per_chan,
                                         &clipped);
+            
+
             if (clipped) {
                 *Fc_clipped = true;
             }
         }
+        
+
 
         /* Add in direct connections */
         get_opin_direct_connections(rr_graph_builder, rr_graph, i, j, side, pin_index, opin_node_index, rr_edges_to_create,
                                     directs, num_directs, clb_to_clb_directs);
     }
+    
+
 }
 
 /**
