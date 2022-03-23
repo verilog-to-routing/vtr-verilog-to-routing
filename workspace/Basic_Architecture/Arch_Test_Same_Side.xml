@@ -202,7 +202,7 @@
   </switchlist>
   <segmentlist>
     <!-- 85% length-2 wires on the semi-global metal layer -->
-    <segment freq="1" name="l2s" length="2" type="unidir" Rmetal="174" Cmetal="0.0">
+    <segment freq="0.85" name="l2s" length="2" type="unidir" Rmetal="174" Cmetal="0.0">
       <mux name="l2s_mux"/>
       <sb type="pattern">1 1 1</sb>
       <cb type="pattern">1 1</cb>
@@ -219,9 +219,9 @@
     <switchblock name="wilton_turn_core" type="unidir">
       <switchblock_location type="CORE"/>
       <switchfuncs>
-        <!-- <func type="tt" formula="t+2"/>
+        <func type="tt" formula="t+2"/>
         <func type="bb" formula="t+2"/>
-        <func type="ll" formula="t+2"/> -->
+        <func type="ll" formula="t+2"/>
         <func type="lr" formula="t+5"/>
         <func type="lt" formula="W-t"/>
         <func type="lb" formula="t-1"/>
@@ -240,9 +240,9 @@
     <switchblock name="wilton_turn_perimeter" type="unidir">
       <switchblock_location type="PERIMETER"/>
       <switchfuncs>
-        <!-- <func type="tt" formula="t+2"/>
+        <func type="tt" formula="t+2"/>
         <func type="bb" formula="t+2"/>
-        <func type="ll" formula="t+2"/> -->
+        <func type="ll" formula="t+2"/>
         <func type="lr" formula="t+5"/>
         <func type="lt" formula="W-t"/>
         <func type="lb" formula="t-1"/>
@@ -260,9 +260,9 @@
     <switchblock name="wilton_straight" type="unidir">
       <switchblock_location type="EVERYWHERE"/>
       <switchfuncs>
-        <!-- <func type="tt" formula="t+2"/>
+        <func type="tt" formula="t+2"/>
         <func type="bb" formula="t+2"/>
-        <func type="ll" formula="t+2"/> -->
+        <func type="ll" formula="t+2"/>
         <func type="lr" formula="t+5"/>
         <func type="lt" formula="W-t"/>
         <func type="lb" formula="t-1"/>
