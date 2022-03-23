@@ -8,6 +8,14 @@
 #include "vpr_error.h"
 #include "vtr_math.h"
 
+static void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles, std::string noc_router_tile_name);
+
+static void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles);
+
+static void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles);
+
+static void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model);
+
 
 void setup_noc(const t_arch& arch)
 {
@@ -49,7 +57,7 @@ void setup_noc(const t_arch& arch)
 
 }
 
-void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles, std::string noc_router_tile_name)
+static void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles, std::string noc_router_tile_name)
 {
     int grid_width = device_grid.width();
     int grid_height = device_grid.height();
@@ -129,7 +137,7 @@ void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_noc_rou
 
 }
 
-void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model , std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles)
+static void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model , std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles)
 {
     // keep track of the shortest distance between a logical router and the curren physical router tile
     // also keep track of the corresponding physical router tile index (within the list)
@@ -241,7 +249,7 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model , std::
     return;
 }
 
-void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model){
+static void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model){
     // the ids used to represent the routers in the NoC are not the same as the ones provided by the user in the arch desc file.
     // while going through the router connections, the user provided router ids are converted and then stored below before being used
     // in the links. 
