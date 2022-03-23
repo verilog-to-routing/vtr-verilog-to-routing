@@ -215,6 +215,13 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                    const int delayless_switch,
                                    const DeviceGrid& grid);
 
+static void build_internal_pins(RRGraphBuilder& rr_graph_builder,
+                    const int i,
+                    const int j,
+                    t_rr_edge_info_set& rr_edges_to_create,
+                    const int delayless_switch,
+                    const DeviceGrid& grid);
+
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int i,
                           const int j,
@@ -1274,6 +1281,20 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
     }
 
+    /* Connect intra-block pins */
+    for (size_t i = 0; i < grid.width(); ++i) {
+        for (size_t j = 0; j < grid.height(); ++j) {
+            build_internal_pins(rr_graph_builder, i, j, rr_edges_to_create,
+                                delayless_switch, grid);
+
+            //Create the actual edges inside the block
+            uniquify_edges(rr_edges_to_create);
+            alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+            rr_edges_to_create.clear();
+
+        }
+    }
+
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
     for (size_t i = 0; i < grid.width() - 1; ++i) {
@@ -1559,6 +1580,15 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
     }
 
     //Create the actual edges
+}
+
+static void build_internal_pins(RRGraphBuilder& rr_graph_builder,
+                                const int i,
+                                const int j,
+                                t_rr_edge_info_set& rr_edges_to_create,
+                                const int delayless_switch,
+                                const DeviceGrid& grid) {
+    
 }
 
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
