@@ -1050,7 +1050,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                     }
                 }
 
-                /* #TODO:BUG PRONE: There maybe a case when the total number of pins of the mode(1) be higher than mode(2). However, the number of output pins of mode(2) be higher than mode(1) */
+                /* #TODO: the way that t_pb_graph_node is extracted from the grid[i][j] needs to be changed. */
                 /* choose the pb_type with the highest number of pins */
                 const t_pb_graph_node* pb_graph_node = nullptr;
                 for(const auto& sub_tile : type->sub_tiles) {
