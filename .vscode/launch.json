@@ -43,7 +43,7 @@
         "type": "cppdbg",
         "request": "launch",
         "program": "/home/vm/VTR-Tools/build/vpr/vpr",
-        "args": ["/home/vm/VTR-Tools/workspace/Basic_Architecture/Arch_Test_Same_Side.xml","/home/vm/VTR-Tools/workspace/Test_Folder/blink.pre-vpr.blif"],
+        "args": ["/home/vm/VTR-Tools/workspace/Test_Folder/Arch_Test_Same_Side.xml","/home/vm/VTR-Tools/workspace/Test_Folder/blink.pre-vpr.blif"],
         "stopAtEntry": false,
         "cwd": "/home/vm/VTR-Tools/build/vpr",
         "environment": [],

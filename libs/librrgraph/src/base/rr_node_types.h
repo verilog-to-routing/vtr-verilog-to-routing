@@ -35,12 +35,14 @@ constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SIN
  * Direction::DEC: wire_driver is positioned at the high-coordinate end of the wire.
  * Direction::BIDIR: wire has multiple drivers, so signals can travel either way along the wire
  * Direction::NONE: node does not have a direction, such as IPIN/OPIN
+ * Direction::SAME: 
  */
 enum class Direction : unsigned char {
     INC = 0,
     DEC = 1,
     BIDIR = 2,
     NONE = 3,
+    SAME = 4,
     NUM_DIRECTIONS
 };
 

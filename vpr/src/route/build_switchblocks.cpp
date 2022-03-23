@@ -764,12 +764,18 @@ static void get_switchpoint_wires(
                     if (seg_direction == Direction::INC && !is_dest) {
                         continue;
                     }
+                    if (seg_direction == Direction::SAME && is_dest) {
+                        continue;
+                    }
                 } else {
                     VTR_ASSERT(side == LEFT || side == BOTTOM);
                     if (seg_direction == Direction::DEC && !is_dest) {
                         continue;
                     }
                     if (seg_direction == Direction::INC && is_dest) {
+                        continue;
+                    }
+                    if (seg_direction == Direction::SAME && !is_dest) {
                         continue;
                     }
                 }
@@ -963,7 +969,14 @@ static void compute_wireconn_connections(
                 continue;
             }
             VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT);
-        } else {
+        } else if (from_wire_direction == Direction::SAME) {
+            /* a wire heading in the same direction can only connect on the same side of a switch block */
+            // if (sb_conn.from_side != ) {
+            //     continue;
+            // }
+            // VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT);
+        }
+        else {
             VTR_ASSERT(from_wire_direction == Direction::BIDIR);
         }
 
