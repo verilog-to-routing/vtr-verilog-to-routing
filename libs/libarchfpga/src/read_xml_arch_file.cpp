@@ -4545,7 +4545,7 @@ static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pug
 static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc_data& loc_data)
 {
     // a vector representing all the possible attributes within the noc tag
-    std::vector<std::string> expected_noc_attributes = {"link_bandwidth", "link_latency", "router_latency"};
+    std::vector<std::string> expected_noc_attributes = {"link_bandwidth", "link_latency", "router_latency", "noc_router_tile_name"};
 
     std::vector<std::string> expected_noc_children_tags = {"mesh","topology"};
 
@@ -4554,6 +4554,9 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
 
     // identifier that lets us know when we could not properly convert an attribute value to a integer
     int attribute_conversion_failure = -1;
+
+    // identifier that lets us know when we could not properly convert a string conversion value
+    std::string attribute_conversion_failure_string = "";
 
     // if we are here, then the user has a NoC in their architecture, so need to add it
     arch->noc = new t_noc_inf;
@@ -4571,11 +4574,20 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
 
     noc_ref->router_latency = pugiutil::get_attribute(noc_tag, "router_latency", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
 
+    noc_ref->noc_router_tile_name = pugiutil::get_attribute(noc_tag, "noc_router_tile_name", loc_data, pugiutil::REQUIRED).as_string();
+
     // the noc parameters can only be non-zero positive values
     if ((noc_ref->link_bandwidth < 0) || (noc_ref->link_latency < 0) || (noc_ref->router_latency < 0))
     {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(noc_tag),
                                "The link bandwidth, link latency and router latency for the NoC must be a positive non-zero integer.");
+    }
+
+    // check that the router tile name was supplied properly
+    if (!(noc_ref->noc_router_tile_name.compare(attribute_conversion_failure_string)))
+    {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(noc_tag),
+                               "The noc router tile name must be a string.");
     }
 
     /* We processed the NoC node, so now process the topology*/
