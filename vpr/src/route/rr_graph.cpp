@@ -222,6 +222,19 @@ static void build_internal_pins(RRGraphBuilder& rr_graph_builder,
                     const int delayless_switch,
                     const DeviceGrid& grid);
 
+
+/* #TODO: choose better name */
+static void add_all_internal_pins_edge(RRGraphBuilder& rr_graph_builder,
+                                       const t_pb_graph_node* pb_graph_node,
+                                       t_rr_edge_info_set& rr_edges_to_create,
+                                       const int delayless_switch);
+
+/* #TODO: choose better name */
+static void add_internal_pins_parent_child(RRGraphBuilder& rr_graph_builder,
+                                           const t_pb_graph_node* pb_graph_node,
+                                           const t_pb_graph_node* child_pb_grpah_node,
+                                           const int delayless_switch);
+
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int i,
                           const int j,
@@ -1588,7 +1601,62 @@ static void build_internal_pins(RRGraphBuilder& rr_graph_builder,
                                 t_rr_edge_info_set& rr_edges_to_create,
                                 const int delayless_switch,
                                 const DeviceGrid& grid) {
-    
+
+    /* Since we share nodes within a large block, only
+     * start tile can initialize sinks, sources, and pins */
+    if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0)
+        return;
+
+    auto type = grid[i][j].type;
+
+    const t_pb_graph_node* pb_graph_node = nullptr;
+    /* #TODO: the way that t_pb_graph_node is extracted from the grid[i][j] needs to be changed. */
+    for(const auto& sub_tile : type->sub_tiles) {
+        for(auto equivalent_site : sub_tile.equivalent_sites) {
+            auto curr_pb_graph_node = equivalent_site->pb_graph_head;
+            if(pb_graph_node == nullptr || (pb_graph_node->num_internal_input_pin > curr_pb_graph_node->num_internal_input_pin)) {
+                pb_graph_node = curr_pb_graph_node;
+            }
+        }
+    }
+    if(pb_graph_node == nullptr) {
+        return;
+    }
+
+    add_all_internal_pins_edge(rr_graph_builder, pb_graph_node, rr_edges_to_create, delayless_switch);
+
+
+}
+
+static void add_all_internal_pins_edge(RRGraphBuilder& rr_graph_builder,
+                                   const t_pb_graph_node* pb_graph_node,
+                                   t_rr_edge_info_set& rr_edges_to_create,
+                                   const int delayless_switch) {
+    if(pb_graph_node->is_primitive())
+        return;
+
+    const t_pb_type* pb_type = pb_graph_node->pb_type;
+    int mode_idx = pb_graph_node->num_internal_pins_mode_num;
+
+    for(int pb_type_idx = 0; pb_type_idx < (pb_type->modes[mode_idx]).num_pb_type_children; pb_type_idx++) {
+        int num_pb = pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][0].pb_type->num_pb;
+        for(int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
+            auto child_pb_grpah_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
+
+            add_internal_pins_parent_child(rr_graph_builder, pb_graph_node, child_pb_grpah_node, delayless_switch);
+
+            add_all_internal_pins_edge(rr_graph_builder, child_pb_grpah_node, rr_edges_to_create, delayless_switch);
+        }
+
+    }
+
+}
+
+static void add_internal_pins_parent_child(RRGraphBuilder& rr_graph_builder,
+                                           const t_pb_graph_node* pb_graph_node,
+                                           const t_pb_graph_node* child_pb_grpah_node,
+                                           const int delayless_switch) {
+
 }
 
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
