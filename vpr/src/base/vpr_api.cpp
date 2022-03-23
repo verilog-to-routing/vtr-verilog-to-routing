@@ -289,6 +289,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->AnnealSched,
              &vpr_setup->RouterOpts,
              &vpr_setup->AnalysisOpts,
+             &vpr_setup->NocOpts,
              &vpr_setup->RoutingArch,
              &vpr_setup->PackerRRGraph,
              vpr_setup->Segments,
@@ -394,6 +395,8 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     vpr_setup_clock_networks(vpr_setup, arch);
 
+    vpr_setup_noc(vpr_setup, arch);
+
     if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
         vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width);
     }
@@ -491,9 +494,9 @@ void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
 void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch)
 {
     // check if the user provided the option to model the noc
-    if (vpr_setup.include_noc == true)
+    if (vpr_setup.NocOpts.noc == true)
     {
-        setup_noc(arch, vpr_setup.noc_router_tile_name);
+        setup_noc(arch);
     }
 }
 
@@ -1140,6 +1143,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_annealing_sched* AnnealSched,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
+                   t_noc_opts* NocOpts,
                    t_det_routing_arch* RoutingArch,
                    std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
@@ -1163,6 +1167,7 @@ void vpr_setup_vpr(t_options* Options,
              AnnealSched,
              RouterOpts,
              AnalysisOpts,
+             NocOpts,
              RoutingArch,
              PackerRRGraph,
              Segments,

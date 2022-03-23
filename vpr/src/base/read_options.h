@@ -139,7 +139,7 @@ struct t_options {
     argparse::ArgValue<int> floorplan_num_vertical_partitions;
     
     // NoC-driven placement
-    argparse::ArgValue<bool> include_noc;
+    argparse::ArgValue<bool> noc;
     argparse::ArgValue<std::string> noc_router_tile_name;
 
     /* Timing-driven placement options only */

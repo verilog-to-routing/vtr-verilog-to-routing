@@ -1270,7 +1270,7 @@ struct t_analysis_opts {
 };
 
 struct t_noc_opts {
-    bool include_noc;                   ///<options to model the noc within the FPGA device
+    bool noc;                   ///<options to model the noc within the FPGA device
     std::string noc_router_tile_name;   ///<name of the router tile located in the FPGA
 };
 
