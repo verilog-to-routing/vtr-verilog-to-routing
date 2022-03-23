@@ -77,9 +77,6 @@ struct t_pin_loc {
 /********************* Subroutines local to this module. *******************/
 void print_rr_graph_stats();
 
-void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
-                                       const std::vector<t_physical_tile_type>& types,
-                                       int max_chan_width,FILE* fp);
 bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed);
 
 static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
@@ -264,7 +261,8 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                                const std::vector<t_segment_inf>& segment_inf_x,
                                const std::vector<t_segment_inf>& segment_inf_y,
                                int wire_to_rr_ipin_switch,
-                               enum e_base_cost_type base_cost_type);
+                               enum e_base_cost_type base_cost_type,
+                               const enum e_router_lookahead lookahead_type);
 
 static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, const int delayless_switch);
 
@@ -302,6 +300,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const float R_minW_pmos,
                            const enum e_base_cost_type base_cost_type,
                            const enum e_clock_modeling clock_modeling,
+                           const enum e_router_lookahead lookahead_type,
                            const t_direct_inf* directs,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
@@ -330,6 +329,7 @@ void create_rr_graph(const t_graph_type graph_type,
                          grid,
                          segment_inf,
                          router_opts.base_cost_type,
+                         router_opts.lookahead_type,
                          &det_routing_arch->wire_to_rr_ipin_switch,
                          det_routing_arch->read_rr_graph_filename.c_str(),
                          router_opts.read_rr_edge_metadata,
@@ -348,7 +348,6 @@ void create_rr_graph(const t_graph_type graph_type,
         }
 
         free_rr_graph();
-
         build_rr_graph(graph_type,
                        block_types,
                        grid,
@@ -365,6 +364,7 @@ void create_rr_graph(const t_graph_type graph_type,
                        det_routing_arch->R_minW_pmos,
                        router_opts.base_cost_type,
                        router_opts.clock_modeling,
+                       router_opts.lookahead_type,
                        directs, num_directs,
                        &det_routing_arch->wire_to_rr_ipin_switch,
                        Warnings);
@@ -431,6 +431,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const float R_minW_pmos,
                            const enum e_base_cost_type base_cost_type,
                            const enum e_clock_modeling clock_modeling,
+                           const enum e_router_lookahead lookahead_type,
                            const t_direct_inf* directs,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
@@ -836,7 +837,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     //Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
 
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, *wire_to_rr_ipin_switch, base_cost_type);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, *wire_to_rr_ipin_switch, base_cost_type,lookahead_type);
 
     check_rr_graph(graph_type, grid, types);
 
@@ -1043,12 +1044,13 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                                const std::vector<t_segment_inf>& segment_inf_x,
                                const std::vector<t_segment_inf>& segment_inf_y,
                                int wire_to_rr_ipin_switch,
-                               enum e_base_cost_type base_cost_type) {
+                               enum e_base_cost_type base_cost_type,
+                               const enum e_router_lookahead lookahead_type){
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     add_rr_graph_C_from_switches(rr_graph.rr_switch_inf(RRSwitchId(wire_to_rr_ipin_switch)).Cin);
     alloc_and_load_rr_indexed_data(segment_inf, segment_inf_x,
-                                   segment_inf_y, wire_to_rr_ipin_switch, base_cost_type);
+                                   segment_inf_y, wire_to_rr_ipin_switch, base_cost_type,lookahead_type);
     //load_rr_index_segments(segment_inf.size());
 }
 

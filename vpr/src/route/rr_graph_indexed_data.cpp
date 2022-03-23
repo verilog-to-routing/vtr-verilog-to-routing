@@ -58,7 +58,8 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
                                     const std::vector<t_segment_inf>& segment_inf_x,
                                     const std::vector<t_segment_inf>& segment_inf_y,
                                     int wire_to_ipin_switch,
-                                    enum e_base_cost_type base_cost_type) {
+                                    enum e_base_cost_type base_cost_type,
+                                    enum e_router_lookahead lookahed_type) {
     int length, i, index;
 
     (void)segment_inf;
@@ -86,34 +87,25 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
     }
     device_ctx.rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).Tdel;
 
-    /*  
-     * AA: ortho_cost_index is the index of the segment that this is a rr_node ca
-     * can connect to (see rr_node.h). If a segment is BOTH_AXIS specified, this means that 
-     * it's most likely to connect to it's perpendicular counter-part. If it is not, 
-     * then  we need to define a likelyhood estimate for all perpendicular segments. 
-     * One way we can do this is to look at the number of switch blocks... 
-     */
-
-    /* Lets walk through the second loop for CHAN_Y segmnets: 
-     * CHANX_COST_INDEX_START = 4, num_segment = 2
-     * 2 total segments -> 4+2*2=8 (size)
-     *
-     * 1) index=4+0=4 -> cost=4+2=6
-     * 2) index=4+1=5 -> cost=5+2=7
-     * 3) index=4+2+0=6 -> cost=6-2=4 
-     * 4) index=4+1+2=7 -> cost=7-2=5
-     * Note how the indeces are orthogonal... this is because here we assume that 
-     * the orthogonal segment that is most likely to connect to a segment, is itself but in the perpendicular direction.
-     * (this code doesn't consider different x & y channels)
-     *4+0 ... 4+1 ... 4+2 but size is 12*/
 
     /* X-directed segments*/
+    std::vector<int> ortho_costs; 
 
-    auto perp_costs = find_ortho_cost_index(segment_inf_x, segment_inf_y, X_AXIS, CHANX_COST_INDEX_START);
+    if (lookahed_type == e_router_lookahead::CLASSIC){
+        
+        ortho_costs = find_ortho_cost_index(segment_inf_x, segment_inf_y, X_AXIS, CHANX_COST_INDEX_START);
 
-    for (int iseg = 0; iseg < (int)perp_costs.size(); ++iseg) {
+    } else {
+        std::vector<int> x_costs (segment_inf_x.size(),CHANX_COST_INDEX_START+segment_inf_x.size());
+        std::vector<int> y_costs (segment_inf_y.size(),CHANX_COST_INDEX_START);
+
+        std::move(x_costs.begin(),x_costs.end(),std::back_inserter(ortho_costs)); 
+        std::move(y_costs.begin(),y_costs.end(),std::back_inserter(ortho_costs)); 
+    }
+    for (size_t iseg = 0; iseg < segment_inf_x.size(); ++iseg) {
         index = iseg + CHANX_COST_INDEX_START;
-        device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = perp_costs[iseg];
+        
+        device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = ortho_costs[iseg];
 
         if (segment_inf_x[iseg].longline)
             length = device_ctx.grid.width();
@@ -126,61 +118,24 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = segment_inf_x[iseg].seg_index;
     }
 
-    /* Y-directed segments*/
-    perp_costs = find_ortho_cost_index(segment_inf_x, segment_inf_y, Y_AXIS, CHANX_COST_INDEX_START);
+    // Y-directed segments 
 
-    for (int iseg = 0; iseg < (int)perp_costs.size(); ++iseg) {
-        index = iseg + CHANX_COST_INDEX_START + segment_inf_x.size();
-        device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = perp_costs[iseg];
+    for (size_t iseg = segment_inf_x.size(); iseg < ortho_costs.size(); ++iseg) {
+        index = iseg + CHANX_COST_INDEX_START;
+        device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = ortho_costs[iseg];
 
-        if (segment_inf_y[iseg].longline)
+        if (segment_inf_x[iseg-segment_inf_x.size()].longline)
             length = device_ctx.grid.width();
         else
-            length = std::min<int>(segment_inf_y[iseg].length, device_ctx.grid.width());
+            length = std::min<int>(segment_inf_y[iseg-segment_inf_x.size()].length, device_ctx.grid.width());
 
         device_ctx.rr_indexed_data[RRIndexedDataId(index)].inv_length = 1. / length;
-        device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = segment_inf_y[iseg].seg_index;
+        /*We use the index fo the segment in the **unified** seg_inf vector not iseg which is relative 
+         * to parallel axis segments vector */
+        device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = segment_inf_y[iseg-segment_inf_x.size()].seg_index;
     }
 
-    /* X-directed segments */
-    /*
-     * for (iseg = 0; iseg < num_segment; iseg++) {
-     * index = CHANX_COST_INDEX_START + iseg;
-     *
-     * if ((index + num_segment) >= (int)device_ctx.rr_indexed_data.size()) {
-     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index;
-     * } else {
-     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index + num_segment;
-     * }
-     *
-     * if (segment_inf[iseg].longline)
-     * length = device_ctx.grid.width();
-     * else
-     * length = std::min<int>(segment_inf[iseg].length, device_ctx.grid.width());
-     *
-     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].inv_length = 1. / length;
-     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = iseg;
-     * }
-     *
-     * Y-directed segments. 
-     * for (iseg = 0; iseg < num_segment; iseg++) {
-     * index = CHANX_COST_INDEX_START + num_segment + iseg;
-     *
-     * if ((index - num_segment) < CHANX_COST_INDEX_START) {
-     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index;
-     * } else {
-     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = index - num_segment;
-     * }
-     *
-     * if (segment_inf[iseg].longline)
-     * length = device_ctx.grid.height();
-     * else
-     * length = std::min<int>(segment_inf[iseg].length, device_ctx.grid.height());
-     *
-     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].inv_length = 1. / length;
-     * device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = iseg;
-     * }
-     */
+    
     load_rr_indexed_data_T_values();
 
     fixup_rr_indexed_data_T_values(total_num_segment);
@@ -210,36 +165,77 @@ std::vector<int> find_ortho_cost_index(std::vector<t_segment_inf> segment_inf_x,
     auto segment_inf_perp = parallel_axis == X_AXIS ? segment_inf_y : segment_inf_x;
     /*EXPERIMENTAL*/ 
 
+    #define MOST_COMMON_ORTHO_COST_INDECES
+
     #ifdef MOST_COMMON_ORTHO_COST_INDECES
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    int num_segments = segment_inf_x.size() + segment_inf_y.size() ; 
-    std::vector<std::vector<size_t>> dest_nodes_count (num_segments,std::vector<size_t> (num_segments,0)); 
+    size_t num_segments = segment_inf_x.size() + segment_inf_y.size() ; 
+    std::vector<std::vector<size_t>> dest_nodes_count;
+    
+    // x segments are perpendicular to y segments
+
+    dest_nodes_count.resize(num_segments);  
+
+    for (size_t iseg = 0; iseg < segment_inf_x.size(); iseg++){
+        dest_nodes_count[iseg].resize(segment_inf_y.size()); 
+    }
+    // y segments are perpendicular to x segments
+    for (size_t iseg = segment_inf_x.size(); iseg < num_segments; iseg++){
+        dest_nodes_count[iseg].resize(segment_inf_x.size()); 
+    }
 
     std::vector<int> ortho_cost_indeces (dest_nodes_count.size(),0); 
 
+    //Go through all rr_Nodes. Look at the ones with CHAN type. Count all outgoing edges to CHAN typed nodes from each CHAN type node. 
     for (const RRNodeId& rr_node : rr_graph.nodes()){
         for (size_t iedge = 0 ; iedge < rr_graph.num_edges(rr_node) ; ++iedge){
             RRNodeId to_node = rr_graph.edge_sink_node(rr_node, iedge);
-            size_t from_node_cost_index = (size_t)rr_graph.node_cost_index(rr_node)-CHANX_COST_INDEX_START; 
-            size_t to_node_cost_index = (size_t)rr_graph.node_cost_index(to_node)-CHANX_COST_INDEX_START; 
+            t_rr_type from_node_type = rr_graph.node_type(rr_node); 
+            t_rr_type to_node_type = rr_graph.node_type(to_node); 
 
-            dest_nodes_count[from_node_cost_index][to_node_cost_index]++; 
+            size_t from_node_cost_index = (size_t)rr_graph.node_cost_index(rr_node);
+            size_t to_node_cost_index = (size_t)rr_graph.node_cost_index(to_node);
 
+            //if the type  is smaller than start index, means destination is not a CHAN type node. 
+ 
+            if ((from_node_type == CHANX && to_node_type == CHANY) || (from_node_type == CHANY && to_node_type == CHANX)) {
+                if (to_node_type == CHANY){
+                    dest_nodes_count[from_node_cost_index-CHANX_COST_INDEX_START][to_node_cost_index-(CHANX_COST_INDEX_START+segment_inf_x.size())]++; 
+                }
+                else {
+                    dest_nodes_count[from_node_cost_index-CHANX_COST_INDEX_START][to_node_cost_index-CHANX_COST_INDEX_START]++; 
+                } 
+            }
+            else {
+                continue;
+            }
         }
     }
 
-    for (int cost_index=0 ; cost_index < dest_nodes_count.size(); cost_index++){
-        ortho_cost_indeces[cost_index] = *std::max_element(dest_nodes_count[cost_index].begin(),dest_nodes_count[cost_index].end()); 
 
+    for (size_t iseg = 0; iseg < segment_inf_x.size(); iseg++){
+        dest_nodes_count[iseg].resize(segment_inf_y.size()); 
     }
 
-    return 
+    for (size_t iseg = 0; iseg < segment_inf_x.size(); iseg++){
+        ortho_cost_indeces[iseg] = std::max_element(dest_nodes_count[iseg].begin(),dest_nodes_count[iseg].end())-dest_nodes_count[iseg].begin(); 
+        ortho_cost_indeces[iseg] += CHANX_COST_INDEX_START + segment_inf_x.size(); 
+    }
+
+    for (size_t iseg=segment_inf_x.size() ; iseg < num_segments; iseg++){
+        ortho_cost_indeces[iseg] = std::max_element(dest_nodes_count[iseg].begin(),dest_nodes_count[iseg].end())-dest_nodes_count[iseg].begin(); 
+        ortho_cost_indeces[iseg] += CHANX_COST_INDEX_START; 
+    }
+
+    return ortho_cost_indeces; 
     #endif    
 
     
     /*Update seg_index */
+
+    #ifdef FREQ_LENGTH_ORTHO_COSTS
 
     for (int i = 0; i < (int)segment_inf_perp.size(); ++i)
         segment_inf_perp[i].seg_index = i;
@@ -286,59 +282,60 @@ std::vector<int> find_ortho_cost_index(std::vector<t_segment_inf> segment_inf_x,
     }
 
 /*Pertubate indeces to make sure all perp seg types have a corresponding perp segment.*/
-#ifdef PERTURB_ORTHO_COST_INDECES
-    std::vector<int> perp_segments;
-    std::unordered_multimap<int, int> indeces_map;
-    auto cmp_greater = [](std::pair<int, int> a, std::pair<int, int> b) {
-        return a.second < b.second;
-    };
-    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, decltype(cmp_greater)> indeces_q_greater(cmp_greater);
+    #ifdef PERTURB_ORTHO_COST_INDECES
+        std::vector<int> perp_segments;
+        std::unordered_multimap<int, int> indeces_map;
+        auto cmp_greater = [](std::pair<int, int> a, std::pair<int, int> b) {
+            return a.second < b.second;
+        };
+        std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, decltype(cmp_greater)> indeces_q_greater(cmp_greater);
 
-    auto cmp_less = [](std::pair<int, int> a, std::pair<int, int> b) {
-        return a.second > b.second;
-    };
+        auto cmp_less = [](std::pair<int, int> a, std::pair<int, int> b) {
+            return a.second > b.second;
+        };
 
-    std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, decltype(cmp_less)> indeces_q_less(cmp_less);
+        std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, decltype(cmp_less)> indeces_q_less(cmp_less);
 
-    perp_segments.resize(segment_inf_perp.size(), 0);
+        perp_segments.resize(segment_inf_perp.size(), 0);
 
-    for (int i = 0; i < num_segments; ++i) {
-        int index = parallel_axis == X_AXIS ? ortho_costs_indeces[i] - num_segments - start_channel_cost : ortho_costs_indeces[i] - start_channel_cost;
-        indeces_map.insert(std::make_pair(index, i));
-        perp_segments[index]++;
-    }
+        for (int i = 0; i < num_segments; ++i) {
+            int index = parallel_axis == X_AXIS ? ortho_costs_indeces[i] - num_segments - start_channel_cost : ortho_costs_indeces[i] - start_channel_cost;
+            indeces_map.insert(std::make_pair(index, i));
+            perp_segments[index]++;
+        }
 
-    for (int i = 0; i < (int)perp_segments.size(); ++i) {
-        auto pair = std::make_pair(i, perp_segments[i]);
-        indeces_q_greater.push(pair);
-        indeces_q_less.push(pair);
-    }
+        for (int i = 0; i < (int)perp_segments.size(); ++i) {
+            auto pair = std::make_pair(i, perp_segments[i]);
+            indeces_q_greater.push(pair);
+            indeces_q_less.push(pair);
+        }
 
-    while (!indeces_q_greater.empty()) {
-        auto g_index_pair = indeces_q_greater.top();
-        auto l_index_pair = indeces_q_less.top();
+        while (!indeces_q_greater.empty()) {
+            auto g_index_pair = indeces_q_greater.top();
+            auto l_index_pair = indeces_q_less.top();
 
-        if (l_index_pair.second != 0)
-            break;
+            if (l_index_pair.second != 0)
+                break;
 
-        indeces_q_greater.pop();
-        indeces_q_less.pop();
+            indeces_q_greater.pop();
+            indeces_q_less.pop();
 
-        g_index_pair.second--;
-        l_index_pair.second++;
-        auto itr_to_change = indeces_map.find(g_index_pair.first);
-        VTR_ASSERT(itr_to_change != indeces_map.end());
-        int index = l_index_pair.first + start_channel_cost;
-        index = parallel_axis == X_AXIS ? index + num_segments : index;
-        ortho_costs_indeces[itr_to_change->second] = index;
-        indeces_map.erase(itr_to_change);
+            g_index_pair.second--;
+            l_index_pair.second++;
+            auto itr_to_change = indeces_map.find(g_index_pair.first);
+            VTR_ASSERT(itr_to_change != indeces_map.end());
+            int index = l_index_pair.first + start_channel_cost;
+            index = parallel_axis == X_AXIS ? index + num_segments : index;
+            ortho_costs_indeces[itr_to_change->second] = index;
+            indeces_map.erase(itr_to_change);
 
-        indeces_q_greater.push(g_index_pair);
-        indeces_q_less.push(l_index_pair);
-    }
-#endif
+            indeces_q_greater.push(g_index_pair);
+            indeces_q_less.push(l_index_pair);
+        }
+    #endif
 
     return ortho_costs_indeces;
+#endif
 }
 
 void load_rr_index_segments(const int num_segment) {

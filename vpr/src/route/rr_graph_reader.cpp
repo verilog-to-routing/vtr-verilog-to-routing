@@ -21,6 +21,7 @@
 #include <fstream>
 
 #include "vtr_time.h"
+#include "vpr_types.h"
 #include "globals.h"
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
@@ -39,6 +40,7 @@ void load_rr_file(const t_graph_type graph_type,
                   const DeviceGrid& grid,
                   const std::vector<t_segment_inf>& segment_inf,
                   const enum e_base_cost_type base_cost_type,
+                  const enum e_router_lookahead lookahead_type,
                   int* wire_to_rr_ipin_switch,
                   const char* read_rr_graph_name,
                   bool read_edge_metadata,
@@ -56,6 +58,7 @@ void load_rr_file(const t_graph_type graph_type,
     RrGraphSerializer reader(
         graph_type,
         base_cost_type,
+        lookahead_type,
         wire_to_rr_ipin_switch,
         do_check_rr_graph,
         read_rr_graph_name,
