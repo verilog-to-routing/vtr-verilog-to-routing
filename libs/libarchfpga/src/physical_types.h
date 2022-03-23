@@ -1793,6 +1793,8 @@ struct t_noc_inf {
     int router_latency; // in nanoseconds
 
     std::vector<t_router> router_list;
+
+    std::string noc_router_tile_name;
 };
 
 /*   Detailed routing architecture */

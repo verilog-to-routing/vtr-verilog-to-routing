@@ -9,7 +9,7 @@
 #include "vtr_math.h"
 
 
-void setup_noc(const t_arch& arch, std::string noc_router_tile_name)
+void setup_noc(const t_arch& arch)
 {
 
     // variable to store all the noc router tiles within the FPGA device
@@ -21,7 +21,7 @@ void setup_noc(const t_arch& arch, std::string noc_router_tile_name)
 
     // go through the FPGA grid and find the noc router tiles
     // then store the position 
-    identify_and_store_noc_router_tile_positions(device_ctx.grid,list_of_noc_router_tiles, noc_router_tile_name);
+    identify_and_store_noc_router_tile_positions(device_ctx.grid,list_of_noc_router_tiles, arch.noc->noc_router_tile_name);
 
     // check whether the noc topology information provided uses more than the number of available routers in the FPGA
     if (list_of_noc_router_tiles.size() < arch.noc->router_list.size())
