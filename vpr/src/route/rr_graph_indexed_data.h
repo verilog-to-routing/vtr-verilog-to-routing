@@ -13,7 +13,6 @@ void load_rr_index_segments(const int num_segment);
 
 std::vector<int> find_ortho_cost_index(const std::vector<t_segment_inf> segment_inf_x,
                                        const std::vector<t_segment_inf> segment_inf_y,
-                                       e_parallel_axis parallel_axis,
-                                       e_cost_indices start_channel_cost);
+                                       e_parallel_axis parallel_axis);
 
 #endif
