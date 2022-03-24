@@ -4566,11 +4566,11 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
     pugiutil::expect_only_attributes(noc_tag, expected_noc_attributes, loc_data);
 
     // now go through and parse the required attributes for noc tag
-    noc_ref->link_bandwidth = pugiutil::get_attribute(noc_tag, "link_bandwidth", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+    noc_ref->link_bandwidth = pugiutil::get_attribute(noc_tag, "link_bandwidth", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
 
-    noc_ref->link_latency = pugiutil::get_attribute(noc_tag, "link_latency", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+    noc_ref->link_latency = pugiutil::get_attribute(noc_tag, "link_latency", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
 
-    noc_ref->router_latency = pugiutil::get_attribute(noc_tag, "router_latency", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+    noc_ref->router_latency = pugiutil::get_attribute(noc_tag, "router_latency", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
 
     noc_ref->noc_router_tile_name = pugiutil::get_attribute(noc_tag, "noc_router_tile_name", loc_data, pugiutil::REQUIRED).as_string();
 
@@ -4578,7 +4578,7 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
     if ((noc_ref->link_bandwidth < 0) || (noc_ref->link_latency < 0) || (noc_ref->router_latency < 0))
     {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(noc_tag),
-                               "The link bandwidth, link latency and router latency for the NoC must be a positive non-zero integer.");
+                               "The link bandwidth, link latency and router latency for the NoC must be a positive non-zero value.");
     }
 
     // check that the router tile name was supplied properly
