@@ -7,6 +7,7 @@
 #include "vtr_assert.h"
 #include "vpr_error.h"
 #include "vtr_math.h"
+#include "echo_files.h"
 
 static void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles, std::string noc_router_tile_name);
 
@@ -15,6 +16,8 @@ static void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_
 static void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles);
 
 static void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model);
+
+static void echo_noc(char* file_name);
 
 
 void setup_noc(const t_arch& arch)
@@ -52,6 +55,14 @@ void setup_noc(const t_arch& arch)
     noc_ctx.noc_link_bandwidth = arch.noc->link_bandwidth;
     noc_ctx.noc_link_latency = arch.noc->link_latency;
     noc_ctx.noc_router_latency = arch.noc->router_latency;
+
+    // echo the noc info
+   if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_NOC_MODEL))
+   {
+       echo_noc(getEchoFileName(E_ECHO_NOC_MODEL));
+   }
+
+   exit(1);
 
     return;
 
@@ -278,6 +289,61 @@ static void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model){
             noc_model->add_link(source_router, sink_router);;
         }
     }
+
+    return;
+
+}
+
+static void echo_noc(char* file_name)
+{
+    FILE* fp;
+    fp = vtr::fopen(file_name, "w");
+
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "NoC\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    auto& noc_ctx = g_vpr_ctx.noc();
+
+    // print the overall constraints of the NoC
+    fprintf(fp, "NoC Constraints:\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+    fprintf(fp, "Maximum NoC Link Bandwidth: %d\n", noc_ctx.noc_link_bandwidth);
+    fprintf(fp, "\n");
+    fprintf(fp, "NoC Link Latency: %d\n", noc_ctx.noc_link_latency);
+    fprintf(fp, "\n");
+    fprintf(fp, "NoC Router Latency: %d\n", noc_ctx.noc_router_latency);
+    fprintf(fp, "\n");
+
+    // print all the routers and their properties
+    fprintf(fp, "NoC Router List:\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    auto& noc_routers = noc_ctx.noc_model.get_noc_routers();
+
+    // go through each router and print its information
+    for (auto router = noc_routers.begin(); router != noc_routers.end(); router++)
+    {
+        fprintf(fp,"Router %d:\n", router->get_router_id());
+        // if the router tile is larger than a single grid, the position represents the bottom left corner of the tile
+        fprintf(fp,"Equivalent Physical Tile Grid Position -> (%d,%d)\n", router->get_router_grid_position_x(), router->get_router_grid_position_y());
+        fprintf(fp, "Router Connections ->");
+
+        auto& router_connections = noc_ctx.noc_model.get_noc_router_connections(noc_ctx.noc_model.convert_router_id(router->get_router_id()));
+
+        // go through the links of the current router and add the connecting router to the list
+        for (auto router_link = router_connections.begin(); router_link != router_connections.end(); router_link++)
+        {
+            fprintf(fp, " %d", noc_ctx.noc_model.get_noc_router_id(noc_ctx.noc_model.get_noc_link_sink_router(*router_link)));
+        }
+
+        fprintf(fp, "\n\n");
+    }
+
+    fclose(fp);
 
     return;
 
