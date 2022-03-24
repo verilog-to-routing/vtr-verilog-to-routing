@@ -431,17 +431,17 @@ struct NocContext : public Context {
     /**
      * @brief Represents the maximum allowed bandwidth for the links in the NoC (in Gbps)
      */
-    int noc_link_bandwidth;
+    double noc_link_bandwidth;
 
     /**
      * @brief Represents the delay expected when going through a link
      */
-    int noc_link_latency;
+    double noc_link_latency;
 
     /**
      * @brief Represents the expected delay when going through a router
      */
-    int noc_router_latency;
+    double noc_router_latency;
 };
 
 /**

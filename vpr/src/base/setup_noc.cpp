@@ -310,11 +310,11 @@ static void echo_noc(char* file_name)
     fprintf(fp, "NoC Constraints:\n");
     fprintf(fp, "--------------------------------------------------------------\n");
     fprintf(fp, "\n");
-    fprintf(fp, "Maximum NoC Link Bandwidth: %d\n", noc_ctx.noc_link_bandwidth);
+    fprintf(fp, "Maximum NoC Link Bandwidth: %f\n", noc_ctx.noc_link_bandwidth);
     fprintf(fp, "\n");
-    fprintf(fp, "NoC Link Latency: %d\n", noc_ctx.noc_link_latency);
+    fprintf(fp, "NoC Link Latency: %f\n", noc_ctx.noc_link_latency);
     fprintf(fp, "\n");
-    fprintf(fp, "NoC Router Latency: %d\n", noc_ctx.noc_router_latency);
+    fprintf(fp, "NoC Router Latency: %f\n", noc_ctx.noc_router_latency);
     fprintf(fp, "\n");
 
     // print all the routers and their properties

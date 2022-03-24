@@ -1806,9 +1806,9 @@ struct t_router {
 /* Network-on-chip(NoC) data type used to store the network 
 properties and used when builidng a dedicated on-chip network*/
 struct t_noc_inf {
-    int link_bandwidth; // in Gbps
-    int link_latency; // in nanoseconds
-    int router_latency; // in nanoseconds
+    double link_bandwidth; // in Gbps
+    double link_latency; // in nanoseconds
+    double router_latency; // in nanoseconds
 
     std::vector<t_router> router_list;
 
