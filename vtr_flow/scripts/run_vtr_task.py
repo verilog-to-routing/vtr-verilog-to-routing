@@ -3,18 +3,18 @@
 """ This module is a wrapper around the scripts/python_libs/vtr,
 allowing the user to run one or more VTR tasks. """
 
+import argparse
+import os
+import subprocess
+import sys
+import textwrap
 
+from contextlib import redirect_stdout
+from datetime import datetime
+from difflib import SequenceMatcher
+from multiprocessing import Pool, Manager
 from pathlib import Path
 from pathlib import PurePath
-import sys
-import os
-import argparse
-import textwrap
-import subprocess
-from datetime import datetime
-from contextlib import redirect_stdout
-from multiprocessing import Pool, Manager
-from difflib import SequenceMatcher
 
 from run_vtr_flow import vtr_command_main as run_vtr_flow
 
@@ -26,6 +26,7 @@ from vtr import (
     format_elapsed_time,
     RawDefaultHelpFormatter,
     argparse_str2bool,
+    argparse_use_previous,
     get_next_run_dir,
     load_task_config,
     find_task_config_file,
@@ -203,6 +204,34 @@ def vtr_command_argparser(prog=None):
     )
 
     parser.add_argument(
+        "-write_rr_graphs",
+        default=False,
+        action="store_true",
+        help="Write out rr_graph files from VPR. These are normally computed on the fly"
+        "and can become very large. Typically used with -use_previous [...] to save time"
+        "on later executions for large tasks.",
+    )
+
+    parser.add_argument(
+        "-write_lookaheads",
+        default=False,
+        action="store_true",
+        help="Write out router lookahead files from VPR. These are normally computed on the fly"
+        "and can become very large. Typically used with -use_previous [...] to save time on"
+        "later executions for large tasks.",
+    )
+
+    parser.add_argument(
+        "-use_previous",
+        default=None,
+        type=argparse_use_previous,
+        help="Reuse intermediate [file]s from previous [run]s of the tasks. Accepts a comma"
+        'separated list of [run]:[file] such as "-use_previous run001:place,run001:net".'
+        'Works throughout different config parameters: "common" will reuse "common"\'s files etc.'
+        "Use with caution and try to validate your results with a clean run.",
+    )
+
+    parser.add_argument(
         "-s",
         nargs=argparse.REMAINDER,
         default=[],
@@ -214,7 +243,7 @@ def vtr_command_argparser(prog=None):
     return parser
 
 
-def vtr_command_main(arg_list, prog=None):
+def vtr_command_main(arg_list, prog=None) -> int:
     """Run the vtr tasks given and the tasks in the lists given"""
     # Load the arguments
     args = vtr_command_argparser(prog).parse_args(arg_list)
@@ -266,10 +295,7 @@ def vtr_command_main(arg_list, prog=None):
     return num_failed
 
 
-def run_tasks(
-    args,
-    configs,
-):
+def run_tasks(args, configs) -> int:
     """
     Runs the specified set of tasks (configs)
     """
@@ -278,6 +304,7 @@ def run_tasks(
 
     jobs = create_jobs(args, configs)
 
+    # Determine the run dir for each config
     run_dirs = {}
     for config in configs:
         task_dir = find_task_dir(config, args.alt_tasks_dir)
@@ -324,24 +351,22 @@ def run_tasks(
     return num_failed
 
 
-def run_parallel(args, queued_jobs, run_dirs):
+def run_parallel(args, queued_jobs, run_dirs: dict) -> int:
     """
     Run each external command in commands with at most args.j commands running in parllel
     """
-    # Determine the run dir for each config
 
     # We pop off the jobs of queued_jobs, which python does from the end,
     # so reverse the list now so we get the expected order. This also ensures
     # we are working with a copy of the jobs
     queued_jobs = list(reversed(queued_jobs))
-    # Find the max taskname length for pretty printing
 
     queued_procs = []
     queue = Manager().Queue()
     for job in queued_jobs:
-        queued_procs += [(queue, run_dirs, job, args.script)]
-    # Queue of currently running subprocesses
+        queued_procs.append((queue, run_dirs, job, args.script))
 
+    # Queue of currently running subprocesses
     num_failed = 0
     with Pool(processes=args.j) as pool:
         for proc in queued_procs:
@@ -451,15 +476,16 @@ def format_human_readable_memory(num_bytes):
     return "%.2f GiB" % (num_bytes / (1024 ** 3))
 
 
-def run_vtr_flow_process(queue, run_dirs, job, script):
+def run_vtr_flow_process(queue, run_dirs, job, script) -> None:
     """
-    This is the function that the multiprocessing calls.
-    It runs the vtr flow and allerts the multiprocessor through a queue if the flow failed.
+    This is the function called by multiprocessing.Pool.
+    It runs the VTR flow and alerts the caller through the queue if the flow failed.
     """
     work_dir = job.work_dir(run_dirs[job.task_name()])
     Path(work_dir).mkdir(parents=True, exist_ok=True)
     out = None
     vtr_flow_out = str(PurePath(work_dir) / "vtr_flow.out")
+
     with open(vtr_flow_out, "w+") as out_file:
         with redirect_stdout(out_file):
             if script == "run_vtr_flow.py":

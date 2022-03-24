@@ -24,5 +24,6 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-#script_params=""
-script_params = -track_memory_usage
+script_params_common = -track_memory_usage
+script_params_list_add =
+script_params_list_add = --router_algorithm parallel --num_workers 4
