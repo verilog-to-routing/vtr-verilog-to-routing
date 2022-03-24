@@ -1,0 +1,229 @@
+{
+	"files": [
+		{
+			"path": "vpr/src/route/build_switchblocks.cpp",
+			"bookmarks": [
+				{
+					"line": 759,
+					"column": 2,
+					"label": "To change:"
+				},
+				{
+					"line": 952,
+					"column": 2,
+					"label": "To change:"
+				},
+				{
+					"line": 1044,
+					"column": 0,
+					"label": "Change not needed: The same side chan already belongs to the side"
+				},
+				{
+					"line": 1140,
+					"column": 2,
+					"label": "Change not needed: Only defining segment numbering convention"
+				},
+				{
+					"line": 1212,
+					"column": 2,
+					"label": "To change: Maybe"
+				}
+			]
+		},
+		{
+			"path": "vpr/src/route/rr_graph2.cpp",
+			"bookmarks": [
+				{
+					"line": 345,
+					"column": 2,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 380,
+					"column": 3,
+					"label": "Tracking chan_details_x"
+				},
+				{
+					"line": 691,
+					"column": 2,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 747,
+					"column": 2,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 1425,
+					"column": 0,
+					"label": "To change: A few things it seems"
+				},
+				{
+					"line": 1571,
+					"column": 5,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 1592,
+					"column": 11,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 1609,
+					"column": 3,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 1631,
+					"column": 3,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 1817,
+					"column": 2,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 2172,
+					"column": 2,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 2341,
+					"column": 3,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 2406,
+					"column": 1,
+					"label": "To change: Maybe"
+				}
+			]
+		},
+		{
+			"path": "vpr/src/route/router_lookahead_map.cpp",
+			"bookmarks": [
+				{
+					"line": 513,
+					"column": 10,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 554,
+					"column": 2,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 932,
+					"column": 4,
+					"label": "To change:"
+				},
+				{
+					"line": 1042,
+					"column": 4,
+					"label": "To change: Maybe"
+				}
+			]
+		},
+		{
+			"path": "vpr/src/draw/draw.cpp",
+			"bookmarks": [
+				{
+					"line": 1544,
+					"column": 3,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 3265,
+					"column": 4,
+					"label": "To change:"
+				}
+			]
+		},
+		{
+			"path": "libs/librrgraph/src/base/rr_graph_obj.cpp",
+			"bookmarks": [
+				{
+					"line": 87,
+					"column": 1,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 111,
+					"column": 0,
+					"label": "To change: Maybe"
+				}
+			]
+		},
+		{
+			"path": "libs/librrgraph/src/base/rr_graph_view.h",
+			"bookmarks": [
+				{
+					"line": 263,
+					"column": 1,
+					"label": "To change: Maybe"
+				}
+			]
+		},
+		{
+			"path": "vpr/src/route/clock_network_builders.cpp",
+			"bookmarks": [
+				{
+					"line": 281,
+					"column": 3,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 332,
+					"column": 2,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 584,
+					"column": 2,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 639,
+					"column": 1,
+					"label": "To change: Maybe"
+				}
+			]
+		},
+		{
+			"path": "vpr/src/route/rr_graph_uxsdcxx_serializer.h",
+			"bookmarks": [
+				{
+					"line": 1693,
+					"column": 1,
+					"label": "To change: Maybe"
+				}
+			]
+		},
+		{
+			"path": "vpr/src/route/gen/rr_graph_uxsdcxx_capnp.h",
+			"bookmarks": [
+				{
+					"line": 232,
+					"column": 2,
+					"label": "To change: Maybe"
+				}
+			]
+		},
+		{
+			"path": "vpr/src/route/gen/rr_graph_uxsdcxx.h",
+			"bookmarks": [
+				{
+					"line": 2013,
+					"column": 6,
+					"label": "To change: Maybe"
+				},
+				{
+					"line": 2034,
+					"column": 3,
+					"label": "To change: Maybe"
+				}
+			]
+		}
+	]
+}
