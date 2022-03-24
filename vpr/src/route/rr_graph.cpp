@@ -231,9 +231,17 @@ static void add_all_internal_pins_edge(RRGraphBuilder& rr_graph_builder,
 
 /* #TODO: choose better name */
 static void add_internal_pins_parent_child(RRGraphBuilder& rr_graph_builder,
-                                           const t_pb_graph_node* pb_graph_node,
+                                           const t_pb_graph_node* parent_pb_graph_node,
                                            const t_pb_graph_node* child_pb_grpah_node,
                                            const int delayless_switch);
+
+
+static void add_internal_pins_parent_child(RRGraphBuilder& rr_graph_builder,
+                                           const t_pb_graph_node* parent_pb_graph_node,
+                                           const t_pb_graph_node* child_pb_grpah_node,
+                                           const int delayless_switch);
+
+static std::vector<t_pb_graph_pin*> get_connected_internal_pins(const t_pb_graph_pin* pb_graph_pin, bool is_input);
 
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int i,
@@ -1295,18 +1303,18 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     }
 
     /* Connect intra-block pins */
-    for (size_t i = 0; i < grid.width(); ++i) {
-        for (size_t j = 0; j < grid.height(); ++j) {
-            build_internal_pins(rr_graph_builder, i, j, rr_edges_to_create,
-                                delayless_switch, grid);
-
-            //Create the actual edges inside the block
-            uniquify_edges(rr_edges_to_create);
-            alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-            rr_edges_to_create.clear();
-
-        }
-    }
+//    for (size_t i = 0; i < grid.width(); ++i) {
+//        for (size_t j = 0; j < grid.height(); ++j) {
+//            build_internal_pins(rr_graph_builder, i, j, rr_edges_to_create,
+//                                delayless_switch, grid);
+//
+//            //Create the actual edges inside the block
+//            uniquify_edges(rr_edges_to_create);
+//            alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+//            rr_edges_to_create.clear();
+//
+//        }
+//    }
 
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
@@ -1652,10 +1660,58 @@ static void add_all_internal_pins_edge(RRGraphBuilder& rr_graph_builder,
 
 }
 
+/* #TODO: Perhaps child_pb_graph_node is not needed */
 static void add_internal_pins_parent_child(RRGraphBuilder& rr_graph_builder,
-                                           const t_pb_graph_node* pb_graph_node,
+                                           const t_pb_graph_node* parent_pb_graph_node,
                                            const t_pb_graph_node* child_pb_grpah_node,
                                            const int delayless_switch) {
+
+    int num_in_ports = parent_pb_graph_node->num_input_ports;
+    int num_out_ports = parent_pb_graph_node->num_output_ports;
+
+    /* if depth = 0, something else needs to be done(because of SOURCE/SINK nodes) */
+
+    for(int in_port_idx = 0; in_port_idx < num_in_ports; in_port_idx++) {
+        int num_pins = parent_pb_graph_node->num_input_pins[in_port_idx];
+        for(int pin_idx = 0; pin_idx < num_pins; pin_idx++) {
+            const t_pb_graph_pin& pb_graph_pin = parent_pb_graph_node->input_pins[in_port_idx][pin_idx];
+            auto connected_pins = get_connected_internal_pins(&pb_graph_pin, true);
+
+
+        }
+    }
+}
+
+static std::vector<t_pb_graph_pin*> get_connected_internal_pins(const t_pb_graph_pin* pb_graph_pin, bool is_input) {
+
+    std::vector<t_pb_graph_pin*> connected_pins;
+    t_pb_graph_edge** edges;
+    t_pb_graph_pin** connected_pins_ptr;
+    int num_edges;
+    int num_pins;
+    if(is_input) {
+        num_edges = pb_graph_pin->num_output_edges;
+        edges = pb_graph_pin->output_edges;
+    }
+    else {
+        num_edges = pb_graph_pin->num_input_edges;
+        edges = pb_graph_pin->input_edges;
+    }
+
+    for(int edge_idx = 0; edge_idx < num_edges; edge_idx++) {
+        const t_pb_graph_edge* pb_graph_edge = edges[edge_idx];
+        if(is_input) {
+            connected_pins_ptr = pb_graph_edge->input_pins;
+            num_pins = pb_graph_edge->num_input_pins;
+        }
+        else {
+            connected_pins_ptr = pb_graph_edge->output_pins;
+            num_pins = pb_graph_edge->num_output_pins;
+        }
+        connected_pins.insert(connected_pins.begin(), connected_pins_ptr, connected_pins_ptr+num_pins);
+
+
+    }
 
 }
 
