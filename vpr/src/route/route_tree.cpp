@@ -40,9 +40,13 @@ void RouteTreeNode::print_x(int depth) const {
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    VTR_LOG("%srt_node: %d (%s) \t ipin: %d \t R: %g \t C: %g \t delay: %g \t",
+    VTR_LOG("%srt_node: %d (%d, %d) -> (%d, %d) (%s) ipin: %d R: %g C: %g delay: %g ",
             indent.c_str(),
             inode,
+            rr_graph.node_xlow(inode),
+            rr_graph.node_ylow(inode),
+            rr_graph.node_xhigh(inode),
+            rr_graph.node_yhigh(inode),
             rr_graph.node_type_string(inode),
             net_pin_index,
             R_upstream,
@@ -50,7 +54,7 @@ void RouteTreeNode::print_x(int depth) const {
             Tdel);
 
     if (_parent) {
-        VTR_LOG("parent: %d \t parent_switch: %d", _parent->inode, parent_switch);
+        VTR_LOG("parent: %d parent_switch: %d", _parent->inode, parent_switch);
         bool parent_edge_configurable = rr_graph.rr_switch_inf(parent_switch).configurable();
         if (!parent_edge_configurable) {
             VTR_LOG("*");
@@ -288,7 +292,7 @@ RouteTree::update_unbuffered_ancestors_C_downstream(RouteTreeNode& from_node) {
 
     /* Having set the value of C_downstream_addition, we must check whether the parent switch
      * is a buffered or unbuffered switch with the if statement below. If the parent switch is
-     * a buffered switch, then the parent node's downsteam capacitance is increased by the
+     * a buffered switch, then the parent node's downstream capacitance is increased by the
      * value of the parent switch's internal capacitance in the if statement below.
      * Correspondingly, the ancestors' downstream capacitance will be updated by the same
      * value through the while loop. Otherwise, if the parent switch is unbuffered, then
@@ -301,6 +305,8 @@ RouteTree::update_unbuffered_ancestors_C_downstream(RouteTreeNode& from_node) {
 
     if (rr_graph.rr_switch_inf(iswitch).buffered() == true) {
         C_downstream_addition = rr_graph.rr_switch_inf(iswitch).Cinternal;
+        if(C_downstream_addition == 0) /* This switch has Cinternal = 0, no need to update parent */
+            return from_node;
         last_node = parent_rt_node;
         last_node->C_downstream += C_downstream_addition;
         parent_rt_node = last_node->_parent;

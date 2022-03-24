@@ -10,7 +10,7 @@ namespace tatum {
 ///\tparam Visitor The analysis type visitor (e.g. SetupAnalysis)
 ///\tparam GraphWalker The graph walker to use (defaults to serial traversals)
 template<class Visitor,
-         class GraphWalker=SerialWalker>
+         class... GraphWalkers>
 struct AnalyzerFactory;
 
 } //namepsace

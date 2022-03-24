@@ -45,13 +45,13 @@ static void load_one_constant_net_delay(const Netlist<>& net_list,
                                         float delay_value);
 
 /*************************** Subroutine definitions **************************/
-void load_net_delay_from_routing(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
-    /* This routine loads net_delay[0..nets.size()-1][1..num_pins-1].  Each entry   *
-     * is the Elmore delay from the net source to the appropriate sink. Both       *
-     * the rr_graph and the routing traceback must be completely constructed        *
-     * before this routine is called, and the net_delay array must have been        *
-     * allocated.                                                                   */
 
+/** This routine loads net_delay[0..nets.size()-1][1..num_pins-1].  Each entry 
+ * is the Elmore delay from the net source to the appropriate sink. Both       
+ * the rr_graph and the routing traceback must be completely constructed        
+ * before this routine is called, and the net_delay array must have been        
+ * allocated. */
+void load_net_delay_from_routing(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
     for (auto net_id : net_list.nets()) {
         if (net_list.net_is_ignored(net_id)) {
             load_one_constant_net_delay(net_list, net_delay, net_id, 0.);
@@ -61,18 +61,17 @@ void load_net_delay_from_routing(const Netlist<>& net_list, NetPinsMatrix<float>
     }
 }
 
+/** This routine loads delay values for one net in                            
+ * net_delay[net_id][1..num_pins-1]. First, from the traceback, it           
+ * constructs the route tree and computes its values for R, C, and Tdel.     
+ * Next, it walks the route tree recursively, storing the time delays for    
+ * each sink into the map ipin_to_Tdel. Then, while looping through the      
+ * net_delay array we search for the pin index in the map, and               
+ * correspondingly update the entry in net_delay. Finally, it frees the      
+ * route tree and clears the ipin_to_Tdel_map associated with that net. */
 static void load_one_net_delay(const Netlist<>& net_list,
                                NetPinsMatrix<float>& net_delay,
                                ParentNetId net_id) {
-    /* This routine loads delay values for one net in                            *
-     * net_delay[net_id][1..num_pins-1]. First, from the traceback, it           *
-     * constructs the route tree and computes its values for R, C, and Tdel.     *
-     * Next, it walks the route tree recursively, storing the time delays for    *
-     * each sink into the map ipin_to_Tdel. Then, while looping through the      *
-     * net_delay array we search for the pin index in the map, and               *
-     * correspondingly update the entry in net_delay. Finally, it frees the      *
-     * route tree and clears the ipin_to_Tdel_map associated with that net.      */
-
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     if (!route_ctx.route_trees[net_id]) {
@@ -92,9 +91,9 @@ static void load_one_net_delay(const Netlist<>& net_list,
     ipin_to_Tdel_map.clear(); // clear the map
 }
 
+/** This routine recursively traverses the route tree, and copies the Tdel of the sink_type nodes
+ * into the map. */
 static void load_one_net_delay_recurr(const RouteTreeNode& rt_node, ParentNetId net_id) {
-    /* This routine recursively traverses the route tree, and copies the Tdel of the sink_type nodes *
-     * into the map.                                                                                 */
     if (rt_node.net_pin_index != OPEN) {                        // value of OPEN indicates a non-SINK
         ipin_to_Tdel_map[rt_node.net_pin_index] = rt_node.Tdel; // add to the map, process current sink-type node
     }
@@ -104,12 +103,11 @@ static void load_one_net_delay_recurr(const RouteTreeNode& rt_node, ParentNetId 
     }
 }
 
+/** Sets each entry of the net_delay array for net inet to delay_value. */
 static void load_one_constant_net_delay(const Netlist<>& net_list,
                                         NetPinsMatrix<float>& net_delay,
                                         ParentNetId net_id,
                                         float delay_value) {
-    /* Sets each entry of the net_delay array for net inet to delay_value.     */
-
     for (unsigned int ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++)
         net_delay[net_id][ipin] = delay_value;
 }

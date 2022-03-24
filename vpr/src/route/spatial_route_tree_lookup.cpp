@@ -48,7 +48,7 @@ void update_route_tree_spatial_lookup_recur(const RouteTreeNode& rt_node, Spatia
     //
     // TODO: Depending on bin size, long wires may end up being added only to bins at
     //      their start/end and may pass through bins along their length to which they
-    //      are not added. If this becomes an issues, reconsider how we add nodes to
+    //      are not added. If this becomes an issue, reconsider how we add nodes to
     //      bins
     if (bin_xhigh != bin_xlow || bin_yhigh != bin_ylow) {
         spatial_lookup[bin_xhigh][bin_yhigh].push_back(rt_node);

@@ -7,6 +7,7 @@
 #include "tatum/TimingGraphFwd.hpp"
 #include "tatum/TimingConstraintsFwd.hpp"
 
+#include "tatum/analyzers/AdaptiveSetupHoldTimingAnalyzer.hpp"
 #include "tatum/graph_walkers.hpp"
 #include "tatum/timing_analyzers.hpp"
 #include "tatum/analyzers/full_timing_analyzers.hpp"
@@ -55,9 +56,9 @@ namespace tatum {
 ///Factor class to construct timing analyzers
 ///
 ///\tparam Visitor The analysis type visitor (e.g. SetupAnalysis)
-///\tparam GraphWalker The graph walker to use (defaults to serial traversals)
+///\tparam GraphWalker The graph walker to use
 template<class Visitor,
-         class GraphWalker>
+         class... GraphWalkers>
 struct AnalyzerFactory {
 
     //We use the dependent_false template to detect if the un-specialized AnalyzerFactor 
@@ -172,6 +173,21 @@ struct AnalyzerFactory<SetupHoldAnalysis,SerialIncrWalker> {
                 new detail::IncrSetupHoldTimingAnalyzer<SerialIncrWalker>(timing_graph, 
                                                                           timing_constraints, 
                                                                           delay_calc)
+                );
+    }
+};
+
+template<>
+struct AnalyzerFactory<SetupHoldAnalysis,ParallelWalker,SerialIncrWalker> {
+
+    static std::unique_ptr<SetupHoldTimingAnalyzer> make(const TimingGraph& timing_graph,
+                                                         const TimingConstraints& timing_constraints,
+                                                         const DelayCalculator& delay_calc) {
+        return std::unique_ptr<SetupHoldTimingAnalyzer>(
+                new detail::AdaptiveSetupHoldTimingAnalyzer<ParallelWalker, SerialIncrWalker>(
+                    timing_graph, 
+                    timing_constraints, 
+                    delay_calc)
                 );
     }
 };

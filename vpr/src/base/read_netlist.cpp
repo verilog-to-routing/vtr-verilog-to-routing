@@ -1057,11 +1057,13 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
             int logical_pin = clb_nlist.pin_logical_index(pin_id);
             int physical_pin = get_physical_pin(tile_type, block_type, logical_pin);
 
+            /* XXX: Silence warning
             if (tile_type->is_ignored_pin[physical_pin] != is_ignored_net) {
                 VTR_LOG_WARN(
                     "Netlist connects net %s to both global and non-global pins.\n",
                     clb_nlist.net_name(net_id).c_str());
             }
+            */
         }
     }
 

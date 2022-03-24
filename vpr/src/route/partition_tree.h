@@ -2,6 +2,7 @@
 
 #include "connection_router.h"
 #include "router_stats.h"
+#include "virtual_net.h"
 
 #include <cmath>
 #include <fstream>
@@ -27,8 +28,6 @@ inline Side operator!(const Side& rhs) {
 
 /** Routing iteration results per thread. (for a subset of the input netlist) */
 struct RouteIterResults {
-    /** Are there any connections impossible to route due to a disconnected rr_graph? */
-    bool is_routable = true;
     /** Net IDs for which timing_driven_route_net() actually got called */
     std::vector<ParentNetId> rerouted_nets;
     /** RouterStats collected from my subset of nets */
@@ -44,22 +43,17 @@ struct RouteIterResults {
  * by the cutline. Leaf nodes represent a final set of nets reached by partitioning.
  *
  * To route this in parallel, we first route the nets in the root node, then add
- * its left and right to a task queue, and repeat this for the whole tree.
- * 
- * The tree stores some routing results to be later combined, such as is_routable and
- * rerouted_nets. (TODO: do this per thread instead of per node) */
+ * its left and right to a task queue, and repeat this for the whole tree. */
 class PartitionTreeNode {
   public:
     /** Nets claimed by this node (intersected by cutline if branch, nets in final region if leaf) */
     std::vector<ParentNetId> nets;
+    /** Virtual nets delegated to this node by the parent */
+    std::vector<VirtualNet> virtual_nets;
     /** Left subtree. */
     std::unique_ptr<PartitionTreeNode> left = nullptr;
     /** Right subtree. */
     std::unique_ptr<PartitionTreeNode> right = nullptr;
-    /** Are there any connections impossible to route due to a disconnected rr_graph? */
-    bool is_routable = false;
-    /** Net IDs for which timing_driven_route_net() actually got called */
-    std::vector<ParentNetId> rerouted_nets;
     /* Axis of the cutline. */
     Axis cutline_axis = Axis::X;
     /* Position of the cutline. It's a float, because cutlines are considered to be "between" integral coordinates. */
@@ -78,14 +72,14 @@ class PartitionTree {
     PartitionTree& operator=(PartitionTree&&) = default;
 
     /** Can only be built from a netlist */
-    PartitionTree(const Netlist<>& netlist);
+    PartitionTree(const Netlist<>& netlist, const vtr::vector<ParentNetId, uint32_t>& scores);
 
     /** Access root. Shouldn't cause a segfault, because PartitionTree constructor always makes a _root */
     inline PartitionTreeNode& root(void) { return *_root; }
 
   private:
     std::unique_ptr<PartitionTreeNode> _root;
-    std::unique_ptr<PartitionTreeNode> build_helper(const Netlist<>& netlist, const std::vector<ParentNetId>& nets, int x1, int y1, int x2, int y2);
+    std::unique_ptr<PartitionTreeNode> build_helper(const std::vector<ParentNetId>& nets, const vtr::vector<ParentNetId, uint32_t>& scores, int x1, int y1, int x2, int y2);
 };
 
 #ifdef VPR_DEBUG_PARTITION_TREE

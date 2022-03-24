@@ -117,13 +117,16 @@ static void do_one_route(const Netlist<>& net_list,
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
-    std::tie(found_path, std::ignore, cheapest) = router.timing_driven_route_connection_from_route_tree(tree.root(),
-                                                                                                    sink_node,
-                                                                                                    cost_params,
-                                                                                                    bounding_box,
-                                                                                                    router_stats,
-                                                                                                    conn_params,
-                                                                                                    true);
+    std::tie(found_path, std::ignore, cheapest) = router.timing_driven_route_connection_from_route_tree(
+        tree.root(),
+        tree.root().inode,
+        sink_node,
+        cost_params,
+        bounding_box,
+        router_stats,
+        conn_params,
+        true
+    );
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);

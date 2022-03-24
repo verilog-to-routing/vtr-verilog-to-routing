@@ -17,14 +17,14 @@ namespace tatum {
  *
  * If TATUM_INCR_BLOCK_INVALIDATION is defined: 
  *      All of a nodes tags associated with an invalidated edge are invalidated.
- *      This is a robust but pessimisitc approach (it invalidates more tags than
+ *      This is a robust but pessimistic approach (it invalidates more tags than
  *      strictly required). As a result all nodes processed will report having been
  *      modified, meaning their decendents/predecessors will also be invalidated
  *      even if in reality the recalculated tags are identical to the previous ones
  *      (i.e. nothing has really changed).
  *
  * Ohterwise, the analyzer performs edge invalidation:
- *      Only node tags which are dominanted by an invalidated edge are invalidated.
+ *      Only node tags which are dominated by an invalidated edge are invalidated.
  *      This is a less pessimistic approach, and means when processed nodes which
  *      don't have any changed tags will report as being unmodified. This significantly
  *      prunes the amount of the timing graph which needs to be updated (as unmodified
@@ -37,7 +37,7 @@ namespace tatum {
  * manner. Unlike SerialWalker it attempts to incrementally (rather than
  * fully) update based on invalidated edges.
  *
- * To performan an incremental traversal, the st of invalidated edges
+ * To perform an incremental traversal, the set of invalidated edges
  * is processed to identify nodes which will need to be re-evaluated for
  * the arrival and/or required traversals.
  *

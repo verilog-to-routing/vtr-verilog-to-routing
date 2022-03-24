@@ -301,6 +301,9 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->PowerOpts,
              vpr_setup);
 
+    /* XXX: Hardcode parallel router for testing */
+    //vpr_setup->RouterOpts.router_algorithm = PARALLEL;
+
     /* Check inputs are reasonable */
     CheckArch(*arch);
 
@@ -906,19 +909,12 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
                               NetPinsMatrix<float>& net_delay,
                               bool is_flat) {
-    get_cached_router_lookahead(
-        vpr_setup.RoutingArch,
-        vpr_setup.RouterOpts.lookahead_type,
-        vpr_setup.RouterOpts.write_router_lookahead,
-        vpr_setup.RouterOpts.read_router_lookahead,
-        vpr_setup.Segments,
-        is_flat);
-
     vtr::ScopedStartFinishTimer timer("Routing");
 
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width || fixed_channel_width <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
     }
+
     bool status = false;
     status = try_route(net_list,
                        fixed_channel_width,
