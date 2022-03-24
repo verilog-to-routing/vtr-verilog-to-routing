@@ -13,6 +13,7 @@
  *
  */
 
+#include "physical_types.h"
 #ifndef NO_GRAPHICS
 #    include <cstdio>
 #    include <sstream>
@@ -92,8 +93,8 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
             return;
         }
 
-        highlight_rr_nodes(rr_node_id);
-        auto_zoom_rr_node(rr_node_id);
+        highlight_rr_nodes(RRNodeId(rr_node_id));
+        auto_zoom_rr_node(RRNodeId(rr_node_id));
     }
 
     else if (search_type == "Block ID") {
@@ -175,13 +176,13 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-bool highlight_rr_nodes(int hit_node) {
+bool highlight_rr_nodes(RRNodeId hit_node) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     //TODO: fixed sized char array may cause overflow.
     char message[250] = "";
 
-    if (hit_node != OPEN) {
+    if (hit_node) {
         const auto& device_ctx = g_vpr_ctx.device();
         auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
         for (auto node : nodes) {
@@ -229,23 +230,25 @@ bool highlight_rr_nodes(int hit_node) {
     return true;
 }
 
-void auto_zoom_rr_node(int rr_node_id) {
+void auto_zoom_rr_node(RRNodeId rr_node_id) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     ezgl::rectangle rr_node;
 
     // find the location of the node
-    switch (rr_graph.node_type(RRNodeId(rr_node_id))) {
+    switch (rr_graph.node_type(rr_node_id)) {
         case IPIN:
         case OPIN: {
-            int i = rr_graph.node_xlow(RRNodeId(rr_node_id));
-            int j = rr_graph.node_ylow(RRNodeId(rr_node_id));
-            int layer_num = rr_graph.node_layer(RRNodeId(rr_node_id));
-            t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({i, j, layer_num});
-            int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
-            int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
-            int ipin = rr_graph.node_ptc_num(RRNodeId(rr_node_id));
+            t_physical_tile_loc tile_loc = {
+                rr_graph.node_xlow(rr_node_id),
+                rr_graph.node_ylow(rr_node_id),
+                rr_graph.node_layer(rr_node_id)};
+            t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(tile_loc);
+            int width_offset = device_ctx.grid.get_width_offset(tile_loc);
+            int height_offset = device_ctx.grid.get_height_offset(tile_loc);
+
+            int ipin = rr_graph.node_ptc_num(rr_node_id);
             float xcen, ycen;
 
             for (const e_side& iside : SIDES) {

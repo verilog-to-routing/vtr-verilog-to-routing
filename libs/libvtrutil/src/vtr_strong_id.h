@@ -4,7 +4,7 @@
  * @file
  * @brief This header provides the StrongId class.
  *
- * It is template which can be used to create strong Id's 
+ * It is template which can be used to create strong Id's
  * which avoid accidental type conversions (generating compiler errors when they occur).
  *
  * Motivation
@@ -146,6 +146,7 @@
 #include <type_traits> //for std::is_integral
 #include <cstddef>     //for std::size_t
 #include <functional>  //for std::hash
+#include <ostream>     //for std::ostream
 
 namespace vtr {
 
@@ -160,13 +161,16 @@ class StrongId;
  * friend them
  */
 template<typename tag, typename T, T sentinel>
-bool operator==(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+constexpr bool operator==(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
 
 template<typename tag, typename T, T sentinel>
-bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+constexpr bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
 
 template<typename tag, typename T, T sentinel>
-bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+constexpr bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+
+template<typename tag, typename T, T sentinel>
+std::ostream& operator<<(std::ostream& out, const StrongId<tag, T, sentinel>& rhs);
 
 ///@brief Class template definition with default template parameters
 template<typename tag, typename T = int, T sentinel = T(-1)>
@@ -175,38 +179,46 @@ class StrongId {
 
   public:
     ///@brief Gets the invalid Id
-    static constexpr StrongId INVALID() { return StrongId(); }
+    static constexpr StrongId INVALID() noexcept { return StrongId(); }
 
     ///@brief Default to the sentinel value
     constexpr StrongId()
         : id_(sentinel) {}
 
-    ///@brief Only allow explict constructions from a raw Id (no automatic conversions)
+    ///@brief Only allow explicit constructions from a raw Id (no automatic conversions)
     explicit constexpr StrongId(T id)
         : id_(id) {}
 
     // Allow some explicit conversion to useful types:
 
-    ///@brief Allow explicit conversion to bool (e.g. if(id))
-    explicit operator bool() const { return *this != INVALID(); }
+    /// @brief Allow explicit conversion to bool (e.g. if(id))
+    explicit constexpr operator bool() const { return id_ != sentinel; }
 
-    ///@brief Allow explicit conversion to size_t (e.g. my_vector[size_t(strong_id)])
-    explicit operator std::size_t() const { return static_cast<std::size_t>(id_); }
+    /// @brief Another name for the bool cast
+    constexpr bool is_valid() const { return id_ != sentinel; }
 
-    ///@brief To enable hasing Ids
+    /// @brief Allow explicit conversion to size_t (e.g. my_vector[size_t(strong_id)])
+    explicit constexpr operator std::size_t() const { return static_cast<std::size_t>(id_); }
+
+    /// @brief To enable hashing Ids
     friend std::hash<StrongId<tag, T, sentinel>>;
 
     /**
-     * @brief To enable comparisions between Ids
+     * @brief To enable comparisons between Ids
      *
      * Note that since these are templated functions we provide an empty set of template parameters
      * after the function name (i.e. <>)
      */
-    friend bool operator== <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+    friend constexpr bool operator== <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
     ///@brief != operator
-    friend bool operator!= <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+    friend constexpr bool operator!= <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
     ///@brief < operator
-    friend bool operator< <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+    friend constexpr bool operator< <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+
+    /**
+     * @brief to be able to print them out
+     */
+    friend std::ostream& operator<< <>(std::ostream& out, const StrongId<tag, T, sentinel>& rhs);
 
   private:
     T id_;
@@ -214,22 +226,28 @@ class StrongId {
 
 ///@brief == operator
 template<typename tag, typename T, T sentinel>
-bool operator==(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
+constexpr bool operator==(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
     return lhs.id_ == rhs.id_;
 }
 
 ///@brief != operator
 template<typename tag, typename T, T sentinel>
-bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
+constexpr bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
     return !(lhs == rhs);
 }
 
 ///@brief operator < Needed for std::map-like containers
 template<typename tag, typename T, T sentinel>
-bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
+constexpr bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
     return lhs.id_ < rhs.id_;
 }
 
+///@brief operator << Needed for print-debugging
+template<typename tag, typename T, T sentinel>
+std::ostream& operator<<(std::ostream& out, const StrongId<tag, T, sentinel>& rhs) {
+    out << rhs.id_;
+    return out;
+}
 } //namespace vtr
 
 ///@brief Specialize std::hash for StrongId's (needed for std::unordered_map-like containers)
