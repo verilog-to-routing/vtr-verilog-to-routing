@@ -6,12 +6,12 @@
 				{
 					"line": 759,
 					"column": 2,
-					"label": "To change:"
+					"label": "To change: Confirm content of Direction::SAME case"
 				},
 				{
 					"line": 952,
 					"column": 2,
-					"label": "To change:"
+					"label": "To change: Populate Direction::SAME case"
 				},
 				{
 					"line": 1044,
@@ -26,7 +26,7 @@
 				{
 					"line": 1212,
 					"column": 2,
-					"label": "To change: Maybe"
+					"label": "To change: Add case for Direction::SAME"
 				}
 			]
 		},
@@ -34,67 +34,67 @@
 			"path": "vpr/src/route/rr_graph2.cpp",
 			"bookmarks": [
 				{
-					"line": 345,
+					"line": 350,
 					"column": 2,
-					"label": "To change: Maybe"
+					"label": "To change: Investigate if Direction::SAME is needed"
 				},
 				{
-					"line": 380,
+					"line": 385,
 					"column": 3,
 					"label": "Tracking chan_details_x"
 				},
 				{
-					"line": 691,
+					"line": 696,
 					"column": 2,
-					"label": "To change: Maybe"
+					"label": "To change: Adapt for Direction::SAME"
 				},
 				{
-					"line": 747,
+					"line": 756,
 					"column": 2,
-					"label": "To change: Maybe"
+					"label": "To change: Understand why ofs need to be flipped if DEC"
 				},
 				{
-					"line": 1425,
+					"line": 1434,
 					"column": 0,
 					"label": "To change: A few things it seems"
 				},
 				{
-					"line": 1571,
+					"line": 1580,
 					"column": 5,
 					"label": "To change: Maybe"
 				},
 				{
-					"line": 1592,
+					"line": 1601,
 					"column": 11,
 					"label": "To change: Maybe"
 				},
 				{
-					"line": 1609,
+					"line": 1618,
 					"column": 3,
 					"label": "To change: Maybe"
 				},
 				{
-					"line": 1631,
+					"line": 1640,
 					"column": 3,
 					"label": "To change: Maybe"
 				},
 				{
-					"line": 1817,
+					"line": 1826,
 					"column": 2,
 					"label": "To change: Maybe"
 				},
 				{
-					"line": 2172,
+					"line": 2181,
 					"column": 2,
 					"label": "To change: Maybe"
 				},
 				{
-					"line": 2341,
+					"line": 2350,
 					"column": 3,
 					"label": "To change: Maybe"
 				},
 				{
-					"line": 2406,
+					"line": 2415,
 					"column": 1,
 					"label": "To change: Maybe"
 				}

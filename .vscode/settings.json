@@ -117,5 +117,74 @@
             } 
             ]
         }
-    ]
+    ],
+
+    "commentAnchors.tags.list": [
+      
+        {
+          "tag": "TO INVESTIGATE",
+          "enabled": true,
+          "iconColor": "default",
+          "highlightColor": "#A8C023",
+          "scope": "workspace"
+        },
+        {
+          "tag": "ANCHOR",
+          "enabled": false,
+          "iconColor": "default",
+          "highlightColor": "#A8C023",
+          "scope": "workspace"
+        },
+        {
+          "tag": "TODO",
+          "enabled": false,
+          "iconColor": "blue",
+          "highlightColor": "#3ea8ff",
+          "scope": "workspace"
+        },
+        {
+          "tag": "FIXME",
+          "enabled": false,
+          "iconColor": "red",
+          "highlightColor": "#F44336",
+          "scope": "workspace"
+        },
+        {
+          "tag": "STUB",
+          "enabled": false,
+          "iconColor": "purple",
+          "highlightColor": "#BA68C8",
+          "scope": "file"
+        },
+        {
+          "tag": "NOTE",
+          "enabled": false,
+          "iconColor": "orange",
+          "highlightColor": "#FFB300",
+          "scope": "file"
+        },
+        {
+          "tag": "REVIEW",
+          "enabled": false,
+          "iconColor": "green",
+          "highlightColor": "#64DD17",
+          "scope": "workspace"
+        },
+        {
+          "tag": "SECTION",
+          "enabled": false,
+          "iconColor": "blurple",
+          "highlightColor": "#896afc",
+          "scope": "workspace",
+          "behavior": "region"
+        },
+        {
+          "tag": "LINK",
+          "enabled": false,
+          "iconColor": "#2ecc71",
+          "highlightColor": "#2ecc71",
+          "scope": "workspace",
+          "behavior": "link"
+        }
+      ]
 }

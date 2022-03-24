@@ -343,6 +343,11 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                 seg_details[cur_track].direction = Direction::BIDIR;
             } else {
                 VTR_ASSERT(UNI_DIRECTIONAL == directionality);
+                /*TO INVESTIGATE - Evaluates whether the remainder is 0 or not to set DEC or INC
+                QUESTION: What is the logic ?
+                ANSWER: Possibly has to do with having to dublicate track in UNIDIR
+                        because on IN and OUT. Still need to workout if DEC and INC
+                        still holds.*/
                 seg_details[cur_track].direction = (itrack % 2) ? Direction::DEC : Direction::INC;
             }
 
@@ -693,6 +698,9 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                      Direction::INC, max_chan_width, true, inc_muxes, &num_inc_muxes, &dummy);
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
                      Direction::DEC, max_chan_width, true, dec_muxes, &num_dec_muxes, &dummy);
+    /* TO INVESTIGATE - Make sure Direction::SAME is fully defined */
+    label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
+                     Direction::SAME, max_chan_width, true, dec_muxes, &num_dec_muxes, &dummy);                 
 
     /* Clip Fc to the number of muxes. */
     if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
@@ -744,6 +752,7 @@ bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_
     VTR_ASSERT(ofs >= 0);
     VTR_ASSERT(ofs < length);
 
+    /* TO INVESTIGATE - What is the ofs about ? Understand why the we check DEC and assume that */
     /* If unidir segment that is going backwards, we need to flip the ofs */
     if (Direction::DEC == seg_details[track].direction()) {
         ofs = (length - 1) - ofs;
