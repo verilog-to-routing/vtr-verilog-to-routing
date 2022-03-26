@@ -507,6 +507,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                 //reset cost for this segment
                 routing_cost_map.fill(Expansion_Cost_Entry());
 
+                /* TO INVESTIGATE - Seems to require some adaptation */
                 for (RRNodeId sample_node : sample_nodes[chan_type]) {
                     int sample_x = rr_graph.node_xlow(sample_node);
                     int sample_y = rr_graph.node_ylow(sample_node);
@@ -551,6 +552,7 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Must start lookahead routing from CHANX or CHANY node\n");
     }
 
+    /* TO INVESTIGATE - Probably needs some extra statements for same side connection */
     /* determine which direction the wire should go in based on the start & target coordinates */
     Direction direction = Direction::INC;
     if ((rr_type == CHANX && target_x < start_x) || (rr_type == CHANY && target_y < start_y)) {
@@ -928,6 +930,7 @@ static void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int*
             delta_seg = 0;
         }
 
+        /* TO INVESTIGATE - Might need adaptation */
         /* account for wire direction. lookahead map was computed by looking up and to the right starting at INC wires. for targets
          * that are opposite of the wire direction, let's add 1 to delta_seg */
         Direction from_dir = rr_graph.node_direction(from_node);
@@ -1040,6 +1043,7 @@ static void adjust_rr_wire_position(const RRNodeId rr, int& x, int& y) {
 
     Direction rr_dir = rr_graph.node_direction(rr);
 
+    /* TO INVESTIGATE - Does it still hold if ::SAME doesn't exist ? */
     if (rr_dir == Direction::DEC) {
         x = rr_graph.node_xhigh(rr);
         y = rr_graph.node_yhigh(rr);

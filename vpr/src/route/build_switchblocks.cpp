@@ -764,6 +764,7 @@ static void get_switchpoint_wires(
                     if (seg_direction == Direction::INC && !is_dest) {
                         continue;
                     }
+                    /* TO INVESTIGATE - Might be unnecessary */
                     if (seg_direction == Direction::SAME && is_dest) {
                         continue;
                     }
@@ -775,6 +776,7 @@ static void get_switchpoint_wires(
                     if (seg_direction == Direction::INC && is_dest) {
                         continue;
                     }
+                    /* TO INVESTIGATE - Might be unnecessary */
                     if (seg_direction == Direction::SAME && !is_dest) {
                         continue;
                     }
@@ -969,12 +971,14 @@ static void compute_wireconn_connections(
                 continue;
             }
             VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT);
-        } else if (from_wire_direction == Direction::SAME) {
+        } 
+        /* TO INVESTIGATE - Might be unnecessary */
+        else if (from_wire_direction == Direction::SAME) {
             /* a wire heading in the same direction can only connect on the same side of a switch block */
             // if (sb_conn.from_side != ) {
             //     continue;
             // }
-            // VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT);
+            //VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT);
         }
         else {
             VTR_ASSERT(from_wire_direction == Direction::BIDIR);
@@ -1041,6 +1045,8 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
 /* Here we find the correct channel (x or y), and the coordinates to index into it based on the
  * specified tile coordinates and the switchblock side. Also returns the type of channel
  * that we are indexing into (ie, CHANX or CHANY */
+/* EXPLANATION - No change seems to be needed as the coordinates still holds with same side */
+
 static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, enum e_side side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int* set_x, int* set_y, t_rr_type* chan_type) {
     *chan_type = CHANX;
 
@@ -1137,6 +1143,7 @@ static int get_wire_subsegment_num(const DeviceGrid& grid, e_rr_type chan_type, 
     }
 
     /* if this wire is going in the decreasing direction, reverse the subsegment num */
+    /* TO INVESTIGATE - Does this still hold ? */
     VTR_ASSERT(seg_end >= seg_start);
     if (direction == Direction::DEC) {
         subsegment_num = wire_length - 1 - subsegment_num;
@@ -1207,6 +1214,7 @@ static int get_switchpoint_of_wire(const DeviceGrid& grid, e_rr_type chan_type, 
         int wire_length = get_wire_segment_length(grid, chan_type, wire_details);
         int subsegment_num = get_wire_subsegment_num(grid, chan_type, wire_details, seg_coord);
 
+        /* TO INVESTIGATE - See if it still holds if type ::SAME doesn't exists*/
         Direction direction = wire_details.direction();
         if (LEFT == sb_side || BOTTOM == sb_side) {
             switchpoint = (subsegment_num + 1) % wire_length;

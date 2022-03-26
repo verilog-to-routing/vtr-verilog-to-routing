@@ -261,6 +261,7 @@ class RRGraphView {
 
             arrow = "->"; //we will point the coordinates from start to finish, left to right
 
+            /* TO INVESTIGATE - Does this still hold if ::SAME doesn't exist ? */
             if (node_direction(node) == Direction::DEC) {                //signal travels along decreasing direction
                 start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start coordinates have large value
                 start_y = std::to_string(node_yhigh(node)) + ")";

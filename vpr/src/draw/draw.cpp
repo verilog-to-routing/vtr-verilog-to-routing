@@ -1542,6 +1542,8 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
     //We assume increasing direction, and swap if needed
     ezgl::point2d start = bound_box.bottom_left();
     ezgl::point2d end = bound_box.top_right();
+    
+    /* TO INVESTIGATE - Still needed ? */
     if (dir == Direction::DEC) {
         std::swap(start, end);
     }
@@ -3262,6 +3264,8 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
 
     float x2 = 0, y2 = 0;
     const Direction chan_rr_direction = rr_graph.node_direction(RRNodeId(chan_node));
+    
+    /* TO INVESTIGATE - Probably needs adaptation for same side */
     switch (channel_type) {
         case CHANX: {
             y1 += draw_pin_offset;

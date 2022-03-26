@@ -129,6 +129,27 @@
           "scope": "workspace"
         },
         {
+          "tag": "EXPLANATION",
+          "enabled": true,
+          "iconColor": "default",
+          "highlightColor": "#00FEFE",
+          "scope": "workspace"
+        },
+        {
+          "tag": "CHANGE DONE",
+          "enabled": true,
+          "iconColor": "default",
+          "highlightColor": "#FF0000",
+          "scope": "workspace"
+        },
+        {
+          "tag": "CODE CHECKED",
+          "enabled": true,
+          "iconColor": "default",
+          "highlightColor": "#00FF00",
+          "scope": "workspace"
+        },
+        {
           "tag": "ANCHOR",
           "enabled": false,
           "iconColor": "default",
