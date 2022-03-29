@@ -1543,7 +1543,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
     ezgl::point2d start = bound_box.bottom_left();
     ezgl::point2d end = bound_box.top_right();
     
-    /* TO INVESTIGATE - Still needed ? */
+    /* CODE CHECKED - This still makes sense */
     if (dir == Direction::DEC) {
         std::swap(start, end);
     }
@@ -1561,6 +1561,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
         g->set_line_width(0);
     }
 
+    /* CODE CHECKED - Still referring to nodes so same side is probably fine here */
     e_side mux_dir = TOP;
     int coord_min = -1;
     int coord_max = -1;
@@ -1583,6 +1584,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
         }
     }
 
+    /* CODE CHECKED - No obvious issue */
     //Draw direction indicators at the boundary of each switch block, and label them
     //with the corresponding switch point (see build_switchblocks.c for a description of switch points)
     t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -3139,6 +3141,8 @@ void draw_triangle_along_line(ezgl::renderer* g, float xend, float yend, float x
     g->fill_poly(poly);
 }
 
+
+/* CODE CHECKED - This only regards pins, so shouldn't affect the same side connection. */
 static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
     /* This routine draws an edge from the pin_node to the chan_node (CHANX or   *
      * CHANY).  The connection is made to the nearest end of the track instead   *
@@ -3204,6 +3208,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
     /* Only 1 side will be picked in the end
      * Any rr_node of a grid should have at least 1 side!!!
      */
+    /* CODE CHECKED - This only regards pins and nodes, so shouldn't affect the same side connection. */
     e_side pin_side = NUM_SIDES;
     const t_rr_type channel_type = rr_graph.node_type(RRNodeId(chan_node));
     if (1 == pin_candidate_sides.size()) {
@@ -3250,6 +3255,8 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
      *   |               ----+-----+  
      *   +------------------------------------------------------------>x
      */
+
+    /* TO INVESTIGATE - Might be a problem. */
     float draw_pin_offset;
     if (TOP == pin_side || RIGHT == pin_side) {
         draw_pin_offset = draw_coords->pin_size;

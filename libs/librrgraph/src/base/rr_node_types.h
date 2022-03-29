@@ -42,8 +42,7 @@ enum class Direction : unsigned char {
     DEC = 1,
     BIDIR = 2,
     NONE = 3,
-    /* CHANGE DONE - Might be unnecessary */
-    SAME = 4,
+    /* CODE CHECKED - Removed "SAME = 4" because ::SAME is not needed. */
     NUM_DIRECTIONS
 };
 

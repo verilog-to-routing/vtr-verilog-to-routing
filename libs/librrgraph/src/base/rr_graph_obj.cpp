@@ -84,7 +84,7 @@ vtr::Point<short> RRGraph::node_start_coordinate(const RRNodeId& node) const {
     VTR_ASSERT((CHANX == node_type(node)) || (CHANY == node_type(node)));
 
     vtr::Point<short> start_coordinate(node_xlow(node), node_ylow(node));
-    /* TO INVESTIGATE - Does this hold with inclusion of same side possibility but without adding ::SAME */
+    /* CODE CHECKED - Shouldn't be a problem as looping back will be seen as another node. */
     if (Direction::DEC == node_direction(node)) {
         start_coordinate.set(node_xhigh(node), node_yhigh(node));
     }
@@ -109,7 +109,7 @@ vtr::Point<short> RRGraph::node_end_coordinate(const RRNodeId& node) const {
 
     vtr::Point<short> end_coordinate(node_xhigh(node), node_yhigh(node));
 
-    /* TO INVESTIGATE - Might need adaptation */
+    /* CODE CHECKED - Shouldn't be a problem as looping back will be seen as another node. */
     if (Direction::DEC == node_direction(node)) {
         end_coordinate.set(node_xlow(node), node_ylow(node));
     }
