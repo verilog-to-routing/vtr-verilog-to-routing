@@ -245,6 +245,16 @@ void button_for_toggle_crit_path() {
 }
 
 void button_for_displaying_noc() {
+
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    // if the user did not turn on the "noc" option then we don't give the option to display the noc to the user
+    if (!draw_state->show_noc_button)
+    {
+        return;
+    }
+
+    // if we are here then the user turned the "noc" option on, so create a radio button to allow the user to display the noc
     GObject* main_window = application.get_object(application.get_main_window_id().c_str());
     GObject* main_window_grid = application.get_object("InnerGrid");
 
@@ -259,6 +269,7 @@ void button_for_displaying_noc() {
     gtk_widget_show_all((GtkWidget*)main_window);
 
     // future signal connection
+    g_signal_connect(display_noc_widget, "toggled", G_CALLBACK(toggle_noc_display), NULL);
 
 }
 
