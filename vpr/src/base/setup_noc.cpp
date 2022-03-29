@@ -30,6 +30,13 @@ void setup_noc(const t_arch& arch)
     auto& device_ctx = g_vpr_ctx.device();
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
 
+    // quick error check that the noc attribute of the arch is not empty
+    // basically, no noc topology information was provided by the user in the arch file
+    if (arch.noc == nullptr)
+    {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No NoC topology information was provided in the architecture file.");
+    }
+
     // go through the FPGA grid and find the noc router tiles
     // then store the position 
     identify_and_store_noc_router_tile_positions(device_ctx.grid,list_of_noc_router_tiles, arch.noc->noc_router_tile_name);
@@ -41,7 +48,7 @@ void setup_noc(const t_arch& arch)
     }
     else if (list_of_noc_router_tiles.size() > arch.noc->router_list.size()) // check whether the noc topology information provided is using all the routers in the FPGA
     {
-        VTR_LOG_WARN("The Provided NoC topology information in the architecture file has less number of routers than what is available in the FPGA device.");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,"The Provided NoC topology information in the architecture file uses less number of routers than what is available in the FPGA device.");
     }
     else if (list_of_noc_router_tiles.size() == 0) // case where no physical router tiles were found
     {
@@ -61,8 +68,6 @@ void setup_noc(const t_arch& arch)
    {
        echo_noc(getEchoFileName(E_ECHO_NOC_MODEL));
    }
-
-   exit(1);
 
     return;
 
