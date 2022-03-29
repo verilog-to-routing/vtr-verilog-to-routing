@@ -78,6 +78,9 @@ bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node,
                                              int sink_rr_node,
                                              std::vector<int>& rr_nodes_on_path);
 
+// toggle functions
+void toggle_noc_display(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+
 /* This routine highlights the blocks affected in the latest move      *
  * It highlights the old and new locations of the moved blocks         *
  * It also highlights the moved block input and output terminals       *
