@@ -198,6 +198,8 @@ struct t_draw_state {
     float net_alpha = 0.1;
     float pres_fac = 1.;
     ManualMovesState manual_moves_state;
+    bool show_noc_button = false;
+    bool draw_noc = false;
 
     std::vector<Breakpoint> list_of_breakpoints;
 

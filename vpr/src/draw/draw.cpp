@@ -95,6 +95,7 @@ static void draw_routing_bb(ezgl::renderer* g);
 static void draw_routing_util(ezgl::renderer* g);
 static void draw_crit_path(ezgl::renderer* g);
 static void draw_placement_macros(ezgl::renderer* g);
+static void draw_noc(ezgl::renderer* g);
 
 void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name);
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y);
@@ -187,12 +188,23 @@ static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*d
 static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void run_graphics_commands(std::string commands);
 
+// draw_noc helper functions
+static ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type_ptr noc_router_logical_block_type);
+
+static void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId, NocRouter>& router_list, ezgl::rectangle connection_marker_bbox);
+
+static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type);
+
 /************************** File Scope Variables ****************************/
 
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
+
+// defines the area of the marker that represents connection points between links
+// area is equivalent to the %x of the area of the router
+constexpr float SIZE_OF_NOC_MARKER = 0.04;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -311,6 +323,8 @@ static void draw_main_canvas(ezgl::renderer* g) {
     draw_crit_path(g);
 
     draw_logical_connections(g);
+
+    draw_noc(g);
 
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
@@ -900,6 +914,20 @@ void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, 
         == DRAW_NO_ROUTER_EXPANSION_COST) {
         application.update_message(draw_state->default_message);
     }
+    application.refresh_drawing();
+}
+
+void toggle_noc_display(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/)
+{
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    // assign corresponding bool value to draw_state->noc_display
+    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
+        draw_state->draw_noc = true;
+    else
+        draw_state->draw_noc = false;
+
+    //redraw
     application.refresh_drawing();
 }
 
@@ -3643,6 +3671,198 @@ static void draw_routed_timing_edge(tatum::NodeId start_tnode,
     g->set_line_dash(ezgl::line_dash::none);
 }
 
+/*
+    This function draws the NoC by drawing the links of the NoC and highlights the connection points between links.The drawing is done on top of all the placment and routing, so this acts as an overlay.
+
+*/
+static void draw_noc(ezgl::renderer *g)
+{
+    t_draw_state* draw_state = get_draw_state_vars();
+    auto& noc_ctx = g_vpr_ctx.noc();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    // vector of routers in the NoC
+    vtr::vector<NocRouterId, NocRouter> router_list = noc_ctx.noc_model.get_noc_routers();
+
+
+    // start by checking to see if the NoC display button was selected
+    // if the noc display option was not selected then don't draw the noc
+    if (!draw_state->draw_noc)
+    {
+        return;
+    }
+
+    // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we cant draw anythign as the NoC tile wont be drawn
+    /* since the vector of routers all have a reference positions on the grid to the corresponding physical tile, just use the first router in the vector and get its position, then use this to get the capcity of a noc router tile
+    */ 
+    int num_subtiles = device_ctx.grid[router_list.begin()->get_router_grid_position_x()][router_list.begin()->get_router_grid_position_y()].type->capacity;
+
+    // get the logical type of a noc router tile
+    t_logical_block_type_ptr noc_router_logical_type = pick_logical_type(device_ctx.grid[router_list.begin()->get_router_grid_position_x()][router_list.begin()->get_router_grid_position_y()].type);
+
+    if (num_subtiles == 0)
+    {
+        return;
+    }
+
+    // Now construct the coordinates for the markers that represent the connections between links (relative to the noc router tile position)
+    ezgl::rectangle noc_connection_marker_bbox = get_noc_connection_marker_bbox(noc_router_logical_type);
+
+
+    draw_noc_connection_marker(g, router_list, noc_connection_marker_bbox);
+    draw_noc_links(g, noc_router_logical_type);
+
+    return;
+}
+
+/************* draw_noc helper functions below *************/
+
+/*
+    This function calculates the position of the marker that will be drawn inside the noc router tile on the FPGA. This marker will be located in the center of the tile and represents a connection point between links that connect to the router.
+*/
+static ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type_ptr noc_router_logical_block_type)
+{
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    // get the drawing information for a noc router
+    t_draw_pb_type_info& blk_type_info = draw_coords->blk_info.at(noc_router_logical_block_type->index);
+
+    // get the drawing coordinates for the noc router tile
+    auto& pb_gnode = *noc_router_logical_block_type->pb_graph_head;
+    ezgl::rectangle noc_router_pb_bbox = blk_type_info.get_pb_bbox(pb_gnode);
+
+    /*
+        The connection marker will be positioned at the center of the noc router tile. For example it will look like below:
+
+        *********************
+        *                   *
+        *                   *
+        *       ****        *
+        *       *  *        *
+        *       ****        *
+        *                   *
+        *                   *
+        *********************
+
+        We do the following to calculate the position of the marker:
+            1. Get the area of the larger router tile
+            2. Calculate the area of the marker (based on a predefined percentage of the area of the larger noc tile)
+            3. The marker is a square, so we can can calculate the lengths 
+            of the sides of the marker
+            4. Divide the side length by 2 and subtract this from the x & y coordinates of the center of the larger noc router tile. This is the bottom left corner of the rectangle.
+            5. Then add the side length to the x & y coordinate of the center of the larger noc router tile. THis is the top right corner of the rectangle.    
+    */
+    double noc_router_bbox_area = noc_router_pb_bbox.area();
+    ezgl::point2d noc_router_bbox_center = noc_router_pb_bbox.center();
+
+    double connection_marker_bbox_area = noc_router_bbox_area * SIZE_OF_NOC_MARKER;
+    double connection_marker_bbox_side_length = sqrt(connection_marker_bbox_area);
+
+    double half_of_connection_marker_bbox_side_length = connection_marker_bbox_side_length/2;
+    
+    // calculate bottom left corner coordinate of marker
+    ezgl::point2d connection_marker_origin_pt(noc_router_bbox_center.x - half_of_connection_marker_bbox_side_length, noc_router_bbox_center.y - half_of_connection_marker_bbox_side_length);
+    // calculate upper right corner coordinate of marker
+    ezgl::point2d connection_marker_top_right_pt(noc_router_bbox_center.x + half_of_connection_marker_bbox_side_length, noc_router_bbox_center.y + half_of_connection_marker_bbox_side_length);
+
+    ezgl::rectangle connection_marker_bbox(connection_marker_origin_pt, connection_marker_top_right_pt);
+
+    return connection_marker_bbox;
+
+}
+
+/*
+    This function draws the markers inside the noc router tiles. This marker represents a connection that is an intersection points between multiple links.
+*/
+static void draw_noc_connection_marker(ezgl::renderer* g,const vtr::vector<NocRouterId, NocRouter>& router_list, ezgl::rectangle connection_marker_bbox)
+{
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    //set the color of the marker
+    g->set_color(ezgl::BLACK);
+
+    int router_grid_position_x = 0;
+    int router_grid_position_y = 0;
+
+    ezgl::rectangle updated_connection_marker_bbox;
+
+    // go through the routers and create the connection marker
+    for(auto router = router_list.begin(); router != router_list.end(); router++)
+    {
+        router_grid_position_x = router->get_router_grid_position_x();
+        router_grid_position_y = router->get_router_grid_position_y();
+
+        // get the coordinates to draw the marker given the current routers tile position
+        updated_connection_marker_bbox = connection_marker_bbox + ezgl::point2d(draw_coords->tile_x[router_grid_position_x], draw_coords->tile_y[router_grid_position_y]);
+
+        // draw the marker
+        g->fill_rectangle(updated_connection_marker_bbox);
+
+    }
+
+    return;
+}
+
+/*
+    This function draws the links within the noc. So based on a given noc topology, this function draws the links that connect the routers in the noc together.
+*/
+static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type)
+{
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    auto& noc_ctx = g_vpr_ctx.noc();
+
+    // vector of routers in the NoC
+    vtr::vector<NocRouterId, NocRouter> router_list = noc_ctx.noc_model.get_noc_routers();
+
+    // get the links of the NoC
+    vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
+
+    // set the color of the noc link
+    g->set_color(ezgl::BLACK);
+    // set the width of the link
+    g->set_line_width(4);
+
+    // routers connecting links
+    NocRouterId source_router;
+    NocRouterId sink_router;
+
+    // source router grid coordinates
+    int source_router_x_position = 0;
+    int source_router_y_position = 0;
+
+    // sink router grid coordinates
+    int sink_router_x_position = 0;
+    int sink_router_y_position = 0;
+
+    // coordinates of source and sink routers
+    ezgl::rectangle abs_source_router_bbox;
+    ezgl::rectangle abs_sink_router_bbox;
+
+
+    // loop through the links and draw them
+    for(auto link = link_list.begin(); link != link_list.end(); link++)
+    {
+        // get the routers
+        source_router = link->get_source_router();
+        sink_router = link->get_sink_router();
+
+        // calculate the grid positions of the source and sink routers
+        source_router_x_position = router_list[source_router].get_router_grid_position_x();
+        source_router_y_position = router_list[source_router].get_router_grid_position_y();
+
+        sink_router_x_position = router_list[sink_router].get_router_grid_position_x();
+        sink_router_y_position = router_list[sink_router].get_router_grid_position_y();
+
+        // get the drawing box coordinates of the source and sink routers
+        abs_source_router_bbox = draw_coords->get_absolute_clb_bbox(source_router_x_position, source_router_y_position, 0,noc_router_logical_block_type);
+        abs_sink_router_bbox = draw_coords->get_absolute_clb_bbox(sink_router_x_position, sink_router_y_position, 0,noc_router_logical_block_type);
+
+        //draw a line between the center of the two routers this link connects
+        g->draw_line(abs_source_router_bbox.center(), abs_sink_router_bbox.center());
+    }
+
+    return;
+}
 //Collect all the drawing locations associated with the timing edge between start and end
 static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
                                                tatum::NodeId sink_tnode,
