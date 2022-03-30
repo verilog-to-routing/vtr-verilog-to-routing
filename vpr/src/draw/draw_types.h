@@ -200,6 +200,7 @@ struct t_draw_state {
     ManualMovesState manual_moves_state;
     bool show_noc_button = false;
     bool draw_noc = false;
+    std::shared_ptr<const vtr::ColorMap> noc_usage_color_map = nullptr;
 
     std::vector<Breakpoint> list_of_breakpoints;
 
