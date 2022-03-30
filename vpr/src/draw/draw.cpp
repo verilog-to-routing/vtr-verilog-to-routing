@@ -133,7 +133,9 @@ static ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type
 
 static void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId, NocRouter>& router_list, ezgl::rectangle connection_marker_bbox);
 
-static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type);
+static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors);
+
+static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors);
 
 /************************** File Scope Variables ****************************/
 
@@ -905,6 +907,12 @@ static void draw_noc(ezgl::renderer *g)
     // vector of routers in the NoC
     vtr::vector<NocRouterId, NocRouter> router_list = noc_ctx.noc_model.get_noc_routers();
 
+    // a vector of colors to use for the NoC links, determines the colors used when drawing each link
+    vtr::vector<NocLinkId,ezgl::color> noc_link_colors;
+
+    // initialize all the link colors to black and set the vector size to the total number of links
+    noc_link_colors.resize(noc_ctx.noc_model.get_noc_links().size(), ezgl::BLACK);
+
 
     // start by checking to see if the NoC display button was selected
     // if the noc display option was not selected then don't draw the noc
@@ -931,7 +939,132 @@ static void draw_noc(ezgl::renderer *g)
 
 
     draw_noc_connection_marker(g, router_list, noc_connection_marker_bbox);
-    draw_noc_links(g, noc_router_logical_type);
+    draw_noc_usage(noc_link_colors);
+    draw_noc_links(g, noc_router_logical_type, noc_link_colors);
+
+    // draw the color map legend
+    draw_color_map_legend(*(draw_state->noc_usage_color_map), g);
+
+    return;
+}
+
+static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors)
+{
+    t_draw_state* draw_state = get_draw_state_vars();
+    auto& noc_ctx = g_vpr_ctx.noc();
+
+    // get the maximum badnwidth per link
+    double max_noc_link_bandwidth = noc_ctx.noc_link_bandwidth;
+
+    // check to see if a color map was already created previously
+    if (draw_state->noc_usage_color_map == nullptr)
+    {
+        // we havent created a color map yet for the noc link usage, so create it here
+        // the color map creates a color spectrum that gradually changes from a dark to light color. Where a dark color represents low noc link usage (low bandwidth) and a light color represents high noc link usage (high bandwidth)
+        // The color map needs a min and max value to generate the color range.
+        // for the NoC, the min value is 0, since you cannot go lower than 0 badnwidth.
+        // The max value is going to be the maximum allowable bandwidth on the noc link (as provided by the user)
+        draw_state->noc_usage_color_map = std::make_shared<vtr::PlasmaColorMap>(0.0, max_noc_link_bandwidth);
+    }
+
+    // get the list of links in the NoC
+    // get the links of the NoC
+    vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
+
+    // if the grpah is undirected, then we have a set of parallel links between the same set of routers, so keep track of their bandwidths 
+    double parallel_link_one_bandwidth = -1;
+    double parallel_link_two_bandwidth = -1;
+
+    // stores the larger bandwidth between two parallel links
+    double larger_link_bandwidth = -1;
+
+    // the color of the current parallel links
+    ezgl::color current_noc_link_color;
+
+    // variables to keep track of the source and sink router for each link
+    NocRouterId link_source_router;
+    NocRouterId link_sink_router;
+
+    // when we go through the links, if the noc connections are undirected, then we want to get the corresponding parralel link of the current link
+    // to find this parallel link, we need to go through all the links in the current links sink router, so we store those links here
+    std::vector<NocLinkId> sink_router_links;
+
+
+    // now we need to determine the colors for each link
+    for (int link = 0; link < (int)link_list.size(); link++)
+    {
+        // get the current link id
+        NocLinkId link_id(link);
+
+        // keep track of the parallel link id, initialize to an invalid value
+        NocLinkId parallel_link_id(-1);
+
+        // reset link badnwidths
+        parallel_link_one_bandwidth = -1;
+        parallel_link_two_bandwidth = -1;
+        larger_link_bandwidth = -1;
+
+        // only update the color of the link if it wasnt updated previously
+        if (noc_link_colors[link_id] == ezgl::BLACK)
+        {
+            // if we are here then the link was not updated previously, so assign the color here
+            parallel_link_one_bandwidth = link_list[link_id].get_bandwidth_usage();
+
+            // get the source and sink routers of the current link
+            link_source_router = link_list[link_id].get_source_router();
+            link_sink_router = link_list[link_id].get_sink_router();
+
+            sink_router_links = noc_ctx.noc_model.get_noc_router_connections(link_sink_router);
+
+            // go through the links of the sink router to see if there is a parallel link
+            for (auto sink_router_link = sink_router_links.begin(); sink_router_link != sink_router_links.end(); sink_router_link++)
+            {
+                // the current source link is  a parallel link if it has the same source and sink routers as the original link
+                if ((link_source_router == noc_ctx.noc_model.get_noc_link_sink_router(*sink_router_link)) && (link_sink_router == noc_ctx.noc_model.get_noc_link_source_router(*sink_router_link)))
+                {   
+                    // second the parallel links badnwidth
+                    parallel_link_two_bandwidth = noc_ctx.noc_model.get_noc_link_bandwidth_usage(*sink_router_link);
+
+                    // store the parallel link id
+                    parallel_link_id = *sink_router_link;
+                    
+                    break;
+                }
+            }
+
+            // we care more about an individual link bandwidth more than the combined bandwidth of both links, so choose the larger bandwidth to detertime the color of both links
+            // We need to set this color for both links because one will overwrite the other
+            if (parallel_link_one_bandwidth >= parallel_link_two_bandwidth)
+            {
+                larger_link_bandwidth = parallel_link_one_bandwidth;
+            }
+            else
+            {
+                larger_link_bandwidth = parallel_link_two_bandwidth;
+            }
+
+            // there is a possibility for the bandwidth to be larger than the maximum, so if it is, we cap it to the maximum value
+            if (larger_link_bandwidth > noc_ctx.noc_link_bandwidth)
+            {
+                larger_link_bandwidth = noc_ctx.noc_link_bandwidth;
+            }
+
+            // get the corresponding color that represents the link bandwidth
+            current_noc_link_color = to_ezgl_color(draw_state->noc_usage_color_map->color(larger_link_bandwidth));
+
+
+            // set the colors of the links
+            noc_link_colors[link_id] = current_noc_link_color;
+
+            // check to see if there was a parallel link and assign it the color if there was
+            if (parallel_link_id != (NocLinkId)-1)
+            {
+                noc_link_colors[parallel_link_id] = current_noc_link_color;
+            }
+            
+        }
+
+    }
 
     return;
 }
@@ -1027,7 +1160,7 @@ static void draw_noc_connection_marker(ezgl::renderer* g,const vtr::vector<NocRo
 /*
     This function draws the links within the noc. So based on a given noc topology, this function draws the links that connect the routers in the noc together.
 */
-static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type)
+static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors)
 {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& noc_ctx = g_vpr_ctx.noc();
@@ -1038,8 +1171,6 @@ static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc
     // get the links of the NoC
     vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
 
-    // set the color of the noc link
-    g->set_color(ezgl::BLACK);
     // set the width of the link
     g->set_line_width(4);
 
@@ -1061,11 +1192,14 @@ static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc
 
 
     // loop through the links and draw them
-    for(auto link = link_list.begin(); link != link_list.end(); link++)
+    for(int link = 0; link < (int)link_list.size(); link++)
     {
+        // get the converted link if
+        NocLinkId link_id(link);
+
         // get the routers
-        source_router = link->get_source_router();
-        sink_router = link->get_sink_router();
+        source_router = link_list[link_id].get_source_router();
+        sink_router = link_list[link_id].get_sink_router();
 
         // calculate the grid positions of the source and sink routers
         source_router_x_position = router_list[source_router].get_router_grid_position_x();
@@ -1077,6 +1211,9 @@ static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc
         // get the drawing box coordinates of the source and sink routers
         abs_source_router_bbox = draw_coords->get_absolute_clb_bbox(source_router_x_position, source_router_y_position, 0,noc_router_logical_block_type);
         abs_sink_router_bbox = draw_coords->get_absolute_clb_bbox(sink_router_x_position, sink_router_y_position, 0,noc_router_logical_block_type);
+
+        // set the color to draw the current link
+        g->set_color(noc_link_colors[link_id]);
 
         //draw a line between the center of the two routers this link connects
         g->draw_line(abs_source_router_bbox.center(), abs_sink_router_bbox.center());
