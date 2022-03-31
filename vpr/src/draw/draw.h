@@ -79,7 +79,27 @@ bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node,
                                              std::vector<int>& rr_nodes_on_path);
 
 // toggle functions
+<<<<<<< HEAD
 void toggle_noc_display(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+=======
+void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_noc_display(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void set_net_alpha_value(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+void set_net_alpha_value_with_enter(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+float get_net_alpha();
+
+ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
+>>>>>>> created a combo box that allows users to have the option to just display the noc links or also the bandwidth usage of each link.
 
 /* This routine highlights the blocks affected in the latest move      *
  * It highlights the old and new locations of the moved blocks         *
