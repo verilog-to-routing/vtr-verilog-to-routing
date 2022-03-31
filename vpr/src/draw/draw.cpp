@@ -919,17 +919,24 @@ void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, 
     application.refresh_drawing();
 }
 
-void toggle_noc_display(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/)
+void toggle_noc_display(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/)
 {
+    /* this is the callback function for runtime created toggle_noc_display button
+     * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
+    std::string button_name = "toggle_noc_display";
+    auto toggle_crit_path = find_button(button_name.c_str());
 
-    // assign corresponding bool value to draw_state->noc_display
-    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
-        draw_state->draw_noc = true;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
+        GTK_COMBO_BOX_TEXT(toggle_crit_path));
+    if (strcmp(combo_box_content, "None") == 0) {
+        draw_state->draw_noc = DRAW_NO_NOC;
+    } else if (strcmp(combo_box_content, "NoC Links") == 0)
+        draw_state->draw_noc = DRAW_NOC_LINKS;
     else
-        draw_state->draw_noc = false;
+        draw_state->draw_noc = DRAW_NOC_LINK_USAGE;
 
-    //redraw
+    g_free(combo_box_content);
     application.refresh_drawing();
 }
 
@@ -3695,7 +3702,7 @@ static void draw_noc(ezgl::renderer *g)
 
     // start by checking to see if the NoC display button was selected
     // if the noc display option was not selected then don't draw the noc
-    if (!draw_state->draw_noc)
+    if (draw_state->draw_noc == DRAW_NO_NOC)
     {
         return;
     }
@@ -3716,13 +3723,18 @@ static void draw_noc(ezgl::renderer *g)
     // Now construct the coordinates for the markers that represent the connections between links (relative to the noc router tile position)
     ezgl::rectangle noc_connection_marker_bbox = get_noc_connection_marker_bbox(noc_router_logical_type);
 
+    // only draw the noc useage if the user selected the option
+    if (draw_state->draw_noc == DRAW_NOC_LINK_USAGE) {
+        
+        draw_noc_usage(noc_link_colors);
+        
+        // draw the color map legend
+        draw_color_map_legend(*(draw_state->noc_usage_color_map), g);
+    }
 
-    draw_noc_connection_marker(g, router_list, noc_connection_marker_bbox);
-    draw_noc_usage(noc_link_colors);
     draw_noc_links(g, noc_router_logical_type, noc_link_colors);
 
-    // draw the color map legend
-    draw_color_map_legend(*(draw_state->noc_usage_color_map), g);
+    draw_noc_connection_marker(g, router_list, noc_connection_marker_bbox);
 
     return;
 }

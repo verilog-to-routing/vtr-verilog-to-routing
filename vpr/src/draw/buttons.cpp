@@ -246,6 +246,8 @@ void button_for_toggle_crit_path() {
 
 void button_for_displaying_noc() {
 
+    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
+    GObject* main_window_grid = application.get_object("InnerGrid");
     t_draw_state* draw_state = get_draw_state_vars();
 
     // if the user did not turn on the "noc" option then we don't give the option to display the noc to the user
@@ -255,22 +257,29 @@ void button_for_displaying_noc() {
     }
 
     // if we are here then the user turned the "noc" option on, so create a radio button to allow the user to display the noc
-    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
-    GObject* main_window_grid = application.get_object("InnerGrid");
 
-    GtkWidget* display_noc_widget = gtk_check_button_new_with_label("Display NoC");
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(display_noc_widget), false);
-    gtk_widget_set_name(display_noc_widget, "display_noc");
+    //combo box for toggle_crit_path
+    GtkWidget* toggle_noc_display_widget = gtk_combo_box_text_new();
+    GtkWidget* toggle_noc_display_label = gtk_label_new("Toggle NoC Display:");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_noc_display_widget), "None");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_noc_display_widget), "NoC Links");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_noc_display_widget), "NoC Link Usage");
+
+    gtk_combo_box_set_active((GtkComboBox*)toggle_noc_display_widget, 0); // default set to None which has an index 0
+    gtk_widget_set_name(toggle_noc_display_widget, "toggle_noc_display");
 
     //attach to the grid
-    gtk_grid_attach((GtkGrid*)main_window_grid, display_noc_widget, label_left_start_col, button_row++, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_noc_display_label, label_left_start_col, button_row++, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_noc_display_widget, box_left_start_col, button_row++, box_width, box_height);
     
     // show the newy added check box
     gtk_widget_show_all((GtkWidget*)main_window);
 
-    // future signal connection
-    g_signal_connect(display_noc_widget, "toggled", G_CALLBACK(toggle_noc_display), NULL);
-
+    //connect signals
+    g_signal_connect_swapped(GTK_COMBO_BOX_TEXT(toggle_noc_display_widget),
+                             "changed",
+                             G_CALLBACK(toggle_noc_display),
+                             toggle_noc_display_widget);
 }
 
 
