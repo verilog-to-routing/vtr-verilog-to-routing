@@ -1087,10 +1087,6 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
 
                 }
 
-
-
-
-
                 // Reserve nodes for top-level blocks in lookup to save memory
                 for (e_side side : wanted_sides) {
                     for (int width_offset = 0; width_offset < type->width; ++width_offset) {
@@ -1105,18 +1101,19 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
 
                 //Assign indices for internal-pins
                 if(pb_graph_node) {
-                    for (size_t ipin = 0; ipin < pb_graph_node->internal_pins_vec.size(); ++ipin) {
+                    for (auto pin_pair : pb_graph_node->internal_pins_vec) {
                         bool assigned_to_rr_node = false;
                         for (int width_offset = 0; width_offset < type->width; ++width_offset) {
                             int x_tile = x + width_offset;
                             for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                                 int y_tile = y + height_offset;
-                                auto pb_graph_pin = pb_graph_node->internal_pins_vec[ipin];
+                                auto pb_graph_pin = pin_pair.first;
+                                int pin_idx = pin_pair.second;
                                 if (pb_graph_pin->type == PB_PIN_INPAD) {
-                                    rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, INTERNAL_IPIN, ipin, e_side::TOP);
+                                    rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, INTERNAL_IPIN, pin_idx, e_side::TOP);
                                     assigned_to_rr_node = true;
                                 } else if (pb_graph_pin->type == PB_PIN_OUTPAD) {
-                                    rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, INTERNAL_OPIN, ipin, e_side::TOP);
+                                    rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, INTERNAL_OPIN, pin_idx, e_side::TOP);
                                     assigned_to_rr_node = true;
                                 }
                             }

@@ -50,7 +50,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster);
 
-static std::vector<t_pb_graph_pin*> get_internal_pins(const t_pb_graph_node* pb_graph_node, int mode_idx);
+static std::unordered_map<t_pb_graph_pin*, int> get_internal_pins(const t_pb_graph_node* pb_graph_node, int mode_idx);
 
 static std::tuple<int, int, int> get_max_num_internal_pin_logical_block(const t_pb_graph_node* pb_graph_node);
 
@@ -358,11 +358,12 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 
 }
 
-static std::vector<t_pb_graph_pin*> get_internal_pins(const t_pb_graph_node* pb_graph_node, int mode_idx) {
+static std::unordered_map<t_pb_graph_pin*, int> get_internal_pins(const t_pb_graph_node* pb_graph_node, int mode_idx) {
 
     int num_input_pins = 0;
     int num_output_pins = 0;
-    std::vector<t_pb_graph_pin*> pb_graph_pin;
+    int num_internal_pins;
+    std::unordered_map<t_pb_graph_pin*, int> pb_graph_pin;
 
     if(pb_graph_node->is_primitive()) {
         return pb_graph_pin;
@@ -375,16 +376,19 @@ static std::vector<t_pb_graph_pin*> get_internal_pins(const t_pb_graph_node* pb_
         for(int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
             const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
 
-            pb_graph_pin.insert(pb_graph_pin.begin(), child_pb_graph_node->internal_pins_vec.begin(), child_pb_graph_node->internal_pins_vec.end());
+            pb_graph_pin.insert(begin(child_pb_graph_node->internal_pins_vec), end(child_pb_graph_node->internal_pins_vec));
+            num_internal_pins = pb_graph_pin.size();
 
             for (int port_idx = 0; port_idx < child_pb_graph_node->num_input_ports; port_idx++) {
                 for (int pin_idx = 0; pin_idx < child_pb_graph_node->num_input_pins[port_idx]; pin_idx++) {
-                    pb_graph_pin.push_back(&(child_pb_graph_node->input_pins[port_idx][pin_idx]));
+                    pb_graph_pin.insert(std::make_pair(&(child_pb_graph_node->input_pins[port_idx][pin_idx]), num_internal_pins));
+                    num_internal_pins++;
                 }
             }
             for (int port_idx = 0; port_idx < child_pb_graph_node->num_output_ports; port_idx++) {
                 for (int pin_idx = 0; pin_idx < child_pb_graph_node->num_output_pins[port_idx]; pin_idx++) {
-                    pb_graph_pin.push_back(&(child_pb_graph_node->output_pins[port_idx][pin_idx]));
+                    pb_graph_pin.insert(std::make_pair(&(child_pb_graph_node->output_pins[port_idx][pin_idx]), num_internal_pins));
+                    num_internal_pins++;
                 }
             }
         }
