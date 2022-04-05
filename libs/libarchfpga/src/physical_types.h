@@ -1188,9 +1188,9 @@ class t_pb_graph_node {
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
 
     int num_internal_pins_mode_num;
-    int num_internal_input_pin;
-    int num_internal_output_pin;
-    std::unordered_map<t_pb_graph_pin*, int> internal_pins_vec; /* {internal_pin_idx, pin} */
+    int total_num_input_pins;
+    int total_num_output_pins;
+    std::unordered_map<t_pb_graph_pin*, int> pins_vec; /* {pin, pin_idx} */
     int total_primitive_count; /* total number of this primitive type in the cluster */
 
     /* Interconnect instances for this pb
