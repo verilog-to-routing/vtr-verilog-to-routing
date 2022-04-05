@@ -50,7 +50,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster);
 
-static std::unordered_map<t_pb_graph_pin*, int> get_internal_pins(const t_pb_graph_node* pb_graph_node, int mode_idx);
+static std::unordered_map<t_pb_graph_pin*, int> get_node_all_pins(const t_pb_graph_node* pb_graph_node, int mode_idx);
 
 static std::tuple<int, int, int> get_max_num_internal_pin_logical_block(const t_pb_graph_node* pb_graph_node);
 
@@ -209,8 +209,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 
     pb_graph_node->num_input_ports = 0;
     pb_graph_node->num_output_ports = 0;
-    pb_graph_node->num_internal_input_pin = 0;
-    pb_graph_node->num_internal_output_pin = 0;
+    pb_graph_node->total_num_input_pins = 0;
+    pb_graph_node->total_num_output_pins = 0;
     pb_graph_node->num_internal_pins_mode_num = -1;
     pb_graph_node->num_clock_ports = 0;
 
@@ -349,52 +349,64 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 
     std::tie (max_input_num_pins, max_output_num_pins, max_pins_mode_num) = get_max_num_internal_pin_logical_block(pb_graph_node);
 
-    auto internal_pins = get_internal_pins(pb_graph_node, max_pins_mode_num);
-    pb_graph_node->num_internal_input_pin = max_input_num_pins;
-    pb_graph_node->num_internal_output_pin = max_output_num_pins;
+    // #TODO: The ID assigned to the pins on the top-level block is not correspondent to the ptc in rr_lookup - Maybe something better can be done!
+    auto pins_vec = get_node_all_pins(pb_graph_node, max_pins_mode_num);
+    pb_graph_node->total_num_input_pins = max_input_num_pins;
+    pb_graph_node->total_num_output_pins = max_output_num_pins;
     pb_graph_node->num_internal_pins_mode_num = max_pins_mode_num;
-    pb_graph_node->internal_pins_vec = internal_pins;
+    pb_graph_node->pins_vec = pins_vec;
 
 
 }
 
-static std::unordered_map<t_pb_graph_pin*, int> get_internal_pins(const t_pb_graph_node* pb_graph_node, int mode_idx) {
+static std::unordered_map<t_pb_graph_pin*, int> get_node_all_pins(const t_pb_graph_node* pb_graph_node, int mode_idx) {
 
-    int num_input_pins = 0;
-    int num_output_pins = 0;
     int num_seen_input_internal_pins = 0;
     int num_seen_output_internal_pins = 0;
     std::unordered_map<t_pb_graph_pin*, int> pb_graph_pin;
 
-    if(pb_graph_node->is_primitive()) {
-        return pb_graph_pin;
+    // if pins_vec is already initialized
+    if(pb_graph_node->num_internal_pins_mode_num != -1) {
+        return pb_graph_node->pins_vec;
+
     }
 
 
+
+    // Add internal pins
+
     const t_pb_type* pb_type = pb_graph_node->pb_type;
-    for(int pb_type_idx = 0; pb_type_idx < pb_type->modes[mode_idx].num_pb_type_children; pb_type_idx++) {
-        int num_pb = pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][0].pb_type->num_pb;
-        for(int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-            const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
+    if(!pb_graph_node->is_primitive()) {
+        for (int pb_type_idx = 0; pb_type_idx < pb_type->modes[mode_idx].num_pb_type_children; pb_type_idx++) {
+            int num_pb = pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][0].pb_type->num_pb;
+            for (int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
+                const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
+                auto child_pins_vec = get_node_all_pins(child_pb_graph_node, -1);
 
-            pb_graph_pin.insert(begin(child_pb_graph_node->internal_pins_vec), end(child_pb_graph_node->internal_pins_vec));
-            num_seen_input_internal_pins = child_pb_graph_node->num_internal_input_pin;
-            num_seen_output_internal_pins = child_pb_graph_node->num_internal_output_pin;
-
-            for (int port_idx = 0; port_idx < child_pb_graph_node->num_input_ports; port_idx++) {
-                for (int pin_idx = 0; pin_idx < child_pb_graph_node->num_input_pins[port_idx]; pin_idx++) {
-                    pb_graph_pin.insert(std::make_pair(&(child_pb_graph_node->input_pins[port_idx][pin_idx]), num_seen_input_internal_pins));
-                    num_seen_input_internal_pins++;
-                }
-            }
-            for (int port_idx = 0; port_idx < child_pb_graph_node->num_output_ports; port_idx++) {
-                for (int pin_idx = 0; pin_idx < child_pb_graph_node->num_output_pins[port_idx]; pin_idx++) {
-                    pb_graph_pin.insert(std::make_pair(&(child_pb_graph_node->output_pins[port_idx][pin_idx]), num_seen_output_internal_pins));
-                    num_seen_output_internal_pins++;
-                }
+                // It is assumed that the sub-blocks of the current block are already initialized
+                pb_graph_pin.insert(begin(child_pins_vec), end(child_pins_vec));
+                num_seen_input_internal_pins += child_pb_graph_node->total_num_input_pins;
+                num_seen_output_internal_pins += child_pb_graph_node->total_num_output_pins;
             }
         }
     }
+
+    /* Add pins of the current block itself */
+
+    for (int port_idx = 0; port_idx < pb_graph_node->num_input_ports; port_idx++) {
+        for (int pin_idx = 0; pin_idx < pb_graph_node->num_input_pins[port_idx]; pin_idx++) {
+            pb_graph_pin.insert(std::make_pair(&(pb_graph_node->input_pins[port_idx][pin_idx]), num_seen_input_internal_pins));
+            num_seen_input_internal_pins++;
+        }
+    }
+
+    for (int port_idx = 0; port_idx < pb_graph_node->num_output_ports; port_idx++) {
+        for (int pin_idx = 0; pin_idx < pb_graph_node->num_output_pins[port_idx]; pin_idx++) {
+            pb_graph_pin.insert(std::make_pair(&(pb_graph_node->output_pins[port_idx][pin_idx]), num_seen_output_internal_pins));
+            num_seen_output_internal_pins++;
+        }
+    }
+
 
     return pb_graph_pin;
 
@@ -404,17 +416,14 @@ static std::tuple<int, int, int> get_max_num_internal_pin_logical_block(const t_
 
     //This function is a recursive function. This conditional statement is used to avoid computing what has already been computed(dynamic programming)
     if(pb_graph_node->num_internal_pins_mode_num != -1) {
-        return std::tuple<int, int, int> (pb_graph_node->num_internal_input_pin, pb_graph_node->num_internal_output_pin,
+        return std::tuple<int, int, int> (pb_graph_node->total_num_input_pins, pb_graph_node->total_num_output_pins,
                           pb_graph_node->num_internal_pins_mode_num);
-    }
-    else if(pb_graph_node->is_primitive()) {
-        return std::tuple<int, int, int> (0, 0, 0);
     }
 
     int max_num_input_pins = 0;
     int max_num_output_pins = 0;
     int max_pins_mode_num = 0;
-    const auto pb_type = pb_graph_node->pb_type;
+    const t_pb_type* pb_type = pb_graph_node->pb_type;
 
 
     for(int mode_num = 0; mode_num < pb_type->num_modes; mode_num++) {
@@ -426,8 +435,6 @@ static std::tuple<int, int, int> get_max_num_internal_pin_logical_block(const t_
             int tmp_num_input_pins, tmp_num_output_pins;
             std::tie(tmp_num_input_pins, tmp_num_output_pins, std::ignore) =
                 get_max_num_internal_pin_logical_block(child_pb_graph_node);
-            tmp_num_input_pins += child_pb_graph_node->pb_type->num_input_pins;
-            tmp_num_output_pins += child_pb_graph_node->pb_type->num_output_pins;
 
             tmp_num_input_pins *= num_pb;
             tmp_num_output_pins *= num_pb;
@@ -441,6 +448,10 @@ static std::tuple<int, int, int> get_max_num_internal_pin_logical_block(const t_
         }
 
     }
+
+    max_num_input_pins += pb_type->num_input_pins;
+
+    max_num_output_pins += pb_type->num_output_pins;
 
     return std::tuple<int, int, int> (max_num_input_pins, max_num_output_pins, max_pins_mode_num);
 }
