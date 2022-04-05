@@ -154,3 +154,29 @@ void NocStorage::make_room_for_noc_router_link_list(){
     router_link_list.resize(router_storage.size());
 }
 
+NocLinkId NocStorage::get_parallel_link(NocLinkId current_link){
+
+    // get the current source and sink router
+    NocRouterId curr_source_router = link_storage[current_link].get_source_router();
+    NocRouterId curr_sink_router = link_storage[current_link].get_sink_router();
+
+    // get the link list of the sink router
+    std::vector<NocLinkId> *sink_router_links = &(router_link_list[curr_sink_router]);
+
+    NocLinkId parallel_link = INVALID_LINK_ID;
+
+    // go through the links of the sink router and the link that has the current source router as the sink router of the link is the parallel link we are looking for
+    for (auto link = sink_router_links->begin(); link != sink_router_links->end(); link++){
+
+        if (link_storage[*link].get_sink_router() == curr_source_router)
+        {
+            parallel_link = *link;
+            break;
+        }
+    }
+
+    return parallel_link;
+
+}
+
+
