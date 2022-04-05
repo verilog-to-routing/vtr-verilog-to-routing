@@ -13,6 +13,9 @@
 #include "vtr_assert.h"
 #include "vpr_error.h"
 
+// represents the value of a link that does not exist in the NoC
+const NocLinkId INVALID_LINK_ID(-1);
+
 
 class NocStorage
 {
@@ -80,6 +83,7 @@ class NocStorage
         void clear_noc();
         NocRouterId convert_router_id(int id) const;
         void make_room_for_noc_router_link_list();
+        NocLinkId get_parallel_link(NocLinkId current_link);
 
         
 
