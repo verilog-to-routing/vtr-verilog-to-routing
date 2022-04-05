@@ -2439,8 +2439,6 @@ void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::strin
     //Pins
     if (nets.size() == 1) {
         //Single-bit port
-        //Port name
-        os << indent(depth) << "." << port_name << "(";
         if (nets[0].empty()) {
             //Disconnected
             if (type == PortType::INPUT || type == PortType::CLOCK) {
@@ -2453,7 +2451,6 @@ void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::strin
             //Connected
             os << escape_verilog_identifier(nets[0]);
         }
-        os << ")";
     } else {
         // Check if all pins are unconnected
         bool all_unconnected = true;
@@ -2473,8 +2470,7 @@ void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::strin
             os << "{"
                << "\n";
             for (int ipin = (int)nets.size() - 1; ipin >= 0; --ipin) { //Reverse order to match endianess
-		std::string name = port_name + "[" + std::to_string(ipin) + "]";
-		os << indent(depth) << "." << escape_verilog_identifier(name) << " (";
+                os << indent(depth + 1);
                 if (nets[ipin].empty()) {
                     //Disconnected
                     if (type == PortType::INPUT || type == PortType::CLOCK) {
@@ -2498,6 +2494,7 @@ void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::strin
             os << indent(depth) + " }";
         }
     }
+    os << ")";
 }
 
 ///@brief Escapes the given identifier to be safe for verilog
