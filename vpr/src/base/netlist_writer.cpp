@@ -20,6 +20,8 @@
 #include "vpr_error.h"
 #include "vpr_types.h"
 
+#include "read_blif.h"
+
 #include "netlist_walker.h"
 #include "netlist_writer.h"
 
@@ -124,6 +126,9 @@ std::string join_identifier(std::string lhs, std::string rhs);
 // File local class and function implementations
 //
 //
+
+// Unconnected net prefix
+const std::string unconn_prefix = "__vpr__unconn";
 
 //A combinational timing arc
 class Arc {
@@ -625,7 +630,13 @@ class BlackBoxInst : public Instance {
 
         //Verilog parameters
         for (auto iter = params_.begin(); iter != params_.end(); ++iter) {
-            os << indent(depth + 1) << "." << iter->first << "(" << iter->second << ")";
+            /* Prepend a prefix if needed */
+            std::stringstream prefix;
+            if (is_binary_param(iter->second)) {
+                prefix << iter->second.length() << "'b";
+            }
+
+            os << indent(depth + 1) << "." << iter->first << "(" << prefix.str() << iter->second << ")";
             if (iter != --params_.end()) {
                 os << ",";
             }
@@ -943,6 +954,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
         verilog_os_ << indent(depth + 1) << "//Cell instances\n";
         for (auto& inst : cell_instances_) {
             inst->print_verilog(verilog_os_, unconn_count, depth + 1);
+        }
+
+        //Unconnected wires
+        if (unconn_count) {
+            verilog_os_ << "\n";
+            verilog_os_ << indent(depth + 1) << "//Unconnected wires\n";
+            for (size_t i = 0; i < unconn_count; ++i) {
+                auto name = unconn_prefix + std::to_string(i);
+                verilog_os_ << indent(depth + 1) << "wire " << escape_verilog_identifier(name) << ";\n";
+            }
         }
 
         verilog_os_ << "\n";
@@ -2126,7 +2147,7 @@ double get_delay_ps(double delay_sec) {
 std::string create_unconn_net(size_t& unconn_count) {
     //We increment unconn_count by reference so each
     //call generates a unique name
-    return "__vpr__unconn" + std::to_string(unconn_count++);
+    return unconn_prefix + std::to_string(unconn_count++);
 }
 
 /**
@@ -2169,6 +2190,30 @@ void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& 
  * Handles special cases like multi-bit and disconnected ports
  */
 void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth, struct t_analysis_opts& opts) {
+    auto unconn_inp_name = [&]() {
+        switch (opts.post_synth_netlist_unconn_input_handling) {
+            case e_post_synth_netlist_unconn_handling::GND:
+                return std::string("1'b0");
+            case e_post_synth_netlist_unconn_handling::VCC:
+                return std::string("1'b1");
+            case e_post_synth_netlist_unconn_handling::NETS:
+                return create_unconn_net(unconn_count);
+            case e_post_synth_netlist_unconn_handling::UNCONNECTED:
+            default:
+                return std::string("1'bX");
+        }
+    };
+
+    auto unconn_out_name = [&]() {
+        switch (opts.post_synth_netlist_unconn_output_handling) {
+            case e_post_synth_netlist_unconn_handling::NETS:
+                return create_unconn_net(unconn_count);
+            case e_post_synth_netlist_unconn_handling::UNCONNECTED:
+            default:
+                return std::string();
+        }
+    };
+
     //Port name
     os << indent(depth) << "." << port_name << "(";
 
@@ -2178,60 +2223,57 @@ void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::strin
         if (nets[0].empty()) {
             //Disconnected
             if (type == PortType::INPUT || type == PortType::CLOCK) {
-                switch (opts.post_synth_netlist_unconn_input_handling) {
-                    case e_post_synth_netlist_unconn_handling::GND:
-                        os << "1'b0";
-                        break;
-                    case e_post_synth_netlist_unconn_handling::VCC:
-                        os << "1'b1";
-                        break;
-                    case e_post_synth_netlist_unconn_handling::NETS:
-                        os << create_unconn_net(unconn_count);
-                        break;
-                    case e_post_synth_netlist_unconn_handling::UNCONNECTED:
-                    default:
-                        os << "1'bX";
-                }
+                os << unconn_inp_name();
             } else {
                 VTR_ASSERT(type == PortType::OUTPUT);
-                switch (opts.post_synth_netlist_unconn_output_handling) {
-                    case e_post_synth_netlist_unconn_handling::NETS:
-                        os << create_unconn_net(unconn_count);
-                        break;
-                    case e_post_synth_netlist_unconn_handling::UNCONNECTED:
-                    default:
-                        os << "1'bX";
-                }
+                os << unconn_out_name();
             }
         } else {
             //Connected
             os << escape_verilog_identifier(nets[0]);
         }
     } else {
-        //A multi-bit port, we explicitly concat the single-bit nets to build the port,
-        //taking care to print MSB on left and LSB on right
-        os << "{"
-           << "\n";
-        for (int ipin = (int)nets.size() - 1; ipin >= 0; --ipin) { //Reverse order to match endianess
-            os << indent(depth + 1);
-            if (nets[ipin].empty()) {
-                //Disconnected
-                if (type == PortType::INPUT || type == PortType::CLOCK) {
-                    os << "1'b0";
-                } else {
-                    VTR_ASSERT(type == PortType::OUTPUT);
-                    os << "";
-                }
-            } else {
-                //Connected
-                os << escape_verilog_identifier(nets[ipin]);
-            }
-            if (ipin != 0) {
-                os << ",";
-                os << "\n";
+        // Check if all pins are unconnected
+        bool all_unconnected = true;
+        for (size_t i = 0; i < nets.size(); ++i) {
+            if (!nets[i].empty()) {
+                all_unconnected = false;
+                break;
             }
         }
-        os << "}";
+
+        //A multi-bit port, we explicitly concat the single-bit nets to build the port,
+        //taking care to print MSB on left and LSB on right
+        if (all_unconnected && type == PortType::OUTPUT && opts.post_synth_netlist_unconn_output_handling == e_post_synth_netlist_unconn_handling::UNCONNECTED) {
+            // Empty connection
+        } else {
+            // Individual bits
+            os << "{"
+               << "\n";
+            for (int ipin = (int)nets.size() - 1; ipin >= 0; --ipin) { //Reverse order to match endianess
+                os << indent(depth + 1);
+                if (nets[ipin].empty()) {
+                    //Disconnected
+                    if (type == PortType::INPUT || type == PortType::CLOCK) {
+                        os << unconn_inp_name();
+                    } else {
+                        VTR_ASSERT(type == PortType::OUTPUT);
+                        // When concatenating output connection there cannot
+                        // be an empty placeholder so we have to create a
+                        // dummy net.
+                        os << create_unconn_net(unconn_count);
+                    }
+                } else {
+                    //Connected
+                    os << escape_verilog_identifier(nets[ipin]);
+                }
+                if (ipin != 0) {
+                    os << ",";
+                }
+                os << "\n";
+            }
+            os << indent(depth) + " }";
+        }
     }
     os << ")";
 }
