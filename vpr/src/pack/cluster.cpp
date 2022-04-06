@@ -116,7 +116,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     t_cluster_progress_stats cluster_stats;
 
     //int num_molecules, num_molecules_processed, mols_since_last_print, blocks_since_last_analysis,
-    int num_clb, num_blocks_hill_added, max_cluster_size, max_pb_depth,
+    int num_blocks_hill_added, max_pb_depth,
         seedindex, savedseedindex /* index of next most timing critical block */,
         detailed_routing_stage, *hill_climbing_inputs_avail;
 
@@ -135,14 +135,17 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     bool is_cluster_legal;
     enum e_block_pack_status block_pack_status;
 
-    t_cluster_placement_stats *cluster_placement_stats, *cur_cluster_placement_stats_ptr;
-    t_pb_graph_node** primitives_list;
+    t_cluster_placement_stats *cur_cluster_placement_stats_ptr;
     t_lb_router_data* router_data = nullptr;
     t_pack_molecule *istart, *next_molecule, *prev_molecule;
 
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+
+    helper_ctx.enable_pin_feasibility_filter = packer_opts.enable_pin_feasibility_filter;
+    helper_ctx.feasible_block_array_size = packer_opts.feasible_block_array_size;
 
     vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*> intra_lb_routing;
 
@@ -159,7 +162,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     // Index 2 holds the number of LEs that are used for registers only.
     std::vector<int> le_count(3, 0);
 
-    num_clb = 0;
+    helper_ctx.total_clb_num = 0;
 
     /* TODO: This is memory inefficient, fix if causes problems */
     /* Store stats on nets used by packed block, useful for determining transitively connected blocks
@@ -169,7 +172,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     istart = nullptr;
 
     /* determine bound on cluster size and primitive input size */
-    max_cluster_size = 0;
+    helper_ctx.max_cluster_size = 0;
     max_pb_depth = 0;
 
     seedindex = 0;
@@ -180,10 +183,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     cluster_stats.num_molecules = count_molecules(molecule_head);
 
-    get_max_cluster_size_and_pb_depth(max_cluster_size, max_pb_depth);
+    get_max_cluster_size_and_pb_depth(helper_ctx.max_cluster_size, max_pb_depth);
 
     if (packer_opts.hill_climbing_flag) {
-        hill_climbing_inputs_avail = (int*)vtr::calloc(max_cluster_size + 1,
+        hill_climbing_inputs_avail = (int*)vtr::calloc(helper_ctx.max_cluster_size + 1,
                                                        sizeof(int));
     } else {
         hill_climbing_inputs_avail = nullptr; /* if used, die hard */
@@ -193,7 +196,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 	check_for_duplicate_inputs ();
 #endif
     alloc_and_init_clustering(max_molecule_stats,
-                              &cluster_placement_stats, &primitives_list, molecule_head,
+                              &(helper_ctx.cluster_placement_stats), &(helper_ctx.primitives_list), molecule_head,
                               memory_pool, unclustered_list_head, net_output_feeds_driving_block_input,
                               unclustered_list_head_size,  cluster_stats.num_molecules);
 
@@ -206,7 +209,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     cluster_stats.blocks_since_last_analysis = 0;
     num_blocks_hill_added = 0;
 
-    VTR_ASSERT(max_cluster_size < MAX_SHORT);
+    VTR_ASSERT(helper_ctx.max_cluster_size < MAX_SHORT);
     /* Limit maximum number of elements for each cluster */
 
     //Default criticalities set to zero (e.g. if not timing driven)
@@ -231,20 +234,20 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
         is_cluster_legal = false;
         savedseedindex = seedindex;
         for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_INVALID; detailed_routing_stage++) {
-            ClusterBlockId clb_index(num_clb);
+            ClusterBlockId clb_index(helper_ctx.total_clb_num);
 
-            VTR_LOGV(verbosity > 2, "Complex block %d:\n", num_clb);
+            VTR_LOGV(verbosity > 2, "Complex block %d:\n", helper_ctx.total_clb_num);
 
             /*Used to store cluster's PartitionRegion as primitives are added to it.
              * Since some of the primitives might fail legality, this structure temporarily
              * stores PartitionRegion information while the cluster is packed*/
             PartitionRegion temp_cluster_pr;
 
-            start_new_cluster(cluster_placement_stats, primitives_list,
+            start_new_cluster(helper_ctx.cluster_placement_stats, helper_ctx.primitives_list,
                               clb_index, istart,
                               num_used_type_instances,
                               packer_opts.target_device_utilization,
-                              num_models, max_cluster_size,
+                              num_models, helper_ctx.max_cluster_size,
                               arch, packer_opts.device_layout,
                               lb_type_rr_graphs, &router_data,
                               detailed_routing_stage, &cluster_ctx.clb_nlist,
@@ -258,7 +261,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             //initial molecule in cluster has been processed
             cluster_stats.num_molecules_processed++;
             cluster_stats.mols_since_last_print++;
-            print_pack_status(num_clb,
+            print_pack_status(helper_ctx.total_clb_num,
                               cluster_stats.num_molecules,
                               cluster_stats.num_molecules_processed,
                               cluster_stats.mols_since_last_print,
@@ -266,7 +269,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               device_ctx.grid.height());
 
             VTR_LOGV(verbosity > 2,
-                     "Complex block %d: '%s' (%s) ", num_clb,
+                     "Complex block %d: '%s' (%s) ", helper_ctx.total_clb_num,
                      cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
                      cluster_ctx.clb_nlist.block_type(clb_index)->name);
             VTR_LOGV(verbosity > 2, ".");
@@ -285,14 +288,14 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  *timing_info,
                                  attraction_groups,
                                  net_output_feeds_driving_block_input);
-            num_clb++;
+            helper_ctx.total_clb_num++;
 
             if (packer_opts.timing_driven) {
                 cluster_stats.blocks_since_last_analysis++;
                 /*it doesn't make sense to do a timing analysis here since there*
                  *is only one atom block clustered it would not change anything      */
             }
-            cur_cluster_placement_stats_ptr = &cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index];
+            cur_cluster_placement_stats_ptr = &(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index]);
             cluster_stats.num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                      attraction_groups,
@@ -314,11 +317,11 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 try_fill_cluster(packer_opts,
                                  cur_cluster_placement_stats_ptr,
                                  next_molecule,
-                                 primitives_list,
+                                 helper_ctx.primitives_list,
                                  cluster_stats,
-                                 num_clb,
+                                 helper_ctx.total_clb_num,
                                  num_models,
-                                 max_cluster_size,
+                                 helper_ctx.max_cluster_size,
                                  clb_index,
                                  detailed_routing_stage,
                                  attraction_groups,
@@ -339,10 +342,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             is_cluster_legal = check_cluster_legality(verbosity, detailed_routing_stage, router_data);
 
             if (is_cluster_legal) {
-                istart = save_cluster_routing_and_pick_new_seed(packer_opts, num_clb, seed_atoms, num_blocks_hill_added, intra_lb_routing, seedindex, cluster_stats, router_data);
+                istart = save_cluster_routing_and_pick_new_seed(packer_opts, helper_ctx.total_clb_num, seed_atoms, num_blocks_hill_added, intra_lb_routing, seedindex, cluster_stats, router_data);
                 store_cluster_info_and_free(packer_opts, clb_index, logic_block_type, le_pb_type, le_count, clb_inter_blk_nets);
             } else {
-                free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, num_used_type_instances, num_clb, seedindex);
+                free_data_and_requeue_used_mols_if_illegal(clb_index, savedseedindex, num_used_type_instances, helper_ctx.total_clb_num, seedindex);
             }
             free_router_data(router_data);
             router_data = nullptr;
@@ -355,11 +358,11 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     }
 
     //check clustering and output it
-    check_and_output_clustering(packer_opts, is_clock, arch, num_clb, intra_lb_routing);
+    check_and_output_clustering(packer_opts, is_clock, arch, helper_ctx.total_clb_num, intra_lb_routing);
 
     // Free Data Structures
-    free_clustering_data(packer_opts, intra_lb_routing, hill_climbing_inputs_avail, cluster_placement_stats,
-                         unclustered_list_head, memory_pool, primitives_list);
+    free_clustering_data(packer_opts, intra_lb_routing, hill_climbing_inputs_avail,
+                         unclustered_list_head, memory_pool);
 
     return num_used_type_instances;
 }

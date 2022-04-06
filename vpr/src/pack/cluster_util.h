@@ -88,10 +88,8 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
 void free_clustering_data(const t_packer_opts& packer_opts,
                           vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
                           int* hill_climbing_inputs_avail,
-                          t_cluster_placement_stats* cluster_placement_stats,
                           t_molecule_link* unclustered_list_head,
-                          t_molecule_link* memory_pool,
-                          t_pb_graph_node** primitives_list);
+                          t_molecule_link* memory_pool);
 
 //check ckustering legality and output it
 void check_and_output_clustering(const t_packer_opts& packer_opts,

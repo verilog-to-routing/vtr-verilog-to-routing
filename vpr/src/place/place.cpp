@@ -58,7 +58,11 @@
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
 
+#include "clustered_netlist_utils.h"
+
+#include "re_cluster.h"
 #include "re_cluster_util.h"
+#include "cluster_placement.h"
 
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
@@ -470,9 +474,6 @@ void try_place(const t_placer_opts& placer_opts,
     t_pl_blocks_to_be_moved blocks_affected(
         cluster_ctx.clb_nlist.blocks().size());
 
-    /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
-    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
-
     /* init file scope variables */
     num_swap_rejected = 0;
     num_swap_accepted = 0;
@@ -511,6 +512,176 @@ void try_place(const t_placer_opts& placer_opts,
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts,
                                      directs, num_directs);
 
+/************* Elgammal ********************/
+
+    VTR_LOG("$$$$$$$$$$$$$$$$$$$$$%zu\n",atom_ctx.atom_molecules.size());
+
+/*
+    for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        VTR_LOG("\n# block id = %d\n", blk_id);
+        VTR_LOG("type = %d\n atoms:\n ", cluster_ctx.clb_nlist.block_type(blk_id)->index);
+        for(auto atom : cluster_to_atoms(blk_id)) {
+            t_pack_molecule* cur_molecule = atom_ctx.atom_molecules.find(atom)->second;
+            
+            VTR_LOG("\tatom = %d, mol_type=%d\n",atom, cur_molecule->root);
+            //if(cur_molecule->type == MOLECULE_FORCED_PACK || cur_molecule->type == MOLECULE_SINGLE_ATOM)
+            //if(cur_molecule->valid)
+            VTR_LOG("HEEEEEEEEEEEEEEEEEEEEEEEEEH\n");
+        }
+    }
+*/
+
+/*
+    for(auto atom_id : atom_ctx.nlist.blocks()) {
+        //VTR_LOG("BBBBBBBB: %zu\n", atom_ctx.atom_molecules.find(atom_id)->second->atom_block_ids[0]);
+        auto itr = atom_ctx.atom_molecules.find(atom_id);
+        if(itr == atom_ctx.atom_molecules.end())
+            VTR_LOG("CCC: %zu, not found",atom_id);
+        else
+            VTR_LOG("CCC: %zu, %zu\n", atom_id, itr->second->atom_block_ids[0]);
+    }
+*/
+
+    for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        VTR_LOG("\n# block id = %d\n", blk_id);
+        VTR_LOG("type = %d\n atoms:\n ", cluster_ctx.clb_nlist.block_type(blk_id)->index);
+        for(auto atom : cluster_to_atoms(blk_id)) {
+            VTR_LOG("\tatom = %d\n", atom);
+            for(auto atom_pin : atom_ctx.nlist.block_pins(atom)) {
+                VTR_LOG("\t\tatom_pin = %d, type = %d, atom_net=%d, cluster_net=%d\n", atom_pin, atom_ctx.nlist.pin_type(atom_pin), atom_ctx.nlist.pin_net(atom_pin), atom_ctx.lookup.clb_net(atom_ctx.nlist.pin_net(atom_pin)));
+            }
+        }
+
+        VTR_LOG("cluster pins:\n");
+        for(auto pin : cluster_ctx.clb_nlist.block_pins(blk_id))
+            VTR_LOG("\tcluster_pin = %d, direction= %d, cluster_net= %d, atom_net=%d\n", pin, cluster_ctx.clb_nlist.pin_type(pin), cluster_ctx.clb_nlist.pin_net(pin), atom_ctx.lookup.atom_net(cluster_ctx.clb_nlist.pin_net(pin)));
+    }
+
+/*
+    VTR_LOG("AAAAAA: %zu, %zu\n", ClusterNetId(0), atom_ctx.lookup.atom_net(ClusterNetId(0)));
+    VTR_LOG("AAAAAA: %zu, %zu\n", ClusterNetId(1), atom_ctx.lookup.atom_net(ClusterNetId(1)));
+    VTR_LOG("AAAAAA: %zu, %zu\n", ClusterNetId(2), atom_ctx.lookup.atom_net(ClusterNetId(2)));
+*/
+/*
+    for(ClusterNetId temp_net : cluster_ctx.clb_nlist.nets()) {
+      VTR_LOG("QQQQQQ: %zu\n", temp_net);
+    }
+    */
+
+
+    std::vector<AtomBlockId> atoms_before = cluster_to_atoms(ClusterBlockId(0));
+    bool is_removed = move_atom_to_new_cluster(AtomBlockId(3), lb_type_rr_graphs);
+    VTR_LOG("@@@@ Atom is removed? %d\n", is_removed);
+    std::vector<AtomBlockId> atoms_after = cluster_to_atoms(ClusterBlockId(0));
+/*
+    for(ClusterNetId temp_net : cluster_ctx.clb_nlist.nets()) {
+      VTR_LOG("QQQQQQ: %zu\n", temp_net);
+    }
+*/
+
+    for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        VTR_LOG("\n# block id = %d\n", blk_id);
+        VTR_LOG("type = %d\n atoms:\n ", cluster_ctx.clb_nlist.block_type(blk_id)->index);
+        for(auto atom : cluster_to_atoms(blk_id)) {
+            VTR_LOG("\tatom = %d\n", atom);
+            for(auto atom_pin : atom_ctx.nlist.block_pins(atom)) {
+                VTR_LOG("\t\tatom_pin = %d, type = %d, atom_net=%d, cluster_net=%d\n", atom_pin, atom_ctx.nlist.pin_type(atom_pin), atom_ctx.nlist.pin_net(atom_pin), atom_ctx.lookup.clb_net(atom_ctx.nlist.pin_net(atom_pin)));
+            }
+        }
+
+        VTR_LOG("cluster pins:\n");
+        for(auto pin : cluster_ctx.clb_nlist.block_pins(blk_id))
+            VTR_LOG("\tcluster_pin = %d, direction= %d, cluster_net= %d, atom_net=%d\n", pin, cluster_ctx.clb_nlist.pin_type(pin), cluster_ctx.clb_nlist.pin_net(pin), atom_ctx.lookup.atom_net(cluster_ctx.clb_nlist.pin_net(pin)));
+    }
+/*
+    t_logical_block_type_ptr temp_block_type;
+    ClusterBlockId temp_blk_id = ClusterBlockId(4);
+    t_pb* temp_pb = cluster_ctx.clb_nlist.block_pb(temp_blk_id);
+    t_pb_graph_pin* temp_pb_graph_pin;
+    temp_block_type = cluster_ctx.clb_nlist.block_type(temp_blk_id);
+    VTR_LOG("WWWWWWWW: %zu, %zu,%zu\n", temp_pb->pb_graph_node->num_input_ports, temp_pb->pb_graph_node->num_output_ports, temp_pb->pb_graph_node->num_clock_ports);
+    for (int j = 0; j < temp_pb->pb_graph_node->num_input_ports; j++) {
+      ClusterPortId input_port_id = cluster_ctx.clb_nlist.find_port(temp_blk_id, temp_block_type->pb_type->ports[j].name);
+      for (int k = 0; k < temp_pb->pb_graph_node->num_input_pins[j]; k++) {
+        VTR_LOG("W\n");
+        temp_pb_graph_pin = &temp_pb->pb_graph_node->input_pins[j][k];
+        if (temp_pb->pb_route.count(temp_pb_graph_pin->pin_count_in_cluster)) {
+          VTR_LOG("WW %zu\n", temp_pb_graph_pin->pin_count_in_cluster);
+        }
+      }
+    }
+    for (int j = 0; j < temp_pb->pb_graph_node->num_output_ports; j++) {
+      ClusterPortId output_port_id = cluster_ctx.clb_nlist.find_port(temp_blk_id, temp_block_type->pb_type->ports[j].name);
+      for (int k = 0; k < temp_pb->pb_graph_node->num_output_pins[j]; k++) {
+        VTR_LOG("W\n");
+        //VTR_LOG("W, %zu \n", temp_pb->pb_graph_node->output_pins[j][k].pin_number);
+        temp_pb_graph_pin = &temp_pb->pb_graph_node->output_pins[j][k];
+        if (temp_pb->pb_route.count(temp_pb_graph_pin->pin_count_in_cluster)) {
+          VTR_LOG("WW %zu\n",temp_pb_graph_pin->pin_count_in_cluster);
+        }
+      }
+    }
+    for (int j = 0; j < temp_pb->pb_graph_node->num_clock_ports; j++) {
+      ClusterPortId clock_port_id = cluster_ctx.clb_nlist.find_port(temp_blk_id, temp_block_type->pb_type->ports[j].name);
+      for (int k = 0; k < temp_pb->pb_graph_node->num_clock_pins[j]; k++) {
+        VTR_LOG("W\n");
+        temp_pb_graph_pin = &temp_pb->pb_graph_node->clock_pins[j][k];
+        if (temp_pb->pb_route.count(temp_pb_graph_pin->pin_count_in_cluster)) {
+          VTR_LOG("WW %zu\n", temp_pb_graph_pin->pin_count_in_cluster);
+        }
+      }
+    }
+*/
+
+/*
+    for(auto atom_id : atom_ctx.nlist.blocks()) {
+        auto itr = atom_ctx.atom_molecules.find(atom_id);
+        if(itr == atom_ctx.atom_molecules.end())
+            VTR_LOG("CCC: %zu, not found",atom_id);
+        else
+            VTR_LOG("CCC: %zu, %zu\n", atom_id, itr->second->atom_block_ids[0]);
+    }
+*/
+
+/*
+    for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        VTR_LOG("\n# block id = %d\n", blk_id);
+        VTR_LOG("type = %d\n atoms:\n ", cluster_ctx.clb_nlist.block_type(blk_id)->index);
+        for(auto atom : cluster_to_atoms(blk_id)) {
+            VTR_LOG("\tatom = %d\n", atom);
+            for(auto atom_pin : atom_ctx.nlist.block_pins(atom)) {
+                VTR_LOG("\t\tpin = %d, type = %d, net=%d\n", atom_pin, atom_ctx.nlist.pin_type(atom_pin), atom_ctx.nlist.pin_net(atom_pin));
+            }
+        }
+
+        VTR_LOG("clsuter pins:\n");
+        for(auto pin : cluster_ctx.clb_nlist.block_pins(blk_id))
+            VTR_LOG("\tpin = %d, direction= %d, net= %d\n", pin, cluster_ctx.clb_nlist.pin_type(pin), cluster_ctx.clb_nlist.pin_net(pin));
+    }
+*/
+
+    VTR_LOG("size before and after %d, %d\n", atoms_before.size(), atoms_after.size());
+    VTR_LOG("*\n");
+
+
+/*
+    VTR_LOG("######################\n");
+    //int x[10] = {8462,4977,71,252,8488,10502,1365,353,225,20750};
+    //for(int i =0; i<100; i++) {
+        size_t size_temp;
+        size_temp = cluster_to_atoms(ClusterBlockId(6)).size();
+        AtomBlockId atom_id = AtomBlockId(603);
+        t_pack_molecule* cur_molecule = atom_ctx.atom_molecules.find(atom_id)->second;
+        bool is_removed = remove_mol_from_cluster(cur_molecule, lb_type_rr_graphs);
+        ClusterAtomsLookup cluster_lookup;
+        size_temp = cluster_lookup.atoms_in_cluster(ClusterBlockId(6)).size();
+        //size_temp = cluster_to_atoms(ClusterBlockId(6)).size();
+        VTR_LOG("@@@@@@@@@@@%zu\n", is_removed);
+        fflush(stdout);
+    //}
+*/  
+/******************************************/
+
     vtr::ScopedStartFinishTimer timer("Placement");
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str());
@@ -533,9 +704,17 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     init_draw_coords((float)width_fac);
+
+    /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
+    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
     //Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist,
                                                   atom_ctx.nlist, pb_gpin_lookup);
+
+/*
+    for(auto i : atom_ctx.nlist.block_pins(AtomBlockId(3)))
+        ClusterPinId teemp =  netlist_pin_lookup.connected_clb_pin(i);
+*/
 
     /* Gets initial cost and loads bounding boxes. */
 
@@ -1226,6 +1405,14 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, move_type_stat, placer_opts.place_algorithm,
                                              REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled);
+
+/******************** Elgammal ************************/
+        /*
+        auto& atom_ctx = g_vpr_ctx.atom();
+        std::vector<AtomBlockId> atom_id = cluster_to_atoms(blocks_affected.moved_blocks[0].block_num);
+        VTR_LOG(" # %zu,%zu, %zu\n", blocks_affected.moved_blocks[0].block_num, atom_id[0], atom_ctx.atom_molecules.find(atom_id[0])->second->num_blocks);
+        */
+/******************************************************/
 
         if (swap_result == ACCEPTED) {
             num_accepted++;

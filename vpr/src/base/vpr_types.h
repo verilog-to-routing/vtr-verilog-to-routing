@@ -1734,4 +1734,7 @@ typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_u
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 
+void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
+void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
+
 #endif

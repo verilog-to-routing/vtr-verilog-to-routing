@@ -229,10 +229,8 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
 void free_clustering_data(const t_packer_opts& packer_opts,
                           vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
                           int* hill_climbing_inputs_avail,
-                          t_cluster_placement_stats* cluster_placement_stats,
                           t_molecule_link* unclustered_list_head,
-                          t_molecule_link* memory_pool,
-                          t_pb_graph_node** primitives_list) {
+                          t_molecule_link* memory_pool) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
@@ -243,7 +241,7 @@ void free_clustering_data(const t_packer_opts& packer_opts,
     if (packer_opts.hill_climbing_flag)
         free(hill_climbing_inputs_avail);
 
-    free_cluster_placement_stats(cluster_placement_stats);
+    //free_cluster_placement_stats(cluster_placement_stats);
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
         cluster_ctx.clb_nlist.remove_block(blk_id);
@@ -253,7 +251,7 @@ void free_clustering_data(const t_packer_opts& packer_opts,
     free(unclustered_list_head);
     free(memory_pool);
 
-    free(primitives_list);
+    //free(primitives_list);
 }
 
 //check the clustering and output it
@@ -1163,7 +1161,7 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
         //Update the atom netlist mappings
         atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
         atom_ctx.lookup.set_atom_pb(blk_id, pb);
-
+    
         add_atom_as_target(router_data, blk_id);
         if (!primitive_feasible(blk_id, pb)) {
             /* failed location feasibility check, revert pack */
@@ -1190,7 +1188,6 @@ enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* pb_grap
         free(pb->name);
         pb->name = nullptr;
     }
-
     return block_pack_status;
 }
 
@@ -1273,10 +1270,6 @@ void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data* router_
     //which is why we store them as such in atom_ctx.lookup
     t_pb* pb = const_cast<t_pb*>(atom_ctx.lookup.atom_pb(blk_id));
 
-    //Update the atom netlist mapping
-    atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
-    atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
-
     if (pb != nullptr) {
         /* When freeing molecules, the current block might already have been freed by a prior revert
          * When this happens, no need to do anything beyond basic book keeping at the atom block
@@ -1307,6 +1300,10 @@ void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data* router_
             pb = next;
         }
     }
+
+    //Update the atom netlist mapping
+    atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
+    atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
 }
 
 void update_connection_gain_values(const AtomNetId net_id, const AtomBlockId clustered_blk_id, t_pb* cur_pb, enum e_net_relation_to_clustered_block net_relation_to_clustered_block) {

@@ -19,6 +19,6 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
                                                std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
                                                const int num_packing_patterns);
 
-void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
+//void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
 
 #endif

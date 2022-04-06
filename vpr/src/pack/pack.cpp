@@ -26,6 +26,7 @@
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
+
 static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
 
 static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs);
@@ -41,24 +42,27 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_model* library_models,
               float interc_delay,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+
+    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+
     std::unordered_set<AtomNetId> is_clock;
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
     const t_model* cur_model;
-    int num_models;
+    //int num_models;
     std::vector<t_pack_patterns> list_of_packing_patterns;
-    std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules(nullptr, free_pack_molecules);
+    //std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules(nullptr, free_pack_molecules);
     VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
 
     /* determine number of models in the architecture */
-    num_models = 0;
+    helper_ctx.num_models = 0;
     cur_model = user_models;
     while (cur_model) {
-        num_models++;
+        helper_ctx.num_models++;
         cur_model = cur_model->next;
     }
     cur_model = library_models;
     while (cur_model) {
-        num_models++;
+        helper_ctx.num_models++;
         cur_model = cur_model->next;
     }
 
@@ -66,6 +70,7 @@ bool try_pack(t_packer_opts* packer_opts,
 
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
+
 
     size_t num_p_inputs = 0;
     size_t num_p_outputs = 0;
@@ -95,7 +100,7 @@ bool try_pack(t_packer_opts* packer_opts,
     std::unique_ptr<std::vector<t_pack_patterns>, decltype(list_of_packing_patterns_deleter)> list_of_packing_patterns_cleanup_guard(&list_of_packing_patterns,
                                                                                                                                      list_of_packing_patterns_deleter);
 
-    list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
+    atom_mutable_ctx.list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
                                                                expected_lowest_cost_pb_gnode,
                                                                list_of_packing_patterns.size()));
 
@@ -132,10 +137,10 @@ bool try_pack(t_packer_opts* packer_opts,
 
     while (true) {
         //Cluster the netlist
-        auto num_type_instances = do_clustering(
+        helper_ctx.num_used_type_instances = do_clustering(
             *packer_opts,
             *analysis_opts,
-            arch, list_of_pack_molecules.get(), num_models,
+            arch, atom_mutable_ctx.list_of_pack_molecules.get(), helper_ctx.num_models,
             is_clock,
             expected_lowest_cost_pb_gnode,
             allow_unrelated_clustering,
@@ -146,7 +151,7 @@ bool try_pack(t_packer_opts* packer_opts,
             attraction_groups);
 
         //Try to size/find a device
-        bool fits_on_device = try_size_device_grid(*arch, num_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
+        bool fits_on_device = try_size_device_grid(*arch, helper_ctx.num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
 
         if (fits_on_device) {
             break; //Done
@@ -172,8 +177,8 @@ bool try_pack(t_packer_opts* packer_opts,
             std::string resource_reqs;
             std::string resource_avail;
             auto& grid = g_vpr_ctx.device().grid;
-            for (auto iter = num_type_instances.begin(); iter != num_type_instances.end(); ++iter) {
-                if (iter != num_type_instances.begin()) {
+            for (auto iter = helper_ctx.num_used_type_instances.begin(); iter != helper_ctx.num_used_type_instances.end(); ++iter) {
+                if (iter != helper_ctx.num_used_type_instances.begin()) {
                     resource_reqs += ", ";
                     resource_avail += ", ";
                 }
