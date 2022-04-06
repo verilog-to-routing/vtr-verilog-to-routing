@@ -1,5 +1,0 @@
-vpr_status=success
-vpr_seconds=0
-rundir=/home/vm/VTR-Tools/vtr_work/quickstart/blink_run_flow
-hostname=vm-VirtualBox
-error=
