@@ -48,6 +48,7 @@
 #include "route_common.h"
 #include "breakpoint.h"
 #include "manual_moves.h"
+#include "draw_noc.h"
 
 #include "move_utils.h"
 
@@ -193,7 +194,7 @@ static ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type
 
 static void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId, NocRouter>& router_list, ezgl::rectangle connection_marker_bbox);
 
-static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors);
+static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors, ezgl::rectangle noc_connection_marker_bbox, const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions);
 
 static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors);
 
@@ -206,7 +207,7 @@ constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 
 // defines the area of the marker that represents connection points between links
 // area is equivalent to the %x of the area of the router
-constexpr float SIZE_OF_NOC_MARKER = 0.04;
+constexpr float SIZE_OF_NOC_MARKER = 0.30;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -3699,6 +3700,11 @@ static void draw_noc(ezgl::renderer *g)
     // initialize all the link colors to black and set the vector size to the total number of links
     noc_link_colors.resize(noc_ctx.noc_model.get_noc_links().size(), ezgl::BLACK);
 
+    // variables to keep track of how each link is drawn
+    vtr::vector<NocLinkId, NocLinkShift> list_of_noc_link_shift_directions;
+
+    // initialize all the link shift directions to no shift and set the vector size to the total number of links
+    list_of_noc_link_shift_directions.resize(noc_ctx.noc_model.get_noc_links().size(), NocLinkShift::NO_SHIFT);
 
     // start by checking to see if the NoC display button was selected
     // if the noc display option was not selected then don't draw the noc
@@ -3712,13 +3718,13 @@ static void draw_noc(ezgl::renderer *g)
     */ 
     int num_subtiles = device_ctx.grid[router_list.begin()->get_router_grid_position_x()][router_list.begin()->get_router_grid_position_y()].type->capacity;
 
-    // get the logical type of a noc router tile
-    t_logical_block_type_ptr noc_router_logical_type = pick_logical_type(device_ctx.grid[router_list.begin()->get_router_grid_position_x()][router_list.begin()->get_router_grid_position_y()].type);
-
     if (num_subtiles == 0)
     {
         return;
     }
+
+    // get the logical type of a noc router tile
+    t_logical_block_type_ptr noc_router_logical_type = pick_logical_type(device_ctx.grid[router_list.begin()->get_router_grid_position_x()][router_list.begin()->get_router_grid_position_y()].type);
 
     // Now construct the coordinates for the markers that represent the connections between links (relative to the noc router tile position)
     ezgl::rectangle noc_connection_marker_bbox = get_noc_connection_marker_bbox(noc_router_logical_type);
@@ -3732,7 +3738,11 @@ static void draw_noc(ezgl::renderer *g)
         draw_color_map_legend(*(draw_state->noc_usage_color_map), g);
     }
 
-    draw_noc_links(g, noc_router_logical_type, noc_link_colors);
+    // go through all the pairs of parallel links (if there are any) and assign a shift direction to them.
+    // One link will shift in one direction (knows as TOP) and the other link will shift in the opposite direction (known as BOTTOM)
+    determine_direction_to_shift_noc_links(list_of_noc_link_shift_directions);
+
+    draw_noc_links(g, noc_router_logical_type, noc_link_colors, noc_connection_marker_bbox, list_of_noc_link_shift_directions);
 
     draw_noc_connection_marker(g, router_list, noc_connection_marker_bbox);
 
@@ -3951,7 +3961,7 @@ static void draw_noc_connection_marker(ezgl::renderer* g,const vtr::vector<NocRo
 /*
     This function draws the links within the noc. So based on a given noc topology, this function draws the links that connect the routers in the noc together.
 */
-static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors)
+static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors, ezgl::rectangle noc_connection_marker_bbox, const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions)
 {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& noc_ctx = g_vpr_ctx.noc();
@@ -3963,7 +3973,7 @@ static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc
     vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
 
     // set the width of the link
-    g->set_line_width(4);
+    g->set_line_width(3);
 
     // routers connecting links
     NocRouterId source_router;
@@ -3980,6 +3990,17 @@ static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc
     // coordinates of source and sink routers
     ezgl::rectangle abs_source_router_bbox;
     ezgl::rectangle abs_sink_router_bbox;
+
+    // the coordinates to draw the link
+    noc_link_draw_coords link_coords;
+
+    // the type of the noc link
+    NocLinkType link_type;
+
+    // get half the width and height of the noc connection marker
+    // we will shift the links based on this parameters since the links will be drawn at the boundaries of connection marker instead of the center
+    double noc_connection_marker_quarter_width = (noc_connection_marker_bbox.center().x - noc_connection_marker_bbox.bottom_left().x)/2;
+    double noc_connection_marker_quarter_height = (noc_connection_marker_bbox.center().y - noc_connection_marker_bbox.bottom_left().y)/2;
 
 
     // loop through the links and draw them
@@ -3999,15 +4020,21 @@ static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc
         sink_router_x_position = router_list[sink_router].get_router_grid_position_x();
         sink_router_y_position = router_list[sink_router].get_router_grid_position_y();
 
-        // get the drawing box coordinates of the source and sink routers
-        abs_source_router_bbox = draw_coords->get_absolute_clb_bbox(source_router_x_position, source_router_y_position, 0,noc_router_logical_block_type);
-        abs_sink_router_bbox = draw_coords->get_absolute_clb_bbox(sink_router_x_position, sink_router_y_position, 0,noc_router_logical_block_type);
+        // get the initial drawing coordinates of the noc link
+        // it will be drawn from the center of two routers it connects
+        link_coords.start = draw_coords->get_absolute_clb_bbox(source_router_x_position, source_router_y_position, 0,noc_router_logical_block_type).center();
+        link_coords.end = draw_coords->get_absolute_clb_bbox(sink_router_x_position, sink_router_y_position, 0,noc_router_logical_block_type).center();
 
+        // determine the current noc link type
+        link_type = determine_noc_link_type(link_coords.start, link_coords.end);
+
+        shift_noc_link(link_coords, list_of_noc_link_shift_directions[link_id], link_type, noc_connection_marker_quarter_width, noc_connection_marker_quarter_height);
+        
         // set the color to draw the current link
         g->set_color(noc_link_colors[link_id]);
 
         //draw a line between the center of the two routers this link connects
-        g->draw_line(abs_source_router_bbox.center(), abs_sink_router_bbox.center());
+        g->draw_line(link_coords.start, link_coords.end);
     }
 
     return;
