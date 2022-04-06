@@ -3256,7 +3256,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
      *   +------------------------------------------------------------>x
      */
 
-    /* TO INVESTIGATE - Might be a problem. */
+    /* CODE CHECKED - This only regards pins and nodes, so shouldn't affect the same side connection. */
     float draw_pin_offset;
     if (TOP == pin_side || RIGHT == pin_side) {
         draw_pin_offset = draw_coords->pin_size;
@@ -3272,7 +3272,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
     float x2 = 0, y2 = 0;
     const Direction chan_rr_direction = rr_graph.node_direction(RRNodeId(chan_node));
     
-    /* TO INVESTIGATE - Probably needs adaptation for same side */
+    /* CODE CHECKED - This only regards pins and nodes, so shouldn't affect the same side connection. */
     switch (channel_type) {
         case CHANX: {
             y1 += draw_pin_offset;
@@ -3317,6 +3317,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
     }
 }
 
+/* TO INVESTIGATE - Draws pin to pin so might be preventing same side drawing */
 static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
     /* This routine draws an edge from the opin rr node to the ipin rr node */
     auto& device_ctx = g_vpr_ctx.device();

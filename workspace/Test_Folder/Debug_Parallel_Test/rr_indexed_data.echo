@@ -1,10 +1,10 @@
-Delay normalization factor: 2.40401e-11
+Delay normalization factor: 2.51413e-11
 Cost Index                    Base Cost           Ortho Cost Index    Seg Index           Inv. Length         T. Linear           T. Quadratic        C. Load             
-0 SOURCE                      2.40401e-11         -1                  -1                  nan                 0                   0                   0                   
+0 SOURCE                      2.51413e-11         -1                  -1                  nan                 0                   0                   0                   
 1 SINK                        0                   -1                  -1                  nan                 0                   0                   0                   
-2 OPIN                        2.40401e-11         -1                  -1                  nan                 0                   0                   0                   
-3 IPIN                        2.28381e-11         -1                  -1                  nan                 7.562e-11           0                   0                   
-4 CHANX l2s                   4.80802e-11         6                   0                   0.5                 6.184e-11           0                   0                   
-5 CHANX l4g                   7.21203e-11         7                   1                   0.333333            5.14805e-11         0                   0                   
-6 CHANY l2s                   4.80802e-11         4                   0                   0.5                 6.184e-11           0                   0                   
-7 CHANY l4g                   7.21203e-11         5                   1                   0.333333            5.14805e-11         0                   0                   
+2 OPIN                        2.51413e-11         -1                  -1                  nan                 0                   0                   0                   
+3 IPIN                        2.38842e-11         -1                  -1                  nan                 7.562e-11           0                   0                   
+4 CHANX l2s                   5.02826e-11         6                   0                   0.5                 6.377e-11           0                   0                   
+5 CHANX l4g                   7.54238e-11         7                   1                   0.333333            5.1699e-11          0                   0                   
+6 CHANY l2s                   5.02826e-11         4                   0                   0.5                 6.68111e-11         0                   0                   
+7 CHANY l4g                   7.54238e-11         5                   1                   0.333333            5.41247e-11         0                   0                   

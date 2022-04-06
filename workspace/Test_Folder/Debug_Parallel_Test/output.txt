@@ -1,5 +1,5 @@
 vpr_status=success
-vpr_seconds=1
+vpr_seconds=2
 rundir=/home/vm/VTR-Tools/workspace/Test_Folder/Debug_Parallel_Test
 hostname=vm-VirtualBox
 error=

@@ -549,32 +549,32 @@ delay_model:
  edge: 2 min_delay: 0 max_delay: 4.243e-11
  edge: 3 min_delay: 0 max_delay: 4.243e-11
  edge: 4 min_delay: 0 max_delay: 4.243e-11
- edge: 5 min_delay: 2.02023e-10 max_delay: 2.44453e-10
- edge: 6 min_delay: 1.37196e-10 max_delay: 1.79626e-10
- edge: 7 min_delay: 2.60347e-10 max_delay: 3.02777e-10
- edge: 8 min_delay: 1.37196e-10 max_delay: 1.79626e-10
- edge: 9 min_delay: 2.02023e-10 max_delay: 2.44453e-10
+ edge: 5 min_delay: 2.74177e-10 max_delay: 3.16607e-10
+ edge: 6 min_delay: 2.6635e-10 max_delay: 3.0878e-10
+ edge: 7 min_delay: 2.08027e-10 max_delay: 2.50457e-10
+ edge: 8 min_delay: 1.35873e-10 max_delay: 1.78303e-10
+ edge: 9 min_delay: 2.6635e-10 max_delay: 3.0878e-10
  edge: 10 min_delay: 6.032e-11 max_delay: 6.032e-11
  edge: 11 min_delay: 6.032e-11 max_delay: 6.032e-11
  edge: 12 min_delay: 6.032e-11 max_delay: 6.032e-11
  edge: 13 min_delay: 6.032e-11 max_delay: 6.032e-11
  edge: 14 min_delay: 6.032e-11 max_delay: 6.032e-11
- edge: 15 min_delay: 1.37196e-10 max_delay: 1.67196e-10
- edge: 16 min_delay: 1.37196e-10 max_delay: 1.67196e-10
- edge: 17 min_delay: 1.39126e-10 max_delay: 1.69126e-10
- edge: 18 min_delay: 1.37196e-10 max_delay: 1.67196e-10
- edge: 19 min_delay: 1.39126e-10 max_delay: 1.69126e-10
- edge: 20 min_delay: 1.98771e-10 max_delay: 2.28771e-10
+ edge: 15 min_delay: 1.43092e-10 max_delay: 1.73092e-10
+ edge: 16 min_delay: 1.4177e-10 max_delay: 1.7177e-10
+ edge: 17 min_delay: 1.43092e-10 max_delay: 1.73092e-10
+ edge: 18 min_delay: 1.3791e-10 max_delay: 1.6791e-10
+ edge: 19 min_delay: 1.4177e-10 max_delay: 1.7177e-10
+ edge: 20 min_delay: 1.39126e-10 max_delay: 1.69126e-10
  edge: 21 min_delay: 1.39126e-10 max_delay: 1.69126e-10
- edge: 22 min_delay: 1.35266e-10 max_delay: 1.65266e-10
+ edge: 22 min_delay: 2.00808e-10 max_delay: 2.30808e-10
  edge: 23 min_delay: 1.39126e-10 max_delay: 1.69126e-10
- edge: 24 min_delay: 1.39126e-10 max_delay: 1.69126e-10
- edge: 25 min_delay: 1.35266e-10 max_delay: 1.65266e-10
- edge: 26 min_delay: 1.39126e-10 max_delay: 1.69126e-10
- edge: 27 min_delay: 1.37196e-10 max_delay: 1.67196e-10
- edge: 28 min_delay: 1.98771e-10 max_delay: 2.28771e-10
- edge: 29 min_delay: 1.39126e-10 max_delay: 1.69126e-10
- edge: 30 min_delay: 1.39126e-10 max_delay: 1.69126e-10
+ edge: 24 min_delay: 1.99486e-10 max_delay: 2.29486e-10
+ edge: 25 min_delay: 2.00808e-10 max_delay: 2.30808e-10
+ edge: 26 min_delay: 1.97556e-10 max_delay: 2.27556e-10
+ edge: 27 min_delay: 1.38518e-10 max_delay: 1.68518e-10
+ edge: 28 min_delay: 1.4177e-10 max_delay: 1.7177e-10
+ edge: 29 min_delay: 1.43092e-10 max_delay: 1.73092e-10
+ edge: 30 min_delay: 1.39232e-10 max_delay: 1.69232e-10
  edge: 31 min_delay: 1.145e-10 max_delay: 1.145e-10
  edge: 32 min_delay: 1.145e-10 max_delay: 1.145e-10
  edge: 33 min_delay: 1.145e-10 max_delay: 1.145e-10
@@ -592,8 +592,8 @@ delay_model:
  edge: 45 min_delay: 1.145e-10 max_delay: 1.145e-10
  edge: 46 min_delay: 1.145e-10 max_delay: 1.145e-10
  edge: 47 min_delay: 1.145e-10 max_delay: 1.145e-10
- edge: 48 min_delay: 1.37196e-10 max_delay: 1.53796e-10
- edge: 49 min_delay: 1.39126e-10 max_delay: 1.55726e-10
+ edge: 48 min_delay: 1.40448e-10 max_delay: 1.57048e-10
+ edge: 49 min_delay: 1.37196e-10 max_delay: 1.53796e-10
  edge: 50 min_delay: 1.145e-10 max_delay: 1.145e-10
  edge: 51 min_delay: 1.145e-10 max_delay: 1.145e-10
  edge: 52 min_delay: 1.145e-10 max_delay: 1.145e-10
@@ -606,7 +606,7 @@ delay_model:
  edge: 59 min_delay: 0 max_delay: 0
  edge: 60 setup_time: 1.891e-11 hold_time: 1.891e-11
  edge: 61 min_delay: 0 max_delay: 0
- edge: 62 min_delay: 2.42317e-10 max_delay: 2.72857e-10
+ edge: 62 min_delay: 2.48065e-10 max_delay: 2.78605e-10
  edge: 63 setup_time: 1.891e-11 hold_time: 1.891e-11
  edge: 64 min_delay: 0 max_delay: 0
  edge: 65 setup_time: 1.891e-11 hold_time: 1.891e-11
@@ -614,81 +614,81 @@ delay_model:
 
 analysis_result:
  type: SETUP_DATA_ARRIVAL node: 1 launch_domain: 0 capture_domain: -1 time: 0
- type: SETUP_DATA_ARRIVAL node: 7 launch_domain: 0 capture_domain: -1 time: 2.44453e-10
- type: SETUP_DATA_ARRIVAL node: 8 launch_domain: 0 capture_domain: -1 time: 1.79626e-10
- type: SETUP_DATA_ARRIVAL node: 9 launch_domain: 0 capture_domain: -1 time: 3.02777e-10
- type: SETUP_DATA_ARRIVAL node: 10 launch_domain: 0 capture_domain: -1 time: 1.79626e-10
- type: SETUP_DATA_ARRIVAL node: 11 launch_domain: 0 capture_domain: -1 time: 2.44453e-10
+ type: SETUP_DATA_ARRIVAL node: 7 launch_domain: 0 capture_domain: -1 time: 3.16607e-10
+ type: SETUP_DATA_ARRIVAL node: 8 launch_domain: 0 capture_domain: -1 time: 3.0878e-10
+ type: SETUP_DATA_ARRIVAL node: 9 launch_domain: 0 capture_domain: -1 time: 2.50457e-10
+ type: SETUP_DATA_ARRIVAL node: 10 launch_domain: 0 capture_domain: -1 time: 1.78303e-10
+ type: SETUP_DATA_ARRIVAL node: 11 launch_domain: 0 capture_domain: -1 time: 3.0878e-10
  type: SETUP_DATA_ARRIVAL node: 12 launch_domain: 0 capture_domain: -1 time: 1.0275e-10
  type: SETUP_DATA_ARRIVAL node: 13 launch_domain: 0 capture_domain: -1 time: 1.0275e-10
  type: SETUP_DATA_ARRIVAL node: 14 launch_domain: 0 capture_domain: -1 time: 1.0275e-10
  type: SETUP_DATA_ARRIVAL node: 15 launch_domain: 0 capture_domain: -1 time: 1.0275e-10
  type: SETUP_DATA_ARRIVAL node: 16 launch_domain: 0 capture_domain: -1 time: 1.0275e-10
- type: SETUP_DATA_ARRIVAL node: 17 launch_domain: 0 capture_domain: -1 time: 2.69946e-10
- type: SETUP_DATA_ARRIVAL node: 18 launch_domain: 0 capture_domain: -1 time: 2.69946e-10
- type: SETUP_DATA_ARRIVAL node: 19 launch_domain: 0 capture_domain: -1 time: 2.71876e-10
- type: SETUP_DATA_ARRIVAL node: 20 launch_domain: 0 capture_domain: -1 time: 2.69946e-10
- type: SETUP_DATA_ARRIVAL node: 21 launch_domain: 0 capture_domain: -1 time: 2.71876e-10
- type: SETUP_DATA_ARRIVAL node: 22 launch_domain: 0 capture_domain: -1 time: 3.31521e-10
+ type: SETUP_DATA_ARRIVAL node: 17 launch_domain: 0 capture_domain: -1 time: 2.75842e-10
+ type: SETUP_DATA_ARRIVAL node: 18 launch_domain: 0 capture_domain: -1 time: 2.7452e-10
+ type: SETUP_DATA_ARRIVAL node: 19 launch_domain: 0 capture_domain: -1 time: 2.75842e-10
+ type: SETUP_DATA_ARRIVAL node: 20 launch_domain: 0 capture_domain: -1 time: 2.7066e-10
+ type: SETUP_DATA_ARRIVAL node: 21 launch_domain: 0 capture_domain: -1 time: 2.7452e-10
+ type: SETUP_DATA_ARRIVAL node: 22 launch_domain: 0 capture_domain: -1 time: 2.71876e-10
  type: SETUP_DATA_ARRIVAL node: 23 launch_domain: 0 capture_domain: -1 time: 2.71876e-10
- type: SETUP_DATA_ARRIVAL node: 24 launch_domain: 0 capture_domain: -1 time: 2.68016e-10
+ type: SETUP_DATA_ARRIVAL node: 24 launch_domain: 0 capture_domain: -1 time: 3.33558e-10
  type: SETUP_DATA_ARRIVAL node: 25 launch_domain: 0 capture_domain: -1 time: 2.71876e-10
- type: SETUP_DATA_ARRIVAL node: 26 launch_domain: 0 capture_domain: -1 time: 2.71876e-10
- type: SETUP_DATA_ARRIVAL node: 27 launch_domain: 0 capture_domain: -1 time: 2.68016e-10
- type: SETUP_DATA_ARRIVAL node: 28 launch_domain: 0 capture_domain: -1 time: 2.71876e-10
- type: SETUP_DATA_ARRIVAL node: 29 launch_domain: 0 capture_domain: -1 time: 2.69946e-10
- type: SETUP_DATA_ARRIVAL node: 30 launch_domain: 0 capture_domain: -1 time: 3.31521e-10
- type: SETUP_DATA_ARRIVAL node: 31 launch_domain: 0 capture_domain: -1 time: 2.71876e-10
- type: SETUP_DATA_ARRIVAL node: 32 launch_domain: 0 capture_domain: -1 time: 2.71876e-10
- type: SETUP_DATA_ARRIVAL node: 33 launch_domain: 0 capture_domain: -1 time: 3.84446e-10
- type: SETUP_DATA_ARRIVAL node: 34 launch_domain: 0 capture_domain: -1 time: 4.46021e-10
- type: SETUP_DATA_ARRIVAL node: 35 launch_domain: 0 capture_domain: -1 time: 4.17277e-10
- type: SETUP_DATA_ARRIVAL node: 36 launch_domain: 0 capture_domain: -1 time: 3.84446e-10
- type: SETUP_DATA_ARRIVAL node: 37 launch_domain: 0 capture_domain: -1 time: 4.46021e-10
- type: SETUP_DATA_ARRIVAL node: 38 launch_domain: 0 capture_domain: -1 time: 3.86376e-10
- type: SETUP_DATA_ARRIVAL node: 39 launch_domain: 0 capture_domain: -1 time: 5.38241e-10
- type: SETUP_DATA_ARRIVAL node: 40 launch_domain: 0 capture_domain: -1 time: 6.01747e-10
- type: SETUP_DATA_ARRIVAL node: 41 launch_domain: 0 capture_domain: -1 time: 6.52741e-10
- type: SETUP_DATA_ARRIVAL node: 42 launch_domain: 0 capture_domain: -1 time: 7.16247e-10
- type: SETUP_DATA_ARRIVAL node: 43 launch_domain: 0 capture_domain: -1 time: 3.84446e-10
- type: SETUP_DATA_ARRIVAL node: 44 launch_domain: 0 capture_domain: -1 time: 4.46021e-10
- type: SETUP_DATA_ARRIVAL node: 45 launch_domain: 0 capture_domain: -1 time: 4.17277e-10
- type: SETUP_DATA_ARRIVAL node: 46 launch_domain: 0 capture_domain: -1 time: 6.59232e-10
- type: SETUP_DATA_ARRIVAL node: 47 launch_domain: 0 capture_domain: -1 time: 6.52741e-10
- type: SETUP_DATA_ARRIVAL node: 48 launch_domain: 0 capture_domain: -1 time: 7.16247e-10
- type: SETUP_DATA_REQUIRED node: 1 launch_domain: 0 capture_domain: 0 time: -3.93757e-10
+ type: SETUP_DATA_ARRIVAL node: 26 launch_domain: 0 capture_domain: -1 time: 3.32236e-10
+ type: SETUP_DATA_ARRIVAL node: 27 launch_domain: 0 capture_domain: -1 time: 3.33558e-10
+ type: SETUP_DATA_ARRIVAL node: 28 launch_domain: 0 capture_domain: -1 time: 3.30306e-10
+ type: SETUP_DATA_ARRIVAL node: 29 launch_domain: 0 capture_domain: -1 time: 2.71268e-10
+ type: SETUP_DATA_ARRIVAL node: 30 launch_domain: 0 capture_domain: -1 time: 2.7452e-10
+ type: SETUP_DATA_ARRIVAL node: 31 launch_domain: 0 capture_domain: -1 time: 2.75842e-10
+ type: SETUP_DATA_ARRIVAL node: 32 launch_domain: 0 capture_domain: -1 time: 2.71982e-10
+ type: SETUP_DATA_ARRIVAL node: 33 launch_domain: 0 capture_domain: -1 time: 4.31107e-10
+ type: SETUP_DATA_ARRIVAL node: 34 launch_domain: 0 capture_domain: -1 time: 4.2328e-10
+ type: SETUP_DATA_ARRIVAL node: 35 launch_domain: 0 capture_domain: -1 time: 4.46736e-10
+ type: SETUP_DATA_ARRIVAL node: 36 launch_domain: 0 capture_domain: -1 time: 4.48058e-10
+ type: SETUP_DATA_ARRIVAL node: 37 launch_domain: 0 capture_domain: -1 time: 4.44806e-10
+ type: SETUP_DATA_ARRIVAL node: 38 launch_domain: 0 capture_domain: -1 time: 3.86482e-10
+ type: SETUP_DATA_ARRIVAL node: 39 launch_domain: 0 capture_domain: -1 time: 6.05106e-10
+ type: SETUP_DATA_ARRIVAL node: 40 launch_domain: 0 capture_domain: -1 time: 5.98601e-10
+ type: SETUP_DATA_ARRIVAL node: 41 launch_domain: 0 capture_domain: -1 time: 7.19606e-10
+ type: SETUP_DATA_ARRIVAL node: 42 launch_domain: 0 capture_domain: -1 time: 7.13101e-10
+ type: SETUP_DATA_ARRIVAL node: 43 launch_domain: 0 capture_domain: -1 time: 4.31107e-10
+ type: SETUP_DATA_ARRIVAL node: 44 launch_domain: 0 capture_domain: -1 time: 4.2328e-10
+ type: SETUP_DATA_ARRIVAL node: 45 launch_domain: 0 capture_domain: -1 time: 4.46736e-10
+ type: SETUP_DATA_ARRIVAL node: 46 launch_domain: 0 capture_domain: -1 time: 6.65087e-10
+ type: SETUP_DATA_ARRIVAL node: 47 launch_domain: 0 capture_domain: -1 time: 7.19606e-10
+ type: SETUP_DATA_ARRIVAL node: 48 launch_domain: 0 capture_domain: -1 time: 7.13101e-10
+ type: SETUP_DATA_REQUIRED node: 1 launch_domain: 0 capture_domain: 0 time: -4.07587e-10
  type: SETUP_DATA_REQUIRED node: 7 launch_domain: 0 capture_domain: 0 time: -9.098e-11
  type: SETUP_DATA_REQUIRED node: 8 launch_domain: 0 capture_domain: 0 time: -9.098e-11
  type: SETUP_DATA_REQUIRED node: 9 launch_domain: 0 capture_domain: 0 time: -9.098e-11
  type: SETUP_DATA_REQUIRED node: 10 launch_domain: 0 capture_domain: 0 time: -9.098e-11
  type: SETUP_DATA_REQUIRED node: 11 launch_domain: 0 capture_domain: 0 time: -9.098e-11
- type: SETUP_DATA_REQUIRED node: 12 launch_domain: 0 capture_domain: 0 time: -5.30331e-10
- type: SETUP_DATA_REQUIRED node: 13 launch_domain: 0 capture_domain: 0 time: -5.30331e-10
- type: SETUP_DATA_REQUIRED node: 14 launch_domain: 0 capture_domain: 0 time: -5.30331e-10
- type: SETUP_DATA_REQUIRED node: 15 launch_domain: 0 capture_domain: 0 time: -5.89977e-10
- type: SETUP_DATA_REQUIRED node: 16 launch_domain: 0 capture_domain: 0 time: -5.56482e-10
+ type: SETUP_DATA_REQUIRED node: 12 launch_domain: 0 capture_domain: 0 time: -5.31046e-10
+ type: SETUP_DATA_REQUIRED node: 13 launch_domain: 0 capture_domain: 0 time: -5.93336e-10
+ type: SETUP_DATA_REQUIRED node: 14 launch_domain: 0 capture_domain: 0 time: -5.93336e-10
+ type: SETUP_DATA_REQUIRED node: 15 launch_domain: 0 capture_domain: 0 time: -5.31046e-10
+ type: SETUP_DATA_REQUIRED node: 16 launch_domain: 0 capture_domain: 0 time: -5.62337e-10
  type: SETUP_DATA_REQUIRED node: 17 launch_domain: 0 capture_domain: 0 time: -9.098e-11
  type: SETUP_DATA_REQUIRED node: 18 launch_domain: 0 capture_domain: 0 time: -9.098e-11
  type: SETUP_DATA_REQUIRED node: 19 launch_domain: 0 capture_domain: 0 time: -9.098e-11
- type: SETUP_DATA_REQUIRED node: 20 launch_domain: 0 capture_domain: 0 time: -3.59276e-10
- type: SETUP_DATA_REQUIRED node: 21 launch_domain: 0 capture_domain: 0 time: -3.61206e-10
+ type: SETUP_DATA_REQUIRED node: 20 launch_domain: 0 capture_domain: 0 time: -3.62528e-10
+ type: SETUP_DATA_REQUIRED node: 21 launch_domain: 0 capture_domain: 0 time: -3.59276e-10
  type: SETUP_DATA_REQUIRED node: 22 launch_domain: 0 capture_domain: 0 time: -9.098e-11
  type: SETUP_DATA_REQUIRED node: 23 launch_domain: 0 capture_domain: 0 time: -9.098e-11
- type: SETUP_DATA_REQUIRED node: 24 launch_domain: 0 capture_domain: 0 time: -3.59276e-10
- type: SETUP_DATA_REQUIRED node: 25 launch_domain: 0 capture_domain: 0 time: -3.61206e-10
+ type: SETUP_DATA_REQUIRED node: 24 launch_domain: 0 capture_domain: 0 time: -3.62528e-10
+ type: SETUP_DATA_REQUIRED node: 25 launch_domain: 0 capture_domain: 0 time: -3.59276e-10
  type: SETUP_DATA_REQUIRED node: 26 launch_domain: 0 capture_domain: 0 time: -9.098e-11
- type: SETUP_DATA_REQUIRED node: 27 launch_domain: 0 capture_domain: 0 time: -3.59276e-10
- type: SETUP_DATA_REQUIRED node: 28 launch_domain: 0 capture_domain: 0 time: -3.61206e-10
+ type: SETUP_DATA_REQUIRED node: 27 launch_domain: 0 capture_domain: 0 time: -3.62528e-10
+ type: SETUP_DATA_REQUIRED node: 28 launch_domain: 0 capture_domain: 0 time: -3.59276e-10
  type: SETUP_DATA_REQUIRED node: 29 launch_domain: 0 capture_domain: 0 time: -9.098e-11
- type: SETUP_DATA_REQUIRED node: 30 launch_domain: 0 capture_domain: 0 time: -3.61206e-10
+ type: SETUP_DATA_REQUIRED node: 30 launch_domain: 0 capture_domain: 0 time: -3.59276e-10
  type: SETUP_DATA_REQUIRED node: 31 launch_domain: 0 capture_domain: 0 time: -9.098e-11
- type: SETUP_DATA_REQUIRED node: 32 launch_domain: 0 capture_domain: 0 time: -3.87357e-10
+ type: SETUP_DATA_REQUIRED node: 32 launch_domain: 0 capture_domain: 0 time: -3.93105e-10
  type: SETUP_DATA_REQUIRED node: 33 launch_domain: 0 capture_domain: 0 time: 2.352e-11
  type: SETUP_DATA_REQUIRED node: 34 launch_domain: 0 capture_domain: 0 time: 2.352e-11
  type: SETUP_DATA_REQUIRED node: 35 launch_domain: 0 capture_domain: 0 time: 2.352e-11
- type: SETUP_DATA_REQUIRED node: 36 launch_domain: 0 capture_domain: 0 time: -2.44776e-10
- type: SETUP_DATA_REQUIRED node: 37 launch_domain: 0 capture_domain: 0 time: -2.46706e-10
- type: SETUP_DATA_REQUIRED node: 38 launch_domain: 0 capture_domain: 0 time: -2.72857e-10
+ type: SETUP_DATA_REQUIRED node: 36 launch_domain: 0 capture_domain: 0 time: -2.48028e-10
+ type: SETUP_DATA_REQUIRED node: 37 launch_domain: 0 capture_domain: 0 time: -2.44776e-10
+ type: SETUP_DATA_REQUIRED node: 38 launch_domain: 0 capture_domain: 0 time: -2.78605e-10
  type: SETUP_DATA_REQUIRED node: 39 launch_domain: 0 capture_domain: 0 time: -9.098e-11
  type: SETUP_DATA_REQUIRED node: 40 launch_domain: 0 capture_domain: 0 time: -9.098e-11
  type: SETUP_DATA_REQUIRED node: 41 launch_domain: 0 capture_domain: 0 time: 2.352e-11
@@ -711,125 +711,125 @@ analysis_result:
  type: SETUP_CAPTURE_CLOCK node: 4 launch_domain: 0 capture_domain: 0 time: 4.243e-11
  type: SETUP_CAPTURE_CLOCK node: 5 launch_domain: 0 capture_domain: 0 time: 4.243e-11
  type: SETUP_CAPTURE_CLOCK node: 6 launch_domain: 0 capture_domain: 0 time: 4.243e-11
- type: SETUP_SLACK node: 1 launch_domain: 0 capture_domain: 0 slack: -3.93757e-10
- type: SETUP_SLACK node: 7 launch_domain: 0 capture_domain: 0 slack: -3.35433e-10
- type: SETUP_SLACK node: 8 launch_domain: 0 capture_domain: 0 slack: -2.70606e-10
- type: SETUP_SLACK node: 9 launch_domain: 0 capture_domain: 0 slack: -3.93757e-10
- type: SETUP_SLACK node: 10 launch_domain: 0 capture_domain: 0 slack: -2.70606e-10
- type: SETUP_SLACK node: 11 launch_domain: 0 capture_domain: 0 slack: -3.35433e-10
- type: SETUP_SLACK node: 12 launch_domain: 0 capture_domain: 0 slack: -6.33081e-10
- type: SETUP_SLACK node: 13 launch_domain: 0 capture_domain: 0 slack: -6.33081e-10
- type: SETUP_SLACK node: 14 launch_domain: 0 capture_domain: 0 slack: -6.33081e-10
- type: SETUP_SLACK node: 15 launch_domain: 0 capture_domain: 0 slack: -6.92727e-10
- type: SETUP_SLACK node: 16 launch_domain: 0 capture_domain: 0 slack: -6.59232e-10
- type: SETUP_SLACK node: 17 launch_domain: 0 capture_domain: 0 slack: -3.60926e-10
- type: SETUP_SLACK node: 18 launch_domain: 0 capture_domain: 0 slack: -3.60926e-10
- type: SETUP_SLACK node: 19 launch_domain: 0 capture_domain: 0 slack: -3.62856e-10
- type: SETUP_SLACK node: 20 launch_domain: 0 capture_domain: 0 slack: -6.29221e-10
- type: SETUP_SLACK node: 21 launch_domain: 0 capture_domain: 0 slack: -6.33081e-10
- type: SETUP_SLACK node: 22 launch_domain: 0 capture_domain: 0 slack: -4.22501e-10
+ type: SETUP_SLACK node: 1 launch_domain: 0 capture_domain: 0 slack: -4.07587e-10
+ type: SETUP_SLACK node: 7 launch_domain: 0 capture_domain: 0 slack: -4.07587e-10
+ type: SETUP_SLACK node: 8 launch_domain: 0 capture_domain: 0 slack: -3.9976e-10
+ type: SETUP_SLACK node: 9 launch_domain: 0 capture_domain: 0 slack: -3.41437e-10
+ type: SETUP_SLACK node: 10 launch_domain: 0 capture_domain: 0 slack: -2.69283e-10
+ type: SETUP_SLACK node: 11 launch_domain: 0 capture_domain: 0 slack: -3.9976e-10
+ type: SETUP_SLACK node: 12 launch_domain: 0 capture_domain: 0 slack: -6.33796e-10
+ type: SETUP_SLACK node: 13 launch_domain: 0 capture_domain: 0 slack: -6.96086e-10
+ type: SETUP_SLACK node: 14 launch_domain: 0 capture_domain: 0 slack: -6.96086e-10
+ type: SETUP_SLACK node: 15 launch_domain: 0 capture_domain: 0 slack: -6.33796e-10
+ type: SETUP_SLACK node: 16 launch_domain: 0 capture_domain: 0 slack: -6.65087e-10
+ type: SETUP_SLACK node: 17 launch_domain: 0 capture_domain: 0 slack: -3.66822e-10
+ type: SETUP_SLACK node: 18 launch_domain: 0 capture_domain: 0 slack: -3.655e-10
+ type: SETUP_SLACK node: 19 launch_domain: 0 capture_domain: 0 slack: -3.66822e-10
+ type: SETUP_SLACK node: 20 launch_domain: 0 capture_domain: 0 slack: -6.33188e-10
+ type: SETUP_SLACK node: 21 launch_domain: 0 capture_domain: 0 slack: -6.33796e-10
+ type: SETUP_SLACK node: 22 launch_domain: 0 capture_domain: 0 slack: -3.62856e-10
  type: SETUP_SLACK node: 23 launch_domain: 0 capture_domain: 0 slack: -3.62856e-10
- type: SETUP_SLACK node: 24 launch_domain: 0 capture_domain: 0 slack: -6.27291e-10
- type: SETUP_SLACK node: 25 launch_domain: 0 capture_domain: 0 slack: -6.33081e-10
- type: SETUP_SLACK node: 26 launch_domain: 0 capture_domain: 0 slack: -3.62856e-10
- type: SETUP_SLACK node: 27 launch_domain: 0 capture_domain: 0 slack: -6.27291e-10
- type: SETUP_SLACK node: 28 launch_domain: 0 capture_domain: 0 slack: -6.33081e-10
- type: SETUP_SLACK node: 29 launch_domain: 0 capture_domain: 0 slack: -3.60926e-10
- type: SETUP_SLACK node: 30 launch_domain: 0 capture_domain: 0 slack: -6.92727e-10
- type: SETUP_SLACK node: 31 launch_domain: 0 capture_domain: 0 slack: -3.62856e-10
- type: SETUP_SLACK node: 32 launch_domain: 0 capture_domain: 0 slack: -6.59232e-10
- type: SETUP_SLACK node: 33 launch_domain: 0 capture_domain: 0 slack: -3.60926e-10
- type: SETUP_SLACK node: 34 launch_domain: 0 capture_domain: 0 slack: -4.22501e-10
- type: SETUP_SLACK node: 35 launch_domain: 0 capture_domain: 0 slack: -3.93757e-10
- type: SETUP_SLACK node: 36 launch_domain: 0 capture_domain: 0 slack: -6.29221e-10
- type: SETUP_SLACK node: 37 launch_domain: 0 capture_domain: 0 slack: -6.92727e-10
- type: SETUP_SLACK node: 38 launch_domain: 0 capture_domain: 0 slack: -6.59232e-10
- type: SETUP_SLACK node: 39 launch_domain: 0 capture_domain: 0 slack: -6.29221e-10
- type: SETUP_SLACK node: 40 launch_domain: 0 capture_domain: 0 slack: -6.92727e-10
- type: SETUP_SLACK node: 41 launch_domain: 0 capture_domain: 0 slack: -6.29221e-10
- type: SETUP_SLACK node: 42 launch_domain: 0 capture_domain: 0 slack: -6.92727e-10
- type: SETUP_SLACK node: 43 launch_domain: 0 capture_domain: 0 slack: -3.60926e-10
- type: SETUP_SLACK node: 44 launch_domain: 0 capture_domain: 0 slack: -4.22501e-10
- type: SETUP_SLACK node: 45 launch_domain: 0 capture_domain: 0 slack: -3.93757e-10
- type: SETUP_SLACK node: 46 launch_domain: 0 capture_domain: 0 slack: -6.59232e-10
- type: SETUP_SLACK node: 47 launch_domain: 0 capture_domain: 0 slack: -6.29221e-10
- type: SETUP_SLACK node: 48 launch_domain: 0 capture_domain: 0 slack: -6.92727e-10
+ type: SETUP_SLACK node: 24 launch_domain: 0 capture_domain: 0 slack: -6.96086e-10
+ type: SETUP_SLACK node: 25 launch_domain: 0 capture_domain: 0 slack: -6.31151e-10
+ type: SETUP_SLACK node: 26 launch_domain: 0 capture_domain: 0 slack: -4.23216e-10
+ type: SETUP_SLACK node: 27 launch_domain: 0 capture_domain: 0 slack: -6.96086e-10
+ type: SETUP_SLACK node: 28 launch_domain: 0 capture_domain: 0 slack: -6.89581e-10
+ type: SETUP_SLACK node: 29 launch_domain: 0 capture_domain: 0 slack: -3.62248e-10
+ type: SETUP_SLACK node: 30 launch_domain: 0 capture_domain: 0 slack: -6.33796e-10
+ type: SETUP_SLACK node: 31 launch_domain: 0 capture_domain: 0 slack: -3.66822e-10
+ type: SETUP_SLACK node: 32 launch_domain: 0 capture_domain: 0 slack: -6.65087e-10
+ type: SETUP_SLACK node: 33 launch_domain: 0 capture_domain: 0 slack: -4.07587e-10
+ type: SETUP_SLACK node: 34 launch_domain: 0 capture_domain: 0 slack: -3.9976e-10
+ type: SETUP_SLACK node: 35 launch_domain: 0 capture_domain: 0 slack: -4.23216e-10
+ type: SETUP_SLACK node: 36 launch_domain: 0 capture_domain: 0 slack: -6.96086e-10
+ type: SETUP_SLACK node: 37 launch_domain: 0 capture_domain: 0 slack: -6.89581e-10
+ type: SETUP_SLACK node: 38 launch_domain: 0 capture_domain: 0 slack: -6.65087e-10
+ type: SETUP_SLACK node: 39 launch_domain: 0 capture_domain: 0 slack: -6.96086e-10
+ type: SETUP_SLACK node: 40 launch_domain: 0 capture_domain: 0 slack: -6.89581e-10
+ type: SETUP_SLACK node: 41 launch_domain: 0 capture_domain: 0 slack: -6.96086e-10
+ type: SETUP_SLACK node: 42 launch_domain: 0 capture_domain: 0 slack: -6.89581e-10
+ type: SETUP_SLACK node: 43 launch_domain: 0 capture_domain: 0 slack: -4.07587e-10
+ type: SETUP_SLACK node: 44 launch_domain: 0 capture_domain: 0 slack: -3.9976e-10
+ type: SETUP_SLACK node: 45 launch_domain: 0 capture_domain: 0 slack: -4.23216e-10
+ type: SETUP_SLACK node: 46 launch_domain: 0 capture_domain: 0 slack: -6.65087e-10
+ type: SETUP_SLACK node: 47 launch_domain: 0 capture_domain: 0 slack: -6.96086e-10
+ type: SETUP_SLACK node: 48 launch_domain: 0 capture_domain: 0 slack: -6.89581e-10
  type: HOLD_DATA_ARRIVAL node: 1 launch_domain: 0 capture_domain: -1 time: 0
- type: HOLD_DATA_ARRIVAL node: 7 launch_domain: 0 capture_domain: -1 time: 2.02023e-10
- type: HOLD_DATA_ARRIVAL node: 8 launch_domain: 0 capture_domain: -1 time: 1.37196e-10
- type: HOLD_DATA_ARRIVAL node: 9 launch_domain: 0 capture_domain: -1 time: 2.60347e-10
- type: HOLD_DATA_ARRIVAL node: 10 launch_domain: 0 capture_domain: -1 time: 1.37196e-10
- type: HOLD_DATA_ARRIVAL node: 11 launch_domain: 0 capture_domain: -1 time: 2.02023e-10
+ type: HOLD_DATA_ARRIVAL node: 7 launch_domain: 0 capture_domain: -1 time: 2.74177e-10
+ type: HOLD_DATA_ARRIVAL node: 8 launch_domain: 0 capture_domain: -1 time: 2.6635e-10
+ type: HOLD_DATA_ARRIVAL node: 9 launch_domain: 0 capture_domain: -1 time: 2.08027e-10
+ type: HOLD_DATA_ARRIVAL node: 10 launch_domain: 0 capture_domain: -1 time: 1.35873e-10
+ type: HOLD_DATA_ARRIVAL node: 11 launch_domain: 0 capture_domain: -1 time: 2.6635e-10
  type: HOLD_DATA_ARRIVAL node: 12 launch_domain: 0 capture_domain: -1 time: 6.032e-11
  type: HOLD_DATA_ARRIVAL node: 13 launch_domain: 0 capture_domain: -1 time: 6.032e-11
  type: HOLD_DATA_ARRIVAL node: 14 launch_domain: 0 capture_domain: -1 time: 6.032e-11
  type: HOLD_DATA_ARRIVAL node: 15 launch_domain: 0 capture_domain: -1 time: 6.032e-11
  type: HOLD_DATA_ARRIVAL node: 16 launch_domain: 0 capture_domain: -1 time: 6.032e-11
- type: HOLD_DATA_ARRIVAL node: 17 launch_domain: 0 capture_domain: -1 time: 1.97516e-10
- type: HOLD_DATA_ARRIVAL node: 18 launch_domain: 0 capture_domain: -1 time: 1.97516e-10
- type: HOLD_DATA_ARRIVAL node: 19 launch_domain: 0 capture_domain: -1 time: 1.99446e-10
- type: HOLD_DATA_ARRIVAL node: 20 launch_domain: 0 capture_domain: -1 time: 1.97516e-10
- type: HOLD_DATA_ARRIVAL node: 21 launch_domain: 0 capture_domain: -1 time: 1.99446e-10
- type: HOLD_DATA_ARRIVAL node: 22 launch_domain: 0 capture_domain: -1 time: 2.59091e-10
+ type: HOLD_DATA_ARRIVAL node: 17 launch_domain: 0 capture_domain: -1 time: 2.03412e-10
+ type: HOLD_DATA_ARRIVAL node: 18 launch_domain: 0 capture_domain: -1 time: 2.0209e-10
+ type: HOLD_DATA_ARRIVAL node: 19 launch_domain: 0 capture_domain: -1 time: 2.03412e-10
+ type: HOLD_DATA_ARRIVAL node: 20 launch_domain: 0 capture_domain: -1 time: 1.9823e-10
+ type: HOLD_DATA_ARRIVAL node: 21 launch_domain: 0 capture_domain: -1 time: 2.0209e-10
+ type: HOLD_DATA_ARRIVAL node: 22 launch_domain: 0 capture_domain: -1 time: 1.99446e-10
  type: HOLD_DATA_ARRIVAL node: 23 launch_domain: 0 capture_domain: -1 time: 1.99446e-10
- type: HOLD_DATA_ARRIVAL node: 24 launch_domain: 0 capture_domain: -1 time: 1.95586e-10
+ type: HOLD_DATA_ARRIVAL node: 24 launch_domain: 0 capture_domain: -1 time: 2.61128e-10
  type: HOLD_DATA_ARRIVAL node: 25 launch_domain: 0 capture_domain: -1 time: 1.99446e-10
- type: HOLD_DATA_ARRIVAL node: 26 launch_domain: 0 capture_domain: -1 time: 1.99446e-10
- type: HOLD_DATA_ARRIVAL node: 27 launch_domain: 0 capture_domain: -1 time: 1.95586e-10
- type: HOLD_DATA_ARRIVAL node: 28 launch_domain: 0 capture_domain: -1 time: 1.99446e-10
- type: HOLD_DATA_ARRIVAL node: 29 launch_domain: 0 capture_domain: -1 time: 1.97516e-10
- type: HOLD_DATA_ARRIVAL node: 30 launch_domain: 0 capture_domain: -1 time: 2.59091e-10
- type: HOLD_DATA_ARRIVAL node: 31 launch_domain: 0 capture_domain: -1 time: 1.99446e-10
- type: HOLD_DATA_ARRIVAL node: 32 launch_domain: 0 capture_domain: -1 time: 1.99446e-10
- type: HOLD_DATA_ARRIVAL node: 33 launch_domain: 0 capture_domain: -1 time: 3.12016e-10
- type: HOLD_DATA_ARRIVAL node: 34 launch_domain: 0 capture_domain: -1 time: 2.51696e-10
+ type: HOLD_DATA_ARRIVAL node: 26 launch_domain: 0 capture_domain: -1 time: 2.59806e-10
+ type: HOLD_DATA_ARRIVAL node: 27 launch_domain: 0 capture_domain: -1 time: 2.61128e-10
+ type: HOLD_DATA_ARRIVAL node: 28 launch_domain: 0 capture_domain: -1 time: 2.57876e-10
+ type: HOLD_DATA_ARRIVAL node: 29 launch_domain: 0 capture_domain: -1 time: 1.98838e-10
+ type: HOLD_DATA_ARRIVAL node: 30 launch_domain: 0 capture_domain: -1 time: 2.0209e-10
+ type: HOLD_DATA_ARRIVAL node: 31 launch_domain: 0 capture_domain: -1 time: 2.03412e-10
+ type: HOLD_DATA_ARRIVAL node: 32 launch_domain: 0 capture_domain: -1 time: 1.99552e-10
+ type: HOLD_DATA_ARRIVAL node: 33 launch_domain: 0 capture_domain: -1 time: 3.17912e-10
+ type: HOLD_DATA_ARRIVAL node: 34 launch_domain: 0 capture_domain: -1 time: 3.13946e-10
  type: HOLD_DATA_ARRIVAL node: 35 launch_domain: 0 capture_domain: -1 time: 3.13946e-10
- type: HOLD_DATA_ARRIVAL node: 36 launch_domain: 0 capture_domain: -1 time: 3.10086e-10
+ type: HOLD_DATA_ARRIVAL node: 36 launch_domain: 0 capture_domain: -1 time: 3.1273e-10
  type: HOLD_DATA_ARRIVAL node: 37 launch_domain: 0 capture_domain: -1 time: 3.13946e-10
- type: HOLD_DATA_ARRIVAL node: 38 launch_domain: 0 capture_domain: -1 time: 3.13946e-10
- type: HOLD_DATA_ARRIVAL node: 39 launch_domain: 0 capture_domain: -1 time: 4.47281e-10
- type: HOLD_DATA_ARRIVAL node: 40 launch_domain: 0 capture_domain: -1 time: 4.53071e-10
- type: HOLD_DATA_ARRIVAL node: 41 launch_domain: 0 capture_domain: -1 time: 2.51696e-10
- type: HOLD_DATA_ARRIVAL node: 42 launch_domain: 0 capture_domain: -1 time: 3.13946e-10
- type: HOLD_DATA_ARRIVAL node: 43 launch_domain: 0 capture_domain: -1 time: 3.12016e-10
- type: HOLD_DATA_ARRIVAL node: 44 launch_domain: 0 capture_domain: -1 time: 2.51696e-10
+ type: HOLD_DATA_ARRIVAL node: 38 launch_domain: 0 capture_domain: -1 time: 3.14052e-10
+ type: HOLD_DATA_ARRIVAL node: 39 launch_domain: 0 capture_domain: -1 time: 4.53178e-10
+ type: HOLD_DATA_ARRIVAL node: 40 launch_domain: 0 capture_domain: -1 time: 4.51141e-10
+ type: HOLD_DATA_ARRIVAL node: 41 launch_domain: 0 capture_domain: -1 time: 2.50373e-10
+ type: HOLD_DATA_ARRIVAL node: 42 launch_domain: 0 capture_domain: -1 time: 3.17912e-10
+ type: HOLD_DATA_ARRIVAL node: 43 launch_domain: 0 capture_domain: -1 time: 3.17912e-10
+ type: HOLD_DATA_ARRIVAL node: 44 launch_domain: 0 capture_domain: -1 time: 3.13946e-10
  type: HOLD_DATA_ARRIVAL node: 45 launch_domain: 0 capture_domain: -1 time: 3.13946e-10
- type: HOLD_DATA_ARRIVAL node: 46 launch_domain: 0 capture_domain: -1 time: 5.56262e-10
- type: HOLD_DATA_ARRIVAL node: 47 launch_domain: 0 capture_domain: -1 time: 2.51696e-10
- type: HOLD_DATA_ARRIVAL node: 48 launch_domain: 0 capture_domain: -1 time: 3.13946e-10
- type: HOLD_DATA_REQUIRED node: 1 launch_domain: 0 capture_domain: 0 time: -2.32786e-10
+ type: HOLD_DATA_ARRIVAL node: 46 launch_domain: 0 capture_domain: -1 time: 5.62117e-10
+ type: HOLD_DATA_ARRIVAL node: 47 launch_domain: 0 capture_domain: -1 time: 2.50373e-10
+ type: HOLD_DATA_ARRIVAL node: 48 launch_domain: 0 capture_domain: -1 time: 3.17912e-10
+ type: HOLD_DATA_REQUIRED node: 1 launch_domain: 0 capture_domain: 0 time: -2.31463e-10
  type: HOLD_DATA_REQUIRED node: 7 launch_domain: 0 capture_domain: 0 time: -9.559e-11
  type: HOLD_DATA_REQUIRED node: 8 launch_domain: 0 capture_domain: 0 time: -9.559e-11
  type: HOLD_DATA_REQUIRED node: 9 launch_domain: 0 capture_domain: 0 time: -9.559e-11
  type: HOLD_DATA_REQUIRED node: 10 launch_domain: 0 capture_domain: 0 time: -9.559e-11
  type: HOLD_DATA_REQUIRED node: 11 launch_domain: 0 capture_domain: 0 time: -9.559e-11
- type: HOLD_DATA_REQUIRED node: 12 launch_domain: 0 capture_domain: 0 time: -2.32786e-10
+ type: HOLD_DATA_REQUIRED node: 12 launch_domain: 0 capture_domain: 0 time: -2.3736e-10
  type: HOLD_DATA_REQUIRED node: 13 launch_domain: 0 capture_domain: 0 time: -2.34716e-10
- type: HOLD_DATA_REQUIRED node: 14 launch_domain: 0 capture_domain: 0 time: -2.34716e-10
- type: HOLD_DATA_REQUIRED node: 15 launch_domain: 0 capture_domain: 0 time: -2.32786e-10
- type: HOLD_DATA_REQUIRED node: 16 launch_domain: 0 capture_domain: 0 time: -2.34716e-10
+ type: HOLD_DATA_REQUIRED node: 14 launch_domain: 0 capture_domain: 0 time: -2.95076e-10
+ type: HOLD_DATA_REQUIRED node: 15 launch_domain: 0 capture_domain: 0 time: -2.34108e-10
+ type: HOLD_DATA_REQUIRED node: 16 launch_domain: 0 capture_domain: 0 time: -2.38682e-10
  type: HOLD_DATA_REQUIRED node: 17 launch_domain: 0 capture_domain: 0 time: -9.559e-11
  type: HOLD_DATA_REQUIRED node: 18 launch_domain: 0 capture_domain: 0 time: -9.559e-11
  type: HOLD_DATA_REQUIRED node: 19 launch_domain: 0 capture_domain: 0 time: -9.559e-11
- type: HOLD_DATA_REQUIRED node: 20 launch_domain: 0 capture_domain: 0 time: -3.47286e-10
- type: HOLD_DATA_REQUIRED node: 21 launch_domain: 0 capture_domain: 0 time: -3.49216e-10
+ type: HOLD_DATA_REQUIRED node: 20 launch_domain: 0 capture_domain: 0 time: -3.50538e-10
+ type: HOLD_DATA_REQUIRED node: 21 launch_domain: 0 capture_domain: 0 time: -3.47286e-10
  type: HOLD_DATA_REQUIRED node: 22 launch_domain: 0 capture_domain: 0 time: -9.559e-11
  type: HOLD_DATA_REQUIRED node: 23 launch_domain: 0 capture_domain: 0 time: -9.559e-11
- type: HOLD_DATA_REQUIRED node: 24 launch_domain: 0 capture_domain: 0 time: -3.47286e-10
- type: HOLD_DATA_REQUIRED node: 25 launch_domain: 0 capture_domain: 0 time: -3.49216e-10
+ type: HOLD_DATA_REQUIRED node: 24 launch_domain: 0 capture_domain: 0 time: -3.50538e-10
+ type: HOLD_DATA_REQUIRED node: 25 launch_domain: 0 capture_domain: 0 time: -3.47286e-10
  type: HOLD_DATA_REQUIRED node: 26 launch_domain: 0 capture_domain: 0 time: -9.559e-11
- type: HOLD_DATA_REQUIRED node: 27 launch_domain: 0 capture_domain: 0 time: -3.47286e-10
- type: HOLD_DATA_REQUIRED node: 28 launch_domain: 0 capture_domain: 0 time: -3.49216e-10
+ type: HOLD_DATA_REQUIRED node: 27 launch_domain: 0 capture_domain: 0 time: -3.50538e-10
+ type: HOLD_DATA_REQUIRED node: 28 launch_domain: 0 capture_domain: 0 time: -3.47286e-10
  type: HOLD_DATA_REQUIRED node: 29 launch_domain: 0 capture_domain: 0 time: -9.559e-11
- type: HOLD_DATA_REQUIRED node: 30 launch_domain: 0 capture_domain: 0 time: -3.49216e-10
+ type: HOLD_DATA_REQUIRED node: 30 launch_domain: 0 capture_domain: 0 time: -3.47286e-10
  type: HOLD_DATA_REQUIRED node: 31 launch_domain: 0 capture_domain: 0 time: -9.559e-11
- type: HOLD_DATA_REQUIRED node: 32 launch_domain: 0 capture_domain: 0 time: -3.56817e-10
+ type: HOLD_DATA_REQUIRED node: 32 launch_domain: 0 capture_domain: 0 time: -3.62565e-10
  type: HOLD_DATA_REQUIRED node: 33 launch_domain: 0 capture_domain: 0 time: 1.891e-11
  type: HOLD_DATA_REQUIRED node: 34 launch_domain: 0 capture_domain: 0 time: 1.891e-11
  type: HOLD_DATA_REQUIRED node: 35 launch_domain: 0 capture_domain: 0 time: 1.891e-11
- type: HOLD_DATA_REQUIRED node: 36 launch_domain: 0 capture_domain: 0 time: -2.32786e-10
- type: HOLD_DATA_REQUIRED node: 37 launch_domain: 0 capture_domain: 0 time: -2.34716e-10
- type: HOLD_DATA_REQUIRED node: 38 launch_domain: 0 capture_domain: 0 time: -2.42317e-10
+ type: HOLD_DATA_REQUIRED node: 36 launch_domain: 0 capture_domain: 0 time: -2.36038e-10
+ type: HOLD_DATA_REQUIRED node: 37 launch_domain: 0 capture_domain: 0 time: -2.32786e-10
+ type: HOLD_DATA_REQUIRED node: 38 launch_domain: 0 capture_domain: 0 time: -2.48065e-10
  type: HOLD_DATA_REQUIRED node: 39 launch_domain: 0 capture_domain: 0 time: -9.559e-11
  type: HOLD_DATA_REQUIRED node: 40 launch_domain: 0 capture_domain: 0 time: -9.559e-11
  type: HOLD_DATA_REQUIRED node: 41 launch_domain: 0 capture_domain: 0 time: 1.891e-11
@@ -852,47 +852,47 @@ analysis_result:
  type: HOLD_CAPTURE_CLOCK node: 4 launch_domain: 0 capture_domain: 0 time: 0
  type: HOLD_CAPTURE_CLOCK node: 5 launch_domain: 0 capture_domain: 0 time: 0
  type: HOLD_CAPTURE_CLOCK node: 6 launch_domain: 0 capture_domain: 0 time: 0
- type: HOLD_SLACK node: 1 launch_domain: 0 capture_domain: 0 slack: 2.32786e-10
- type: HOLD_SLACK node: 7 launch_domain: 0 capture_domain: 0 slack: 2.97613e-10
- type: HOLD_SLACK node: 8 launch_domain: 0 capture_domain: 0 slack: 2.32786e-10
- type: HOLD_SLACK node: 9 launch_domain: 0 capture_domain: 0 slack: 3.55937e-10
- type: HOLD_SLACK node: 10 launch_domain: 0 capture_domain: 0 slack: 2.32786e-10
- type: HOLD_SLACK node: 11 launch_domain: 0 capture_domain: 0 slack: 2.97613e-10
- type: HOLD_SLACK node: 12 launch_domain: 0 capture_domain: 0 slack: 2.93106e-10
+ type: HOLD_SLACK node: 1 launch_domain: 0 capture_domain: 0 slack: 2.31463e-10
+ type: HOLD_SLACK node: 7 launch_domain: 0 capture_domain: 0 slack: 3.69767e-10
+ type: HOLD_SLACK node: 8 launch_domain: 0 capture_domain: 0 slack: 3.6194e-10
+ type: HOLD_SLACK node: 9 launch_domain: 0 capture_domain: 0 slack: 3.03617e-10
+ type: HOLD_SLACK node: 10 launch_domain: 0 capture_domain: 0 slack: 2.31463e-10
+ type: HOLD_SLACK node: 11 launch_domain: 0 capture_domain: 0 slack: 3.6194e-10
+ type: HOLD_SLACK node: 12 launch_domain: 0 capture_domain: 0 slack: 2.9768e-10
  type: HOLD_SLACK node: 13 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
- type: HOLD_SLACK node: 14 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
- type: HOLD_SLACK node: 15 launch_domain: 0 capture_domain: 0 slack: 2.93106e-10
- type: HOLD_SLACK node: 16 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
- type: HOLD_SLACK node: 17 launch_domain: 0 capture_domain: 0 slack: 2.93106e-10
- type: HOLD_SLACK node: 18 launch_domain: 0 capture_domain: 0 slack: 2.93106e-10
- type: HOLD_SLACK node: 19 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
- type: HOLD_SLACK node: 20 launch_domain: 0 capture_domain: 0 slack: 5.44801e-10
- type: HOLD_SLACK node: 21 launch_domain: 0 capture_domain: 0 slack: 5.48661e-10
- type: HOLD_SLACK node: 22 launch_domain: 0 capture_domain: 0 slack: 3.54681e-10
+ type: HOLD_SLACK node: 14 launch_domain: 0 capture_domain: 0 slack: 3.55396e-10
+ type: HOLD_SLACK node: 15 launch_domain: 0 capture_domain: 0 slack: 2.94428e-10
+ type: HOLD_SLACK node: 16 launch_domain: 0 capture_domain: 0 slack: 2.99002e-10
+ type: HOLD_SLACK node: 17 launch_domain: 0 capture_domain: 0 slack: 2.99002e-10
+ type: HOLD_SLACK node: 18 launch_domain: 0 capture_domain: 0 slack: 2.9768e-10
+ type: HOLD_SLACK node: 19 launch_domain: 0 capture_domain: 0 slack: 2.99002e-10
+ type: HOLD_SLACK node: 20 launch_domain: 0 capture_domain: 0 slack: 5.48768e-10
+ type: HOLD_SLACK node: 21 launch_domain: 0 capture_domain: 0 slack: 5.49376e-10
+ type: HOLD_SLACK node: 22 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
  type: HOLD_SLACK node: 23 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
- type: HOLD_SLACK node: 24 launch_domain: 0 capture_domain: 0 slack: 5.42871e-10
- type: HOLD_SLACK node: 25 launch_domain: 0 capture_domain: 0 slack: 5.48661e-10
- type: HOLD_SLACK node: 26 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
- type: HOLD_SLACK node: 27 launch_domain: 0 capture_domain: 0 slack: 5.42871e-10
- type: HOLD_SLACK node: 28 launch_domain: 0 capture_domain: 0 slack: 5.48661e-10
- type: HOLD_SLACK node: 29 launch_domain: 0 capture_domain: 0 slack: 2.93106e-10
- type: HOLD_SLACK node: 30 launch_domain: 0 capture_domain: 0 slack: 6.08307e-10
- type: HOLD_SLACK node: 31 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
- type: HOLD_SLACK node: 32 launch_domain: 0 capture_domain: 0 slack: 5.56262e-10
- type: HOLD_SLACK node: 33 launch_domain: 0 capture_domain: 0 slack: 2.93106e-10
- type: HOLD_SLACK node: 34 launch_domain: 0 capture_domain: 0 slack: 2.32786e-10
+ type: HOLD_SLACK node: 24 launch_domain: 0 capture_domain: 0 slack: 6.11666e-10
+ type: HOLD_SLACK node: 25 launch_domain: 0 capture_domain: 0 slack: 5.46731e-10
+ type: HOLD_SLACK node: 26 launch_domain: 0 capture_domain: 0 slack: 3.55396e-10
+ type: HOLD_SLACK node: 27 launch_domain: 0 capture_domain: 0 slack: 6.11666e-10
+ type: HOLD_SLACK node: 28 launch_domain: 0 capture_domain: 0 slack: 6.05161e-10
+ type: HOLD_SLACK node: 29 launch_domain: 0 capture_domain: 0 slack: 2.94428e-10
+ type: HOLD_SLACK node: 30 launch_domain: 0 capture_domain: 0 slack: 5.49376e-10
+ type: HOLD_SLACK node: 31 launch_domain: 0 capture_domain: 0 slack: 2.99002e-10
+ type: HOLD_SLACK node: 32 launch_domain: 0 capture_domain: 0 slack: 5.62117e-10
+ type: HOLD_SLACK node: 33 launch_domain: 0 capture_domain: 0 slack: 2.99002e-10
+ type: HOLD_SLACK node: 34 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
  type: HOLD_SLACK node: 35 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
- type: HOLD_SLACK node: 36 launch_domain: 0 capture_domain: 0 slack: 5.42871e-10
- type: HOLD_SLACK node: 37 launch_domain: 0 capture_domain: 0 slack: 5.48661e-10
- type: HOLD_SLACK node: 38 launch_domain: 0 capture_domain: 0 slack: 5.56262e-10
- type: HOLD_SLACK node: 39 launch_domain: 0 capture_domain: 0 slack: 5.42871e-10
- type: HOLD_SLACK node: 40 launch_domain: 0 capture_domain: 0 slack: 5.48661e-10
- type: HOLD_SLACK node: 41 launch_domain: 0 capture_domain: 0 slack: 2.32786e-10
- type: HOLD_SLACK node: 42 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
- type: HOLD_SLACK node: 43 launch_domain: 0 capture_domain: 0 slack: 2.93106e-10
- type: HOLD_SLACK node: 44 launch_domain: 0 capture_domain: 0 slack: 2.32786e-10
+ type: HOLD_SLACK node: 36 launch_domain: 0 capture_domain: 0 slack: 5.48768e-10
+ type: HOLD_SLACK node: 37 launch_domain: 0 capture_domain: 0 slack: 5.46731e-10
+ type: HOLD_SLACK node: 38 launch_domain: 0 capture_domain: 0 slack: 5.62117e-10
+ type: HOLD_SLACK node: 39 launch_domain: 0 capture_domain: 0 slack: 5.48768e-10
+ type: HOLD_SLACK node: 40 launch_domain: 0 capture_domain: 0 slack: 5.46731e-10
+ type: HOLD_SLACK node: 41 launch_domain: 0 capture_domain: 0 slack: 2.31463e-10
+ type: HOLD_SLACK node: 42 launch_domain: 0 capture_domain: 0 slack: 2.99002e-10
+ type: HOLD_SLACK node: 43 launch_domain: 0 capture_domain: 0 slack: 2.99002e-10
+ type: HOLD_SLACK node: 44 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
  type: HOLD_SLACK node: 45 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
- type: HOLD_SLACK node: 46 launch_domain: 0 capture_domain: 0 slack: 5.56262e-10
- type: HOLD_SLACK node: 47 launch_domain: 0 capture_domain: 0 slack: 2.32786e-10
- type: HOLD_SLACK node: 48 launch_domain: 0 capture_domain: 0 slack: 2.95036e-10
+ type: HOLD_SLACK node: 46 launch_domain: 0 capture_domain: 0 slack: 5.62117e-10
+ type: HOLD_SLACK node: 47 launch_domain: 0 capture_domain: 0 slack: 2.31463e-10
+ type: HOLD_SLACK node: 48 launch_domain: 0 capture_domain: 0 slack: 2.99002e-10
 

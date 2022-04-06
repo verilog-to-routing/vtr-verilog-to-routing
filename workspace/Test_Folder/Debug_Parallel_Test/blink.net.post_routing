@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
-<block name="blink.net.post_routing" instance="FPGA_packed_netlist[0]" architecture_id="SHA256:cfd0f0977835cf4c458e7f25497cf5b4d838364b809ff177c4da2a50e1cd08bb" atom_netlist_id="SHA256:49afc6380e28b864e5b1c1b952728d227b4569b1350863e3ff87b31af9d79b32">
+<block name="blink.net.post_routing" instance="FPGA_packed_netlist[0]" architecture_id="SHA256:585e5facc34ab1947fed997e7ed12c1e5a933e69ba96d830cd37edd9c43613d2" atom_netlist_id="SHA256:213b0408a00955e963f80081a8675ca439c9a661a3378a28aa5971b307a57de0">
 	<inputs>blink^clk blink^i_reset</inputs>
 	<outputs>out:blink^o_led</outputs>
 	<clocks>blink^clk</clocks>
 	<block name="n17" instance="clb[0]" mode="default">
 		<inputs>
 			<port name="I0">open blink^r_counter~4_FF open open</port>
-			<port name="I1">open blink^r_counter~4_FF n27_1 blink^i_reset</port>
-			<port name="I2">blink^r_counter~3_FF blink^r_counter~0_FF blink^r_counter~1_FF blink^r_counter~2_FF</port>
+			<port name="I1">blink^i_reset blink^r_counter~4_FF n27_1 open</port>
+			<port name="I2">blink^r_counter~2_FF blink^r_counter~0_FF blink^r_counter~1_FF blink^r_counter~3_FF</port>
 			<port name="I3">n25 open blink^i_reset blink^r_counter~3_FF</port>
-			<port name="I4">open blink^r_counter~0_FF blink^r_counter~1_FF blink^r_counter~2_FF</port>
-			<port name="I5">open blink^r_counter~0_FF blink^i_reset open</port>
-			<port name="I6">open blink^r_counter~0_FF blink^r_counter~1_FF blink^i_reset</port>
-			<port name="I7">blink^i_reset blink^r_counter~0_FF blink^r_counter~1_FF blink^r_counter~2_FF</port>
+			<port name="I4">open blink^r_counter~0_FF blink^r_counter~2_FF blink^r_counter~1_FF</port>
+			<port name="I5">open blink^r_counter~0_FF open blink^i_reset</port>
+			<port name="I6">blink^i_reset blink^r_counter~0_FF blink^r_counter~1_FF open</port>
+			<port name="I7">blink^r_counter~2_FF blink^r_counter~0_FF blink^r_counter~1_FF blink^i_reset</port>
 		</inputs>
 		<outputs>
 			<port name="O">ble4[0].out[0]-&gt;directO ble4[1].out[0]-&gt;directO ble4[2].out[0]-&gt;directO ble4[3].out[0]-&gt;directO ble4[4].out[0]-&gt;directO ble4[5].out[0]-&gt;directO ble4[6].out[0]-&gt;directO ble4[7].out[0]-&gt;directO</port>
@@ -55,7 +55,7 @@
 		</block>
 		<block name="n27" instance="ble4[1]" mode="default">
 			<inputs>
-				<port name="in">open clb.I1[3]-&gt;completeI1 clb.I1[2]-&gt;completeI1 clb.I1[1]-&gt;completeI1</port>
+				<port name="in">open clb.I1[0]-&gt;completeI1 clb.I1[2]-&gt;completeI1 clb.I1[1]-&gt;completeI1</port>
 			</inputs>
 			<outputs>
 				<port name="out">ff[0].Q[0]-&gt;mux1</port>
@@ -100,7 +100,7 @@
 		</block>
 		<block name="n27_1" instance="ble4[2]" mode="default">
 			<inputs>
-				<port name="in">clb.I2[3]-&gt;completeI2 clb.I2[1]-&gt;completeI2 clb.I2[2]-&gt;completeI2 clb.I2[0]-&gt;completeI2</port>
+				<port name="in">clb.I2[0]-&gt;completeI2 clb.I2[1]-&gt;completeI2 clb.I2[2]-&gt;completeI2 clb.I2[3]-&gt;completeI2</port>
 			</inputs>
 			<outputs>
 				<port name="out">lut4[0].out[0]-&gt;mux1</port>
@@ -178,7 +178,7 @@
 		</block>
 		<block name="n25" instance="ble4[4]" mode="default">
 			<inputs>
-				<port name="in">clb.I4[1]-&gt;completeI4 clb.I4[3]-&gt;completeI4 open clb.I4[2]-&gt;completeI4</port>
+				<port name="in">clb.I4[1]-&gt;completeI4 clb.I4[2]-&gt;completeI4 open clb.I4[3]-&gt;completeI4</port>
 			</inputs>
 			<outputs>
 				<port name="out">lut4[0].out[0]-&gt;mux1</port>
@@ -211,7 +211,7 @@
 		</block>
 		<block name="n7" instance="ble4[5]" mode="default">
 			<inputs>
-				<port name="in">clb.I5[1]-&gt;completeI5 open open clb.I5[2]-&gt;completeI5</port>
+				<port name="in">clb.I5[1]-&gt;completeI5 open open clb.I5[3]-&gt;completeI5</port>
 			</inputs>
 			<outputs>
 				<port name="out">ff[0].Q[0]-&gt;mux1</port>
@@ -256,7 +256,7 @@
 		</block>
 		<block name="n12" instance="ble4[6]" mode="default">
 			<inputs>
-				<port name="in">clb.I6[3]-&gt;completeI6 clb.I6[2]-&gt;completeI6 clb.I6[1]-&gt;completeI6 open</port>
+				<port name="in">clb.I6[0]-&gt;completeI6 clb.I6[2]-&gt;completeI6 clb.I6[1]-&gt;completeI6 open</port>
 			</inputs>
 			<outputs>
 				<port name="out">ff[0].Q[0]-&gt;mux1</port>
@@ -301,7 +301,7 @@
 		</block>
 		<block name="n17" instance="ble4[7]" mode="default">
 			<inputs>
-				<port name="in">clb.I7[3]-&gt;completeI7 clb.I7[1]-&gt;completeI7 clb.I7[0]-&gt;completeI7 clb.I7[2]-&gt;completeI7</port>
+				<port name="in">clb.I7[0]-&gt;completeI7 clb.I7[1]-&gt;completeI7 clb.I7[3]-&gt;completeI7 clb.I7[2]-&gt;completeI7</port>
 			</inputs>
 			<outputs>
 				<port name="out">ff[0].Q[0]-&gt;mux1</port>

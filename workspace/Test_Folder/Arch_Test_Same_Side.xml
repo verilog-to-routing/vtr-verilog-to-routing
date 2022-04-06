@@ -219,9 +219,9 @@
     <switchblock name="wilton_turn_core" type="unidir">
       <switchblock_location type="CORE"/>
       <switchfuncs>
-        <!-- <func type="tt" formula="t+2"/>
+        <func type="tt" formula="t+2"/>
         <func type="bb" formula="t+2"/>
-        <func type="ll" formula="t+2"/> -->
+        <func type="ll" formula="t+2"/>
         <func type="lr" formula="t+5"/>
         <func type="lt" formula="W-t"/>
         <func type="lb" formula="t-1"/>
@@ -233,16 +233,16 @@
         <func type="rb" formula="W-t-2"/>
       </switchfuncs>
       <wireconn from_type="l2s" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
-      <wireconn from_type="l2s" to_type="l2s" from_switchpoint="1" to_switchpoint="0" num_conns="from"/>
+      <wireconn from_type="l2s" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
       <wireconn from_type="l4g" to_type="l4g" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
       <wireconn from_type="l4g" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
     </switchblock>
     <switchblock name="wilton_turn_perimeter" type="unidir">
       <switchblock_location type="PERIMETER"/>
       <switchfuncs>
-        <!-- <func type="tt" formula="t+2"/>
+        <func type="tt" formula="t+2"/>
         <func type="bb" formula="t+2"/>
-        <func type="ll" formula="t+2"/> -->
+        <func type="ll" formula="t+2"/>
         <func type="lr" formula="t+5"/>
         <func type="lt" formula="W-t"/>
         <func type="lb" formula="t-1"/>
@@ -253,16 +253,16 @@
         <func type="tr" formula="t+1"/>
         <func type="rb" formula="W-t-2"/>
       </switchfuncs>
-      <wireconn from_type="l2s" to_type="l2s" from_switchpoint="0,1" to_switchpoint="0" num_conns="from"/>
+      <wireconn from_type="l2s" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
       <wireconn from_type="l4g" to_type="l4g" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
       <wireconn from_type="l4g" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns="from"/>
     </switchblock>
     <switchblock name="wilton_straight" type="unidir">
       <switchblock_location type="EVERYWHERE"/>
       <switchfuncs>
-        <!-- <func type="tt" formula="t+2"/>
+        <func type="tt" formula="t+2"/>
         <func type="bb" formula="t+2"/>
-        <func type="ll" formula="t+2"/> -->
+        <func type="ll" formula="t+2"/>
         <func type="lr" formula="t+5"/>
         <func type="lt" formula="W-t"/>
         <func type="lb" formula="t-1"/>

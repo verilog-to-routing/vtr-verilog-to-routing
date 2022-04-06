@@ -478,574 +478,84 @@ cb list:  1 1
 sb list: 1 1 1 
 
 track: 68
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 69
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 70
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 71
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 72
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 73
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 74
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 75
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 76
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 77
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 78
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 79
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 80
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 81
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 82
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 83
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 84
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 85
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 86
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 87
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 88
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 89
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 90
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 91
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 92
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 93
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 94
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 95
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 96
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 97
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 98
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 99
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 100
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 101
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 102
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 103
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 104
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 105
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 106
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 107
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 108
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 109
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 110
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 111
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 112
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 113
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 114
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 115
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 116
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 117
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 118
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 119
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 120
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 121
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 122
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 123
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 124
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 125
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 126
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 127
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 128
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 129
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 130
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 131
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 132
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 133
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 134
 length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 135
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 136
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 137
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 138
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 139
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 140
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 141
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 142
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 143
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 144
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 145
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 146
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 147
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 148
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 149
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
 Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
 cb list:  1 0 0 0 
@@ -1531,574 +1041,84 @@ cb list:  1 1
 sb list: 1 1 1 
 
 track: 68
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 69
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 70
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 71
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 72
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 73
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 74
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 75
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 76
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 77
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 78
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 79
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 80
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 81
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 82
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 83
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 84
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 85
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 86
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 87
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 88
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 89
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 90
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 91
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 92
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 93
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 94
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 95
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 96
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 97
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 98
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 99
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 100
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 101
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 102
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 103
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 104
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 105
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 106
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 107
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 108
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 109
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 110
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 111
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 112
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 113
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 114
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 115
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 116
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 117
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 118
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 119
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 120
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 121
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 122
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 123
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 124
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 125
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 126
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 127
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 128
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 129
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 130
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 131
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 132
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 133
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 134
 length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 135
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 136
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 137
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 138
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 139
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 140
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 141
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 142
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 143
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 144
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 145
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 146
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 147
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 148
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 149
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
 Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
 cb list:  1 0 0 0 
@@ -2584,574 +1604,84 @@ cb list:  1 1
 sb list: 1 1 1 
 
 track: 68
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 69
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 70
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 71
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 72
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 73
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 74
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 75
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 76
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 77
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 78
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 79
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 80
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 81
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 82
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 83
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 84
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 85
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 86
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 87
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 88
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 89
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 90
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 91
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 92
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 93
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 94
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 95
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 96
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 97
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 98
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 99
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 100
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 101
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 102
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 103
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 104
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 105
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 106
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 107
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 108
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 109
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 110
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 111
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 112
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 113
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 114
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 115
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 116
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 117
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 118
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 119
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 120
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 121
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 122
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 123
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 124
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 125
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 126
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 127
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 128
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 129
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 130
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 131
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 132
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 133
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 134
 length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 135
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 136
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 137
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 138
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 139
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 140
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 141
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 142
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 143
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 144
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 145
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 146
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 147
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 148
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 149
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
 Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
 cb list:  1 0 0 0 
@@ -3637,574 +2167,84 @@ cb list:  1 1
 sb list: 1 1 1 
 
 track: 68
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 69
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 70
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 71
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 72
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 73
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 74
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 75
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 76
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 77
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 78
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 79
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 80
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 81
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 82
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 83
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 84
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 85
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 86
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 87
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 88
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 89
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 90
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 91
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 92
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 93
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 94
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 95
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 96
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 97
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 98
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 99
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 100
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 101
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 102
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 103
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 104
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 105
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 106
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 107
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 108
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 109
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 110
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 111
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 112
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 113
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 114
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 115
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 116
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 117
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 118
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 119
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 120
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 121
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 122
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 123
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 124
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 125
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 126
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 127
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 128
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 129
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 130
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 131
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 132
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 133
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 134
 length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 135
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 136
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 137
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 138
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 139
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 140
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 141
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 142
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 143
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 144
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 145
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 146
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 147
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 148
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 149
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
 Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
 cb list:  1 0 0 0 
@@ -4690,574 +2730,84 @@ cb list:  1 1
 sb list: 1 1 1 
 
 track: 68
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 69
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 70
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 71
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 72
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 73
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 74
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 75
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 76
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 77
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 78
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 79
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 80
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 81
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 82
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 83
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 84
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 85
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 86
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 87
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 88
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 89
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 90
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 91
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 92
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 93
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 94
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 95
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 96
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 97
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 98
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 99
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 100
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 101
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 102
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 103
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 104
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 105
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 106
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 107
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 108
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 109
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 110
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 111
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 112
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 113
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 114
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 115
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 116
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 117
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 118
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 119
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 120
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 121
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 122
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 123
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 124
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 125
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 126
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 127
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 128
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 129
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 130
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 131
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 132
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 133
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 134
 length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 135
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 136
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 137
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 138
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 139
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 140
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 141
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 142
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 143
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 144
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 145
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 146
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 147
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 148
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 149
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
 Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
 cb list:  1 0 0 0 
@@ -5743,574 +3293,84 @@ cb list:  1 1
 sb list: 1 1 1 
 
 track: 68
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 69
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 70
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 71
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 72
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 73
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 74
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 75
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 76
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 77
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 78
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 79
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 80
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 81
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 82
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 83
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 84
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 85
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 86
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 87
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 88
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 89
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 90
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 91
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 92
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 93
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 94
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 95
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 96
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 97
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 98
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 99
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 100
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 101
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 102
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 103
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 104
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 105
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 106
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 107
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 108
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 109
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 110
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 111
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 112
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 113
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 114
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 115
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 116
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 117
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 118
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 119
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 120
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 121
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 122
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 123
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 124
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 125
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 126
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 127
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 128
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 129
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 130
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 131
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 132
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 133
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 134
 length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 135
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 136
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 137
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 138
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 139
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 140
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 141
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 142
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 143
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 144
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 145
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 146
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 147
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 148
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 149
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
 Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
 cb list:  1 0 0 0 
@@ -6796,574 +3856,84 @@ cb list:  1 1
 sb list: 1 1 1 
 
 track: 68
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 69
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 70
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 71
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 72
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 73
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 74
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 75
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 76
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 77
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 78
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 79
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 80
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 81
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 82
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 83
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 84
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 85
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 86
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 87
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 88
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 89
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 90
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 91
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 92
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 93
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 94
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 95
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 96
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 97
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 98
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 99
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 100
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 101
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 102
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 103
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 104
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 105
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 106
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 107
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 108
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 109
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 110
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 111
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 112
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 113
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 114
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 115
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 116
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 117
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 118
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 119
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 120
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 121
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 122
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 123
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 124
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 125
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 126
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 127
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 128
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 129
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 130
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 131
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 132
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 133
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 134
 length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 135
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 136
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 137
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 138
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 139
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 140
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 141
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 142
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 143
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 144
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 145
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 146
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 147
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 148
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 149
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
 Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
 cb list:  1 0 0 0 
@@ -7849,574 +4419,84 @@ cb list:  1 1
 sb list: 1 1 1 
 
 track: 68
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 69
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 70
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 71
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 72
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 73
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 74
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 75
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 76
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 77
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 78
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
+length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
+Rmetal: 23  Cmetal: 0
 direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
+cb list:  1 0 0 0 
+sb list: 1 1 1 1 1 
 
 track: 79
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 80
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 81
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 82
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 83
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 84
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 85
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 86
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 87
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 88
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 89
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 90
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 91
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 92
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 93
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 94
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 95
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 96
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 97
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 98
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 99
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 100
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 101
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 102
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 103
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 104
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 105
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 106
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 107
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 108
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 109
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 110
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 111
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 112
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 113
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 114
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 115
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 116
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 117
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 118
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 119
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 120
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 121
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 122
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 123
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 124
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 125
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 126
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 127
-length: 2  start: 2 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 128
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 129
-length: 2  start: 1 [1,1]  longline: 0  arch_wire_switch: 0  arch_opin_switch: 0
-Rmetal: 174  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 1 
-sb list: 1 1 1 
-
-track: 130
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 131
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 132
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 133
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 134
 length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 135
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 136
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 137
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 138
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 139
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 140
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 141
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 142
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 143
-length: 4  start: 4 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 144
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 145
-length: 4  start: 1 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 146
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 147
-length: 4  start: 2 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: DEC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 148
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
-Rmetal: 23  Cmetal: 0
-direction: INC_DIRECTION
-cb list:  1 0 0 0 
-sb list: 1 1 1 1 1 
-
-track: 149
-length: 4  start: 3 [1,1]  longline: 0  arch_wire_switch: 1  arch_opin_switch: 1
 Rmetal: 23  Cmetal: 0
 direction: DEC_DIRECTION
 cb list:  1 0 0 0 

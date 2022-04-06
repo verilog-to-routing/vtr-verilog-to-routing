@@ -1,4 +1,4 @@
-# Benchmark "blink" written by ABC on Wed Mar 16 18:13:39 2022
+# Benchmark "blink" written by ABC on Sun Mar 27 14:41:24 2022
 .model blink
 .inputs blink^clk blink^i_reset
 .outputs blink^o_led

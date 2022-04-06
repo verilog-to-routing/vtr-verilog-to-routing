@@ -32,7 +32,7 @@ Switch List:
 
 *************************************************
 Segment List:
-	Segment[1]: frequency 8000 length 2 R_metal 1.740000e+02 C_metal 0.000000e+00
+	Segment[1]: frequency 6800 length 2 R_metal 1.740000e+02 C_metal 0.000000e+00
 				type unidir mux_name l2s_mux
 				cb 1 1 
 				sb 1 1 1 

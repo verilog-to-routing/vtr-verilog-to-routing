@@ -757,15 +757,13 @@ static void get_switchpoint_wires(
                 /* unidirectional wires going in the decreasing direction can have an outgoing edge
                  * only from the top or right switch block sides, and an incoming edge only if they are
                  * at the left or bottom sides (analogous for wires going in INC direction) */
+                /* EXPLANATION - Seems to specify the edges of each wire. It just states where the wire in/out can be. 
+                                 It just seems to be a sanity check before actually starting putting on switchpoints. */
                 if (side == TOP || side == RIGHT) {
                     if (seg_direction == Direction::DEC && is_dest) {
                         continue;
                     }
                     if (seg_direction == Direction::INC && !is_dest) {
-                        continue;
-                    }
-                    /* TO INVESTIGATE - Might be unnecessary */
-                    if (seg_direction == Direction::SAME && is_dest) {
                         continue;
                     }
                 } else {
@@ -776,10 +774,8 @@ static void get_switchpoint_wires(
                     if (seg_direction == Direction::INC && is_dest) {
                         continue;
                     }
-                    /* TO INVESTIGATE - Might be unnecessary */
-                    if (seg_direction == Direction::SAME && !is_dest) {
-                        continue;
-                    }
+                /* CODE CHECKED - As explained, it seems to only be a wire sanity check.
+                                  This works because wires can only go along the same CHAN. Switchpoint are not yet put here. */
                 }
 
                 int wire_switchpoint = get_switchpoint_of_wire(grid, chan_type, chan_details[iwire], seg_coord, side);
