@@ -83,7 +83,7 @@ class NocStorage
         void clear_noc();
         NocRouterId convert_router_id(int id) const;
         void make_room_for_noc_router_link_list();
-        NocLinkId get_parallel_link(NocLinkId current_link);
+        NocLinkId get_parallel_link(NocLinkId current_link) const;
 
         
 
