@@ -350,14 +350,13 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     std::tie (max_input_num_pins, max_output_num_pins, max_pins_mode_num) = get_max_num_internal_pin_logical_block(pb_graph_node);
 
     // #TODO: The ID assigned to the pins on the top-level block is not correspondent to the ptc in rr_lookup - Maybe something better can be done!
-    auto pins_vec = get_node_all_pins(pb_graph_node, max_pins_mode_num);
+    pb_graph_node->pins_vec = get_node_all_pins(pb_graph_node, max_pins_mode_num);
     pb_graph_node->total_num_input_pins = max_input_num_pins;
     pb_graph_node->total_num_output_pins = max_output_num_pins;
     pb_graph_node->num_internal_pins_mode_num = max_pins_mode_num;
-    pb_graph_node->pins_vec = pins_vec;
-
 
 }
+
 
 static std::unordered_map<t_pb_graph_pin*, int> get_node_all_pins(const t_pb_graph_node* pb_graph_node, int mode_idx) {
 
