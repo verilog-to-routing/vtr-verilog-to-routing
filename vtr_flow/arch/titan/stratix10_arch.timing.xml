@@ -104,6 +104,7 @@
     </tile>
   </tiles>
   <complexblocklist>
+
     <pb_type name="LAB">
       <input name="data_in" num_pins="80" equivalent="full"/>
       <input name="control_in" num_pins="5" equivalent="none"/>
@@ -126,82 +127,86 @@
               <output name="combout" num_pins="2"/>
               <output name="sumout" num_pins="2"/>
               <output name="cout" num_pins="1"/>
-              <pb_type name="lut" num_pb="2">
-                <input name="lin" num_pins="8"/>
-                <input name="cin" num_pins="1"/>
-                <output name="combout" num_pins="1"/>
-                <output name="sumout" num_pins="1"/>
-                <output name="cout" num_pins="1"/>
-                <mode name="fourteennm_lcell">
-                  <pb_type blif_model=".subckt stratix10_lcell_comb" name="lcell_comb" num_pb="1">
-                    <input name="dataa" num_pins="1"/>
-                    <input name="datab" num_pins="1"/>
-                    <input name="datac" num_pins="1"/>
-                    <input name="datad" num_pins="1"/>
-                    <input name="datae" num_pins="1"/>
-                    <input name="dataf" num_pins="1"/>
-                    <input name="datag" num_pins="1"/>
-                    <input name="datah" num_pins="1"/>
-                    <input name="cin" num_pins="1"/>
-                    <output name="combout" num_pins="1"/>
-                    <output name="sumout" num_pins="1"/>
-                    <output name="cout" num_pins="1"/>
-                  </pb_type>
-                  <interconnect>
-                    <!-- LUT inputs -->
-                    <direct input="lut.lin[0]" name="in_comp1" output="lcell_comb.dataa"/>
-                    <direct input="lut.lin[1]" name="in_comp2" output="lcell_comb.datab"/>
-                    <direct input="lut.lin[2]" name="in_comp3" output="lcell_comb.datac"/>
-                    <direct input="lut.lin[3]" name="in_comp4" output="lcell_comb.datad"/>
-                    <direct input="lut.lin[4]" name="in_comp5" output="lcell_comb.datae"/>
-                    <direct input="lut.lin[5]" name="in_comp6" output="lcell_comb.dataf"/>
-                    <direct input="lut.lin[6]" name="in_comp7" output="lcell_comb.datag"/>
-                    <direct input="lut.lin[7]" name="in_comp8" output="lcell_comb.datah"/>
-                    <!-- LUT outputs -->
-                    <direct input="lcell_comb.combout" name="out_comp1" output="lut.combout"/>
-                    <direct input="lcell_comb.sumout" name="out_comp2" output="lut.sumout"/>
-                    <!-- LUT carry chain -->
-                    <direct input="lut.cin" name="lut_cin" output="lcell_comb.cin">
-                      <pack_pattern name="LAB_carry_chain" in_port="lut.cin" out_port="lcell_comb.cin"/>
-                    </direct>
-                    <direct input="lcell_comb.cout" name="out_comp3" output="lut.cout">
-                      <pack_pattern name="LAB_carry_chain" in_port="lcell_comb.cout" out_port="lut.cout"/>
-                    </direct>
-                  </interconnect>
-                </mode>
-                <mode name="names_lut">
-                  <pb_type blif_model=".names" class="lut" name="lut6" num_pb="1">
-                    <input name="in" num_pins="6" port_class="lut_in"/>
-                    <output name="out" num_pins="1" port_class="lut_out"/>
-                  </pb_type>
+              <mode name="comb_block">
+                <pb_type name="lut" num_pb="2">
+                  <input name="lin" num_pins="8"/>
+                  <input name="cin" num_pins="1"/>
+                  <output name="combout" num_pins="1"/>
+                  <output name="sumout" num_pins="1"/>
+                  <output name="cout" num_pins="1"/>
+                  <mode name="fourteennm_lcell">
+                    <pb_type blif_model=".subckt fourteennm_lcell_comb" name="lcell_comb" num_pb="1">
+                      <input name="dataa" num_pins="1"/>
+                      <input name="datab" num_pins="1"/>
+                      <input name="datac" num_pins="1"/>
+                      <input name="datad" num_pins="1"/>
+                      <input name="datae" num_pins="1"/>
+                      <input name="dataf" num_pins="1"/>
+                      <input name="datag" num_pins="1"/>
+                      <input name="datah" num_pins="1"/>
+                      <input name="cin" num_pins="1"/>
+                      <output name="combout" num_pins="1"/>
+                      <output name="sumout" num_pins="1"/>
+                      <output name="cout" num_pins="1"/>
+                    </pb_type>
+                    <interconnect>
+                      <!-- LUT inputs -->
+                      <direct input="lut.lin[0]" name="in_comp1" output="lcell_comb.dataa"/>
+                      <direct input="lut.lin[1]" name="in_comp2" output="lcell_comb.datab"/>
+                      <direct input="lut.lin[2]" name="in_comp3" output="lcell_comb.datac"/>
+                      <direct input="lut.lin[3]" name="in_comp4" output="lcell_comb.datad"/>
+                      <direct input="lut.lin[4]" name="in_comp5" output="lcell_comb.datae"/>
+                      <direct input="lut.lin[5]" name="in_comp6" output="lcell_comb.dataf"/>
+                      <direct input="lut.lin[6]" name="in_comp7" output="lcell_comb.datag"/>
+                      <direct input="lut.lin[7]" name="in_comp8" output="lcell_comb.datah"/>
+                      <!-- LUT outputs -->
+                      <direct input="lcell_comb.combout" name="out_comp1" output="lut.combout"/>
+                      <direct input="lcell_comb.sumout" name="out_comp2" output="lut.sumout"/>
+                      <!-- LUT carry chain -->
+                      <direct input="lut.cin" name="lut_cin" output="lcell_comb.cin">
+                        <pack_pattern name="LAB_carry_chain" in_port="lut.cin" out_port="lcell_comb.cin"/>
+                      </direct>
+                      <direct input="lcell_comb.cout" name="out_comp3" output="lut.cout">
+                        <pack_pattern name="LAB_carry_chain" in_port="lcell_comb.cout" out_port="lut.cout"/>
+                      </direct>
+                    </interconnect>
+                  </mode>
+                  <mode name="names_lut">
+                    <pb_type blif_model=".names" class="lut" name="lut6" num_pb="1">
+                      <input name="in" num_pins="6" port_class="lut_in"/>
+                      <output name="out" num_pins="1" port_class="lut_out"/>
+                    </pb_type>
 
 
-                  <interconnect>
-                    <complete input="lut.lin" name="l_complete1" output="lut6.in[5:0]"/>
-                    <complete input="lut6.out" name="l_complete2" output="lut.sumout lut.combout"/>
-                  </interconnect>
-                </mode>
-              </pb_type>
-              <interconnect>
-                <!-- Inputs to the LUTs -->
-                <direct input="comb_block.lin" name="in_lut0" output="lut[0].lin"/>
-                <direct input="comb_block.lin" name="in_lut1" output="lut[1].lin"/>
-                <!-- Combinational Block Carry Chain -->
-                <direct input="comb_block.cin" name="comb_block_cin" output="lut[0].cin">
-                  <pack_pattern name="LAB_carry_chain" in_port="comb_block.cin" out_port="lut[0].cin"/>
-                </direct>
-                <direct input="lut[0].cout" name="lut_to_lut_carry" output="lut[1].cin">
-                  <pack_pattern name="LAB_carry_chain" in_port="lut[0].cout" out_port="lut[1].cin"/>
-                </direct>
-                <direct input="lut[1].cout" name="alm_cout" output="comb_block.cout">
-                  <pack_pattern name="LAB_carry_chain" in_port="lut[1].cout" out_port="comb_block.cout"/>
-                </direct>
-                <!-- Outputs to the Combinational Block -->
-                <direct input="lut[0].combout" name="in_lut0" output=" comb_block.combout[0]"/>
-                <direct input="lut[1].combout" name="in_lut0" output=" comb_block.combout[1]"/>
-                <direct input="lut[0].sumout" name="in_lut0" output=" comb_block.sumout[0]"/>
-                <direct input="lut[1].sumout" name="in_lut0" output=" comb_block.sumout[1]"/>
-              </interconnect>
+                    <interconnect>
+                      <complete input="lut.lin" name="l_complete1" output="lut6.in[5:0]"/>
+                      <complete input="lut6.out" name="l_complete2" output="lut.sumout lut.combout"/>
+                    </interconnect>
+                  </mode>
+                </pb_type>
+
+                <interconnect>
+                  <!-- Inputs to the LUTs -->
+                  <complete input="comb_block.lin" name="in_lut0" output="lut[0].lin"/>
+                  <complete input="comb_block.lin" name="in_lut1" output="lut[1].lin"/>
+                  <!-- Combinational Block Carry Chain -->
+                  <direct input="comb_block.cin" name="comb_block_cin" output="lut[0].cin">
+                    <pack_pattern name="LAB_carry_chain" in_port="comb_block.cin" out_port="lut[0].cin"/>
+                  </direct>
+                  <direct input="lut[0].cout" name="lut_to_lut_carry" output="lut[1].cin">
+                    <pack_pattern name="LAB_carry_chain" in_port="lut[0].cout" out_port="lut[1].cin"/>
+                  </direct>
+                  <direct input="lut[1].cout" name="alm_cout" output="comb_block.cout">
+                    <pack_pattern name="LAB_carry_chain" in_port="lut[1].cout" out_port="comb_block.cout"/>
+                  </direct>
+                  <!-- Outputs to the Combinational Block -->
+                  <direct input="lut[0].combout" name="lut0_comb" output=" comb_block.combout[0]"/>
+                  <direct input="lut[1].combout" name="lut1_comb" output=" comb_block.combout[1]"/>
+                  <direct input="lut[0].sumout" name="lut0_sum" output=" comb_block.sumout[0]"/>
+                  <direct input="lut[1].sumout" name="lut1_sum" output=" comb_block.sumout[1]"/>
+
+                </interconnect>              
+              </mode>
             </pb_type>
             <pb_type name="dff" num_pb="4">
               <input name="clrn" num_pins="1"/>
@@ -228,7 +233,7 @@
                   <direct input="dff.clk" name="fourteennm_ff_clk" output="fourteennm_ff.clk"/>
                 </interconnect>
               </mode>
-              <mode name="latch">
+               <mode name="latch">
                 <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
                   <input name="D" num_pins="1" port_class="D"/>
                   <output name="Q" num_pins="1" port_class="Q"/>
@@ -244,20 +249,20 @@
             <interconnect>
               <!-- Inputs to LUTs -->
               <direct input="alm.data_in[2:7]" name="in_lut_2_7" output="comb_block.lin[2:7]"/>
-              <mux input="alm.data_in[0] dff[0].d dff[0].q" name="in_lut_0" output="comb_block.lin[0]">
-              <mux input="alm.data_in[1] dff[2].d dff[2].q" name="in_lut_1" output="comb_block.lin[1]">
+              <mux input="alm.data_in[0] comb_block.sumout[0] dff[0].q" name="in_lut_0" output="comb_block.lin[0]"/>
+              <mux input="alm.data_in[1] comb_block.combout[0] comb_block.sumout[1] dff[2].q" name="in_lut_1" output="comb_block.lin[1]"/>
 
               <!-- Inputs to FFs -->
-              <mux input="alm.data_in[0] comb_block.sumout[0]" name="in_dff_0" output="dff[0].d">
-              <direct input="comb_block.combout[0]" name="in_dff_1" output="dff[1].d">
-              <mux input="alm.data_in[1] comb_block.combout[0] comb_block.sumout[1]" name="in_dff_2" output="dff[2].d">
-              <direct input="comb_block.combout[1]" name="in_dff_3" output="dff[3].d">
+              <mux input="alm.data_in[0] comb_block.sumout[0]" name="in_dff_0" output="dff[0].d"/>
+              <direct input="comb_block.combout[0]" name="in_dff_1" output="dff[1].d"/>
+              <mux input="alm.data_in[1] comb_block.combout[0] comb_block.sumout[1]" name="in_dff_2" output="dff[2].d"/>
+              <direct input="comb_block.combout[1]" name="in_dff_3" output="dff[3].d"/>
 
               <!-- ALM Outputs-->
-              <mux input="dff[0].q dff[0].d dff[1].q dff[1].d comb_block.combout[0] comb_block.sumout[0]" name="alm_out0" output="alm.data_out[0]">
-              <mux input="dff[0].q dff[0].d dff[1].q dff[1].d comb_block.combout[0] comb_block.sumout[0]" name="alm_out1" output="alm.data_out[1]">
-              <mux input="dff[2].q dff[2].d dff[3].q dff[3].d comb_block.sumout[1]" name="alm_out2" output="alm.data_out[2]">
-              <mux input="dff[2].q dff[2].d dff[3].q dff[3].d comb_block.sumout[1]" name="alm_out3" output="alm.data_out[3]">
+              <mux input="dff[0].q alm.data_in[0] dff[1].q comb_block.combout[0] comb_block.sumout[0]" name="alm_out0" output="alm.data_out[0]"/>
+              <mux input="dff[0].q alm.data_in[0] dff[1].q comb_block.combout[0] comb_block.sumout[0]" name="alm_out1" output="alm.data_out[1]"/>
+              <mux input="dff[2].q alm.data_in[1] comb_block.combout[0] dff[3].q comb_block.combout[1] comb_block.sumout[1]" name="alm_out2" output="alm.data_out[2]"/>
+              <mux input="dff[2].q alm.data_in[1] comb_block.combout[0] dff[3].q comb_block.combout[1] comb_block.sumout[1]" name="alm_out3" output="alm.data_out[3]"/>
 
               <!-- FF Clocks -->
               <direct input="alm.clock" name="clock_dff0" output="dff[0].clk"/>
@@ -267,9 +272,7 @@
               <direct input="alm.cin" name="alm_cin" output="comb_block.cin">
                 <pack_pattern name="LAB_carry_chain" in_port="alm.cin" out_port="comb_block.cin"/>
               </direct>
-              <direct input="comb_block.cout" name="lut_to_lut_carry" output="comb_block.cin">
-                <pack_pattern name="LAB_carry_chain" in_port="comb_block.cout" out_port="comb_block.cin"/>
-              </direct>
+
               <direct input="comb_block.cout" name="alm_cout" output="alm.cout">
                 <pack_pattern name="LAB_carry_chain" in_port="comb_block.cout" out_port="alm.cout"/>
               </direct>
@@ -306,13 +309,13 @@
           <complete input="LAB.data_in" name="LAB_datain" output="alm[9:0].data_in"/>
 
           <!-- ALM feedback: The ALM outputs feedback to the ALM inputs  -->
-          <complete input="alm[9:0].data_out[3:0]" name="LAB_alm_feedback" output="alm[9:0].data_in"/>
+          <complete input="alm[9:0].data_out[0] alm[9:0].data_out[3]" name="LAB_alm_feedback" output="alm[9:0].data_in"/>
 
           <!-- ALM Outputs: directly drive global routing -->
-          <complete input="alm[9:0].data_out[3:0]" name="LAB_dataout" output="LAB.data_out"/>
+          <complete input="alm[9:0].data_out[1] alm[9:0].data_out[2]" name="LAB_dataout" output="LAB.data_out"/>
 
           <!-- ALM Control Inputs -->
-          <complete input="LAB.control_in" name="LAB_control" output="alm[9:0].control"/>
+           <complete input="LAB.control_in" name="LAB_control" output="alm[9:0].control"/>
 
           <!-- LAB Clocks -->
           <direct input="LAB.clk" name="LAB_clock" output="alm[0].clock"/>
@@ -364,6 +367,7 @@
         </interconnect>
       </mode>
       <mode name="MLAB">
+
         <pb_type name="MLAB" num_pb="1">
           <clock name="clk0" num_pins="1"/>
           <input name="ena0" num_pins="1"/>
@@ -373,6 +377,7 @@
           <input name="portadatain" num_pins="20"/>
           <input name="portbaddr" num_pins="5"/>
           <output name="portbdataout" num_pins="20"/>
+          <mode name="mlab_cell">
           <pb_type blif_model=".subckt fourteennm_mlab_cell" name="mlab_cell" num_pb="10">
             <input name="ena0" num_pins="1"/>
             <clock name="clk0" num_pins="1"/>
@@ -382,6 +387,19 @@
             <input name="portadatain" num_pins="2"/>
             <input name="portbaddr" num_pins="5"/>
             <output name="portbdataout" num_pins="2"/>
+                  <T_setup value="66e-12" port="mlab_cell.ena0" clock="clk0"/>
+                  <T_setup value="66e-12" port="mlab_cell.clr" clock="clk0"/>
+                  <T_setup value="66e-12" port="mlab_cell.portaaddr" clock="clk0"/>
+                  <T_setup value="66e-12" port="mlab_cell.portabyteenamasks" clock="clk0"/>
+                  <T_setup value="66e-12" port="mlab_cell.portadatain" clock="clk0"/>
+                  <T_setup value="66e-12" port="mlab_cell.portbaddr" clock="clk0"/>
+                  <T_hold value="37e-12" port="mlab_cell.clr" clock="clk0"/>
+                  <T_hold value="37e-12" port="mlab_cell.portaaddr" clock="clk0"/>
+                  <T_hold value="37e-12" port="mlab_cell.portabyteenamasks" clock="clk0"/>
+                  <T_hold value="37e-12" port="mlab_cell.portadatain" clock="clk0"/>
+                  <T_hold value="37e-12" port="mlab_cell.portbaddr" clock="clk0"/>
+                  <T_clock_to_Q max="42e-12" min="37e-12" port="mlab_cell.portbdataout" clock="clk0"/>
+
           </pb_type>
           <interconnect>
               <!-- Enable Input: From MLAB block to MLAB cells enable input -->
@@ -406,7 +424,7 @@
               <direct input="MLAB.clr" name="clr6" output="mlab_cell[6].clr"/>
               <direct input="MLAB.clr" name="clr7" output="mlab_cell[7].clr"/>
               <direct input="MLAB.clr" name="clr8" output="mlab_cell[8].clr"/>
-              <direct input="MLAB.clr" name="clr9" output="mlab_cell[9].clr0"/>
+              <direct input="MLAB.clr" name="clr9" output="mlab_cell[9].clr"/>
 
               <!-- Write Address: Input write address to the MLAB cells -->
               <direct input="MLAB.portaaddr" name="portaaddr0" output="mlab_cell[0].portaaddr"/>
@@ -421,28 +439,28 @@
               <direct input="MLAB.portaaddr" name="portaaddr9" output="mlab_cell[9].portaaddr"/>
 
               <!-- Byte Enable Mask: Input byte enable mask to the MLAB cells -->
-              <direct input="MLAB.portabyteenamasks" name="portabytenamasks0" output="mlab_cell[0].portabyteenamasks[1:0]"/>
-              <direct input="MLAB.portabyteenamasks" name="portabytenamasks1" output="mlab_cell[1].portabyteenamasks[3:2]"/>
-              <direct input="MLAB.portabyteenamasks" name="portabytenamasks2" output="mlab_cell[2].portabyteenamasks[5:4]"/>
-              <direct input="MLAB.portabyteenamasks" name="portabytenamasks3" output="mlab_cell[3].portabyteenamasks[7:6]"/>
-              <direct input="MLAB.portabyteenamasks" name="portabytenamasks4" output="mlab_cell[4].portabyteenamasks[9:8]"/>
-              <direct input="MLAB.portabyteenamasks" name="portabytenamasks5" output="mlab_cell[5].portabyteenamasks[11:10]"/>
-              <direct input="MLAB.portabyteenamasks" name="portabytenamasks6" output="mlab_cell[6].portabyteenamasks[13:12]"/>
-              <direct input="MLAB.portabyteenamasks" name="portabytenamasks7" output="mlab_cell[7].portabyteenamasks[15:14]"/>
-              <direct input="MLAB.portabyteenamasks" name="portabytenamasks8" output="mlab_cell[8].portabyteenamasks[17:16]"/>
-              <direct input="MLAB.portabyteenamasks" name="portabytenamasks9" output="mlab_cell[9].portabyteenamasks[19:18]"/>
+              <direct input="MLAB.portabyteenamasks[1:0]" name="portabytenamasks0" output="mlab_cell[0].portabyteenamasks"/>
+              <direct input="MLAB.portabyteenamasks[3:2]" name="portabytenamasks1" output="mlab_cell[1].portabyteenamasks"/>
+              <direct input="MLAB.portabyteenamasks[5:4]" name="portabytenamasks2" output="mlab_cell[2].portabyteenamasks"/>
+              <direct input="MLAB.portabyteenamasks[7:6]" name="portabytenamasks3" output="mlab_cell[3].portabyteenamasks"/>
+              <direct input="MLAB.portabyteenamasks[9:8]" name="portabytenamasks4" output="mlab_cell[4].portabyteenamasks"/>
+              <direct input="MLAB.portabyteenamasks[11:10]" name="portabytenamasks5" output="mlab_cell[5].portabyteenamasks"/>
+              <direct input="MLAB.portabyteenamasks[13:12]" name="portabytenamasks6" output="mlab_cell[6].portabyteenamasks"/>
+              <direct input="MLAB.portabyteenamasks[15:14]" name="portabytenamasks7" output="mlab_cell[7].portabyteenamasks"/>
+              <direct input="MLAB.portabyteenamasks[17:16]" name="portabytenamasks8" output="mlab_cell[8].portabyteenamasks"/>
+              <direct input="MLAB.portabyteenamasks[19:18]" name="portabytenamasks9" output="mlab_cell[9].portabyteenamasks"/>
 
               <!-- Write Data: Input data to the MLAB cells -->
-              <direct input="MLAB.portadatain" name="portadatain0" output="mlab_cell[0].portadatain[1:0]"/>
-              <direct input="MLAB.portadatain" name="portadatain1" output="mlab_cell[1].portadatain[3:2]"/>
-              <direct input="MLAB.portadatain" name="portadatain2" output="mlab_cell[2].portadatain[5:4]"/>
-              <direct input="MLAB.portadatain" name="portadatain3" output="mlab_cell[3].portadatain[7:6]"/>
-              <direct input="MLAB.portadatain" name="portadatain4" output="mlab_cell[4].portadatain[9:8]"/>
-              <direct input="MLAB.portadatain" name="portadatain5" output="mlab_cell[5].portadatain[11:10]"/>
-              <direct input="MLAB.portadatain" name="portadatain6" output="mlab_cell[6].portadatain[13:12]"/>
-              <direct input="MLAB.portadatain" name="portadatain7" output="mlab_cell[7].portadatain[15:14]"/>
-              <direct input="MLAB.portadatain" name="portadatain8" output="mlab_cell[8].portadatain[17:16]"/>
-              <direct input="MLAB.portadatain" name="portadatain9" output="mlab_cell[9].portadatain[19:18]"/>
+              <direct input="MLAB.portadatain[1:0]" name="portadatain0" output="mlab_cell[0].portadatain"/>
+              <direct input="MLAB.portadatain[3:2]" name="portadatain1" output="mlab_cell[1].portadatain"/>
+              <direct input="MLAB.portadatain[5:4]" name="portadatain2" output="mlab_cell[2].portadatain"/>
+              <direct input="MLAB.portadatain[7:6]" name="portadatain3" output="mlab_cell[3].portadatain"/>
+              <direct input="MLAB.portadatain[9:8]" name="portadatain4" output="mlab_cell[4].portadatain"/>
+              <direct input="MLAB.portadatain[11:10]" name="portadatain5" output="mlab_cell[5].portadatain"/>
+              <direct input="MLAB.portadatain[13:12]" name="portadatain6" output="mlab_cell[6].portadatain"/>
+              <direct input="MLAB.portadatain[15:14]" name="portadatain7" output="mlab_cell[7].portadatain"/>
+              <direct input="MLAB.portadatain[17:16]" name="portadatain8" output="mlab_cell[8].portadatain"/>
+              <direct input="MLAB.portadatain[19:18]" name="portadatain9" output="mlab_cell[9].portadatain"/>
 
               <!-- Read Address: Input read address to the MLAB cells -->
               <direct input="MLAB.portbaddr" name="portbaddr0" output="mlab_cell[0].portbaddr"/>
@@ -457,40 +475,42 @@
               <direct input="MLAB.portbaddr" name="portbaddr9" output="mlab_cell[9].portbaddr"/>
 
               <!-- Read data: Output data from MLAB cells to the MLAB output -->
-              <direct input="mlab_cell[0].portbdataout" name="portbdataout" output="MLAB.portbdataout[1:0]"/>
-              <direct input="mlab_cell[1].portbdataout" name="portbdataout" output="MLAB.portbdataout[3:2]"/>
-              <direct input="mlab_cell[2].portbdataout" name="portbdataout" output="MLAB.portbdataout[5:4]"/>
-              <direct input="mlab_cell[3].portbdataout" name="portbdataout" output="MLAB.portbdataout[7:6]"/>
-              <direct input="mlab_cell[4].portbdataout" name="portbdataout" output="MLAB.portbdataout[9:8]"/>
-              <direct input="mlab_cell[5].portbdataout" name="portbdataout" output="MLAB.portbdataout[11:10]"/>
-              <direct input="mlab_cell[6].portbdataout" name="portbdataout" output="MLAB.portbdataout[13:12]"/>
-              <direct input="mlab_cell[7].portbdataout" name="portbdataout" output="MLAB.portbdataout[15:14]"/>
-              <direct input="mlab_cell[8].portbdataout" name="portbdataout" output="MLAB.portbdataout[17:16]"/>
-              <direct input="mlab_cell[9].portbdataout" name="portbdataout" output="MLAB.portbdataout[19:18]"/>
+              <direct input="mlab_cell[0].portbdataout" name="portbdataout0" output="MLAB.portbdataout[1:0]"/>
+              <direct input="mlab_cell[1].portbdataout" name="portbdataout1" output="MLAB.portbdataout[3:2]"/>
+              <direct input="mlab_cell[2].portbdataout" name="portbdataout2" output="MLAB.portbdataout[5:4]"/>
+              <direct input="mlab_cell[3].portbdataout" name="portbdataout3" output="MLAB.portbdataout[7:6]"/>
+              <direct input="mlab_cell[4].portbdataout" name="portbdataout4" output="MLAB.portbdataout[9:8]"/>
+              <direct input="mlab_cell[5].portbdataout" name="portbdataout5" output="MLAB.portbdataout[11:10]"/>
+              <direct input="mlab_cell[6].portbdataout" name="portbdataout6" output="MLAB.portbdataout[13:12]"/>
+              <direct input="mlab_cell[7].portbdataout" name="portbdataout7" output="MLAB.portbdataout[15:14]"/>
+              <direct input="mlab_cell[8].portbdataout" name="portbdataout8" output="MLAB.portbdataout[17:16]"/>
+              <direct input="mlab_cell[9].portbdataout" name="portbdataout9" output="MLAB.portbdataout[19:18]"/>
 
               <!-- MLAB cell clocks -->
               <direct input="MLAB.clk0" name="clk0" output="mlab_cell[0].clk0"/>
-              <direct input="MLAB.clk0" name="clk0" output="mlab_cell[1].clk0"/>
-              <direct input="MLAB.clk0" name="clk0" output="mlab_cell[2].clk0"/>
-              <direct input="MLAB.clk0" name="clk0" output="mlab_cell[3].clk0"/>
-              <direct input="MLAB.clk0" name="clk0" output="mlab_cell[4].clk0"/>
-              <direct input="MLAB.clk0" name="clk0" output="mlab_cell[5].clk0"/>
-              <direct input="MLAB.clk0" name="clk0" output="mlab_cell[6].clk0"/>
-              <direct input="MLAB.clk0" name="clk0" output="mlab_cell[7].clk0"/>
-              <direct input="MLAB.clk0" name="clk0" output="mlab_cell[8].clk0"/>
-              <direct input="MLAB.clk0" name="clk0" output="mlab_cell[9].clk0"/>
+              <direct input="MLAB.clk0" name="clk1" output="mlab_cell[1].clk0"/>
+              <direct input="MLAB.clk0" name="clk2" output="mlab_cell[2].clk0"/>
+              <direct input="MLAB.clk0" name="clk3" output="mlab_cell[3].clk0"/>
+              <direct input="MLAB.clk0" name="clk4" output="mlab_cell[4].clk0"/>
+              <direct input="MLAB.clk0" name="clk5" output="mlab_cell[5].clk0"/>
+              <direct input="MLAB.clk0" name="clk6" output="mlab_cell[6].clk0"/>
+              <direct input="MLAB.clk0" name="clk7" output="mlab_cell[7].clk0"/>
+              <direct input="MLAB.clk0" name="clk8" output="mlab_cell[8].clk0"/>
+              <direct input="MLAB.clk0" name="clk9" output="mlab_cell[9].clk0"/>
             </interconnect>
+        </mode>
         </pb_type>
         <interconnect>
           <complete input="LAB.clk" name="mlab_clk" output="MLAB.clk0"/>
           <complete input="LAB.data_in" name="mlab_in1" output="MLAB.ena0"/>
-          <complete input="LAB.data_in" name="mlab_in1" output="MLAB.clr0"/>
-          <complete input="LAB.data_in" name="mlab_in2" output="MLAB.portaaddr"/>
-          <complete input="LAB.data_in" name="mlab_in3" output="MLAB.portabyteenamasks"/>
-          <complete input="LAB.data_in" name="mlab_in4" output="MLAB.portadatain"/>
-          <complete input="LAB.data_in" name="mlab_in5" output="MLAB.portbaddr"/>
+          <complete input="LAB.data_in" name="mlab_in2" output="MLAB.clr"/>
+          <complete input="LAB.data_in" name="mlab_in3" output="MLAB.portaaddr"/>
+          <complete input="LAB.data_in" name="mlab_in4" output="MLAB.portabyteenamasks"/>
+          <complete input="LAB.data_in" name="mlab_in5" output="MLAB.portadatain"/>
+          <complete input="LAB.data_in" name="mlab_in6" output="MLAB.portbaddr"/>
           <complete input="MLAB.portbdataout" name="mlab_out" output="LAB.data_out"/>
         </interconnect>
       </mode>
     </pb_type>
+    
   </complexblocklist>
