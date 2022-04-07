@@ -988,32 +988,20 @@ static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors)
         // we havent created a color map yet for the noc link usage, so create it here
         // the color map creates a color spectrum that gradually changes from a dark to light color. Where a dark color represents low noc link usage (low bandwidth) and a light color represents high noc link usage (high bandwidth)
         // The color map needs a min and max value to generate the color range.
+        // The noc usage is calculated by taking the ratio of the links current bandwidth over the maximum allowable bandwidth
         // for the NoC, the min value is 0, since you cannot go lower than 0 badnwidth.
-        // The max value is going to be the maximum allowable bandwidth on the noc link (as provided by the user)
-        draw_state->noc_usage_color_map = std::make_shared<vtr::PlasmaColorMap>(0.0, max_noc_link_bandwidth);
+        // The max value is going to be 1 and represents the case where the link is used to full capacity on the noc link (as provided by the user)
+        draw_state->noc_usage_color_map = std::make_shared<vtr::PlasmaColorMap>(0.0, 1.0);
     }
 
     // get the list of links in the NoC
-    // get the links of the NoC
     vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
 
-    // if the grpah is undirected, then we have a set of parallel links between the same set of routers, so keep track of their bandwidths 
-    double parallel_link_one_bandwidth = -1;
-    double parallel_link_two_bandwidth = -1;
+    // store each links bandwidth usage
+    double link_bandwidth_usage;
 
-    // stores the larger bandwidth between two parallel links
-    double larger_link_bandwidth = -1;
-
-    // the color of the current parallel links
+    // represents the color to draw each noc link
     ezgl::color current_noc_link_color;
-
-    // variables to keep track of the source and sink router for each link
-    NocRouterId link_source_router;
-    NocRouterId link_sink_router;
-
-    // when we go through the links, if the noc connections are undirected, then we want to get the corresponding parralel link of the current link
-    // to find this parallel link, we need to go through all the links in the current links sink router, so we store those links here
-    std::vector<NocLinkId> sink_router_links;
 
 
     // now we need to determine the colors for each link
@@ -1022,72 +1010,27 @@ static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors)
         // get the current link id
         NocLinkId link_id(link);
 
-        // keep track of the parallel link id, initialize to an invalid value
-        NocLinkId parallel_link_id(-1);
-
-        // reset link badnwidths
-        parallel_link_one_bandwidth = -1;
-        parallel_link_two_bandwidth = -1;
-        larger_link_bandwidth = -1;
-
         // only update the color of the link if it wasnt updated previously
         if (noc_link_colors[link_id] == ezgl::BLACK)
         {
             // if we are here then the link was not updated previously, so assign the color here
-            parallel_link_one_bandwidth = link_list[link_id].get_bandwidth_usage();
 
-            // get the source and sink routers of the current link
-            link_source_router = link_list[link_id].get_source_router();
-            link_sink_router = link_list[link_id].get_sink_router();
+            //get the current link bandwidth usage (ratio calculation)
+            link_bandwidth_usage = (link_list[link_id].get_bandwidth_usage()) / max_noc_link_bandwidth;
 
-            sink_router_links = noc_ctx.noc_model.get_noc_router_connections(link_sink_router);
-
-            // go through the links of the sink router to see if there is a parallel link
-            for (auto sink_router_link = sink_router_links.begin(); sink_router_link != sink_router_links.end(); sink_router_link++)
+            // check if the link is being overused and if it is then cap it at 1.0
+            if (link_bandwidth_usage > 1.0)
             {
-                // the current source link is  a parallel link if it has the same source and sink routers as the original link
-                if ((link_source_router == noc_ctx.noc_model.get_noc_link_sink_router(*sink_router_link)) && (link_sink_router == noc_ctx.noc_model.get_noc_link_source_router(*sink_router_link)))
-                {   
-                    // second the parallel links badnwidth
-                    parallel_link_two_bandwidth = noc_ctx.noc_model.get_noc_link_bandwidth_usage(*sink_router_link);
-
-                    // store the parallel link id
-                    parallel_link_id = *sink_router_link;
-                    
-                    break;
-                }
+                link_bandwidth_usage = 1.0;
             }
 
-            // we care more about an individual link bandwidth more than the combined bandwidth of both links, so choose the larger bandwidth to detertime the color of both links
-            // We need to set this color for both links because one will overwrite the other
-            if (parallel_link_one_bandwidth >= parallel_link_two_bandwidth)
-            {
-                larger_link_bandwidth = parallel_link_one_bandwidth;
-            }
-            else
-            {
-                larger_link_bandwidth = parallel_link_two_bandwidth;
-            }
-
-            // there is a possibility for the bandwidth to be larger than the maximum, so if it is, we cap it to the maximum value
-            if (larger_link_bandwidth > noc_ctx.noc_link_bandwidth)
-            {
-                larger_link_bandwidth = noc_ctx.noc_link_bandwidth;
-            }
-
-            // get the corresponding color that represents the link bandwidth
-            current_noc_link_color = to_ezgl_color(draw_state->noc_usage_color_map->color(larger_link_bandwidth));
+            // get the corresponding color that represents the link bandwidth usgae
+            current_noc_link_color = to_ezgl_color(draw_state->noc_usage_color_map->color(link_bandwidth_usage));
 
 
-            // set the colors of the links
+            // set the colors of the link
             noc_link_colors[link_id] = current_noc_link_color;
-
-            // check to see if there was a parallel link and assign it the color if there was
-            if (parallel_link_id != (NocLinkId)-1)
-            {
-                noc_link_colors[parallel_link_id] = current_noc_link_color;
-            }
-            
+  
         }
 
     }
