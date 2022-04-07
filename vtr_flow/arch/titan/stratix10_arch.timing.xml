@@ -659,5 +659,171 @@
         
       </interconnect>
     </pb_type>
+
+    <pb_type name="iolane" num_pb="1">
+      <input name="core_in" num_pins="55"/>
+      <output name="core_out" num_pins="24"/>
+
+      <pb_type name="io_cell" num_pb="4">
+        <input name="data_in" num_pins="36"/>
+        <output name="data_out" num_pins="6"/>
+        <clock name="clk" num_pins="1"/>
+
+        <mode name="io_cell" num_pb="1">
+
+          <pb_type name="pad" num_pb="1">
+            <output name="recieve_off_chip" num_pins="1"/>
+            <input name="drive_off_chip" num_pins="1"/>
+
+            <pb_type blif_model=".input" name="inpad" num_pb="1">
+              <output name="inpad" num_pins="1"/>
+            </pb_type>
+
+            <pb_type blif_model=".output" name="outpad" num_pb="1">
+              <input name="outpad" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+            <direct input="inpad.inpad" name="inpad" output="pad.recieve_off_chip"/>
+            <direct input="pad.drive_off_chip" name="outpad" output="outpad.outpad"/>
+            </interconnect>
+          </pb_type>
+
+          <pb_type blif_model=".subckt fourteennm_ff" name="oe_ff" num_pb="1">
+            <input name="clrn" num_pins="1"/> <!-- driver signal for clrn, sclr, ena, and d comes from the core logic -->
+            <input name="sclr" num_pins="1"/>
+            <input name="ena" num_pins="1"/>
+            <input name="d" num_pins="1"/>
+            <output name="q" num_pins="1"/> <!-- driving the output enable port of the output buffer -->
+            <clock name="clk" num_pins="1"/>
+          </pb_type>
+
+          <pb_type blif_model=".subckt fourteennm_io_obuf" name="obuf" num_pb="1">
+            <input name="i" num_pins="1"/> <!-- can be driven by the core logic through obuf_i port of the parent pb_type or by the dataout port of the ddio_out -->
+            <input name="oe" num_pins="1"/> <!-- output enable port driven by the q output of the OE flip flop or the core logic -->
+            <input name="dynamicterminationcontrol" num_pins="1"/> <!-- the following three ports driven by the corresponding ports in the parent pb_type -->
+            <input name="seriesterminationcontrol" num_pins="16"/>
+            <input name="parallelterminationcontrol" num_pins="16"/>
+            <!-- <input name="devoe" num_pins="1"/>
+            <input name="emif_phy_in" num_pins="2"/> -->
+            <output name="o" num_pins="1"/>
+            <output name="obar" num_pins="1"/>
+          </pb_type>
+
+          <pb_type blif_model=".subckt fourteennm_io_ibuf" name="ibuf" num_pb="1">
+            <input name="i" num_pins="1"/>
+            <input name="ibar" num_pins="1"/>
+            <input name="dynamicterminationcontrol" num_pins="1"/>
+            <input name="seriesterminationcontrol" num_pins="16"/>
+            <input name="parallelterminationcontrol" num_pins="16"/>
+            <output name="o" num_pins="1"/>
+          </pb_type>
+
+          <pb_type blif_model=".subckt fourteennm_ddio_out" name="ddio_out" num_pb="1">
+            <input name="areset" num_pins="1"/>
+            <input name="sreset" num_pins="1"/>
+            <input name="ena" num_pins="1"/>
+            <clock name="clk" num_pins="1"/>
+            <input name="clkhi" num_pins="1"/>
+            <input name="clklo" num_pins="1"/>
+            <input name="muxsel" num_pins="1"/>
+            <input name="datainlo" num_pins="1"/>
+            <input name="datainhi" num_pins="1"/>
+            <output name="dataout" num_pins="1"/>
+            <!-- <input name="dfflo" num_pins="1"/>
+            <input name="dffhi" num_pins="1"/>
+            <input name="devpor" num_pins="1"/>
+            <input name="hrbypass" num_pins="1"/>
+            <input name="devclrn" num_pins="1"/> -->
+          </pb_type>
+
+          <pb_type blif_model=".subckt fourteennm_ddio_in" name="ddio_in" num_pb="1">
+            <clock name="clk" num_pins="1"/>
+            <input name="clkn" num_pins="1"/>
+            <input name="areset" num_pins="1"/>
+            <input name="sreset" num_pins="1"/>
+            <input name="ena" num_pins="1"/>
+            <input name="datain" num_pins="1"/>
+            <output name="regoutlo" num_pins="1"/>
+            <output name="regouthi" num_pins="1"/>
+            <!-- <input name="dfflo" num_pins="1"/>
+            <input name="devpor" num_pins="1"/>
+            <input name="devclrn" num_pins="1"/> -->
+          </pb_type>
+
+          <pb_type blif_model=".subckt fourteennm_pseudo_diff_out" name="pseudo_diff_out" num_pb="1">
+            <input name="i" num_pins="1"/>
+            <input name="ibar" num_pins="1"/>
+            <input name="oein" num_pins="1"/>
+            <input name="oebin"  num_pins="1"/>
+            <input name="dtcin" num_pins="1"/>
+            <input name="dtcbarin" num_pins="1"/>
+            <output name="o" num_pins="1"/>
+            <output name="obar" num_pins="1"/>
+            <output name="oeout" num_pins="1"/>
+            <output name="oebout" num_pins="1"/>
+            <output name="dtc" num_pins="1"/>
+            <output name="dtcbar" num_pins="1"/>
+            <!-- <input name="emif_phy_in" num_pins="2"/>
+            <input name="emif_phy_inb" num_pins="2"/>
+            <output name="emif_phy_out" num_pins="2"/>
+            <output name="emif_phy_outb" num_pins="2"/> -->
+          </pb_type>
+
+          <interconnect>
+            <!-- inputs coming from the FPGA core and going to OE flip flop -->
+            <complete input="io_cell.data_in" name="core_to_ff" output="oe_ff.clrn oe_ff.sclr oe_ff.ena oe_ff.d"/>
+            <direct input="io_cell.clk" name="ff_clk" num_pins="1" output="oe_ff.clk"/>
+
+            <!-- inputs coming from the FPGA core and going to ddio out primitive -->
+            <complete input="io_cell.data_in" name="core_to_ddio_out" num_pins="1" output="ddio_out.areset ddio_out.sreset ddio_out.ena ddio_out.clkhi ddio_out.clklo ddio_out.muxsel ddio_out.datainlo ddio_out.datainhi"/>
+            <direct input="io_cell.clk" name="ddio_out_clk" num_pins="1" output="ddio_out.clk"/>
+
+            <!-- inputs coming from the FPGA core and going to the output buffer -->
+            <direct input="iocell.data_in" name="core_to_obuf" output="obuf.dynamicterminationcontrol obuf.seriesterminationcontrol obuf.parallelterminationcontrol"/>
+            <!-- the i port of the output buffer can be driven by the output of the ddio out module or the core logic or the o output of the pseudo diff out-->
+            <complete input="io_cell.data_in ddio_out.dataout pseudo_diff_out.o" name="i_obuff" num_pins="1" output="obuf.i"/>
+            <!-- the oe port of the output buffer can be driven by the output of the oe flip flop or the core logic or the oeout output of the pseudo diff out-->
+            <complete input="io_cell.data_in oe_ff.q pseudo_diff_out.oeout" name="oe_obuff" num_pins="1" output="obuf.oe"/>
+
+            <!-- inputs coming from the FPGA core and going to the input buffer -->
+            <direct input="iocell.data_in" name="core_to_ibuff" output="ibuf.ibar ibuf.dynamicterminationcontrol ibuf.seriesterminationcontrol ibuf.parallelterminationcontrol"/>
+            <!-- the output of the padin will directly drive the input buffer  -->
+            <direct input="pad.recieve_off_chip" name="pad_receive" num_pins="1" output="ibuf.i"/>
+
+            <!-- inputs coming from the FPGA core and going to pseudo diff out primitive -->
+            <direct input="io_cell.data_in" name="core_to_pseudo_diff_out" num_pins="1" output="pseudo_diff_out.ibar pseudo_diff_out.oebin pseudo_diff_out.dtcin pseudo_diff_out.dtcbarin"/>
+            <!-- the i port of the  pseudo diff out can be driven by the output of the ddio out module or the core logic -->
+            <complete input="io_cell.data_in ddio_out.dataout" name="i_pseudo_diff" num_pins="1" output=" pseudo_diff_out.i"/>
+            <!-- the oein port of the pseudo diff out can be driven by the output of the oe flip flop or the core logic -->
+            <complete input="io_cell.data_in oe_ff.q" name="oe_pseudo_diff" num_pins="1" output="diff_out.oein"/>
+
+            <!-- inputs coming from the FPGA core and going to ddio in primitive -->
+            <direct input="io_cell.data_in" name="core_to_ddio_in" num_pins="1" output="ddio_in.clkn ddio_in.areset ddio_in.sreset ddio_in.ena"/>
+            <direct input="io_cell.clk" name="ddioi_clk" num_pins="1" output="ddio_in.clk"/>
+
+            <!-- the data port of theddio in is driven by the output of the input buffer -->
+            <direct input="ibuf.o" name="ddioi_datain" num_pins="1" output="ddio_in.datain"/>
+
+            <!-- the pad out can be driven by the output ports of the output buffer  -->
+            <complete input="obuf.o obuf.obar" name="pad_drive" num_pins="1" output="pad.drive_off_chip"/>
+
+            <!-- the outputs of the iocell block going to the core -->
+            <direct input="pseudo_diff_out.obar" name="iocell_obar" num_pins="1" output="iocell.data_out[0]"/>
+            <direct input="pseudo_diff_out.oebout" name="iocell_oeout" num_pins="1" output="iocell.data_out[1]"/>
+            <direct input="pseudo_diff_out.dtc" name="iocell_dtc" num_pins="1" output="iocell.data_out[2]"/>
+            <direct input="pseudo_diff_out.dtcbar" name="iocell_dtcbar" num_pins="1" output="iocell.data_out[3]"/>
+            <complete input="ibuf.o ddio_in.regoutlo" name="iocell_regoutlo" num_pins="1" output="iocell.data_out[4]"/>
+            <direct input="ddio_in.regouthi" name="iocell_regouthi" num_pins="1" output="iocell.data_out[5]"/>
+
+          </interconnect>
+        </mode>
+      </pb_type>
+
+      <interconnect>
+        <complete input="iolane.core_in" name="core_to_io" output="io_cell.data_in"/>
+        <complete input="iocell.data_out" name="io_to_core" output="io_lane.core_out"/>
+      </interconnect>
+    </pb_type>
     
   </complexblocklist>
