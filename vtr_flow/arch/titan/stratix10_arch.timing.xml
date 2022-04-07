@@ -105,6 +105,91 @@
   </tiles>
   <complexblocklist>
 
+    <pb_type name="PLL" num_pb="1">
+      <input name="core_in" num_pins="10"/>
+      <output name="core_out" num_pins="36"/>
+      <clock name="clk" num_pins="2"/>
+
+      <pb_type blif_model=".subckt fourteennm_iopll" name="iopll" num_pb="1">
+        <input name="clkena" num_pins="2"/>
+        <input name="cnt_sel" num_pins="4"/> <!-- counter selector for dynamic phase shift -->
+        <!--<input name="dprio_address" num_pins="9"/>  --><!--  Avalon-MM Interface - address of the databus for dynamic partial reconfiguration -->
+        <!--<input name="dprio_clk" num_pins="1"/> --> <!--  Avalon-MM Interface - clock port for dynamic partial reconfiguration -->
+        <!--<input name="read" num_pins="1"/>  --><!--  Avalon-MM Interface - indicate a read operation during dynamic partial reconfiguration -->
+        <!--<input name="write" num_pins="1"/>  --><!--  Avalon-MM Interface - indicate a write operation during dynamic partial reconfiguration -->
+        <!--<input name="writedata" num_pins="8"/> --> <!--  Avalon-MM Interface - data to be written to the given address during dynamic partial reconfiguration -->
+        <input name="core_refclk" num_pins="1"/> <!-- use core clock as an input reference clock -->
+        <!--<input name="csr_clk" num_pins="1"/>--> <!--Avalon-MM control-and-status register (CSR) agent interface - clock signal-->
+        <!--<input name="csr_en" num_pins="1"/>--> <!--Avalon-MM control-and-status register (CSR) agent interface - enable signal-->
+        <!--<input name="csr_in" num_pins="1"/>--> <!--Avalon-MM control-and-status register (CSR) agent interface -->
+        <!--<<input name="dprio_rst_n" num_pins="1"/>>--> <!--  Avalon-MM Interface - reset port for dynamic partial reconfiguration -->
+        <input name="dps_rst_n" num_pins="1"/> <!--  dynamic phase shift reset -->
+        <input name="extswitch" num_pins="1"/> <!--  controlling clock switchover -->
+        <input name="fbclk_in" num_pins="1"/> <!--  feedback clock used for external feedback compensation -->
+        <input name="fblvds_in" num_pins="1"/> <!--  feedback clock used for LVDS compensation -->
+        <input name="refclk" num_pins="4"/> <!--  reference clock source driving the IO PLL -->
+        <input name="mdio_dis" num_pins="1"/>
+        <input name="rst_n" num_pins="1"/>
+        <input name="num_phase_shifts" num_-pins="3"/> <!--  number of phase shifts per dynamic phase shift operation -->
+        <input name="pfden" num_pins="1"/> <!--  enabling dynamic phase shift operation -->
+        <!--<input name="pipeline_global_en_n" num_pins="1"/>-->
+        <!--  <input name="pma_csr_test_dis" num_pins="1"/> --> <!-- disable PMA CSR test  -->
+        <input name="pll_cascade_in" num_pins="1"/> <!-- cascade input from IO PLL in the same IO column  -->
+        <input name="scan_mode_n" num_pins="1"/> <!-- dynamic phase shift clock -->
+        <input name="scan_shift_n" num_pins="1"/>
+        <!-- <input name="uc_cal_addr" num_pins="20"/>
+        <input name="uc_cal_clk" num_pins="1"/>
+        <input name="uc_cal_read" num_pins="1"/>
+        <input name="uc_cal_write" num_pins="1"/>
+        <input name="uc_cal_writedata" num_pins="8"/>  -->
+        <input name="up_dn" num_pins="1"/> <!-- direction of phase shift -->
+        <input name="user_mode" num_pins="1"/> <!-- enable user mode  -->
+        <input name="zdb_in" num_pins="1"/> <!-- zero delay buffer compensation feedback -->
+
+        <output name="block_select" num_pins="1"/>
+        <output name="clk0_bad" num_pins="1"/> <!-- indicates the status of reference clock (whether it is good or bad) -->
+        <output name="clk1_bad" num_pins="1"/> <!-- indicates the status of reference clock (whether it is good or bad) -->
+        <output name="clksel" num_pins="1"/>
+        <output name="cal_ok" num_pins="1"/> <!-- indicates the calibration status -->
+        <output name="core_avl_busy" num_pins="1"/>
+        <output name="core_cal_done" num_pins="1"/>
+        <!--<output name="readdata" num_pins="8"/> --> <!-- Avalon-MM Interface - data read from the given address during dynamic partial reconfiguration -->
+        <!--<output name="csr_out" num_pins="1"/> --> <!--Avalon-MM control-and-status register (CSR) agent interface !-->
+        <output name="extclk_output" num_pins="2"/> <!-- external clock output port -->
+        <output name="extclk_dft" num_pins="2"/>
+        <output name="fblvds_out" num_pins="1"/>
+        <output name="lf_reset" num_pins="1"/> <!-- loop filter reset -->
+        <output name="loaden" num_pins="2"/> <!-- signal to the LVDS receiver -->
+        <output name="lock" num_pins="1"/> <!-- indicate wether the PLL is locked - signal to the core logic -->
+        <output name="lock2io12lane0" num_pins="1"/> <!-- indicate wether the PLL is locked - going to the IO Lane 0 -->
+        <output name="lock2io12lane1" num_pins="1"/> <!-- indicate wether the PLL is locked - going to the IO Lane 1 -->
+        <output name="lock2io12lane2" num_pins="1"/> <!-- indicate wether the PLL is locked - going to the IO Lane 2 -->
+        <output name="lock2io12lane3" num_pins="1"/> <!-- indicate wether the PLL is locked - going to the IO Lane 3 -->
+        <output name="lock2iohmc" num_pins="1"/> <!-- indicate wether the PLL is locked - going to Hybrid Memory Cube (HMC)-->
+        <!--<output name="lvds_clk" num_pins="2"/> --> <!-- the output clk feeding the LVDS SERDES block -->
+        <output name="phase_done" num_pins="1"/> <!-- indicates completion of dynamic phase shift operation -->
+        <output name="pll_cascade_out" num_pins="1"/> <!-- the output from the source PLL feeding the downstream PLL in cascade mode -->
+        <output name="pll_pd" num_pins="1"/> <!-- indicating power down - going to the exteral PLLs  -->
+        <output name="outclk" num_pins="9"/> <!-- PLL output clocks -->
+        <output name="dll_output" num_pins="1"/> <!-- going to the External Memory Interface DLL -->
+        <output name="fbclk_out" num_pins="1"/> <!-- output of the M counter -->
+        <output name="uc_cal_readdata" num_pins="8"/>
+        <output name="vcop_en" num_pins="1"/>
+        <output name="vcoph" num_pins="8"/> <!-- VCO output clocks -->
+        <output name="iopll_out_sig1" num_pins="1"/>
+        <output name="iopll_out_sig2" num_pins="1"/>
+      </pb_type>
+
+      <complete input="PLL.core_in" name="core_to_pll" output="iopll.clkena iopll.cnt_sel iopll.core_refclk iopll.dps_rst_n iopll.extswitch iopll.fbclk_in iopll.fblvds_in
+          iopll.mdio_dis iopll.rst_n iopll.num_phase_shifts iopll.pfden iopll.pll_cascade_in iopll.scan_mode_n iopll.scan_shift_n iopll.up_dn iopll.user_mode iopll.zdb_in"/>
+
+      <complete input="PLL.clk" name="pll_clock" output="iopll.refclk"/>
+
+      <complete input="iopll.block_select iopll.clk0_bad iopll.clk1_bad iopll.clksel iopll.cal_ok iopll.core_avl_busy iopll.core_cal_done iopll.extclk_output
+          iopll.extclk_dft iopll.fblvds_out iopll.lf_reset iopll.loaden iopll.lock iopll.lock2io12lane0 iopll.lock2io12lane1 iopll.lock2io12lane2 iopll.lock2io12lane2 iopll.lock2io12lane3
+          iopll.lock2iohmc iopll.phase_done iopll.pll_cascade_out iopll.pll_pd iopll.outclk iopll.dll_output iopll.fbclk_out iopll.uc_cal_readdata iopll.vcop_en iopll.vcoph iopll.iopll_out_sig1 iopll.iopll_out_sig2" name="pll_to_core" output="PLL.core_out"/>
+    </pb_type>
+
     <pb_type name="LAB">
       <input name="data_in" num_pins="80" equivalent="full"/>
       <input name="control_in" num_pins="5" equivalent="none"/>
@@ -512,5 +597,5 @@
         </interconnect>
       </mode>
     </pb_type>
-    
+
   </complexblocklist>
