@@ -1,5 +1,5 @@
   <models>
-    
+
     <!-- LAB Primitives -->
     <model name="fourteennm_lcell_comb">
       <input_ports>
@@ -139,6 +139,85 @@
         <port name="vcoph" clock="refclk"/> 
         <port name="iopll_out_sig1" clock="refclk"/>
         <port name="iopll_out_sig2" clock="refclk"/>
+      </output_ports>
+    </model>
+
+    <!-- IO Primitives -->
+    <model name="fourteennm_io_obuf">
+      <input_ports>
+        <port name="i" combinational_sink_ports="o obar"/> 
+        <port name="oe" combinational_sink_ports="o obar"/> 
+        <port name="dynamicterminationcontrol" combinational_sink_ports="o obar"/> 
+        <port name="seriesterminationcontrol" combinational_sink_ports="o obar"/>
+        <port name="parallelterminationcontrol" combinational_sink_ports="o obar"/>
+      </input_ports>
+      <output_ports>
+        <port name="o" />
+        <port name="obar" />
+      </output_ports>
+    </model>
+
+    <model name="fourteennm_io_ibuf">
+      <input_ports>
+        <port name="i" combinational_sink_ports="o"/>
+        <port name="ibar" combinational_sink_ports="o"/>
+        <port name="dynamicterminationcontrol" combinational_sink_ports="o"/>
+        <port name="seriesterminationcontrol" combinational_sink_ports="o"/>
+        <port name="parallelterminationcontrol" combinational_sink_ports="o"/>
+      </input_ports>
+      <output_ports>
+        <port name="o" />
+      </output_ports>
+    </model>
+
+    <model name="fourteennm_pseudo_diff_out">
+      <input_ports>
+        <port name="i" combinational_sink_ports="o obar oeout oebout dtc dtcbar"/>
+        <port name="ibar" combinational_sink_ports="o obar oeout oebout dtc dtcbar"/>
+        <port name="oein" combinational_sink_ports="o obar oeout oebout dtc dtcbar"/>
+        <port name="oebin"  combinational_sink_ports="o obar oeout oebout dtc dtcbar"/>
+        <port name="dtcin" combinational_sink_ports="o obar oeout oebout dtc dtcbar"/>
+        <port name="dtcbarin" combinational_sink_ports="o obar oeout oebout dtc dtcbar"/>
+      </input_ports>
+      <output_ports>
+        <port name="o" />
+        <port name="obar" />
+        <port name="oeout" />
+        <port name="oebout" />
+        <port name="dtc" />
+        <port name="dtcbar" />
+      </output_ports>
+    </model>
+
+    <model name="fourteennm_ddio_out">
+      <input_ports>
+        <port name="areset" clock="clk"/>
+        <port name="sreset" clock="clk"/>
+        <port name="ena" clock="clk"/>
+        <clock name="clk" is_clock="1"/>
+        <port name="clkhi" clock="clk"/>
+        <port name="clklo" clock="clk"/>
+        <port name="muxsel" clock="clk"/>
+        <port name="datainlo" clock="clk"/>
+        <port name="datainhi" clock="clk"/>
+      </input_ports>
+      <output_ports>
+        <port name="dataout" clock="clk"/>
+      </output_ports>
+    </model>
+
+    <model name="fourteennm_ddio_in">
+      <input_ports>
+        <clock name="clk" is_clock="1"/>
+        <port name="clkn" clock="clk"/>
+        <port name="areset" clock="clk"/>
+        <port name="sreset" clock="clk"/>
+        <port name="ena" clock="clk"/>
+        <port name="datain" clock="clk"/>
+      </input_ports>
+      <output_ports>
+        <port name="regoutlo" clock="clk"/>
+        <port name="regouthi" clock="clk"/>
       </output_ports>
     </model>
 
