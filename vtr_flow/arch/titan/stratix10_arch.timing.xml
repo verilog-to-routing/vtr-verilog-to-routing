@@ -18,6 +18,7 @@
         <port name="cout"/>
       </output_ports>
     </model>
+
     <model name="fourteennm_ff">
       <input_ports>
         <port name="clk" is_clock="1"/>
@@ -30,6 +31,7 @@
         <port name="q" clock="clk"/>
       </output_ports>
     </model>
+
     <model name="fourteennm_mlab_cell">
       <input_ports>
         <port name="clk0" is_clock="1"/>
@@ -44,6 +46,63 @@
         <port name="portbdataout" clock="clk0"/>
       </output_ports>
     </model>
+
+
+    <model blif_model="fourteennm_iopll">
+      <input_ports>
+        <port name="clkena" clock="refclk"/>
+        <port name="cnt_sel" clock="refclk"/> 
+        <port name="core_refclk" clock="refclk"/> 
+        <port name="dps_rst_n" clock="refclk"/> 
+        <port name="extswitch" clock="refclk"/> 
+        <port name="fbclk_in" clock="refclk"/> 
+        <port name="fblvds_in" clock="refclk"/> 
+        <port name="refclk" is_clock="1"/> 
+        <port name="mdio_dis" clock="refclk"/>
+        <port name="rst_n" clock="refclk"/>
+        <port name="num_phase_shifts" clock="refclk"/> 
+        <port name="pfden" clock="refclk"/> 
+        <port name="pll_cascade_in" clock="refclk"/> 
+        <port name="scan_mode_n" clock="refclk"/> 
+        <port name="scan_shift_n" clock="refclk"/>
+        <port name="uc_cal_writedata" clock="refclk"/>  -->
+        <port name="up_dn" clock="refclk"/> 
+        <port name="user_mode" clock="refclk"/> 
+        <port name="zdb_in" clock="refclk"/> 
+      </input_ports>
+      <output_ports>
+        <port name="block_select" clock="refclk"/>
+        <port name="clk0_bad" clock="refclk"/> 
+        <port name="clk1_bad" clock="refclk"/> 
+        <port name="clksel" clock="refclk"/>
+        <port name="cal_ok" clock="refclk"/> 
+        <port name="core_avl_busy" clock="refclk"/>
+        <port name="core_cal_done" clock="refclk"/>
+        <port name="extclk_output" clock="refclk"/> 
+        <port name="extclk_dft" clock="refclk"/>
+        <port name="fblvds_out" clock="refclk"/>
+        <port name="lf_reset" clock="refclk"/> 
+        <port name="loaden" clock="refclk"/> 
+        <port name="lock" clock="refclk"/> 
+        <port name="lock2io12lane0" clock="refclk"/> 
+        <port name="lock2io12lane1" clock="refclk"/> 
+        <port name="lock2io12lane2" clock="refclk"/> 
+        <port name="lock2io12lane3" clock="refclk"/> 
+        <port name="lock2iohmc" clock="refclk"/> 
+        <port name="phase_done" clock="refclk"/> 
+        <port name="pll_cascade_out" clock="refclk"/> 
+        <port name="pll_pd" clock="refclk"/> 
+        <port name="outclk" clock="refclk"/> 
+        <port name="dll_output" clock="refclk"/> 
+        <port name="fbclk_out" clock="refclk"/> 
+        <port name="uc_cal_readdata" clock="refclk"/>
+        <port name="vcop_en" clock="refclk"/>
+        <port name="vcoph" clock="refclk"/> 
+        <port name="iopll_out_sig1" clock="refclk"/>
+        <port name="iopll_out_sig2" clock="refclk"/>
+      </output_ports>
+    </model>
+
   </models>
   <tiles>
     <tile name="LAB">
@@ -127,10 +186,10 @@
         <input name="extswitch" num_pins="1"/> <!--  controlling clock switchover -->
         <input name="fbclk_in" num_pins="1"/> <!--  feedback clock used for external feedback compensation -->
         <input name="fblvds_in" num_pins="1"/> <!--  feedback clock used for LVDS compensation -->
-        <input name="refclk" num_pins="4"/> <!--  reference clock source driving the IO PLL -->
+        <clock name="refclk" num_pins="4"/> <!--  reference clock source driving the IO PLL -->
         <input name="mdio_dis" num_pins="1"/>
         <input name="rst_n" num_pins="1"/>
-        <input name="num_phase_shifts" num_-pins="3"/> <!--  number of phase shifts per dynamic phase shift operation -->
+        <input name="num_phase_shifts" num_pins="3"/> <!--  number of phase shifts per dynamic phase shift operation -->
         <input name="pfden" num_pins="1"/> <!--  enabling dynamic phase shift operation -->
         <!--<input name="pipeline_global_en_n" num_pins="1"/>-->
         <!--  <input name="pma_csr_test_dis" num_pins="1"/> --> <!-- disable PMA CSR test  -->
@@ -825,5 +884,5 @@
         <complete input="iocell.data_out" name="io_to_core" output="io_lane.core_out"/>
       </interconnect>
     </pb_type>
-    
+
   </complexblocklist>
