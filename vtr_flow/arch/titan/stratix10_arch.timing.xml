@@ -220,8 +220,6 @@
         <port name="regouthi" clock="clk"/>
       </output_ports>
     </model>
-
-
   </models>
   <tiles>
     <tile name="LAB">
@@ -280,6 +278,44 @@
         </pinlocations>
       </sub_tile>
     </tile>
+
+   <tile height="1" name="PLL">
+      <sub_tile name="PLL">
+        <equivalent_sites>
+          <site pb_type="PLL" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="in_signal" num_pins="14"/>
+        <clock name="in_clock" num_pins="2"/>
+        <output name="out_clock" num_pins="10"/>
+        <output name="out_signal" num_pins="10"/>
+        <fc in_type="frac" in_val="0.055" out_type="frac" out_val="0.075"/>
+        <pinlocations pattern="custom">
+          <loc side="left">PLL.in_signal PLL.in_clock PLL.out_clock PLL.out_signal</loc>
+          <loc side="right">PLL.in_signal PLL.in_clock PLL.out_clock PLL.out_signal</loc>
+          <loc side="top">PLL.in_signal PLL.in_clock PLL.out_clock PLL.out_signal</loc>
+          <loc side="bottom">PLL.in_signal PLL.in_clock PLL.out_clock PLL.out_signal</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+
+    <tile height="1" name="PLL">
+      <sub_tile name="PLL">
+        <equivalent_sites>
+          <site pb_type="PLL" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="core_in" num_pins="10"/>
+        <output name="core_out" num_pins="36"/>
+        <clock name="clk" num_pins="2"/>
+        <fc in_type="frac" in_val="0.055" out_type="frac" out_val="0.075"/>
+        <pinlocations pattern="custom">
+          <loc side="left">PLL.core_in PLL.core_out PLL.clk </loc>
+          <loc side="right">PLL.core_in PLL.core_out PLL.clk </loc>
+          <loc side="top">PLL.core_in PLL.core_out PLL.clk </loc>
+          <loc side="bottom">PLL.core_in PLL.core_out PLL.clk </loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+
   </tiles>
   <complexblocklist>
 
