@@ -1921,6 +1921,215 @@
           </interconnect>
         </mode>
 
+        <!-- 27x27 independent multiplier mode -->
+        <mode name="m27x27.input_type{reg}.output_type{comb}">
+            <pb_type name="mac27x27" blif_model=".subckt fourteennm_mac.opmode{m27x27}.input_type{reg}.output_type{comb}" num_pb="1">
+                <input name="accumulate" num_pins="1"/>
+                <input name="chainin" num_pins="64"/>
+                <input name="clr" num_pins="2"/>
+                <clock name="clk" num_pins="3"/>
+                <input name="ax" num_pins="27"/>
+                <input name="ay" num_pins="27"/>
+                <input name="az" num_pins="26"/>
+                <input name="coefsela" num_pins="3"/>
+                <input name="loadconst" num_pins="1"/>
+                <input name="negate" num_pins="1"/>
+                <input name="scanin" num_pins="27"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
+
+                <output name="chainout" num_pins="64"/>
+                <output name="resulta" num_pins="64"/>
+                <output name="scanout" num_pins="27"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin" output="mac27x27.chainin"/>
+                <direct name="chain_out" input="mac27x27.chainout" output="DSP.chainout"/>
+                <direct name="scan_in" input="DSP.scanin" output="mac27x27.scanin"/>
+                <direct name="scan_out" input="mac27x27.scanout" output="DSP.scanout"/>
+                <direct name="dft_out" input="mac27x27.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[26:0]" output="mac27x27.ax"/>
+                <direct name="ay_in" input="DSP.datain[53:27]" output="mac27x27.ay"/>
+                <direct name="az_in" input="DSP.datain[79:54]" output="mac27x27.az"/>
+
+                <direct name="resulta_out" input="mac27x27.resulta" output="DSP.result[63:0]"/>
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac27x27.clr"/>
+                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac27x27.coefsela"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac27x27.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac27x27.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac27x27.dfxmisrena"/>
+                <direct name="accumulate_in" input="DSP.controlin[13]" output="mac27x27.accumulate"/>
+                <direct name="loadconst_in" input="DSP.controlin[14]" output="mac27x27.loadconst"/>
+                <direct name="negate_in" input="DSP.controlin[15]" output="mac27x27.negate"/>
+
+                <complete name="clk_in" input="DSP.clk" output="mac27x27.clk"/>
+
+            </interconnect>
+        </mode>
+
+        <mode name="m27x27.input_type{comb}.output_type{reg}">
+            <pb_type name="mac27x27" blif_model=".subckt fourteennm_mac.opmode{m27x27}.input_type{comb}.output_type{reg}" num_pb="1">
+                <input name="accumulate" num_pins="1"/>
+                <input name="chainin" num_pins="64"/>
+                <input name="clr" num_pins="2"/>
+                <clock name="clk" num_pins="3"/>
+                <input name="ax" num_pins="27"/>
+                <input name="ay" num_pins="27"/>
+                <input name="az" num_pins="26"/>
+                <input name="coefsela" num_pins="3"/>
+                <input name="loadconst" num_pins="1"/>
+                <input name="negate" num_pins="1"/>
+                <input name="scanin" num_pins="27"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
+
+                <output name="chainout" num_pins="64"/>
+                <output name="resulta" num_pins="64"/>
+                <output name="scanout" num_pins="27"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin" output="mac27x27.chainin"/>
+                <direct name="chain_out" input="mac27x27.chainout" output="DSP.chainout"/>
+                <direct name="scan_in" input="DSP.scanin" output="mac27x27.scanin"/>
+                <direct name="scan_out" input="mac27x27.scanout" output="DSP.scanout"/>
+                <direct name="dft_out" input="mac27x27.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[26:0]" output="mac27x27.ax"/>
+                <direct name="ay_in" input="DSP.datain[53:27]" output="mac27x27.ay"/>
+                <direct name="az_in" input="DSP.datain[79:54]" output="mac27x27.az"/>
+
+                <direct name="resulta_out" input="mac27x27.resulta" output="DSP.result[63:0]"/>
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac27x27.clr"/>
+                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac27x27.coefsela"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac27x27.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac27x27.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac27x27.dfxmisrena"/>
+                <direct name="accumulate_in" input="DSP.controlin[13]" output="mac27x27.accumulate"/>
+                <direct name="loadconst_in" input="DSP.controlin[14]" output="mac27x27.loadconst"/>
+                <direct name="negate_in" input="DSP.controlin[15]" output="mac27x27.negate"/>
+
+                <complete name="clk_in" input="DSP.clk" output="mac27x27.clk"/>
+
+            </interconnect>
+        </mode>
+
+        <mode name="m27x27.input_type{comb}.output_type{comb}">
+            <pb_type name="mac27x27" blif_model=".subckt fourteennm_mac.opmode{m27x27}.input_type{comb}.output_type{comb}" num_pb="1">
+                <input name="accumulate" num_pins="1"/>
+                <input name="chainin" num_pins="64"/>
+                <input name="clr" num_pins="2"/>
+                <input name="ax" num_pins="27"/>
+                <input name="ay" num_pins="27"/>
+                <input name="az" num_pins="26"/>
+                <input name="coefsela" num_pins="3"/>
+                <input name="loadconst" num_pins="1"/>
+                <input name="negate" num_pins="1"/>
+                <input name="scanin" num_pins="27"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
+
+                <output name="chainout" num_pins="64"/>
+                <output name="resulta" num_pins="64"/>
+                <output name="scanout" num_pins="27"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin" output="mac27x27.chainin"/>
+                <direct name="chain_out" input="mac27x27.chainout" output="DSP.chainout"/>
+                <direct name="scan_in" input="DSP.scanin" output="mac27x27.scanin"/>
+                <direct name="scan_out" input="mac27x27.scanout" output="DSP.scanout"/>
+                <direct name="dft_out" input="mac27x27.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[26:0]" output="mac27x27.ax"/>
+                <direct name="ay_in" input="DSP.datain[53:27]" output="mac27x27.ay"/>
+                <direct name="az_in" input="DSP.datain[79:54]" output="mac27x27.az"/>
+
+                <direct name="resulta_out" input="mac27x27.resulta" output="DSP.result[63:0]"/>
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac27x27.clr"/>
+                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac27x27.coefsela"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac27x27.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac27x27.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac27x27.dfxmisrena"/>
+                <direct name="accumulate_in" input="DSP.controlin[13]" output="mac27x27.accumulate"/>
+                <direct name="loadconst_in" input="DSP.controlin[14]" output="mac27x27.loadconst"/>
+                <direct name="negate_in" input="DSP.controlin[15]" output="mac27x27.negate"/>
+
+
+            </interconnect>
+        </mode>
+
+        <mode name="m27x27.input_type{reg}.output_type{reg}">
+            <pb_type name="mac27x27" blif_model=".subckt fourteennm_mac.opmode{m27x27}.input_type{reg}.output_type{reg}" num_pb="1">
+                <input name="accumulate" num_pins="1"/>
+                <input name="chainin" num_pins="64"/>
+                <input name="clr" num_pins="2"/>
+                <clock name="clk" num_pins="3"/>
+                <input name="ax" num_pins="27"/>
+                <input name="ay" num_pins="27"/>
+                <input name="az" num_pins="26"/>
+                <input name="coefsela" num_pins="3"/>
+                <input name="loadconst" num_pins="1"/>
+                <input name="negate" num_pins="1"/>
+                <input name="scanin" num_pins="27"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
+
+                <output name="chainout" num_pins="64"/>
+                <output name="resulta" num_pins="64"/>
+                <output name="scanout" num_pins="27"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin" output="mac27x27.chainin"/>
+                <direct name="chain_out" input="mac27x27.chainout" output="DSP.chainout"/>
+                <direct name="scan_in" input="DSP.scanin" output="mac27x27.scanin"/>
+                <direct name="scan_out" input="mac27x27.scanout" output="DSP.scanout"/>
+                <direct name="dft_out" input="mac27x27.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[26:0]" output="mac27x27.ax"/>
+                <direct name="ay_in" input="DSP.datain[53:27]" output="mac27x27.ay"/>
+                <direct name="az_in" input="DSP.datain[79:54]" output="mac27x27.az"/>
+
+                <direct name="resulta_out" input="mac27x27.resulta" output="DSP.result[63:0]"/>
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac27x27.clr"/>
+                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac27x27.coefsela"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac27x27.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac27x27.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac27x27.dfxmisrena"/>
+                <direct name="accumulate_in" input="DSP.controlin[13]" output="mac27x27.accumulate"/>
+                <direct name="loadconst_in" input="DSP.controlin[14]" output="mac27x27.loadconst"/>
+                <direct name="negate_in" input="DSP.controlin[15]" output="mac27x27.negate"/>
+
+                <complete name="clk_in" input="DSP.clk" output="mac27x27.clk"/>
+
+            </interconnect>
+        </mode>
+
+        
+
     </pb_type>
 
   </complexblocklist>
