@@ -598,4 +598,66 @@
       </mode>
     </pb_type>
 
+    <pb_type name="OCT" num_pb="1">
+      <input name="core_in" num_pins="10"/>
+      <output name="core_out" num_pins="36"/>
+      <clock name="clk" num_pins="1"/>
+
+       <!-- the input pad is used is connected to rzqin pin -->
+      <pb_type blif_model=".input" name="inpad" num_pb="1">
+        <output name="inpad" num_pins="1"/>
+      </pb_type>
+
+      <pb_type blif_model=".subckt fourteennm_termination" name="oct_block" num_pb="1">
+        <input name="rzqin" num_pins="1"/> <!-- connects to an external reference resistor -->
+        <input name="enserusr" num_pins="1"/> <!-- specifies the oct block to read from  -->
+        <input name="nclrusr" num_pins="1"/> <!-- clear signal -->
+        <input name="clkenusr" num_pins="1"/>
+        <clock name="clkusr" num_pins="1"/>
+        <input name="ser_data_dq_from_core" num_pins="1"/>
+        <input name="ser_data_ca_from_core" num_pins="1"/>
+        <input name="test_clkusr_en_n" num_pins="1"/>
+        <input name="oct_scanin" num_pins="1"/>
+        <output name="clkusr_dft_out" num_pins="1"/>
+        <output name="oct_scanout" num_pins="1"/>
+        <output name="compout_rdn" num_pins="1"/>
+        <output name="compout_rup" num_pins="1"/>
+        <output name="serdataout" num_pins="1"/>
+        <output name="ser_data_dq_to_core" num_pins="1"/>
+        <output name="ser_data_ca_to_core" num_pins="1"/>
+      </pb_type>
+
+      <pb_type blif_model=".subckt fourteennm_termination_logic" name="oct_logic" num_pb="1">
+        <input name="s2pload" num_pins="1"/>
+        <input name="serdata" num_pins="1"/>
+        <input name="scan_in" num_pins="1"/>
+        <input name="scan_shift_in" num_pins="1"/>
+        <output name="scan_out" num_pins="1"/>
+        <output name="seriesterminationcontrol" num_pins="16"/>
+        <output name="parallelterminationcontrol" num_pins="16"/>
+      </pb_type>
+
+      <interconnect>
+        <direct input="OCT.clk" name="clk_to_oct_block" output="oct_block.clkusr"/>
+
+        <!-- the rzqin pin is connected to an external resistor -->
+        <direct input="inpad.inpad" name="rzqin_in" output="oct_block.rzqin"/>
+
+        <!-- oct_block inputs coming from the core logic -->
+        <complete input="OCT.core_in" name="core_to_oct_block" output="oct_block.enserusr oct_block.nclrusr oct_block.clkenusr oct_block.ser_data_dq_from_core oct_block.ser_data_ca_from_core oct_block.test_clkusr_en_n oct_block.oct_scanin"/>
+
+        <!-- oct_logic inputs coming from the core logic -->
+        <complete input="OCT.core_in" name="core_to_oct_logic" output="oct_block.s2pload oct_block.scan_in oct_block.scan_shift_in"/>
+        <!-- oct_logic serdata coming from serdataout of the oct block -->
+        <direct input="oct_block.serdataout" name="serdata_path" output="oct_logic.serdata"/>
+
+        <!-- oct_block outputs going to the core logic -->
+        <complete input="oct_block.clkusr_dft_out oct_block.oct_scanout oct_block.compout_rdn oct_block.compout_rup oct_block.ser_data_dq_to_core oct_block.ser_data_ca_to_core" name="oct_block_to_core" output="OCT.core_out"/>
+
+        <!-- oct_logic outputs going to the core logic -->
+        <complete input="oct_logic.scan_out oct_logic.seriesterminationcontrol oct_logic.parallelterminationcontrol" name="oct_logic_to_core" output="OCT.core_out"/>
+        
+      </interconnect>
+    </pb_type>
+    
   </complexblocklist>
