@@ -3317,7 +3317,228 @@
             </interconnect> 
         </mode>
 
+        <!-- fp vector two mode -->
+        <mode name="sp_vector2.input_type{reg}.output_type{comb}">
+            <pb_type name="fp_mac_vect2" blif_model=".subckt fourteennm_fp_mac.opmode{sp_vector2}.input_type{reg}.output_type{comb}" num_pb="1">
+                <input name="chainin" num_pins="32"/>
+                <input name="clr" num_pins="2"/>
+                <clock name="clk" num_pins="3"/>
+                <input name="ax" num_pins="32"/>
+                <input name="ay" num_pins="32"/>
+                <input name="az" num_pins="32"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
 
+                <output name="chainout" num_pins="32"/>
+                <output name="resulta" num_pins="32"/>
+                <output name="adder_inexact" num_pins="1"/>
+                <output name="adder_invalid" num_pins="1"/>
+                <output name="adder_overflow" num_pins="1"/>
+                <output name="adder_underflow" num_pins="1"/>
+                <output name="mult_inexact" num_pins="1"/>
+                <output name="mult_invalid" num_pins="1"/>
+                <output name="mult_overflow" num_pins="1"/>
+                <output name="mult_underflow" num_pins="1"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
+                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+
+                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+
+                <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+
+            </interconnect> 
+        </mode>
+
+        <mode name="sp_vector2.input_type{comb}.output_type{reg}">
+            <pb_type name="fp_mac_vect2" blif_model=".subckt fourteennm_fp_mac.opmode{sp_vector2}.input_type{comb}.output_type{reg}" num_pb="1">
+                <input name="chainin" num_pins="32"/>
+                <input name="clr" num_pins="2"/>
+                <clock name="clk" num_pins="3"/>
+                <input name="ax" num_pins="32"/>
+                <input name="ay" num_pins="32"/>
+                <input name="az" num_pins="32"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
+
+                <output name="chainout" num_pins="32"/>
+                <output name="resulta" num_pins="32"/>
+                <output name="adder_inexact" num_pins="1"/>
+                <output name="adder_invalid" num_pins="1"/>
+                <output name="adder_overflow" num_pins="1"/>
+                <output name="adder_underflow" num_pins="1"/>
+                <output name="mult_inexact" num_pins="1"/>
+                <output name="mult_invalid" num_pins="1"/>
+                <output name="mult_overflow" num_pins="1"/>
+                <output name="mult_underflow" num_pins="1"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
+                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+
+                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+
+                <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+
+            </interconnect> 
+        </mode>
+
+        <mode name="sp_vector2.input_type{comb}.output_type{comb}">
+            <pb_type name="fp_mac_vect2" blif_model=".subckt fourteennm_fp_mac.opmode{sp_vector2}.input_type{comb}.output_type{comb}" num_pb="1">
+                <input name="chainin" num_pins="32"/>
+                <input name="clr" num_pins="2"/>
+                <input name="ax" num_pins="32"/>
+                <input name="ay" num_pins="32"/>
+                <input name="az" num_pins="32"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
+
+                <output name="chainout" num_pins="32"/>
+                <output name="resulta" num_pins="32"/>
+                <output name="adder_inexact" num_pins="1"/>
+                <output name="adder_invalid" num_pins="1"/>
+                <output name="adder_overflow" num_pins="1"/>
+                <output name="adder_underflow" num_pins="1"/>
+                <output name="mult_inexact" num_pins="1"/>
+                <output name="mult_invalid" num_pins="1"/>
+                <output name="mult_overflow" num_pins="1"/>
+                <output name="mult_underflow" num_pins="1"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
+                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+
+                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+
+
+            </interconnect> 
+        </mode>
+
+        <mode name="sp_vector2.input_type{reg}.output_type{reg}">
+            <pb_type name="fp_mac_vect2" blif_model=".subckt fourteennm_fp_mac.opmode{sp_vector2}.input_type{reg}.output_type{reg}" num_pb="1">
+                <input name="chainin" num_pins="32"/>
+                <input name="clr" num_pins="2"/>
+                <clock name="clk" num_pins="3"/>
+                <input name="ax" num_pins="32"/>
+                <input name="ay" num_pins="32"/>
+                <input name="az" num_pins="32"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
+
+                <output name="chainout" num_pins="32"/>
+                <output name="resulta" num_pins="32"/>
+                <output name="adder_inexact" num_pins="1"/>
+                <output name="adder_invalid" num_pins="1"/>
+                <output name="adder_overflow" num_pins="1"/>
+                <output name="adder_underflow" num_pins="1"/>
+                <output name="mult_inexact" num_pins="1"/>
+                <output name="mult_invalid" num_pins="1"/>
+                <output name="mult_overflow" num_pins="1"/>
+                <output name="mult_underflow" num_pins="1"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
+                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+
+                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+
+                <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+
+            </interconnect> 
+        </mode>
         
     </pb_type>
 
