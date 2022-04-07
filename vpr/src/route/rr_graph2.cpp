@@ -39,6 +39,19 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
                                   int* index);
 
+static void reserve_internal_nodes(RRGraphBuilder& rr_graph_builder,
+                                   t_physical_tile_type_ptr type,
+                                   const int x,
+                                   const int y,
+                                   const t_pb_graph_node* pb_graph_node);
+
+static void add_internal_nodes(RRGraphBuilder& rr_graph_builder,
+                               t_physical_tile_type_ptr type,
+                               const int x,
+                               const int y,
+                               const t_pb_graph_node* pb_graph_node,
+                               int* rr_index);
+
 static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                        const std::vector<int> conn_tracks,
                                        const int to_chan,
@@ -1050,46 +1063,28 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                     }
                 }
 
-                /* #TODO: the way that t_pb_graph_node is extracted from the grid[i][j] needs to be changed. */
-                /* choose the pb_type with the highest number of pins */
-                const t_pb_graph_node* pb_graph_node = nullptr;
-                for(const auto& sub_tile : type->sub_tiles) {
-                    for(auto equivalent_site : sub_tile.equivalent_sites) {
-                        auto curr_pb_graph_node = equivalent_site->pb_graph_head;
-                        if(pb_graph_node == nullptr || (pb_graph_node->total_num_input_pins > curr_pb_graph_node->total_num_input_pins)) {
-                            pb_graph_node = curr_pb_graph_node;
+                auto get_eq_site_max_in_pin = [&] (const std::vector<t_logical_block_type_ptr>& eq_sites)
+                {
+                    int max_num_in_pin = -1;
+                    t_logical_block_type_ptr res;
+                    for(auto site : eq_sites) {
+                        int tmp_num_in_pins = site->pb_type->num_input_pins;
+                        if(max_num_in_pin < tmp_num_in_pins) {
+                            max_num_in_pin = tmp_num_in_pins;
+                            res = site;
                         }
                     }
-                }
+                    return res;
+                };
 
-                /* Reserve nodes for internal pins in lookup */
-                int num_in = 0;
-                int num_out = 0;
-                if(pb_graph_node) {
-                    for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-                        int x_tile = x + width_offset;
-                        for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                            int y_tile = y + height_offset;
-                            rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, INTERNAL_IPIN,
-                                                                         pb_graph_node->total_num_input_pins, e_side::TOP);
-                            rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, INTERNAL_OPIN,
-                                                                         pb_graph_node->total_num_output_pins, e_side::TOP);
-                        }
+                for(auto sub_tile : type->sub_tiles) {
+                    /* TODO: a better approach needs to be chosen - instead of get only the first equivalent site! */
+                    auto eq_site = get_eq_site_max_in_pin(sub_tile.equivalent_sites);
+                    auto pb_graph_node = eq_site->pb_graph_head;
+                    auto pb_type = eq_site->pb_type;
+                    for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
+                        reserve_internal_nodes(rr_graph_builder, type, x, y, pb_graph_node);
                     }
-
-                    // #TODO: for debugging purpose - needs to be deleted
-                    for(auto pin_pair : pb_graph_node->pins_vec) {
-                        auto pin = pin_pair.first;
-                        if (pin->port->type == PORTS::IN_PORT) {
-                            num_in++;
-                        } else if (pin->port->type == PORTS::OUT_PORT) {
-                            num_out++;
-                        }
-                        else if(pin->port->type == PORTS::INOUT_PORT) {
-                            std::cout << "Do something about inout port!" << std::endl;
-                        }
-                    }
-
                 }
 
                 // Reserve nodes for top-level blocks in lookup to save memory
@@ -1105,32 +1100,17 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                 }
 
                 //Assign indices for internal-pins
-                if(pb_graph_node) {
-                    for (auto pin_pair : pb_graph_node->pins_vec) {
-                        auto pb_graph_pin = pin_pair.first;
-                        bool assigned_to_rr_node = false;
-                        //top-level block pins are added later
-                        if(pb_graph_pin->is_root_block_pin()) {
-                            continue;
-                        }
-                        for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-                            int x_tile = x + width_offset;
-                            for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                                int y_tile = y + height_offset;
-                                int pin_idx = pin_pair.second;
-                                if (pb_graph_pin->port->type == IN_PORT) {
-                                    rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, INTERNAL_IPIN, pin_idx, e_side::TOP);
-                                    assigned_to_rr_node = true;
-                                } else if (pb_graph_pin->port->type == OUT_PORT || pb_graph_pin->port->type == INOUT_PORT) {
-                                    rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, INTERNAL_OPIN, pin_idx, e_side::TOP);
-                                    assigned_to_rr_node = true;
-                                }
-                            }
-                        }
-                        if (assigned_to_rr_node)
-                            ++(*index);
+                for(auto sub_tile : type->sub_tiles) {
+                    /* TODO: a better approach needs to be chosen! */
+                    auto eq_site = sub_tile.equivalent_sites[0];
+                    auto pb_graph_node = eq_site->pb_graph_head;
+                    auto pb_type = eq_site->pb_type;
+                    for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
+                        add_internal_nodes(rr_graph_builder, type, x, y, pb_graph_node, index);
+
                     }
                 }
+
 
 
 
@@ -1147,8 +1127,6 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                     auto class_type = type->class_inf[iclass].type;
                                     if (class_type == DRIVER) {
                                         rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, OPIN, ipin, side);
-                                        auto pb_graph_pin =
-                                        pb_graph_node->pins_vec[]
                                         assigned_to_rr_node = true;
                                     } else {
                                         VTR_ASSERT(class_type == RECEIVER);
@@ -1198,6 +1176,83 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                                             SIDES[0]);
             }
         }
+    }
+}
+
+
+
+static void reserve_internal_nodes(RRGraphBuilder& rr_graph_builder,
+                                   t_physical_tile_type_ptr type,
+                                   const int x,
+                                   const int y,
+                                   const t_pb_graph_node* pb_graph_node) {
+
+    if(!pb_graph_node)
+        return;
+    /* Reserve nodes for internal pins in lookup */
+    int num_in = 0;
+    int num_out = 0;
+
+    for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+        int x_tile = x + width_offset;
+        for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+            int y_tile = y + height_offset;
+            rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, INTERNAL_IPIN,
+                                                         pb_graph_node->total_num_input_pins, e_side::TOP);
+            rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, INTERNAL_OPIN,
+                                                         pb_graph_node->total_num_output_pins, e_side::TOP);
+        }
+    }
+
+    // #TODO: for debugging purpose - needs to be deleted
+    for(auto pin_pair : pb_graph_node->pins_vec) {
+        auto pin = pin_pair.first;
+        if (pin->port->type == PORTS::IN_PORT) {
+            num_in++;
+        } else if (pin->port->type == PORTS::OUT_PORT) {
+            num_out++;
+        }
+        else if(pin->port->type == PORTS::INOUT_PORT) {
+            std::cout << "Do something about inout port!" << std::endl;
+        }
+    }
+
+
+}
+
+static void add_internal_nodes(RRGraphBuilder& rr_graph_builder,
+                               t_physical_tile_type_ptr type,
+                               const int x,
+                               const int y,
+                               const t_pb_graph_node* pb_graph_node,
+                               int* rr_index) {
+
+    if(!pb_graph_node)
+        return;
+
+    for (auto pin_pair : pb_graph_node->pins_vec) {
+        auto pb_graph_pin = pin_pair.first;
+        bool assigned_to_rr_node = false;
+        //top-level block pins are added later
+        if(pb_graph_pin->is_root_block_pin()) {
+            continue;
+        }
+        for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+            int x_tile = x + width_offset;
+            for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                int y_tile = y + height_offset;
+                int pin_idx = pin_pair.second;
+                if (pb_graph_pin->port->type == IN_PORT) {
+                    rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x_tile, y_tile, INTERNAL_IPIN, pin_idx, e_side::TOP);
+                    assigned_to_rr_node = true;
+                } else if (pb_graph_pin->port->type == OUT_PORT || pb_graph_pin->port->type == INOUT_PORT) {
+                    rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x_tile, y_tile, INTERNAL_OPIN, pin_idx, e_side::TOP);
+                    assigned_to_rr_node = true;
+                }
+            }
+        }
+        if (assigned_to_rr_node)
+            ++(*rr_index);
     }
 }
 
