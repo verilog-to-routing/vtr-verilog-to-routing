@@ -1040,4 +1040,42 @@
       </interconnect>
     </pb_type>
 
+    <pb_type name="DSP">
+      <input name="datain" num_pins="110"/>
+      <input name="chainin" num_pins="64"/>
+      <input name="controlin" num_pins="17"/>
+      <input name="scanin" num_pins="27"/>
+      <clock name="clk" num_pins="3"/>
+      <output name="result" num_pins="74"/>
+      <output name="chainout" num_pins="64"/>
+      <output name="scanout" num_pins="27"/>
+      <output name="dftout" num_pins="1"/>
+      <!-- 
+           We model several different operation modes of the fourteennm_mac primitive:
+                independent multiplier 
+                multiplier adder sum 
+                18x19 multiplication summed with 36-bit input 
+                systolic fir mode
+                27x27 independent multiplier 
+                single 18x18 multiplier
+
+            As well as several operation modes of the fourteennm_fp_mac primitive:
+                multiplication
+                multiply accumulate
+                multiply add
+                adder or subtract
+                vector one mode
+                vector two mode
+
+           We also model 4 variations of each operation mode to capture timing differences based on whether the inputs and/or outputs are 
+           registered or combinational.
+
+           This is itself an approximation of the actual Stratix 10 architecture, which can support multiple levels of internal registers
+           inside each DSP block.  To model this would be extremely verbose and time consuming. The approximation mentioned above is a 
+           reasonable compromise, since it captures the key timing characteristics of the fourteennm_mac or fourteennm_fp_mac from an external perspective (which is
+           what most pack/place/route CAD tools would care about).  
+        -->
+
+    </pb_type>
+
   </complexblocklist>
