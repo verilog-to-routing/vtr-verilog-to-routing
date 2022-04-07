@@ -2907,6 +2907,193 @@
             </interconnect> 
         </mode>
 
+        <!-- fp adder or subtract mode -->
+        <mode name="sp_add.input_type{reg}.output_type{comb}">
+            <pb_type name="fp_mac_add" blif_model=".subckt fourteennm_fp_mac.opmode{sp_add}.input_type{reg}.output_type{comb}" num_pb="1">
+                <input name="chainin" num_pins="32"/>
+                <input name="clr" num_pins="2"/>
+                <clock name="clk" num_pins="3"/>
+                <input name="ax" num_pins="32"/>
+                <input name="ay" num_pins="32"/>
+                <input name="az" num_pins="32"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
+
+                <output name="chainout" num_pins="32"/>
+                <output name="resulta" num_pins="32"/>
+                <output name="adder_inexact" num_pins="1"/>
+                <output name="adder_invalid" num_pins="1"/>
+                <output name="adder_overflow" num_pins="1"/>
+                <output name="adder_underflow" num_pins="1"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_add.chainin"/>
+                <direct name="chain_out" input="fp_mac_add.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_add.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_add.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_add.ay"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_add.az"/>
+
+                <direct name="resulta_out" input="fp_mac_add.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_add.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_add.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_add.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_add.adder_underflow" output="DSP.result[35]" />
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_add.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_add.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_add.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_add.dfxmisrena"/>
+
+                <complete name="clk_in" input="DSP.clk" output="fp_mac_add.clk"/>
+            </interconnect> 
+        </mode>
+
+        <mode name="sp_add.input_type{comb}.output_type{reg}">
+            <pb_type name="fp_mac_add" blif_model=".subckt fourteennm_fp_mac.opmode{sp_add}.input_type{comb}.output_type{reg}" num_pb="1">
+                <input name="chainin" num_pins="32"/>
+                <input name="clr" num_pins="2"/>
+                <clock name="clk" num_pins="3"/>
+                <input name="ax" num_pins="32"/>
+                <input name="ay" num_pins="32"/>
+                <input name="az" num_pins="32"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
+
+                <output name="chainout" num_pins="32"/>
+                <output name="resulta" num_pins="32"/>
+                <output name="adder_inexact" num_pins="1"/>
+                <output name="adder_invalid" num_pins="1"/>
+                <output name="adder_overflow" num_pins="1"/>
+                <output name="adder_underflow" num_pins="1"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_add.chainin"/>
+                <direct name="chain_out" input="fp_mac_add.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_add.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_add.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_add.ay"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_add.az"/>
+
+                <direct name="resulta_out" input="fp_mac_add.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_add.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_add.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_add.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_add.adder_underflow" output="DSP.result[35]" />
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_add.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_add.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_add.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_add.dfxmisrena"/>
+
+                <complete name="clk_in" input="DSP.clk" output="fp_mac_add.clk"/>
+            </interconnect> 
+        </mode>
+
+        <mode name="sp_add.input_type{comb}.output_type{comb}">
+            <pb_type name="fp_mac_add" blif_model=".subckt fourteennm_fp_mac.opmode{sp_add}.input_type{comb}.output_type{comb}" num_pb="1">
+                <input name="chainin" num_pins="32"/>
+                <input name="clr" num_pins="2"/>
+                <input name="ax" num_pins="32"/>
+                <input name="ay" num_pins="32"/>
+                <input name="az" num_pins="32"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
+
+                <output name="chainout" num_pins="32"/>
+                <output name="resulta" num_pins="32"/>
+                <output name="adder_inexact" num_pins="1"/>
+                <output name="adder_invalid" num_pins="1"/>
+                <output name="adder_overflow" num_pins="1"/>
+                <output name="adder_underflow" num_pins="1"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_add.chainin"/>
+                <direct name="chain_out" input="fp_mac_add.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_add.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_add.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_add.ay"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_add.az"/>
+
+                <direct name="resulta_out" input="fp_mac_add.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_add.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_add.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_add.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_add.adder_underflow" output="DSP.result[35]" />
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_add.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_add.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_add.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_add.dfxmisrena"/>
+
+            </interconnect> 
+        </mode>
+        
+        <mode name="sp_add.input_type{reg}.output_type{reg}">
+            <pb_type name="fp_mac_add" blif_model=".subckt fourteennm_fp_mac.opmode{sp_add}.input_type{reg}.output_type{reg}" num_pb="1">
+                <input name="chainin" num_pins="32"/>
+                <input name="clr" num_pins="2"/>
+                <clock name="clk" num_pins="3"/>
+                <input name="ax" num_pins="32"/>
+                <input name="ay" num_pins="32"/>
+                <input name="az" num_pins="32"/>
+                <input name="ena" num_pins="3"/>
+                <input name="dfxlfsrena" num_pins="1"/>
+                <input name="dfxmisrena" num_pins="1"/>
+
+                <output name="chainout" num_pins="32"/>
+                <output name="resulta" num_pins="32"/>
+                <output name="adder_inexact" num_pins="1"/>
+                <output name="adder_invalid" num_pins="1"/>
+                <output name="adder_overflow" num_pins="1"/>
+                <output name="adder_underflow" num_pins="1"/>
+                <output name="dftout" num_pins="1"/>
+            </pb_type>
+
+            <interconnect>
+
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_add.chainin"/>
+                <direct name="chain_out" input="fp_mac_add.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_add.dftout" output="DSP.dftout"/>
+
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_add.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_add.ay"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_add.az"/>
+
+                <direct name="resulta_out" input="fp_mac_add.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_add.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_add.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_add.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_add.adder_underflow" output="DSP.result[35]" />
+
+                
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_add.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_add.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_add.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_add.dfxmisrena"/>
+
+                <complete name="clk_in" input="DSP.clk" output="fp_mac_add.clk"/>
+            </interconnect> 
+        </mode>
+
 
         
     </pb_type>
