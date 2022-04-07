@@ -1,4 +1,5 @@
   <models>
+    
     <!-- LAB Primitives -->
     <model name="fourteennm_lcell_comb">
       <input_ports>
@@ -47,8 +48,46 @@
       </output_ports>
     </model>
 
+    <!-- OCT Primitives -->
+    <model name="fourteennm_termination">
+      <input_ports>
+        <port name="rzqin" clock="clkusr"/> 
+        <port name="enserusr" clock="clkusr"/> 
+        <port name="nclrusr" clock="clkusr"/>
+        <port name="clkenusr" clock="clkusr"/>
+        <port name="clkusr" is_clock="1"/>
+        <port name="ser_data_dq_from_core" clock="clkusr"/>
+        <port name="ser_data_ca_from_core" clock="clkusr"/>
+        <port name="test_clkusr_en_n" clock="clkusr"/>
+        <port name="oct_scanin" clock="clkusr"/>
+      </input_ports>
+      <output_ports>
+        <port name="clkusr_dft_out" clock="clkusr"/>
+        <port name="oct_scanout" clock="clkusr"/>
+        <port name="compout_rdn" clock="clkusr"/>
+        <port name="compout_rup" clock="clkusr"/>
+        <port name="serdataout" clock="clkusr"/>
+        <port name="ser_data_dq_to_core" clock="clkusr"/>
+        <port name="ser_data_ca_to_core" clock="clkusr"/>
+      </output_ports>
+    </model>
 
-    <model blif_model="fourteennm_iopll">
+    <model name="fourteennm_termination_logic">
+      <input_ports>
+        <port name="s2pload" combinational_sink_ports="scan_out seriesterminationcontrol parallelterminationcontrol" />
+        <port name="serdata" combinational_sink_ports="scan_out seriesterminationcontrol parallelterminationcontrol" />
+        <port name="scan_in" combinational_sink_ports="scan_out seriesterminationcontrol parallelterminationcontrol" />
+        <port name="scan_shift_in" combinational_sink_ports="scan_out seriesterminationcontrol parallelterminationcontrol" />
+      </input_ports>
+      <output_ports>
+        <port name="scan_out" />
+        <port name="seriesterminationcontrol" />
+        <port name="parallelterminationcontrol" />
+      </output_ports>
+    </model>
+
+    <!-- PLL Primitive -->
+    <model name="fourteennm_iopll">
       <input_ports>
         <port name="clkena" clock="refclk"/>
         <port name="cnt_sel" clock="refclk"/> 
@@ -102,6 +141,7 @@
         <port name="iopll_out_sig2" clock="refclk"/>
       </output_ports>
     </model>
+
 
   </models>
   <tiles>
