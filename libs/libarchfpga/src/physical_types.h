@@ -1187,7 +1187,7 @@ class t_pb_graph_node {
     int* output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
 
-    int num_internal_pins_mode_num;
+    int max_input_pin_mode_num;
     int total_num_input_pins;
     int total_num_output_pins;
     std::unordered_map<t_pb_graph_pin*, int> pins_vec; /* {pin, pin_idx} */
