@@ -221,30 +221,102 @@
       </output_ports>
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_full}.input_type{reg}.output_type{reg}">
+    <model name="fourteennm_mac.opmode{m18×18_full}.input_type{reg}.output_type{comb}">
       <input_ports>
-        <port name="chainin"/>
-        <port name="clr"/>
-        <port name="clk"/>
-        <port name="ax"/>
-        <port name="ay"/>
-        <port name="az"/>
-        <port name="coefsela"/>
-        <port name="bx"/>
-        <port name="by"/>
-        <port name="bz"/>
-        <port name="coefselb"/>
-        <port name="scanin"/>
-        <port name="ena"/>
-        <port name="dfxlfsrena"/>
-        <port name="dfxmisrena"/>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" clock="clk" combinational_sink_ports="resulta"/>
+        <port name="ay" clock="clk" combinational_sink_ports="resulta"/>
+        <port name="az" clock="clk" combinational_sink_ports="resulta"/>
+        <port name="coefsela" clock="clk" combinational_sink_ports="resulta"/>
+        <port name="bx" clock="clk" combinational_sink_ports="resultb"/>
+        <port name="by" clock="clk" combinational_sink_ports="resultb"/>
+        <port name="bz" clock="clk" combinational_sink_ports="resultb"/>
+        <port name="coefselb" clock="clk" combinational_sink_ports="resultb"/>
+        <port name="scanin" clock="clk" combinational_sink_ports="resulta resultb"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
       </input_ports>
       <output_ports>
-        <port name="chainout"/>
+        <port name="resulta" />
+        <port name="resultb" />
+        <port name="scanout" clock="clk"/>
+        <port name="dftout" clock="clk"/>
+      </output_ports>    
+    </model>
+
+    <model name="fourteennm_mac.opmode{m18×18_full}.input_type{comb}.output_type{reg}">
+      <input_ports>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" combinational_sink_ports="resulta"/>
+        <port name="ay" combinational_sink_ports="resulta"/>
+        <port name="az" combinational_sink_ports="resulta"/>
+        <port name="coefsela" combinational_sink_ports="resulta"/>
+        <port name="bx" combinational_sink_ports="resultb"/>
+        <port name="by" combinational_sink_ports="resultb"/>
+        <port name="bz" combinational_sink_ports="resultb"/>
+        <port name="coefselb" combinational_sink_ports="resultb"/>
+        <port name="scanin" combinational_sink_ports="resulta resultb"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
+      </input_ports>
+      <output_ports>
+        <port name="resulta" clock="clk"/>
+        <port name="resultb" clock="clk"/>
+        <port name="scanout" clock="clk"/>
+        <port name="dftout" clock="clk"/>
+      </output_ports>    
+    </model>
+
+    <model name="fourteennm_mac.opmode{m18×18_full}.input_type{comb}.output_type{comb}">
+      <input_ports>
+        <port name="clr" combinational_sink_ports="resulta resultb"/>
+        <port name="ax" combinational_sink_ports="resulta dftout"/>
+        <port name="ay" combinational_sink_ports="resulta scanout dftout"/>
+        <port name="az" combinational_sink_ports="resulta dftout"/>
+        <port name="coefsela" combinational_sink_ports="resulta dftout"/>
+        <port name="bx" combinational_sink_ports="resultb dftout"/>
+        <port name="by" combinational_sink_ports="resultb scanout dftout"/>
+        <port name="bz" combinational_sink_ports="resultb dftout"/>
+        <port name="coefselb" combinational_sink_ports="resultb dftout"/>
+        <port name="scanin" combinational_sink_ports="resulta resultb scanout dftout"/>
+        <port name="ena" combinational_sink_ports="resulta resultb dftout"/>
+        <port name="dfxlfsrena" combinational_sink_ports="resulta resultb dftout"/>
+        <port name="dfxmisrena" combinational_sink_ports="resulta resultb dftout"/>
+      </input_ports>
+      <output_ports>
         <port name="resulta"/>
         <port name="resultb"/>
         <port name="scanout"/>
         <port name="dftout"/>
+      </output_ports>    
+    </model>
+
+    <model name="fourteennm_mac.opmode{m18×18_full}.input_type{reg}.output_type{reg}">
+      <input_ports>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" clock="clk" combinational_sink_ports="resulta"/>
+        <port name="ay" clock="clk" combinational_sink_ports="resulta"/>
+        <port name="az" clock="clk" combinational_sink_ports="resulta"/>
+        <port name="coefsela" clock="clk" combinational_sink_ports="resulta"/>
+        <port name="bx" clock="clk" combinational_sink_ports="resultb"/>
+        <port name="by" clock="clk" combinational_sink_ports="resultb"/>
+        <port name="bz" clock="clk" combinational_sink_ports="resultb"/>
+        <port name="coefselb" clock="clk" combinational_sink_ports="resultb"/>
+        <port name="scanin" clock="clk" combinational_sink_ports="resulta resultb"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
+      </input_ports>
+      <output_ports>
+        <port name="resulta" clock="clk"/>
+        <port name="resultb" clock="clk"/>
+        <port name="scanout" clock="clk"/>
+        <port name="dftout" clock="clk"/>
       </output_ports>    
     </model>
 
@@ -1087,7 +1159,6 @@
         <!-- independent multiplier mode -->
         <mode name="m18×18_full.input_type{reg}.output_type{comb}">
             <pb_type name="mac18×18_full" blif_model=".subckt fourteennm_mac.opmode{m18×18_full}.input_type{reg}.output_type{comb}" num_pb="1">
-                <input name="chainin" num_pins="64"/>
                 <input name="clr" num_pins="2"/>
                 <clock name="clk" num_pins="3"/>
                 <input name="ax" num_pins="18"/>
@@ -1103,7 +1174,6 @@
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
-                <output name="chainout" num_pins="64"/>
                 <output name="resulta" num_pins="37"/>
                 <output name="resultb" num_pins="37"/>
                 <output name="scanout" num_pins="19"/>
@@ -1112,8 +1182,6 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin" output="mac18×18_full.chainin"/>
-                <direct name="chain_out" input="mac18×18_full.chainout" output="DSP.chainout"/>
                 <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_full.scanin"/>
                 <direct name="scan_out" input="mac18×18_full.scanout" output="DSP.scanout[18:0]"/>
                 <direct name="dft_out" input="mac18×18_full.dftout" output="DSP.dftout"/>
@@ -1143,7 +1211,6 @@
 
         <mode name="m18×18_full.input_type{comb}.output_type{reg}">
             <pb_type name="mac18×18_full" blif_model=".subckt fourteennm_mac.opmode{m18×18_full}.input_type{comb}.output_type{reg}" num_pb="1">
-                <input name="chainin" num_pins="64"/>
                 <input name="clr" num_pins="2"/>
                 <clock name="clk" num_pins="3"/>
                 <input name="ax" num_pins="18"/>
@@ -1159,7 +1226,6 @@
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
-                <output name="chainout" num_pins="64"/>
                 <output name="resulta" num_pins="37"/>
                 <output name="resultb" num_pins="37"/>
                 <output name="scanout" num_pins="19"/>
@@ -1168,8 +1234,6 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin" output="mac18×18_full.chainin"/>
-                <direct name="chain_out" input="mac18×18_full.chainout" output="DSP.chainout"/>
                 <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_full.scanin"/>
                 <direct name="scan_out" input="mac18×18_full.scanout" output="DSP.scanout[18:0]"/>
                 <direct name="dft_out" input="mac18×18_full.dftout" output="DSP.dftout"/>
@@ -1199,7 +1263,6 @@
 
         <mode name="m18×18_full.input_type{comb}.output_type{comb}">
             <pb_type name="mac18×18_full" blif_model=".subckt fourteennm_mac.opmode{m18×18_full}.input_type{comb}.output_type{comb}" num_pb="1">
-                <input name="chainin" num_pins="64"/>
                 <input name="clr" num_pins="2"/>
                 <input name="ax" num_pins="18"/>
                 <input name="ay" num_pins="19"/>
@@ -1214,7 +1277,6 @@
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
-                <output name="chainout" num_pins="64"/>
                 <output name="resulta" num_pins="37"/>
                 <output name="resultb" num_pins="37"/>
                 <output name="scanout" num_pins="19"/>
@@ -1223,8 +1285,6 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin" output="mac18×18_full.chainin"/>
-                <direct name="chain_out" input="mac18×18_full.chainout" output="DSP.chainout"/>
                 <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_full.scanin"/>
                 <direct name="scan_out" input="mac18×18_full.scanout" output="DSP.scanout[18:0]"/>
                 <direct name="dft_out" input="mac18×18_full.dftout" output="DSP.dftout"/>
@@ -1252,7 +1312,6 @@
 
         <mode name="m18×18_full.input_type{reg}.output_type{reg}">
             <pb_type name="mac18×18_full" blif_model=".subckt fourteennm_mac.opmode{m18×18_full}.input_type{reg}.output_type{reg}" num_pb="1">
-                <input name="chainin" num_pins="64"/>
                 <input name="clr" num_pins="2"/>
                 <clock name="clk" num_pins="3"/>
                 <input name="ax" num_pins="18"/>
@@ -1268,7 +1327,6 @@
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
-                <output name="chainout" num_pins="64"/>
                 <output name="resulta" num_pins="37"/>
                 <output name="resultb" num_pins="37"/>
                 <output name="scanout" num_pins="19"/>
@@ -1277,8 +1335,6 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin" output="mac18×18_full.chainin"/>
-                <direct name="chain_out" input="mac18×18_full.chainout" output="DSP.chainout"/>
                 <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_full.scanin"/>
                 <direct name="scan_out" input="mac18×18_full.scanout" output="DSP.scanout[18:0]"/>
                 <direct name="dft_out" input="mac18×18_full.dftout" output="DSP.dftout"/>
