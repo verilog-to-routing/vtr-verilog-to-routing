@@ -194,7 +194,7 @@
         <port name="areset" clock="clk"/>
         <port name="sreset" clock="clk"/>
         <port name="ena" clock="clk"/>
-        <clock name="clk" is_clock="1"/>
+        <port name="clk" is_clock="1"/>
         <port name="clkhi" clock="clk"/>
         <port name="clklo" clock="clk"/>
         <port name="muxsel" clock="clk"/>
@@ -208,7 +208,7 @@
 
     <model name="fourteennm_ddio_in">
       <input_ports>
-        <clock name="clk" is_clock="1"/>
+        <port name="clk" is_clock="1"/>
         <port name="clkn" clock="clk"/>
         <port name="areset" clock="clk"/>
         <port name="sreset" clock="clk"/>
@@ -220,6 +220,34 @@
         <port name="regouthi" clock="clk"/>
       </output_ports>
     </model>
+
+    <model name="fourteennm_mac.opmode{m18×18_full}.input_type{reg}.output_type{reg}">
+      <input_ports>
+        <port name="chainin"/>
+        <port name="clr"/>
+        <port name="clk"/>
+        <port name="ax"/>
+        <port name="ay"/>
+        <port name="az"/>
+        <port name="coefsela"/>
+        <port name="bx"/>
+        <port name="by"/>
+        <port name="bz"/>
+        <port name="coefselb"/>
+        <port name="scanin"/>
+        <port name="ena"/>
+        <port name="dfxlfsrena"/>
+        <port name="dfxmisrena"/>
+      </input_ports>
+      <output_ports>
+        <port name="chainout"/>
+        <port name="resulta"/>
+        <port name="resultb"/>
+        <port name="scanout"/>
+        <port name="dftout"/>
+      </output_ports>    
+    </model>
+
   </models>
   <tiles>
     <tile name="LAB">
@@ -279,25 +307,6 @@
       </sub_tile>
     </tile>
 
-   <tile height="1" name="PLL">
-      <sub_tile name="PLL">
-        <equivalent_sites>
-          <site pb_type="PLL" pin_mapping="direct"/>
-        </equivalent_sites>
-        <input name="in_signal" num_pins="14"/>
-        <clock name="in_clock" num_pins="2"/>
-        <output name="out_clock" num_pins="10"/>
-        <output name="out_signal" num_pins="10"/>
-        <fc in_type="frac" in_val="0.055" out_type="frac" out_val="0.075"/>
-        <pinlocations pattern="custom">
-          <loc side="left">PLL.in_signal PLL.in_clock PLL.out_clock PLL.out_signal</loc>
-          <loc side="right">PLL.in_signal PLL.in_clock PLL.out_clock PLL.out_signal</loc>
-          <loc side="top">PLL.in_signal PLL.in_clock PLL.out_clock PLL.out_signal</loc>
-          <loc side="bottom">PLL.in_signal PLL.in_clock PLL.out_clock PLL.out_signal</loc>
-        </pinlocations>
-      </sub_tile>
-    </tile>
-
     <tile height="1" name="PLL">
       <sub_tile name="PLL">
         <equivalent_sites>
@@ -315,7 +324,6 @@
         </pinlocations>
       </sub_tile>
     </tile>
-
   </tiles>
   <complexblocklist>
 
@@ -2387,7 +2395,6 @@
            <pb_type name="fp_mac_mult" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult}.input_type{comb}.output_type{comb}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
                 <input name="ena" num_pins="3"/>
@@ -2424,7 +2431,6 @@
                 <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_mult.dfxlfsrena"/>
                 <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_mult.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="fp_mac_mult.clk"/>
 
             </interconnect> 
         </mode>
@@ -3539,7 +3545,7 @@
 
             </interconnect> 
         </mode>
-        
+
     </pb_type>
 
   </complexblocklist>
