@@ -1773,6 +1773,9 @@ struct t_lut_element {
     }
 };
 
+/* Maps Physical PIN name to a name of PAD BEL */
+typedef std::unordered_map<std::string, std::string> t_phys_grid_mapping;
+
 /*   Detailed routing architecture */
 struct t_arch {
     mutable vtr::string_internment strings;
@@ -1831,6 +1834,7 @@ struct t_arch {
     std::string ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+    t_phys_grid_mapping phys_grid_mapping; //Mapping from physical pins to grid PADs.
 
     t_clock_arch_spec clock_arch; // Clock related data types
 };

@@ -53,9 +53,9 @@ class Range {
     ///@brief Return an iterator to the end of the range (immutable)
     const T end() const { return end_; }
     ///@brief Return true if empty
-    bool empty() { return begin_ == end_; }
+    bool empty() const { return begin_ == end_; }
     ///@brief Return the range size
-    size_t size() { return std::distance(begin_, end_); }
+    size_t size() const { return std::distance(begin_, end_); }
 
   private:
     T begin_;

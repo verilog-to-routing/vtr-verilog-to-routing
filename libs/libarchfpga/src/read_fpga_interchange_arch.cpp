@@ -820,6 +820,8 @@ struct ArchReader {
                     pckg_pin.site_name = str(pin.getSite().getSite());
 
                 package_pins_.push_back(pckg_pin);
+
+                arch_->phys_grid_mapping[pckg_pin.name] = pckg_pin.bel_name;
             }
         }
     }

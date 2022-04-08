@@ -27,6 +27,8 @@
 #include "clock_modeling.h"
 #include "ShowSetup.h"
 
+#include "xdc_constraints.h"
+
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options,
                             t_packer_opts* PackerOpts);
@@ -97,6 +99,7 @@ void SetupVPR(const t_options* Options,
     FileNameOpts->CmosTechFile = Options->CmosTechFile;
     FileNameOpts->out_file_prefix = Options->out_file_prefix;
     FileNameOpts->read_vpr_constraints_file = Options->read_vpr_constraints_file;
+    FileNameOpts->read_xdc_constraints_file = Options->XDCFile;
     FileNameOpts->write_vpr_constraints_file = Options->write_vpr_constraints_file;
     FileNameOpts->write_block_usage = Options->write_block_usage;
 
@@ -109,6 +112,9 @@ void SetupVPR(const t_options* Options,
     SetupAnalysisOpts(*Options, *AnalysisOpts);
     SetupPowerOpts(*Options, PowerOpts, Arch);
 
+    if (Options->XDCFile.value() != "")
+        xdc_init();
+
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
         switch (Options->arch_format) {
@@ -118,6 +124,7 @@ void SetupVPR(const t_options* Options,
                             Arch,
                             device_ctx.physical_tile_types,
                             device_ctx.logical_block_types);
+                VTR_ASSERT_MSG(Options->XDCFile.value() != "", "XDC constraints are not supported for VTR format");
                 break;
             case e_arch_format::FPGAInterchange:
                 VTR_LOG("Use FPGA Interchange device\n");

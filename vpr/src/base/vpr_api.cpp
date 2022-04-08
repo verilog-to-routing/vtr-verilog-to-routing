@@ -69,6 +69,7 @@
 #include "cluster.h"
 #include "output_clustering.h"
 #include "vpr_constraints_reader.h"
+#include "xdc_constraints.h"
 #include "place_constraints.h"
 #include "place_util.h"
 
@@ -99,6 +100,8 @@
 //setting is persistent
 std::unique_ptr<tbb::task_scheduler_init> tbb_scheduler;
 #endif
+
+const char* _argv0;
 
 /* Local subroutines */
 static void free_complex_block_types();
@@ -168,6 +171,8 @@ void vpr_initialize_logging() {
  * 4. Sanity check all three
  */
 void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup* vpr_setup, t_arch* arch) {
+    _argv0 = argv[0];
+    
     vpr_initialize_logging();
 
     /* Print title message */
@@ -343,8 +348,19 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     //Initialize vpr floorplanning constraints
     auto& filename_opts = vpr_setup->FileNameOpts;
-    if (!filename_opts.read_vpr_constraints_file.empty()) {
+    if (!filename_opts.read_vpr_constraints_file.empty())
         load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
+
+    if (!filename_opts.read_xdc_constraints_file.empty()) {
+        try {
+            load_xdc_constraints_file(filename_opts.read_xdc_constraints_file.c_str(), *arch, atom_ctx.nlist);
+        } catch (const XDC_eErroneousXDC& e) {
+            VTR_LOG_ERROR("Error reading XDC: %s\n", std::string(e).c_str());
+            throw e;
+        } catch (const XDC_eException& e) {
+            VTR_LOG_ERROR("Error loading XDC: %s\n", std::string(e).c_str());
+            throw e;
+        }
     }
 
     fflush(stdout);
