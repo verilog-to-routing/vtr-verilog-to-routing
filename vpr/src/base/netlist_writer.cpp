@@ -2121,7 +2121,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 };
 
 /**
- * @brief A class which writes post-synthesis merged netlists (Verilog)
+ * @brief A class which writes post-implementation merged netlists (Verilog)
  *
  * It implements the NetlistVisitor interface used by NetlistWalker (see netlist_walker.h)
  */
@@ -2328,7 +2328,7 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
 
 ///@brief Main routing for this file. See netlist_writer.h for details.
 void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
-    std::string verilog_filename = basename + "_merged_post_synthesis.v";
+    std::string verilog_filename = basename + "_merged_post_implementation.v";
 
     VTR_LOG("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
 
