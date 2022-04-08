@@ -174,7 +174,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const int num_directs,
                                                                   const t_clb_to_clb_directs* clb_to_clb_directs,
                                                                   bool is_global_graph,
-                                                                  const enum e_clock_modeling clock_modeling);
+                                                                  const enum e_clock_modeling clock_modeling,
+                                                                  bool is_flat);
 
 static float pattern_fmod(float a, float b);
 static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
@@ -332,7 +333,8 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const t_direct_inf* directs,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
-                           int* Warnings);
+                           int* Warnings,
+                           bool is_flat = false);
 
 /******************* Subroutine definitions *******************************/
 
@@ -461,7 +463,8 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const t_direct_inf* directs,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
-                           int* Warnings) {
+                           int* Warnings,
+                           bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
     /* Reset warning flag */
@@ -618,7 +621,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     alloc_and_load_rr_node_indices(device_ctx.rr_graph_builder,
                                    max_chan_width, grid,
-                                   &num_rr_nodes, chan_details_x, chan_details_y);
+                                   &num_rr_nodes, chan_details_x, chan_details_y, is_flat);
 
     size_t expected_node_count = num_rr_nodes;
     if (clock_modeling == DEDICATED_NETWORK) {
@@ -752,7 +755,8 @@ static void build_rr_graph(const t_graph_type graph_type,
         &Fc_clipped,
         directs, num_directs, clb_to_clb_directs,
         is_global_graph,
-        clock_modeling);
+        clock_modeling,
+        is_flat);
 
     // Verify no incremental node allocation.
     if (rr_graph.num_nodes() > expected_node_count) {
@@ -1247,7 +1251,8 @@ static std::function<void(t_chan_width*)>   alloc_and_load_rr_graph(RRGraphBuild
                                                                   const int num_directs,
                                                                   const t_clb_to_clb_directs* clb_to_clb_directs,
                                                                   bool is_global_graph,
-                                                                  const enum e_clock_modeling clock_modeling) {
+                                                                  const enum e_clock_modeling clock_modeling,
+                                                                  bool is_flat) {
     //We take special care when creating RR graph edges (there are typically many more
     //edges than nodes in an RR graph).
     //
