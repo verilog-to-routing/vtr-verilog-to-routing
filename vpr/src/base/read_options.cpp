@@ -2532,9 +2532,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    analysis_grp.add_argument<bool, ParseOnOff>(args.Generate_Post_Synthesis_Merged_Netlist, "--gen_post_synthesis_merged_netlist")
+    analysis_grp.add_argument<bool, ParseOnOff>(args.Generate_Post_Implementation_Merged_Netlist, "--gen_post_implementation_merged_netlist")
         .help(
-            "Generates the post-synthesis netlist with merged top module ports"
+            "Generates the post-implementation netlist with merged top module ports"
             " Used for post-implementation simulation and verification")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);

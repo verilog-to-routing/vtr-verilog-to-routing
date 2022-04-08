@@ -1254,11 +1254,11 @@ Analysis Options
 
     **Default:** ``off``
 
-.. option:: --gen_post_synthesis_merged_netlist { on | off }
+.. option:: --gen_post_implementation_merged_netlist { on | off }
 
     This option is based on ``--gen_post_synthesis_netlist``.
-    The difference is that ``--gen_post_synthesis_merged_netlist`` generates only single verilog file with merged top module multi-bit ports of the implemented circuit.
-    The name of the file is ``<basename>_merged_post_synthesis.v``
+    The difference is that ``--gen_post_implementation_merged_netlist`` generates only single verilog file with merged top module multi-bit ports of the implemented circuit.
+    The name of the file is ``<basename>_merged_post_implementation.v``
 
     **Default:** ``off``
 
