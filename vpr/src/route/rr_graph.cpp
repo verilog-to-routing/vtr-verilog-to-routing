@@ -1669,7 +1669,7 @@ static void add_node_internal_edge(RRGraphBuilder& rr_graph_builder,
         return;
 
     const t_pb_type* pb_type = pb_graph_node->pb_type;
-    int mode_idx = pb_graph_node->num_internal_pins_mode_num;
+    int mode_idx = pb_graph_node->max_input_pin_mode_num;
 
     // add edges between the current node its immediate children
     add_internal_pins_parent_children(rr_graph_builder, pb_graph_node, i, j, rr_edges_to_create, delayless_switch);
