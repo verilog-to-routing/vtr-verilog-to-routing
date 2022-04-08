@@ -6,6 +6,8 @@
 #include "cluster_router.h"
 #include "cluster_placement.h"
 
+std::unordered_set<ClusterPinId> free_pins;
+
 ClusterBlockId atom_to_cluster(const AtomBlockId& atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
     return (atom_ctx.lookup.atom_clb(atom));
@@ -155,56 +157,46 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
 
 
 void fix_cluster_net_after_moving(const AtomBlockId& atom_id, 
+								  const ClusterBlockId& old_clb,
 								  const ClusterBlockId& new_clb) {
 
 	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 	auto& atom_ctx = g_vpr_ctx.mutable_atom();
 	
 	AtomNetId atom_net_id;
-	AtomBlockId atom_block_id;
-	ClusterBlockId clb_index;
-	ClusterNetId clb_net_id;
-	//ClusterPinId clb_pin_id;
-	bool previously_absorbed, add_clb_net;
+	ClusterPinId cluster_pin;
+	bool previously_absorbed, now_abosrbed;
 
 	for(auto& atom_pin : atom_ctx.nlist.block_pins(atom_id)) {
-		//clb_pin_id = netlist_pin_lookup.connected_clb_pin(atom_pin);
 		
 		atom_net_id = atom_ctx.nlist.pin_net(atom_pin);
-		clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
-		previously_absorbed = false;
-		add_clb_net = false;
+		check_net_absorbtion(atom_net_id, new_clb, old_clb, cluster_pin, previously_absorbed, now_abosrbed);
 
-		//Check whether the net is abosrbed or not
-		//if(clb_pin_id == ClusterPinId::INVALID())
-		//	previously_absorbed = true;
-
-		if(clb_net_id == ClusterNetId::INVALID())
-			previously_absorbed = true;
-
-		//iterate over net pins and check their cluster
-		for(auto& net_pin: atom_ctx.nlist.net_pins(atom_net_id)) {
-			atom_block_id = atom_ctx.nlist.pin_block(net_pin);
-			clb_index = atom_to_cluster(atom_block_id);
-
-			if(clb_index != new_clb)
-				add_clb_net = true;
-		}
-
-		//define new clusterNet
-		if(previously_absorbed && add_clb_net) {
-			clb_net_id = cluster_ctx.clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
-			atom_ctx.lookup.set_atom_clb_net(atom_net_id, clb_net_id);
-		}
-
-		//remove previous clusterNet
-		if(!previously_absorbed && !add_clb_net) {
-			//cluster_ctx.clb_nlist.remove_net(cluster_ctx.clb_nlist.pin_net(clb_pin_id));
-			cluster_ctx.clb_nlist.remove_net(clb_net_id);
-			atom_ctx.lookup.set_atom_clb_net(atom_net_id, ClusterNetId::INVALID());
+		if(!previously_absorbed) {
+			cluster_ctx.clb_nlist.remove_net_pin(atom_ctx.lookup.clb_net(atom_net_id), cluster_pin);
+			free_pins.insert(cluster_pin);
 		}
 	}
-	cluster_ctx.clb_nlist.verify();
+
+	for(auto& atom_pin : atom_ctx.)
+
+		if(!now_abosrbed)
+			create_cluster_net_for_atom_net(atom_net_id);
+
+		/*
+		if(previously_absorbed && now_abosrbed)
+			continue;
+		else if(previously_absorbed && !now_abosrbed) {
+			create_cluster_net_for_atom_net(atom_net_id);
+		} else if(!previously_absorbed && now_abosrbed) {
+			delete_cluster_net_of_atom_net(atom_net_id);
+		} else {
+			VTR_ASSERT(!previously_absorbed && !now_abosrbed);
+			continue;
+		}
+		*/
+	}
+	cluster_ctx.clb_nlist.compress();
 }
 
 
@@ -233,14 +225,12 @@ void fix_cluster_port_after_moving(const ClusterBlockId clb_index) {
 	}
 
 	num_old_ports = cluster_ctx.clb_nlist.block_ports(clb_index).size();
-	cluster_ctx.clb_nlist.verify();
-
-	//VTR_LOG("BBB: %zu, %zu\n", num_old_ports, pb_type->num_ports);
 }
 
+/*
 void fix_cluster_pin_after_moving(const ClusterBlockId clb_index) {
 	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-	auto& atom_ctx = g_vpr_ctx.atom();
+	auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
 	const t_pb* pb = cluster_ctx.clb_nlist.block_pb(clb_index);
 	t_pb_graph_pin* pb_graph_pin;
@@ -266,7 +256,9 @@ void fix_cluster_pin_after_moving(const ClusterBlockId clb_index) {
 				VTR_LOG("BBB\n");
 				atom_net_id = pb->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 				if(atom_net_id) {
-					clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
+					clb_net_id = cluster_ctx.clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
+					atom_ctx.lookup.set_atom_clb_net(atom_net_id, clb_net_id);
+					//clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
 					cluster_ctx.clb_nlist.create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, ipin);
 				}
 			}
@@ -285,10 +277,12 @@ void fix_cluster_pin_after_moving(const ClusterBlockId clb_index) {
 				VTR_LOG("BBBB\n");
 				atom_net_id = pb->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 				if (atom_net_id) {
-					clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
+					clb_net_id = cluster_ctx.clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
+					atom_ctx.lookup.set_atom_clb_net(atom_net_id, clb_net_id);
+					//clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
 					AtomPinId atom_net_driver = atom_ctx.nlist.net_driver(atom_net_id);
 					bool driver_is_constant = atom_ctx.nlist.pin_is_constant(atom_net_driver);
-					PortType temp_type  = cluster_ctx.clb_nlist.port_type(ClusterPortId(12));
+					//PortType temp_type  = cluster_ctx.clb_nlist.port_type(ClusterPortId(12));
 					cluster_ctx.clb_nlist.create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, ipin, driver_is_constant);
 					VTR_ASSERT(cluster_ctx.clb_nlist.net_is_constant(clb_net_id) == driver_is_constant);
 				}
@@ -306,7 +300,9 @@ void fix_cluster_pin_after_moving(const ClusterBlockId clb_index) {
 			if (pb->pb_route.count(pb_graph_pin->pin_count_in_cluster)) {
 				VTR_LOG("BBBBB\n");
 				if (atom_net_id) {
-					clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
+					clb_net_id = cluster_ctx.clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
+					atom_ctx.lookup.set_atom_clb_net(atom_net_id, clb_net_id);
+					//clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
 					cluster_ctx.clb_nlist.create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, ipin);
 				}
 			}
@@ -315,4 +311,125 @@ void fix_cluster_pin_after_moving(const ClusterBlockId clb_index) {
 
 	}
 	cluster_ctx.clb_nlist.verify();
+}
+*/
+
+void check_net_absorbtion(const AtomNetId atom_net_id,
+								const ClusterBlockId new_clb,
+								const ClusterBlockId old_clb,
+								ClusterPinId& cluster_pin_id,
+								bool& previously_absorbed,
+								bool& now_abosrbed) {
+
+	auto& atom_ctx = g_vpr_ctx.atom();
+
+	AtomBlockId atom_block_id;
+	ClusterBlockId clb_index;
+
+	ClusterNetId clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
+
+	if(clb_net_id == ClusterNetId::INVALID())
+		previously_absorbed = true;
+	else {
+		previously_absorbed = false;
+		for(auto& cluster_pin : cluster_ctx.clb_nlist.net_pins(clb_net_id)) {
+			if(cluster_ctx.clb_nlist.pin_block(cluster_pin) == old_clb) {
+				cluster_pin_id = cluster_pin;
+				break;
+			}
+		}
+	}
+
+	//iterate over net pins and check their cluster
+	now_abosrbed = true;
+	for(auto& net_pin: atom_ctx.nlist.net_pins(atom_net_id)) {
+		atom_block_id = atom_ctx.nlist.pin_block(net_pin);
+		clb_index = atom_ctx.lookup.atom_clb(atom_block_id);
+
+		if(clb_index != new_clb) {
+			now_abosrbed = false;
+			break;
+		}
+	}
+}
+
+void create_cluster_net_for_atom_net(const AtomNetId& atom_net_id) {
+	auto& atom_ctx = g_vpr_ctx.mutable_atom();
+	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+	AtomBlockId atom_block_id;
+
+	ClusterNetId clb_net_id = cluster_ctx.clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
+	atom_ctx.lookup.set_atom_clb_net(atom_net_id, clb_net_id);
+	//iterating over the different pins of the atom net
+	for(auto& atom_pin : atom_ctx.nlist.net_pins(atom_net_id)) {
+		create_cluster_pin_for_atom_pin(atom_pin);
+	}
+}
+
+
+void create_cluster_pin_for_atom_pin(const AtomPinId& atom_pin_id) {
+	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+	auto& atom_ctx = g_vpr_ctx.atom();
+
+	AtomNetId atom_net_id = atom_ctx.nlist.pin_net(atom_pin_id);
+	ClusterNetId clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
+	AtomBlockId atom_block_id = atom_ctx.nlist.pin_block(atom_pin_id);
+	ClusterBlockId cluster_block_id = atom_ctx.lookup.atom_clb(atom_block_id);
+	const t_pb* pb = cluster_ctx.clb_nlist.block_pb(cluster_block_id);
+	t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(cluster_block_id);
+
+	int num_input_ports = pb->pb_graph_node->num_input_ports;
+	int num_output_ports = pb->pb_graph_node->num_output_ports;
+	int num_clock_ports = pb->pb_graph_node->num_clock_ports;
+
+	int j,k;
+	t_pb_graph_pin* pb_graph_pin;
+
+	if(atom_ctx.nlist.pin_type(atom_pin_id) == PinType::SINK) {
+		//iterate over input pins
+		for (j = 0; j < num_input_ports; j++) {
+			ClusterPortId input_port_id = cluster_ctx.clb_nlist.find_port(cluster_block_id, block_type->pb_type->ports[j].name);
+			for (k = 0; k < pb->pb_graph_node->num_input_pins[j]; k++) {
+				pb_graph_pin = &pb->pb_graph_node->input_pins[j][k];
+				if (pb->pb_route.count(pb_graph_pin->pin_count_in_cluster) && atom_net_id == pb->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
+					cluster_ctx.clb_nlist.create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, pb_graph_pin->pin_count_in_cluster);
+					return;
+				}
+			}
+		}
+
+		for (j = 0; j < num_clock_ports; j++) {
+			ClusterPortId clock_port_id = cluster_ctx.clb_nlist.find_port(cluster_block_id, block_type->pb_type->ports[num_input_ports+num_output_ports+j].name);
+			for (k = 0; k < pb->pb_graph_node->num_clock_pins[j]; k++) {
+				pb_graph_pin = &pb->pb_graph_node->clock_pins[j][k];
+				if (pb->pb_route.count(pb_graph_pin->pin_count_in_cluster) && atom_net_id == pb->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
+					cluster_ctx.clb_nlist.create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, pb_graph_pin->pin_count_in_cluster);
+					return;
+				}
+			}
+		}
+
+	} else {
+		VTR_ASSERT(atom_ctx.nlist.pin_type(atom_pin_id) == PinType::DRIVER);
+		for (j = 0; j < num_output_ports; j++) {
+			ClusterPortId output_port_id = cluster_ctx.clb_nlist.find_port(cluster_block_id, block_type->pb_type->ports[num_input_ports+j].name);
+			for (k = 0; k < pb->pb_graph_node->num_output_pins[j]; k++) {
+				pb_graph_pin = &pb->pb_graph_node->output_pins[j][k];
+				if (pb->pb_route.count(pb_graph_pin->pin_count_in_cluster) && atom_net_id == pb->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
+					clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
+					AtomPinId atom_net_driver = atom_ctx.nlist.net_driver(atom_net_id);
+					bool driver_is_constant = atom_ctx.nlist.pin_is_constant(atom_net_driver);
+					cluster_ctx.clb_nlist.create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, pb_graph_pin->pin_count_in_cluster, driver_is_constant);
+					VTR_ASSERT(cluster_ctx.clb_nlist.net_is_constant(clb_net_id) == driver_is_constant);
+					return;
+				}
+			}
+		}
+	}
+	VTR_ASSERT(false);
+}
+
+void delete_cluster_net_of_atom_net(const AtomNetId& ) {
+	return;
 }

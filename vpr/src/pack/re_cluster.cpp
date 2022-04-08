@@ -54,9 +54,7 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 		VTR_LOG("Atom: %zu move failed. Can't start a new cluster of the same type and mode\n", atom_id);
 	else {
 		fix_cluster_port_after_moving(new_clb);
-		fix_cluster_net_after_moving(atom_id, new_clb);
-		fix_cluster_pin_after_moving(new_clb);
-		
+		fix_cluster_net_after_moving(atom_id, old_clb, new_clb);		
 	}
 
 	return(is_created);

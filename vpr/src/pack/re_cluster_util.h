@@ -61,11 +61,26 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                        PartitionRegion& temp_cluster_pr);
 
-void fix_cluster_net_after_moving(const AtomBlockId& atom_id, 
+void fix_cluster_net_after_moving(const AtomBlockId& atom_id,
+                                  const ClusterBlockId& old_clb,
                                   const ClusterBlockId& new_clb);
 
 void fix_cluster_port_after_moving(const ClusterBlockId clb_index);
 
 void fix_cluster_pin_after_moving(const ClusterBlockId clb_index);
+
+
+
+void check_net_absorbtion(const AtomNetId atom_net_id,
+                                const ClusterBlockId new_clb,
+                                const ClusterBlockId old_clb,
+                                ClusterPinId& cluster_pin_id,
+                                bool& previously_absorbed,
+                                bool& now_abosrbed)
+
+void create_cluster_net_for_atom_net(const AtomNetId& atom_net_id);
+void delete_cluster_net_of_atom_net(const AtomNetId& );
+
+void create_cluster_pin_for_atom_pin(const AtomPinId& atom_pin_id);
 
 #endif
