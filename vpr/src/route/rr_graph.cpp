@@ -1313,16 +1313,18 @@ static std::function<void(t_chan_width*)>   alloc_and_load_rr_graph(RRGraphBuild
         }
     }
 
-    /* Connect intra-block pins */
-    for (size_t i = 0; i < grid.width(); ++i) {
-        for (size_t j = 0; j < grid.height(); ++j) {
-            build_internal_edges(rr_graph_builder, i, j, rr_edges_to_create,
-                                delayless_switch, grid);
+    if(is_flat) {
+        /* Connect intra-block pins */
+        for (size_t i = 0; i < grid.width(); ++i) {
+            for (size_t j = 0; j < grid.height(); ++j) {
+                build_internal_edges(rr_graph_builder, i, j, rr_edges_to_create,
+                                     delayless_switch, grid);
 
-            //Create the actual edges inside the block
-            uniquify_edges(rr_edges_to_create);
-            alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-            rr_edges_to_create.clear();
+                //Create the actual edges inside the block
+                uniquify_edges(rr_edges_to_create);
+                alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+                rr_edges_to_create.clear();
+            }
         }
     }
 
@@ -1645,7 +1647,6 @@ static void build_internal_edges(RRGraphBuilder& rr_graph_builder,
         /* TODO: a better approach needs to be chosen - instead of get only the first equivalent site! */
         auto eq_site = get_eq_site_max_in_pin(sub_tile.equivalent_sites);
         auto pb_graph_node = eq_site->pb_graph_head;
-        auto pb_type = eq_site->pb_type;
         for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
             /* TODO: For now delayless_switch is used. Which is NOT correct! */
             add_node_internal_edge(rr_graph_builder, pb_graph_node, i, j, rr_edges_to_create, delayless_switch);
@@ -1740,24 +1741,24 @@ static void add_internal_edge_pin(RRGraphBuilder& rr_graph_builder,
     RRNodeId node_id;
     std::vector<t_pb_graph_pin*> connected_pins;
 
-    auto get_rr_node_id_pin = [&] (t_rr_type node_type, int node_ptc)
+    auto get_rr_node_id_pin = [&rr_graph_builder, &i, &j] (t_rr_type type, int ptc)
     {
-        RRNodeId node_id;
+        RRNodeId id;
         for(e_side side : SIDES) {
-            node_id = rr_graph_builder.node_lookup().find_node(i, j, node_type, node_ptc, side);
-            if(!node_id) continue;
-            return node_id;
+            id = rr_graph_builder.node_lookup().find_node(i, j, type, ptc, side);
+            if(!id) continue;
+            return id;
         }
-        if(node_id == RRNodeId::INVALID()) {
+        if(id == RRNodeId::INVALID()) {
             return RRNodeId::INVALID();
         }
         return RRNodeId::INVALID();
 
     };
 
-    auto get_pin_spec = [&] (t_pb_graph_pin* pin)
+    auto get_pin_spec = [&get_rr_node_id_pin] (t_pb_graph_pin* pb_graph_pin)
     {
-        const t_pb_graph_node* node = pin->parent_node;
+        const t_pb_graph_node* node = pb_graph_pin->parent_node;
         t_rr_type node_type = NUM_RR_TYPES;
         int node_ptc;
         RRNodeId node_id = RRNodeId::INVALID();
@@ -1766,16 +1767,16 @@ static void add_internal_edge_pin(RRGraphBuilder& rr_graph_builder,
 
         // get node type
         // #TODO: What about INOUT ports?
-        if(pin->port->type == PORTS::IN_PORT)
+        if(pb_graph_pin->port->type == PORTS::IN_PORT)
             node_type = INTERNAL_IPIN;
-        else if(pin->port->type == PORTS::OUT_PORT || pin->port->type == PORTS::INOUT_PORT)
+        else if(pb_graph_pin->port->type == PORTS::OUT_PORT || pb_graph_pin->port->type == PORTS::INOUT_PORT)
             node_type = INTERNAL_OPIN;
         else
             return invalid_res;
 
         // get node ptc
         try {
-            node_ptc = node->pins_vec.at(pin);
+            node_ptc = node->pins_vec.at(pb_graph_pin);
         }
         catch (const std::out_of_range& oor) {
             std::cerr << "Out of Range error: " << oor.what() << '\n';
