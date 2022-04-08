@@ -211,7 +211,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     pb_graph_node->num_output_ports = 0;
     pb_graph_node->total_num_input_pins = 0;
     pb_graph_node->total_num_output_pins = 0;
-    pb_graph_node->num_internal_pins_mode_num = -1;
+    pb_graph_node->max_input_pin_mode_num = -1;
     pb_graph_node->num_clock_ports = 0;
 
     /* Generate ports for pb graph node */
@@ -353,7 +353,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     pb_graph_node->pins_vec = get_node_all_pins(pb_graph_node, max_pins_mode_num);
     pb_graph_node->total_num_input_pins = max_input_num_pins;
     pb_graph_node->total_num_output_pins = max_output_num_pins;
-    pb_graph_node->num_internal_pins_mode_num = max_pins_mode_num;
+    pb_graph_node->max_input_pin_mode_num = max_pins_mode_num;
 
 }
 
@@ -365,7 +365,7 @@ static std::unordered_map<t_pb_graph_pin*, int> get_node_all_pins(const t_pb_gra
     std::unordered_map<t_pb_graph_pin*, int> pb_graph_pin;
 
     // if pins_vec is already initialized
-    if(pb_graph_node->num_internal_pins_mode_num != -1) {
+    if(pb_graph_node->max_input_pin_mode_num != -1) {
         return pb_graph_node->pins_vec;
 
     }
@@ -414,9 +414,9 @@ static std::unordered_map<t_pb_graph_pin*, int> get_node_all_pins(const t_pb_gra
 static std::tuple<int, int, int> get_max_num_internal_pin_logical_block(const t_pb_graph_node* pb_graph_node) {
 
     //This function is a recursive function. This conditional statement is used to avoid computing what has already been computed(dynamic programming)
-    if(pb_graph_node->num_internal_pins_mode_num != -1) {
+    if(pb_graph_node->max_input_pin_mode_num != -1) {
         return std::tuple<int, int, int> (pb_graph_node->total_num_input_pins, pb_graph_node->total_num_output_pins,
-                          pb_graph_node->num_internal_pins_mode_num);
+                          pb_graph_node->max_input_pin_mode_num);
     }
 
     int max_num_input_pins = 0;
