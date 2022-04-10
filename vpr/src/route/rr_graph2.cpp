@@ -1134,7 +1134,7 @@ static void add_all_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
                                    const std::vector<e_side>& wanted_sides) {
 
     auto type = grid[x][y].type;
-    auto get_eq_site_max_in_pin = [&] (const std::vector<t_logical_block_type_ptr>& eq_sites)
+    auto get_eq_site_max_input_pin = [&] (const std::vector<t_logical_block_type_ptr>& eq_sites)
     {
         int max_num_in_pin = -1;
         t_logical_block_type_ptr res;
@@ -1150,7 +1150,7 @@ static void add_all_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
 
     for(auto sub_tile : type->sub_tiles) {
         /* TODO: a better approach needs to be chosen - instead of get only the equivalent site with highest number of inputs! */
-        auto eq_site = get_eq_site_max_in_pin(sub_tile.equivalent_sites);
+        auto eq_site = get_eq_site_max_input_pin(sub_tile.equivalent_sites);
         auto pb_graph_node = eq_site->pb_graph_head;
         auto pb_type = eq_site->pb_type;
         for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
@@ -1321,7 +1321,7 @@ static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
     int added_src_num = 0;
     int added_sink_num = 0;
 
-    auto get_eq_site_max_in_pin = [&] (const std::vector<t_logical_block_type_ptr>& eq_sites)
+    auto get_eq_site_max_input_pin = [] (const std::vector<t_logical_block_type_ptr>& eq_sites)
     {
         int max_num_in_pin = -1;
         t_logical_block_type_ptr res;
@@ -1337,7 +1337,7 @@ static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
 
     for(auto sub_tile : type->sub_tiles) {
         /* TODO: a better approach needs to be chosen - instead of get only the equivalent site with highest number of inputs! */
-        auto eq_site = get_eq_site_max_in_pin(sub_tile.equivalent_sites);
+        auto eq_site = get_eq_site_max_input_pin(sub_tile.equivalent_sites);
         auto pb_graph_node = eq_site->pb_graph_head;
         for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
             auto primitives = get_primitives(pb_graph_node);

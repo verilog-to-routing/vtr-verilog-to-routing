@@ -619,6 +619,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* Alloc node lookups, count nodes, alloc rr nodes */
     int num_rr_nodes = 0;
 
+    is_flat = true;
     alloc_and_load_rr_node_indices(device_ctx.rr_graph_builder,
                                    max_chan_width, grid,
                                    &num_rr_nodes, chan_details_x, chan_details_y, is_flat);
