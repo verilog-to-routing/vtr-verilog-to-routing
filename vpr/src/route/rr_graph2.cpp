@@ -55,17 +55,19 @@ static void add_top_level_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
                                          const std::vector<e_side>& wanted_sides);
 
 static void reserve_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
+                                       t_physical_tile_type_ptr type,
+                                       const int x,
+                                       const int y,
+                                       const t_pb_graph_node* pb_graph_node,
+                                       const std::vector<e_side>& wanted_sides);
+
+static void add_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
                                    t_physical_tile_type_ptr type,
                                    const int x,
                                    const int y,
-                                   const t_pb_graph_node* pb_graph_node);
-
-static void add_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
-                               t_physical_tile_type_ptr type,
-                               const int x,
-                               const int y,
-                               const t_pb_graph_node* pb_graph_node,
-                               int* rr_index);
+                                   const t_pb_graph_node* pb_graph_node,
+                                   int* rr_index,
+                                   const std::vector<e_side>& wanted_sides);
 
 static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
                                    const DeviceGrid& grid,
@@ -1096,7 +1098,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                     add_all_tile_pins_lookup (rr_graph_builder, grid, x, y, index, wanted_sides);
                 }
                 else {
-                    add_top_level_tile_pins_lookup(rr_graph_builder, grid, x, y, index, wanted_sides);
+                    add_top_level_tile_pins_lookup (rr_graph_builder, grid, x, y, index, wanted_sides);
 
                 }
             }
@@ -1134,39 +1136,26 @@ static void add_all_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
                                    const std::vector<e_side>& wanted_sides) {
 
     auto type = grid[x][y].type;
-    auto get_eq_site_max_input_pin = [&] (const std::vector<t_logical_block_type_ptr>& eq_sites)
-    {
-        int max_num_in_pin = -1;
-        t_logical_block_type_ptr res;
-        for(auto site : eq_sites) {
-            int tmp_num_in_pins = site->pb_type->num_input_pins;
-            if(max_num_in_pin < tmp_num_in_pins) {
-                max_num_in_pin = tmp_num_in_pins;
-                res = site;
-            }
-        }
-        return res;
-    };
 
-    for(auto sub_tile : type->sub_tiles) {
-        /* TODO: a better approach needs to be chosen - instead of get only the equivalent site with highest number of inputs! */
-        auto eq_site = get_eq_site_max_input_pin(sub_tile.equivalent_sites);
-        auto pb_graph_node = eq_site->pb_graph_head;
-        auto pb_type = eq_site->pb_type;
-        for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
-            reserve_all_pb_pins_lookup(rr_graph_builder, type, x, y, pb_graph_node);
+    for(const t_sub_tile& sub_tile : type->sub_tiles) {
+        for(auto eq_site : sub_tile.equivalent_sites) {
+            auto pb_graph_node = eq_site->pb_graph_head;
+            for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
+                reserve_all_pb_pins_lookup(rr_graph_builder, type, x, y, pb_graph_node, wanted_sides);
+            }
+
         }
     }
 
     //Assign indices for internal-pins
-    for(auto sub_tile : type->sub_tiles) {
-        /* TODO: a better approach needs to be chosen! */
-        auto eq_site = sub_tile.equivalent_sites[0];
-        auto pb_graph_node = eq_site->pb_graph_head;
-        auto pb_type = eq_site->pb_type;
-        for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
-            add_all_pb_pins_lookup(rr_graph_builder, type, x, y, pb_graph_node, index);
+    for(const t_sub_tile& sub_tile : type->sub_tiles) {
+        for(auto eq_site : sub_tile.equivalent_sites) {
+            auto pb_graph_node = eq_site->pb_graph_head;
+            auto pb_type = eq_site->pb_type;
+            for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
+                add_all_pb_pins_lookup(rr_graph_builder, type, x, y, pb_graph_node, index, wanted_sides);
 
+            }
         }
     }
 }
@@ -1237,10 +1226,11 @@ static void add_top_level_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
 
 
 static void reserve_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
-                                   t_physical_tile_type_ptr type,
-                                   const int x,
-                                   const int y,
-                                   const t_pb_graph_node* pb_graph_node) {
+                                       t_physical_tile_type_ptr type,
+                                       const int x,
+                                       const int y,
+                                       const t_pb_graph_node* pb_graph_node,
+                                       const std::vector<e_side>& wanted_sides) {
 
     if(!pb_graph_node)
         return;
@@ -1248,14 +1238,16 @@ static void reserve_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
     int num_in = 0;
     int num_out = 0;
 
-    for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-        int x_tile = x + width_offset;
-        for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-            int y_tile = y + height_offset;
-            rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN,
-                                                         pb_graph_node->total_num_input_pins, e_side::TOP);
-            rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN,
-                                                         pb_graph_node->total_num_output_pins, e_side::TOP);
+    for(auto side : wanted_sides) {
+        for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+            int x_tile = x + width_offset;
+            for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                int y_tile = y + height_offset;
+                rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN,
+                                                             pb_graph_node->total_num_input_pins, side);
+                rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN,
+                                                             pb_graph_node->total_num_output_pins, side);
+            }
         }
     }
 
@@ -1276,15 +1268,18 @@ static void reserve_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
 }
 
 static void add_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
-                               t_physical_tile_type_ptr type,
-                               const int x,
-                               const int y,
-                               const t_pb_graph_node* pb_graph_node,
-                               int* rr_index) {
+                                   t_physical_tile_type_ptr type,
+                                   const int x,
+                                   const int y,
+                                   const t_pb_graph_node* pb_graph_node,
+                                   int* rr_index,
+                                   const std::vector<e_side>& wanted_sides) {
+    //#TODO: What to do with root-block pins? the probem is that type->pinloc needs to be checked. There is not any mapping between physical pin and pb_graph_pin!
 
     if(!pb_graph_node)
         return;
 
+    // Add all pins except for root-block pins
     for (auto pin_pair : pb_graph_node->pins_vec) {
         auto pb_graph_pin = pin_pair.first;
         bool assigned_to_rr_node = false;
@@ -1292,23 +1287,33 @@ static void add_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
         if(pb_graph_pin->is_root_block_pin()) {
             continue;
         }
-        for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-            int x_tile = x + width_offset;
-            for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                int y_tile = y + height_offset;
-                int pin_idx = pin_pair.second;
-                if (pb_graph_pin->port->type == IN_PORT) {
-                    rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x_tile, y_tile, IPIN, pin_idx, e_side::TOP);
-                    assigned_to_rr_node = true;
-                } else if (pb_graph_pin->port->type == OUT_PORT || pb_graph_pin->port->type == INOUT_PORT) {
-                    rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x_tile, y_tile, OPIN, pin_idx, e_side::TOP);
-                    assigned_to_rr_node = true;
+        std::vector<e_side> sides;
+        if(pb_graph_pin->is_root_block_pin())
+            sides = wanted_sides;
+        else
+            sides.push_back(e_side::TOP);
+
+        for(auto side : sides) {
+            for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+                int x_tile = x + width_offset;
+                for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                    int y_tile = y + height_offset;
+                    int pin_idx = pin_pair.second;
+                    if (pb_graph_pin->port->type == IN_PORT) {
+                        rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x_tile, y_tile, IPIN, pin_idx, side);
+                        assigned_to_rr_node = true;
+                    } else if (pb_graph_pin->port->type == OUT_PORT || pb_graph_pin->port->type == INOUT_PORT) {
+                        rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x_tile, y_tile, OPIN, pin_idx, side);
+                        assigned_to_rr_node = true;
+                    }
                 }
             }
         }
         if (assigned_to_rr_node)
             ++(*rr_index);
     }
+
+
 }
 
 static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
@@ -1320,20 +1325,6 @@ static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
     auto type = grid[x][y].type;
     int added_src_num = 0;
     int added_sink_num = 0;
-
-    auto get_eq_site_max_input_pin = [] (const std::vector<t_logical_block_type_ptr>& eq_sites)
-    {
-        int max_num_in_pin = -1;
-        t_logical_block_type_ptr res;
-        for(auto site : eq_sites) {
-            int tmp_num_in_pins = site->pb_type->num_input_pins;
-            if(max_num_in_pin < tmp_num_in_pins) {
-                max_num_in_pin = tmp_num_in_pins;
-                res = site;
-            }
-        }
-        return res;
-    };
 
     for(auto sub_tile : type->sub_tiles) {
         for(auto eq_site : sub_tile.equivalent_sites) {
@@ -1353,6 +1344,7 @@ static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
                                 rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, added_sink_num);
                                 added_sink_num++;
                             }
+                            // #TODO: If type is not in_port we would assing SOURCE node to it - is it okey?
                             else {
                                 rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, added_src_num);
                                 added_src_num++;
