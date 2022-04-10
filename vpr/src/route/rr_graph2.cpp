@@ -1336,33 +1336,19 @@ static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
     };
 
     for(auto sub_tile : type->sub_tiles) {
-        /* TODO: a better approach needs to be chosen - instead of get only the equivalent site with highest number of inputs! */
-        auto eq_site = get_eq_site_max_input_pin(sub_tile.equivalent_sites);
-        auto pb_graph_node = eq_site->pb_graph_head;
-        for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
-            auto primitives = get_primitives(pb_graph_node);
+        for(auto eq_site : sub_tile.equivalent_sites) {
+            auto pb_graph_node = eq_site->pb_graph_head;
+            for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
+                auto primitives = get_primitives(pb_graph_node);
 
-            for(auto primitive : primitives) {
-                auto primitive_pb_type = primitive->pb_type;
-                auto ports = primitive_pb_type->ports;
-                int num_ports = primitive_pb_type->num_ports;
+                for(auto primitive : primitives) {
+                    auto primitive_pb_type = primitive->pb_type;
+                    auto ports = primitive_pb_type->ports;
+                    int num_ports = primitive_pb_type->num_ports;
 
-                for(int port_idx = 0; port_idx < num_ports; port_idx++) {
-                    auto port = ports[port_idx];
-                    if(port.equivalent != PortEquivalence::NONE) {
-                        if (port.type == PORTS::IN_PORT) {
-                            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, added_sink_num);
-                            added_sink_num++;
-                        }
-                        else {
-                            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, added_src_num);
-                            added_src_num++;
-                        }
-                        ++(*index);
-
-                    }
-                    else {
-                        for(int pin_idx = 0; pin_idx < port.num_pins; pin_idx++) {
+                    for(int port_idx = 0; port_idx < num_ports; port_idx++) {
+                        auto port = ports[port_idx];
+                        if(port.equivalent != PortEquivalence::NONE) {
                             if (port.type == PORTS::IN_PORT) {
                                 rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, added_sink_num);
                                 added_sink_num++;
@@ -1372,12 +1358,28 @@ static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
                                 added_src_num++;
                             }
                             ++(*index);
+
+                        }
+                        else {
+                            for(int pin_idx = 0; pin_idx < port.num_pins; pin_idx++) {
+                                if (port.type == PORTS::IN_PORT) {
+                                    rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, added_sink_num);
+                                    added_sink_num++;
+                                }
+                                else {
+                                    rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, added_src_num);
+                                    added_src_num++;
+                                }
+                                ++(*index);
+                            }
                         }
                     }
                 }
+
             }
 
         }
+
     }
 
 
@@ -1391,16 +1393,17 @@ static std::vector<const t_pb_graph_node*> get_primitives(const t_pb_graph_node*
     }
 
     auto pb_type = pb_graph_node->pb_type;
-    int mode_idx = pb_graph_node->max_input_pin_mode_num;
-    for(int pb_type_idx = 0; pb_type_idx < (pb_type->modes[mode_idx]).num_pb_type_children; pb_type_idx++) {
-        int num_pb = pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb;
-        for(int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-            const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
-            auto tmp_primitives = get_primitives(child_pb_graph_node);
-            primitives.insert(std::end(primitives), std::begin(tmp_primitives), std::end(tmp_primitives));
+    for(int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++) {
+        for(int pb_type_idx = 0; pb_type_idx < (pb_type->modes[mode_idx]).num_pb_type_children; pb_type_idx++) {
+            int num_pb = pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb;
+            for(int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
+                const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
+                auto tmp_primitives = get_primitives(child_pb_graph_node);
+                primitives.insert(std::end(primitives), std::begin(tmp_primitives), std::end(tmp_primitives));
+
+            }
 
         }
-
     }
     return primitives;
 }
