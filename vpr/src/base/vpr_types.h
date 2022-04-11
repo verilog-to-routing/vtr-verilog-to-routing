@@ -1256,6 +1256,7 @@ struct t_analysis_opts {
     e_stage_action doAnalysis;
 
     bool gen_post_synthesis_netlist;
+    bool gen_post_implementation_merged_netlist;
     e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_input_handling;
     e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_output_handling;
 
