@@ -221,6 +221,9 @@
       </output_ports>
     </model>
 
+    <!-- DSP Primitives -->
+
+    <!-- independent multiplier mode -->
     <model name="fourteennm_mac.opmode{m18×18_full}.input_type{reg}.output_type{comb}">
       <input_ports>
         <port name="clr" clock="clk"/>
@@ -318,6 +321,126 @@
         <port name="scanout" clock="clk"/>
         <port name="dftout" clock="clk"/>
       </output_ports>    
+    </model>
+
+    <!-- multiplier adder sum mode -->
+    <model name="fourteennm_mac.opmode{m18×18_sumof2}.input_type{reg}.output_type{comb}">
+      <input_ports>
+        <port name="accumulate" clock="clk"/>
+        <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="ay" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="az" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="coefsela" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="bx" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="by" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="bz" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="coefselb" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="loadconst" clock="clk"/>
+        <port name="negate" clock="clk"/>
+        <port name="scanin" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="sub" clock="clk"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
+      </input_ports>
+      <output_ports>
+        <port name="chainout"/>
+        <port name="resulta"/>
+        <port name="scanout" clock="clk"/>
+        <port name="dftout" clock="clk"/>
+      </output_ports>
+    </model>
+
+    <model name="fourteennm_mac.opmode{m18×18_sumof2}.input_type{comb}.output_type{reg}">
+      <input_ports>
+        <port name="accumulate" clock="clk"/>
+        <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" combinational_sink_ports="resulta chainout"/>
+        <port name="ay" combinational_sink_ports="resulta chainout"/>
+        <port name="az" combinational_sink_ports="resulta chainout"/>
+        <port name="coefsela" combinational_sink_ports="resulta chainout"/>
+        <port name="bx" combinational_sink_ports="resulta chainout"/>
+        <port name="by" combinational_sink_ports="resulta chainout"/>
+        <port name="bz" combinational_sink_ports="resulta chainout"/>
+        <port name="coefselb" combinational_sink_ports="resulta chainout"/>
+        <port name="loadconst" clock="clk"/>
+        <port name="negate" clock="clk"/>
+        <port name="scanin" combinational_sink_ports="resulta chainout"/>
+        <port name="sub" clock="clk"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
+      </input_ports>
+      <output_ports>
+        <port name="chainout" clock="clk"/>
+        <port name="resulta" clock="clk"/>
+        <port name="scanout" clock="clk"/>
+        <port name="dftout" clock="clk"/>
+      </output_ports>
+    </model>
+
+    <model name="fourteennm_mac.opmode{m18×18_sumof2}.input_type{comb}.output_type{comb}">
+      <input_ports>
+        <port name="accumulate" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="chainin" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="clr" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="ax" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="ay" combinational_sink_ports="resulta chainout scanout dftout"/>
+        <port name="az" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="coefsela" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="bx" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="by" combinational_sink_ports="resulta chainout scanout dftout"/>
+        <port name="bz" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="coefselb" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="loadconst" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="negate" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="scanin" combinational_sink_ports="resulta chainout scanout dftout"/>
+        <port name="sub" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="ena" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="dfxlfsrena" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="dfxmisrena" combinational_sink_ports="resulta chainout dftout"/>
+      </input_ports>
+      <output_ports>
+        <port name="chainout"/>
+        <port name="resulta"/>
+        <port name="scanout"/>
+        <port name="dftout"/>
+      </output_ports>
+    </model>
+
+    <model name="fourteennm_mac.opmode{m18×18_sumof2}.input_type{reg}.output_type{reg}">
+      <input_ports>
+        <port name="accumulate" clock="clk"/>
+        <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="ay" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="az" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="coefsela" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="bx" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="by" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="bz" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="coefselb" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="loadconst" clock="clk"/>
+        <port name="negate" clock="clk"/>
+        <port name="scanin" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="sub" clock="clk"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
+      </input_ports>
+      <output_ports>
+        <port name="chainout" clock="clk"/>
+        <port name="resulta" clock="clk"/>
+        <port name="scanout" clock="clk"/>
+        <port name="dftout" clock="clk"/>
+      </output_ports>
     </model>
 
   </models>
@@ -1425,7 +1548,7 @@
         </mode>
 
         <mode name="m18×18_sumof2.input_type{comb}.output_type{reg}">
-          <pb_type name="mac18×18_sumof2" blif_model=".subckt fourteennm_mac.opmode{m18×18_sumof2}.input_type{cpmb}.output_type{reg}" num_pb="1">
+          <pb_type name="mac18×18_sumof2" blif_model=".subckt fourteennm_mac.opmode{m18×18_sumof2}.input_type{comb}.output_type{reg}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="64"/>
               <input name="clr" num_pins="2"/>
@@ -1545,7 +1668,65 @@
         </mode>
 
         <mode name="m18×18_sumof2.input_type{reg}.output_type{reg}">
-        </mode>   
+          <pb_type name="mac18×18_sumof2" blif_model=".subckt fourteennm_mac.opmode{m18×18_sumof2}.input_type{reg}.output_type{reg}" num_pb="1">
+              <input name="accumulate" num_pins="1"/>
+              <input name="chainin" num_pins="64"/>
+              <input name="clr" num_pins="2"/>
+              <clock name="clk" num_pins="3"/>
+              <input name="ax" num_pins="18"/>
+              <input name="ay" num_pins="19"/>
+              <input name="az" num_pins="18"/>
+              <input name="coefsela" num_pins="3"/>
+              <input name="bx" num_pins="18"/>
+              <input name="by" num_pins="19"/>
+              <input name="bz" num_pins="18"/>
+              <input name="coefselb" num_pins="3"/>
+              <input name="loadconst" num_pins="1"/>
+              <input name="negate" num_pins="1"/>
+              <input name="scanin" num_pins="19"/>
+              <input name="sub" num_pins="1"/>
+              <input name="ena" num_pins="3"/>
+              <input name="dfxlfsrena" num_pins="1"/>
+              <input name="dfxmisrena" num_pins="1"/>
+
+              <output name="chainout" num_pins="64"/>
+              <output name="resulta" num_pins="64"/>
+              <output name="scanout" num_pins="19"/>
+              <output name="dftout" num_pins="1"/>
+          </pb_type>
+
+          <interconnect>
+
+              <direct name="chain_in" input="DSP.chainin" output="mac18×18_sumof2.chainin"/>
+              <direct name="chain_out" input="mac18×18_sumof2.chainout" output="DSP.chainout"/>
+              <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_sumof2.scanin"/>
+              <direct name="scan_out" input="mac18×18_sumof2.scanout" output="DSP.scanout[18:0]"/>
+              <direct name="dft_out" input="mac18×18_sumof2.dftout" output="DSP.dftout"/>
+
+              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_sumof2.ax"/>
+              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_sumof2.ay"/>
+              <direct name="az_in" input="DSP.datain[54:37]" output="mac18×18_sumof2.az"/>
+              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_sumof2.bx"/>
+              <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_sumof2.by"/>
+              <direct name="bz_in" input="DSP.datain[109:92]" output="mac18×18_sumof2.bz"/>
+
+              <direct name="resulta_out" input="mac18×18_sumof2.resulta" output="DSP.result[63:0]"/>
+
+              
+              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_sumof2.clr"/>
+              <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18×18_sumof2.coefsela"/>
+              <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18×18_sumof2.coefselb"/>
+              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_sumof2.ena"/>
+              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_sumof2.dfxlfsrena"/>
+              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_sumof2.dfxmisrena"/>
+              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18×18_sumof2.accumulate"/>
+              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18×18_sumof2.loadconst"/>
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18×18_sumof2.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18×18_sumof2.sub"/>
+
+              <complete name="clk_in" input="DSP.clk" output="mac18×18_sumof2.clk"/>
+          </interconnect>
+        </mode>  
 
         <!-- 18x19 multiplication summed with 36-bit input -->
         <mode name="m18×18_plus36.input_type{reg}.output_type{comb}">
