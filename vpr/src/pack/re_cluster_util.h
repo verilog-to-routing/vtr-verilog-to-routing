@@ -67,7 +67,7 @@ void fix_cluster_net_after_moving(const AtomBlockId& atom_id,
 
 void fix_cluster_port_after_moving(const ClusterBlockId clb_index);
 
-void fix_cluster_pin_after_moving(const ClusterBlockId clb_index);
+void fix_cluster_pins_after_moving(const ClusterBlockId clb_index);
 
 
 
@@ -76,11 +76,12 @@ void check_net_absorbtion(const AtomNetId atom_net_id,
                                 const ClusterBlockId old_clb,
                                 ClusterPinId& cluster_pin_id,
                                 bool& previously_absorbed,
-                                bool& now_abosrbed)
+                                bool& now_abosrbed);
 
 void create_cluster_net_for_atom_net(const AtomNetId& atom_net_id);
 void delete_cluster_net_of_atom_net(const AtomNetId& );
 
 void create_cluster_pin_for_atom_pin(const AtomPinId& atom_pin_id);
+void fix_atom_pin_mapping(const AtomBlockId blk);
 
 #endif
