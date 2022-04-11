@@ -229,14 +229,14 @@
         <port name="clr" clock="clk"/>
         <port name="clk" is_clock="1"/>
         <port name="ax" clock="clk" combinational_sink_ports="resulta"/>
-        <port name="ay" clock="clk" combinational_sink_ports="resulta"/>
+        <port name="ay" clock="clk" combinational_sink_ports="resulta scanout"/>
         <port name="az" clock="clk" combinational_sink_ports="resulta"/>
         <port name="coefsela" clock="clk" combinational_sink_ports="resulta"/>
         <port name="bx" clock="clk" combinational_sink_ports="resultb"/>
-        <port name="by" clock="clk" combinational_sink_ports="resultb"/>
+        <port name="by" clock="clk" combinational_sink_ports="resultb scanout"/>
         <port name="bz" clock="clk" combinational_sink_ports="resultb"/>
         <port name="coefselb" clock="clk" combinational_sink_ports="resultb"/>
-        <port name="scanin" clock="clk" combinational_sink_ports="resulta resultb"/>
+        <port name="scanin" clock="clk" combinational_sink_ports="resulta resultb scanout"/>
         <port name="ena" clock="clk"/>
         <port name="dfxlfsrena" clock="clk"/>
         <port name="dfxmisrena" clock="clk"/>
@@ -254,14 +254,14 @@
         <port name="clr" clock="clk"/>
         <port name="clk" is_clock="1"/>
         <port name="ax" combinational_sink_ports="resulta"/>
-        <port name="ay" combinational_sink_ports="resulta"/>
+        <port name="ay" combinational_sink_ports="resulta scanout"/>
         <port name="az" combinational_sink_ports="resulta"/>
         <port name="coefsela" combinational_sink_ports="resulta"/>
         <port name="bx" combinational_sink_ports="resultb"/>
-        <port name="by" combinational_sink_ports="resultb"/>
+        <port name="by" combinational_sink_ports="resultb scanout"/>
         <port name="bz" combinational_sink_ports="resultb"/>
         <port name="coefselb" combinational_sink_ports="resultb"/>
-        <port name="scanin" combinational_sink_ports="resulta resultb"/>
+        <port name="scanin" combinational_sink_ports="resulta resultb scanout"/>
         <port name="ena" clock="clk"/>
         <port name="dfxlfsrena" clock="clk"/>
         <port name="dfxmisrena" clock="clk"/>
@@ -538,6 +538,126 @@
         <output name="chainout" clock="clk"/>
         <output name="resulta" clock="clk"/>
         <output name="dftout" clock="clk"/>
+      </output_ports> 
+    </model>
+
+    <!-- systolic fir mode -->  
+    <model name="fourteennm_mac.opmode{m18×18_systolic}.input_type{reg}.output_type{comb}">
+      <input_ports> 
+        <port name="accumulate" clock="clk"/>
+        <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="ay" clock="clk" combinational_sink_ports="resulta chainout scanout"/>
+        <port name="az" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="coefsela" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="bx" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="by" clock="clk" combinational_sink_ports="resulta chainout scanout"/>
+        <port name="bz" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="coefselb" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="loadconst" clock="clk"/>
+        <port name="negate" clock="clk"/>
+        <port name="scanin" clock="clk" combinational_sink_ports="resulta chainout scanout"/>
+        <port name="sub" clock="clk"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
+      </input_ports> 
+      <output_ports> 
+        <port name="chainout"/>
+        <port name="resulta"/>
+        <port name="scanout" clock="clk"/>
+        <port name="dftout" clock="clk"/>
+      </output_ports> 
+    </model>
+
+    <model name="fourteennm_mac.opmode{m18×18_systolic}.input_type{comb}.output_type{reg}">
+      <input_ports> 
+        <port name="accumulate" clock="clk"/>
+        <port name="chainin" combinational_sink_ports="resulta chainout"/>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" combinational_sink_ports="resulta chainout"/>
+        <port name="ay" combinational_sink_ports="resulta chainout scanout"/>
+        <port name="az" combinational_sink_ports="resulta chainout"/>
+        <port name="coefsela" combinational_sink_ports="resulta chainout"/>
+        <port name="bx" combinational_sink_ports="resulta chainout"/>
+        <port name="by" combinational_sink_ports="resulta chainout scanout"/>
+        <port name="bz" combinational_sink_ports="resulta chainout"/>
+        <port name="coefselb" combinational_sink_ports="resulta chainout"/>
+        <port name="loadconst" clock="clk"/>
+        <port name="negate" clock="clk"/>
+        <port name="scanin" combinational_sink_ports="resulta chainout scanout"/>
+        <port name="sub" clock="clk"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
+      </input_ports> 
+      <output_ports> 
+        <port name="chainout" clock="clk"/>
+        <port name="resulta" clock="clk"/>
+        <port name="scanout" clock="clk"/>
+        <port name="dftout" clock="clk"/>
+      </output_ports> 
+    </model>
+
+    <model name="fourteennm_mac.opmode{m18×18_systolic}.input_type{comb}.output_type{comb}">
+      <input_ports> 
+        <port name="accumulate" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="chainin" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="clr" combinational_sink_ports="resulta chainout"/>
+        <port name="ax" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="ay" combinational_sink_ports="resulta chainout scanout dftout"/>
+        <port name="az" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="coefsela" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="bx" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="by" combinational_sink_ports="resulta chainout scanout dftout"/>
+        <port name="bz" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="coefselb" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="loadconst" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="negate" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="scanin" combinational_sink_ports="resulta chainout scanout dftout"/>
+        <port name="sub" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="ena" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="dfxlfsrena" combinational_sink_ports="resulta chainout dftout"/>
+        <port name="dfxmisrena" combinational_sink_ports="resulta chainout dftout"/>
+      </input_ports> 
+      <output_ports> 
+        <port name="chainout"/>
+        <port name="resulta"/>
+        <port name="scanout"/>
+        <port name="dftout"/>
+      </output_ports> 
+    </model>
+
+    <model name="fourteennm_mac.opmode{m18×18_systolic}.input_type{reg}.output_type{reg}">
+      <input_ports> 
+        <port name="accumulate" clock="clk"/>
+        <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="ay" clock="clk" combinational_sink_ports="resulta chainout scanout"/>
+        <port name="az" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="coefsela" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="bx" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="by" clock="clk" combinational_sink_ports="resulta chainout scanout"/>
+        <port name="bz" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="coefselb" clock="clk" combinational_sink_ports="resulta chainout"/>
+        <port name="loadconst" clock="clk"/>
+        <port name="negate" clock="clk"/>
+        <port name="scanin" clock="clk" combinational_sink_ports="resulta chainout scanout"/>
+        <port name="sub" clock="clk"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
+      </input_ports> 
+      <output_ports> 
+        <port name="chainout" clock="clk"/>
+        <port name="resulta" clock="clk"/>
+        <port name="scanout" clock="clk"/>
+        <port name="dftout" clock="clk"/>
       </output_ports> 
     </model>
 
