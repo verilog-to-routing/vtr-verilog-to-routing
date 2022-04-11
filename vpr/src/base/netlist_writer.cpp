@@ -2305,7 +2305,7 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
 // Externally Accessible Functions
 //
 
-///@brief Main routing for this file. See netlist_writer.h for details.
+///@brief Main routine for this file. See netlist_writer.h for details.
 void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
     std::string verilog_filename = basename + "_post_synthesis.v";
     std::string blif_filename = basename + "_post_synthesis.blif";
@@ -2326,7 +2326,7 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
     nl_walker.walk();
 }
 
-///@brief Main routing for this file. See netlist_writer.h for details.
+///@brief Main routine for this file. See netlist_writer.h for details.
 void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
     std::string verilog_filename = basename + "_merged_post_implementation.v";
 
