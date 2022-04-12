@@ -10,7 +10,6 @@
 
 /*Re-defining static functions in setup_noc.cpp that are tested here*/
 
-
 static void identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles, std::string noc_router_tile_name) {
     int grid_width = device_grid.width();
     int grid_height = device_grid.height();
@@ -51,8 +50,6 @@ static void identify_and_store_noc_router_tile_positions(const DeviceGrid& devic
 
     return;
 }
-
-
 
 static void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::vector<t_noc_router_tile_position>& list_of_noc_router_tiles) {
     // keep track of the shortest distance between a logical router and the curren physical router tile

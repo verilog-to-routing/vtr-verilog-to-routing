@@ -3,7 +3,7 @@
 
 #include "vtr_strong_id.h"
 
-// definitins data types used to index the routers and links within the noc
+// data types used to index the routers and links within the noc
 
 struct noc_router_id_tag;
 struct noc_link_id_tag;

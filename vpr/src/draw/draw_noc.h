@@ -9,7 +9,9 @@
 #include <iostream>
 #include <vector>
 
-#include "draw.h"
+#ifndef NO_GRAPHICS
+
+#    include "draw.h"
 
 // defines the length of a reference horizontal line that is used in a cross product to calculate the angle between this line and a noc link to be drawn
 const double HORIZONTAL_LINE_LENGTH(5.0);
@@ -50,5 +52,7 @@ void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>
 NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2d link_end_point);
 
 void shift_noc_link(noc_link_draw_coords& link_coords, NocLinkShift link_shift_direction, NocLinkType link_type, double noc_connection_marker_quarter_width, double noc_connection_marker_quarter_height);
+
+#endif
 
 #endif
