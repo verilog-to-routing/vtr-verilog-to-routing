@@ -3,12 +3,17 @@
 # Updated documentation of the configuration options is available at
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+from pathlib import Path
 import sys
 import os
 import shlex
-import shutil
+from shutil import copy, which
 import subprocess
 
+
+ROOT = Path(__file__).resolve().parent
+
+copy(ROOT / "../../CHANGELOG.md", ROOT / "CHANGELOG.md")
 
 sys.path.append(".")
 sys.path.insert(0, os.path.abspath("../../vtr_flow/scripts/python_libs"))
@@ -145,7 +150,7 @@ notfound_context = {
 """,
 }
 
-if shutil.which("doxygen"):
+if which("doxygen"):
     breathe_projects = {
         "vpr": "../_build/doxygen/vpr/xml",
         "vtr": "../_build/doxygen/vtr/xml",
