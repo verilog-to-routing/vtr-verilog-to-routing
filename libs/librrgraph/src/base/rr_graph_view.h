@@ -175,7 +175,7 @@ class RRGraphView {
      * This function is inlined for runtime optimization.
      */
     inline int node_length(RRNodeId node) const {
-        VTR_ASSERT(node_type(node) == CHANX || node_type(node) == CHANY);
+        VTR_ASSERT(node_is_wire(node));
         int length = 1 + node_xhigh(node) - node_xlow(node) + node_yhigh(node) - node_ylow(node);
         VTR_ASSERT_SAFE(length > 0);
         return length;
@@ -186,6 +186,16 @@ class RRGraphView {
         return !((node_type(node) == NUM_RR_TYPES)
                  && (node_xlow(node) == -1) && (node_ylow(node) == -1)
                  && (node_xhigh(node) == -1) && (node_yhigh(node) == -1));
+    }
+
+    /** @brief Check if routing resource node is a wire. This function is inlined for runtime optimization. */
+    inline bool node_is_wire(RRNodeId node) const {
+        return node_type(node) == CHANX || node_type(node) == CHANY;
+    }
+
+    /** @brief Check if routing node type is a wire. This function is inlined for runtime optimization. */
+    inline bool type_is_wire(t_rr_type curr_type) const {
+        return curr_type == CHANX || curr_type == CHANY;
     }
 
     /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY). 
@@ -252,7 +262,7 @@ class RRGraphView {
             // For SOURCE and SINK the starting and ending coordinate are identical, so just use start
             start_x = "(" + std::to_string(node_xhigh(node)) + ",";
             start_y = std::to_string(node_yhigh(node)) + ")";
-        } else if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
+        } else if (node_is_wire(node)) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
             coordinate_string += rr_segments(RRSegmentId(seg_index)).name;       //Write the segment name

@@ -138,9 +138,9 @@ void check_rr_graph(const t_graph_type graph_type,
              * - CHAN  -> IPIN connections (unique rr_node for IPIN nodes on multiple sides)
              * - OPIN  -> CHAN connections (unique rr_node for OPIN nodes on multiple sides)
              */
-            bool is_chan_to_chan = (rr_type == CHANX || rr_type == CHANY) && (to_rr_type == CHANY || to_rr_type == CHANX);
-            bool is_chan_to_ipin = (rr_type == CHANX || rr_type == CHANY) && to_rr_type == IPIN;
-            bool is_opin_to_chan = rr_type == OPIN && (to_rr_type == CHANX || to_rr_type == CHANY);
+            bool is_chan_to_chan = (rr_graph.type_is_wire(rr_type)) && (rr_graph.type_is_wire(to_rr_type));
+            bool is_chan_to_ipin = (rr_graph.type_is_wire(rr_type)) && to_rr_type == IPIN;
+            bool is_opin_to_chan = rr_type == OPIN && (rr_graph.type_is_wire(to_rr_type));
             if (!(is_chan_to_chan || is_chan_to_ipin || is_opin_to_chan)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_graph: node %d (%s) connects to node %d (%s) %zu times - multi-connections only expected for CHAN<->CHAN, CHAN->IPIN, OPIN->CHAN.\n",
@@ -148,8 +148,8 @@ void check_rr_graph(const t_graph_type graph_type,
             }
 
             //Between two wire segments
-            VTR_ASSERT_MSG(to_rr_type == CHANX || to_rr_type == CHANY || to_rr_type == IPIN, "Expect channel type or input pin type");
-            VTR_ASSERT_MSG(rr_type == CHANX || rr_type == CHANY || rr_type == OPIN, "Expect channel type or output pin type");
+            VTR_ASSERT_MSG(rr_graph.type_is_wire(to_rr_type) || to_rr_type == IPIN, "Expect channel type or input pin type");
+            VTR_ASSERT_MSG(rr_graph.type_is_wire(rr_type) || rr_type == OPIN, "Expect channel type or output pin type");
 
             //While multiple connections between the same wires can be electrically legal,
             //they are redundant if they are of the same switch type.
@@ -170,8 +170,8 @@ void check_rr_graph(const t_graph_type graph_type,
                 /* Redundant edges are not allowed for chan <-> chan connections
                  * but allowed for input pin <-> chan or output pin <-> chan connections 
                  */
-                if ((to_rr_type == CHANX || to_rr_type == CHANY)
-                    && (rr_type == CHANX || rr_type == CHANY)) {
+                if ((rr_graph.type_is_wire(to_rr_type))
+                    && (rr_graph.type_is_wire(rr_type))) {
                     auto switch_type = rr_graph.rr_switch_inf(RRSwitchId(kv.first)).type();
 
                     VPR_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
@@ -230,8 +230,7 @@ void check_rr_graph(const t_graph_type graph_type,
                                   || (rr_graph.node_ylow(rr_node) == 1)
                                   || (rr_graph.node_xhigh(rr_node) == int(grid.width()) - 2)
                                   || (rr_graph.node_yhigh(rr_node) == int(grid.height()) - 2));
-                bool is_wire = (rr_graph.node_type(rr_node) == CHANX
-                                || rr_graph.node_type(rr_node) == CHANY);
+                bool is_wire = (rr_graph.node_is_wire(rr_node));
 
                 if (!is_chain && !is_fringe && !is_wire) {
                     if (rr_graph.node_type(rr_node) == IPIN || rr_graph.node_type(rr_node) == OPIN) {
@@ -515,7 +514,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     C = rr_graph.node_C(rr_node);
     R = rr_graph.node_R(rr_node);
 
-    if (rr_type == CHANX || rr_type == CHANY) {
+    if (rr_graph.type_is_wire(rr_type)) {
         if (C < 0. || R < 0.) {
             VPR_ERROR(VPR_ERROR_ROUTE,
                       "in check_rr_node: node %d of type %d has R = %g and C = %g.\n", inode, rr_type, R, C);

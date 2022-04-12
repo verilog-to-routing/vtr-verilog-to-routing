@@ -364,7 +364,7 @@ static bool check_adjacent(int from_node, int to_node) {
             break;
 
         case OPIN:
-            if (to_type == CHANX || to_type == CHANY) {
+            if (rr_graph.type_is_wire(to_type)) {
                 num_adj += 1; //adjacent
             } else {
                 VTR_ASSERT(to_type == IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */

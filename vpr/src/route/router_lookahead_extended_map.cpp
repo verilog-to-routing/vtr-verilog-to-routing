@@ -574,7 +574,7 @@ float ExtendedMapLookahead::get_expected_cost(
 
     t_rr_type rr_type = rr_graph.node_type(current_node);
 
-    if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
+    if (rr_graph.type_is_wire(rr_type) || rr_type == SOURCE || rr_type == OPIN) {
         float delay_cost, cong_cost;
 
         // Get the total cost using the combined delay and congestion costs

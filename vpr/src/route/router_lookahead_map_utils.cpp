@@ -462,7 +462,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
         pq.pop();
 
         e_rr_type curr_rr_type = rr_graph.node_type(curr.node);
-        if (curr_rr_type == CHANX || curr_rr_type == CHANY || curr_rr_type == SINK) {
+        if (rr_graph.type_is_wire(curr_rr_type) || curr_rr_type == SINK) {
             //We stop expansion at any CHANX/CHANY/SINK
             int seg_index;
             if (curr_rr_type != SINK) {
@@ -579,7 +579,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
             chan_ipins_delays[itile][ptc].wire_rr_type = curr_rr_type;
             chan_ipins_delays[itile][ptc].delay = site_pin_delay;
             chan_ipins_delays[itile][ptc].congestion = curr.congestion;
-        } else if (curr_rr_type == CHANX || curr_rr_type == CHANY) {
+        } else if (rr_graph.type_is_wire(curr_rr_type)) {
             if (curr.level >= MAX_EXPANSION_LEVEL) {
                 continue;
             }

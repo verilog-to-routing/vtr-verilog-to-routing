@@ -2483,7 +2483,7 @@ std::string describe_rr_node(int inode) {
 
     std::string msg = vtr::string_fmt("RR node: %d", inode);
 
-    if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) {
+    if (rr_graph.node_is_wire(RRNodeId(inode))) {
         auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
 
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;

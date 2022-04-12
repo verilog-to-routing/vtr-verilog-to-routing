@@ -1532,7 +1532,7 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) 
 
     t_rr_type type = rr_graph.node_type(rr_node);
 
-    VTR_ASSERT(type == CHANX || type == CHANY);
+    VTR_ASSERT(rr_graph.type_is_wire(type));
 
     ezgl::rectangle bound_box = draw_get_rr_chan_bbox(inode);
     Direction dir = rr_graph.node_direction(rr_node);

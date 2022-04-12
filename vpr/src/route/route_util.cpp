@@ -2,10 +2,10 @@
 #include "globals.h"
 
 vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
-    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    VTR_ASSERT(rr_graph.type_is_wire(rr_type));
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -53,10 +53,9 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
 
 vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type) {
     //Calculate the number of available resources in each x/y channel
-    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    VTR_ASSERT(rr_graph.type_is_wire(rr_type));
 
     vtr::Matrix<float> avail({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
     for (const RRNodeId& rr_node : rr_graph.nodes()) {

@@ -137,7 +137,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         const auto& rr_graph = device_ctx.rr_graph;
 
         for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
-            if ((rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY) && rr_graph.num_edges(inode) > 0) {
+            if ((rr_graph.node_is_wire(inode)) && rr_graph.num_edges(inode) > 0) {
                 src_inode = size_t(inode);
                 break;
             }

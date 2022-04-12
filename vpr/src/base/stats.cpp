@@ -309,11 +309,11 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends_ptr, int* len_ptr, i
             curr_type = rr_graph.node_type(RRNodeId(tptr->index));
         }
 
-        else if (curr_type == CHANX || curr_type == CHANY) {
+        else if (rr_graph.type_is_wire(curr_type)) {
             segments++;
             length += rr_graph.node_length(RRNodeId(inode));
 
-            if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
+            if (curr_type != prev_type && (rr_graph.type_is_wire(prev_type)))
                 bends++;
         }
 

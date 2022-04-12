@@ -285,8 +285,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
         auto rr_type = rr_graph.node_type(RRNodeId(node->inode));
         if (rr_type == OPIN
             || rr_type == IPIN
-            || rr_type == CHANX
-            || rr_type == CHANY
+            || rr_graph.type_is_wire(rr_type)
             || ((rr_type == SOURCE || rr_type == SINK) && (detail_level() == e_timing_report_detail::DEBUG))) {
             tatum::DelayComponent net_component; //declare a new instance of DelayComponent
 
