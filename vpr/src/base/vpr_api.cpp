@@ -514,17 +514,18 @@ void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
  *             description file.
  */
 void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
-    t_draw_state* draw_state = get_draw_state_vars();
-
     // check if the user provided the option to model the noc
     if (vpr_setup.NocOpts.noc == true) {
         // create the NoC model based on the user description from the arch file
         setup_noc(arch);
 
+#ifndef NO_GRAPHICS
         // setup the graphics
         // if the user turned on "noc" in the command line, then we also want them to have the option to display the noc, so set that option here to be able to display it.
         // if the "noc" was not turned on, then we don't need to provide the user with the option to display it
+        t_draw_state* draw_state = get_draw_state_vars();
         draw_state->show_noc_button = true;
+#endif
     }
 }
 

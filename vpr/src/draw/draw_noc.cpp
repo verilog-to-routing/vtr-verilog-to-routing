@@ -1,9 +1,11 @@
 
-#include "draw_noc.h"
-#include "globals.h"
-#include "noc_storage.h"
-#include "vpr_error.h"
-#include "vtr_math.h"
+#ifndef NO_GRAPHICS
+
+#    include "draw_noc.h"
+#    include "globals.h"
+#    include "noc_storage.h"
+#    include "vpr_error.h"
+#    include "vtr_math.h"
 
 /**
  * @brief For a NoC that is undirected, each connection between routers has two
@@ -226,3 +228,5 @@ void shift_noc_link(noc_link_draw_coords& link_coords, NocLinkShift link_shift_d
 
     return;
 }
+
+#endif
