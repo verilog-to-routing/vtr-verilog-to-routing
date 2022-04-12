@@ -119,11 +119,11 @@ enum e_edge_dir {
 };
 
 /*
-    Defines the type of drawings that can be generated for the NoC.
-    DRAW_NO_NOC -> user did not select the option to draw the NoC
-    DRAW_NOC_LINKS -> display the NoC links and how they are connected to each other
-    DRAW_NOC_LINK_USAGE -> Display the NoC links (same as DRAW_NOC_LINKS) and color the links based on their bandwidth usage
-*/
+ * Defines the type of drawings that can be generated for the NoC.
+ * DRAW_NO_NOC -> user did not select the option to draw the NoC
+ * DRAW_NOC_LINKS -> display the NoC links and how they are connected to each other
+ * DRAW_NOC_LINK_USAGE -> Display the NoC links (same as DRAW_NOC_LINKS) and color the links based on their bandwidth usage
+ */
 enum e_draw_noc {
     DRAW_NO_NOC = 0,
     DRAW_NOC_LINKS,
@@ -216,7 +216,7 @@ struct t_draw_state {
     ManualMovesState manual_moves_state;
     bool show_noc_button = false;
     e_draw_noc draw_noc = DRAW_NO_NOC;
-    std::shared_ptr<const vtr::ColorMap> noc_usage_color_map = nullptr;
+    std::shared_ptr<const vtr::ColorMap> noc_usage_color_map = nullptr; // color map used to display noc link bandwidth usage
 
     std::vector<Breakpoint> list_of_breakpoints;
 

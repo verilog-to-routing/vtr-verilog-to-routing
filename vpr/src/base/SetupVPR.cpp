@@ -36,7 +36,7 @@ static void SetupAnnealSched(const t_options& Options,
                              t_annealing_sched* AnnealSched);
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts);
 static void SetupNocOpts(const t_options& Options,
-                            t_noc_opts* NocOpts);
+                         t_noc_opts* NocOpts);
 static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch* RoutingArch);
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
 static void SetupSwitches(const t_arch& Arch,
@@ -659,8 +659,10 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
     }
 }
 
+/*
+ * Go through all the NoC options supplied by the user and store them internally.
+ */
 static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
-
     // assign the noc specific options from the command line
     NocOpts->noc = Options.noc;
 

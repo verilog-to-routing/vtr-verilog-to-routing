@@ -1793,21 +1793,21 @@ struct t_lut_element {
 };
 
 /* Network-on-chip(NoC) Router data type used to identify 
-connections regarding individual routers in the network. */
+ * connections regarding individual routers in the network. */
 struct t_router {
     int id = -1;
 
     double device_x_position = -1;
     double device_y_position = -1;
-    
+
     std::vector<int> connection_list;
 };
 
 /* Network-on-chip(NoC) data type used to store the network 
-properties and used when builidng a dedicated on-chip network*/
+ * properties and used when builidng a dedicated on-chip network*/
 struct t_noc_inf {
     double link_bandwidth; // in Gbps
-    double link_latency; // in nanoseconds
+    double link_latency;   // in nanoseconds
     double router_latency; // in nanoseconds
 
     std::vector<t_router> router_list;

@@ -502,13 +502,23 @@ void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     }
 }
 
-void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch)
-{
+/**
+ * @brief If the user provided the "--noc on" option then the noc is
+ *        setup by creating an internal model and storing the NoC
+ *        constraints. Additionally, the graphics state is updated
+ *        to include a NoC button to display it.
+ * 
+ * @param vpr_setup A datastructure that stores all the user provided option
+ *                  to vpr.
+ * @param arch Contains the parsed information from the architecture
+ *             description file.
+ */
+void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // check if the user provided the option to model the noc
-    if (vpr_setup.NocOpts.noc == true)
-    {
+    if (vpr_setup.NocOpts.noc == true) {
+        // create the NoC model based on the user description from the arch file
         setup_noc(arch);
 
         // setup the graphics

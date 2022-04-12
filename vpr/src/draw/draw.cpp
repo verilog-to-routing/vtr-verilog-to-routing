@@ -555,8 +555,327 @@ static void toggle_window_mode(GtkWidget* /*widget*/,
     window_mode = true;
 }
 
+<<<<<<< HEAD
 void toggle_noc_display(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/)
 {
+=======
+void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_nets button
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    // get the pointer to the toggle_nets button
+    std::string button_name = "toggle_nets";
+    auto toggle_nets = find_button(button_name.c_str());
+
+    // use the pointer to get the active text
+    enum e_draw_nets new_state;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
+        GTK_COMBO_BOX_TEXT(toggle_nets));
+
+    // assign corresponding enum value to draw_state->show_nets
+    if (strcmp(combo_box_content, "None") == 0)
+        new_state = DRAW_NO_NETS;
+    else if (strcmp(combo_box_content, "Nets") == 0) {
+        new_state = DRAW_NETS;
+    } else { // "Logical Connections"
+        new_state = DRAW_LOGICAL_CONNECTIONS;
+    }
+    draw_state->reset_nets_congestion_and_rr();
+    draw_state->show_nets = new_state;
+
+    //free dynamically allocated pointers
+    g_free(combo_box_content);
+
+    //redraw
+    application.update_message(draw_state->default_message);
+    application.refresh_drawing();
+}
+
+void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_rr button
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::string button_name = "toggle_rr";
+    auto toggle_rr = find_button(button_name.c_str());
+
+    enum e_draw_rr_toggle new_state;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
+        GTK_COMBO_BOX_TEXT(toggle_rr));
+    if (strcmp(combo_box_content, "None") == 0)
+        new_state = DRAW_NO_RR;
+    else if (strcmp(combo_box_content, "Nodes") == 0)
+        new_state = DRAW_NODES_RR;
+    else if (strcmp(combo_box_content, "Nodes SBox") == 0)
+        new_state = DRAW_NODES_SBOX_RR;
+    else if (strcmp(combo_box_content, "Nodes SBox CBox") == 0)
+        new_state = DRAW_NODES_SBOX_CBOX_RR;
+    else if (strcmp(combo_box_content, "Nodes SBox CBox Internal") == 0)
+        new_state = DRAW_NODES_SBOX_CBOX_INTERNAL_RR;
+    else
+        // all rr
+        new_state = DRAW_ALL_RR;
+
+    //free dynamically allocated pointers
+    g_free(combo_box_content);
+
+    draw_state->reset_nets_congestion_and_rr();
+    draw_state->draw_rr_toggle = new_state;
+
+    application.update_message(draw_state->default_message);
+    application.refresh_drawing();
+}
+
+void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_congestion button
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::string button_name = "toggle_congestion";
+    auto toggle_congestion = find_button(button_name.c_str());
+
+    enum e_draw_congestion new_state;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
+        GTK_COMBO_BOX_TEXT(toggle_congestion));
+    if (strcmp(combo_box_content, "None") == 0)
+        new_state = DRAW_NO_CONGEST;
+    else if (strcmp(combo_box_content, "Congested") == 0)
+        new_state = DRAW_CONGESTED;
+    else
+        // congested with nets
+        new_state = DRAW_CONGESTED_WITH_NETS;
+
+    draw_state->reset_nets_congestion_and_rr();
+    draw_state->show_congestion = new_state;
+    if (draw_state->show_congestion == DRAW_NO_CONGEST) {
+        application.update_message(draw_state->default_message);
+    }
+    g_free(combo_box_content);
+    application.refresh_drawing();
+}
+
+void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_routing_congestion_cost button
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::string button_name = "toggle_routing_congestion_cost";
+    auto toggle_routing_congestion_cost = find_button(button_name.c_str());
+    enum e_draw_routing_costs new_state;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
+        GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost));
+    if (strcmp(combo_box_content, "None") == 0)
+        new_state = DRAW_NO_ROUTING_COSTS;
+    else if (strcmp(combo_box_content, "Total Routing Costs") == 0)
+        new_state = DRAW_TOTAL_ROUTING_COSTS;
+    else if (strcmp(combo_box_content, "Log Total Routing Costs") == 0)
+        new_state = DRAW_LOG_TOTAL_ROUTING_COSTS;
+    else if (strcmp(combo_box_content, "Acc Routing Costs") == 0)
+        new_state = DRAW_ACC_ROUTING_COSTS;
+    else if (strcmp(combo_box_content, "Log Acc Routing Costs") == 0)
+        new_state = DRAW_LOG_ACC_ROUTING_COSTS;
+    else if (strcmp(combo_box_content, "Pres Routing Costs") == 0)
+        new_state = DRAW_PRES_ROUTING_COSTS;
+    else if (strcmp(combo_box_content, "Log Pres Routing Costs") == 0)
+        new_state = DRAW_LOG_PRES_ROUTING_COSTS;
+    else
+        new_state = DRAW_BASE_ROUTING_COSTS;
+
+    draw_state->reset_nets_congestion_and_rr();
+    draw_state->show_routing_costs = new_state;
+    g_free(combo_box_content);
+    if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) {
+        application.update_message(draw_state->default_message);
+    }
+    application.refresh_drawing();
+}
+
+void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_routing_bounding_box button
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+    auto& route_ctx = g_vpr_ctx.routing();
+    // get the pointer to the toggle_routing_bounding_box button
+    std::string button_name = "toggle_routing_bounding_box";
+    auto toggle_routing_bounding_box = find_button(button_name.c_str());
+
+    if (route_ctx.route_bb.size() == 0)
+        return; //Nothing to draw
+
+    // use the pointer to get the active value
+    int new_value = gtk_spin_button_get_value_as_int(
+        (GtkSpinButton*)toggle_routing_bounding_box);
+
+    // assign value to draw_state->show_routing_bb, bound check + set OPEN when it's -1 (draw nothing)
+    if (new_value < -1)
+        draw_state->show_routing_bb = -1;
+    else if (new_value == -1)
+        draw_state->show_routing_bb = OPEN;
+    else if (new_value >= (int)(route_ctx.route_bb.size()))
+        draw_state->show_routing_bb = route_ctx.route_bb.size() - 1;
+    else
+        draw_state->show_routing_bb = new_value;
+
+    //redraw
+    if ((int)(draw_state->show_routing_bb)
+        == (int)((int)(route_ctx.route_bb.size()) - 1)) {
+        application.update_message(draw_state->default_message);
+    }
+    application.refresh_drawing();
+}
+
+void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_routing_util button
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::string button_name = "toggle_routing_util";
+    auto toggle_routing_util = find_button(button_name.c_str());
+
+    enum e_draw_routing_util new_state;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
+        GTK_COMBO_BOX_TEXT(toggle_routing_util));
+    if (strcmp(combo_box_content, "None") == 0)
+        new_state = DRAW_NO_ROUTING_UTIL;
+    else if (strcmp(combo_box_content, "Routing Util") == 0)
+        new_state = DRAW_ROUTING_UTIL;
+    else if (strcmp(combo_box_content, "Routing Util with Value") == 0)
+        new_state = DRAW_ROUTING_UTIL_WITH_VALUE;
+    else if (strcmp(combo_box_content, "Routing Util with Formula") == 0)
+        new_state = DRAW_ROUTING_UTIL_WITH_FORMULA;
+    else
+        new_state = DRAW_ROUTING_UTIL_OVER_BLOCKS;
+
+    g_free(combo_box_content);
+    draw_state->show_routing_util = new_state;
+
+    if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
+        application.update_message(draw_state->default_message);
+    }
+    application.refresh_drawing();
+}
+
+void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_blk_internal button
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::string button_name = "toggle_blk_internal";
+    auto toggle_blk_internal = find_button(button_name.c_str());
+
+    int new_value = gtk_spin_button_get_value_as_int(
+        (GtkSpinButton*)toggle_blk_internal);
+    if (new_value < 0)
+        draw_state->show_blk_internal = 0;
+    else if (new_value >= draw_state->max_sub_blk_lvl)
+        draw_state->show_blk_internal = draw_state->max_sub_blk_lvl - 1;
+    else
+        draw_state->show_blk_internal = new_value;
+    application.refresh_drawing();
+}
+
+void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_block_pin_util button
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::string button_name = "toggle_block_pin_util";
+    auto toggle_block_pin_util = find_button(button_name.c_str());
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
+        GTK_COMBO_BOX_TEXT(toggle_block_pin_util));
+    if (strcmp(combo_box_content, "None") == 0) {
+        draw_state->show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
+        draw_reset_blk_colors();
+        application.update_message(draw_state->default_message);
+    } else if (strcmp(combo_box_content, "All") == 0)
+        draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_TOTAL;
+    else if (strcmp(combo_box_content, "Inputs") == 0)
+        draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_INPUTS;
+    else
+        draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_OUTPUTS;
+
+    g_free(combo_box_content);
+    application.refresh_drawing();
+}
+
+void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_placement_macros button
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::string button_name = "toggle_placement_macros";
+    auto toggle_placement_macros = find_button(button_name.c_str());
+
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
+        GTK_COMBO_BOX_TEXT(toggle_placement_macros));
+    if (strcmp(combo_box_content, "None") == 0)
+        draw_state->show_placement_macros = DRAW_NO_PLACEMENT_MACROS;
+    else
+        draw_state->show_placement_macros = DRAW_PLACEMENT_MACROS;
+
+    g_free(combo_box_content);
+    application.refresh_drawing();
+}
+
+void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_crit_path button
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::string button_name = "toggle_crit_path";
+    auto toggle_crit_path = find_button(button_name.c_str());
+
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
+        GTK_COMBO_BOX_TEXT(toggle_crit_path));
+    if (strcmp(combo_box_content, "None") == 0) {
+        draw_state->show_crit_path = DRAW_NO_CRIT_PATH;
+    } else if (strcmp(combo_box_content, "Crit Path Flylines") == 0)
+        draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES;
+    else if (strcmp(combo_box_content, "Crit Path Flylines Delays") == 0)
+        draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES_DELAYS;
+    else if (strcmp(combo_box_content, "Crit Path Routing") == 0)
+        draw_state->show_crit_path = DRAW_CRIT_PATH_ROUTING;
+    else
+        // Crit Path Routing Delays
+        draw_state->show_crit_path = DRAW_CRIT_PATH_ROUTING_DELAYS;
+
+    g_free(combo_box_content);
+    application.refresh_drawing();
+}
+
+void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_router_expansion_costs button
+     * which is written in button.cpp                                         */
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::string button_name = "toggle_router_expansion_costs";
+    auto toggle_router_expansion_costs = find_button(button_name.c_str());
+
+    e_draw_router_expansion_cost new_state;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
+        GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs));
+    if (strcmp(combo_box_content, "None") == 0) {
+        new_state = DRAW_NO_ROUTER_EXPANSION_COST;
+    } else if (strcmp(combo_box_content, "Total") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_TOTAL;
+    } else if (strcmp(combo_box_content, "Known") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_KNOWN;
+    } else if (strcmp(combo_box_content, "Expected") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED;
+    } else if (strcmp(combo_box_content, "Total (with edges)") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES;
+    } else if (strcmp(combo_box_content, "Known (with edges)") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES;
+    } else if (strcmp(combo_box_content, "Expected (with edges)") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES;
+    } else {
+        VPR_THROW(VPR_ERROR_DRAW, "Unrecognzied draw RR cost option");
+    }
+
+    g_free(combo_box_content);
+    draw_state->show_router_expansion_cost = new_state;
+
+    if (draw_state->show_router_expansion_cost
+        == DRAW_NO_ROUTER_EXPANSION_COST) {
+        application.update_message(draw_state->default_message);
+    }
+    application.refresh_drawing();
+}
+
+void toggle_noc_display(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+>>>>>>> Improved code documentation (added comments)
     /* this is the callback function for runtime created toggle_noc_display button
      * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -907,11 +1226,10 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
 }
 
 /*
-    This function draws the NoC by drawing the links of the NoC and highlights the connection points between links.The drawing is done on top of all the placment and routing, so this acts as an overlay.
-
-*/
-static void draw_noc(ezgl::renderer *g)
-{
+ * Draw the NoC by drawing the links of the NoC and highlights the connection points between links.The drawing is done on top of all the placment and routing, so this acts as an overlay.
+ *
+ */
+static void draw_noc(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& noc_ctx = g_vpr_ctx.noc();
     auto& device_ctx = g_vpr_ctx.device();
@@ -920,7 +1238,7 @@ static void draw_noc(ezgl::renderer *g)
     vtr::vector<NocRouterId, NocRouter> router_list = noc_ctx.noc_model.get_noc_routers();
 
     // a vector of colors to use for the NoC links, determines the colors used when drawing each link
-    vtr::vector<NocLinkId,ezgl::color> noc_link_colors;
+    vtr::vector<NocLinkId, ezgl::color> noc_link_colors;
 
     // initialize all the link colors to black and set the vector size to the total number of links
     noc_link_colors.resize(noc_ctx.noc_model.get_noc_links().size(), ezgl::BLACK);
@@ -933,18 +1251,16 @@ static void draw_noc(ezgl::renderer *g)
 
     // start by checking to see if the NoC display button was selected
     // if the noc display option was not selected then don't draw the noc
-    if (draw_state->draw_noc == DRAW_NO_NOC)
-    {
+    if (draw_state->draw_noc == DRAW_NO_NOC) {
         return;
     }
 
     // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we cant draw anythign as the NoC tile wont be drawn
     /* since the vector of routers all have a reference positions on the grid to the corresponding physical tile, just use the first router in the vector and get its position, then use this to get the capcity of a noc router tile
-    */ 
+     */
     int num_subtiles = device_ctx.grid[router_list.begin()->get_router_grid_position_x()][router_list.begin()->get_router_grid_position_y()].type->capacity;
 
-    if (num_subtiles == 0)
-    {
+    if (num_subtiles == 0) {
         return;
     }
 
@@ -956,9 +1272,8 @@ static void draw_noc(ezgl::renderer *g)
 
     // only draw the noc useage if the user selected the option
     if (draw_state->draw_noc == DRAW_NOC_LINK_USAGE) {
-        
         draw_noc_usage(noc_link_colors);
-        
+
         // draw the color map legend
         draw_color_map_legend(*(draw_state->noc_usage_color_map), g);
     }
@@ -974,8 +1289,10 @@ static void draw_noc(ezgl::renderer *g)
     return;
 }
 
-static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors)
-{
+/*
+ * Go through each NoC link and assign a color based on how much the link is being used (its bandwidth). The colors are determined from the PLasma colormap.
+ */
+static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& noc_ctx = g_vpr_ctx.noc();
 
@@ -983,8 +1300,7 @@ static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors)
     double max_noc_link_bandwidth = noc_ctx.noc_link_bandwidth;
 
     // check to see if a color map was already created previously
-    if (draw_state->noc_usage_color_map == nullptr)
-    {
+    if (draw_state->noc_usage_color_map == nullptr) {
         // we havent created a color map yet for the noc link usage, so create it here
         // the color map creates a color spectrum that gradually changes from a dark to light color. Where a dark color represents low noc link usage (low bandwidth) and a light color represents high noc link usage (high bandwidth)
         // The color map needs a min and max value to generate the color range.
@@ -1003,36 +1319,29 @@ static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors)
     // represents the color to draw each noc link
     ezgl::color current_noc_link_color;
 
-
     // now we need to determine the colors for each link
-    for (int link = 0; link < (int)link_list.size(); link++)
-    {
+    for (int link = 0; link < (int)link_list.size(); link++) {
         // get the current link id
         NocLinkId link_id(link);
 
         // only update the color of the link if it wasnt updated previously
-        if (noc_link_colors[link_id] == ezgl::BLACK)
-        {
+        if (noc_link_colors[link_id] == ezgl::BLACK) {
             // if we are here then the link was not updated previously, so assign the color here
 
             //get the current link bandwidth usage (ratio calculation)
             link_bandwidth_usage = (link_list[link_id].get_bandwidth_usage()) / max_noc_link_bandwidth;
 
             // check if the link is being overused and if it is then cap it at 1.0
-            if (link_bandwidth_usage > 1.0)
-            {
+            if (link_bandwidth_usage > 1.0) {
                 link_bandwidth_usage = 1.0;
             }
 
             // get the corresponding color that represents the link bandwidth usgae
             current_noc_link_color = to_ezgl_color(draw_state->noc_usage_color_map->color(link_bandwidth_usage));
 
-
             // set the colors of the link
             noc_link_colors[link_id] = current_noc_link_color;
-  
         }
-
     }
 
     return;
@@ -1041,10 +1350,9 @@ static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors)
 /************* draw_noc helper functions below *************/
 
 /*
-    This function calculates the position of the marker that will be drawn inside the noc router tile on the FPGA. This marker will be located in the center of the tile and represents a connection point between links that connect to the router.
-*/
-static ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type_ptr noc_router_logical_block_type)
-{
+ * This function calculates the position of the marker that will be drawn inside the noc router tile on the FPGA. This marker will be located in the center of the tile and represents a connection point between links that connect to the router.
+ */
+static ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type_ptr noc_router_logical_block_type) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     // get the drawing information for a noc router
@@ -1055,34 +1363,34 @@ static ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type
     ezgl::rectangle noc_router_pb_bbox = blk_type_info.get_pb_bbox(pb_gnode);
 
     /*
-        The connection marker will be positioned at the center of the noc router tile. For example it will look like below:
-
-        *********************
-        *                   *
-        *                   *
-        *       ****        *
-        *       *  *        *
-        *       ****        *
-        *                   *
-        *                   *
-        *********************
-
-        We do the following to calculate the position of the marker:
-            1. Get the area of the larger router tile
-            2. Calculate the area of the marker (based on a predefined percentage of the area of the larger noc tile)
-            3. The marker is a square, so we can can calculate the lengths 
-            of the sides of the marker
-            4. Divide the side length by 2 and subtract this from the x & y coordinates of the center of the larger noc router tile. This is the bottom left corner of the rectangle.
-            5. Then add the side length to the x & y coordinate of the center of the larger noc router tile. THis is the top right corner of the rectangle.    
-    */
+     * The connection marker will be positioned at the center of the noc router tile. For example it will look like below:
+     *
+     *********************
+     *                   *
+     *                   *
+     *       ****        *
+     *       *  *        *
+     *       ****        *
+     *                   *
+     *                   *
+     *********************
+     *
+     * We do the following to calculate the position of the marker:
+     * 1. Get the area of the larger router tile
+     * 2. Calculate the area of the marker (based on a predefined percentage of the area of the larger noc tile)
+     * 3. The marker is a square, so we can can calculate the lengths 
+     * of the sides of the marker
+     * 4. Divide the side length by 2 and subtract this from the x & y coordinates of the center of the larger noc router tile. This is the bottom left corner of the rectangle.
+     * 5. Then add the side length to the x & y coordinate of the center of the larger noc router tile. THis is the top right corner of the rectangle.    
+     */
     double noc_router_bbox_area = noc_router_pb_bbox.area();
     ezgl::point2d noc_router_bbox_center = noc_router_pb_bbox.center();
 
     double connection_marker_bbox_area = noc_router_bbox_area * SIZE_OF_NOC_MARKER;
     double connection_marker_bbox_side_length = sqrt(connection_marker_bbox_area);
 
-    double half_of_connection_marker_bbox_side_length = connection_marker_bbox_side_length/2;
-    
+    double half_of_connection_marker_bbox_side_length = connection_marker_bbox_side_length / 2;
+
     // calculate bottom left corner coordinate of marker
     ezgl::point2d connection_marker_origin_pt(noc_router_bbox_center.x - half_of_connection_marker_bbox_side_length, noc_router_bbox_center.y - half_of_connection_marker_bbox_side_length);
     // calculate upper right corner coordinate of marker
@@ -1091,14 +1399,12 @@ static ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type
     ezgl::rectangle connection_marker_bbox(connection_marker_origin_pt, connection_marker_top_right_pt);
 
     return connection_marker_bbox;
-
 }
 
 /*
-    This function draws the markers inside the noc router tiles. This marker represents a connection that is an intersection points between multiple links.
-*/
-static void draw_noc_connection_marker(ezgl::renderer* g,const vtr::vector<NocRouterId, NocRouter>& router_list, ezgl::rectangle connection_marker_bbox)
-{
+ * This function draws the markers inside the noc router tiles. This marker represents a connection that is an intersection points between multiple links.
+ */
+static void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId, NocRouter>& router_list, ezgl::rectangle connection_marker_bbox) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     //set the color of the marker
@@ -1110,8 +1416,7 @@ static void draw_noc_connection_marker(ezgl::renderer* g,const vtr::vector<NocRo
     ezgl::rectangle updated_connection_marker_bbox;
 
     // go through the routers and create the connection marker
-    for(auto router = router_list.begin(); router != router_list.end(); router++)
-    {
+    for (auto router = router_list.begin(); router != router_list.end(); router++) {
         router_grid_position_x = router->get_router_grid_position_x();
         router_grid_position_y = router->get_router_grid_position_y();
 
@@ -1120,17 +1425,15 @@ static void draw_noc_connection_marker(ezgl::renderer* g,const vtr::vector<NocRo
 
         // draw the marker
         g->fill_rectangle(updated_connection_marker_bbox);
-
     }
 
     return;
 }
 
 /*
-    This function draws the links within the noc. So based on a given noc topology, this function draws the links that connect the routers in the noc together.
-*/
-static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors, ezgl::rectangle noc_connection_marker_bbox, const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions)
-{
+ * This function draws the links within the noc. So based on a given noc topology, this function draws the links that connect the routers in the noc together.
+ */
+static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors, ezgl::rectangle noc_connection_marker_bbox, const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& noc_ctx = g_vpr_ctx.noc();
 
@@ -1141,7 +1444,7 @@ static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc
     vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
 
     // set the width of the link
-    g->set_line_width(3);
+    g->set_line_width(2);
 
     // routers connecting links
     NocRouterId source_router;
@@ -1167,13 +1470,11 @@ static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc
 
     // get half the width and height of the noc connection marker
     // we will shift the links based on this parameters since the links will be drawn at the boundaries of connection marker instead of the center
-    double noc_connection_marker_quarter_width = (noc_connection_marker_bbox.center().x - noc_connection_marker_bbox.bottom_left().x)/2;
-    double noc_connection_marker_quarter_height = (noc_connection_marker_bbox.center().y - noc_connection_marker_bbox.bottom_left().y)/2;
-
+    double noc_connection_marker_quarter_width = (noc_connection_marker_bbox.center().x - noc_connection_marker_bbox.bottom_left().x) / 2;
+    double noc_connection_marker_quarter_height = (noc_connection_marker_bbox.center().y - noc_connection_marker_bbox.bottom_left().y) / 2;
 
     // loop through the links and draw them
-    for(int link = 0; link < (int)link_list.size(); link++)
-    {
+    for (int link = 0; link < (int)link_list.size(); link++) {
         // get the converted link if
         NocLinkId link_id(link);
 
@@ -1190,14 +1491,14 @@ static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc
 
         // get the initial drawing coordinates of the noc link
         // it will be drawn from the center of two routers it connects
-        link_coords.start = draw_coords->get_absolute_clb_bbox(source_router_x_position, source_router_y_position, 0,noc_router_logical_block_type).center();
-        link_coords.end = draw_coords->get_absolute_clb_bbox(sink_router_x_position, sink_router_y_position, 0,noc_router_logical_block_type).center();
+        link_coords.start = draw_coords->get_absolute_clb_bbox(source_router_x_position, source_router_y_position, 0, noc_router_logical_block_type).center();
+        link_coords.end = draw_coords->get_absolute_clb_bbox(sink_router_x_position, sink_router_y_position, 0, noc_router_logical_block_type).center();
 
         // determine the current noc link type
         link_type = determine_noc_link_type(link_coords.start, link_coords.end);
 
         shift_noc_link(link_coords, list_of_noc_link_shift_directions[link_id], link_type, noc_connection_marker_quarter_width, noc_connection_marker_quarter_height);
-        
+
         // set the color to draw the current link
         g->set_color(noc_link_colors[link_id]);
 
@@ -1207,6 +1508,87 @@ static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc
 
     return;
 }
+<<<<<<< HEAD
+=======
+
+/************* end of draw_noc helper functions *************/
+
+//Collect all the drawing locations associated with the timing edge between start and end
+static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
+                                               tatum::NodeId sink_tnode,
+                                               ezgl::color color,
+                                               ezgl::renderer* g) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& timing_ctx = g_vpr_ctx.timing();
+
+    AtomPinId atom_src_pin = atom_ctx.lookup.tnode_atom_pin(src_tnode);
+    AtomPinId atom_sink_pin = atom_ctx.lookup.tnode_atom_pin(sink_tnode);
+
+    std::vector<ezgl::point2d> points;
+    points.push_back(atom_pin_draw_coord(atom_src_pin));
+
+    tatum::EdgeId tedge = timing_ctx.graph->find_edge(src_tnode, sink_tnode);
+    tatum::EdgeType edge_type = timing_ctx.graph->edge_type(tedge);
+
+    ClusterNetId net_id = ClusterNetId::INVALID();
+
+    //We currently only trace interconnect edges in detail, and treat all others
+    //as flylines
+    if (edge_type == tatum::EdgeType::INTERCONNECT) {
+        //All atom pins are implemented inside CLBs, so next hop is to the top-level CLB pins
+
+        //TODO: most of this code is highly similar to code in PostClusterDelayCalculator, refactor
+        //      into a common method for walking the clustered netlist, this would also (potentially)
+        //      allow us to grab the component delays
+        AtomBlockId atom_src_block = atom_ctx.nlist.pin_block(atom_src_pin);
+        AtomBlockId atom_sink_block = atom_ctx.nlist.pin_block(atom_sink_pin);
+
+        ClusterBlockId clb_src_block = atom_ctx.lookup.atom_clb(atom_src_block);
+        VTR_ASSERT(clb_src_block != ClusterBlockId::INVALID());
+        ClusterBlockId clb_sink_block = atom_ctx.lookup.atom_clb(
+            atom_sink_block);
+        VTR_ASSERT(clb_sink_block != ClusterBlockId::INVALID());
+
+        const t_pb_graph_pin* sink_gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(
+            atom_sink_pin);
+        VTR_ASSERT(sink_gpin);
+
+        int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
+
+        int sink_block_pin_index = -1;
+        int sink_net_pin_index = -1;
+
+        std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block,
+                                                                                                     sink_pb_route_id);
+        if (net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1
+            && sink_net_pin_index != -1) {
+            //Connection leaves the CLB
+            //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
+            VTR_ASSERT(
+                cluster_ctx.clb_nlist.net_driver_block(net_id)
+                == clb_src_block);
+
+            std::vector<int> routed_rr_nodes = trace_routed_connection_rr_nodes(
+                net_id, 0, sink_net_pin_index);
+
+            //Mark all the nodes highlighted
+            t_draw_state* draw_state = get_draw_state_vars();
+            for (int inode : routed_rr_nodes) {
+                draw_state->draw_rr_node[inode].color = color;
+            }
+
+            draw_partial_route((std::vector<int>)routed_rr_nodes,
+                               (ezgl::renderer*)g);
+        } else {
+            //Connection entirely within the CLB, we don't draw the internal routing so treat it as a fly-line
+            VTR_ASSERT(clb_src_block == clb_sink_block);
+        }
+    }
+
+    points.push_back(atom_pin_draw_coord(atom_sink_pin));
+}
+>>>>>>> Improved code documentation (added comments)
 
 //Returns the set of rr nodes which connect driver to sink
 std::vector<int> trace_routed_connection_rr_nodes(
