@@ -118,7 +118,8 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
     // testing datastructure
     NocStorage test_noc;
 
-    int total_num_of_links = NUM_OF_ROUTERS * NOC_CONNECTIVITY;
+    // keeps track of the number of links created
+    int total_num_of_links = 0;
 
     // noc router stuff (we need routers before being able to add links)
     int router_id = 0;
@@ -150,6 +151,8 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
                 // add the link to the NoC
                 test_noc.add_link(source, sink);
+
+                total_num_of_links++;
             }
         }
     }
@@ -159,9 +162,9 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
         link_id = (NocLinkId)link_number;
 
         // verify the link by checking its properties
-        REQUIRE(golden_set[link_number].get_source_router() == test_noc.get_noc_link_source_router(link_id));
+        REQUIRE(test_noc.get_noc_router_id(golden_set[link_number].get_source_router()) == test_noc.get_noc_router_id(test_noc.get_noc_link_source_router(link_id)));
 
-        REQUIRE(golden_set[link_number].get_sink_router() == test_noc.get_noc_link_sink_router(link_id));
+        REQUIRE(test_noc.get_noc_router_id(golden_set[link_number].get_sink_router()) == test_noc.get_noc_router_id(test_noc.get_noc_link_sink_router(link_id)));
     }
 }
 TEST_CASE("test_router_link_list", "[vpr_noc]") {
