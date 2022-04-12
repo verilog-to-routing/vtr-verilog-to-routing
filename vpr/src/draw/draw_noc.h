@@ -1,11 +1,11 @@
 #ifndef DRAW_NOC_H
 #define DRAW_NOC_H
 /*
-    THis file contains functions and data types related to drawing the NoC in the canvas.
-
-    The functions here should be used to determine how the NoC links should be drawn.
-
-*/
+ * THis file contains functions and data types related to drawing the NoC in the canvas.
+ *
+ * The functions here should be used to determine how the NoC links should be drawn.
+ *
+ */
 #include <iostream>
 #include <vector>
 
@@ -23,7 +23,6 @@ struct noc_link_draw_coords {
     ezgl::point2d end;
 };
 
-
 // define the types of orientations we will see links draw in in the canvas
 // vertical defines a vertical line
 // horizontal defines a horizontal line
@@ -38,44 +37,18 @@ enum NocLinkType {
 };
 
 /*
-    Since the noc links run in both directions between any two routers, we want to draw them parallel to each other instead of ovrelapping them. So the idea is to shift one link in one direction and shift the other link in the opposite direction. THe enum below defines the direction a link was shifted, so for example if we had a vertical line, top would be mean shift left and Bottom would mean shift right. SImilarily, if we had a horizontal line, top would mean shift up and bottom would mean shift down.
-*/
+ * Since the noc links run in both directions between any two routers, we want to draw them parallel to each other instead of ovrelapping them. So the idea is to shift one link in one direction and shift the other link in the opposite direction. THe enum below defines the direction a link was shifted, so for example if we had a vertical line, top would be mean shift left and Bottom would mean shift right. SImilarily, if we had a horizontal line, top would mean shift up and bottom would mean shift down.
+ */
 enum NocLinkShift {
     NO_SHIFT, // initially there is no shift
     TOP_SHIFT,
     BOTTOM_SHIFT
 };
 
-void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId,NocLinkShift>& list_of_noc_link_shift_directions);
+void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions);
 
 NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2d link_end_point);
 
 void shift_noc_link(noc_link_draw_coords& link_coords, NocLinkShift link_shift_direction, NocLinkType link_type, double noc_connection_marker_quarter_width, double noc_connection_marker_quarter_height);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif

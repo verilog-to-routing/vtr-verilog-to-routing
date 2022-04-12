@@ -1269,9 +1269,9 @@ struct t_analysis_opts {
     e_timing_update_type timing_update_type;
 };
 
+// used to store NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
-    bool noc;                   ///<options to model the noc within the FPGA device
-    std::string noc_router_tile_name;   ///<name of the router tile located in the FPGA
+    bool noc; ///<options to model the noc within the FPGA device
 };
 
 /**
