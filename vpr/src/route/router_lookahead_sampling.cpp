@@ -130,7 +130,7 @@ static std::tuple<int, int, int> get_node_info(const t_rr_node& node, int num_se
     const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = node.id();
 
-    if (rr_graph.node_type(rr_node) != CHANX && rr_graph.node_type(rr_node) != CHANY) {
+    if (!rr_graph.node_is_wire(rr_node)) {
         return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
     }
 
@@ -203,7 +203,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     // compute bounding boxes for each segment type
     std::vector<vtr::Rect<int>> bounding_box_for_segment(num_segments, vtr::Rect<int>());
     for (auto& node : rr_graph.rr_nodes()) {
-        if (rr_graph.node_type(node.id()) != CHANX && rr_graph.node_type(node.id()) != CHANY) continue;
+        if (!rr_graph.node_is_wire(node.id())) continue;
         if (rr_graph.node_capacity(node.id()) == 0 || rr_graph.num_edges(node.id()) == 0) continue;
         int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(node.id())].seg_index;
 

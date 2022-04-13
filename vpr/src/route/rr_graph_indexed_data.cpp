@@ -244,7 +244,7 @@ static std::vector<size_t> count_rr_segment_types() {
     const auto& rr_graph = device_ctx.rr_graph;
 
     for (const RRNodeId& id : rr_graph.nodes()) {
-        if (rr_graph.node_type(id) != CHANX && rr_graph.node_type(id) != CHANY) continue;
+        if (!rr_graph.node_is_wire(id)) continue;
 
         auto cost_index = rr_graph.node_cost_index(id);
 
@@ -346,7 +346,7 @@ static void load_rr_indexed_data_T_values() {
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         t_rr_type rr_type = rr_graph.node_type(rr_id);
 
-        if (rr_type != CHANX && rr_type != CHANY) {
+        if (!rr_graph.type_is_wire(rr_type)) {
             continue;
         }
 

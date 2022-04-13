@@ -540,7 +540,7 @@ static void check_unbuffered_edges(int from_node) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     from_rr_type = rr_graph.node_type(RRNodeId(from_node));
-    if (from_rr_type != CHANX && from_rr_type != CHANY)
+    if (!rr_graph.type_is_wire(from_rr_type))
         return;
 
     from_num_edges = rr_graph.num_edges(RRNodeId(from_node));
@@ -549,7 +549,7 @@ static void check_unbuffered_edges(int from_node) {
         to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), from_edge));
         to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
-        if (to_rr_type != CHANX && to_rr_type != CHANY)
+        if (!rr_graph.type_is_wire(to_rr_type))
             continue;
 
         from_switch_type = rr_graph.edge_switch(RRNodeId(from_node), from_edge);

@@ -198,6 +198,11 @@ class RRGraphView {
         return curr_type == CHANX || curr_type == CHANY;
     }
 
+    /** @brief Check if routing node type string is a wire. This function is inlined for runtime optimization. */
+    inline bool type_is_wire(std::string curr_type) const {
+        return curr_type == "CHANX" || curr_type == "CHANY";
+    }
+
     /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY). 
      * This function is used for error checking; it checks if two nodes are physically adjacent (could be connected) based on their geometry.
      * It does not check the routing edges to see if they are, in fact, possible to connect in the current routing graph.

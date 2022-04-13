@@ -548,7 +548,7 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
 
     RRNodeId result = RRNodeId::INVALID();
 
-    if (rr_type != CHANX && rr_type != CHANY) {
+    if (!rr_graph.type_is_wire(rr_type)) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Must start lookahead routing from CHANX or CHANY node\n");
     }
 
