@@ -1242,7 +1242,7 @@
         <port name="dfxmisrena" clock="clk"/>
       </input_ports> 
       <output_ports> 
-        <port name="chainout"/>
+        <port name="chainout" clock="clk"/>
         <port name="resulta"/>
         <port name="adder_inexact"/>
         <port name="adder_invalid"/>
@@ -1335,6 +1335,116 @@
         <port name="dftout" clock="clk"/>
       </output_ports>
     </model>
+
+    <!-- vector two mode -->
+
+    <model name="fourteennm_fp_mac.opmode{sp_vector2}.input_type{reg}.output_type{comb}">
+      <input_ports>        
+        <port name="chainin" clock="clk" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" clock="clk" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="ay" clock="clk" combinational_sink_ports="chainout mult_inexact mult_invalid mult_overflow mult_underflow"/>
+        <port name="az" clock="clk" combinational_sink_ports="chainout mult_inexact mult_invalid mult_overflow mult_underflow"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
+      </input_ports> 
+      <output_ports> 
+        <port name="chainout"/>
+        <port name="resulta"/>
+        <port name="adder_inexact"/>
+        <port name="adder_invalid"/>
+        <port name="adder_overflow"/>
+        <port name="adder_underflow"/>
+        <port name="mult_inexact" clock="clk"/>
+        <port name="mult_invalid" clock="clk"/>
+        <port name="mult_overflow" clock="clk"/>
+        <port name="mult_underflow" clock="clk"/>
+        <port name="dftout" clock="clk"/>
+      </output_ports>
+    </model>
+
+    <model name="fourteennm_fp_mac.opmode{sp_vector2}.input_type{comb}.output_type{reg}">
+      <input_ports>        
+        <port name="chainin" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="ay" combinational_sink_ports="chainout mult_inexact mult_invalid mult_overflow mult_underflow"/>
+        <port name="az" combinational_sink_ports="chainout mult_inexact mult_invalid mult_overflow mult_underflow"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
+      </input_ports> 
+      <output_ports> 
+        <port name="chainout"/>
+        <port name="resulta" clock="clk"/>
+        <port name="adder_inexact" clock="clk"/>
+        <port name="adder_invalid" clock="clk"/>
+        <port name="adder_overflow" clock="clk"/>
+        <port name="adder_underflow" clock="clk"/>
+        <port name="mult_inexact"/>
+        <port name="mult_invalid"/>
+        <port name="mult_overflow"/>
+        <port name="mult_underflow"/>
+        <port name="dftout" clock="clk"/>
+      </output_ports>
+    </model>
+
+    <model name="fourteennm_fp_mac.opmode{sp_vector2}.input_type{comb}.output_type{comb}">
+      <input_ports>        
+        <port name="chainin" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="clr" combinational_sink_ports="resulta"/>
+        <port name="ax" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="ay" combinational_sink_ports="chainout mult_inexact mult_invalid mult_overflow mult_underflow"/>
+        <port name="az" combinational_sink_ports="chainout mult_inexact mult_invalid mult_overflow mult_underflow"/>
+        <port name="ena" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="dfxlfsrena" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="dfxmisrena" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
+      </input_ports> 
+      <output_ports> 
+        <port name="chainout"/>
+        <port name="resulta"/>
+        <port name="adder_inexact"/>
+        <port name="adder_invalid"/>
+        <port name="adder_overflow"/>
+        <port name="adder_underflow"/>
+        <port name="mult_inexact"/>
+        <port name="mult_invalid"/>
+        <port name="mult_overflow"/>
+        <port name="mult_underflow"/>
+        <port name="dftout"/>
+      </output_ports>
+    </model>
+
+    <model name="fourteennm_fp_mac.opmode{sp_vector2}.input_type{reg}.output_type{reg}">
+      <input_ports>        
+        <port name="chainin" clock="clk" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="clr" clock="clk"/>
+        <port name="clk" is_clock="1"/>
+        <port name="ax" clock="clk" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="ay" clock="clk" combinational_sink_ports="chainout mult_inexact mult_invalid mult_overflow mult_underflow"/>
+        <port name="az" clock="clk" combinational_sink_ports="chainout mult_inexact mult_invalid mult_overflow mult_underflow"/>
+        <port name="ena" clock="clk"/>
+        <port name="dfxlfsrena" clock="clk"/>
+        <port name="dfxmisrena" clock="clk"/>
+      </input_ports> 
+      <output_ports> 
+        <port name="chainout" clock="clk"/>
+        <port name="resulta" clock="clk"/>
+        <port name="adder_inexact" clock="clk"/>
+        <port name="adder_invalid" clock="clk"/>
+        <port name="adder_overflow" clock="clk"/>
+        <port name="adder_underflow" clock="clk"/>
+        <port name="mult_inexact" clock="clk"/>
+        <port name="mult_invalid" clock="clk"/>
+        <port name="mult_overflow" clock="clk"/>
+        <port name="mult_underflow" clock="clk"/>
+        <port name="dftout" clock="clk"/>
+      </output_ports>
+    </model>
+
   </models>
   <tiles>
     <tile name="LAB">
