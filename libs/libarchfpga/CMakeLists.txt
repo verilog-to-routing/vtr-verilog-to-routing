@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 
 project("libarchfpga")
 
-file(GLOB_RECURSE EXEC_SOURCES main.cpp)
+file(GLOB_RECURSE EXEC_SOURCES src/main.cpp)
 file(GLOB_RECURSE LIB_SOURCES src/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)

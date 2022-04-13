@@ -1771,7 +1771,6 @@ struct t_lut_element {
     bool operator==(const t_lut_element& other) const {
         return site_type == other.site_type && width == other.width && lut_bels == other.lut_bels;
     }
-
 };
 
 /* Network-on-chip(NoC) Router data type used to identify 
