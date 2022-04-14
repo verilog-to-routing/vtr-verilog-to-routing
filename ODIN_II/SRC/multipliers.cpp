@@ -1765,68 +1765,41 @@ bool is_ast_multiplier(ast_node_t* node) {
  * -------------------------------------------------------------------------
  * (function: check_multiplier_port_size)
  *
- * If output size is less than the max of input sizes, the inputs should 
- * be pruned since the most significant bits are useless
+ * If output size is less than the sum of input sizes, 
+ * we need to expand output pins with pad pins
  * 
- * @param node  pointer to the multiplication node
+ * @param node pointer to the multiplication node
+ * @param netlist pointer to the current netlist file
  * -----------------------------------------------------------------------
  */
-void check_multiplier_port_size(nnode_t* node) {
+void check_multiplier_port_size(nnode_t* node, netlist_t* netlist) {
     /* Can only perform the optimisation if hard multipliers exist! */
     if (hard_multipliers == NULL)
         return;
 
     int mula = node->input_port_sizes[0];
     int mulb = node->input_port_sizes[1];
-    int max = std::max(mula, mulb);
+    int sizeout = node->num_output_pins;
+    int limit = mula + mulb;
 
     /* check the output port size */
-    if (node->num_output_pins < max) {
-        int limit = node->num_output_pins;
-        int new_mula = (mula > limit) ? limit : mula;
-        int new_mulb = (mulb > limit) ? limit : mulb;
-        npin_t** new_input_pins = (npin_t**)vtr::calloc(new_mula + new_mulb, sizeof(npin_t*));
+    if (node->num_output_pins < limit) {
+        // Set the limit value as the number of output pins
+        node->num_output_pins = limit;
+        node->output_port_sizes[0] = limit;
+        // Keep record of old output pins pointer for cleaning up later
+        npin_t** old_output_pins = node->output_pins;
+        node->output_pins = (npin_t**)calloc(node->num_output_pins, sizeof(npin_t*));
 
-        /* handle mula */
-        for (int i = 0; i < mula; i++) {
-            npin_t* input_pin = node->input_pins[i];
-            /* detach from mul node */
-            node->input_pins[i] = NULL;
-
-            if (i < new_mula) {
-                new_input_pins[i] = input_pin;
-            } else {
-                /* detach from its net */
-                remove_fanout_pins_from_net(input_pin->net, input_pin, input_pin->pin_net_idx);
-                /* free the pin */
-                input_pin->node = NULL;
-                free_npin(input_pin);
-            }
+        // Move output pins to new array and adding pad pins in extra spots
+        for (int i = 0; i < node->num_output_pins; i++) {
+            if (i < sizeout)
+                node->output_pins[i] = old_output_pins[i];
+            else
+                add_output_pin_to_node(node, get_pad_pin(netlist), i);
         }
-
-        /* handle mulb */
-        for (int i = 0; i < mulb; i++) {
-            npin_t* input_pin = node->input_pins[node->input_port_sizes[0] + i];
-            /* detach from mul node */
-            node->input_pins[node->input_port_sizes[0] + i] = NULL;
-
-            if (i < new_mulb) {
-                new_input_pins[new_mula + i] = input_pin;
-            } else {
-                /* detach from its net */
-                remove_fanout_pins_from_net(input_pin->net, input_pin, input_pin->pin_net_idx);
-                /* free the pin */
-                input_pin->node = NULL;
-                free_npin(input_pin);
-            }
-        }
-
-        /* free old input pin list */
-        vtr::free(node->input_pins);
-        node->input_pins = new_input_pins;
-        node->num_input_pins = new_mula + new_mulb;
-        node->input_port_sizes[0] = new_mula;
-        node->input_port_sizes[1] = new_mulb;
+        // CLEAN UP
+        vtr::free(old_output_pins);
     }
 }
 /*-------------------------------------------------------------------------
