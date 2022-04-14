@@ -620,6 +620,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     int num_rr_nodes = 0;
 
     is_flat = true;
+    // Add routing resources to rr_graph lookup table
     alloc_and_load_rr_node_indices(device_ctx.rr_graph_builder,
                                    max_chan_width, grid,
                                    &num_rr_nodes, chan_details_x, chan_details_y, is_flat);

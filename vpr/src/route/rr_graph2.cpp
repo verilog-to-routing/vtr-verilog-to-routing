@@ -1252,13 +1252,12 @@ static void reserve_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
     // #TODO: for debugging purpose - needs to be deleted
     for(auto pin_pair : pb_graph_node->pins_vec) {
         auto pin = pin_pair.first;
-        if (pin->port->type == PORTS::IN_PORT) {
+        auto port_type = pin->port->type;
+        if (port_type == PORTS::IN_PORT) {
             num_in++;
-        } else if (pin->port->type == PORTS::OUT_PORT) {
+        } else {
+            VTR_ASSERT(port_type == PORTS::OUT_PORT);
             num_out++;
-        }
-        else if(pin->port->type == PORTS::INOUT_PORT) {
-            std::cout << "Do something about inout port!" << std::endl;
         }
     }
 
@@ -1308,11 +1307,12 @@ static void add_all_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
                         if (!type->pinloc[width_offset][height_offset][side][pin_num])
                             continue;
                     }
-                    if (pb_graph_pin->port->type == IN_PORT) {
+                    auto port_type = pb_graph_pin->port->type;
+                    if (port_type == IN_PORT) {
                         rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x_tile, y_tile, IPIN, pin_num, side);
                         assigned_to_rr_node = true;
-                    } else if (pb_graph_pin->port->type == OUT_PORT || pb_graph_pin->port->type == INOUT_PORT) {
-                        VTR_ASSERT(pb_graph_pin->port->type == OUT_PORT || pb_graph_pin->port->type == INOUT_PORT);
+                    } else {
+                        VTR_ASSERT(port_type == OUT_PORT);
                         rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x_tile, y_tile, OPIN, pin_num, side);
                         assigned_to_rr_node = true;
                     }
