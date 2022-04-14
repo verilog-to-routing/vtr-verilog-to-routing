@@ -301,4 +301,11 @@ const t_physical_tile_port* get_port_by_pin(const t_sub_tile* sub_tile, int pin)
  */
 const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
 
+int get_sub_tile_pin_from_pb_pin(t_physical_tile_type_ptr physical_tile,
+                                 const t_sub_tile* sub_tile,
+                                 int relative_cap,
+                                 const t_pb_graph_pin* pin);
+
+const t_pb_graph_pin* get_pb_pin_from_logical_pin_idx(t_logical_block_type_ptr type, int pin);
+
 #endif

@@ -1,6 +1,7 @@
 #include "vtr_assert.h"
 #include "vtr_memory.h"
 #include "vtr_util.h"
+#include "vtr_log.h"
 
 #include "arch_types.h"
 #include "arch_util.h"
@@ -487,6 +488,77 @@ const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin) {
             return &pb_type->ports[port.index];
         }
     }
+
+    return nullptr;
+}
+
+int get_sub_tile_pin_from_pb_pin(t_physical_tile_type_ptr physical_tile,
+                                 const t_sub_tile* sub_tile,
+                                 int relative_cap,
+                                 const t_pb_graph_pin* pin) {
+    int sub_tile_num_pin = sub_tile->num_phy_pins / sub_tile->capacity.total();
+
+    int sub_tile_pin;
+    if(!pin->is_root_block_pin()) {
+        return -1;
+    }
+
+    const t_pb_graph_node* pb_graph_node = pin->parent_node;
+    t_logical_block_type_ptr logical_block = nullptr;
+    for(auto eq_site : sub_tile->equivalent_sites) {
+        if(eq_site->pb_graph_head == pb_graph_node) {
+            logical_block = eq_site;
+            break;
+        }
+    }
+    if(logical_block == nullptr) {
+        return -1;
+    }
+    int logical_pin_id = pin->port->absolute_first_pin_index + pin->pin_number;
+    sub_tile_pin = get_sub_tile_physical_pin(sub_tile->index, physical_tile, logical_block, logical_pin_id);
+
+    sub_tile_pin = relative_cap*sub_tile_num_pin + sub_tile_pin;
+
+
+    return sub_tile_pin;
+}
+
+const t_pb_graph_pin* get_pb_pin_from_logical_pin_idx(t_logical_block_type_ptr type, int pin) {
+    auto port = get_port_by_pin(type, pin);
+    VTR_ASSERT(pin >= port->absolute_first_pin_index && pin < port->absolute_first_pin_index + port->num_pins);
+    int pin_num_in_port = pin - port->absolute_first_pin_index;
+
+    const t_pb_graph_node* pb_graph_node = type->pb_graph_head;
+
+
+
+    VTR_ASSERT(port->type == PORTS::IN_PORT || port->type == PORTS::OUT_PORT);
+    if(port->type == PORTS::IN_PORT) {
+        for(int port_idx = 0; port_idx < pb_graph_node->num_input_ports; port_idx++) {
+            if(pb_graph_node->num_input_pins[port_idx] != 0) {
+                if(pb_graph_node->input_pins[port_idx][0].port == port) {
+                    return &pb_graph_node->input_pins[port_idx][pin_num_in_port];
+                }
+            }
+        }
+        for(int port_idx = 0; port_idx < pb_graph_node->num_clock_ports; port_idx++) {
+            if(pb_graph_node->num_clock_pins[port_idx] != 0) {
+                if(pb_graph_node->clock_pins[port_idx][0].port == port) {
+                    return &pb_graph_node->clock_pins[port_idx][pin_num_in_port];
+                }
+            }
+        }
+
+    } else {
+        for(int port_idx = 0; port_idx < pb_graph_node->num_output_ports; port_idx++) {
+            if(pb_graph_node->num_output_pins[port_idx] != 0) {
+                if(pb_graph_node->output_pins[port_idx][0].port == port) {
+                    return &pb_graph_node->output_pins[port_idx][pin_num_in_port];
+                }
+            }
+        }
+    }
+
 
     return nullptr;
 }
