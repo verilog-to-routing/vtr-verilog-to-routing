@@ -2,7 +2,6 @@
 #include "globals.h"
 
 vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type) {
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     VTR_ASSERT(rr_graph.type_is_wire(rr_type));
