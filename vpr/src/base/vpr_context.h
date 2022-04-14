@@ -416,6 +416,16 @@ struct NocContext : public Context {
      * @brief Represents the expected delay when going through a router
      */
     double noc_router_latency;
+
+    /**
+     * @brief Stores all the communication happening betwee routers in the NoC 
+     *
+     * Contains a list of traffic flows that describe which two routers are communication with each other and also some metrics and constraints on the data transfer between the two routers. 
+     * 
+     *
+     * This is created from a user supplied .flows file.
+     */
+    std::vector<t_noc_traffic_flow> list_of_noc_traffic_flows;
 };
 
 /**
