@@ -1778,7 +1778,7 @@ static void add_internal_edge_pin(RRGraphBuilder& rr_graph_builder,
 
         // get node ptc
         try {
-            node_ptc = node->pins_vec.at(pb_graph_pin);
+            node_ptc = node->pb_pin_idx_map.at(pb_graph_pin);
         }
         catch (const std::out_of_range& oor) {
             std::cerr << "Out of Range error: " << oor.what() << '\n';
