@@ -492,13 +492,13 @@ const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin) {
     return nullptr;
 }
 
-int get_sub_tile_pin_from_pb_pin(t_physical_tile_type_ptr physical_tile,
+int get_physical_pin_from_pb_pin(t_physical_tile_type_ptr physical_tile,
                                  const t_sub_tile* sub_tile,
                                  int relative_cap,
                                  const t_pb_graph_pin* pin) {
     int sub_tile_num_pin = sub_tile->num_phy_pins / sub_tile->capacity.total();
 
-    int sub_tile_pin;
+    int physical_pin;
     if(!pin->is_root_block_pin()) {
         return -1;
     }
@@ -515,12 +515,12 @@ int get_sub_tile_pin_from_pb_pin(t_physical_tile_type_ptr physical_tile,
         return -1;
     }
     int logical_pin_id = pin->port->absolute_first_pin_index + pin->pin_number;
-    sub_tile_pin = get_sub_tile_physical_pin(sub_tile->index, physical_tile, logical_block, logical_pin_id);
+    physical_pin = get_sub_tile_physical_pin(sub_tile->index, physical_tile, logical_block, logical_pin_id);
 
-    sub_tile_pin = relative_cap*sub_tile_num_pin + sub_tile_pin;
+    physical_pin = relative_cap*sub_tile_num_pin + physical_pin;
 
 
-    return sub_tile_pin;
+    return physical_pin;
 }
 
 const t_pb_graph_pin* get_pb_pin_from_logical_pin_idx(t_logical_block_type_ptr type, int pin) {
