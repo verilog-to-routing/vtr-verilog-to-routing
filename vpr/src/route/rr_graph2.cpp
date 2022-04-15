@@ -83,8 +83,6 @@ static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
                                    int y,
                                    int* index);
 
-static std::vector<const t_pb_graph_node*> get_primitives(const t_pb_graph_node* pb_graph_node);
-
 static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                        const std::vector<int> conn_tracks,
                                        const int to_chan,
@@ -1027,9 +1025,8 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
 
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
+            //Process each block from it's root location
             if (grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0) {
-                //Process each block from it's root location
-                auto type = grid[x][y].type;
 
                 //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
@@ -1242,15 +1239,15 @@ static void reserve_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
             for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                 int y_tile = y + height_offset;
                 rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN,
-                                                             pb_graph_node->pins_vec.size()+type->num_pins, side);
+                                                             pb_graph_node->pb_pin_idx_map.size()+type->num_pins, side);
                 rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN,
-                                                             pb_graph_node->pins_vec.size()+type->num_pins, side);
+                                                             pb_graph_node->pb_pin_idx_map.size()+type->num_pins, side);
             }
         }
     }
 
     // #TODO: for debugging purpose - needs to be deleted
-    for(auto pin_pair : pb_graph_node->pins_vec) {
+    for(auto pin_pair : pb_graph_node->pb_pin_idx_map) {
         auto pin = pin_pair.first;
         auto port_type = pin->port->type;
         if (port_type == PORTS::IN_PORT) {
@@ -1273,13 +1270,13 @@ static void add_all_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
                                    const int y,
                                    int* rr_index,
                                    const std::vector<e_side>& root_pin_sides) {
-    //#TODO: What to do with root-block pins? the problem is that type->pinloc needs to be checked. There is not any mapping between physical pin and pb_graph_pin!
+
     const t_pb_graph_node* pb_graph_node = logical_block->pb_graph_head;
     if(!pb_graph_node)
         return;
 
     // Add all pins except for root-block pins
-    for (auto pin_pair : pb_graph_node->pins_vec) {
+    for (auto pin_pair : pb_graph_node->pb_pin_idx_map) {
         auto pb_graph_pin = pin_pair.first;
         int pin_num;
         bool assigned_to_rr_node = false;
@@ -1289,12 +1286,13 @@ static void add_all_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
         if(pb_graph_pin->is_root_block_pin()) {
             sides = root_pin_sides;
             // Get the physical pin num
-            pin_num = get_sub_tile_pin_from_pb_pin(type,
+            pin_num = get_physical_pin_from_pb_pin(type,
                                                    sub_tile,
                                                    relative_capacity,
                                                    pb_graph_pin);
         } else {
             sides.push_back(e_side::TOP);
+            // Index = 0 to Index = type->num_pins is reserved for the root-block(to corresponds with physical pin index)
             pin_num += type->num_pins;
         }
 
@@ -1354,51 +1352,23 @@ static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
                                    int* index) {
 
     auto type = grid[x][y].type;
-    int added_src_num = 0;
-    int added_sink_num = 0;
 
-    for(auto sub_tile : type->sub_tiles) {
+
+
+    for(const auto& sub_tile : type->sub_tiles) {
         for(auto eq_site : sub_tile.equivalent_sites) {
             auto pb_graph_node = eq_site->pb_graph_head;
             for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
-                auto primitives = get_primitives(pb_graph_node);
-
-                for(auto primitive : primitives) {
-                    auto primitive_pb_type = primitive->pb_type;
-                    auto ports = primitive_pb_type->ports;
-                    int num_ports = primitive_pb_type->num_ports;
-
-                    for(int port_idx = 0; port_idx < num_ports; port_idx++) {
-                        auto port = ports[port_idx];
-                        if(port.equivalent != PortEquivalence::NONE) {
-                            if (port.type == PORTS::IN_PORT) {
-                                rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, added_sink_num);
-                                added_sink_num++;
-                            }
-                            // #TODO: If type is not in_port we would assing SOURCE node to it - is it okey?
-                            else {
-                                rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, added_src_num);
-                                added_src_num++;
-                            }
-                            ++(*index);
-
-                        }
-                        else {
-                            for(int pin_idx = 0; pin_idx < port.num_pins; pin_idx++) {
-                                if (port.type == PORTS::IN_PORT) {
-                                    rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, added_sink_num);
-                                    added_sink_num++;
-                                }
-                                else {
-                                    rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, added_src_num);
-                                    added_src_num++;
-                                }
-                                ++(*index);
-                            }
-                        }
+                for (size_t iclass = 0; iclass < pb_graph_node->primitive_class_inf.size(); ++iclass) {
+                    auto class_type = pb_graph_node->primitive_class_inf[iclass].type;
+                    if (class_type == DRIVER) {
+                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, iclass);
+                    } else {
+                        VTR_ASSERT(class_type == RECEIVER);
+                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, iclass);
                     }
+                    ++(*index);
                 }
-
             }
 
         }
@@ -1406,29 +1376,6 @@ static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
     }
 
 
-}
-
-static std::vector<const t_pb_graph_node*> get_primitives(const t_pb_graph_node* pb_graph_node) {
-    std::vector<const t_pb_graph_node*> primitives;
-    if(pb_graph_node->is_primitive()) {
-        primitives.push_back(pb_graph_node);
-        return primitives;
-    }
-
-    auto pb_type = pb_graph_node->pb_type;
-    for(int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++) {
-        for(int pb_type_idx = 0; pb_type_idx < (pb_type->modes[mode_idx]).num_pb_type_children; pb_type_idx++) {
-            int num_pb = pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb;
-            for(int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-                const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
-                auto tmp_primitives = get_primitives(child_pb_graph_node);
-                primitives.insert(std::end(primitives), std::begin(tmp_primitives), std::end(tmp_primitives));
-
-            }
-
-        }
-    }
-    return primitives;
 }
 
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
