@@ -1187,15 +1187,15 @@ class t_pb_graph_node {
     int* output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
 
-    int total_num_primitive_input_class; /* only valid for root blocks */
-    int total_num_primitive_output_class; /* only valid for root blocks */
     int max_input_pin_mode_num;
     int total_num_input_pins;
     int total_num_output_pins;
     int total_num_clock_pins;
-    std::unordered_map<const t_pb_graph_pin*, int> pins_vec; /* {pin, intra_cluster_pin_idx} - Only valid for root-block*/
-    std::unordered_map<const t_pb_graph_pin*, int> primitive_pin_class_map; /* {primitive_pin, class_number} - only valid for top level block*/
     int total_primitive_count; /* total number of this primitive type in the cluster */
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_idx_map; /* {pin, intra_cluster_pin_idx}*/
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map;
+    std::vector<t_class> primitive_class_inf; /* {primitive_pin, class_number} - only valid for top level block*/
+
 
     /* Interconnect instances for this pb
      * Only used for power
