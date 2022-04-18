@@ -54,7 +54,7 @@ static void set_pin_indices(t_pb_graph_node* pb_graph_node);
 
 static std::tuple<int, int, int, int> get_node_num_pins(const t_pb_graph_node* pb_graph_node);
 
-static std::vector<const t_pb_graph_node*> get_primitives(const t_pb_graph_node* pb_graph_node);
+static std::vector<const t_pb_graph_node*> get_all_primitives(const t_pb_graph_node* pb_graph_node);
 
 static void set_all_primitives_pins_classes(t_pb_graph_node* pb_graph_node);
 
@@ -369,7 +369,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 
     std::tie (total_num_input_pins, total_num_output_pins, total_num_clock_pins, max_pins_mode_num) = get_node_num_pins(pb_graph_node);
 
-    // #TODO: The ID assigned to the pins on the top-level block is not correspondent to the ptc in rr_lookup - Maybe something better can be done!
     set_pin_indices(pb_graph_node);
     pb_graph_node->total_num_input_pins = total_num_input_pins;
     pb_graph_node->total_num_output_pins = total_num_output_pins;
@@ -393,7 +392,7 @@ static void set_pin_indices(t_pb_graph_node* pb_graph_node) {
     const t_pb_type* pb_type = pb_graph_node->pb_type;
     for(int mode_idx = 0; mode_idx < pb_type->num_modes; mode_idx++) {
         for (int pb_type_idx = 0; pb_type_idx < pb_type->modes[mode_idx].num_pb_type_children; pb_type_idx++) {
-            int num_pb = pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][0].pb_type->num_pb;
+            int num_pb = pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb;
             for (int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
                 int child_num_pins = 0;
                 t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
@@ -401,7 +400,7 @@ static void set_pin_indices(t_pb_graph_node* pb_graph_node) {
                 // We assume that the sub-blocks are already initialized
                 VTR_ASSERT(child_pb_graph_node->max_input_pin_mode_num != -1);
                 for(auto& pb_pin_idx_pair : child_pb_pin_idx_map) {
-                    // The indices assign to the sibling blocks should be added to and offset
+                    // The indices assign to the sibling blocks should be added to an offset
                     pb_pin_idx_pair.second += num_seen_pins;
                     pb_pin_idx_map.insert(pb_pin_idx_pair);
                     child_num_pins += 1;
@@ -412,7 +411,7 @@ static void set_pin_indices(t_pb_graph_node* pb_graph_node) {
     }
 
     /* Add pins of the current block itself */
-    // Add input pins
+
     for(int port_type = 0; port_type < 3; port_type++) {
         int num_ports;
         int* num_pins;
@@ -492,7 +491,7 @@ static std::tuple<int, int, int, int> get_node_num_pins(const t_pb_graph_node* p
     return std::tuple<int, int, int, int> (total_num_input_pins, total_num_output_pins, total_num_clock_pins, max_pins_mode_num);
 }
 
-static std::vector<const t_pb_graph_node*> get_primitives(const t_pb_graph_node* pb_graph_node) {
+static std::vector<const t_pb_graph_node*> get_all_primitives(const t_pb_graph_node* pb_graph_node) {
     std::vector<const t_pb_graph_node*> primitives;
     if(pb_graph_node->is_primitive()) {
         primitives.push_back(pb_graph_node);
@@ -505,7 +504,7 @@ static std::vector<const t_pb_graph_node*> get_primitives(const t_pb_graph_node*
             int num_pb = pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb;
             for(int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
                 const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
-                auto tmp_primitives = get_primitives(child_pb_graph_node);
+                auto tmp_primitives = get_all_primitives(child_pb_graph_node);
                 primitives.insert(std::end(primitives), std::begin(tmp_primitives), std::end(tmp_primitives));
 
             }
@@ -516,10 +515,7 @@ static std::vector<const t_pb_graph_node*> get_primitives(const t_pb_graph_node*
 
 static void set_all_primitives_pins_classes(t_pb_graph_node* pb_graph_node) {
 
-
-
-
-    auto primitives = get_primitives(pb_graph_node);
+    auto primitives = get_all_primitives(pb_graph_node);
     for(auto primitive : primitives) {
         for(int port_type = 0; port_type < 3; port_type++) {
             int num_ports;

@@ -1245,20 +1245,6 @@ static void reserve_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
             }
         }
     }
-
-    // #TODO: for debugging purpose - needs to be deleted
-    for(auto pin_pair : pb_graph_node->pb_pin_idx_map) {
-        auto pin = pin_pair.first;
-        auto port_type = pin->port->type;
-        if (port_type == PORTS::IN_PORT) {
-            num_in++;
-        } else {
-            VTR_ASSERT(port_type == PORTS::OUT_PORT);
-            num_out++;
-        }
-    }
-
-
 }
 
 static void add_all_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
@@ -1279,27 +1265,30 @@ static void add_all_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
     for (auto pin_pair : pb_graph_node->pb_pin_idx_map) {
         auto pb_graph_pin = pin_pair.first;
         int pin_num;
+        int max_width;
+        int max_height;
         bool assigned_to_rr_node = false;
         //top-level block pins are added later
         std::vector<e_side> sides;
-        pin_num = pin_pair.second;
+        pin_num = get_pb_pin_ptc(type,
+                                 sub_tile,
+                                 logical_block,
+                                 relative_capacity,
+                                 pb_graph_pin);
         if(pb_graph_pin->is_root_block_pin()) {
             sides = root_pin_sides;
-            // Get the physical pin num
-            pin_num = get_physical_pin_from_pb_pin(type,
-                                                   sub_tile,
-                                                   relative_capacity,
-                                                   pb_graph_pin);
+            max_width = type->width;
+            max_height = type->height;
         } else {
             sides.push_back(e_side::TOP);
-            // Index = 0 to Index = type->num_pins is reserved for the root-block(to corresponds with physical pin index)
-            pin_num += type->num_pins;
+            max_width = 1;
+            max_height = 1;
         }
 
         for(auto side : sides) {
-            for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+            for (int width_offset = 0; width_offset < max_width; ++width_offset) {
                 int x_tile = x + width_offset;
-                for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                for (int height_offset = 0; height_offset < max_height; ++height_offset) {
                     int y_tile = y + height_offset;
                     if(pb_graph_pin->is_root_block_pin()){
                         if (!type->pinloc[width_offset][height_offset][side][pin_num])

@@ -523,6 +523,26 @@ int get_physical_pin_from_pb_pin(t_physical_tile_type_ptr physical_tile,
     return physical_pin;
 }
 
+int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
+                   const t_sub_tile* sub_tile,
+                   t_logical_block_type_ptr logical_block,
+                   int relative_cap,
+                   const t_pb_graph_pin* pin) {
+    int pin_ptc;
+    const t_pb_graph_node* root_pb_graph_node = logical_block->pb_graph_head;
+    if(pin->is_root_block_pin()){
+        pin_ptc = get_physical_pin_from_pb_pin(physical_tile,
+                                               sub_tile,
+                                               relative_cap,
+                                               pin);
+    }else{
+        int logical_pin_num = root_pb_graph_node->pb_pin_idx_map.at(pin);
+        pin_ptc = logical_pin_num + physical_tile->num_pins;
+    }
+
+    return pin_ptc;
+}
+
 const t_pb_graph_pin* get_pb_pin_from_logical_pin_idx(t_logical_block_type_ptr type, int pin) {
     auto port = get_port_by_pin(type, pin);
     VTR_ASSERT(pin >= port->absolute_first_pin_index && pin < port->absolute_first_pin_index + port->num_pins);

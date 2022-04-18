@@ -20,8 +20,6 @@
 typedef enum e_rr_type : unsigned char {
     SOURCE = 0, ///<A dummy node that is a logical output within a block -- i.e., the gate that generates a signal.
     SINK,       ///<A dummy node that is a logical input within a block -- i.e. the gate that needs a signal.
-    INTERNAL_IPIN, /// Input pin to a primitve
-    INTERNAL_OPIN, /// Output pin to a primitive
     IPIN,       ///Input pin to a block
     OPIN,       ///Output pin of a block
     CHANX,      ///x-directed routing wire, or an x-directed segment of a channel for global routing
@@ -29,10 +27,8 @@ typedef enum e_rr_type : unsigned char {
     NUM_RR_TYPES
 } t_rr_type;
 
-constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, INTERNAL_IPIN, INTERNAL_OPIN,
-                                                           IPIN, OPIN, CHANX, CHANY}};
-constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "INTERNAL_IPIN", "INTERNAL_OPIN",
-                                                                  "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
+constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}};
+constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
 
 /*
  * Direction::INC: wire driver is positioned at the low-coordinate end of the wire.

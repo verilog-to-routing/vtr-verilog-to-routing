@@ -306,6 +306,12 @@ int get_physical_pin_from_pb_pin(t_physical_tile_type_ptr physical_tile,
                                  int relative_cap,
                                  const t_pb_graph_pin* pin);
 
+int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
+                   const t_sub_tile* sub_tile,
+                   t_logical_block_type_ptr logical_block,
+                   int relative_cap,
+                   const t_pb_graph_pin* pin);
+
 const t_pb_graph_pin* get_pb_pin_from_logical_pin_idx(t_logical_block_type_ptr type, int pin);
 
 #endif
