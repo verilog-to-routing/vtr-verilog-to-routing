@@ -227,7 +227,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     pb_graph_node->total_num_clock_pins = 0;
     pb_graph_node->total_primitive_count = 0;
 
-    pb_graph_node->pb_pin_idx_map = std::unordered_map<const t_pb_graph_pin*, int>();
+    pb_graph_node->pb_pin_idx_bimap = vtr::unordered_bimap<const t_pb_graph_pin*, int>();
     pb_graph_node->pb_pin_class_map = std::unordered_map<const t_pb_graph_pin*, int>();
     pb_graph_node->primitive_class_inf = std::vector<t_class>();
 
@@ -380,10 +380,10 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 
 static void set_pin_indices(t_pb_graph_node* pb_graph_node) {
 
-    std::unordered_map<const t_pb_graph_pin*, int>& pb_pin_idx_map = pb_graph_node->pb_pin_idx_map;
+    vtr::unordered_bimap<const t_pb_graph_pin*, int>& pb_pin_idx_map = pb_graph_node->pb_pin_idx_bimap;
     int num_seen_pins = 0;
 
-    // if pb_pin_idx_map is already initialized
+    // if pb_pin_idx_bimap is already initialized
     if(pb_graph_node->max_input_pin_mode_num != -1) {
         return;
 
@@ -396,13 +396,14 @@ static void set_pin_indices(t_pb_graph_node* pb_graph_node) {
             for (int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
                 int child_num_pins = 0;
                 t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
-                auto& child_pb_pin_idx_map = child_pb_graph_node->pb_pin_idx_map;
+                auto& child_pb_pin_idx_map = child_pb_graph_node->pb_pin_idx_bimap;
                 // We assume that the sub-blocks are already initialized
                 VTR_ASSERT(child_pb_graph_node->max_input_pin_mode_num != -1);
                 for(auto& pb_pin_idx_pair : child_pb_pin_idx_map) {
                     // The indices assign to the sibling blocks should be added to an offset
-                    pb_pin_idx_pair.second += num_seen_pins;
-                    pb_pin_idx_map.insert(pb_pin_idx_pair);
+                    int new_pb_pin_logic_num = pb_pin_idx_pair.second+num_seen_pins;
+                    child_pb_pin_idx_map.update(pb_pin_idx_pair.first, new_pb_pin_logic_num);
+                    pb_pin_idx_map.insert(pb_pin_idx_pair.first, new_pb_pin_logic_num);
                     child_num_pins += 1;
                 }
                 num_seen_pins += child_num_pins;
@@ -433,7 +434,7 @@ static void set_pin_indices(t_pb_graph_node* pb_graph_node) {
         for (int port_idx = 0; port_idx < num_ports; port_idx++) {
             for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
 
-                pb_pin_idx_map.insert(std::make_pair(&(pins[port_idx][pin_idx]), num_seen_pins));
+                pb_pin_idx_map.insert(&pins[port_idx][pin_idx], num_seen_pins);
                 num_seen_pins++;
             }
         }
@@ -567,7 +568,7 @@ void static set_primitive_port_pin_classes(t_pb_graph_node* root_pb_graph_node,
 
             for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
                 auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
-                class_inf.pinlist.push_back(root_pb_graph_node->pb_pin_idx_map.at(pb_graph_pin));
+                class_inf.pinlist.push_back(root_pb_graph_node->pb_pin_idx_bimap[pb_graph_pin]);
                 root_pb_graph_node->pb_pin_class_map.insert(std::make_pair(pb_graph_pin, class_num));
             }
             primitive_class_inf.push_back(class_inf);
@@ -586,7 +587,7 @@ void static set_primitive_port_pin_classes(t_pb_graph_node* root_pb_graph_node,
                 }
 
                 auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
-                class_inf.pinlist.push_back(root_pb_graph_node->pb_pin_idx_map.at(pb_graph_pin));
+                class_inf.pinlist.push_back(root_pb_graph_node->pb_pin_idx_bimap[pb_graph_pin]);
                 root_pb_graph_node->pb_pin_class_map.insert(std::make_pair(pb_graph_pin, class_num));
                 primitive_class_inf.push_back(class_inf);
             }

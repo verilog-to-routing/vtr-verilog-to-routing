@@ -299,7 +299,7 @@ const t_physical_tile_port* get_port_by_pin(const t_sub_tile* sub_tile, int pin)
 /**
  * @brief Returns the logical block port given the pin name and the corresponding logical block type
  */
-const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
+const t_port* get_port_by_logical_pin_num(t_logical_block_type_ptr type, int pin);
 
 int get_physical_pin_from_pb_pin(t_physical_tile_type_ptr physical_tile,
                                  const t_sub_tile* sub_tile,

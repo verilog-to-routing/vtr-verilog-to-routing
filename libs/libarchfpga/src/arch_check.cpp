@@ -113,7 +113,7 @@ void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_ti
     }
 
     for (auto pin_map : pin_direct_map) {
-        auto block_port = get_port_by_pin(logical_block, pin_map.first.pin);
+        auto block_port = get_port_by_logical_pin_num(logical_block, pin_map.first.pin);
 
         auto sub_tile_port = get_port_by_pin(sub_tile, pin_map.second.pin);
 

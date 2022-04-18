@@ -1239,9 +1239,9 @@ static void reserve_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
             for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                 int y_tile = y + height_offset;
                 rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN,
-                                                             pb_graph_node->pb_pin_idx_map.size()+type->num_pins, side);
+                                                             pb_graph_node->pb_pin_idx_bimap.size()+type->num_pins, side);
                 rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN,
-                                                             pb_graph_node->pb_pin_idx_map.size()+type->num_pins, side);
+                                                             pb_graph_node->pb_pin_idx_bimap.size()+type->num_pins, side);
             }
         }
     }
@@ -1262,7 +1262,7 @@ static void add_all_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
         return;
 
     // Add all pins except for root-block pins
-    for (auto pin_pair : pb_graph_node->pb_pin_idx_map) {
+    for (auto pin_pair : pb_graph_node->pb_pin_idx_bimap) {
         auto pb_graph_pin = pin_pair.first;
         int pin_num;
         int max_width;

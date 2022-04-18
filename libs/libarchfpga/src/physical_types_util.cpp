@@ -10,7 +10,7 @@
 #include "physical_types_util.h"
 
 /**
- * @brief Data structure that holds information about a phyisical pin
+ * @brief Data structure that holds information about a physical pin
  *
  * This structure holds the following information on a pin:
  *   - sub_tile_index: index of the sub tile within the physical tile type containing this pin
@@ -282,7 +282,7 @@ int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index
 
 std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type_ptr physical_tile, int pin) {
     int pins_to_remove = 0;
-    for (auto sub_tile : physical_tile->sub_tiles) {
+    for (const auto& sub_tile : physical_tile->sub_tiles) {
         auto capacity = sub_tile.capacity;
         int sub_tile_num_pins = sub_tile.num_phy_pins;
         int sub_tile_pin = pin - pins_to_remove;
@@ -479,17 +479,9 @@ const t_physical_tile_port* get_port_by_pin(const t_sub_tile* sub_tile, int pin)
     return nullptr;
 }
 
-const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin) {
-    auto pb_type = type->pb_type;
-
-    for (int i = 0; i < pb_type->num_ports; i++) {
-        auto port = pb_type->ports[i];
-        if (pin >= port.absolute_first_pin_index && pin < port.absolute_first_pin_index + port.num_pins) {
-            return &pb_type->ports[port.index];
-        }
-    }
-
-    return nullptr;
+const t_port* get_port_by_logical_pin_num(t_logical_block_type_ptr type, int pin) {
+    auto pb_pin = type->pb_graph_head->pb_pin_idx_bimap[pin];
+    return pb_pin->port;
 }
 
 int get_physical_pin_from_pb_pin(t_physical_tile_type_ptr physical_tile,
@@ -536,7 +528,7 @@ int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
                                                relative_cap,
                                                pin);
     }else{
-        int logical_pin_num = root_pb_graph_node->pb_pin_idx_map.at(pin);
+        int logical_pin_num = root_pb_graph_node->pb_pin_idx_bimap[pin];
         pin_ptc = logical_pin_num + physical_tile->num_pins;
     }
 
@@ -544,7 +536,7 @@ int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
 }
 
 const t_pb_graph_pin* get_pb_pin_from_logical_pin_idx(t_logical_block_type_ptr type, int pin) {
-    auto port = get_port_by_pin(type, pin);
+    auto port = get_port_by_logical_pin_num(type, pin);
     VTR_ASSERT(pin >= port->absolute_first_pin_index && pin < port->absolute_first_pin_index + port->num_pins);
     int pin_num_in_port = pin - port->absolute_first_pin_index;
 
