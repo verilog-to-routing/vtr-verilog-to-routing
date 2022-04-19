@@ -55,11 +55,11 @@ class VprConstraints {
     PartitionId get_atom_partition(AtomBlockId blk_id);
 
     /**
-     * @brief Store a partition
+     * @brief Store a partition, return its id
      *
      *   @param part     The partition being stored
      */
-    void add_partition(Partition part);
+    PartitionId add_partition(Partition part);
 
     /**
      * @brief Return a partition

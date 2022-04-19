@@ -350,7 +350,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     auto& filename_opts = vpr_setup->FileNameOpts;
     if (!filename_opts.read_vpr_constraints_file.empty())
         load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
-
     if (!filename_opts.read_xdc_constraints_file.empty()) {
         try {
             load_xdc_constraints_file(filename_opts.read_xdc_constraints_file.c_str(), *arch, atom_ctx.nlist);

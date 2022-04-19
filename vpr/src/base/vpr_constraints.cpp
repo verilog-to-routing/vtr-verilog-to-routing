@@ -28,8 +28,9 @@ PartitionId VprConstraints::get_atom_partition(AtomBlockId blk_id) {
     }
 }
 
-void VprConstraints::add_partition(Partition part) {
+PartitionId VprConstraints::add_partition(Partition part) {
     partitions.push_back(part);
+    return PartitionId(partitions.size() - 1);
 }
 
 Partition VprConstraints::get_partition(PartitionId part_id) {

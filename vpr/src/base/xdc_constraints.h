@@ -5,6 +5,7 @@
 
 #include "atom_netlist.h"
 #include "physical_types.h"
+#include "vpr_constraints.h"
 
 class XDC_eException {
 public:
@@ -53,11 +54,7 @@ void xdc_init();
  *         XDC_eErroneousXDC: Failure when parsing XDC
  *         XDC_eCustomException: Anything else that doesn't fit he above categories.
  */
-VprConstraints read_xdc_constraints_to_vpr(
-    const t_arch& arch,
-    AtomNetlist& netlist,
-    std::istream& xdc_stream
-);
+VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arch& arch, const AtomNetlist& netlist);
 
 /**
  * \brief Parse a file in XDC format and apply it to global FloorplanningContext.
@@ -66,10 +63,6 @@ VprConstraints read_xdc_constraints_to_vpr(
  *         XDC_eErroneousXDC: Failure when parsing XDC
  *         XDC_eCustomException: Anything else that doesn't fit he above categories.
  */
-void load_xdc_constraints_file(
-    const char* read_xdc_constraints_name,
-    const t_arch& arch,
-    AtomNetlist& netlist
-);
+void load_xdc_constraints_file(const char* read_xdc_constraints_name, const t_arch& arch, const AtomNetlist& netlist);
 
 #endif

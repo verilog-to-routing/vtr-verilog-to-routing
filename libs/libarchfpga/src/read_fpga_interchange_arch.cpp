@@ -806,10 +806,13 @@ struct ArchReader {
     }
 
     void process_package_pins() {
+        std::unordered_map<std::string, std::string> site_to_pin_map;
+
         for (auto package : ar_.getPackages()) {
             for (auto pin : package.getPackagePins()) {
                 t_package_pin pckg_pin;
                 pckg_pin.name = str(pin.getPackagePin());
+                
 
                 if (pin.getBel().isBel()) {
                     pckg_pin.bel_name = str(pin.getBel().getBel());
@@ -821,7 +824,33 @@ struct ArchReader {
 
                 package_pins_.push_back(pckg_pin);
 
-                arch_->phys_grid_mapping[pckg_pin.name] = pckg_pin.bel_name;
+                site_to_pin_map[pckg_pin.site_name] = pckg_pin.name;
+            }
+        }
+
+        for (const auto& tile : ar_.getTileList()) {
+            int site_idx = 0;
+            for (const auto& site : tile.getSites()) {
+                int subtile = site_idx++;
+
+                std::string site_name = str(site.getName());
+                auto it = site_to_pin_map.find(site_name);
+                if (it == site_to_pin_map.end())
+                    continue;
+                std::string& pin_name = it->second;
+
+                auto tile_type = ar_.getTileTypeList()[tile.getType()];
+
+                /* TODO: All tiles are currently set to 1x1 size, but this is done in process_tiles method which gets
+                 * called later. We should split this logic in a way that's more suitable for constraining pins,
+                 * because currently the line below makes an assumption about tile size which happens to be true only
+                 * due to process_tiles implementation.
+                 * 
+                 * A similar thing could be said about subtile indexing.
+                 */
+                t_phys_map_region pin_region { tile.getCol() + 1, tile.getRow() + 1, 1, 1, subtile };
+
+                arch_->phys_grid_mapping[pin_name] = std::move(pin_region);
             }
         }
     }
