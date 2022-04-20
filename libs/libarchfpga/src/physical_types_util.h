@@ -301,13 +301,16 @@ const t_physical_tile_port* get_port_by_pin(const t_sub_tile* sub_tile, int pin)
  */
 const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
 
+
+/************************************ Access to intra-block resources ************************************/
+
 const t_port* get_port_by_logical_pin_num(t_logical_block_type_ptr type, int pin);
 
 int get_root_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                                  const t_sub_tile* sub_tile,
-
+                                 t_logical_block_type_ptr logical_block,
                                  int relative_cap,
-                                 const t_pb_graph_pin* pin);
+                                 int logical_pin_num);
 
 int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
                    const t_sub_tile* sub_tile,
@@ -315,11 +318,11 @@ int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
                    int relative_cap,
                    const t_pb_graph_pin* pin);
 
-int get_logical_num_from_physical_num (t_physical_tile_type_ptr physical_tile,
-                                      const t_sub_tile* sub_tile,
-                                      t_logical_block_type_ptr logical_block,
-                                      int relative_cap,
-                                      int physical_num);
+int get_pin_logical_num_from_physical_num (t_physical_tile_type_ptr physical_tile,
+                                          const t_sub_tile* sub_tile,
+                                          t_logical_block_type_ptr logical_block,
+                                          int relative_cap,
+                                          int physical_num);
 
 const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                                                        const t_sub_tile* sub_tile,
@@ -331,10 +334,23 @@ const t_pb_graph_pin* get_pb_pin_from_logical_pin_idx(t_logical_block_type_ptr t
 
 int get_total_num_tile_pins(t_physical_tile_type_ptr tile);
 
-int get_tile_primitive_class_num(t_physical_tile_type_ptr curr_physical_tile,
+int get_primitives_class_physical_num(t_physical_tile_type_ptr curr_physical_tile,
                                  const t_sub_tile* curr_sub_tile,
                                  t_logical_block_type_ptr curr_logical_block,
                                  int curr_relative_cap,
                                  int logical_primitive_class_num);
+
+std::unordered_map<const t_class*, int> get_sub_tile_primitive_classes_map(t_physical_tile_type_ptr curr_physical_tile,
+                                   const t_sub_tile* curr_sub_tile,
+                                   t_logical_block_type_ptr curr_logical_block,
+                                   int curr_relative_cap);
+
+std::unordered_map<const t_class*, int> get_primitive_block_classes_map(t_physical_tile_type_ptr physical_tile,
+                                                                        const t_sub_tile* sub_tile,
+                                                                        t_logical_block_type_ptr logical_block,
+                                                                        int sub_tile_relative_cap,
+                                                                        const t_pb_graph_node* primitive_pb_graph_node);
+
+std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node* pb_graph_node);
 
 #endif

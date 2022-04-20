@@ -228,8 +228,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     pb_graph_node->total_primitive_count = 0;
 
     pb_graph_node->pb_pin_idx_bimap = vtr::unordered_bimap<const t_pb_graph_pin*, int>();
-    pb_graph_node->pb_pin_class_map = std::unordered_map<const t_pb_graph_pin*, int>();
-    pb_graph_node->primitive_class_inf = std::vector<t_class>();
 
     /* Generate ports for pb graph node */
     for (i = 0; i < pb_type->num_ports; i++) {

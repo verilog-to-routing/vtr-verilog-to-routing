@@ -1192,8 +1192,8 @@ class t_pb_graph_node {
     int total_num_output_pins;
     int total_num_clock_pins;
     int total_primitive_count; /* total number of this primitive type in the cluster */
-    vtr::unordered_bimap<const t_pb_graph_pin*, int> pb_pin_idx_bimap; /* {pin, intra_cluster_pin_idx}*/
-    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map;
+    vtr::unordered_bimap<const t_pb_graph_pin*, int> pb_pin_idx_bimap; /* {pin, intra_cluster_pin_idx} */
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* only valid for top level block */
     std::vector<t_class> primitive_class_inf; /* {primitive_pin, class_number} - only valid for top level block*/
 
 

@@ -119,11 +119,13 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
 static t_logical_block_type_ptr get_max_input_pin_eq_site(const std::vector<t_logical_block_type_ptr>& eq_sites);
 
-static std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node* pb_graph_node);
-
 static std::vector<const t_pb_graph_node*> get_mode_primitives(const t_pb_graph_node* pb_graph_node);
 
-static std::unordered_map<const t_class*, int> get_mode_primitives_classes(const t_pb_graph_node* pb_graph_node);
+static std::unordered_map<const t_class*, int> get_mode_primitives_classes(t_physical_tile_type_ptr physical_tile,
+                                                                           const t_sub_tile* sub_tile,
+                                                                           t_logical_block_type_ptr logical_block,
+                                                                           int sub_tile_relative_cap,
+                                                                           const t_pb_graph_node* pb_graph_node);
 
 static void add_rr_sink_and_source(const t_class* class_inf,
                                              int class_id,
@@ -1557,40 +1559,6 @@ static t_logical_block_type_ptr get_max_input_pin_eq_site(const std::vector<t_lo
     }
     return res;
 }
-static std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node* pb_graph_node) {
-
-    std::vector<const t_pb_graph_pin*> pins;
-
-    for(int port_type_idx = 0; port_type_idx < 3; port_type_idx++) {
-        t_pb_graph_pin** pb_pins;
-        int num_ports;
-        int* num_pins;
-
-        if(port_type_idx == 0) {
-            pb_pins = pb_graph_node->input_pins;
-            num_ports = pb_graph_node->num_input_ports;
-            num_pins = pb_graph_node->num_input_pins;
-
-        } else if(port_type_idx == 1) {
-            pb_pins = pb_graph_node->output_pins;
-            num_ports = pb_graph_node->num_output_ports;
-            num_pins = pb_graph_node->num_output_pins;
-        } else {
-            VTR_ASSERT(port_type_idx == 2);
-            pb_pins = pb_graph_node->clock_pins;
-            num_ports = pb_graph_node->num_clock_ports;
-            num_pins = pb_graph_node->num_clock_pins;
-        }
-
-        for(int port_idx = 0; port_idx < num_ports; port_idx++) {
-            for(int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
-                const t_pb_graph_pin* pin = &(pb_pins[port_idx][pin_idx]);
-                pins.push_back(pin);
-            }
-        }
-    }
-    return pins;
-}
 
 static std::vector<const t_pb_graph_node*> get_mode_primitives(const t_pb_graph_node* pb_graph_node) {
     std::vector<const t_pb_graph_node*> primitives;
@@ -1617,7 +1585,11 @@ static std::vector<const t_pb_graph_node*> get_mode_primitives(const t_pb_graph_
     return primitives;
 }
 
-static std::unordered_map<const t_class*, int> get_mode_primitives_classes(const t_pb_graph_node* pb_graph_node) {
+static std::unordered_map<const t_class*, int> get_mode_primitives_classes(t_physical_tile_type_ptr physical_tile,
+                                                                           const t_sub_tile* sub_tile,
+                                                                           t_logical_block_type_ptr logical_block,
+                                                                           int sub_tile_relative_cap,
+                                                                           const t_pb_graph_node* pb_graph_node) {
 
     const std::unordered_map<const t_pb_graph_pin*, int>& pb_pin_class_map = pb_graph_node->pb_pin_class_map;
     const std::vector<t_class>& primitive_class_inf = pb_graph_node->primitive_class_inf;
@@ -1626,15 +1598,11 @@ static std::unordered_map<const t_class*, int> get_mode_primitives_classes(const
     std::vector<const t_pb_graph_node*> primitives =  get_mode_primitives(pb_graph_node);
 
     for(auto primitive : primitives) {
-        auto pins = get_pb_graph_node_pins(primitive);
-        for(auto pin : pins) {
-            int class_inf_num =  pb_pin_class_map.at(pin);
-            const t_class* class_inf = &(primitive_class_inf[class_inf_num]);
-            auto result = classes_id_map.find(class_inf);
-            if(result == classes_id_map.end()){
-                classes_id_map.insert(std::make_pair(class_inf, class_inf_num));
-            }
-        }
+        auto tmp_class_id_map = get_primitive_block_classes_map(physical_tile,
+                                                                sub_tile,
+                                                                logical_block,
+                                                                sub_tile_relative_cap,
+                                                                primitive);
     }
     return classes_id_map;
 }
@@ -1804,11 +1772,15 @@ static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
 
 
     for(const auto& sub_tile : physical_tile->sub_tiles) {
+        // #TODO: eq_site with the highest number of input pins is chosen - Is there any better suggestion?
+        auto logical_block = get_max_input_pin_eq_site(sub_tile.equivalent_sites);
         for(int sub_tile_cap = 0; sub_tile_cap < sub_tile.capacity.total(); sub_tile_cap++) {
-            // #TODO: eq_site with the highest number of input pins is chosen - Is there any better suggestion?
-            auto logical_block = get_max_input_pin_eq_site(sub_tile.equivalent_sites);
             auto pb_graph_head = logical_block->pb_graph_head;
-            auto classes = get_mode_primitives_classes(pb_graph_head);
+            auto classes = get_mode_primitives_classes(physical_tile,
+                                                       &sub_tile,
+                                                       logical_block,
+                                                       sub_tile_cap,
+                                                       pb_graph_head);
             /* Initialize SINK/SOURCE nodes and connect them to their respective pins */
             for(auto class_pair : classes) {
                 auto class_inf = class_pair.first;

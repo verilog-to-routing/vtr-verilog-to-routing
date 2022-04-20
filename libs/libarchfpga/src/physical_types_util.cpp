@@ -582,25 +582,140 @@ int get_total_num_tile_pins(t_physical_tile_type_ptr tile) {
     return num_pins;
 }
 
-int get_tile_primitive_class_num(t_physical_tile_type_ptr physical_tile,
-                                 const t_sub_tile* curr_sub_tile,
-                                 t_logical_block_type_ptr curr_logical_block,
-                                 int curr_relative_cap,
-                                 int logical_primitive_class_num) {
+int get_primitives_class_physical_num(t_physical_tile_type_ptr physical_tile,
+                                      const t_sub_tile* curr_sub_tile,
+                                      t_logical_block_type_ptr curr_logical_block,
+                                      int curr_relative_cap,
+                                      int logical_primitive_class_num) {
 
     int num_seen_primitive_class = 0;
     for(auto& sub_tile : physical_tile->sub_tiles) {
-        for(int sub_tile_cap = 0; sub_tile_cap < sub_tile.capacity.total(); sub_tile_cap++) {
-            for(auto eq_site : sub_tile.equivalent_sites) {
-                if(eq_site == curr_logical_block) {
-                    if(curr_relative_cap == sub_tile_cap)
-                        return num_seen_primitive_class;
+        for (int sub_tile_cap = 0; sub_tile_cap < sub_tile.capacity.total(); sub_tile_cap++) {
+            if(&sub_tile == curr_sub_tile) {
+                for (auto eq_site : sub_tile.equivalent_sites) {
+                    if (eq_site == curr_logical_block) {
+                        if (curr_relative_cap == sub_tile_cap)
+                            return num_seen_primitive_class + logical_primitive_class_num;
+                    }
+                    num_seen_primitive_class += (int)eq_site->pb_graph_head->primitive_class_inf.size();
                 }
-                num_seen_primitive_class += (int)eq_site->pb_graph_head->primitive_class_inf.size();
+            } else {
+                for (auto eq_site : sub_tile.equivalent_sites) {
+                    num_seen_primitive_class += (int)eq_site->pb_graph_head->primitive_class_inf.size();
+                }
             }
         }
-
     }
 
     return -1;
+}
+
+std::unordered_map<const t_class*, int> get_sub_tile_primitive_classes_map(t_physical_tile_type_ptr curr_physical_tile,
+                                                                           const t_sub_tile* curr_sub_tile,
+                                                                           t_logical_block_type_ptr curr_logical_block,
+                                                                           int curr_relative_cap) {
+
+    std::unordered_map<const t_class*, int> primitive_classes_map;
+
+    for(auto eq_site : curr_sub_tile->equivalent_sites) {
+        auto pb_graph_node = eq_site->pb_graph_head;
+       auto logical_block_primitives_classes = pb_graph_node->primitive_class_inf;
+        for(int class_num = 0; class_num < (int)logical_block_primitives_classes.size(); class_num++) {
+            int tile_class_num = get_primitives_class_physical_num(curr_physical_tile,
+                                                               curr_sub_tile,
+                                                               curr_logical_block,
+                                                               curr_relative_cap,
+                                                               class_num);
+            VTR_ASSERT(tile_class_num != -1);
+            primitive_classes_map.insert(std::make_pair(&logical_block_primitives_classes[class_num], tile_class_num));
+        }
+    }
+
+    return primitive_classes_map;
+}
+
+std::unordered_map<const t_class*, int> get_primitive_block_classes_map(t_physical_tile_type_ptr physical_tile,
+                                                                        const t_sub_tile* sub_tile,
+                                                                        t_logical_block_type_ptr logical_block,
+                                                                        int sub_tile_relative_cap,
+                                                                        const t_pb_graph_node* primitive_pb_graph_node) {
+    VTR_ASSERT(primitive_pb_graph_node->is_primitive());
+    std::unordered_map<const t_class*, int> block_classes_map;
+    const std::unordered_map<const t_pb_graph_pin*, int>& pb_pin_class_map = logical_block->pb_graph_head->pb_pin_class_map;
+    const std::vector<t_class>& primitive_class_inf = logical_block->pb_graph_head->primitive_class_inf;
+
+    // #TODO: What about clock port?
+    for(int port_type = 0; port_type < 2; port_type++) {
+        int num_ports;
+        int* ports_num_pins;
+        t_pb_graph_pin** pins;
+        if (port_type == 0) {
+            // Add internal edges for connected to the current block input pins
+            num_ports = primitive_pb_graph_node->num_input_ports;
+            ports_num_pins = primitive_pb_graph_node->num_input_pins;
+            pins = primitive_pb_graph_node->input_pins;
+        } else {
+            // Add internal edges for connected to the current block output pins
+            VTR_ASSERT(port_type == 1);
+
+            num_ports = primitive_pb_graph_node->num_output_ports;
+            ports_num_pins = primitive_pb_graph_node->num_output_pins;
+            pins = primitive_pb_graph_node->output_pins;
+        }
+
+        for(int port_idx = 0; port_idx < num_ports; port_idx++) {
+            int num_pins = ports_num_pins[port_idx];
+            for (int pin_idx = 0; pin_idx < num_pins; pin_idx++) {
+                const t_pb_graph_pin* tmp_pin = &(pins[port_idx][pin_idx]);
+                auto tmp_class_idx = pb_pin_class_map.at(tmp_pin);
+                auto tmp_class = &primitive_class_inf[tmp_class_idx];
+                if(block_classes_map.count(tmp_class) > 0) {
+                    int class_physical_num = get_primitives_class_physical_num(physical_tile,
+                                                                               sub_tile,
+                                                                               logical_block,
+                                                                               sub_tile_relative_cap,
+                                                                               tmp_class_idx);
+                    block_classes_map.insert(std::make_pair(tmp_class, class_physical_num));
+                }
+            }
+        }
+    }
+
+    return block_classes_map;
+
+}
+
+std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node* pb_graph_node) {
+
+    std::vector<const t_pb_graph_pin*> pins;
+
+    for(int port_type_idx = 0; port_type_idx < 3; port_type_idx++) {
+        t_pb_graph_pin** pb_pins;
+        int num_ports;
+        int* num_pins;
+
+        if(port_type_idx == 0) {
+            pb_pins = pb_graph_node->input_pins;
+            num_ports = pb_graph_node->num_input_ports;
+            num_pins = pb_graph_node->num_input_pins;
+
+        } else if(port_type_idx == 1) {
+            pb_pins = pb_graph_node->output_pins;
+            num_ports = pb_graph_node->num_output_ports;
+            num_pins = pb_graph_node->num_output_pins;
+        } else {
+            VTR_ASSERT(port_type_idx == 2);
+            pb_pins = pb_graph_node->clock_pins;
+            num_ports = pb_graph_node->num_clock_ports;
+            num_pins = pb_graph_node->num_clock_pins;
+        }
+
+        for(int port_idx = 0; port_idx < num_ports; port_idx++) {
+            for(int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
+                const t_pb_graph_pin* pin = &(pb_pins[port_idx][pin_idx]);
+                pins.push_back(pin);
+            }
+        }
+    }
+    return pins;
 }
