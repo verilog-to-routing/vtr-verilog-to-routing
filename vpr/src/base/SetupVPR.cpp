@@ -27,16 +27,6 @@
 #include "clock_modeling.h"
 #include "ShowSetup.h"
 
-static void set_tile_primitive_classes(t_physical_tile_type& tile);
-
-static void add_logical_block_primitive_classes(t_physical_tile_type& tile, t_logical_block_type_ptr eq_site);
-
-void static add_port_primitive_classes(t_physical_tile_type& tile,
-                                       t_pb_graph_node* root_pb_graph_node,
-                                       t_pb_graph_pin** pb_graph_pins,
-                                       int num_ports,
-                                       int* num_pins);
-
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options,
                             t_packer_opts* PackerOpts);
@@ -270,12 +260,6 @@ void SetupVPR(const t_options* Options,
         echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH));
     }
 
-    for(auto& tile : device_ctx.physical_tile_types) {
-        tile.pb_pin_class_map = std::unordered_map<const t_pb_graph_pin*, int> ();
-        tile.primitive_class_inf = std::vector<t_class> ();
-        set_tile_primitive_classes(tile);
-    }
-
     *GraphPause = Options->GraphPause;
 
     *ShowGraphics = Options->show_graphics;
@@ -286,103 +270,6 @@ void SetupVPR(const t_options* Options,
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
         EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, Arch);
     }
-}
-
-static void set_tile_primitive_classes(t_physical_tile_type& tile) {
-    for(auto& sub_tile : tile.sub_tiles){
-        for(int sub_tile_cap = 0; sub_tile_cap < sub_tile.capacity.total(); sub_tile_cap++) {
-            for(auto eq_site : sub_tile.equivalent_sites) {
-                add_logical_block_primitive_classes(tile, eq_site);
-            }
-        }
-    }
-}
-
-static void add_logical_block_primitive_classes(t_physical_tile_type& tile, t_logical_block_type_ptr eq_site) {
-    auto pb_graph_node = eq_site->pb_graph_head;
-
-    auto primitives = get_all_pb_graph_node_primitives(pb_graph_node);
-    for(auto primitive : primitives) {
-        for(int port_type = 0; port_type < 3; port_type++) {
-            int num_ports;
-            int* num_pins;
-            t_pb_graph_pin** pb_graph_pins;
-            if(port_type == 0) {
-                num_ports = primitive->num_input_ports;
-                num_pins = primitive->num_input_pins;
-                pb_graph_pins = primitive->input_pins;
-
-            } else if(port_type == 1) {
-                num_ports = primitive->num_output_ports;
-                num_pins = primitive->num_output_pins;
-                pb_graph_pins = primitive->output_pins;
-
-            } else {
-                VTR_ASSERT(port_type == 2);
-                num_ports = primitive->num_clock_ports;
-                num_pins = primitive->num_clock_pins;
-                pb_graph_pins = primitive->clock_pins;
-            }
-            add_port_primitive_classes(tile, pb_graph_node, pb_graph_pins, num_ports, num_pins);
-        }
-    }
-}
-
-void static add_port_primitive_classes(t_physical_tile_type& tile,
-                                       t_pb_graph_node* root_pb_graph_node,
-                                       t_pb_graph_pin** pb_graph_pins,
-                                       int num_ports,
-                                       int* num_pins) {
-    std::unordered_map<const t_pb_graph_pin*, int>& pb_pin_class_map = tile.pb_pin_class_map;
-    std::vector<t_class>& primitive_class_inf = tile.primitive_class_inf;
-
-
-    for(int port_idx = 0; port_idx < num_ports; port_idx++) {
-        if(num_pins[port_idx] == 0)
-            continue;
-        auto port = pb_graph_pins[port_idx][0].port;
-        if (port->equivalent != PortEquivalence::NONE) {
-            t_class class_inf;
-            int class_num = (int)primitive_class_inf.size();
-            class_inf.num_pins = port->num_pins;
-            class_inf.equivalence = port->equivalent;
-
-            if (port->type == IN_PORT) {
-                class_inf.type = RECEIVER;
-            } else {
-                VTR_ASSERT(port->type == OUT_PORT);
-                class_inf.type = DRIVER;
-            }
-
-            for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
-                auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
-                class_inf.pinlist.push_back(root_pb_graph_node->pb_pin_idx_bimap[pb_graph_pin]);
-                pb_pin_class_map.insert(std::make_pair(pb_graph_pin, class_num));
-            }
-            primitive_class_inf.push_back(class_inf);
-        } else {
-            for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
-                t_class class_inf;
-                int class_num = (int)primitive_class_inf.size();
-                class_inf.num_pins = 1;
-                class_inf.equivalence = port->equivalent;
-
-                if (port->type == IN_PORT) {
-                    class_inf.type = RECEIVER;
-                } else {
-                    VTR_ASSERT(port->type == OUT_PORT);
-                    class_inf.type = DRIVER;
-                }
-
-                auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
-                class_inf.pinlist.push_back(root_pb_graph_node->pb_pin_idx_bimap[pb_graph_pin]);
-                pb_pin_class_map.insert(std::make_pair(pb_graph_pin, class_num));
-                primitive_class_inf.push_back(class_inf);
-            }
-        }
-
-    }
-
 }
 
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing) {

@@ -612,9 +612,6 @@ struct t_physical_tile_type {
     vtr::NdMatrix<std::vector<bool>, 3> pinloc; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
 
     std::vector<t_class> class_inf; /* [0..num_class-1] */
-    //The below two data structures are filled after pb graph data structures are initialized
-    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map;
-    std::vector<t_class> primitive_class_inf; /* {primitive_pin, class_number} - only valid for top level block*/
 
     std::vector<int> pin_width_offset;  // [0..num_pins-1]
     std::vector<int> pin_height_offset; // [0..num_pins-1]
@@ -1196,7 +1193,8 @@ class t_pb_graph_node {
     int total_num_clock_pins;
     int total_primitive_count; /* total number of this primitive type in the cluster */
     vtr::unordered_bimap<const t_pb_graph_pin*, int> pb_pin_idx_bimap; /* {pin, intra_cluster_pin_idx}*/
-
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map;
+    std::vector<t_class> primitive_class_inf; /* {primitive_pin, class_number} - only valid for top level block*/
 
 
     /* Interconnect instances for this pb
