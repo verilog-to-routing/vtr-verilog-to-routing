@@ -2021,3 +2021,25 @@ void print_timing_stats(std::string name,
             current.num_full_hold_updates - past.num_full_hold_updates,
             current.num_full_setup_hold_updates - past.num_full_setup_hold_updates);
 }
+
+static std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_graph_node* pb_graph_node) {
+    std::vector<const t_pb_graph_node*> primitives;
+    if(pb_graph_node->is_primitive()) {
+        primitives.push_back(pb_graph_node);
+        return primitives;
+    }
+
+    auto pb_type = pb_graph_node->pb_type;
+    for(int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++) {
+        for(int pb_type_idx = 0; pb_type_idx < (pb_type->modes[mode_idx]).num_pb_type_children; pb_type_idx++) {
+            int num_pb = pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb;
+            for(int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
+                const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
+                auto tmp_primitives = get_all_primitives(child_pb_graph_node);
+                primitives.insert(std::end(primitives), std::begin(tmp_primitives), std::end(tmp_primitives));
+
+            }
+        }
+    }
+    return primitives;
+}

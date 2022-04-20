@@ -291,7 +291,8 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     /* This routine checks that the rr_node is inside the grid and has a valid
      * pin number, etc.
      */
-
+    //#TODO: This variable should be read from somewhere!
+    bool is_flat = true;
     int xlow, ylow, xhigh, yhigh, ptc_num, capacity;
     t_rr_type rr_type;
     t_physical_tile_type_ptr type;
@@ -388,99 +389,82 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
 
     /* Check that it's capacities and such make sense. */
 
-    switch (rr_type) {
-        case SOURCE:
-            if (ptc_num >= (int)type->class_inf.size()
-                || type->class_inf[ptc_num].type != DRIVER) {
-                VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
-            }
-            if (type->class_inf[ptc_num].num_pins != capacity) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) had a capacity of %d.\n", inode, rr_type, capacity);
-            }
-            break;
-
-        case SINK:
-            if (ptc_num >= (int)type->class_inf.size()
-                || type->class_inf[ptc_num].type != RECEIVER) {
-                VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
-            }
-            if (type->class_inf[ptc_num].num_pins != capacity) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
-            }
-            break;
-
-        case OPIN:
-            if (ptc_num >= type->num_pins
-                || type->class_inf[type->pin_class[ptc_num]].type != DRIVER) {
-                VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
-            }
-            if (capacity != 1) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
-            }
-            break;
-
-        case IPIN:
-            if (ptc_num >= type->num_pins
-                || type->class_inf[type->pin_class[ptc_num]].type != RECEIVER) {
-                VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
-            }
-            if (capacity != 1) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
-            }
-            break;
-
-        case CHANX:
-            if (route_type == DETAILED) {
-                nodes_per_chan = device_ctx.chan_width.max;
-                tracks_per_node = 1;
-            } else {
-                nodes_per_chan = 1;
-                tracks_per_node = device_ctx.chan_width.x_list[ylow];
-            }
-
-            if (ptc_num >= nodes_per_chan) {
-                VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-            }
-
-            if (capacity != tracks_per_node) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
-            }
-            break;
-
-        case CHANY:
-            if (route_type == DETAILED) {
-                nodes_per_chan = device_ctx.chan_width.max;
-                tracks_per_node = 1;
-            } else {
-                nodes_per_chan = 1;
-                tracks_per_node = device_ctx.chan_width.y_list[xlow];
-            }
-
-            if (ptc_num >= nodes_per_chan) {
-                VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-            }
-
-            if (capacity != tracks_per_node) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
-            }
-            break;
-
-        default:
+    if(rr_type == SOURCE || rr_type == SINK) {
+        int max_ptc = ;
+        e_pin_type pin_type = (rr_type == SINK) ? RECEIVER : DRIVER;
+        if (ptc_num >= (int)type->class_inf.size()
+            || type->class_inf[ptc_num].type != pin_type) {
+            VPR_ERROR(VPR_ERROR_ROUTE,
+                      "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
+        }
+        if (type->class_inf[ptc_num].num_pins != capacity) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "in check_rr_node: Unexpected segment type: %d\n", rr_type);
+                            "in check_rr_node: inode %d (type %d) had a capacity of %d.\n", inode, rr_type, capacity);
+        }
+
+    } else if(rr_type == IPIN || rr_type == OPIN) {
+        int max_ptc = (is_flat) ? (type->num_pins + get_total_num_tile_pins(type)) : type->num_pins;
+        e_pin_type pin_type = (rr_type == IPIN) ? RECEIVER : DRIVER;
+        if(is_flat) {
+            max_ptc = type->num_pins + get_total_num_tile_pins(type);
+            for(const t_sub_tile& sub_tile : type->sub_tiles) {
+                for(int sub_tile_cap = 0; sub_tile_cap < sub_tile.capacity.total(); sub_tile_cap++) {
+                    for (auto eq_site : sub_tile.equivalent_sites) {
+                        auto pb_graph_node = eq_site->pb_graph_head;
+                        auto pb_pin = get_pb_pin_from_pin_physical_num(type,
+                                                                       &sub_tile,
+                                                                       eq_site,
+                                                                       sub_tile_cap,
+                                                                       ptc_num);
+                        if (pb_graph_node->primitive_class_inf[pb_graph_node->pb_pin_class_map[pb_pin]].type != pin_type) {
+                            VPR_ERROR(VPR_ERROR_ROUTE,
+                                      "in check_rr_node: inode %d (type %d) type is not equal to DRIVER.\n", inode, rr_type, ptc_num);
+                        }
+                    }
+                }
+            }
+        } else {
+            VTR_ASSERT(is_flat == false);
+            if(type->class_inf[type->pin_class[ptc_num]].type != pin_type) {
+                VPR_ERROR(VPR_ERROR_ROUTE,
+                          "in check_rr_node: inode %d (type %d) type is not equal to DRIVER.\n", inode, rr_type, ptc_num);
+            }
+        }
+        if (ptc_num >= max_ptc) {
+            VPR_ERROR(VPR_ERROR_ROUTE,
+                      "in check_rr_node: inode %d (type %d) had a ptc_num of %d - max_ptc = %d.\n", inode, rr_type, ptc_num, max_ptc);
+        }
+        if (capacity != 1) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+        }
+    } else if(rr_type == CHANX || rr_type == CHANY) {
+        if (route_type == DETAILED) {
+            nodes_per_chan = device_ctx.chan_width.max;
+            tracks_per_node = 1;
+        } else {
+            nodes_per_chan = 1;
+            if(rr_type == CHANX)
+                tracks_per_node = device_ctx.chan_width.x_list[ylow];
+            else
+                tracks_per_node = device_ctx.chan_width.y_list[xlow];
+        }
+
+        if (ptc_num >= nodes_per_chan) {
+            VPR_ERROR(VPR_ERROR_ROUTE,
+                      "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
+        }
+
+        if (capacity != tracks_per_node) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+        }
+
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "in check_rr_node: Unexpected segment type: %d\n", rr_type);
     }
+
 
     /* Check that the number of (out) edges is reasonable. */
     num_edges = rr_graph.num_edges(RRNodeId(inode));

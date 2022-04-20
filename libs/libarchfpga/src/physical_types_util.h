@@ -303,8 +303,9 @@ const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
 
 const t_port* get_port_by_logical_pin_num(t_logical_block_type_ptr type, int pin);
 
-int get_physical_pin_from_pb_pin(t_physical_tile_type_ptr physical_tile,
+int get_root_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                                  const t_sub_tile* sub_tile,
+
                                  int relative_cap,
                                  const t_pb_graph_pin* pin);
 
@@ -314,6 +315,20 @@ int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
                    int relative_cap,
                    const t_pb_graph_pin* pin);
 
+int get_logical_num_from_physical_num (t_physical_tile_type_ptr physical_tile,
+                                      const t_sub_tile* sub_tile,
+                                      t_logical_block_type_ptr logical_block,
+                                      int relative_cap,
+                                      int physical_num);
+
+const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_tile,
+                                                       const t_sub_tile* sub_tile,
+                                                       t_logical_block_type_ptr logical_block,
+                                                       int relative_cap,
+                                                       int physical_num);
+
 const t_pb_graph_pin* get_pb_pin_from_logical_pin_idx(t_logical_block_type_ptr type, int pin);
+
+int get_total_num_tile_pins(t_physical_tile_type_ptr tile);
 
 #endif

@@ -497,35 +497,19 @@ const t_port* get_port_by_logical_pin_num(t_logical_block_type_ptr type, int pin
     return pb_pin->port;
 }
 
-int get_physical_pin_from_pb_pin(t_physical_tile_type_ptr physical_tile,
+int get_root_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                                  const t_sub_tile* sub_tile,
+                                 t_logical_block_type_ptr logical_block,
                                  int relative_cap,
-                                 const t_pb_graph_pin* pin) {
-    int sub_tile_num_pin = sub_tile->num_phy_pins / sub_tile->capacity.total();
+                                 int logical_pin_num) {
 
-    int physical_pin;
-    if(!pin->is_root_block_pin()) {
-        return -1;
-    }
+    int sub_tile_index = sub_tile->index;
 
-    const t_pb_graph_node* pb_graph_node = pin->parent_node;
-    t_logical_block_type_ptr logical_block = nullptr;
-    for(auto eq_site : sub_tile->equivalent_sites) {
-        if(eq_site->pb_graph_head == pb_graph_node) {
-            logical_block = eq_site;
-            break;
-        }
-    }
-    if(logical_block == nullptr) {
-        return -1;
-    }
-    int logical_pin_id = pin->port->absolute_first_pin_index + pin->pin_number;
-    physical_pin = get_sub_tile_physical_pin(sub_tile->index, physical_tile, logical_block, logical_pin_id);
+    int block_num_pins = physical_tile->sub_tiles[sub_tile_index].num_phy_pins / physical_tile->sub_tiles[sub_tile_index].capacity.total();
 
-    physical_pin = relative_cap*sub_tile_num_pin + physical_pin;
+    int sub_tile_physical_pin = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_num);
+    return relative_cap * block_num_pins + physical_tile->sub_tiles[sub_tile_index].sub_tile_to_tile_pin_indices[sub_tile_physical_pin];
 
-
-    return physical_pin;
 }
 
 int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
@@ -536,11 +520,12 @@ int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
     int pin_ptc;
     const t_pb_graph_node* root_pb_graph_node = logical_block->pb_graph_head;
     if(pin->is_root_block_pin()){
-        pin_ptc = get_physical_pin_from_pb_pin(physical_tile,
+        pin_ptc = get_root_pb_pin_physical_num(physical_tile,
                                                sub_tile,
+                                               logical_block,
                                                relative_cap,
-                                               pin);
-    }else{
+                                               pin->port->absolute_first_pin_index + pin->pin_number);
+    } else{
         int logical_pin_num = root_pb_graph_node->pb_pin_idx_bimap[pin];
         pin_ptc = logical_pin_num + physical_tile->num_pins;
     }
@@ -548,42 +533,51 @@ int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
     return pin_ptc;
 }
 
-const t_pb_graph_pin* get_pb_pin_from_logical_pin_idx(t_logical_block_type_ptr type, int pin) {
-    auto port = get_port_by_logical_pin_num(type, pin);
-    VTR_ASSERT(pin >= port->absolute_first_pin_index && pin < port->absolute_first_pin_index + port->num_pins);
-    int pin_num_in_port = pin - port->absolute_first_pin_index;
-
-    const t_pb_graph_node* pb_graph_node = type->pb_graph_head;
-
-
-
-    VTR_ASSERT(port->type == PORTS::IN_PORT || port->type == PORTS::OUT_PORT);
-    if(port->type == PORTS::IN_PORT) {
-        for(int port_idx = 0; port_idx < pb_graph_node->num_input_ports; port_idx++) {
-            if(pb_graph_node->num_input_pins[port_idx] != 0) {
-                if(pb_graph_node->input_pins[port_idx][0].port == port) {
-                    return &pb_graph_node->input_pins[port_idx][pin_num_in_port];
-                }
-            }
-        }
-        for(int port_idx = 0; port_idx < pb_graph_node->num_clock_ports; port_idx++) {
-            if(pb_graph_node->num_clock_pins[port_idx] != 0) {
-                if(pb_graph_node->clock_pins[port_idx][0].port == port) {
-                    return &pb_graph_node->clock_pins[port_idx][pin_num_in_port];
-                }
-            }
-        }
-
+int get_pin_logical_num_from_physical_num (t_physical_tile_type_ptr physical_tile,
+                                          const t_sub_tile* sub_tile,
+                                          t_logical_block_type_ptr logical_block,
+                                          int relative_cap,
+                                          int physical_num) {
+    int tile_num_pins = physical_tile->num_pins;
+    int sub_tile_index = sub_tile->index;
+    int block_num_pins = physical_tile->sub_tiles[sub_tile_index].num_phy_pins / physical_tile->sub_tiles[sub_tile_index].capacity.total();
+    if(physical_num > tile_num_pins) {
+        int offset = relative_cap * block_num_pins;
+        int first_sub_tile_pin_num = physical_num - offset;
+        auto direct_map = physical_tile->tile_block_pin_directs_map.at(logical_block->index).at(sub_tile->index);
+        int logical_pin = direct_map[t_physical_pin(first_sub_tile_pin_num)].pin;
+        return logical_pin;
     } else {
-        for(int port_idx = 0; port_idx < pb_graph_node->num_output_ports; port_idx++) {
-            if(pb_graph_node->num_output_pins[port_idx] != 0) {
-                if(pb_graph_node->output_pins[port_idx][0].port == port) {
-                    return &pb_graph_node->output_pins[port_idx][pin_num_in_port];
-                }
-            }
+        return (physical_num - tile_num_pins);
+    }
+}
+
+const t_pb_graph_pin* get_pb_pin_from_pin_physical_num (t_physical_tile_type_ptr physical_tile,
+                                                       const t_sub_tile* sub_tile,
+                                                       t_logical_block_type_ptr logical_block,
+                                                       int relative_cap,
+                                                       int physical_num) {
+    int logical_num = get_pin_logical_num_from_physical_num(physical_tile,
+                                                            sub_tile,
+                                                            logical_block,
+                                                            relative_cap,
+                                                            physical_num);
+    return logical_block->pb_graph_head->pb_pin_idx_bimap[logical_num];
+
+}
+
+const t_pb_graph_pin* get_pb_pin_from_logical_pin_idx (t_logical_block_type_ptr type, int pin) {
+    auto pb_graph_node = type->pb_graph_head;
+    return pb_graph_node->pb_pin_idx_bimap[pin];
+}
+
+int get_total_num_tile_pins(t_physical_tile_type_ptr tile) {
+    int num_pins = 0;
+    for(const t_sub_tile& sub_tile : tile->sub_tiles) {
+        for(auto eq_site : sub_tile.equivalent_sites) {
+            num_pins += ((eq_site->pb_type->num_pins)*sub_tile.capacity.total());
         }
     }
 
-
-    return nullptr;
+    return num_pins;
 }

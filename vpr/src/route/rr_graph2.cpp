@@ -1230,8 +1230,8 @@ static void reserve_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
     if(!pb_graph_node)
         return;
     /* Reserve nodes for internal pins in lookup */
-    int num_in = 0;
-    int num_out = 0;
+
+
 
     for(auto side : wanted_sides) {
         for (int width_offset = 0; width_offset < type->width; ++width_offset) {

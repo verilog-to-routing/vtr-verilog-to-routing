@@ -1663,6 +1663,7 @@ static void add_rr_sink_and_source(const t_class* class_inf,
     for (int ipin = 0; ipin < class_inf->num_pins; ++ipin) {
         int logical_pin_num = class_inf->pinlist[ipin];
         auto pin = get_pb_pin_from_logical_pin_idx(logical_block, logical_pin_num);
+        VTR_ASSERT(pin != nullptr);
         t_rr_type pin_type;
         RRNodeId pin_node_id;
         std::tie(pin_type, std::ignore, pin_node_id) = get_pin_spec(rr_graph_builder,
