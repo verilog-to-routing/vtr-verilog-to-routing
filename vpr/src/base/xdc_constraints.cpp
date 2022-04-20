@@ -13,7 +13,6 @@
 #include "oo_tcl.h"
 #include "xdc_constraints.h"
 
-/* TCL COMMANDS */
 
 enum class e_XDCProperty {
     XDC_PROP_PACKAGE_PIN,
@@ -26,8 +25,6 @@ static e_XDCProperty xdc_prop_from_str(const char* str) {
     
     return e_XDCProperty::XDC_PROP_UNKNOWN;
 }
-
-/* TCL Object Types */
 
 extern const Tcl_ObjType port_tcl_t;
 REGISTER_TCL_TYPE(AtomPortId, &port_tcl_t);
@@ -55,7 +52,7 @@ public:
     void register_methods(std::function<void(const char* name, TclMethod)> register_method) {
         register_method("get_ports", &TclPhysicalConstraintsClient::get_ports);
         register_method("set_property", &TclPhysicalConstraintsClient::set_property);
-    };
+    }
 
     /* TCL functions */
 
@@ -148,25 +145,38 @@ protected:
     }
 
     int _do_get_ports(const char* pin_name) {
-        AtomPinId pin = this->netlist.find_pin(pin_name);
-        if (pin == AtomPinId::INVALID()) {
-            std::string available_pins;
-            const auto& pins = this->netlist.pins();
+        AtomBlockId pin_block = this->netlist.find_block(pin_name);
+
+        if (pin_block == AtomBlockId::INVALID()) {
+            std::string available_ports;
+            const auto& pins = this->netlist.blocks();
             int pins_left = pins.size();
-            for (auto& pin : pins) {
-                available_pins += this->netlist.pin_name(pin);
-                if (pins_left != 1)
-                    available_pins += ", ";
+            for (auto& pin_block_ : pins) {
+                auto ports = this->netlist.block_ports(pin_block_);
+                auto port_it = this->netlist.block_ports(pin_block_).begin();
+                if (port_it != ports.end()) {
+                    available_ports += this->netlist.block_name(pin_block_);
+                    if (pins_left != 1)
+                        available_ports += ", ";
+                }
                 pins_left--;
             }
 
-            return this->_ret_error("set_property: Can't find PORT named `" +
-                                    std::string(pin_name) + "`. Available pins: " +
-                                    available_pins);
+            return this->_ret_error("set_property: Can't find ports for `" +
+                                    std::string(pin_name) + "`. Available blocks: " +
+                                    available_ports);
         }
         
-        AtomPortId port = this->netlist.pin_port(pin);
-        std::string port_name = this->netlist.port_name(port);
+        auto ports = this->netlist.block_ports(pin_block);
+        auto port_it = this->netlist.block_ports(pin_block).begin();
+        if (port_it == ports.end())
+            return this->_ret_error("set_property: '" + std::string(pin_name) + "' - no ports found.");
+
+        /* TODO: this assumes there's only one port, which just happens to be true in case of fpga interchange.
+         * If we want to handle it better, we should return a list of port ids instead.
+         */
+        AtomPortId port = *this->netlist.block_ports(pin_block).begin();
+        std::string port_name = this->netlist.block_name(pin_block);
 
         VTR_LOG("get_ports: Got port `%s` (%llu) for pin `%s`\n", port_name.c_str(), (size_t)port, pin_name);
 
@@ -186,8 +196,6 @@ const Tcl_ObjType port_tcl_t = (Tcl_ObjType){
     },
     .setFromAnyProc = tcl_set_from_none
 };
-
-/* API */
 
 VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arch& arch, const AtomNetlist& netlist) {
     //VTR_ASSERT(_xdc_initialized);
