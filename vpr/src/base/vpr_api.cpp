@@ -69,6 +69,7 @@
 #include "cluster.h"
 #include "output_clustering.h"
 #include "vpr_constraints_reader.h"
+#include "oo_tcl.h"
 #include "xdc_constraints.h"
 #include "place_constraints.h"
 #include "place_util.h"
@@ -353,10 +354,10 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     if (!filename_opts.read_xdc_constraints_file.empty()) {
         try {
             load_xdc_constraints_file(filename_opts.read_xdc_constraints_file.c_str(), *arch, atom_ctx.nlist);
-        } catch (const XDC_eErroneousXDC& e) {
+        } catch (const TCL_eErroneousTCL& e) {
             VTR_LOG_ERROR("Error reading XDC: %s\n", std::string(e).c_str());
             throw e;
-        } catch (const XDC_eException& e) {
+        } catch (const TCL_eException& e) {
             VTR_LOG_ERROR("Error loading XDC: %s\n", std::string(e).c_str());
             throw e;
         }
