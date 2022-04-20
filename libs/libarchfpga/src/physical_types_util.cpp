@@ -581,3 +581,26 @@ int get_total_num_tile_pins(t_physical_tile_type_ptr tile) {
 
     return num_pins;
 }
+
+int get_tile_primitive_class_num(t_physical_tile_type_ptr physical_tile,
+                                 const t_sub_tile* curr_sub_tile,
+                                 t_logical_block_type_ptr curr_logical_block,
+                                 int curr_relative_cap,
+                                 int logical_primitive_class_num) {
+
+    int num_seen_primitive_class = 0;
+    for(auto& sub_tile : physical_tile->sub_tiles) {
+        for(int sub_tile_cap = 0; sub_tile_cap < sub_tile.capacity.total(); sub_tile_cap++) {
+            for(auto eq_site : sub_tile.equivalent_sites) {
+                if(eq_site == curr_logical_block) {
+                    if(curr_relative_cap == sub_tile_cap)
+                        return num_seen_primitive_class;
+                }
+                num_seen_primitive_class += (int)eq_site->pb_graph_head->primitive_class_inf.size();
+            }
+        }
+
+    }
+
+    return -1;
+}

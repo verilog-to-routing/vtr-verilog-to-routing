@@ -331,4 +331,10 @@ const t_pb_graph_pin* get_pb_pin_from_logical_pin_idx(t_logical_block_type_ptr t
 
 int get_total_num_tile_pins(t_physical_tile_type_ptr tile);
 
+int get_tile_primitive_class_num(t_physical_tile_type_ptr curr_physical_tile,
+                                 const t_sub_tile* curr_sub_tile,
+                                 t_logical_block_type_ptr curr_logical_block,
+                                 int curr_relative_cap,
+                                 int logical_primitive_class_num);
+
 #endif
