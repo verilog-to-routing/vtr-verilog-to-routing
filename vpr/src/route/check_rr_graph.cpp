@@ -390,7 +390,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     /* Check that it's capacities and such make sense. */
 
     if(rr_type == SOURCE || rr_type == SINK) {
-        int max_ptc = ;
+        int max_ptc = get_tile_num_primitive_classes(type);
         e_pin_type pin_type = (rr_type == SINK) ? RECEIVER : DRIVER;
         if (ptc_num >= (int)type->class_inf.size()
             || type->class_inf[ptc_num].type != pin_type) {

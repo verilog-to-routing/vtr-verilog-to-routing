@@ -719,3 +719,15 @@ std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node*
     }
     return pins;
 }
+
+int get_tile_num_primitive_classes(t_physical_tile_type_ptr physical_tile) {
+
+    int num_classes = 0;
+
+    for(const auto& sub_tile : physical_tile->sub_tiles) {
+        for(auto eq_site : sub_tile.equivalent_sites) {
+            num_classes += (int)(eq_site->pb_graph_head->primitive_class_inf.size()*sub_tile.capacity.total());
+        }
+    }
+    return num_classes;
+}

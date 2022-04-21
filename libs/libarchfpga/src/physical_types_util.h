@@ -353,4 +353,6 @@ std::unordered_map<const t_class*, int> get_primitive_block_classes_map(t_physic
 
 std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node* pb_graph_node);
 
+int get_tile_num_primitive_classes(t_physical_tile_type_ptr physical_tile);
+
 #endif
