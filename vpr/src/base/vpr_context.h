@@ -28,6 +28,7 @@
 #include "metadata_storage.h"
 #include "vpr_constraints.h"
 #include "noc_storage.h"
+#include "noc_traffic_flows.h"
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -420,12 +421,12 @@ struct NocContext : public Context {
     /**
      * @brief Stores all the communication happening betwee routers in the NoC 
      *
-     * Contains a list of traffic flows that describe which two routers are communication with each other and also some metrics and constraints on the data transfer between the two routers. 
+     * Contains all of the traffic flows that describe which two routers are communication with each other and also some metrics and constraints on the data transfer between the two routers. 
      * 
      *
      * This is created from a user supplied .flows file.
      */
-    std::vector<t_noc_traffic_flow> list_of_noc_traffic_flows;
+    NocTrafficFlows noc_traffic_flows_storage;
 };
 
 /**
