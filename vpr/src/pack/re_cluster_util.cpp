@@ -9,6 +9,7 @@
 static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
 static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin);
 static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type, t_pb_routes& pb_route);
+static int count_children_pbs(const t_pb* pb);
 
 ClusterBlockId atom_to_cluster(const AtomBlockId& atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -25,6 +26,7 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
 							  ClusterBlockId& old_clb) {
     
 	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+	auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
 	//Determine the cluster ID
 	old_clb = atom_to_cluster(atom_id);
@@ -39,7 +41,19 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
 	bool is_cluster_legal = check_cluster_legality(0, E_DETAILED_ROUTE_AT_END_ONLY, router_data);
 
 	if(is_cluster_legal) {
+		t_pb* temp = const_cast<t_pb*>(atom_ctx.lookup.atom_pb(atom_id));
+		t_pb* next = temp->parent_pb;
+        
 		revert_place_atom_block(atom_id, router_data);
+		cleanup_pb(temp);
+
+		int num_children_pbs = count_children_pbs(next);
+		while(num_children_pbs == 0) {
+			temp = next;
+			next = next->parent_pb;
+			cleanup_pb(temp);
+			num_children_pbs = count_children_pbs(next);
+		}
 		cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
 		cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
 	}
@@ -196,7 +210,7 @@ void fix_cluster_net_after_moving(const AtomBlockId& atom_id,
 
 
 
-/************ static functions **************
+/************ static functions *************/
 /*******************************************/
 
 void fix_cluster_port_after_moving(const ClusterBlockId clb_index) {
@@ -487,4 +501,19 @@ static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin) {
 
     //Store ourselves with the driver
     pb_route[driver].sink_pb_pin_ids.push_back(ipin);
+}
+
+static int count_children_pbs(const t_pb* pb) {
+
+	if(pb == nullptr)
+		return 0;
+
+	int num_pbs = 0;
+	for (int i = 0; i < pb->get_num_child_types(); i++) {
+        for (int j = 0; j < pb->get_num_children_of_type(i); j++) {
+          	if(pb->child_pbs[i] != nullptr && pb->child_pbs[i][j].name != nullptr)
+            	++num_pbs;
+        }
+    }
+    return num_pbs;
 }
