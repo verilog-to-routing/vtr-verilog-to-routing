@@ -81,7 +81,7 @@ struct EDIFReader {
         outputs = new t_model_ports;
 
         std::string top_cell = (edif_.find_top_(node_));
-        edif_.find_cell_instances(node_, top_cell);
+        // edif_.find_cell_instances(node_, top_cell);
         edif_.map_cell_ports(node_);
 
         ports_vec = edif_.find_cell_ports(top_cell_);
@@ -93,8 +93,6 @@ struct EDIFReader {
             std::string cmp_string_out = "OUTPUT";
             std::string cmp_string_in = "INPUT";
 
-            AtomPortId port_id;
-            AtomNetId net_id;
             if (dir == cmp_string_in) {
                 outputs->name = const_cast<char*>(port_name.c_str());
 
@@ -103,9 +101,9 @@ struct EDIFReader {
                 outputs->min_size = 0;
                 blk_model->outputs = outputs;
 
-                port_id = main_netlist_.create_port(blk_id, blk_model->outputs);
-
-                // main_netlist_.create_pin(port_id, 0, net_id, PinType::DRIVER);
+                AtomPortId port_id = main_netlist_.create_port(blk_id, blk_model->outputs);
+                AtomNetId net_id = main_netlist_.create_net(port_name);
+                main_netlist_.create_pin(port_id, 0, net_id, PinType::DRIVER);
                 const std::string& in_blk = main_netlist_.block_name(blk_id);
                 const std::string& input_port = main_netlist_.port_name(port_id);
                 const std::string& netlistname = main_netlist_.netlist_name();
@@ -121,10 +119,10 @@ struct EDIFReader {
                 inputs->size = 1;
                 inputs->min_size = 0;
                 blk_model->inputs = inputs;
-                port_id = main_netlist_.create_port(blk_id, blk_model->inputs);
+                AtomPortId port_id = main_netlist_.create_port(blk_id, blk_model->inputs);
                 const std::string& out_blk = main_netlist_.block_name(blk_id);
-                // net_id = main_netlist_.create_net(port_name);
-                // main_netlist_.create_pin(port_id, 0, net_id, PinType::SINK);
+                AtomNetId net_id = main_netlist_.create_net(port_name);
+                main_netlist_.create_pin(port_id, 0, net_id, PinType::SINK);
                 const std::string& output_port = main_netlist_.port_name(port_id);
                 const std::string& netlistname = main_netlist_.netlist_name();
 
@@ -133,92 +131,123 @@ struct EDIFReader {
                 printf("NETLIST name is given as::%s\n", netlistname.c_str());
             }
         }
+        for (AtomBlockId blk_id : main_netlist_.blocks()) {
+            const std::string& block_name = main_netlist_.block_name(blk_id);
+            printf("BLOCK : %s \n", block_name.c_str());
+            for (AtomPortId port_id_ : main_netlist_.block_input_ports(blk_id)) {
+                for (AtomPinId pin_id_ : main_netlist_.port_pins(port_id_)) {
+                    AtomNetId net_id_ = main_netlist_.pin_net(pin_id_);
+                    const std::string& net_name = main_netlist_.net_name(net_id_);
+                    printf("ASSOCIATED input NET : %s \n", net_name.c_str());
+                }
+            }
 
-        edif_.find_cell_net(node_, top_cell);
-         	        AtomNetId net_id ;
-         	        for (size_t k = 0; k < edif_.con_vec.size(); k++){
-         	        std::string net_name = std::get<1>(edif_.con_vec[k]);
-         	       net_id = main_netlist_.create_net(net_name);
-         	        const std::string& net_in = main_netlist_.net_name(net_id);
-         	        printf("NET is given as::%s\n", net_in.c_str());
-         	        }
+            for (AtomPortId port_id_ : main_netlist_.block_output_ports(blk_id)) {
+                for (AtomPinId pin_id_ : main_netlist_.port_pins(port_id_)) {
+                    AtomNetId net_id_ = main_netlist_.pin_net(pin_id_);
+                    const std::string& net_name = main_netlist_.net_name(net_id_);
+                    printf("ASSOCIATED output NET : %s \n", net_name.c_str());
+                }
+            }
+        }
     }
-
     void read_blocks() {
+        t_model* ins_model;
+        ins_model = new t_model;
+        t_model_ports* inputs;
+        t_model_ports* outputs;
+        inputs = new t_model_ports;
+        outputs = new t_model_ports;
+        std::string top_cell = (edif_.find_top_(node_));
+        edif_.find_cell_instances(node_, top_cell);
+        for (size_t k = 0; k < edif_.instance_vec.size(); k++) {
+            std::string model_name = std::get<1>(edif_.instance_vec[k]);
+            //std::string inst_name = std::get<0>(edif_.instance_vec[k]);
+            std::string inst_name = (std::get<0>(edif_.instance_vec[k])).c_str();
+            AtomBlockId blk_ins = main_netlist_.create_block(inst_name, ins_model);
 
-    	        t_model* ins_model;
-    	       ins_model = new t_model;
-    	       t_model_ports* inputs;
-    	              t_model_ports* outputs;
-    	              inputs = new t_model_ports;
-    	              outputs = new t_model_ports;
-    	       std::string top_cell = (edif_.find_top_(node_));
-    	       edif_.find_cell_instances(node_, top_cell);
-    	       for (size_t k = 0; k < edif_.instance_vec.size(); k++){
-    	    	   std::string model_name = std::get<1>(edif_.instance_vec[k]);
-    	    	   //std::string inst_name = std::get<0>(edif_.instance_vec[k]);
-    	    	   std::string inst_name = ( std::get<0>(edif_.instance_vec[k])).c_str();
-    	    	   AtomBlockId blk_ins = main_netlist_.create_block(inst_name, ins_model);
-    	    	 //  const t_model* ins_model = find_model(model_name);
+            const std::string& out_blk = main_netlist_.block_name(blk_ins);
+            printf(" block created is from read block section ::%s\n", out_blk.c_str());
+            //  const t_model* ins_model = find_model(model_name);
+            edif_.find_cell_net(node_, top_cell);
 
-    	    	   edif_.map_cell_ports(node_);
-    	    	   ports_vec = edif_.find_cell_ports(model_name);
+            edif_.map_cell_ports(node_);
+            ports_vec = edif_.find_cell_ports(model_name);
 
-    	    	   for (size_t i = 0; i < ports_vec.size(); i++) {
-
-    	    	               std::string port_name = ports_vec[i].first;
-    	    	               port_name=inst_name+port_name;
-    	    	               std::string dir = ports_vec[i].second;
-    	    	               printf(" direction is given as::%s\n", dir.c_str());
-    	    	               std::string cmp_string_out = "OUTPUT";
-    	    	               std::string cmp_string_in = "INPUT";
-
-    	    	               AtomPortId port_id;
-
-    	    	               if (dir == cmp_string_in) {
-    	    	                   outputs->name = const_cast<char*>(port_name.c_str());
-
-    	    	                   outputs->dir = OUT_PORT;
-    	    	                   outputs->size = 1;
-    	    	                   outputs->min_size = 0;
-    	    	                   ins_model->outputs = outputs;
-
-    	    	                   port_id = main_netlist_.create_port(blk_ins, ins_model->outputs);
-    	    	                    //net_id = main_netlist_.create_net(port_name);
-    	    	                   // main_netlist_.create_pin(port_id, 0, net_id, PinType::DRIVER);
-    	    	                   const std::string& in_blk = main_netlist_.block_name(blk_ins);
-    	    	                   const std::string& input_port = main_netlist_.port_name(port_id);
-    	    	                   const std::string& netlistname = main_netlist_.netlist_name();
-
-    	    	                   printf(" block created is given as::%s\n", in_blk.c_str());
-    	    	                   printf(" port created is given as::%s\n", input_port.c_str());
-
-    	    	                   printf("NETLIST name is given as::%s\n", netlistname.c_str());
-    	    	               }
-    	    	               if (dir == cmp_string_out) {
-    	    	                   inputs->name = const_cast<char*>(port_name.c_str());
-    	    	                   inputs->dir = IN_PORT;
-    	    	                   inputs->size = 1;
-    	    	                   inputs->min_size = 0;
-    	    	                   ins_model->inputs = inputs;
-    	    	                   port_id = main_netlist_.create_port(blk_ins, ins_model->inputs);
-    	    	                   const std::string& out_blk = main_netlist_.block_name(blk_ins);
-
-    	    	                   // main_netlist_.create_pin(port_id, 0, net_id, PinType::SINK);
-    	    	                   const std::string& output_port = main_netlist_.port_name(port_id);
-    	    	                   const std::string& netlistname = main_netlist_.netlist_name();
-
-    	    	                   printf(" block created is given as::%s\n", out_blk.c_str());
-    	    	                   printf(" port created is given as::%s\n", output_port.c_str());
-    	    	                   printf("NETLIST name is given as::%s\n", netlistname.c_str());
-    	    	               }
-
-
-    	    	           }
+            for (size_t i = 0; i < ports_vec.size(); i++) {
+                std::string port_name = ports_vec[i].first;
+                port_name = inst_name + port_name;
+                std::string dir = ports_vec[i].second;
+                printf(" direction is given as::%s\n", dir.c_str());
+                std::string cmp_string_out = "OUTPUT";
+                std::string cmp_string_in = "INPUT";
 
 
 
-    	       }
+                if (dir == cmp_string_in) {
+                    outputs->name = const_cast<char*>(port_name.c_str());
+
+                    outputs->dir = OUT_PORT;
+                    outputs->size = 1;
+                    outputs->min_size = 0;
+                    ins_model->outputs = outputs;
+
+                    AtomPortId port_id = main_netlist_.create_port(blk_ins, ins_model->outputs);
+                    //net_id = main_netlist_.create_net(port_name);
+                    // main_netlist_.create_pin(port_id, 0, net_id, PinType::DRIVER);
+                    const std::string& in_blk = main_netlist_.block_name(blk_ins);
+                    const std::string& input_port = main_netlist_.port_name(port_id);
+                    const std::string& netlistname = main_netlist_.netlist_name();
+
+                    //  printf(" block created is given as::%s\n", in_blk.c_str());
+                    printf(" port created is given as::%s\n", input_port.c_str());
+
+                    printf("NETLIST name is given as::%s\n", netlistname.c_str());
+                }
+                if (dir == cmp_string_out) {
+                    inputs->name = const_cast<char*>(port_name.c_str());
+                    inputs->dir = IN_PORT;
+                    inputs->size = 1;
+                    inputs->min_size = 0;
+                    ins_model->inputs = inputs;
+                    AtomPortId port_id = main_netlist_.create_port(blk_ins, ins_model->inputs);
+                    const std::string& out_blk = main_netlist_.block_name(blk_ins);
+
+                    // main_netlist_.create_pin(port_id, 0, net_id, PinType::SINK);
+                    const std::string& output_port = main_netlist_.port_name(port_id);
+                    const std::string& netlistname = main_netlist_.netlist_name();
+
+                    //  printf(" block created is given as::%s\n", out_blk.c_str());
+                    printf(" port created is given as::%s\n", output_port.c_str());
+                    printf("NETLIST name is given as::%s\n", netlistname.c_str());
+                }
+                const t_model_ports* model_port = find_model_port(ins_model, port_name);
+                VTR_ASSERT(model_port);
+
+                //Determine the pin type
+                PinType pin_type = PinType::SINK;
+                if (model_port->dir == OUT_PORT) {
+                    pin_type = PinType::DRIVER;
+                } else {
+                    VTR_ASSERT_MSG(model_port->dir == IN_PORT, "Unexpected port type");
+                }
+
+                AtomPortId port_id = main_netlist_.find_atom_port(blk_ins, model_port);
+                const std::string& output_port = main_netlist_.port_name(port_id);
+                printf(" port created is given as::%s\n", output_port.c_str());
+                std::string net_name;
+             //   for (size_t j = 0; j < edif_.con_vec.size(); j++) {
+                  //  net_name = std::get<0>(edif_.con_vec[j]);
+                   // std::string port_bit = std::get<2>(edif_.con_vec[j]);
+                  //  auto port_bit_i = stoi(port_bit);
+                    AtomNetId net_id = main_netlist_.create_net("a");
+
+
+                    //Make the pin
+                    main_netlist_.create_pin(port_id, 0, net_id, pin_type);
+               // }
+            }
+        }
     }
 
     const t_model* find_model(std::string name) {
