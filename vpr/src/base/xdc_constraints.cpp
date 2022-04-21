@@ -16,33 +16,28 @@
 
 enum class e_XDCProperty {
     XDC_PROP_PACKAGE_PIN,
+    XDC_PROP_IOSTANDARD,
     XDC_PROP_UNKNOWN
 };
 
 static e_XDCProperty xdc_prop_from_str(const char* str) {
     if (!std::strcmp(str, "PACKAGE_PIN"))
         return e_XDCProperty::XDC_PROP_PACKAGE_PIN;
+    if (!std::strcmp(str, "IOSTANDARD"))
+        return e_XDCProperty::XDC_PROP_IOSTANDARD;
     
     return e_XDCProperty::XDC_PROP_UNKNOWN;
 }
 
-extern const Tcl_ObjType port_tcl_t;
-REGISTER_TCL_TYPE(AtomPortId, &port_tcl_t);
-
-class TclPhysicalConstraintsClient;
-
-template <>
-TclPhysicalConstraintsClient* tcl_obj_getptr(Tcl_Obj* obj) {
-    return static_cast<TclPhysicalConstraintsClient*>(obj->internalRep.twoPtrValue.ptr1);
-}
+DECLARE_TCL_TYPE(AtomPortId, port_tcl_t)
 
 class TclPhysicalConstraintsClient : public TclClient {
 public:
     VprConstraints& constraints;
     const t_arch& arch;
-    const AtomNetlist& netlist;
+    AtomNetlist& netlist;
 
-    TclPhysicalConstraintsClient(VprConstraints& constraints_, const t_arch& arch_, const AtomNetlist& netlist_) :
+    TclPhysicalConstraintsClient(VprConstraints& constraints_, const t_arch& arch_, AtomNetlist& netlist_) :
         constraints(constraints_),
         arch(arch_),
         netlist(netlist_)
@@ -73,6 +68,11 @@ public:
                 return this->_ret_error("set_property: Property `PACKAGE_PIN` "
                                         "requires one target and one value.");
             return this->_set_property_package_pin(objvp[2], objvp[3]);
+        case e_XDCProperty::XDC_PROP_IOSTANDARD:
+            if (objc != 4)
+                return this->_ret_error("set_property: Property `IOSTANDARD` "
+                                        "requires one value and one target.");
+            return this->_set_property_iostandard(objvp[2], objvp[3]);
         case e_XDCProperty::XDC_PROP_UNKNOWN:
             return this->_ret_error("set_property: Property `" + std::string(property_name) +
                             "` is not recognized.");
@@ -95,22 +95,20 @@ public:
 
 protected:
     int _set_property_package_pin(Tcl_Obj* tcl_pin_name, Tcl_Obj* tcl_port) {
-        int error;
-        
         const char* pin_name = Tcl_GetString(tcl_pin_name);
         if (pin_name == nullptr)
             return this->_ret_error("set_property: pin_name of PACKAGE_PIN should be a string.");
         
         auto* port = tcl_obj_getptr<AtomPortId>(tcl_port);
         if (port == nullptr)
-            return this->_ret_error("set_property: pin_name of PACKAGE_PIN should have a `port` type.");
+            return this->_ret_error("set_property: port__name of PACKAGE_PIN should have a `port` type.");
 
         return this->_do_set_property_package_pin(pin_name, *port);
-
-        return error;
     }
 
     int _do_set_property_package_pin(const char* pin_name, AtomPortId port) {
+        /* Find associated AtomBlock */
+
         const auto& phys_grid_mapping = this->arch.phys_grid_mapping;
         
         std::string pin_str(pin_name);
@@ -121,6 +119,9 @@ protected:
         const t_phys_map_region& package_pin_region = it->second;
         
         AtomBlockId port_block = this->netlist.port_block(port);
+
+        /* Create a 1x1 VprConstraints Partition to contrain the block */
+
         Partition part;
         part.set_name(pin_str + ".PART");
         Region r;
@@ -135,6 +136,9 @@ protected:
         pr.add_to_part_region(r);
         part.set_part_region(pr);
         PartitionId part_id = this->constraints.add_partition(part);
+
+        /* Constrain the AtomBlock */
+
         this->constraints.add_constrained_atom(port_block, part_id);
 
         VTR_LOG("XDC: Assigned PACKAGE_PIN %s = [%d, %d, %d, %d].%d\n",
@@ -142,6 +146,24 @@ protected:
                 package_pin_region.w, package_pin_region.h, package_pin_region.subtile);
 
         return this->_ret_ok();
+    }
+
+    int _set_property_iostandard(Tcl_Obj* tcl_io_standard, Tcl_Obj* tcl_port) {
+        const char* io_standard = Tcl_GetString(tcl_io_standard);
+        if (tcl_io_standard == nullptr)
+            return this->_ret_error("set_property: iostandard should be a string.");
+        
+        auto* port = tcl_obj_getptr<AtomPortId>(tcl_port);
+        if (port == nullptr)
+            return this->_ret_error("set_property: port_name of IOSTANDARD should have a `port` type.");
+        
+        return this->_do_set_property_iostandard(io_standard, *port);
+    }
+
+    int _do_set_property_iostandard(const char* io_standard, AtomPortId port) {
+        AtomBlockId block = this->netlist.port_block(port);
+        this->netlist.set_block_param(block, "IOSTANDARD", io_standard);
+        VTR_LOG("XDC: Assigned IOSTANDARD %s = %s\n", this->netlist.block_name(block).c_str(), io_standard);
     }
 
     int _do_get_ports(const char* pin_name) {
@@ -184,20 +206,14 @@ protected:
     }
 };
 
-const Tcl_ObjType port_tcl_t = (Tcl_ObjType){
-    .name = "port",
-    .freeIntRepProc = tcl_obj_free<AtomPortId>,
-    .dupIntRepProc = tcl_obj_dup,
-    .updateStringProc = [](Tcl_Obj* obj) {
-        const auto* port = tcl_obj_getptr<AtomPortId>(obj);
-        const auto* client = tcl_obj_getptr<TclPhysicalConstraintsClient>(obj);
-        std::string port_name = client->netlist.port_name(*port);
-        tcl_set_obj_string(obj, port_name);
-    },
-    .setFromAnyProc = tcl_set_from_none
-};
+REGISTER_TCL_TYPE_W_STR_UPDATE(AtomPortId, port_tcl_t) {
+    const auto* port = tcl_obj_getptr<AtomPortId>(obj);
+    const auto* client = tcl_obj_get_ctx_ptr<TclPhysicalConstraintsClient>(obj);
+    std::string port_name = client->netlist.port_name(*port);
+    tcl_set_obj_string(obj, port_name);
+} END_REGISTER_TCL_TYPE;
 
-VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arch& arch, const AtomNetlist& netlist) {
+VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arch& arch, AtomNetlist& netlist) {
     //VTR_ASSERT(_xdc_initialized);
 
     VprConstraints constraints;
@@ -209,10 +225,10 @@ VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arc
     ctx.add_tcl_client<TclPhysicalConstraintsClient>(pc_client);
     ctx.read_tcl(xdc_stream);
 
-    return std::move(constraints);
+    return constraints;
 }
 
-void load_xdc_constraints_file(const char* read_xdc_constraints_name, const t_arch& arch, const AtomNetlist& netlist) {
+void load_xdc_constraints_file(const char* read_xdc_constraints_name, const t_arch& arch, AtomNetlist& netlist) {
     VTR_ASSERT(vtr::check_file_name_extension(read_xdc_constraints_name, ".xdc"));
     VTR_LOG("Reading XDC %s...\n", read_xdc_constraints_name);
 

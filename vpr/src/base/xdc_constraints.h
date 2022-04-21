@@ -17,8 +17,10 @@
  *         TCL_eErroneousTCL: Failure when parsing XDC
  *         TCL_eCustomException: Anything else that doesn't fit he above categories.
  * \return VprConstraints created from an XDC script.
+ * 
+ * This function may modify the netlist by changing its blocks' properties.
  */
-VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arch& arch, const AtomNetlist& netlist);
+VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arch& arch, AtomNetlist& netlist);
 
 /**
  * \brief Parse a file in XDC format and apply it to global FloorplanningContext.
@@ -30,8 +32,9 @@ VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arc
  *         TCL_eErroneousTCL: Failure when parsing XDC
  *         TCL_eCustomException: Anything else that doesn't fit he above categories.
  * 
- * This function overwrites global floorplanning constraints g_vpr.constraints_.constraints
+ * This function overwrites global floorplanning constraints (g_vpr.constraints_.constraints)\
+ * This function may modify the netlist by changing its blocks' properties.
  */
-void load_xdc_constraints_file(const char* read_xdc_constraints_name, const t_arch& arch, const AtomNetlist& netlist);
+void load_xdc_constraints_file(const char* read_xdc_constraints_name, const t_arch& arch, AtomNetlist& netlist);
 
 #endif

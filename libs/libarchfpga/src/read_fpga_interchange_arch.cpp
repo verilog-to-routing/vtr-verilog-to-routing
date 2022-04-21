@@ -828,6 +828,7 @@ struct ArchReader {
             }
         }
 
+        /* Populate phys_grid_mapping - associate pin names with grid locations */
         for (const auto& tile : ar_.getTileList()) {
             int site_idx = 0;
             for (const auto& site : tile.getSites()) {

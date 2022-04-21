@@ -92,6 +92,20 @@ static T* tcl_obj_getptr(Tcl_Obj* obj) {
     return static_cast<T*>(obj->internalRep.twoPtrValue.ptr2);
 }
 
+/**
+ * \brief Get pointer to an extra referenced C++ object.
+ * \return Pointer to a C++ object.
+ * 
+ * This can be used to access context associated with a client, but when doing so
+ * the user must ensure that whatever client is bound there, gets handled correctly.
+ * Ie. when passing an object between two different clients, this should point to a
+ * common interface.
+ */
+template <typename T>
+static T* tcl_obj_get_ctx_ptr(Tcl_Obj* obj) {
+    return static_cast<T*>(obj->internalRep.twoPtrValue.ptr1);
+}
+
 using TclCommandError = std::string;
 
 /**
@@ -169,13 +183,13 @@ protected:
     }
 };
 
+/* Default implementations for handling TCL-managed C++ objects */
 template <typename T>
 static void tcl_obj_free(Tcl_Obj* obj) {
     T* obj_data = tcl_obj_getptr<T>(obj);
     obj_data->~T();
     Tcl_Free(reinterpret_cast<char*>(obj_data));
 }
-
 void tcl_obj_dup(Tcl_Obj* src, Tcl_Obj* dst);
 void tcl_set_obj_string(Tcl_Obj* obj, const std::string& str);
 int tcl_set_from_none(Tcl_Interp *tcl_interp, Tcl_Obj *obj);
@@ -308,15 +322,27 @@ private:
 #endif
 };
 
+#define DECLARE_TCL_TYPE(cxx_type, tcl_type)                  \
+    extern const Tcl_ObjType tcl_type;                        \
+    template <>                                               \
+    constexpr const Tcl_ObjType* tcl_type_of<cxx_type>() {    \
+        return &tcl_type;                                     \
+    }                                                         \
+
 /**
  * \brief Associate a C++ struct/class with a `Tcl_ObjType`.
  * \param cxx_type C++ type name.
  * \param tcl_type pointer to statically-allocated Tcl_ObjType.
  */
-#define REGISTER_TCL_TYPE(cxx_type, tcl_type)                 \
-    template <>                                               \
-    constexpr const Tcl_ObjType* tcl_type_of<cxx_type>() {    \
-        return tcl_type;                                      \
-    }
+#define REGISTER_TCL_TYPE_W_STR_UPDATE(cxx_type, tcl_type)    \
+    const Tcl_ObjType tcl_type = (Tcl_ObjType){               \
+        .name = #cxx_type,                                    \
+        .freeIntRepProc = tcl_obj_free<cxx_type>,             \
+        .dupIntRepProc = tcl_obj_dup,                         \
+        .updateStringProc = [](Tcl_Obj* obj)
+
+#define END_REGISTER_TCL_TYPE ,                               \
+    .setFromAnyProc = tcl_set_from_none                       \
+}
 
 #endif
