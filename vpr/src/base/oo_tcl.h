@@ -4,12 +4,13 @@
 #include <string>
 #include <list>
 #include <memory>
+#include <functional>
 
 #include <tcl/tcl.h>
 
 /**
- * \file
- * \brief Object-oriented wrappers for TCL interpreter.
+ * @file
+ * @brief Object-oriented wrappers for TCL interpreter.
  * Overview
  * ========
  * This file contains function declarations and definitionsas well as classes that allow embedding TCL interpreter in C++
@@ -18,20 +19,22 @@
  * A standard scenario is:
  * - // Create an instance of TclClient-derived class
  *   MyTclClient client;
- * - TclCtx ctx;
- * - // Call this before doing anything else with `ctx`.
- *   ctx.init()
- * - // This will register all methods provided by `client`
- *   ctx.add_client<MyTclClient>(client)
- * - // Read and interpret TCL code
- *   ctx.read_tcl(stream)
+ * - // Create a TclCtx context and run code within its lifetime.
+ *   TclCtx::with_ctx([&](TclCtx& ctx) {;
+ * -   // Call this before doing anything else with `ctx`.
+ *     ctx.init()
+ * -   // This will register all methods provided by `client`
+ *     ctx.add_client<MyTclClient>(client)
+ * -   // Read and interpret TCL code
+ *     ctx.read_tcl(stream)
+ * - // TclCtx gets destroyd at the end of this call
+ *   });
  * - // Process results stored by a client
  *   do_something(client.data)
- * 
  */
 
 /**
- * \brief Base class for any exception thrown within TCLCtx.
+ * @brief Base class for any exception thrown within TCLCtx.
  */
 class TCL_eException {
 public:
@@ -40,7 +43,7 @@ public:
 };
 
 /**
- * \brief Generic exception thrown within TCLCtx. Features a message string.
+ * @brief Generic exception thrown within TCLCtx. Features a message string.
  */
 class TCL_eCustomException : TCL_eException {
 public:
@@ -52,7 +55,7 @@ public:
 };
 
 /**
- * \brief Exception thrown within TCLCtx if it fails during TCLCtx::init()
+ * @brief Exception thrown within TCLCtx if it fails during TCLCtx::init()
  */
 class TCL_eFailedToInitTcl : TCL_eException {
 public:
@@ -64,7 +67,7 @@ public:
 };
 
 /**
- * \brief Exception thrown within TCLCtx when an error occurs while interpreting TCL.
+ * @brief Exception thrown within TCLCtx when an error occurs while interpreting TCL.
  */
 class TCL_eErroneousTCL : TCL_eException {
 public:
@@ -82,8 +85,8 @@ void Tcl_SetStringResult(Tcl_Interp *interp, const std::string &s);
 template <typename T> constexpr const Tcl_ObjType* tcl_type_of();
 
 /**
- * \brief Get pointer to a C++ object managed within TCL-context
- * \return Pointer to a C++ object if `T` matches the type of an object. Otherwise nullptr.
+ * @brief Get pointer to a C++ object managed within TCL-context
+ * @return Pointer to a C++ object if `T` matches the type of an object. Otherwise nullptr.
  */
 template <typename T>
 static T* tcl_obj_getptr(Tcl_Obj* obj) {
@@ -93,8 +96,8 @@ static T* tcl_obj_getptr(Tcl_Obj* obj) {
 }
 
 /**
- * \brief Get pointer to an extra referenced C++ object.
- * \return Pointer to a C++ object.
+ * @brief Get pointer to an extra referenced C++ object.
+ * @return Pointer to a C++ object.
  * 
  * This can be used to access context associated with a client, but when doing so
  * the user must ensure that whatever client is bound there, gets handled correctly.
@@ -133,7 +136,7 @@ protected:
      */
 
     /** 
-     * \brief Throw an error from a TCL command.
+     * @brief Throw an error from a TCL command.
      */
     inline int _ret_error(TclCommandError&& error) {
         this->cmd_status = e_TclCommandStatus::TCL_CMD_FAIL;
@@ -142,7 +145,7 @@ protected:
     }
 
     /** 
-     * \brief Return from a TCL command with no errors.
+     * @brief Return from a TCL command with no errors.
      */
     inline int _ret_ok() {
         this->cmd_status = e_TclCommandStatus::TCL_CMD_SUCCESS;
@@ -150,7 +153,7 @@ protected:
     }
     
     /** 
-     * \brief Return a string from a TCL command with no errors.
+     * @brief Return a string from a TCL command with no errors.
      */
     inline int _ret_string(std::string&& string_) {
         this->cmd_status = e_TclCommandStatus::TCL_CMD_SUCCESS_STRING;
@@ -159,10 +162,10 @@ protected:
     }
 
     /**
-     * \brief Move an object to TCL-managed context and return it in TCL code.
-     * \param T registered custom TCL type
-     * \param this_ pointer to the concrete client. Note that it might be different than `this` within context of base class.
-     * \param object_data object to be moved into TCL-managed context
+     * @brief Move an object to TCL-managed context and return it in TCL code.
+     * @param T registered custom TCL type
+     * @param this_ pointer to the concrete client. Note that it might be different than `this` within context of base class.
+     * @param object_data object to be moved into TCL-managed context
      */
     template <typename T>
     int _ret_obj(void* this_, const T&& object_data) {
@@ -197,7 +200,7 @@ int tcl_set_from_none(Tcl_Interp *tcl_interp, Tcl_Obj *obj);
 void tcl_init();
 
 /**
- * \brief Provide TCL runtime for parsing XDC files.
+ * @brief Provide a TCL runtime.
  * Allows extending TCL language with new types which are associated with C++ types and new methods provided by objects of TclClient-derived classes.
  * 
  * `TclCtx` binds a TCL context to the lifetime of a C++ object, so once TclCtx::~TclCtx gets called, TCL context will be cleaned-up.
@@ -205,14 +208,17 @@ void tcl_init();
  */
 class TclCtx {
 public:
-    TclCtx();
 
-    ~TclCtx();
-
-    /**
-     * \brief Initialize a newly created instance of TclCtx. It's illegal to call any other method before calling this one.
+    /** 
+     * @brief Create and initialize context, then run a closure with it.
+     * This is done to limit TclCtx lifetime.
      */
-    void init();
+    template <typename T>
+    static T with_ctx(std::function<T(TclCtx& ctx)> fun) {
+        TclCtx ctx;
+        ctx._init();
+        fun(ctx);
+    }
 
     /**
      * \brief Read and interpret a TCL script within this context.
@@ -220,7 +226,7 @@ public:
     void read_tcl(std::istream& tcl_stream);
 
     /**
-     * \brief Add a client class that provides methods to interface with a context managed by it
+     * @brief Add a client class that provides methods to interface with a context managed by it
      */
     template <typename C>
         void add_tcl_client(C& client) {
@@ -237,7 +243,7 @@ public:
     }
 
     /**
-     * \brief Add a custom type to TCL.
+     * @brief Add a custom type to TCL.
      * 
      * The type has to be moveable in order to allow passing it between Tcl-managed cotext and C++ code.
      * Use REGISTER_TCL_TYPE macro to associate type T with a static struct instance describing the Tcl type.
@@ -249,14 +255,23 @@ public:
 
 protected:
 
+    TclCtx();
+
+    ~TclCtx();
+
     /**
-     * \brief Tcl by default will interpret bus indices as calls to commands
+     * @brief Initialize a newly created instance of TclCtx. It's illegal to call any other method before calling this one.
+     */
+    void _init();
+
+    /**
+     * @brief Tcl by default will interpret bus indices as calls to commands
      *        (eg. in[0] gets interpreted as call to command `i` with argument being a
      *        result of calling `0`). This overrides this behaviour.
      * 
      * TODO: This is SDC/XDC-specific and should be handled somewhere else.
      */
-    int _fix_port_indexing();
+    /* int _fix_port_indexing(); */
 
     /**
      * \brief Provide an interface to call a client method.
@@ -330,9 +345,9 @@ private:
     }                                                         \
 
 /**
- * \brief Associate a C++ struct/class with a `Tcl_ObjType`.
- * \param cxx_type C++ type name.
- * \param tcl_type pointer to statically-allocated Tcl_ObjType.
+ * @brief Associate a C++ struct/class with a `Tcl_ObjType`.
+ * @param cxx_type C++ type name.
+ * @param tcl_type pointer to statically-allocated Tcl_ObjType.
  */
 #define REGISTER_TCL_TYPE_W_STR_UPDATE(cxx_type, tcl_type)    \
     const Tcl_ObjType tcl_type = (Tcl_ObjType){               \

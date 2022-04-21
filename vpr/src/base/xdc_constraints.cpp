@@ -101,7 +101,7 @@ protected:
         
         auto* port = tcl_obj_getptr<AtomPortId>(tcl_port);
         if (port == nullptr)
-            return this->_ret_error("set_property: port__name of PACKAGE_PIN should have a `port` type.");
+            return this->_ret_error("set_property: port_name of PACKAGE_PIN should have a `AtomPortId` type.");
 
         return this->_do_set_property_package_pin(pin_name, *port);
     }
@@ -155,7 +155,7 @@ protected:
         
         auto* port = tcl_obj_getptr<AtomPortId>(tcl_port);
         if (port == nullptr)
-            return this->_ret_error("set_property: port_name of IOSTANDARD should have a `port` type.");
+            return this->_ret_error("set_property: port_name of IOSTANDARD should have a `AtomPortId` type.");
         
         return this->_do_set_property_iostandard(io_standard, *port);
     }
@@ -184,7 +184,7 @@ protected:
                 pins_left--;
             }
 
-            return this->_ret_error("set_property: Can't find ports for `" +
+            return this->_ret_error("get_ports: Can't find ports for `" +
                                     std::string(pin_name) + "`. Available blocks: " +
                                     available_ports);
         }
@@ -192,12 +192,13 @@ protected:
         auto ports = this->netlist.block_ports(pin_block);
         auto port_it = this->netlist.block_ports(pin_block).begin();
         if (port_it == ports.end())
-            return this->_ret_error("set_property: '" + std::string(pin_name) + "' - no ports found.");
+            return this->_ret_error("get_ports: '" + std::string(pin_name) + "' - no ports found.");
 
-        /* TODO: this assumes there's only one port, which just happens to be true in case of fpga interchange.
-         * If we want to handle it better, we should return a list of port ids instead.
+        /* We assume that there's only one port, which just happens to be true in case of fpga interchange.
+         * If we ever want to handle it better, we should return a list of port ids instead.
          */
-        AtomPortId port = *this->netlist.block_ports(pin_block).begin();
+        VTR_ASSERT(ports.size() == 1);
+        AtomPortId port = *ports.begin();
         std::string port_name = this->netlist.block_name(pin_block);
 
         VTR_LOG("get_ports: Got port `%s` (%llu) for pin `%s`\n", port_name.c_str(), (size_t)port, pin_name);
@@ -217,14 +218,36 @@ VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arc
     //VTR_ASSERT(_xdc_initialized);
 
     VprConstraints constraints;
-
     TclPhysicalConstraintsClient pc_client(constraints, arch, netlist);
-    TclCtx ctx;
-    ctx.init();
-    ctx.add_tcl_type<AtomPortId>();
-    ctx.add_tcl_client<TclPhysicalConstraintsClient>(pc_client);
-    ctx.read_tcl(xdc_stream);
 
+    TclCtx::with_ctx<void>([&](TclCtx& ctx) {
+        /*
+         * Tcl by default will interpret bus indices as calls to commands
+         * (eg. in[0] gets interpreted as call to command `i` with argument being a
+         * result of calling `0`). This overrides this behaviour.
+         */
+        std::istringstream fix_port_indexing(
+            "rename unknown _original_unknown\n"
+            "proc unknown args {\n"
+            "  set result [scan [lindex $args 0] \"%d\" value]\n"
+            "  if { $result == 1 && [llength $args] == 1 } {\n"
+            "    return \\[$value\\]\n"
+            "  } else {\n"
+            "    uplevel 1 [list _original_unknown {*}$args]\n"
+            "  }\n"
+            "}"
+        );
+        ctx.read_tcl(fix_port_indexing);
+        
+        /* Add types and commands to handle XDC files */
+        ctx.add_tcl_type<AtomPortId>();
+        ctx.add_tcl_client<TclPhysicalConstraintsClient>(pc_client);
+
+        /* Read and interpret XDC */
+        ctx.read_tcl(xdc_stream);
+    });
+
+    /* At this point `pc_client` has written the contraints */
     return constraints;
 }
 

@@ -76,22 +76,21 @@ TclCtx::TclCtx() {
 #ifdef DEBUG
     this->_init = false;
 #endif
-    VTR_LOG("Created XDC context.\n");
+    VTR_LOG("Created TCL context.\n");
 }
 
 TclCtx::~TclCtx() {
     Tcl_DeleteInterp(this->_tcl_interp);
 
-    VTR_LOG("Deleted XDC context.\n");
+    VTR_LOG("Deleted TCL context.\n");
 }
 
-void TclCtx::init() {
+void TclCtx::_init() {
     int error;
 
     if ((error = Tcl_Init(this->_tcl_interp)) != TCL_OK)
         throw TCL_eFailedToInitTcl(error);
-
-    error = this->_fix_port_indexing();
+    
     VTR_ASSERT(error == TCL_OK);
 
 #ifdef DEBUG
@@ -99,41 +98,22 @@ void TclCtx::init() {
 #endif
 }
 
-void TclCtx::read_tcl(std::istream& xdc_stream) {
+void TclCtx::read_tcl(std::istream& tcl_stream) {
     int error;
 
     this->_debug_init();
 
     std::ostringstream os;
-    xdc_stream >> os.rdbuf();
-    std::string xdc = os.str();
+    tcl_stream >> os.rdbuf();
+    std::string tcl = os.str();
 
-    error = Tcl_Eval(this->_tcl_interp, xdc.c_str());
+    error = Tcl_Eval(this->_tcl_interp, tcl.c_str());
     /* TODO: More precise error */
     if (error != TCL_OK) {
         int error_line = Tcl_GetErrorLine(this->_tcl_interp);
         const char* msg = Tcl_GetStringResult(this->_tcl_interp);
         throw TCL_eErroneousTCL("<unknown file>", error_line, 0, std::string(msg));
     }
-}
-
-int TclCtx::_fix_port_indexing() {
-    int error;
-    error = Tcl_Eval(this->_tcl_interp, "rename unknown _original_unknown");
-    if (error != TCL_OK)
-        return error;
-    error = Tcl_Eval(
-        this->_tcl_interp,
-        "proc unknown args {\n"
-        "  set result [scan [lindex $args 0] \"%d\" value]\n"
-        "  if { $result == 1 && [llength $args] == 1 } {\n"
-        "    return \\[$value\\]\n"
-        "  } else {\n"
-        "    uplevel 1 [list _original_unknown {*}$args]\n"
-        "  }\n"
-        "}"
-    );
-    return error;
 }
 
 int TclCtx::_tcl_do_method(
