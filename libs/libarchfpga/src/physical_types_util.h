@@ -340,12 +340,18 @@ int get_primitives_class_physical_num(t_physical_tile_type_ptr curr_physical_til
                                  int curr_relative_cap,
                                  int logical_primitive_class_num);
 
-std::unordered_map<const t_class*, int> get_sub_tile_primitive_classes_map(t_physical_tile_type_ptr curr_physical_tile,
-                                   const t_sub_tile* curr_sub_tile,
-                                   t_logical_block_type_ptr curr_logical_block,
-                                   int curr_relative_cap);
+std::unordered_map<int, const t_class*> get_tile_primitive_classes_map(t_physical_tile_type_ptr physical_tile);
 
-std::unordered_map<const t_class*, int> get_primitive_block_classes_map(t_physical_tile_type_ptr physical_tile,
+std::unordered_map<int, const t_class*> get_sub_tile_primitive_classes_map(t_physical_tile_type_ptr physical_tile,
+                                                                           const t_sub_tile* sub_tile,
+                                                                           int relative_cap);
+
+std::unordered_map<int, const t_class*> get_logical_block_primitive_classes_map(t_physical_tile_type_ptr physical_tile,
+                                                                                const t_sub_tile* sub_tile,
+                                                                                t_logical_block_type_ptr logical_block,
+                                                                                int relative_cap);
+
+std::unordered_map<int, const t_class*> get_primitive_block_classes_map(t_physical_tile_type_ptr physical_tile,
                                                                         const t_sub_tile* sub_tile,
                                                                         t_logical_block_type_ptr logical_block,
                                                                         int sub_tile_relative_cap,

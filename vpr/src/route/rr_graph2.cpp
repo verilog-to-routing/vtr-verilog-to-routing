@@ -1343,34 +1343,19 @@ static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
     auto type = grid[x][y].type;
 
 
-
-    for(const auto& sub_tile : type->sub_tiles) {
-        for(auto eq_site : sub_tile.equivalent_sites) {
-            auto pb_graph_node = eq_site->pb_graph_head;
-            for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
-                auto sub_tile_classes = get_sub_tile_primitive_classes_map(type,
-                                                   &sub_tile,
-                                                   eq_site,
-                                                   sub_tile_idx);
-                for (auto class_pair : sub_tile_classes) {
-                    auto primitive_class = class_pair.first;
-                    int class_num = class_pair.second;
-                    auto class_type = primitive_class->type;
-                    if (class_type == DRIVER) {
-                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, class_num);
-                    } else {
-                        VTR_ASSERT(class_type == RECEIVER);
-                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, class_num);
-                    }
-                    ++(*index);
-                }
-            }
-
+    auto tile_primitive_classes_map = get_tile_primitive_classes_map(type);
+    for (auto class_pair : tile_primitive_classes_map) {
+        int class_num = class_pair.first;
+        auto primitive_class = class_pair.second;
+        auto class_type = primitive_class->type;
+        if (class_type == DRIVER) {
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, class_num);
+        } else {
+            VTR_ASSERT(class_type == RECEIVER);
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, class_num);
         }
-
+        ++(*index);
     }
-
-
 }
 
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 

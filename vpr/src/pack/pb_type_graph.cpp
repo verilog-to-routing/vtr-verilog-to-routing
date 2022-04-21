@@ -138,6 +138,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 
     for (auto& type : device_ctx.logical_block_types) {
         if (type.pb_type) {
+            //#TODO: Because of using calloc, not all of the objects inside of the t_pb_graph_node are constructed properly - We should use new!
             type.pb_graph_head = (t_pb_graph_node*)vtr::calloc(1, sizeof(t_pb_graph_node));
             int pin_count_in_cluster = 0;
             alloc_and_load_pb_graph(type.pb_graph_head, nullptr,
@@ -514,6 +515,8 @@ static std::vector<const t_pb_graph_node*> get_all_primitives(const t_pb_graph_n
 
 static void set_all_primitives_pins_classes(t_pb_graph_node* pb_graph_node) {
 
+    pb_graph_node->pb_pin_class_map = std::unordered_map<const t_pb_graph_pin*, int>();
+
     auto primitives = get_all_primitives(pb_graph_node);
     for(auto primitive : primitives) {
         for(int port_type = 0; port_type < 3; port_type++) {
@@ -545,6 +548,7 @@ void static set_primitive_port_pin_classes(t_pb_graph_node* root_pb_graph_node,
                                            t_pb_graph_pin** pb_graph_pins,
                                            int num_ports,
                                            int* num_pins) {
+    VTR_ASSERT(root_pb_graph_node->is_root());
     std::vector<t_class>& primitive_class_inf = root_pb_graph_node->primitive_class_inf;
 
     for(int port_idx = 0; port_idx < num_ports; port_idx++) {
