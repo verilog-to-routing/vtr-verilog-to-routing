@@ -3,9 +3,15 @@
 
 #include "clustered_netlist_fwd.h"
 #include "noc_data_types.h"
+#include "vtr_vector.h"
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
+
+
+constexpr bool PROCESSED = true;
+constexpr bool NOT_PROCESSED = false;
 
 /*
     Describes a traffic flow within the NoC, which is the communication between two routers. This description includes the following:
@@ -49,8 +55,13 @@ class NocTrafficFlows
 
         vtr::vector<NocTrafficFlowId, bool> processed_traffic_flows;
 
+        // contains the cluster ID of all unique router modules in the design
+        std::unordered_set<ClusterBlockId> noc_router_blocks;
+
         // shouldnt have access to this functions
-        void add_traffic_flow_to_associated_source_and_sink_routers(NocTrafficFlowId traffic_flow_id);
+        void add_traffic_flow_to_associated_routers(NocTrafficFlowId traffic_flow_id, ClusterBlockId source_router_id, std::unordered_map<ClusterBlockId, std::vector<NocTrafficFlowId>>& router_associated_traffic_flows);
+
+        void add_router_to_block_set(ClusterBlockId router_block_id);
 
 
     public:
@@ -59,19 +70,23 @@ class NocTrafficFlows
         //getters
         const t_noc_traffic_flow& get_single_noc_traffic_flow(NocTrafficFlowId traffic_flow_id) const;
 
-        const std::vector<NocTrafficFlowId>& get_traffic_flows_associated_to_source_router(ClusterBlockId source_router_id) const;
+        const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_source_router(ClusterBlockId source_router_id) const;
 
-        const std::vector<NocTrafficFlowId>& get_traffic_flows_associated_to_sink_router(ClusterBlockId sink_router_id) const;
+        const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_sink_router(ClusterBlockId sink_router_id) const;
+
+        bool get_traffic_flow_processed_status(NocTrafficFlowId traffic_flow_id);
 
 
         // setters
         void create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency);
 
+        void set_traffic_flow_as_processed(NocTrafficFlowId traffic_flow_id);
 
         //utility functions
         void finshed_noc_traffic_flows_setup(void);
         void reset_traffic_flows_processed_status(void);
         void clear_traffic_flows(void);
+        bool check_if_cluster_block_is_a_noc_router(ClusterBlockId block_id);
 
 };
 
