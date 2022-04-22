@@ -43,8 +43,8 @@ public:
         netlist(netlist_)
     {}
 
-    typedef int(TclPhysicalConstraintsClient::*TclMethod)(int objc, Tcl_Obj* const objvp[]);
-    void register_methods(std::function<void(const char* name, TclMethod)> register_method) {
+    template <typename F>
+    void register_methods(F register_method) {
         register_method("get_ports", &TclPhysicalConstraintsClient::get_ports);
         register_method("set_property", &TclPhysicalConstraintsClient::set_property);
     }
@@ -164,6 +164,7 @@ protected:
         AtomBlockId block = this->netlist.port_block(port);
         this->netlist.set_block_param(block, "IOSTANDARD", io_standard);
         VTR_LOG("XDC: Assigned IOSTANDARD %s = %s\n", this->netlist.block_name(block).c_str(), io_standard);
+        return this->_ret_ok();
     }
 
     int _do_get_ports(const char* pin_name) {
@@ -215,7 +216,6 @@ REGISTER_TCL_TYPE_W_STR_UPDATE(AtomPortId, port_tcl_t) {
 } END_REGISTER_TCL_TYPE;
 
 VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arch& arch, AtomNetlist& netlist) {
-    //VTR_ASSERT(_xdc_initialized);
 
     VprConstraints constraints;
     TclPhysicalConstraintsClient pc_client(constraints, arch, netlist);
