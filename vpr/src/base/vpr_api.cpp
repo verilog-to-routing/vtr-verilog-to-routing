@@ -355,11 +355,9 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         try {
             load_xdc_constraints_file(filename_opts.read_xdc_constraints_file.c_str(), *arch, atom_ctx.nlist);
         } catch (const TCL_eErroneousTCL& e) {
-            VTR_LOG_ERROR("Error reading XDC: %s\n", std::string(e).c_str());
-            throw e;
+            vpr_throw(VPR_ERROR_XDC, e.filename.c_str(), e.line, e.message.c_str());
         } catch (const TCL_eException& e) {
-            VTR_LOG_ERROR("Error loading XDC: %s\n", std::string(e).c_str());
-            throw e;
+            VPR_THROW(VPR_ERROR_OTHER, "Error loading XDC: %s\n", std::string(e).c_str());
         }
     }
 
@@ -1407,6 +1405,9 @@ void vpr_print_error(const VprError& vpr_error) {
                 break;
             case VPR_ERROR_SDC:
                 error_type = "SDC file";
+                break;
+            case VPR_ERROR_XDC:
+                error_type = "XDC file";
                 break;
             case VPR_ERROR_NET_F:
                 error_type = "Netlist file";
