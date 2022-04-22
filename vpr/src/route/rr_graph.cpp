@@ -121,7 +121,7 @@ static t_logical_block_type_ptr get_max_input_pin_eq_site(const std::vector<t_lo
 
 static std::vector<const t_pb_graph_node*> get_mode_primitives(const t_pb_graph_node* pb_graph_node);
 
-static std::unordered_map<const t_class*, int> get_mode_primitives_classes(t_physical_tile_type_ptr physical_tile,
+static std::unordered_map<int, const t_class*> get_mode_primitives_classes(t_physical_tile_type_ptr physical_tile,
                                                                            const t_sub_tile* sub_tile,
                                                                            t_logical_block_type_ptr logical_block,
                                                                            int sub_tile_relative_cap,
@@ -1585,16 +1585,16 @@ static std::vector<const t_pb_graph_node*> get_mode_primitives(const t_pb_graph_
     return primitives;
 }
 
-static std::unordered_map<const t_class*, int> get_mode_primitives_classes(t_physical_tile_type_ptr physical_tile,
+static std::unordered_map<int, const t_class*> get_mode_primitives_classes(t_physical_tile_type_ptr physical_tile,
                                                                            const t_sub_tile* sub_tile,
                                                                            t_logical_block_type_ptr logical_block,
                                                                            int sub_tile_relative_cap,
                                                                            const t_pb_graph_node* pb_graph_node) {
 
-    const std::unordered_map<const t_pb_graph_pin*, int>& pb_pin_class_map = pb_graph_node->pb_pin_class_map;
-    const std::vector<t_class>& primitive_class_inf = pb_graph_node->primitive_class_inf;
 
-    std::unordered_map<const t_class*, int> classes_id_map;
+    const std::vector<t_class>& primitive_class_inf = logical_block->primitive_class_inf;
+
+    std::unordered_map<int, const t_class*> classes_id_map;
     std::vector<const t_pb_graph_node*> primitives =  get_mode_primitives(pb_graph_node);
 
     for(auto primitive : primitives) {
@@ -1603,6 +1603,8 @@ static std::unordered_map<const t_class*, int> get_mode_primitives_classes(t_phy
                                                                 logical_block,
                                                                 sub_tile_relative_cap,
                                                                 primitive);
+        classes_id_map.insert(tmp_class_id_map.begin(), tmp_class_id_map.end());
+
     }
     return classes_id_map;
 }
@@ -1630,7 +1632,7 @@ static void add_rr_sink_and_source(const t_class* class_inf,
 
     for (int ipin = 0; ipin < class_inf->num_pins; ++ipin) {
         int logical_pin_num = class_inf->pinlist[ipin];
-        auto pin = get_pb_pin_from_logical_pin_idx(logical_block, logical_pin_num);
+        auto pin = logical_block->pb_pin_idx_bimap[logical_pin_num];
         VTR_ASSERT(pin != nullptr);
         t_rr_type pin_type;
         RRNodeId pin_node_id;
@@ -1783,8 +1785,9 @@ static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
                                                        pb_graph_head);
             /* Initialize SINK/SOURCE nodes and connect them to their respective pins */
             for(auto class_pair : classes) {
-                auto class_inf = class_pair.first;
-                int class_id = class_pair.second;
+                int class_id = class_pair.first;
+                auto class_inf = class_pair.second;
+
                 add_rr_sink_and_source(class_inf,
                                        class_id,
                                        rr_graph_builder,

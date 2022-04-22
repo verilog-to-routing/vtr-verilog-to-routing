@@ -410,13 +410,12 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             for(const t_sub_tile& sub_tile : type->sub_tiles) {
                 for(int sub_tile_cap = 0; sub_tile_cap < sub_tile.capacity.total(); sub_tile_cap++) {
                     for (auto eq_site : sub_tile.equivalent_sites) {
-                        auto pb_graph_node = eq_site->pb_graph_head;
                         auto pb_pin = get_pb_pin_from_pin_physical_num(type,
                                                                        &sub_tile,
                                                                        eq_site,
                                                                        sub_tile_cap,
                                                                        ptc_num);
-                        if (pb_graph_node->primitive_class_inf[pb_graph_node->pb_pin_class_map[pb_pin]].type != pin_type) {
+                        if (eq_site->primitive_class_inf[eq_site->pb_pin_class_map.at(pb_pin)].type != pin_type) {
                             VPR_ERROR(VPR_ERROR_ROUTE,
                                       "in check_rr_node: inode %d (type %d) type is not equal to DRIVER.\n", inode, rr_type, ptc_num);
                         }

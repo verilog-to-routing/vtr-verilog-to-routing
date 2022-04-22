@@ -840,6 +840,10 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
+    vtr::unordered_bimap<const t_pb_graph_pin*, int> pb_pin_idx_bimap; /* {pin, intra_cluster_pin_idx} */
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* only valid for top level block */
+    std::vector<t_class> primitive_class_inf; /* {primitive_pin, class_number} - only valid for top level block*/
+
     // Is this t_logical_block_type empty?
     bool is_empty() const;
 };
@@ -1192,9 +1196,6 @@ class t_pb_graph_node {
     int total_num_output_pins;
     int total_num_clock_pins;
     int total_primitive_count; /* total number of this primitive type in the cluster */
-    vtr::unordered_bimap<const t_pb_graph_pin*, int> pb_pin_idx_bimap; /* {pin, intra_cluster_pin_idx} */
-    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* only valid for top level block */
-    std::vector<t_class> primitive_class_inf; /* {primitive_pin, class_number} - only valid for top level block*/
 
 
     /* Interconnect instances for this pb
