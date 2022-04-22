@@ -12,11 +12,11 @@
 
 class usefull_data {
   public:
-    std::vector<std::pair<std::string, std::string>> ports_vec;
+    std::vector<std::tuple<std::string, std::string, std::string>> ports_vec;
     std::vector<std::tuple<std::string, std::string, std::string, std::string>> instance_vec;
     std::vector<std::tuple<std::string, std::string, std::string, std::string>> con_vec;
 
-    std::map<std::string, std::vector<std::pair<std::string, std::string>>> ports;
+    std::map<std::string, std::vector<std::tuple<std::string, std::string, std::string>>> ports;
 
     std::string top_cell;
     std::vector<Cell> cell_vec;
@@ -49,6 +49,7 @@ class usefull_data {
         std::string cell_name;
         std::string port_name;
         std::string port_dirt;
+        std::string port_size;
         while (current != NULL) {
             if (current->type == 0 || current->type == 5) {
                 list_depth = current->list_counter;
@@ -87,6 +88,7 @@ class usefull_data {
                             cmp_string = "port";
                             input_string = current->value;
                             if (input_string == cmp_string) {
+                                port_size = "0";
                                 current = current->next;
                                 if (current->type == 0 || current->type == 5) {
                                     //list_depth=current->list_counter;
@@ -94,10 +96,22 @@ class usefull_data {
                                     cmp_string = "array";
                                     cmp_string1 = "rename";
                                     input_string = current->value;
-                                    if ((input_string == cmp_string) | (input_string == cmp_string1)) {
+
+                                    if ((input_string == cmp_string1)) {
                                         current = current->next;
                                         port_name = current->value;
                                         current = current->next;
+                                        current = current->next;
+                                        current = current->next;
+                                        current = current->next;
+                                        current = current->next;
+                                        port_dirt = current->value;
+                                    }
+                                    if (input_string == cmp_string) {
+                                        current = current->next;
+                                        port_name = current->value;
+                                        current = current->next;
+                                        port_size = current->value;
                                         current = current->next;
                                         current = current->next;
                                         current = current->next;
@@ -111,8 +125,8 @@ class usefull_data {
                                     current = current->next;
                                     port_dirt = current->value;
                                 }
-                                ports_vec.push_back(std::make_pair(port_name, port_dirt));
-                                //printf ("\n The port is : %s \n Direction is : %s",port_name.c_str(),port_dirt.c_str());
+                                ports_vec.push_back(std::make_tuple(port_name, port_dirt, port_size));
+                                printf("\n The port is : %s \n Direction is : %s and size is : %s", port_name.c_str(), port_dirt.c_str(), port_size.c_str());
                             }
                         }
                     }
@@ -240,6 +254,7 @@ class usefull_data {
     void find_cell_net(struct SNode* head, std::string top_name)
 
     {
+        con_vec.clear();
         int list_depth = 0;
         struct SNode* current = head;
         std::string cell_name;
@@ -369,8 +384,8 @@ class usefull_data {
         }
     }
 
-    std::vector<std::pair<std::string, std::string>> find_cell_ports(std::string cell_name) {
-        std::vector<std::pair<std::string, std::string>> temp_vec;
+    std::vector<std::tuple<std::string, std::string, std::string>> find_cell_ports(std::string cell_name) {
+        std::vector<std::tuple<std::string, std::string, std::string>> temp_vec;
         for (auto it = ports.begin(); it != ports.end(); it++) {
             //std::cout<< "\nmap value : " << it->first<< "\n";
             if (it->first == cell_name) {
