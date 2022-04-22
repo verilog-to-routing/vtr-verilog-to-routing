@@ -312,23 +312,23 @@ int get_root_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                                  int relative_cap,
                                  int logical_pin_num);
 
-int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
+int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                    const t_sub_tile* sub_tile,
                    t_logical_block_type_ptr logical_block,
                    int relative_cap,
                    const t_pb_graph_pin* pin);
 
-int get_pin_logical_num_from_physical_num (t_physical_tile_type_ptr physical_tile,
-                                          const t_sub_tile* sub_tile,
-                                          t_logical_block_type_ptr logical_block,
-                                          int relative_cap,
-                                          int physical_num);
+int get_pin_logical_num_from_physical_num (t_physical_tile_type_ptr physical_tile, int physical_num);
 
-const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_tile,
-                                                       const t_sub_tile* sub_tile,
-                                                       t_logical_block_type_ptr logical_block,
-                                                       int relative_cap,
-                                                       int physical_num);
+const t_sub_tile* get_sub_tile_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
+
+int get_relative_cap_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
+
+t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
+
+const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
+
+int get_total_num_sub_tile_pins(const t_sub_tile* sub_tile);
 
 int get_total_num_tile_pins(t_physical_tile_type_ptr tile);
 

@@ -389,8 +389,8 @@ static void set_logical_block_all_pins_indices(t_logical_block_type* logical_blo
     int offset = 0;
 
     pb_graph_node_to_set_pin_index_q.push(root_pb_graph_node);
+    /* Iterated over all sub-blocks from the root-level block down to primitives */
     while(!pb_graph_node_to_set_pin_index_q.empty()) {
-        std::vector<t_pb_graph_pin*> debug_pin;
         auto curr_pb_graph_node = pb_graph_node_to_set_pin_index_q.front();
         pb_graph_node_to_set_pin_index_q.pop();
         auto curr_pb_type = curr_pb_graph_node->pb_type;
@@ -415,12 +415,12 @@ static void set_logical_block_all_pins_indices(t_logical_block_type* logical_blo
             for (int port_idx = 0; port_idx < num_ports; port_idx++) {
                 for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
                     auto curr_pb_graph_pin = &pins[port_idx][pin_idx];
-                    debug_pin.push_back(curr_pb_graph_pin);
                     auto curr_pb_graph_l_idx = curr_pb_graph_pin->port->absolute_first_pin_index + curr_pb_graph_pin->pin_number + offset;
                     pb_pin_idx_map.insert(curr_pb_graph_pin, curr_pb_graph_l_idx);
                 }
             }
         }
+        /* logical indices for the next block should be shifted by the number of pins seen so far. As a result, the given logical index will be unique in the logical_block level*/
         offset += curr_pb_type->num_pins;
 
         if(curr_pb_graph_node->is_root()){

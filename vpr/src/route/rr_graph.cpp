@@ -1592,7 +1592,7 @@ static std::unordered_map<int, const t_class*> get_mode_primitives_classes(t_phy
                                                                            const t_pb_graph_node* pb_graph_node) {
 
 
-    const std::vector<t_class>& primitive_class_inf = logical_block->primitive_class_inf;
+
 
     std::unordered_map<int, const t_class*> classes_id_map;
     std::vector<const t_pb_graph_node*> primitives =  get_mode_primitives(pb_graph_node);
@@ -1806,7 +1806,7 @@ static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
             for (auto pin : pins) {
                 int max_width_offset;
                 int max_height_offset;
-                int pin_ptc = get_pb_pin_ptc(physical_tile,
+                int pin_ptc = get_pb_pin_physical_num(physical_tile,
                                              &sub_tile,
                                              logical_block,
                                              sub_tile_cap,
@@ -2164,7 +2164,7 @@ static RRNodeId get_pb_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
                                const int j,
                                const t_pb_graph_pin* pin) {
     RRNodeId node_id = RRNodeId::INVALID();
-    int pin_ptc = get_pb_pin_ptc(physical_tile,
+    int pin_ptc = get_pb_pin_physical_num(physical_tile,
                                  sub_tile,
                                  logical_block,
                                  relative_cap,
@@ -2217,7 +2217,7 @@ static std::tuple<t_rr_type, int, RRNodeId> get_pin_spec (RRGraphBuilder& rr_gra
 
 
     // get node ptc
-    pin_ptc = get_pb_pin_ptc(physical_tile,
+    pin_ptc = get_pb_pin_physical_num(physical_tile,
                              sub_tile,
                              logical_block,
                              sub_tile_relative_cap,

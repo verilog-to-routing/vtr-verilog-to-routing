@@ -1264,7 +1264,7 @@ static void add_all_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
         bool assigned_to_rr_node = false;
         //top-level block pins are added later
         std::vector<e_side> sides;
-        pin_num = get_pb_pin_ptc(type,
+        pin_num = get_pb_pin_physical_num(type,
                                  sub_tile,
                                  logical_block,
                                  relative_capacity,

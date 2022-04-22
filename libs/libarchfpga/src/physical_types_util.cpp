@@ -38,6 +38,10 @@ struct t_pin_inst_port {
 
 static std::tuple<int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_index);
 static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr type, int pin_index);
+static int get_sub_block_pin_num_offset(t_physical_tile_type_ptr physical_tile,
+                                        const t_sub_tile* curr_sub_tile,
+                                        t_logical_block_type_ptr curr_logical_block,
+                                        const int curr_relative_cap);
 
 static std::tuple<int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_index) {
     VTR_ASSERT(pin_index < type->num_pins);
@@ -80,6 +84,37 @@ static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr
         }
     }
     return pin_inst_port;
+}
+
+static int get_sub_block_pin_num_offset(t_physical_tile_type_ptr physical_tile,
+                                        const t_sub_tile* curr_sub_tile,
+                                        t_logical_block_type_ptr curr_logical_block,
+                                        const int curr_relative_cap) {
+    bool is_found = false;
+    int offset = physical_tile->num_pins;
+    for(const auto& tmp_sub_tile : physical_tile->sub_tiles) {
+        for(int sub_tile_cap = 0; sub_tile_cap < tmp_sub_tile.capacity.total(); sub_tile_cap++) {
+            for(auto eq_site : tmp_sub_tile.equivalent_sites) {
+                if(&tmp_sub_tile == curr_sub_tile) {
+                    if (sub_tile_cap == curr_relative_cap) {
+                        if (eq_site == curr_logical_block) {
+                            is_found = true;
+                        }
+                    }
+                }
+                if(is_found) {
+                    break;
+                } else {
+                    offset += eq_site->pb_type->num_pins;
+                }
+            }
+            if(is_found)
+                break;
+        }
+        if(is_found)
+            break;
+    }
+    return offset;
 }
 
 /******************** End Subroutine declarations and definition ************************/
@@ -502,22 +537,28 @@ int get_root_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                                  t_logical_block_type_ptr logical_block,
                                  int relative_cap,
                                  int logical_pin_num) {
+    /* The operation of this function is similar to get_physical_pin_at_sub_tile_location. However, in the mentioned function,
+     * sub_tile is not given as an input. Thus, the first sub_tile which contains logical_block as one of its equivalent sites,
+     * would be considered at the desirable sub_tile. I consider this approach as an unsafe one. As a result, this function ,which
+     * get the sub_tile as an input, is written*/
 
     int sub_tile_index = sub_tile->index;
 
     int block_num_pins = physical_tile->sub_tiles[sub_tile_index].num_phy_pins / physical_tile->sub_tiles[sub_tile_index].capacity.total();
 
     int sub_tile_physical_pin = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_num);
-    return relative_cap * block_num_pins + physical_tile->sub_tiles[sub_tile_index].sub_tile_to_tile_pin_indices[sub_tile_physical_pin];
-
+    sub_tile_physical_pin += relative_cap * block_num_pins;
+    return physical_tile->sub_tiles[sub_tile_index].sub_tile_to_tile_pin_indices[sub_tile_physical_pin];
 }
 
-int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
+int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                    const t_sub_tile* sub_tile,
                    t_logical_block_type_ptr logical_block,
                    int relative_cap,
                    const t_pb_graph_pin* pin) {
     int pin_ptc;
+    /* There is special mapping between logical_block on the root-level block and the physical pins on the tiles.
+     * Thus, special care needs to be taken when the physical index of a root-level pb_graph_pin is being calculated */
     if(pin->is_root_block_pin()){
         pin_ptc = get_root_pb_pin_physical_num(physical_tile,
                                                sub_tile,
@@ -525,44 +566,153 @@ int get_pb_pin_ptc(t_physical_tile_type_ptr physical_tile,
                                                relative_cap,
                                                pin->port->absolute_first_pin_index + pin->pin_number);
     } else{
+        /* There isn't any mapping between sub-pb-blocks pins and the physical pins.
+         * However, since we want to retain the uniqueness of physical indices at the tile level, we shift the logical_indices,
+         * which are unique at logical level, by the number of physical pins. By doing so, we avoid collision in the case that the
+         * number of physical pins is higher than those of root-level logical pins. The more conservative approach would be to offset
+         * the sub-blocks' pin id by the difference between the number of pins on root-level logical pin and the physical tile */
         int logical_pin_num = logical_block->pb_pin_idx_bimap[pin];
-        pin_ptc = logical_pin_num + physical_tile->num_pins;
+        int offset = get_sub_block_pin_num_offset(physical_tile,
+                                                  sub_tile,
+                                                  logical_block,
+                                                  relative_cap);
+        pin_ptc = logical_pin_num + offset;
     }
 
     return pin_ptc;
 }
 
-int get_pin_logical_num_from_physical_num (t_physical_tile_type_ptr physical_tile,
-                                          const t_sub_tile* sub_tile,
-                                          t_logical_block_type_ptr logical_block,
-                                          int relative_cap,
-                                          int physical_num) {
+int get_pin_logical_num_from_physical_num (t_physical_tile_type_ptr physical_tile, int physical_num) {
+
+    auto sub_tile = get_sub_tile_from_pin_physical_num(physical_tile, physical_num);
+    auto relative_cap = get_relative_cap_from_pin_physical_num(physical_tile, physical_num);
+    auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, physical_num);
+
     int tile_num_pins = physical_tile->num_pins;
     int sub_tile_index = sub_tile->index;
     int block_num_pins = physical_tile->sub_tiles[sub_tile_index].num_phy_pins / physical_tile->sub_tiles[sub_tile_index].capacity.total();
-    if(physical_num > tile_num_pins) {
-        int offset = relative_cap * block_num_pins;
-        int first_sub_tile_pin_num = physical_num - offset;
-        auto direct_map = physical_tile->tile_block_pin_directs_map.at(logical_block->index).at(sub_tile->index);
-        int logical_pin = direct_map[t_physical_pin(first_sub_tile_pin_num)].pin;
-        return logical_pin;
-    } else {
-        return (physical_num - tile_num_pins);
+
+    int pin_logical_num;
+    if(physical_num >= tile_num_pins) { /* pin is not on the root-level block */
+        int offset = get_sub_block_pin_num_offset(physical_tile,
+                                                  sub_tile,
+                                                  logical_block,
+                                                  relative_cap);
+        pin_logical_num = physical_num - offset;
+    } else { /* pin is on the root-level block */
+        auto direct_map = physical_tile->tile_block_pin_directs_map.at(logical_block->index).at(sub_tile_index);
+        auto result = std::find(std::begin(sub_tile->sub_tile_to_tile_pin_indices),
+                             end(sub_tile->sub_tile_to_tile_pin_indices), physical_num);
+        VTR_ASSERT(result != end(sub_tile->sub_tile_to_tile_pin_indices));
+        int sub_tile_pin_num = std::distance(std::begin(sub_tile->sub_tile_to_tile_pin_indices), result);
+        sub_tile_pin_num -= relative_cap * block_num_pins;
+        pin_logical_num = direct_map[t_physical_pin(sub_tile_pin_num)].pin;
     }
+
+    return pin_logical_num;
 }
 
-const t_pb_graph_pin* get_pb_pin_from_pin_physical_num (t_physical_tile_type_ptr physical_tile,
-                                                       const t_sub_tile* sub_tile,
-                                                       t_logical_block_type_ptr logical_block,
-                                                       int relative_cap,
-                                                       int physical_num) {
-    int logical_num = get_pin_logical_num_from_physical_num(physical_tile,
-                                                            sub_tile,
-                                                            logical_block,
-                                                            relative_cap,
-                                                            physical_num);
+const t_sub_tile* get_sub_tile_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num) {
+
+    const t_sub_tile* target_sub_tile = nullptr;
+
+    if(physical_num < physical_tile->num_pins) { /* pin located on the root-level block */
+        int num_seen_root_pins = 0;
+        for(const auto& sub_tile : physical_tile->sub_tiles) {
+            if(physical_num < (num_seen_root_pins + sub_tile.num_phy_pins))
+                target_sub_tile = &sub_tile;
+            else
+                num_seen_root_pins += sub_tile.num_phy_pins;
+        }
+    } else { /* This physical_num corresponds to a pin located inside a block */
+        int num_seen_root_pins = physical_tile->num_pins;
+        for(const auto& sub_tile : physical_tile->sub_tiles) {
+            int num_internal_sub_tile_pin = get_total_num_sub_tile_pins(&sub_tile) - sub_tile.num_phy_pins;
+            if(physical_num < (num_seen_root_pins + num_internal_sub_tile_pin))
+                target_sub_tile = &sub_tile;
+            else
+                num_seen_root_pins += num_internal_sub_tile_pin;
+        }
+    }
+
+    VTR_ASSERT(target_sub_tile != nullptr);
+    return target_sub_tile;
+}
+int get_relative_cap_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num) {
+
+    int target_cap = -1;
+    auto sub_tile = get_sub_tile_from_pin_physical_num(physical_tile, physical_num);
+    int block_num_pins = get_total_num_sub_tile_pins(sub_tile) / sub_tile->capacity.total();
+    int num_seen_pins = physical_tile->num_pins;
+
+    for(const auto& tmp_sub_tile : physical_tile->sub_tiles) {
+        int num_internal_sub_tile_pin = get_total_num_sub_tile_pins(&tmp_sub_tile) - tmp_sub_tile.num_phy_pins;
+        if(sub_tile == &tmp_sub_tile)
+            num_seen_pins += num_internal_sub_tile_pin;
+        else
+            break;
+    }
+    for(int sub_tile_cap = 0; sub_tile_cap < sub_tile->capacity.total(); sub_tile_cap++) {
+        if(physical_num < (num_seen_pins + block_num_pins)) {
+            target_cap = sub_tile_cap;
+            break;
+        } else {
+            num_seen_pins += block_num_pins;
+        }
+    }
+
+    VTR_ASSERT(target_cap != -1);
+    return target_cap;
+
+}
+
+t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num) {
+
+    t_logical_block_type_ptr target_logical_block = nullptr;
+    auto sub_tile = get_sub_tile_from_pin_physical_num(physical_tile, physical_num);
+    auto sub_tile_cap = get_relative_cap_from_pin_physical_num(physical_tile, physical_num);
+    int num_seen_pins = physical_tile->num_pins;
+
+    for(const auto& tmp_sub_tile : physical_tile->sub_tiles) {
+        int num_internal_sub_tile_pin = get_total_num_sub_tile_pins(&tmp_sub_tile) - tmp_sub_tile.num_phy_pins;
+        if(sub_tile == &tmp_sub_tile)
+            num_seen_pins += num_internal_sub_tile_pin;
+        else
+            break;
+    }
+
+    int block_num_pins = get_total_num_sub_tile_pins(sub_tile) / sub_tile->capacity.total();
+    for(int cap = 0; cap < sub_tile_cap; cap++) {
+        num_seen_pins += block_num_pins;
+    }
+
+    for(auto tmp_logical_block : sub_tile->equivalent_sites) {
+        if(physical_num < num_seen_pins) {
+            target_logical_block = tmp_logical_block;
+            break;
+        } else {
+            num_seen_pins += tmp_logical_block->pb_type->num_pins;
+        }
+    }
+
+    VTR_ASSERT(target_logical_block != nullptr);
+    return target_logical_block;
+}
+
+const t_pb_graph_pin* get_pb_pin_from_pin_physical_num (t_physical_tile_type_ptr physical_tile, int physical_num) {
+    auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, physical_num);
+    int logical_num = get_pin_logical_num_from_physical_num(physical_tile, physical_num);
     return logical_block->pb_pin_idx_bimap[logical_num];
 
+}
+
+int get_total_num_sub_tile_pins(const t_sub_tile* sub_tile) {
+    int num_pins = 0;
+    for(auto eq_site : sub_tile->equivalent_sites) {
+        num_pins += eq_site->pb_pin_idx_bimap.size();
+    }
+    num_pins *= sub_tile->capacity.total();
+    return num_pins;
 }
 
 int get_total_num_tile_pins(t_physical_tile_type_ptr tile) {
