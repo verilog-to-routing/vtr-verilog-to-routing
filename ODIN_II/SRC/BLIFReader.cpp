@@ -333,6 +333,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     vtr::free(mappings);
     mappings = NULL;
 
+    t_model* hb_model = NULL;
     nnode_t* new_node = allocate_nnode(my_location);
 
     // Name the node subcircuit_name~hard_block_number so that the name is unique.
@@ -371,6 +372,11 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
                     new_node->type = HARD_IP;
                     /* specify node name */
                     odin_sprintf(new_name, "\\%s~%ld", subcircuit_stripped_name, hard_block_number - 1);
+                    /* Detect used hard block for the blif generation */
+                    hb_model = find_hard_block(subcircuit_stripped_name);
+                    if (hb_model) {
+                        hb_model->used = 1;
+                    }
                 } else {
                     error_message(PARSE_BLIF, unknown_location,
                                   "Unsupported subcircuit type (%s) in BLIF file.\n", subcircuit_name);
@@ -449,7 +455,8 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
                                 || new_node->type == ROM
                                 || new_node->type == SPRAM
                                 || new_node->type == DPRAM
-                                || new_node->type == MEMORY)
+                                || new_node->type == MEMORY
+                                || hb_model != NULL)
                                    ? get_hard_block_port_name(mapping)
                                    : NULL;
 
@@ -470,7 +477,8 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
                                 || new_node->type == ROM
                                 || new_node->type == SPRAM
                                 || new_node->type == DPRAM
-                                || new_node->type == MEMORY)
+                                || new_node->type == MEMORY
+                                || hb_model != NULL)
                                    ? get_hard_block_port_name(mapping)
                                    : NULL;
 
