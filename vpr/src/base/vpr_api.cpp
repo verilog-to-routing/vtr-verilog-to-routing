@@ -102,8 +102,6 @@
 std::unique_ptr<tbb::task_scheduler_init> tbb_scheduler;
 #endif
 
-const char* _argv0;
-
 /* Local subroutines */
 static void free_complex_block_types();
 
@@ -172,7 +170,6 @@ void vpr_initialize_logging() {
  * 4. Sanity check all three
  */
 void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup* vpr_setup, t_arch* arch) {
-    _argv0 = argv[0];
     
     vpr_initialize_logging();
 

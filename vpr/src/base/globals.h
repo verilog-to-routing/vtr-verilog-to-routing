@@ -8,6 +8,5 @@
 #include "vpr_context.h"
 
 extern VprContext g_vpr_ctx;
-extern const char* _argv0;
 
 #endif
