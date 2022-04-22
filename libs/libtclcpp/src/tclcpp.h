@@ -1,5 +1,5 @@
-#ifndef OO_TCL_H
-#define OO_TCL_H
+#ifndef TCLCPP_H
+#define TCLCPP_H
 
 #include <string>
 #include <list>
@@ -112,7 +112,7 @@ static T* tcl_obj_get_ctx_ptr(Tcl_Obj* obj) {
 using TclCommandError = std::string;
 
 /**
- * \brief Descibes a after exiting a custom TCL command implementation.
+ * @brief Descibes a after exiting a custom TCL command implementation.
  */
 enum class e_TclCommandStatus : int {
     TCL_CMD_SUCCESS,         /* Command exited with no return value. */
@@ -121,15 +121,61 @@ enum class e_TclCommandStatus : int {
     TCL_CMD_FAIL             /* Command exited with a failure. Will cause a TCL_eErroneousTCL to be thrown. */
 };
 
+
+/**
+ * @brief Provide a C++ state with TCL interface.
+ * 
+ * This class should be a base for a Client class to implement a TCL interface.
+ * 
+ * Commands need to be registered within
+ *   template <typename F>
+ *   void register_methods(F register_method)
+ * method template.
+ * 
+ * Commands are implemented as methods of TclClient-derived class:
+ *   int(DerivedClient::*)(int objc, Tcl_Obj* const objvp[]))
+ * 
+ * Use TclClient::_ret_* methods to return from a command implementation.
+ */
 class TclClient {
 public:
-    TclClient();
 
     e_TclCommandStatus cmd_status;
     std::string string;
     Tcl_Obj* object;
 
+    /**
+     * Define this method template in a derived TclClient:
+     * 
+     * template <typename F>
+     * void register_methods(F register_method)
+     * 
+     * F should be a functor of acting as the following type:
+     * void(*)(const char* name, int(DerivedClient::*)(int objc, Tcl_Obj* const objvp[]))
+     * 
+     * (alternatively you can define a method taking std::function)
+     * 
+     * Eg.:
+     * template <typename F>
+     * void DerivedClient::register_methods(F register_method) {
+     *   register_method("my_custom_command", DerivedClient::my_custom_command);
+     *   register_method("my_other_custom_command", DerivedClient::my_other_custom_command);
+     * }
+     * 
+     * In the future if C++20 is going to be adopted as a standard for VPR, this should be
+     * handled using a concept.
+     */
+
 protected:
+    /* TclClient must be derived */
+    TclClient();
+
+    /* TclClient must be immovable to prevent invalidating any references to it stored within TCL objects */
+    TclClient(TclClient&& other) = delete;
+    /* TclClient shouldn't be copied, because that would require duplicating this->object and binding it to
+     * the new copy of a client. This might be an unwanted behaviour. */
+    TclClient(const TclClient& other) = delete;
+    TclClient& operator=(const TclClient& other) = delete;
 
     /* Return methods
      * Use these when returning from a TCL command implementation.
@@ -194,10 +240,12 @@ static void tcl_obj_free(Tcl_Obj* obj) {
     Tcl_Free(reinterpret_cast<char*>(obj_data));
 }
 void tcl_obj_dup(Tcl_Obj* src, Tcl_Obj* dst);
-void tcl_set_obj_string(Tcl_Obj* obj, const std::string& str);
 int tcl_set_from_none(Tcl_Interp *tcl_interp, Tcl_Obj *obj);
 
-void tcl_init();
+/**
+ * @brief set TCL object's string representation
+ */
+void tcl_set_obj_string(Tcl_Obj* obj, const std::string& str);
 
 /**
  * @brief Provide a TCL runtime.
@@ -221,7 +269,7 @@ public:
     }
 
     /**
-     * \brief Read and interpret a TCL script within this context.
+     * @brief Read and interpret a TCL script within this context.
      */
     void read_tcl(std::istream& tcl_stream);
 
@@ -230,8 +278,8 @@ public:
      */
     template <typename C>
         void add_tcl_client(C& client) {
-        auto* client_container = new TclClientContainer<C>(client);
-        auto register_command = [&](const char* name, int(C::*method)(int objc, Tcl_Obj* const objvp[])) {
+            auto* client_container = new TclClientContainer<C>(client);
+            auto register_command = [&](const char* name, int(C::*method)(int objc, Tcl_Obj* const objvp[])) {
             client_container->methods.push_front(TclMethodDispatch<C>(method, client));
             auto& md = client_container->methods.front();
             Tcl_CreateObjCommand(this->_tcl_interp, name, TclCtx::_tcl_do_method, static_cast<TclMethodDispatchBase*>(&md), nullptr);
@@ -274,7 +322,7 @@ protected:
     /* int _fix_port_indexing(); */
 
     /**
-     * \brief Provide an interface to call a client method.
+     * @brief Provide an interface to call a client method.
      */
     struct TclMethodDispatchBase {
         inline TclMethodDispatchBase(TclClient& client_) : client(client_) {}
@@ -284,7 +332,7 @@ protected:
     };
 
     /**
-     * \brief Wrap a call-by-PTM (pointer-to-method) of a concrete TclClient-derived class as a virtual function of TclMethodDispatchBase.
+     * @brief Wrap a call-by-PTM (pointer-to-method) of a concrete TclClient-derived class as a virtual function of TclMethodDispatchBase.
      * This allows us to avoid making methods defined within TclClient-derived virtual methods of TclClient.
      */
     template <typename C>
@@ -304,7 +352,7 @@ protected:
     struct TclClientContainerBase {};
 
     /**
-     * \brief Store a reference to a client along with method dispatch list associated with that client.
+     * @brief Store a reference to a client along with method dispatch list associated with that client.
      */
     template <typename C>
     struct TclClientContainer : TclClientContainerBase {
@@ -337,27 +385,35 @@ private:
 #endif
 };
 
-#define DECLARE_TCL_TYPE(cxx_type, tcl_type)                  \
-    extern const Tcl_ObjType tcl_type;                        \
+#define TCL_TYPE_OF(cxx_type) cxx_type##_tcl_t
+
+/**
+ * @brief Declare Tcl type associated with a C++ type
+ * @param cxx_type C++ type name.
+ */
+#define DECLARE_TCL_TYPE(cxx_type)                            \
+    extern const Tcl_ObjType TCL_TYPE_OF(cxx_type);           \
     template <>                                               \
     constexpr const Tcl_ObjType* tcl_type_of<cxx_type>() {    \
-        return &tcl_type;                                     \
+        return &TCL_TYPE_OF(cxx_type);                        \
     }                                                         \
 
 /**
  * @brief Associate a C++ struct/class with a `Tcl_ObjType`.
  * @param cxx_type C++ type name.
- * @param tcl_type pointer to statically-allocated Tcl_ObjType.
+ * 
+ * Foollow it with a body of updateStringProc and close it with END_REGISTER_TCL_TYPE:
+ * REGISTER_TCL_TYPE_W_STR_UPDATE(CppType)(Tcl_Obj* obj) { ...body... } END_REGISTER_TCL_TYPE;
  */
-#define REGISTER_TCL_TYPE_W_STR_UPDATE(cxx_type, tcl_type)    \
-    const Tcl_ObjType tcl_type = (Tcl_ObjType){               \
-        .name = #cxx_type,                                    \
-        .freeIntRepProc = tcl_obj_free<cxx_type>,             \
-        .dupIntRepProc = tcl_obj_dup,                         \
-        .updateStringProc = [](Tcl_Obj* obj)
+#define REGISTER_TCL_TYPE_W_STR_UPDATE(cxx_type          )    \
+    const Tcl_ObjType TCL_TYPE_OF(cxx_type) {                 \
+        /* .name = */ #cxx_type,                              \
+        /* .freeIntRepProc = */ tcl_obj_free<cxx_type>,       \
+        /* .dupIntRepProc = */ tcl_obj_dup,                   \
+        /* .updateStringProc = */ []
 
 #define END_REGISTER_TCL_TYPE ,                               \
-    .setFromAnyProc = tcl_set_from_none                       \
+    /* .setFromAnyProc = */ tcl_set_from_none                 \
 }
 
 #endif

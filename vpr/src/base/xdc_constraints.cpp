@@ -10,7 +10,7 @@
 #include "vpr_constraints.h"
 #include "atom_netlist.h"
 
-#include "oo_tcl.h"
+#include "tclcpp.h"
 #include "xdc_constraints.h"
 
 
@@ -29,7 +29,7 @@ static e_XDCProperty xdc_prop_from_str(const char* str) {
     return e_XDCProperty::XDC_PROP_UNKNOWN;
 }
 
-DECLARE_TCL_TYPE(AtomPortId, port_tcl_t)
+DECLARE_TCL_TYPE(AtomPortId)
 
 class TclPhysicalConstraintsClient : public TclClient {
 public:
@@ -208,7 +208,7 @@ protected:
     }
 };
 
-REGISTER_TCL_TYPE_W_STR_UPDATE(AtomPortId, port_tcl_t) {
+REGISTER_TCL_TYPE_W_STR_UPDATE(AtomPortId) (Tcl_Obj* obj) {
     const auto* port = tcl_obj_getptr<AtomPortId>(obj);
     const auto* client = tcl_obj_get_ctx_ptr<TclPhysicalConstraintsClient>(obj);
     std::string port_name = client->netlist.port_name(*port);

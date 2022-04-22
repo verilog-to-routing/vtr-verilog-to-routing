@@ -1,12 +1,10 @@
-#include "oo_tcl.h"
+#include "tclcpp.h"
 
 #include <functional>
 #include <list>
 #include <tcl/tcl.h>
 #include <cstring>
-
-#include "globals.h"
-#include "vtr_log.h"
+#include <sstream>
 
 /* TCL ERRORS */
 #define OV_TOSTRING(c, e) c::operator std::string() const { return (e); }
@@ -60,29 +58,16 @@ int tcl_set_from_none(Tcl_Interp *tcl_interp, Tcl_Obj *obj) {
     return TCL_ERROR;
 }
 
-static bool _tcl_initialized = false;
-
-void tcl_init() {
-    if (!_tcl_initialized)
-        Tcl_FindExecutable(_argv0);
-    _tcl_initialized = true;
-
-    VTR_LOG("Initialized TCL subsystem");
-}
-
 
 TclCtx::TclCtx() {
     this->_tcl_interp = Tcl_CreateInterp();
 #ifdef DEBUG
     this->_init = false;
 #endif
-    VTR_LOG("Created TCL context.\n");
 }
 
 TclCtx::~TclCtx() {
     Tcl_DeleteInterp(this->_tcl_interp);
-
-    VTR_LOG("Deleted TCL context.\n");
 }
 
 void TclCtx::_init() {
@@ -90,8 +75,6 @@ void TclCtx::_init() {
 
     if ((error = Tcl_Init(this->_tcl_interp)) != TCL_OK)
         throw TCL_eFailedToInitTcl(error);
-    
-    VTR_ASSERT(error == TCL_OK);
 
 #ifdef DEBUG
     this->_init = true;

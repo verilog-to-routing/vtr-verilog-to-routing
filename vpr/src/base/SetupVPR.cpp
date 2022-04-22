@@ -27,8 +27,6 @@
 #include "clock_modeling.h"
 #include "ShowSetup.h"
 
-#include "oo_tcl.h"
-
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options,
                             t_packer_opts* PackerOpts);
@@ -111,9 +109,6 @@ void SetupVPR(const t_options* Options,
     SetupRouterOpts(*Options, RouterOpts);
     SetupAnalysisOpts(*Options, *AnalysisOpts);
     SetupPowerOpts(*Options, PowerOpts, Arch);
-
-    if (Options->XDCFile.value() != "")
-        tcl_init();
 
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");

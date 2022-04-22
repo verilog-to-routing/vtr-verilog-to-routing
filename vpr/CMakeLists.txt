@@ -87,6 +87,7 @@ target_link_libraries(libvpr
                         libargparse
                         libpugixml
                         librrgraph
+                        libtclcpp
 )
 
 #link graphics library only when graphics set to on
