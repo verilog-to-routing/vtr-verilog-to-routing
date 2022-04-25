@@ -64,20 +64,20 @@ public:
         e_XDCProperty property = xdc_prop_from_str(property_name);
 
         switch (property) {
-        case e_XDCProperty::XDC_PROP_PACKAGE_PIN:
-            if (objc != 4)
-                return this->_ret_error("set_property: Property `PACKAGE_PIN` "
-                                        "requires one target and one value.");
-            return this->_set_property_package_pin(objvp[2], objvp[3]);
-        case e_XDCProperty::XDC_PROP_IOSTANDARD:
-            if (objc != 4)
-                return this->_ret_error("set_property: Property `IOSTANDARD` "
-                                        "requires one value and one target.");
-            return this->_set_property_iostandard(objvp[2], objvp[3]);
-        case e_XDCProperty::XDC_PROP_UNKNOWN:
-            return this->_ret_error("set_property: Property `" + std::string(property_name) +
-                            "` is not recognized.");
-        default: break;
+            case e_XDCProperty::XDC_PROP_PACKAGE_PIN:
+                if (objc != 4)
+                    return this->_ret_error("set_property: Property `PACKAGE_PIN` "
+                                            "requires one target and one value.");
+                return this->_set_property_package_pin(objvp[2], objvp[3]);
+            case e_XDCProperty::XDC_PROP_IOSTANDARD:
+                if (objc != 4)
+                    return this->_ret_error("set_property: Property `IOSTANDARD` "
+                                            "requires one value and one target.");
+                return this->_set_property_iostandard(objvp[2], objvp[3]);
+            case e_XDCProperty::XDC_PROP_UNKNOWN:
+                return this->_ret_error("set_property: Property `" + std::string(property_name) +
+                                "` is not recognized.");
+            default: break;
         }
         return this->_ret_error("set_property: Property `" + std::string(property_name) +
                                 "` is not supported.");

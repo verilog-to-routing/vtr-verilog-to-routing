@@ -111,16 +111,16 @@ int TclCtx::_tcl_do_method(
     d->do_method(objc, objvp);
 
     switch (d->client.cmd_status) {
-    case e_TclCommandStatus::TCL_CMD_FAIL:
-        Tcl_SetStringResult(tcl_interp, d->client.string);
-        return TCL_ERROR;
-    case e_TclCommandStatus::TCL_CMD_SUCCESS_STRING:
-        Tcl_SetStringResult(tcl_interp, d->client.string);
-        return TCL_OK;
-    case e_TclCommandStatus::TCL_CMD_SUCCESS_OBJECT:
-    case e_TclCommandStatus::TCL_CMD_SUCCESS_LIST:
-        Tcl_SetObjResult(tcl_interp, d->client.object);
-    default: break;
+        case e_TclCommandStatus::TCL_CMD_FAIL:
+            Tcl_SetStringResult(tcl_interp, d->client.string);
+            return TCL_ERROR;
+        case e_TclCommandStatus::TCL_CMD_SUCCESS_STRING:
+            Tcl_SetStringResult(tcl_interp, d->client.string);
+            return TCL_OK;
+        case e_TclCommandStatus::TCL_CMD_SUCCESS_OBJECT:
+        case e_TclCommandStatus::TCL_CMD_SUCCESS_LIST:
+            Tcl_SetObjResult(tcl_interp, d->client.object);
+        default: break;
     }
     return TCL_OK;
 }
