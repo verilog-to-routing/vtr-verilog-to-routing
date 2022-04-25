@@ -3,8 +3,11 @@
 
 #include <string>
 #include <list>
+#include <vector>
 #include <memory>
 #include <functional>
+#include <cstring>
+#include <type_traits>
 
 #include <tcl/tcl.h>
 
@@ -118,9 +121,174 @@ enum class e_TclCommandStatus : int {
     TCL_CMD_SUCCESS,         /* Command exited with no return value. */
     TCL_CMD_SUCCESS_STRING,  /* Command exited returning a string. */
     TCL_CMD_SUCCESS_OBJECT,  /* Command exited returning a custom object. */
+    TCL_CMD_SUCCESS_LIST,    /* Command exited returning a list. */
     TCL_CMD_FAIL             /* Command exited with a failure. Will cause a TCL_eErroneousTCL to be thrown. */
 };
 
+template <typename T>
+Tcl_Obj* Tcl_MoveCppObject(void* ctx, T object_data) {
+    const Tcl_ObjType* type = tcl_type_of<T>();
+    Tcl_Obj* obj = Tcl_NewObj();
+    obj->bytes = nullptr;
+    obj->typePtr = type;
+    obj->internalRep.twoPtrValue.ptr1 = ctx;
+    obj->internalRep.twoPtrValue.ptr2 = Tcl_Alloc(sizeof(T));
+    new(obj->internalRep.twoPtrValue.ptr2) T(std::move(object_data));
+    if (type->updateStringProc != nullptr)
+        type->updateStringProc(obj);
+    
+    return obj;
+}
+
+template <class T, template <class...> class Template>
+struct is_specialization : std::false_type {};
+
+template <template <class...> class Template, class... Args>
+struct is_specialization<Template<Args...>, Template> : std::true_type {};
+
+/**
+ * @brief C++ wrapper for TCL lists of TCL-managed C++ objects. Allows easy iteration and construction from C++ containers.
+ */
+template <typename T>
+class TclList {
+public:
+    /**
+     * @brief Create empty TCL list
+     */
+    TclList(Tcl_Interp* interp) : _interp(interp), _obj(Tcl_NewListObj(0, nullptr)) {}
+
+    /**
+     * @brief Create a TCL list from a C++ container
+     * Client must point to the concrete TclClient instance.
+     */
+    template <typename Container>
+    TclList(Tcl_Interp* interp, void* client, Container&& elements) {
+        std::vector<Tcl_Obj*> tcl_objs;
+        for (auto&& elem : elements) {
+            Tcl_Obj* obj = Tcl_MoveCppObject(client, elem);
+            tcl_objs.push_back(obj);
+        }
+
+        this->_obj = Tcl_NewListObj(tcl_objs.size(), &tcl_objs[0]);
+    }
+
+    /**
+     * @brief Import a TCL list from Tcl_Obj of list type, or create one-element list from
+     *        object of any other type.
+     */
+    TclList(Tcl_Interp* interp, Tcl_Obj* obj) :
+        _interp(interp) {
+            const Tcl_ObjType* obj_type = obj->typePtr;
+            if (obj_type == nullptr)
+                return;
+
+            if (obj_type == nullptr || std::strcmp(obj_type->name, "list")) {
+                Tcl_Obj* item;
+                this->_obj = Tcl_NewListObj(1, &obj);
+            } else {
+                this->_obj = obj;
+            }
+        }
+
+    /**
+     * @brief Get the raw TCL_Obj representing the list.
+     */
+    Tcl_Obj* tcl_obj() {
+        return this->_obj;
+    }
+
+    template <typename, typename dummy>
+    class IteratorDereferencerHelper {
+    public:
+        void uh_oh() {}
+    };
+
+    template <class dummy>
+    class IteratorDereferencerHelper<std::false_type, dummy> {
+    public:
+        T* operator*() const {
+            TclList<T>::Iterator<dummy>* this_ = static_cast<TclList<T>::Iterator<dummy>*>(this);
+            Tcl_Obj* objp;
+            Tcl_ListObjIndex(this_->_interp, this_->_obj, this_->_idx, &objp);
+            return tcl_obj_getptr<T>(objp);
+        }
+    };
+
+    template <class dummy>
+    class IteratorDereferencerHelper<std::true_type, dummy> {
+    public:
+        T operator*() const {
+            TclList<T>::Iterator<dummy>* this_ = static_cast<TclList<T>::Iterator<dummy>*>(this);
+            return T(this_->_interp, this_->_obj);
+        }
+    };
+
+    /**
+     * @brief Iterator
+     * Dereferencing it yields a pointer to a C++ object
+     */
+    template<class dummy>
+    class Iterator : public IteratorDereferencerHelper<is_specialization<T, TclList>, dummy> {
+    public:
+
+        Iterator& operator=(const Iterator& other) {
+            this->_idx = other->_idx;
+            return *this;
+        }
+
+        Iterator& operator++() {
+            this->_idx++;
+            return *this;
+        }
+
+        bool operator!=(const Iterator& other) {
+            return (this->_interp != other._interp) ||
+                   (this->_obj != other._obj) ||
+                   (this->_idx != other._idx);
+        }
+
+        /* TODO: Fix specialization code to resturn TclList in case of a list-of-list */
+        T* operator*() const {
+            Tcl_Obj* objp;
+            Tcl_ListObjIndex(this->_interp, this->_obj, this->_idx, &objp);
+            return tcl_obj_getptr<T>(objp);
+        }
+
+
+        Iterator(Tcl_Interp* interp, Tcl_Obj* obj, int idx) :
+            _interp(interp), _obj(obj), _idx(idx) {}
+
+    protected:
+        Tcl_Interp* _interp;
+        int _idx; /* Currently visited index on the list */
+        Tcl_Obj* _obj; /* Underlying Tcl_Obj representing the list */
+    };
+
+    Iterator<void> begin() {
+        return Iterator<void>(this->_interp, this->_obj, 0);
+    }
+
+    Iterator<void> end() {
+        int count;
+        Tcl_ListObjLength(this->_interp, this->_obj, &count);
+        return Iterator<void>(this->_interp, this->_obj, count);
+    }
+
+    /**
+     * @brief Get number of elements on the list.
+     */
+    size_t size() const {
+        int len;
+        Tcl_ListObjLength(this->_interp, this->_obj, &len);
+        return size_t(len);
+    }
+
+protected:
+    Tcl_Interp* _interp;
+    Tcl_Obj* _obj; /* Underlying Tcl_Obj representing the list */
+};
+
+class TclCtx;
 
 /**
  * @brief Provide a C++ state with TCL interface.
@@ -215,22 +383,40 @@ protected:
      */
     template <typename T>
     int _ret_obj(void* this_, const T&& object_data) {
-        const Tcl_ObjType* type = tcl_type_of<T>();
-        Tcl_Obj* obj = Tcl_NewObj();
-        obj->bytes = nullptr;
-        obj->typePtr = type;
-        obj->internalRep.twoPtrValue.ptr1 = this_;
-        obj->internalRep.twoPtrValue.ptr2 = Tcl_Alloc(sizeof(T));
-        new(obj->internalRep.twoPtrValue.ptr2) T(std::move(object_data));
-        if (type->updateStringProc != nullptr)
-            type->updateStringProc(obj);
+        Tcl_Obj* obj = Tcl_MoveCppObject<T>(this_, object_data);
         
         this->object = obj;
         this->cmd_status = e_TclCommandStatus::TCL_CMD_SUCCESS_OBJECT;
 
         return TCL_OK;
     }
+
+    template <typename T, typename Container>
+    TclList<T> _list(void* this_, Container&& elements) {
+        return TclList<T>(this->_interp, reinterpret_cast<void*>(this_), std::move(elements));
+    }
+
+    template <typename T>
+    int _ret_list(void* this_, TclList<T>& list) {
+        this->object = list.tcl_obj();
+        this->cmd_status = e_TclCommandStatus::TCL_CMD_SUCCESS_LIST;
+
+        return TCL_OK;
+    }
+
+private:
+    friend class TclCtx;
+    template <typename T>
+    friend TclList<T> tcl_obj_getlist(TclClient* client, Tcl_Obj* obj);
+
+    Tcl_Interp* _interp;
 };
+
+
+template <typename T>
+static TclList<T> tcl_obj_getlist(TclClient* client, Tcl_Obj* obj) {
+    return TclList<T>(client->_interp, obj);
+}
 
 /* Default implementations for handling TCL-managed C++ objects */
 template <typename T>
@@ -284,6 +470,8 @@ public:
             auto& md = client_container->methods.front();
             Tcl_CreateObjCommand(this->_tcl_interp, name, TclCtx::_tcl_do_method, static_cast<TclMethodDispatchBase*>(&md), nullptr);
         };
+
+        client._interp = this->_tcl_interp;
 
         client.register_methods(register_command);
 

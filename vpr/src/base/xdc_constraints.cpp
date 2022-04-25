@@ -47,6 +47,7 @@ public:
     void register_methods(F register_method) {
         register_method("get_ports", &TclPhysicalConstraintsClient::get_ports);
         register_method("set_property", &TclPhysicalConstraintsClient::set_property);
+        register_method("get_cells", &TclPhysicalConstraintsClient::get_cells);
     }
 
     /* TCL functions */
@@ -83,23 +84,37 @@ public:
     }
 
     int get_ports(int objc, Tcl_Obj* const objvp[]) {
-        if (objc != 2)
-            return this->_ret_error("get_ports: Expected one argument.");
+        if (objc < 2)
+            return this->_ret_error("get_ports: Expected one or more arguments.");
         
-        const char* pin_name = Tcl_GetString(objvp[1]);
-        if (pin_name == nullptr)
-            return this->_ret_error("get_ports: pin_name should be a string.");
+        std::vector<const char*> port_names;
+
+        for (size_t i = 1; i < objc; i++) {
+            const char* pin_name = Tcl_GetString(objvp[i]);
+            if (pin_name == nullptr)
+                return this->_ret_error("get_ports: pin_name should be a string.");
+            port_names.push_back(pin_name);
+        }
         
-        return this->_do_get_ports(pin_name);
+        return this->_do_get_ports(std::move(port_names));
+    }
+
+    int get_cells(int objc, Tcl_Obj* const objvp[]) {
+        return this->_ret_error("get_cells: unimplemented");
     }
 
 protected:
-    int _set_property_package_pin(Tcl_Obj* tcl_pin_name, Tcl_Obj* tcl_port) {
+    int _set_property_package_pin(Tcl_Obj* tcl_pin_name, Tcl_Obj* tcl_ports) {
         const char* pin_name = Tcl_GetString(tcl_pin_name);
         if (pin_name == nullptr)
             return this->_ret_error("set_property: pin_name of PACKAGE_PIN should be a string.");
         
-        auto* port = tcl_obj_getptr<AtomPortId>(tcl_port);
+        auto port_list = tcl_obj_getlist<AtomPortId>(static_cast<TclClient*>(this), tcl_ports);
+        size_t port_count = port_list.size();
+        if (port_count != 1)
+            return this->_ret_error("set_property PACKAGE_PIN: Expected 1 port, got " + 
+                                    std::to_string(port_count) + ".");
+        auto* port = *port_list.begin();
         if (port == nullptr)
             return this->_ret_error("set_property: port_name of PACKAGE_PIN should have a `AtomPortId` type.");
 
@@ -148,26 +163,42 @@ protected:
         return this->_ret_ok();
     }
 
-    int _set_property_iostandard(Tcl_Obj* tcl_io_standard, Tcl_Obj* tcl_port) {
+    int _set_property_iostandard(Tcl_Obj* tcl_io_standard, Tcl_Obj* tcl_ports) {
         const char* io_standard = Tcl_GetString(tcl_io_standard);
-        if (tcl_io_standard == nullptr)
-            return this->_ret_error("set_property: iostandard should be a string.");
         
-        auto* port = tcl_obj_getptr<AtomPortId>(tcl_port);
-        if (port == nullptr)
-            return this->_ret_error("set_property: port_name of IOSTANDARD should have a `AtomPortId` type.");
+        auto ports = tcl_obj_getlist<AtomPortId>(static_cast<TclClient*>(this), tcl_ports);
         
-        return this->_do_set_property_iostandard(io_standard, *port);
+        return this->_do_set_property_iostandard(io_standard, ports);
     }
 
-    int _do_set_property_iostandard(const char* io_standard, AtomPortId port) {
-        AtomBlockId block = this->netlist.port_block(port);
-        this->netlist.set_block_param(block, "IOSTANDARD", io_standard);
-        VTR_LOG("XDC: Assigned IOSTANDARD %s = %s\n", this->netlist.block_name(block).c_str(), io_standard);
+    int _do_set_property_iostandard(const char* io_standard, TclList<AtomPortId>& ports) {
+        auto iterator = ports.begin();
+        for (auto port : ports) {
+            if (port == nullptr)
+                return this->_ret_error("set_property: port_name of IOSTANDARD should have a `AtomPortId` type.");
+            AtomBlockId block = this->netlist.port_block(*port);
+            this->netlist.set_block_param(block, "IOSTANDARD", io_standard);
+            VTR_LOG("XDC: Assigned IOSTANDARD %s = %s\n", this->netlist.block_name(block).c_str(), io_standard);
+        }
+
         return this->_ret_ok();
     }
 
-    int _do_get_ports(const char* pin_name) {
+    int _do_get_ports(std::vector<const char*> pin_names) {
+        std::vector<AtomPortId> port_ids;
+        for (auto pin_name : pin_names) {
+            AtomPortId port;
+            int result = this->_do_get_port(pin_name, &port);
+            if (result != TCL_OK)
+                return result;
+            port_ids.push_back(port);
+        }
+
+        auto port_list = this->_list<AtomPortId, decltype(port_ids)>(this, std::move(port_ids));
+        this->_ret_list<AtomPortId>(reinterpret_cast<void*>(this), port_list);
+    }
+
+    int _do_get_port(const char* pin_name, AtomPortId* port_) {
         AtomBlockId pin_block = this->netlist.find_block(pin_name);
 
         if (pin_block == AtomBlockId::INVALID()) {
@@ -191,6 +222,7 @@ protected:
         }
         
         auto ports = this->netlist.block_ports(pin_block);
+
         auto port_it = this->netlist.block_ports(pin_block).begin();
         if (port_it == ports.end())
             return this->_ret_error("get_ports: '" + std::string(pin_name) + "' - no ports found.");
@@ -204,7 +236,8 @@ protected:
 
         VTR_LOG("get_ports: Got port `%s` (%llu) for pin `%s`\n", port_name.c_str(), (size_t)port, pin_name);
 
-        return this->_ret_obj<AtomPortId>(this, std::move(port));
+        *port_ = port;
+        return this->_ret_ok();
     }
 };
 

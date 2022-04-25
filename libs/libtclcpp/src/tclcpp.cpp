@@ -1,6 +1,7 @@
 #include "tclcpp.h"
 
 #include <functional>
+#include <vector>
 #include <list>
 #include <tcl/tcl.h>
 #include <cstring>
@@ -39,6 +40,7 @@ TclClient::TclClient() :
 
 void tcl_obj_dup(Tcl_Obj* src, Tcl_Obj* dst) {
     dst->internalRep.twoPtrValue = src->internalRep.twoPtrValue;
+    dst->typePtr = src->typePtr;
     dst->bytes = nullptr;
     dst->length = 0;
 }
@@ -116,8 +118,14 @@ int TclCtx::_tcl_do_method(
         Tcl_SetStringResult(tcl_interp, d->client.string);
         return TCL_OK;
     case e_TclCommandStatus::TCL_CMD_SUCCESS_OBJECT:
+    case e_TclCommandStatus::TCL_CMD_SUCCESS_LIST:
         Tcl_SetObjResult(tcl_interp, d->client.object);
     default: break;
     }
     return TCL_OK;
 }
+
+/* std::vector<Tcl_Obj*> Tcl_GetList(Tcl_Obj* obj) {
+    obj->typePtr
+}
+ */
