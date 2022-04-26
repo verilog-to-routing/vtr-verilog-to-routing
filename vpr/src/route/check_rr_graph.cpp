@@ -292,7 +292,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
      * pin number, etc.
      */
     //#TODO: This variable should be read from somewhere!
-    bool is_flat = true;
+    bool is_flat = false;
     int xlow, ylow, xhigh, yhigh, ptc_num, capacity;
     t_rr_type rr_type;
     t_physical_tile_type_ptr type;
