@@ -20,6 +20,7 @@ sudo apt-get install -y \
 sudo apt-get install -y \
     clang \
     tcl-dev \
+    tk-dev \
     libreadline-dev
 
 # Required to build the documentation
