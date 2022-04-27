@@ -254,9 +254,8 @@ void YYosys::execute() {
 
         // Check whether cells match libraries and find top module
         if (global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED) {
-            run_pass(std::string("hierarchy -check -top " + global_args.top_level_module_name.value()  + " -purge_lib"));
-        }
-        else {
+            run_pass(std::string("hierarchy -check -top " + global_args.top_level_module_name.value() + " -purge_lib"));
+        } else {
             run_pass(std::string("hierarchy -check -auto-top -purge_lib"));
         }
 
