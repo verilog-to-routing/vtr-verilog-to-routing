@@ -170,7 +170,6 @@ void vpr_initialize_logging() {
  * 4. Sanity check all three
  */
 void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup* vpr_setup, t_arch* arch) {
-    
     vpr_initialize_logging();
 
     /* Print title message */
@@ -348,9 +347,9 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     auto& filename_opts = vpr_setup->FileNameOpts;
     if (!filename_opts.read_vpr_constraints_file.empty())
         load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
-    if (!filename_opts.read_xdc_constraints_file.empty()) {
+    if (filename_opts.read_xdc_constraints_files.size()) {
         try {
-            load_xdc_constraints_file(filename_opts.read_xdc_constraints_file.c_str(), *arch, atom_ctx.nlist);
+            load_xdc_constraints_files(filename_opts.read_xdc_constraints_files, *arch, atom_ctx.nlist);
         } catch (const TCL_eErroneousTCL& e) {
             vpr_throw(VPR_ERROR_XDC, e.filename.c_str(), e.line, e.message.c_str());
         } catch (const TCL_eException& e) {

@@ -721,7 +721,7 @@ struct t_file_name_opts {
     std::string CmosTechFile;
     std::string out_file_prefix;
     std::string read_vpr_constraints_file;
-    std::string read_xdc_constraints_file;
+    std::vector<std::string> read_xdc_constraints_files;
     std::string write_vpr_constraints_file;
     std::string write_block_usage;
     bool verify_file_digests;

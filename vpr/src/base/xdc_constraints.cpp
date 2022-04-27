@@ -243,7 +243,7 @@ REGISTER_TCL_TYPE_W_STR_UPDATE(AtomPortId)
 }
 END_REGISTER_TCL_TYPE;
 
-VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arch& arch, AtomNetlist& netlist) {
+VprConstraints read_xdc_constraints_to_vpr(std::vector<XDCStream>&& xdc_streams, const t_arch& arch, AtomNetlist& netlist) {
     VprConstraints constraints;
     TclPhysicalConstraintsClient pc_client(constraints, arch, netlist);
 
@@ -269,25 +269,30 @@ VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arc
         ctx.add_tcl_type<AtomPortId>();
         ctx.add_tcl_client<TclPhysicalConstraintsClient>(pc_client);
 
-        /* Read and interpret XDC */
-        ctx.read_tcl(xdc_stream);
+        /* Read and interpret XDCs */
+        for (auto& stream : xdc_streams) {
+            try {
+                ctx.read_tcl(*stream.stream);
+            } catch (TCL_eErroneousTCL& e) {
+                e.filename = stream.name;
+                throw e;
+            }
+        }
     });
 
     /* At this point `pc_client` has written the contraints */
     return constraints;
 }
 
-void load_xdc_constraints_file(const char* read_xdc_constraints_name, const t_arch& arch, AtomNetlist& netlist) {
-    VTR_ASSERT(vtr::check_file_name_extension(read_xdc_constraints_name, ".xdc"));
-    VTR_LOG("Reading XDC %s...\n", read_xdc_constraints_name);
-
-    std::ifstream file(read_xdc_constraints_name);
-    FloorplanningContext& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-
-    try {
-        floorplanning_ctx.constraints = read_xdc_constraints_to_vpr(file, arch, netlist);
-    } catch (TCL_eErroneousTCL& e) {
-        e.filename = std::string(read_xdc_constraints_name);
-        throw e;
+void load_xdc_constraints_files(const std::vector<std::string> xdc_paths, const t_arch& arch, AtomNetlist& netlist) {
+    std::vector<XDCStream> xdc_streams;
+    for (auto&& path : xdc_paths) {
+        VTR_ASSERT(vtr::check_file_name_extension(path.c_str(), ".xdc"));
+        VTR_LOG("Reading XDC %s...\n", path.c_str());
+        auto file = std::unique_ptr<std::istream>(new std::ifstream(path));
+        xdc_streams.push_back(XDCStream(std::move(path), std::move(file)));
     }
+
+    FloorplanningContext& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
+    floorplanning_ctx.constraints = read_xdc_constraints_to_vpr(std::move(xdc_streams), arch, netlist);
 }
