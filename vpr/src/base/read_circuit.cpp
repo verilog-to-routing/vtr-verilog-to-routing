@@ -67,6 +67,8 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
                 break;
             case e_circuit_format::EDIF:
                 netlist = read_edif(circuit_format, circuit_file, user_models, library_models);
+                show_circuit_stats(netlist);
+               // netlist = read_edif(circuit_format, circuit_file);
                 break;
 
             case e_circuit_format::FPGA_INTERCHANGE:

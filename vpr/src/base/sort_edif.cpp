@@ -14,9 +14,11 @@ class usefull_data {
   public:
     std::vector<std::tuple<std::string, std::string, std::string>> ports_vec;
     std::vector<std::tuple<std::string, std::string, std::string, std::string>> instance_vec;
-    std::vector<std::tuple<std::string, std::string, std::string, std::string>> con_vec;
+    std::vector<std::tuple<std::string, std::string, std::string>> con_vec;
 
     std::map<std::string, std::vector<std::tuple<std::string, std::string, std::string>>> ports;
+
+    std::map<std::string, std::vector<std::tuple<std::string, std::string, std::string>>> nets;
 
     std::string top_cell;
     std::vector<Cell> cell_vec;
@@ -25,7 +27,7 @@ class usefull_data {
         std::string top;
         const char* t1;
         struct SNode* current = head;
-        struct Cell* n_cell = NULL;
+        //struct Cell* n_cell = NULL;
         while (current != NULL) {
             if (current->type == 2) {
                 std::string cmp_string = "design";
@@ -88,7 +90,7 @@ class usefull_data {
                             cmp_string = "port";
                             input_string = current->value;
                             if (input_string == cmp_string) {
-                                port_size = "0";
+                                port_size = "1";
                                 current = current->next;
                                 if (current->type == 0 || current->type == 5) {
                                     //list_depth=current->list_counter;
@@ -126,7 +128,7 @@ class usefull_data {
                                     port_dirt = current->value;
                                 }
                                 ports_vec.push_back(std::make_tuple(port_name, port_dirt, port_size));
-                                printf("\n The port is : %s \n Direction is : %s and size is : %s", port_name.c_str(), port_dirt.c_str(), port_size.c_str());
+                                //printf ("\n The port is : %s \n Direction is : %s and size is : %s",port_name.c_str(),port_dirt.c_str(), port_size.c_str());
                             }
                         }
                     }
@@ -147,7 +149,7 @@ class usefull_data {
         std::string inst_name;
         std::string inst_ref;
         std::string property_lut;
-        std::string property_width;
+        std::string property_width = "1";
         while (current != NULL) {
             if (current->type == 0 || current->type == 5) {
                 list_depth = current->list_counter;
@@ -254,7 +256,6 @@ class usefull_data {
     void find_cell_net(struct SNode* head, std::string top_name)
 
     {
-        con_vec.clear();
         int list_depth = 0;
         struct SNode* current = head;
         std::string cell_name;
@@ -316,7 +317,7 @@ class usefull_data {
                                     } else {
                                         net_name = current->value;
                                     }
-                                    std::string net_name_repeat = net_name;
+                                    //std:: string net_name_repeat= net_name;
                                     //printf ("\n The net is  :  %s",net_name.c_str());
                                     int net_joining_iteration = list_depth - 1;
                                     while (list_depth > net_joining_iteration) {
@@ -370,10 +371,14 @@ class usefull_data {
                                                 }
                                                 port_ref = port_ref + instance_ref;
                                                 //printf ("\n\n\n\n%s",port_ref.c_str() );
-                                                con_vec.push_back(std::make_tuple(net_name_repeat, port_ref, member_num, instance_ref));
+                                                con_vec.push_back(std::make_tuple(port_ref, member_num, instance_ref));
+                                                //printf("\nthe port_ref is %s\n", port_ref.c_str());
                                             }
                                         }
                                     }
+                                    // printf ("\n The net name is %s", net_name.c_str());
+                                    nets.insert({net_name, con_vec});
+                                    con_vec.clear();
                                 }
                             }
                         }
