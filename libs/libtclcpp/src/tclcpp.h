@@ -40,7 +40,7 @@
  * @brief Base class for any exception thrown within TCLCtx.
  */
 class TCL_eException {
-public:
+  public:
     virtual ~TCL_eException() = default;
     virtual operator std::string() const;
 };
@@ -49,7 +49,7 @@ public:
  * @brief Generic exception thrown within TCLCtx. Features a message string.
  */
 class TCL_eCustomException : TCL_eException {
-public:
+  public:
     TCL_eCustomException(std::string&& message_);
     ~TCL_eCustomException() override = default;
     operator std::string() const override;
@@ -61,7 +61,7 @@ public:
  * @brief Exception thrown within TCLCtx if it fails during TCLCtx::init()
  */
 class TCL_eFailedToInitTcl : TCL_eException {
-public:
+  public:
     TCL_eFailedToInitTcl(int error_code_);
     ~TCL_eFailedToInitTcl() override = default;
     operator std::string() const override;
@@ -73,7 +73,7 @@ public:
  * @brief Exception thrown within TCLCtx when an error occurs while interpreting TCL.
  */
 class TCL_eErroneousTCL : TCL_eException {
-public:
+  public:
     TCL_eErroneousTCL(std::string&& filename_, int line_, int column_, std::string&& message_);
     ~TCL_eErroneousTCL() override = default;
     operator std::string() const override;
@@ -83,15 +83,16 @@ public:
     std::string message;
 };
 
-void Tcl_SetStringResult(Tcl_Interp *interp, const std::string &s);
+void Tcl_SetStringResult(Tcl_Interp* interp, const std::string& s);
 
-template <typename T> constexpr const Tcl_ObjType* tcl_type_of();
+template<typename T>
+constexpr const Tcl_ObjType* tcl_type_of();
 
 /**
  * @brief Get pointer to a C++ object managed within TCL-context
  * @return Pointer to a C++ object if `T` matches the type of an object. Otherwise nullptr.
  */
-template <typename T>
+template<typename T>
 static T* tcl_obj_getptr(Tcl_Obj* obj) {
     if (obj->typePtr != tcl_type_of<T>())
         return nullptr;
@@ -107,7 +108,7 @@ static T* tcl_obj_getptr(Tcl_Obj* obj) {
  * Ie. when passing an object between two different clients, this should point to a
  * common interface.
  */
-template <typename T>
+template<typename T>
 static T* tcl_obj_get_ctx_ptr(Tcl_Obj* obj) {
     return static_cast<T*>(obj->internalRep.twoPtrValue.ptr1);
 }
@@ -115,53 +116,49 @@ static T* tcl_obj_get_ctx_ptr(Tcl_Obj* obj) {
 using TclCommandError = std::string;
 
 /**
- * @brief Descibes a after exiting a custom TCL command implementation.
+ * @brief Descibes a state after exiting a custom TCL command implementation.
  */
 enum class e_TclCommandStatus : int {
-    TCL_CMD_SUCCESS,         /* Command exited with no return value. */
-    TCL_CMD_SUCCESS_STRING,  /* Command exited returning a string. */
-    TCL_CMD_SUCCESS_OBJECT,  /* Command exited returning a custom object. */
-    TCL_CMD_SUCCESS_LIST,    /* Command exited returning a list. */
-    TCL_CMD_FAIL             /* Command exited with a failure. Will cause a TCL_eErroneousTCL to be thrown. */
+    TCL_CMD_SUCCESS,        /* Command exited with no return value. */
+    TCL_CMD_SUCCESS_STRING, /* Command exited returning a string. */
+    TCL_CMD_SUCCESS_OBJECT, /* Command exited returning a custom object. */
+    TCL_CMD_SUCCESS_LIST,   /* Command exited returning a list. */
+    TCL_CMD_FAIL            /* Command exited with a failure. Will cause a TCL_eErroneousTCL to be thrown. */
 };
 
-template <typename T>
-Tcl_Obj* Tcl_MoveCppObject(void* ctx, T object_data) {
+template<typename T, class = typename std::enable_if<std::is_move_constructible<T>::value>::type>
+Tcl_Obj* Tcl_MoveCppObject(void* ctx, T& object_data) {
     const Tcl_ObjType* type = tcl_type_of<T>();
     Tcl_Obj* obj = Tcl_NewObj();
     obj->bytes = nullptr;
     obj->typePtr = type;
     obj->internalRep.twoPtrValue.ptr1 = ctx;
     obj->internalRep.twoPtrValue.ptr2 = Tcl_Alloc(sizeof(T));
-    new(obj->internalRep.twoPtrValue.ptr2) T(std::move(object_data));
+    new (obj->internalRep.twoPtrValue.ptr2) T(std::move(object_data));
     if (type->updateStringProc != nullptr)
         type->updateStringProc(obj);
-    
+
     return obj;
 }
-
-template <class T, template <class...> class Template>
-struct is_specialization : std::false_type {};
-
-template <template <class...> class Template, class... Args>
-struct is_specialization<Template<Args...>, Template> : std::true_type {};
 
 /**
  * @brief C++ wrapper for TCL lists of TCL-managed C++ objects. Allows easy iteration and construction from C++ containers.
  */
-template <typename T>
+template<typename T>
 class TclList {
-public:
+  public:
     /**
      * @brief Create empty TCL list
      */
-    TclList(Tcl_Interp* interp) : _interp(interp), _obj(Tcl_NewListObj(0, nullptr)) {}
+    TclList(Tcl_Interp* interp)
+        : _interp(interp)
+        , _obj(Tcl_NewListObj(0, nullptr)) {}
 
     /**
      * @brief Create a TCL list from a C++ container
      * Client must point to the concrete TclClient instance.
      */
-    template <typename Container>
+    template<typename Container>
     TclList(Tcl_Interp* interp, void* client, Container&& elements) {
         std::vector<Tcl_Obj*> tcl_objs;
         for (auto&& elem : elements) {
@@ -176,19 +173,19 @@ public:
      * @brief Import a TCL list from Tcl_Obj of list type, or create one-element list from
      *        object of any other type.
      */
-    TclList(Tcl_Interp* interp, Tcl_Obj* obj) :
-        _interp(interp) {
-            const Tcl_ObjType* obj_type = obj->typePtr;
-            if (obj_type == nullptr)
-                return;
+    TclList(Tcl_Interp* interp, Tcl_Obj* obj)
+        : _interp(interp) {
+        const Tcl_ObjType* obj_type = obj->typePtr;
+        if (obj_type == nullptr)
+            return;
 
-            if (obj_type == nullptr || std::strcmp(obj_type->name, "list")) {
-                Tcl_Obj* item;
-                this->_obj = Tcl_NewListObj(1, &obj);
-            } else {
-                this->_obj = obj;
-            }
+        if (obj_type == nullptr || std::strcmp(obj_type->name, "list")) {
+            Tcl_Obj* item;
+            this->_obj = Tcl_NewListObj(1, &obj);
+        } else {
+            this->_obj = obj;
         }
+    }
 
     /**
      * @brief Get the raw TCL_Obj representing the list.
@@ -197,40 +194,18 @@ public:
         return this->_obj;
     }
 
-    template <typename, typename dummy>
-    class IteratorDereferencerHelper {
-    public:
-        void uh_oh() {}
-    };
-
-    template <class dummy>
-    class IteratorDereferencerHelper<std::false_type, dummy> {
-    public:
-        T* operator*() const {
-            TclList<T>::Iterator<dummy>* this_ = static_cast<TclList<T>::Iterator<dummy>*>(this);
-            Tcl_Obj* objp;
-            Tcl_ListObjIndex(this_->_interp, this_->_obj, this_->_idx, &objp);
-            return tcl_obj_getptr<T>(objp);
-        }
-    };
-
-    template <class dummy>
-    class IteratorDereferencerHelper<std::true_type, dummy> {
-    public:
-        T operator*() const {
-            TclList<T>::Iterator<dummy>* this_ = static_cast<TclList<T>::Iterator<dummy>*>(this);
-            return T(this_->_interp, this_->_obj);
-        }
-    };
-
     /**
      * @brief Iterator
      * Dereferencing it yields a pointer to a C++ object
+     * 
+     * TODO: If we ever need to handle a TCL list of TCL lists this won't work. It might be possible to use
+     * template spcializations to derive a class with alternative implementation of `operator*()` that would
+     * return `TclList<T>` for `TclList<TclList<T>>::Iterator::operaotr*()`.
+     * Primitive TCL types might also need a specialized handling.
      */
     template<class dummy>
-    class Iterator : public IteratorDereferencerHelper<is_specialization<T, TclList>, dummy> {
-    public:
-
+    class Iterator {
+      public:
         Iterator& operator=(const Iterator& other) {
             this->_idx = other->_idx;
             return *this;
@@ -242,25 +217,23 @@ public:
         }
 
         bool operator!=(const Iterator& other) {
-            return (this->_interp != other._interp) ||
-                   (this->_obj != other._obj) ||
-                   (this->_idx != other._idx);
+            return (this->_interp != other._interp) || (this->_obj != other._obj) || (this->_idx != other._idx);
         }
 
-        /* TODO: Fix specialization code to resturn TclList in case of a list-of-list */
         T* operator*() const {
             Tcl_Obj* objp;
             Tcl_ListObjIndex(this->_interp, this->_obj, this->_idx, &objp);
             return tcl_obj_getptr<T>(objp);
         }
 
+        Iterator(Tcl_Interp* interp, Tcl_Obj* obj, int idx)
+            : _interp(interp)
+            , _obj(obj)
+            , _idx(idx) {}
 
-        Iterator(Tcl_Interp* interp, Tcl_Obj* obj, int idx) :
-            _interp(interp), _obj(obj), _idx(idx) {}
-
-    protected:
+      protected:
         Tcl_Interp* _interp;
-        int _idx; /* Currently visited index on the list */
+        int _idx;      /* Currently visited index on the list */
         Tcl_Obj* _obj; /* Underlying Tcl_Obj representing the list */
     };
 
@@ -283,7 +256,7 @@ public:
         return size_t(len);
     }
 
-protected:
+  protected:
     Tcl_Interp* _interp;
     Tcl_Obj* _obj; /* Underlying Tcl_Obj representing the list */
 };
@@ -306,8 +279,7 @@ class TclCtx;
  * Use TclClient::_ret_* methods to return from a command implementation.
  */
 class TclClient {
-public:
-
+  public:
     e_TclCommandStatus cmd_status;
     std::string string;
     Tcl_Obj* object;
@@ -334,7 +306,7 @@ public:
      * handled using a concept.
      */
 
-protected:
+  protected:
     /* TclClient must be derived */
     TclClient();
 
@@ -365,7 +337,7 @@ protected:
         this->cmd_status = e_TclCommandStatus::TCL_CMD_SUCCESS;
         return TCL_OK;
     }
-    
+
     /** 
      * @brief Return a string from a TCL command with no errors.
      */
@@ -381,22 +353,22 @@ protected:
      * @param this_ pointer to the concrete client. Note that it might be different than `this` within context of base class.
      * @param object_data object to be moved into TCL-managed context
      */
-    template <typename T>
+    template<typename T, class = typename std::enable_if<std::is_move_constructible<T>::value>::type>
     int _ret_obj(void* this_, const T&& object_data) {
         Tcl_Obj* obj = Tcl_MoveCppObject<T>(this_, object_data);
-        
+
         this->object = obj;
         this->cmd_status = e_TclCommandStatus::TCL_CMD_SUCCESS_OBJECT;
 
         return TCL_OK;
     }
 
-    template <typename T, typename Container>
+    template<typename T, typename Container>
     TclList<T> _list(void* this_, Container&& elements) {
         return TclList<T>(this->_interp, reinterpret_cast<void*>(this_), std::move(elements));
     }
 
-    template <typename T>
+    template<typename T>
     int _ret_list(void* this_, TclList<T>& list) {
         this->object = list.tcl_obj();
         this->cmd_status = e_TclCommandStatus::TCL_CMD_SUCCESS_LIST;
@@ -404,29 +376,28 @@ protected:
         return TCL_OK;
     }
 
-private:
+  private:
     friend class TclCtx;
-    template <typename T>
+    template<typename T>
     friend TclList<T> tcl_obj_getlist(TclClient* client, Tcl_Obj* obj);
 
     Tcl_Interp* _interp;
 };
 
-
-template <typename T>
+template<typename T>
 static TclList<T> tcl_obj_getlist(TclClient* client, Tcl_Obj* obj) {
     return TclList<T>(client->_interp, obj);
 }
 
 /* Default implementations for handling TCL-managed C++ objects */
-template <typename T>
+template<typename T, class = typename std::enable_if<std::is_destructible<T>::value>::type>
 static void tcl_obj_free(Tcl_Obj* obj) {
     T* obj_data = tcl_obj_getptr<T>(obj);
     obj_data->~T();
     Tcl_Free(reinterpret_cast<char*>(obj_data));
 }
 void tcl_obj_dup(Tcl_Obj* src, Tcl_Obj* dst);
-int tcl_set_from_none(Tcl_Interp *tcl_interp, Tcl_Obj *obj);
+int tcl_set_from_none(Tcl_Interp* tcl_interp, Tcl_Obj* obj);
 
 /**
  * @brief set TCL object's string representation
@@ -441,13 +412,12 @@ void tcl_set_obj_string(Tcl_Obj* obj, const std::string& str);
  * It is illegal to call any method of `TclCtx` othar than its destructor after destroying a bound client.
  */
 class TclCtx {
-public:
-
+  public:
     /** 
      * @brief Create and initialize context, then run a closure with it.
      * This is done to limit TclCtx lifetime.
      */
-    template <typename T>
+    template<typename T>
     static T with_ctx(std::function<T(TclCtx& ctx)> fun) {
         TclCtx ctx;
         ctx._init();
@@ -462,10 +432,10 @@ public:
     /**
      * @brief Add a client class that provides methods to interface with a context managed by it
      */
-    template <typename C>
-        void add_tcl_client(C& client) {
-            auto* client_container = new TclClientContainer<C>(client);
-            auto register_command = [&](const char* name, int(C::*method)(int objc, Tcl_Obj* const objvp[])) {
+    template<typename C>
+    void add_tcl_client(C& client) {
+        auto* client_container = new TclClientContainer<C>(client);
+        auto register_command = [&](const char* name, int (C::*method)(int objc, Tcl_Obj* const objvp[])) {
             client_container->methods.push_front(TclMethodDispatch<C>(method, client));
             auto& md = client_container->methods.front();
             Tcl_CreateObjCommand(this->_tcl_interp, name, TclCtx::_tcl_do_method, static_cast<TclMethodDispatchBase*>(&md), nullptr);
@@ -484,13 +454,12 @@ public:
      * The type has to be moveable in order to allow passing it between Tcl-managed cotext and C++ code.
      * Use REGISTER_TCL_TYPE macro to associate type T with a static struct instance describing the Tcl type.
      */
-    template <typename T>
+    template<typename T, class = typename std::enable_if<std::is_destructible<T>::value && std::is_move_constructible<T>::value>::type>
     inline void add_tcl_type() {
         Tcl_RegisterObjType(tcl_type_of<T>());
     }
 
-protected:
-
+  protected:
     TclCtx();
 
     ~TclCtx();
@@ -513,7 +482,8 @@ protected:
      * @brief Provide an interface to call a client method.
      */
     struct TclMethodDispatchBase {
-        inline TclMethodDispatchBase(TclClient& client_) : client(client_) {}
+        inline TclMethodDispatchBase(TclClient& client_)
+            : client(client_) {}
         virtual ~TclMethodDispatchBase() {}
         virtual int do_method(int objc, Tcl_Obj* const objvp[]) = 0;
         TclClient& client;
@@ -523,10 +493,12 @@ protected:
      * @brief Wrap a call-by-PTM (pointer-to-method) of a concrete TclClient-derived class as a virtual function of TclMethodDispatchBase.
      * This allows us to avoid making methods defined within TclClient-derived virtual methods of TclClient.
      */
-    template <typename C>
+    template<typename C>
     struct TclMethodDispatch : TclMethodDispatchBase {
-        typedef int(C::*TclMethod)(int objc, Tcl_Obj* const objvp[]);
-        inline TclMethodDispatch(TclMethod method_, TclClient& client_) : TclMethodDispatchBase(client_), method(method_) {}
+        typedef int (C::*TclMethod)(int objc, Tcl_Obj* const objvp[]);
+        inline TclMethodDispatch(TclMethod method_, TclClient& client_)
+            : TclMethodDispatchBase(client_)
+            , method(method_) {}
         virtual ~TclMethodDispatch() = default;
 
         virtual int do_method(int objc, Tcl_Obj* const objvp[]) {
@@ -542,9 +514,10 @@ protected:
     /**
      * @brief Store a reference to a client along with method dispatch list associated with that client.
      */
-    template <typename C>
+    template<typename C>
     struct TclClientContainer : TclClientContainerBase {
-        inline TclClientContainer(C& client_) : client(client_) {}
+        inline TclClientContainer(C& client_)
+            : client(client_) {}
         C& client;
         /* Use list to guarantee the validity of references */
         std::list<TclMethodDispatch<C>> methods;
@@ -554,14 +527,13 @@ protected:
         ClientData cd,
         Tcl_Interp* tcl_interp,
         int objc,
-        Tcl_Obj* const objvp[]
-    );
+        Tcl_Obj* const objvp[]);
 
     Tcl_Interp* _tcl_interp;
     /* Use list to guarantee the validity of references */
     std::list<std::unique_ptr<TclClientContainerBase>> _tcl_clients;
 
-private:
+  private:
 #ifdef DEBUG
     inline void _debug_init() const {
         VTR_ASSERT(this->_init);
@@ -579,12 +551,12 @@ private:
  * @brief Declare Tcl type associated with a C++ type
  * @param cxx_type C++ type name.
  */
-#define DECLARE_TCL_TYPE(cxx_type)                            \
-    extern const Tcl_ObjType TCL_TYPE_OF(cxx_type);           \
-    template <>                                               \
-    constexpr const Tcl_ObjType* tcl_type_of<cxx_type>() {    \
-        return &TCL_TYPE_OF(cxx_type);                        \
-    }                                                         \
+#define DECLARE_TCL_TYPE(cxx_type)                         \
+    extern const Tcl_ObjType TCL_TYPE_OF(cxx_type);        \
+    template<>                                             \
+    constexpr const Tcl_ObjType* tcl_type_of<cxx_type>() { \
+        return &TCL_TYPE_OF(cxx_type);                     \
+    }
 
 /**
  * @brief Associate a C++ struct/class with a `Tcl_ObjType`.
@@ -593,15 +565,16 @@ private:
  * Foollow it with a body of updateStringProc and close it with END_REGISTER_TCL_TYPE:
  * REGISTER_TCL_TYPE_W_STR_UPDATE(CppType)(Tcl_Obj* obj) { ...body... } END_REGISTER_TCL_TYPE;
  */
-#define REGISTER_TCL_TYPE_W_STR_UPDATE(cxx_type          )    \
-    const Tcl_ObjType TCL_TYPE_OF(cxx_type) {                 \
-        /* .name = */ #cxx_type,                              \
-        /* .freeIntRepProc = */ tcl_obj_free<cxx_type>,       \
-        /* .dupIntRepProc = */ tcl_obj_dup,                   \
-        /* .updateStringProc = */ []
+#define REGISTER_TCL_TYPE_W_STR_UPDATE(cxx_type)             \
+    const Tcl_ObjType TCL_TYPE_OF(cxx_type) {                \
+        /* .name = */ #cxx_type,                             \
+            /* .freeIntRepProc = */ tcl_obj_free <cxx_type>, \
+            /* .dupIntRepProc = */ tcl_obj_dup,              \
+            /* .updateStringProc = */[]
 
-#define END_REGISTER_TCL_TYPE ,                               \
-    /* .setFromAnyProc = */ tcl_set_from_none                 \
-}
+#define END_REGISTER_TCL_TYPE                     \
+    ,                                             \
+        /* .setFromAnyProc = */ tcl_set_from_none \
+    }
 
 #endif

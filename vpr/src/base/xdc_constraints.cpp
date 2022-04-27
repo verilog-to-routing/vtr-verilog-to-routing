@@ -13,7 +13,6 @@
 #include "tclcpp.h"
 #include "xdc_constraints.h"
 
-
 enum class e_XDCProperty {
     XDC_PROP_PACKAGE_PIN,
     XDC_PROP_IOSTANDARD,
@@ -25,25 +24,24 @@ static e_XDCProperty xdc_prop_from_str(const char* str) {
         return e_XDCProperty::XDC_PROP_PACKAGE_PIN;
     if (!std::strcmp(str, "IOSTANDARD"))
         return e_XDCProperty::XDC_PROP_IOSTANDARD;
-    
+
     return e_XDCProperty::XDC_PROP_UNKNOWN;
 }
 
 DECLARE_TCL_TYPE(AtomPortId)
 
 class TclPhysicalConstraintsClient : public TclClient {
-public:
+  public:
     VprConstraints& constraints;
     const t_arch& arch;
     AtomNetlist& netlist;
 
-    TclPhysicalConstraintsClient(VprConstraints& constraints_, const t_arch& arch_, AtomNetlist& netlist_) :
-        constraints(constraints_),
-        arch(arch_),
-        netlist(netlist_)
-    {}
+    TclPhysicalConstraintsClient(VprConstraints& constraints_, const t_arch& arch_, AtomNetlist& netlist_)
+        : constraints(constraints_)
+        , arch(arch_)
+        , netlist(netlist_) {}
 
-    template <typename F>
+    template<typename F>
     void register_methods(F register_method) {
         register_method("get_ports", &TclPhysicalConstraintsClient::get_ports);
         register_method("set_property", &TclPhysicalConstraintsClient::set_property);
@@ -52,41 +50,41 @@ public:
 
     /* TCL functions */
 
-    int set_property(int objc, Tcl_Obj* const objvp[]) {        
+    int set_property(int objc, Tcl_Obj* const objvp[]) {
         if (objc < 3)
-            return this->_ret_error("set_property: Expected at least 2 arguments, got " + 
-                                    std::to_string(objc) + ".");
+            return this->_ret_error("set_property: Expected at least 2 arguments, got " + std::to_string(objc) + ".");
 
         const char* property_name = Tcl_GetString(objvp[1]);
         if (property_name == nullptr)
             return this->_ret_error("set_property: First argument should be a string.");
-        
+
         e_XDCProperty property = xdc_prop_from_str(property_name);
 
         switch (property) {
             case e_XDCProperty::XDC_PROP_PACKAGE_PIN:
                 if (objc != 4)
-                    return this->_ret_error("set_property: Property `PACKAGE_PIN` "
-                                            "requires one target and one value.");
+                    return this->_ret_error(
+                        "set_property: Property `PACKAGE_PIN` "
+                        "requires one target and one value.");
                 return this->_set_property_package_pin(objvp[2], objvp[3]);
             case e_XDCProperty::XDC_PROP_IOSTANDARD:
                 if (objc != 4)
-                    return this->_ret_error("set_property: Property `IOSTANDARD` "
-                                            "requires one value and one target.");
+                    return this->_ret_error(
+                        "set_property: Property `IOSTANDARD` "
+                        "requires one value and one target.");
                 return this->_set_property_iostandard(objvp[2], objvp[3]);
             case e_XDCProperty::XDC_PROP_UNKNOWN:
-                return this->_ret_error("set_property: Property `" + std::string(property_name) +
-                                "` is not recognized.");
-            default: break;
+                return this->_ret_error("set_property: Property `" + std::string(property_name) + "` is not recognized.");
+            default:
+                break;
         }
-        return this->_ret_error("set_property: Property `" + std::string(property_name) +
-                                "` is not supported.");
+        return this->_ret_error("set_property: Property `" + std::string(property_name) + "` is not supported.");
     }
 
     int get_ports(int objc, Tcl_Obj* const objvp[]) {
         if (objc < 2)
             return this->_ret_error("get_ports: Expected one or more arguments.");
-        
+
         std::vector<const char*> port_names;
 
         for (size_t i = 1; i < objc; i++) {
@@ -95,7 +93,7 @@ public:
                 return this->_ret_error("get_ports: pin_name should be a string.");
             port_names.push_back(pin_name);
         }
-        
+
         return this->_do_get_ports(std::move(port_names));
     }
 
@@ -103,17 +101,16 @@ public:
         return this->_ret_error("get_cells: unimplemented");
     }
 
-protected:
+  protected:
     int _set_property_package_pin(Tcl_Obj* tcl_pin_name, Tcl_Obj* tcl_ports) {
         const char* pin_name = Tcl_GetString(tcl_pin_name);
         if (pin_name == nullptr)
             return this->_ret_error("set_property: pin_name of PACKAGE_PIN should be a string.");
-        
+
         auto port_list = tcl_obj_getlist<AtomPortId>(static_cast<TclClient*>(this), tcl_ports);
         size_t port_count = port_list.size();
         if (port_count != 1)
-            return this->_ret_error("set_property PACKAGE_PIN: Expected 1 port, got " + 
-                                    std::to_string(port_count) + ".");
+            return this->_ret_error("set_property PACKAGE_PIN: Expected 1 port, got " + std::to_string(port_count) + ".");
         auto* port = *port_list.begin();
         if (port == nullptr)
             return this->_ret_error("set_property: port_name of PACKAGE_PIN should have a `AtomPortId` type.");
@@ -125,14 +122,13 @@ protected:
         /* Find associated AtomBlock */
 
         const auto& phys_grid_mapping = this->arch.phys_grid_mapping;
-        
+
         std::string pin_str(pin_name);
         auto it = phys_grid_mapping.find(pin_str);
         if (it == phys_grid_mapping.end())
-            return this->_ret_error("Can't find physical PIN named `" +
-                                    pin_str + "`");
+            return this->_ret_error("Can't find physical PIN named `" + pin_str + "`");
         const t_phys_map_region& package_pin_region = it->second;
-        
+
         AtomBlockId port_block = this->netlist.port_block(port);
 
         /* Create a 1x1 VprConstraints Partition to contrain the block */
@@ -144,8 +140,7 @@ protected:
             package_pin_region.x,
             package_pin_region.y,
             package_pin_region.x + package_pin_region.w - 1,
-            package_pin_region.y + package_pin_region.h - 1
-        );
+            package_pin_region.y + package_pin_region.h - 1);
         r.set_sub_tile(package_pin_region.subtile);
         PartitionRegion pr;
         pr.add_to_part_region(r);
@@ -165,9 +160,9 @@ protected:
 
     int _set_property_iostandard(Tcl_Obj* tcl_io_standard, Tcl_Obj* tcl_ports) {
         const char* io_standard = Tcl_GetString(tcl_io_standard);
-        
+
         auto ports = tcl_obj_getlist<AtomPortId>(static_cast<TclClient*>(this), tcl_ports);
-        
+
         return this->_do_set_property_iostandard(io_standard, ports);
     }
 
@@ -216,11 +211,9 @@ protected:
                 pins_left--;
             }
 
-            return this->_ret_error("get_ports: Can't find ports for `" +
-                                    std::string(pin_name) + "`. Available blocks: " +
-                                    available_ports);
+            return this->_ret_error("get_ports: Can't find ports for `" + std::string(pin_name) + "`. Available blocks: " + available_ports);
         }
-        
+
         auto ports = this->netlist.block_ports(pin_block);
 
         auto port_it = this->netlist.block_ports(pin_block).begin();
@@ -241,15 +234,16 @@ protected:
     }
 };
 
-REGISTER_TCL_TYPE_W_STR_UPDATE(AtomPortId) (Tcl_Obj* obj) {
+REGISTER_TCL_TYPE_W_STR_UPDATE(AtomPortId)
+(Tcl_Obj* obj) {
     const auto* port = tcl_obj_getptr<AtomPortId>(obj);
     const auto* client = tcl_obj_get_ctx_ptr<TclPhysicalConstraintsClient>(obj);
     std::string port_name = client->netlist.port_name(*port);
     tcl_set_obj_string(obj, port_name);
-} END_REGISTER_TCL_TYPE;
+}
+END_REGISTER_TCL_TYPE;
 
 VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arch& arch, AtomNetlist& netlist) {
-
     VprConstraints constraints;
     TclPhysicalConstraintsClient pc_client(constraints, arch, netlist);
 
@@ -268,10 +262,9 @@ VprConstraints read_xdc_constraints_to_vpr(std::istream& xdc_stream, const t_arc
             "  } else {\n"
             "    uplevel 1 [list _original_unknown {*}$args]\n"
             "  }\n"
-            "}"
-        );
+            "}");
         ctx.read_tcl(fix_port_indexing);
-        
+
         /* Add types and commands to handle XDC files */
         ctx.add_tcl_type<AtomPortId>();
         ctx.add_tcl_client<TclPhysicalConstraintsClient>(pc_client);
