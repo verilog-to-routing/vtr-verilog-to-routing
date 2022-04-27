@@ -841,8 +841,8 @@ struct t_logical_block_type {
                                                             ///>place this type of netlist block.
 
     vtr::unordered_bimap<const t_pb_graph_pin*, int> pb_pin_idx_bimap; /* {pin, intra_cluster_pin_idx} */
-    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* only valid for top level block */
-    std::vector<t_class> primitive_class_inf; /* {primitive_pin, class_number} - only valid for top level block*/
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* {pb_pin_ptr, class_inf_idx} */
+    std::vector<t_class> primitive_class_inf; /* {primitive_pin, class_number} */
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
