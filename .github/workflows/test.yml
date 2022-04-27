@@ -16,26 +16,26 @@ jobs:
 
   Run-tests:
     # Prevents from running on forks where no custom runners are available
-    if: ${{ github.repository_owner == 'verilog-to-routing' }}
+    #if: ${{ github.repository_owner == 'verilog-to-routing' }}
 
     container: ubuntu:bionic
 
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: ubuntu-18.04
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {test: "vtr_reg_nightly_test1", cores: "8",  options: "",          cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test2", cores: "16", options: "",          cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test3", cores: "16", options: "",          cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test4", cores: "16", options: "",          cmake: ""                                             }
+          #- {test: "vtr_reg_nightly_test1", cores: "8",  options: "",          cmake: ""                                             }
+          #- {test: "vtr_reg_nightly_test2", cores: "16", options: "",          cmake: ""                                             }
+          #- {test: "vtr_reg_nightly_test3", cores: "16", options: "",          cmake: ""                                             }
+          #- {test: "vtr_reg_nightly_test4", cores: "16", options: "",          cmake: ""                                             }
           - {test: "vtr_reg_strong",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3"                         }
-          - {test: "vtr_reg_strong",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON"}
-          - {test: "vtr_reg_yosys",         cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON"                              }
-          - {test: "vtr_reg_yosys_odin",    cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON"                          }
-          - {test: "odin_tech_strong",      cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON"                          }
-          - {test: "odin_reg_strong",       cores: "16", options: "",          cmake: ""                                             }
+          #- {test: "vtr_reg_strong",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON"}
+          #- {test: "vtr_reg_yosys",         cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON"                              }
+          #- {test: "vtr_reg_yosys_odin",    cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON"                          }
+          #- {test: "odin_tech_strong",      cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON"                          }
+          #- {test: "odin_reg_strong",       cores: "16", options: "",          cmake: ""                                             }
 
     env:
       DEBIAN_FRONTEND: "noninteractive"
