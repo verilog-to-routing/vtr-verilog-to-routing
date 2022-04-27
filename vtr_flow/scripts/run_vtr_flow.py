@@ -339,7 +339,10 @@ def vtr_command_argparser(prog=None):
         help="List of include files to a benchmark circuit(pass to Odin as a benchmark design set)",
     )
     odin.add_argument(
-        "-top_module", default=None, dest="top_module", help="",
+        "-top_module", 
+        default=None, 
+        dest="top_module", 
+        help="Specify the name of the module in the design that should be considered as top",
     )
     odin.add_argument(
         "-coarsen",
