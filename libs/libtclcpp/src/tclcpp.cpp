@@ -127,3 +127,33 @@ int TclCtx::_tcl_do_method(
     }
     return TCL_OK;
 }
+
+TclDynList::TclDynList(Tcl_Interp* interp, Tcl_Obj* obj)
+    : _interp(interp) {
+    const Tcl_ObjType* obj_type = obj->typePtr;
+    if (obj_type == nullptr)
+        return;
+
+    if (obj_type == nullptr || std::strcmp(obj_type->name, "list")) {
+        Tcl_Obj* item;
+        this->_obj = Tcl_NewListObj(1, &obj);
+    } else {
+        this->_obj = obj;
+    }
+}
+
+TclDynList tcl_obj_getdynlist (TclClient* client, Tcl_Obj* obj) {
+    return TclDynList(client->_interp, obj);
+}
+
+Tcl_Obj* TclDynList::operator[](size_t idx) {
+    int count;
+    Tcl_Obj* objp;
+
+    Tcl_ListObjLength(this->_interp, this->_obj, &count);
+    if (idx >= count)
+        return nullptr;
+    Tcl_ListObjIndex(this->_interp, this->_obj, idx, &objp);
+    
+    return objp;
+}

@@ -194,6 +194,18 @@ class TclList {
         return this->_obj;
     }
 
+    Tcl_Obj* operator*(size_t idx) {
+        int count;
+        Tcl_Obj* objp;
+
+        Tcl_ListObjLength(this->_interp, this->_obj, &count);
+        if (idx >= count)
+            return nullptr;
+        Tcl_ListObjIndex(this->_interp, this->_obj, idx, &objp);
+
+        return tcl_obj_getptr<T>(objp);
+    }
+
     /**
      * @brief Iterator
      * Dereferencing it yields a pointer to a C++ object
@@ -203,11 +215,10 @@ class TclList {
      * return `TclList<T>` for `TclList<TclList<T>>::Iterator::operaotr*()`.
      * Primitive TCL types might also need a specialized handling.
      */
-    template<class dummy>
     class Iterator {
       public:
         Iterator& operator=(const Iterator& other) {
-            this->_idx = other->_idx;
+            this->_idx = other._idx;
             return *this;
         }
 
@@ -237,14 +248,14 @@ class TclList {
         Tcl_Obj* _obj; /* Underlying Tcl_Obj representing the list */
     };
 
-    Iterator<void> begin() {
-        return Iterator<void>(this->_interp, this->_obj, 0);
+    Iterator begin() {
+        return Iterator(this->_interp, this->_obj, 0);
     }
 
-    Iterator<void> end() {
+    Iterator end() {
         int count;
         Tcl_ListObjLength(this->_interp, this->_obj, &count);
-        return Iterator<void>(this->_interp, this->_obj, count);
+        return Iterator(this->_interp, this->_obj, count);
     }
 
     /**
@@ -261,7 +272,113 @@ class TclList {
     Tcl_Obj* _obj; /* Underlying Tcl_Obj representing the list */
 };
 
+class TclDynList {
+  public:
+    /**
+     * @brief Create empty TCL list
+     */
+    inline TclDynList(Tcl_Interp* interp)
+        : _interp(interp)
+        , _obj(Tcl_NewListObj(0, nullptr)) {}
+
+    /**
+     * @brief Import a TCL list from Tcl_Obj of list type, or create one-element list from
+     *        object of any other type.
+     */
+    TclDynList(Tcl_Interp* interp, Tcl_Obj* obj);
+
+    /**
+     * @brief Get the raw TCL_Obj representing the list.
+     */
+    inline Tcl_Obj* tcl_obj() {
+        return this->_obj;
+    }
+
+    Tcl_Obj* operator[](size_t idx);
+
+    template <typename T>
+    Tcl_Obj* at(size_t idx) {
+        Tcl_Obj* obj = (*this)[idx];
+        if (obj == nullptr)
+            return nullptr;
+        return tcl_obj_getptr<T>(obj);
+    }
+
+    /**
+     * @brief Iterator
+     * Dereferencing it yields a pointer to a C++ object
+     * 
+     * TODO: If we ever need to handle a TCL list of TCL lists this won't work. It might be possible to use
+     * template spcializations to derive a class with alternative implementation of `operator*()` that would
+     * return `TclList<T>` for `TclList<TclList<T>>::Iterator::operaotr*()`.
+     * Primitive TCL types might also need a specialized handling.
+     */
+    class Iterator {
+      public:
+       inline Iterator& operator=(const Iterator& other) {
+            this->_idx = other._idx;
+            return *this;
+        }
+
+        inline Iterator& operator++() {
+            this->_idx++;
+            return *this;
+        }
+
+        inline bool operator!=(const Iterator& other) {
+            return (this->_interp != other._interp) || (this->_obj != other._obj) || (this->_idx != other._idx);
+        }
+        
+        inline Tcl_Obj* operator*() const {
+            Tcl_Obj* objp;
+            Tcl_ListObjIndex(this->_interp, this->_obj, this->_idx, &objp);
+            return objp;
+        }
+
+        template <typename T>
+        inline T* at() const {
+            return tcl_obj_getptr<T>(**this);
+        }
+
+        inline Iterator(Tcl_Interp* interp, Tcl_Obj* obj, int idx)
+            : _interp(interp)
+            , _obj(obj)
+            , _idx(idx) {}
+
+      protected:
+        Tcl_Interp* _interp;
+        int _idx;      /* Currently visited index on the list */
+        Tcl_Obj* _obj; /* Underlying Tcl_Obj representing the list */
+    };
+
+    inline Iterator begin() {
+        return Iterator(this->_interp, this->_obj, 0);
+    }
+
+    inline Iterator end() {
+        int count;
+        Tcl_ListObjLength(this->_interp, this->_obj, &count);
+        return Iterator(this->_interp, this->_obj, count);
+    }
+
+    /**
+     * @brief Get number of elements on the list.
+     */
+    inline size_t size() const {
+        int len;
+        Tcl_ListObjLength(this->_interp, this->_obj, &len);
+        return size_t(len);
+    }
+
+  protected:
+    Tcl_Interp* _interp;
+    Tcl_Obj* _obj; /* Underlying Tcl_Obj representing the list */
+};
+
 class TclCtx;
+class TclClient;
+
+TclDynList tcl_obj_getdynlist(TclClient* client, Tcl_Obj* obj);
 
 /**
  * @brief Provide a C++ state with TCL interface.
@@ -380,6 +497,7 @@ class TclClient {
     friend class TclCtx;
     template<typename T>
     friend TclList<T> tcl_obj_getlist(TclClient* client, Tcl_Obj* obj);
+    friend TclDynList tcl_obj_getdynlist(TclClient* client, Tcl_Obj* obj);
 
     Tcl_Interp* _interp;
 };
