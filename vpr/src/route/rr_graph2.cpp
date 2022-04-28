@@ -37,7 +37,51 @@ static void load_chan_rr_indices(const int max_chan_width,
 
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
-                                  int* index);
+                                  int* index,
+                                  bool is_flat);
+
+static void add_all_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
+                                   const DeviceGrid& grid,
+                                   int x,
+                                   int y,
+                                   int* index,
+                                   const std::vector<e_side>& wanted_sides);
+
+static void add_top_level_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
+                                         const DeviceGrid& grid,
+                                         int x,
+                                         int y,
+                                         int* index,
+                                         const std::vector<e_side>& wanted_sides);
+
+static void reserve_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
+                                       t_physical_tile_type_ptr physical_tile,
+                                       const int x,
+                                       const int y,
+                                       t_logical_block_type_ptr logical_block,
+                                       const std::vector<e_side>& wanted_sides);
+
+static void add_all_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
+                                   t_physical_tile_type_ptr type,
+                                   const t_sub_tile* sub_tile,
+                                   t_logical_block_type_ptr logical_block,
+                                   int relative_capacity,
+                                   const int x,
+                                   const int y,
+                                   int* rr_index,
+                                   const std::vector<e_side>& root_pin_sides);
+
+static void add_top_level_sink_src(RRGraphBuilder& rr_graph_builder,
+                       const DeviceGrid& grid,
+                       int x,
+                       int y,
+                       int* index);
+
+static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
+                                   const DeviceGrid& grid,
+                                   int x,
+                                   int y,
+                                   int* index);
 
 static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                        const std::vector<int> conn_tracks,
@@ -967,30 +1011,30 @@ static void load_chan_rr_indices(const int max_chan_width,
     }
 }
 
+
+
+
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
  * TODO: these building functions should only talk to a RRGraphBuilder object
  */
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
-                                  int* index) {
+                                  int* index,
+                                  bool is_flat) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
+
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
+            //Process each block from it's root location
             if (grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0) {
-                //Process each block from it's root location
-                auto type = grid[x][y].type;
 
                 //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
-                for (size_t iclass = 0; iclass < type->class_inf.size(); ++iclass) {
-                    auto class_type = type->class_inf[iclass].type;
-                    if (class_type == DRIVER) {
-                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, iclass);
-                    } else {
-                        VTR_ASSERT(class_type == RECEIVER);
-                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, iclass);
-                    }
-                    ++(*index);
+                if(is_flat) {
+                    add_primitive_sink_src(rr_graph_builder, grid, x, y, index);
+                }
+                else {
+                    add_top_level_sink_src(rr_graph_builder, grid, x, y, index);
                 }
 
                 /* Limited sides for grids
@@ -1040,62 +1084,18 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                 /* If wanted sides is empty still, this block does not have specific wanted sides,
                  * Deposit all the sides
                  */
-                if (true == wanted_sides.empty()) {
+                if (wanted_sides.empty()) {
                     for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
                         wanted_sides.push_back(side);
                     }
                 }
 
-                // Reserve nodes in lookup to save memory
-                for (e_side side : wanted_sides) {
-                    for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-                        int x_tile = x + width_offset;
-                        for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                            int y_tile = y + height_offset;
-                            rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN, type->num_pins, side);
-                            rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN, type->num_pins, side);
-                        }
-                    }
+                if(is_flat) {
+                    add_all_tile_pins_lookup (rr_graph_builder, grid, x, y, index, wanted_sides);
                 }
+                else {
+                    add_top_level_tile_pins_lookup (rr_graph_builder, grid, x, y, index, wanted_sides);
 
-                //Assign indices for IPINs and OPINs at all offsets from root
-                for (int ipin = 0; ipin < type->num_pins; ++ipin) {
-                    bool assigned_to_rr_node = false;
-                    for (e_side side : wanted_sides) {
-                        for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-                            int x_tile = x + width_offset;
-                            for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                                int y_tile = y + height_offset;
-                                if (type->pinloc[width_offset][height_offset][side][ipin]) {
-                                    int iclass = type->pin_class[ipin];
-                                    auto class_type = type->class_inf[iclass].type;
-
-                                    if (class_type == DRIVER) {
-                                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, OPIN, ipin, side);
-                                        assigned_to_rr_node = true;
-                                    } else {
-                                        VTR_ASSERT(class_type == RECEIVER);
-                                        rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, IPIN, ipin, side);
-                                        assigned_to_rr_node = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    /* A pin may locate on multiple sides of a tile.
-                     * Instead of allocating multiple rr_nodes for the pin,
-                     * we just create a rr_node and make it indexable on these sides
-                     * As such, we can avoid redundant rr_node to be allocated
-                     * and multiple nets to be mapped to the pin
-                     *
-                     * Considering that some pin could be just dangling, we do not need
-                     * to create a void rr_node for it.
-                     * As such, we only allocate a rr node when the pin is indeed located
-                     * on at least one side
-                     */
-                    if (assigned_to_rr_node) {
-                        ++(*index);
-                    }
                 }
             }
         }
@@ -1124,6 +1124,234 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
     }
 }
 
+static void add_all_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
+                                   const DeviceGrid& grid,
+                                   int x,
+                                   int y,
+                                   int* index,
+                                   const std::vector<e_side>& wanted_sides) {
+
+    auto type = grid[x][y].type;
+
+    for(const t_sub_tile& sub_tile : type->sub_tiles) {
+        for(auto eq_site : sub_tile.equivalent_sites) {
+            for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
+                reserve_all_pb_pins_lookup(rr_graph_builder, type, x, y, eq_site, wanted_sides);
+            }
+
+        }
+    }
+
+    //Assign indices for internal-pins
+    for(const t_sub_tile& sub_tile : type->sub_tiles) {
+        for(auto eq_site : sub_tile.equivalent_sites) {
+            for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
+                add_all_logical_block_pins_lookup(rr_graph_builder, type, &sub_tile, eq_site,
+                                       sub_tile_idx, x, y, index, wanted_sides);
+
+            }
+        }
+    }
+}
+
+
+static void add_top_level_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
+                                         const DeviceGrid& grid,
+                                         int x,
+                                         int y,
+                                         int* index,
+                                         const std::vector<e_side>& wanted_sides) {
+
+    auto type = grid[x][y].type;
+
+    // Reserve nodes for top-level blocks in lookup to save memory
+    for (e_side side : wanted_sides) {
+        for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+            int x_tile = x + width_offset;
+            for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                int y_tile = y + height_offset;
+                rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN, type->num_pins, side);
+                rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN, type->num_pins, side);
+            }
+        }
+    }
+
+    //Assign indices for IPINs and OPINs at all offsets from root
+    for (int ipin = 0; ipin < type->num_pins; ++ipin) {
+        bool assigned_to_rr_node = false;
+        for (e_side side : wanted_sides) {
+            for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+                int x_tile = x + width_offset;
+                for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                    int y_tile = y + height_offset;
+                    if (type->pinloc[width_offset][height_offset][side][ipin]) {
+                        int iclass = type->pin_class[ipin];
+                        auto class_type = type->class_inf[iclass].type;
+                        if (class_type == DRIVER) {
+                            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, OPIN, ipin, side);
+                            assigned_to_rr_node = true;
+                        } else {
+                            VTR_ASSERT(class_type == RECEIVER);
+                            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, IPIN, ipin, side);
+                            assigned_to_rr_node = true;
+                        }
+                    }
+                }
+            }
+        }
+        /* A pin may locate on multiple sides of a tile.
+                     * Instead of allocating multiple rr_nodes for the pin,
+                     * we just create a rr_node and make it indexable on these sides
+                     * As such, we can avoid redundant rr_node to be allocated
+                     * and multiple nets to be mapped to the pin
+                     *
+                     * Considering that some pin could be just dangling, we do not need
+                     * to create a void rr_node for it.
+                     * As such, we only allocate a rr node when the pin is indeed located
+                     * on at least one side
+                     */
+        if (assigned_to_rr_node) {
+            ++(*index);
+        }
+    }
+
+}
+
+
+
+static void reserve_all_pb_pins_lookup(RRGraphBuilder& rr_graph_builder,
+                                       t_physical_tile_type_ptr physical_tile,
+                                       const int x,
+                                       const int y,
+                                       t_logical_block_type_ptr logical_block,
+                                       const std::vector<e_side>& wanted_sides) {
+
+    /* Reserve nodes for internal pins in lookup */
+    for(auto side : wanted_sides) {
+        for (int width_offset = 0; width_offset < physical_tile->width; ++width_offset) {
+            int x_tile = x + width_offset;
+            for (int height_offset = 0; height_offset < physical_tile->height; ++height_offset) {
+                int y_tile = y + height_offset;
+                rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN,
+                                                             logical_block->pb_pin_idx_bimap.size()+physical_tile->num_pins, side);
+                rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN,
+                                                             logical_block->pb_pin_idx_bimap.size()+physical_tile->num_pins, side);
+            }
+        }
+    }
+}
+
+static void add_all_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
+                                   t_physical_tile_type_ptr type,
+                                   const t_sub_tile* sub_tile,
+                                   t_logical_block_type_ptr logical_block,
+                                   int relative_capacity,
+                                   const int x,
+                                   const int y,
+                                   int* rr_index,
+                                   const std::vector<e_side>& root_pin_sides) {
+
+    const t_pb_graph_node* pb_graph_node = logical_block->pb_graph_head;
+    if(!pb_graph_node)
+        return;
+
+    // Add all pins except for root-block pins
+    for (auto pin_pair : logical_block->pb_pin_idx_bimap) {
+        auto pb_graph_pin = pin_pair.first;
+        int pin_num;
+        int max_width;
+        int max_height;
+        bool assigned_to_rr_node = false;
+        //top-level block pins are added later
+        std::vector<e_side> sides;
+        pin_num = get_pb_pin_physical_num(type,
+                                 sub_tile,
+                                 logical_block,
+                                 relative_capacity,
+                                 pb_graph_pin);
+        if(pb_graph_pin->is_root_block_pin()) {
+            sides = root_pin_sides;
+            max_width = type->width;
+            max_height = type->height;
+        } else {
+            sides.push_back(e_side::TOP);
+            max_width = 1;
+            max_height = 1;
+        }
+
+        for(auto side : sides) {
+            for (int width_offset = 0; width_offset < max_width; ++width_offset) {
+                int x_tile = x + width_offset;
+                for (int height_offset = 0; height_offset < max_height; ++height_offset) {
+                    int y_tile = y + height_offset;
+                    if(pb_graph_pin->is_root_block_pin()){
+                        if (!type->pinloc[width_offset][height_offset][side][pin_num])
+                            continue;
+                    }
+                    auto port_type = pb_graph_pin->port->type;
+                    if (port_type == IN_PORT) {
+                        rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x_tile, y_tile, IPIN, pin_num, side);
+                        assigned_to_rr_node = true;
+                    } else {
+                        VTR_ASSERT(port_type == OUT_PORT);
+                        rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x_tile, y_tile, OPIN, pin_num, side);
+                        assigned_to_rr_node = true;
+                    }
+
+                }
+            }
+        }
+        if (assigned_to_rr_node)
+            ++(*rr_index);
+    }
+
+
+}
+
+static void add_top_level_sink_src(RRGraphBuilder& rr_graph_builder,
+                                   const DeviceGrid& grid,
+                                   int x,
+                                   int y,
+                                   int* index) {
+
+    auto type = grid[x][y].type;
+    for (size_t iclass = 0; iclass < type->class_inf.size(); ++iclass) {
+        auto class_type = type->class_inf[iclass].type;
+        if (class_type == DRIVER) {
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, iclass);
+        } else {
+            VTR_ASSERT(class_type == RECEIVER);
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, iclass);
+        }
+        ++(*index);
+    }
+
+}
+
+static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
+                                   const DeviceGrid& grid,
+                                   int x,
+                                   int y,
+                                   int* index) {
+
+    auto type = grid[x][y].type;
+
+
+    auto tile_primitive_classes_map = get_tile_primitive_classes_map(type);
+    for (auto class_pair : tile_primitive_classes_map) {
+        int class_num = class_pair.first;
+        auto primitive_class = class_pair.second;
+        auto class_type = primitive_class->type;
+        if (class_type == DRIVER) {
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SOURCE, class_num);
+        } else {
+            VTR_ASSERT(class_type == RECEIVER);
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, SINK, class_num);
+        }
+        ++(*index);
+    }
+}
+
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
  * TODO: these building functions should only talk to a RRGraphBuilder object
  *       The biggest and fatal issue is 
@@ -1139,7 +1367,8 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y) {
+                                    const t_chan_details& chan_details_y,
+                                    bool is_flat) {
     /* Allocates and loads all the structures needed for fast lookups of the   *
      * index of an rr_node.  rr_node_indices is a matrix containing the index  *
      * of the *first* rr_node at a given (i,j) location.                       */
@@ -1154,7 +1383,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     }
 
     /* Assign indices for block nodes */
-    load_block_rr_indices(rr_graph_builder, grid, index);
+    load_block_rr_indices(rr_graph_builder, grid, index, is_flat);
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
