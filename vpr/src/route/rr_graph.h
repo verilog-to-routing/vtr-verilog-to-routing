@@ -41,7 +41,8 @@ void create_rr_graph(const t_graph_type graph_type,
 void free_rr_graph();
 
 //Returns a brief one-line summary of an RR node
-std::string describe_rr_node(int inode);
+// #TODO: is_flat should not have a default value
+std::string describe_rr_node(int inode, bool is_flat = false);
 
 t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
                                                   const float R_minW_nmos,

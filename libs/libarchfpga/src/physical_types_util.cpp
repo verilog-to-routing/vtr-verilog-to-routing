@@ -1,7 +1,7 @@
 #include "vtr_assert.h"
 #include "vtr_memory.h"
 #include "vtr_util.h"
-#include "vtr_log.h"
+
 
 #include "arch_types.h"
 #include "arch_util.h"
@@ -36,12 +36,19 @@ struct t_pin_inst_port {
 
 /******************** Subroutine declarations and definition ****************************/
 
-static std::tuple<int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_index);
-static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr type, int pin_index);
-static int get_sub_block_pin_num_offset(t_physical_tile_type_ptr physical_tile,
-                                        const t_sub_tile* curr_sub_tile,
-                                        t_logical_block_type_ptr curr_logical_block,
-                                        const int curr_relative_cap);
+static std::tuple<int, int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_index, bool is_flat);
+
+// #TODO: remove the default value for is_flat
+static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr type, int pin_index, bool is_flat = false);
+
+static int get_sub_tile_inst_physical_pin_num_offset(t_physical_tile_type_ptr physical_tile,
+                                                     const t_sub_tile* curr_sub_tile,
+                                                     const int curr_relative_cap);
+
+static int get_logical_block_physical_pin_num_offset(t_physical_tile_type_ptr physical_tile,
+                                                     const t_sub_tile* curr_sub_tile,
+                                                     t_logical_block_type_ptr curr_logical_block,
+                                                     const int curr_relative_cap);
 
 static int get_root_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                                  const t_sub_tile* sub_tile,
@@ -49,32 +56,44 @@ static int get_root_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                                  int relative_cap,
                                  int logical_pin_num);
 
-static std::tuple<int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_index) {
-    VTR_ASSERT(pin_index < type->num_pins);
+static std::tuple<int, int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_index, bool is_flat) {
+    int max_ptc = get_tile_max_ptc(type, is_flat);
+    VTR_ASSERT(pin_index < max_ptc);
 
     int total_pin_counts = 0;
     int pin_offset = 0;
-    for (auto& sub_tile : type->sub_tiles) {
-        total_pin_counts += sub_tile.num_phy_pins;
 
-        if (pin_index < total_pin_counts) {
-            int pins_per_inst = sub_tile.num_phy_pins / sub_tile.capacity.total();
-            int inst_num = (pin_index - pin_offset) / pins_per_inst;
-            int inst_index = (pin_index - pin_offset) % pins_per_inst;
+    if(is_flat) {
+        auto pin_logical_num = get_pin_logical_num_from_pin_physical_num(type, pin_index);
+        auto sub_tile = get_sub_tile_from_pin_physical_num(type, pin_index);
+        auto sub_tile_cap = get_sub_tile_cap_from_pin_physical_num(type, pin_index);
+        auto logical_block = get_logical_block_from_pin_physical_num(type, pin_index);
 
-            return std::make_tuple(inst_index, inst_num, sub_tile.index);
+        return std::make_tuple(pin_logical_num, sub_tile_cap, sub_tile->index, logical_block->index);
+    } else {
+        VTR_ASSERT(is_flat == false);
+        for (auto& sub_tile : type->sub_tiles) {
+            total_pin_counts += sub_tile.num_phy_pins;
+
+            if (pin_index < total_pin_counts) {
+                int pins_per_inst = sub_tile.num_phy_pins / sub_tile.capacity.total();
+                int inst_num = (pin_index - pin_offset) / pins_per_inst;
+                int inst_index = (pin_index - pin_offset) % pins_per_inst;
+
+                return std::make_tuple(inst_index, inst_num, sub_tile.index, -1);
+            }
+
+            pin_offset += sub_tile.num_phy_pins;
         }
-
-        pin_offset += sub_tile.num_phy_pins;
     }
 
     archfpga_throw(__FILE__, __LINE__,
                    "Could not infer the correct pin instance index for %s (pin index: %d)", type->name, pin_index);
 }
 
-static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr type, int pin_index) {
-    int sub_tile_index, inst_num;
-    std::tie<int, int, int>(pin_index, inst_num, sub_tile_index) = get_pin_index_for_inst(type, pin_index);
+static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr type, int pin_index, bool is_flat) {
+    int sub_tile_index, inst_num, logical_num;
+    std::tie<int, int, int, int>(pin_index, inst_num, sub_tile_index, logical_num) = get_pin_index_for_inst(type, pin_index, is_flat);
 
     t_pin_inst_port pin_inst_port;
     pin_inst_port.sub_tile_index = sub_tile_index;
@@ -92,33 +111,37 @@ static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr
     return pin_inst_port;
 }
 
-static int get_sub_block_pin_num_offset(t_physical_tile_type_ptr physical_tile,
+static int get_sub_tile_inst_physical_pin_num_offset(t_physical_tile_type_ptr physical_tile,
+                                                     const t_sub_tile* curr_sub_tile,
+                                                     const int curr_relative_cap) {
+    int curr_sub_tile_num = curr_sub_tile->index;
+    int offset = physical_tile->num_pins;
+    for(const auto& tmp_sub_tile : physical_tile->sub_tiles) {
+        /* curr_sub_tile should not be excluded from the iterations because the number of pins in previous sub_tile instances
+         * should be added to offset */
+        if(tmp_sub_tile.index > curr_sub_tile_num)
+            break;
+        int sub_tile_inst_num_internal_pins = get_total_num_sub_tile_internal_pins(&tmp_sub_tile) / tmp_sub_tile.capacity.total();
+        for (int sub_tile_cap = 0; sub_tile_cap < curr_relative_cap; sub_tile_cap++) {
+            offset += sub_tile_inst_num_internal_pins;
+        }
+    }
+    return offset;
+}
+
+static int get_logical_block_physical_pin_num_offset(t_physical_tile_type_ptr physical_tile,
                                         const t_sub_tile* curr_sub_tile,
                                         t_logical_block_type_ptr curr_logical_block,
                                         const int curr_relative_cap) {
-    bool is_found = false;
-    int offset = physical_tile->num_pins;
-    for(const auto& tmp_sub_tile : physical_tile->sub_tiles) {
-        for(int sub_tile_cap = 0; sub_tile_cap < tmp_sub_tile.capacity.total(); sub_tile_cap++) {
-            for(auto eq_site : tmp_sub_tile.equivalent_sites) {
-                if(&tmp_sub_tile == curr_sub_tile) {
-                    if (sub_tile_cap == curr_relative_cap) {
-                        if (eq_site == curr_logical_block) {
-                            is_found = true;
-                        }
-                    }
-                }
-                if(is_found) {
-                    break;
-                } else {
-                    offset += eq_site->pb_type->num_pins;
-                }
-            }
-            if(is_found)
-                break;
-        }
-        if(is_found)
+    int offset;
+    int curr_logical_block_idx = curr_logical_block->index;
+    offset = get_sub_tile_inst_physical_pin_num_offset(physical_tile, curr_sub_tile, curr_relative_cap);
+
+    for(auto eq_site : curr_sub_tile->equivalent_sites) {
+        if(eq_site->index >= curr_logical_block_idx)
             break;
+        offset += (int)eq_site->pb_pin_idx_bimap.size();
+
     }
     return offset;
 }
@@ -411,13 +434,14 @@ bool is_io_type(t_physical_tile_type_ptr type) {
            || is_output_type(type);
 }
 
-std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_index) {
-    VTR_ASSERT(pin_index < type->num_pins);
+std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_index, bool is_flat) {
+    int max_ptc = get_tile_max_ptc(type, is_flat);
+    VTR_ASSERT(pin_index < max_ptc);
 
     std::string pin_name = type->name;
 
-    int sub_tile_index, inst_num;
-    std::tie<int, int, int>(pin_index, inst_num, sub_tile_index) = get_pin_index_for_inst(type, pin_index);
+    int sub_tile_index, inst_num, logical_num;
+    std::tie<int, int, int, int>(pin_index, inst_num, sub_tile_index, logical_num) = get_pin_index_for_inst(type, pin_index, is_flat);
 
     if (type->sub_tiles[sub_tile_index].capacity.total() > 1) {
         pin_name += "[" + std::to_string(inst_num) + "]";
@@ -425,13 +449,27 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
 
     pin_name += ".";
 
-    for (auto const& port : type->sub_tiles[sub_tile_index].ports) {
-        if (pin_index >= port.absolute_first_pin_index && pin_index < port.absolute_first_pin_index + port.num_pins) {
-            //This port contains the desired pin index
-            int index_in_port = pin_index - port.absolute_first_pin_index;
-            pin_name += port.name;
-            pin_name += "[" + std::to_string(index_in_port) + "]";
-            return pin_name;
+    if(is_flat) {
+        pin_name += "[" + std::to_string(logical_num)+ "]";
+        pin_name += ".";
+
+        auto pb_pin = get_pb_pin_from_pin_physical_num(type, pin_index);
+        auto pb_pin_port = pb_pin->port;
+        pin_name += pb_pin_port->name;
+
+        pin_name += "[" + std::to_string(pb_pin->pin_number) + "]";
+
+        return pin_name;
+    } else {
+        VTR_ASSERT(is_flat == false);
+        for (auto const& port : type->sub_tiles[sub_tile_index].ports) {
+            if (pin_index >= port.absolute_first_pin_index && pin_index < port.absolute_first_pin_index + port.num_pins) {
+                //This port contains the desired pin index
+                int index_in_port = pin_index - port.absolute_first_pin_index;
+                pin_name += port.name;
+                pin_name += "[" + std::to_string(index_in_port) + "]";
+                return pin_name;
+            }
         }
     }
 
@@ -578,7 +616,7 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
          * number of physical pins is higher than those of root-level logical pins. The more conservative approach would be to offset
          * the sub-blocks' pin id by the difference between the number of pins on root-level logical pin and the physical tile */
         int logical_pin_num = logical_block->pb_pin_idx_bimap[pin];
-        int offset = get_sub_block_pin_num_offset(physical_tile,
+        int offset = get_logical_block_physical_pin_num_offset(physical_tile,
                                                   sub_tile,
                                                   logical_block,
                                                   relative_cap);
@@ -841,7 +879,7 @@ const t_sub_tile* get_sub_tile_from_pin_physical_num(t_physical_tile_type_ptr ph
     } else { /* This physical_num corresponds to a pin located inside a block */
         int num_seen_root_pins = physical_tile->num_pins;
         for(const auto& sub_tile : physical_tile->sub_tiles) {
-            int num_internal_sub_tile_pin = get_total_num_sub_tile_pins(&sub_tile) - sub_tile.num_phy_pins;
+            int num_internal_sub_tile_pin = get_total_num_sub_tile_internal_pins(&sub_tile);
             if(physical_num < (num_seen_root_pins + num_internal_sub_tile_pin))
                 target_sub_tile = &sub_tile;
             else
@@ -862,16 +900,11 @@ int get_sub_tile_cap_from_pin_physical_num(t_physical_tile_type_ptr physical_til
         int block_num_pins = (sub_tile->num_phy_pins / sub_tile->capacity.total());
         target_cap = physical_num / block_num_pins;
     } else {
-        int num_seen_pins = physical_tile->num_pins;
-        int block_num_pins = get_total_num_sub_tile_pins(sub_tile) / sub_tile->capacity.total();
-        for (const auto& tmp_sub_tile : physical_tile->sub_tiles) {
-            int num_internal_sub_tile_pin = get_total_num_sub_tile_pins(&tmp_sub_tile) - tmp_sub_tile.num_phy_pins;
-            if (sub_tile == &tmp_sub_tile) {
-                break;
-            } else {
-                num_seen_pins += num_internal_sub_tile_pin;
-            }
-        }
+        int num_seen_pins;
+        int block_num_pins = get_total_num_sub_tile_internal_pins(sub_tile) / sub_tile->capacity.total();
+        // Add the number of pins of the previous sub_tiles
+        num_seen_pins = get_sub_tile_inst_physical_pin_num_offset(physical_tile, sub_tile, 0);
+        // Add the number of pins of the previous sub tiles cap
         for (int sub_tile_cap = 0; sub_tile_cap < sub_tile->capacity.total(); sub_tile_cap++) {
             if (physical_num < (num_seen_pins + block_num_pins)) {
                 target_cap = sub_tile_cap;
@@ -892,27 +925,15 @@ t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile
     t_logical_block_type_ptr target_logical_block = nullptr;
     auto sub_tile = get_sub_tile_from_pin_physical_num(physical_tile, physical_num);
     auto sub_tile_cap = get_sub_tile_cap_from_pin_physical_num(physical_tile, physical_num);
-    int num_seen_pins = physical_tile->num_pins;
+    int num_seen_pins = get_sub_tile_inst_physical_pin_num_offset(physical_tile, sub_tile, sub_tile_cap);
 
-    for(const auto& tmp_sub_tile : physical_tile->sub_tiles) {
-        int num_internal_sub_tile_pin = get_total_num_sub_tile_pins(&tmp_sub_tile) - tmp_sub_tile.num_phy_pins;
-        if(sub_tile == &tmp_sub_tile)
-            num_seen_pins += num_internal_sub_tile_pin;
-        else
-            break;
-    }
-
-    int block_num_pins = get_total_num_sub_tile_pins(sub_tile) / sub_tile->capacity.total();
-    for(int cap = 0; cap < sub_tile_cap; cap++) {
-        num_seen_pins += block_num_pins;
-    }
 
     for(auto tmp_logical_block : sub_tile->equivalent_sites) {
-        if(physical_num < num_seen_pins) {
+        if(physical_num < (num_seen_pins + (int)tmp_logical_block->pb_pin_idx_bimap.size()) ) {
             target_logical_block = tmp_logical_block;
             break;
         } else {
-            num_seen_pins += tmp_logical_block->pb_type->num_pins;
+            num_seen_pins += (int)tmp_logical_block->pb_pin_idx_bimap.size();
         }
     }
 
@@ -939,7 +960,7 @@ int get_pin_logical_num_from_pin_physical_num(t_physical_tile_type_ptr physical_
 
     int pin_logical_num;
     if(physical_num >= tile_num_pins) { /* pin is not on the root-level block */
-        int offset = get_sub_block_pin_num_offset(physical_tile,
+        int offset = get_logical_block_physical_pin_num_offset(physical_tile,
                                                   sub_tile,
                                                   logical_block,
                                                   relative_cap);
@@ -961,21 +982,19 @@ int get_pin_logical_num_from_pin_physical_num(t_physical_tile_type_ptr physical_
 
 /* */
 
-int get_total_num_sub_tile_pins(const t_sub_tile* sub_tile) {
+int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile) {
     int num_pins = 0;
     for(auto eq_site : sub_tile->equivalent_sites) {
-        num_pins += eq_site->pb_pin_idx_bimap.size();
+        num_pins += (int)eq_site->pb_pin_idx_bimap.size();
     }
     num_pins *= sub_tile->capacity.total();
     return num_pins;
 }
 
-int get_total_num_tile_pins(t_physical_tile_type_ptr tile) {
+int get_total_num_tile_internal_pins(t_physical_tile_type_ptr tile) {
     int num_pins = 0;
     for(const t_sub_tile& sub_tile : tile->sub_tiles) {
-        for(auto eq_site : sub_tile.equivalent_sites) {
-            num_pins += ((eq_site->pb_type->num_pins)*sub_tile.capacity.total());
-        }
+        num_pins += get_total_num_sub_tile_internal_pins(&sub_tile);
     }
 
     return num_pins;
@@ -984,7 +1003,7 @@ int get_total_num_tile_pins(t_physical_tile_type_ptr tile) {
 int get_tile_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
 
     if(is_flat) {
-        return tile->num_pins + get_total_num_tile_pins(tile);
+        return tile->num_pins + get_total_num_tile_internal_pins(tile);
     } else {
         VTR_ASSERT(is_flat == false);
         return tile->num_pins;

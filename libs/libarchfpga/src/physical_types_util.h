@@ -160,7 +160,8 @@ int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_ti
 std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type_ptr physical_tile, int pin);
 
 ///@brief Returns the name of the pin_index'th pin on the specified block type
-std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_index);
+// #TODO: is_flat shouldn't have a default value - This should be modified ASAP!
+std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_index, bool is_flat = false);
 
 ///@brief Returns the name of the class_index'th pin class on the specified block type
 std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_type_ptr type, int class_index);
@@ -375,9 +376,9 @@ int get_pin_logical_num_from_pin_physical_num(t_physical_tile_type_ptr physical_
 
 std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node* pb_graph_node);
 
-int get_total_num_sub_tile_pins(const t_sub_tile* sub_tile);
+int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile);
 
-int get_total_num_tile_pins(t_physical_tile_type_ptr tile);
+int get_total_num_tile_internal_pins(t_physical_tile_type_ptr tile);
 
 int get_tile_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 

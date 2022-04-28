@@ -871,7 +871,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     rr_graph_externals(segment_inf, *wire_to_rr_ipin_switch, base_cost_type);
 
-    check_rr_graph(graph_type, grid, types);
+    check_rr_graph(graph_type, grid, types, is_flat);
 
     /* Free all temp structs */
     if (seg_details) {
@@ -1363,7 +1363,7 @@ static std::function<void(t_chan_width*)>   alloc_and_load_rr_graph(RRGraphBuild
         }
     }
 
-    /* Build opins */
+    /* Build opins - Connect opins to  the channels*/
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
             for (e_side side : SIDES) {
@@ -3248,7 +3248,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
 }
 
 /* TODO: This function should adapt RRNodeId */
-std::string describe_rr_node(int inode) {
+std::string describe_rr_node(int inode, bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -3271,7 +3271,7 @@ std::string describe_rr_node(int inode) {
         }
     } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
         auto type = device_ctx.grid[rr_graph.node_xlow(RRNodeId(inode))][rr_graph.node_ylow(RRNodeId(inode))].type;
-        std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(RRNodeId(inode)));
+        std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(RRNodeId(inode)), is_flat);
 
         msg += vtr::string_fmt(" pin: %d pin_name: %s",
                                rr_graph.node_pin_num(RRNodeId(inode)),
