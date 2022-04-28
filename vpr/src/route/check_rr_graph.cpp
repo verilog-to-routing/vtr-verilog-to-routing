@@ -208,11 +208,11 @@ void check_rr_graph(const t_graph_type graph_type,
         size_t inode = (size_t)rr_node;
         t_rr_type rr_type = rr_graph.node_type(rr_node);
         // #TODO: I just insert this to exclude internal pins. For now, I am not sure what the following checks are doing!
+        int ptc_num = rr_graph.node_ptc_num(rr_node);
+        int xlow = rr_graph.node_xlow(rr_node);
+        int ylow = rr_graph.node_ylow(rr_node);
+        auto type = device_ctx.grid[xlow][ylow].type;
         if(rr_type == IPIN || rr_type == OPIN) {
-            int ptc_num = rr_graph.node_ptc_num(rr_node);
-            int xlow = rr_graph.node_xlow(rr_node);
-            int ylow = rr_graph.node_ylow(rr_node);
-            auto type = device_ctx.grid[xlow][ylow].type;
             auto pb_pin = get_pb_pin_from_pin_physical_num(type, ptc_num);
             if(!pb_pin->is_root_block_pin())
                 continue;
@@ -226,7 +226,6 @@ void check_rr_graph(const t_graph_type graph_type,
                  */
                 bool is_chain = false;
                 if (rr_type == IPIN) {
-                    t_physical_tile_type_ptr type = device_ctx.grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
                     for (const t_fc_specification& fc_spec : types[type->index].fc_specs) {
                         if (fc_spec.fc_value == 0 && fc_spec.seg_index == 0) {
                             is_chain = true;
@@ -258,9 +257,12 @@ void check_rr_graph(const t_graph_type graph_type,
                             }
                         }
                     } else {
-                        if()
-                        VTR_LOG_ERROR("in check_rr_graph: node %d (%s) has no fanin.\n",
-                                      inode, rr_graph.node_type_string(rr_node));
+                        // #TODO: This if statement is required since there are some rr_nodes which are created due to adding type->pin_num offset
+                        // to the notes ptc. This needs to be solved
+                        if(ptc_num < type->num_pins) {
+                            VTR_LOG_ERROR("in check_rr_graph: node %d (%s) has no fanin.\n",
+                                          inode, rr_graph.node_type_string(rr_node));
+                        }
                     }
                 } else if (!is_chain && !is_fringe_warning_sent) {
                     VTR_LOG_WARN(
