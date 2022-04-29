@@ -67,7 +67,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
                 break;
             case e_circuit_format::EDIF:
                 netlist = read_edif(circuit_format, circuit_file, user_models, library_models);
-                show_circuit_stats(netlist);
+               // show_circuit_stats(netlist);
                // netlist = read_edif(circuit_format, circuit_file);
                 break;
 
@@ -85,6 +85,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_ORIG)) {
         print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_ORIG), netlist);
     }
+
 
     process_circuit(netlist,
                     const_gen_inference,
@@ -159,10 +160,15 @@ static void process_circuit(AtomNetlist& netlist,
 
 static void show_circuit_stats(const AtomNetlist& netlist) {
     std::map<std::string, size_t> block_type_counts;
-
+    for (auto net_id : netlist.nets()) {
+    	 const std::string& in_blk = netlist.net_name(net_id  );
+    	        printf(" net created is given as in read circuit                                               ::%s\n", in_blk.c_str());
+    }
     //Count the block statistics
     for (auto blk_id : netlist.blocks()) {
         const t_model* blk_model = netlist.block_model(blk_id);
+        const std::string& in_blk = netlist.block_name(blk_id);
+        printf(" block created is given as in read circuit                                               ::%s\n", in_blk.c_str());
         if (blk_model->name == std::string(MODEL_NAMES)) {
             //LUT
             size_t lut_size = 0;
@@ -188,6 +194,8 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
     //Count the net statistics
     std::map<std::string, double> net_stats;
     for (auto net_id : netlist.nets()) {
+    	 const std::string& in_blk = netlist.net_name(net_id  );
+    	 printf(" nets given as is given as in read circuit::%s\n", in_blk.c_str());
         double fanout = netlist.net_sinks(net_id).size();
 
         net_stats["Max Fanout"] = std::max(net_stats["Max Fanout"], fanout);

@@ -948,6 +948,7 @@ bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk_id, s
 
     //An output is only removable if it has no fan-in
     for (AtomPinId pin_id : netlist.block_input_pins(blk_id)) {
+
         if (!pin_id) continue;
         AtomNetId net_id = netlist.pin_net(pin_id);
         if (net_id) {
