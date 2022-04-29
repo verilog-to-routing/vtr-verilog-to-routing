@@ -134,3 +134,9 @@ tags
 .history
 #eclipse project
 .project
+
+#
+# CLION
+#
+.idea
+cmake-build-debug
