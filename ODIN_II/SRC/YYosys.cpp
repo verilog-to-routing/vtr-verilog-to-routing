@@ -250,10 +250,14 @@ void YYosys::execute() {
         // Read the hardware decription Verilog circuits
         // FOR loop enables include feature for Yosys+Odin (multiple Verilog input files)
         for (auto verilog_circuit : this->verilog_circuits)
-            run_pass(std::string("read_verilog -nolatches " + verilog_circuit));
+            run_pass(std::string("read_verilog -sv -nolatches " + verilog_circuit));
 
         // Check whether cells match libraries and find top module
-        run_pass(std::string("hierarchy -check -auto-top -purge_lib"));
+        if (global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED) {
+            run_pass(std::string("hierarchy -check -top " + global_args.top_level_module_name.value() + " -purge_lib"));
+        } else {
+            run_pass(std::string("hierarchy -check -auto-top -purge_lib"));
+        }
 
         // Use a readable name convention
         run_pass(std::string("autoname"));

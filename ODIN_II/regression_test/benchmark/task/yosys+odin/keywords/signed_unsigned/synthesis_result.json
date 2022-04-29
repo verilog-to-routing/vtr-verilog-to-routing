@@ -16,26 +16,26 @@
     "signed_unsigned/signed_to_unsigned/no_arch": {
         "test_name": "signed_unsigned/signed_to_unsigned/no_arch",
         "verilog": "signed_to_unsigned.v",
-        "exit": 134,
-        "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
-        ]
+        "Pi": 4,
+        "Po": 6,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "signed_unsigned/unsigned_to_signed/no_arch": {
         "test_name": "signed_unsigned/unsigned_to_signed/no_arch",
         "verilog": "unsigned_to_signed.v",
-        "exit": 134,
-        "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
-        ]
+        "Pi": 4,
+        "Po": 6,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "signed_unsigned/unsigned_to_unsigned/no_arch": {
         "test_name": "signed_unsigned/unsigned_to_unsigned/no_arch",
         "verilog": "unsigned_to_unsigned.v",
-        "exit": 134,
-        "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
-        ]
+        "Pi": 4,
+        "Po": 6,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "DEFAULT": {
         "test_name": "n/a",
