@@ -149,8 +149,6 @@ static void add_rr_ipin_and_opin(RRGraphBuilder& rr_graph_builder,
                                  const int height_offset,
                                  const e_side side);
 
-static std::vector<const t_pb_graph_pin*> get_mode_pins(const t_pb_graph_node* pb_graph_node);
-
 static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   const RRGraphView& rr_graph,
                                   const int i,
@@ -250,7 +248,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                    const int delayless_switch,
                                    const DeviceGrid& grid);
 
-static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
+static void initialize_src_sink_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                                    const int i,
                                    const int j,
                                    t_rr_edge_info_set& rr_edges_to_create,
@@ -1350,7 +1348,7 @@ static std::function<void(t_chan_width*)>   alloc_and_load_rr_graph(RRGraphBuild
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
             if(is_flat)
-                build_rr_sinks_sources_flat(rr_graph_builder, i, j, rr_edges_to_create,
+                initialize_src_sink_pins_rr_graph(rr_graph_builder, i, j, rr_edges_to_create,
                                             delayless_switch, grid);
             else
                 build_rr_sinks_sources(rr_graph_builder, i, j, rr_edges_to_create,
@@ -1724,36 +1722,9 @@ static void add_rr_ipin_and_opin(RRGraphBuilder& rr_graph_builder,
 
 }
 
-static std::vector<const t_pb_graph_pin*> get_mode_pins(const t_pb_graph_node* pb_graph_node) {
-
-    std::vector<const t_pb_graph_pin*> pins;
-    auto pb_type = pb_graph_node->pb_type;
-
-    if(!pb_graph_node->is_primitive()) {
-        int mode_num = pb_graph_node->max_input_pin_mode_num;
-        int num_pb_type = pb_type->modes[mode_num].num_pb_type_children;
-        auto mode = pb_type->modes[mode_num];
-
-        for (int pb_type_idx = 0; pb_type_idx < num_pb_type; pb_type_idx++) {
-            int num_pb = mode.pb_type_children[pb_type_idx].num_pb;
-            for (int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-                auto child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_num][pb_type_idx][pb_idx]);
-                auto child_pins = get_mode_pins(child_pb_graph_node);
-                pins.insert(pins.end(), std::begin(child_pins), std::end(child_pins));
-            }
-        }
-    }
-
-    auto node_pins = get_pb_graph_node_pins(pb_graph_node);
-    pins.insert(pins.end(), std::begin(node_pins), std::end(node_pins));
-
-    return pins;
-
-}
 
 
-
-static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
+static void initialize_src_sink_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                                    const int i,
                                    const int j,
                                    t_rr_edge_info_set& rr_edges_to_create,
@@ -1778,11 +1749,7 @@ static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
         auto logical_block = get_max_input_pin_eq_site(sub_tile.equivalent_sites);
         for(int sub_tile_cap = 0; sub_tile_cap < sub_tile.capacity.total(); sub_tile_cap++) {
             auto pb_graph_head = logical_block->pb_graph_head;
-            auto classes = get_mode_primitives_classes(physical_tile,
-                                                       &sub_tile,
-                                                       logical_block,
-                                                       sub_tile_cap,
-                                                       pb_graph_head);
+            auto classes = get_tile_primitive_classes_map(physical_tile);
             /* Initialize SINK/SOURCE nodes and connect them to their respective pins */
             for(auto class_pair : classes) {
                 int class_id = class_pair.first;
@@ -1802,8 +1769,10 @@ static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
             }
 
             /* Initialize IPIN/OPIN */
-            auto pins = get_mode_pins(pb_graph_head);
-            for (auto pin : pins) {
+            auto pins_idx_map = logical_block->pb_pin_idx_bimap;
+            for (auto pin_idx_map : pins_idx_map) {
+                auto pin = pin_idx_map.first;
+                auto pin_logical_num = pin_idx_map.second;
                 int max_width_offset;
                 int max_height_offset;
                 int pin_ptc = get_pb_pin_physical_num(physical_tile,

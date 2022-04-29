@@ -207,11 +207,10 @@ void check_rr_graph(const t_graph_type graph_type,
     for (const RRNodeId& rr_node : device_ctx.rr_graph.nodes()) {
         size_t inode = (size_t)rr_node;
         t_rr_type rr_type = rr_graph.node_type(rr_node);
-        // #TODO: I just insert this to exclude internal pins. For now, I am not sure what the following checks are doing!
         int ptc_num = rr_graph.node_ptc_num(rr_node);
         int xlow = rr_graph.node_xlow(rr_node);
         int ylow = rr_graph.node_ylow(rr_node);
-        auto type = device_ctx.grid[xlow][ylow].type;
+        t_physical_tile_type_ptr type = device_ctx.grid[xlow][ylow].type;
         if(rr_type == IPIN || rr_type == OPIN) {
             auto pb_pin = get_pb_pin_from_pin_physical_num(type, ptc_num);
             if(!pb_pin->is_root_block_pin())
@@ -257,9 +256,7 @@ void check_rr_graph(const t_graph_type graph_type,
                             }
                         }
                     } else {
-                        // #TODO: This if statement is required since there are some rr_nodes which are created due to adding type->pin_num offset
-                        // to the notes ptc. This needs to be solved
-                        if(ptc_num < type->num_pins) {
+                        if (ptc_num < type->num_pins) {
                             VTR_LOG_ERROR("in check_rr_graph: node %d (%s) has no fanin.\n",
                                           inode, rr_graph.node_type_string(rr_node));
                         }
