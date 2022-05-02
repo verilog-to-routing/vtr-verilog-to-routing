@@ -134,12 +134,10 @@ TclDynList::TclDynList(Tcl_Interp* interp, Tcl_Obj* obj)
     if (obj_type == nullptr)
         return;
 
-    if (obj_type == nullptr || std::strcmp(obj_type->name, "list")) {
-        Tcl_Obj* item;
+    if (obj_type == nullptr || std::strcmp(obj_type->name, "list"))
         this->_obj = Tcl_NewListObj(1, &obj);
-    } else {
+    else
         this->_obj = obj;
-    }
 }
 
 TclDynList tcl_obj_getdynlist (TclClient* client, Tcl_Obj* obj) {
@@ -151,7 +149,7 @@ Tcl_Obj* TclDynList::operator[](size_t idx) {
     Tcl_Obj* objp;
 
     Tcl_ListObjLength(this->_interp, this->_obj, &count);
-    if (idx >= count)
+    if (idx >= size_t(count))
         return nullptr;
     Tcl_ListObjIndex(this->_interp, this->_obj, idx, &objp);
     

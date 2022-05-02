@@ -87,7 +87,7 @@ class TclPhysicalConstraintsClient : public TclClient {
 
         std::vector<const char*> port_names;
 
-        for (size_t i = 1; i < objc; i++) {
+        for (int i = 1; i < objc; i++) {
             const char* pin_name = Tcl_GetString(objvp[i]);
             if (pin_name == nullptr)
                 return this->_ret_error("get_ports: pin_name should be a string.");
@@ -98,6 +98,8 @@ class TclPhysicalConstraintsClient : public TclClient {
     }
 
     int get_cells(int objc, Tcl_Obj* const objvp[]) {
+        (void)objc;
+        (void)objvp;
         return this->_ret_error("get_cells: unimplemented");
     }
 
@@ -167,7 +169,6 @@ class TclPhysicalConstraintsClient : public TclClient {
     }
 
     int _do_set_property_iostandard(const char* io_standard, TclList<AtomPortId>& ports) {
-        auto iterator = ports.begin();
         for (auto port : ports) {
             if (port == nullptr)
                 return this->_ret_error("set_property: port_name of IOSTANDARD should have a `AtomPortId` type.");
@@ -190,7 +191,7 @@ class TclPhysicalConstraintsClient : public TclClient {
         }
 
         auto port_list = this->_list<AtomPortId, decltype(port_ids)>(this, std::move(port_ids));
-        this->_ret_list<AtomPortId>(reinterpret_cast<void*>(this), port_list);
+        return this->_ret_list<AtomPortId>(port_list);
     }
 
     int _do_get_port(const char* pin_name, AtomPortId* port_) {

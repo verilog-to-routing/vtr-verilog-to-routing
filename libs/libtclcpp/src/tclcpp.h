@@ -159,7 +159,8 @@ class TclList {
      * Client must point to the concrete TclClient instance.
      */
     template<typename Container>
-    TclList(Tcl_Interp* interp, void* client, Container&& elements) {
+    TclList(Tcl_Interp* interp, void* client, Container&& elements) 
+        : _interp(interp) {
         std::vector<Tcl_Obj*> tcl_objs;
         for (auto&& elem : elements) {
             Tcl_Obj* obj = Tcl_MoveCppObject(client, elem);
@@ -179,12 +180,10 @@ class TclList {
         if (obj_type == nullptr)
             return;
 
-        if (obj_type == nullptr || std::strcmp(obj_type->name, "list")) {
-            Tcl_Obj* item;
+        if (obj_type == nullptr || std::strcmp(obj_type->name, "list"))
             this->_obj = Tcl_NewListObj(1, &obj);
-        } else {
+        else
             this->_obj = obj;
-        }
     }
 
     /**
@@ -239,8 +238,8 @@ class TclList {
 
         Iterator(Tcl_Interp* interp, Tcl_Obj* obj, int idx)
             : _interp(interp)
-            , _obj(obj)
-            , _idx(idx) {}
+            , _idx(idx) 
+            , _obj(obj) {}
 
       protected:
         Tcl_Interp* _interp;
@@ -342,8 +341,8 @@ class TclDynList {
 
         inline Iterator(Tcl_Interp* interp, Tcl_Obj* obj, int idx)
             : _interp(interp)
-            , _obj(obj)
-            , _idx(idx) {}
+            , _idx(idx)
+            , _obj(obj) {}
 
       protected:
         Tcl_Interp* _interp;
@@ -486,7 +485,7 @@ class TclClient {
     }
 
     template<typename T>
-    int _ret_list(void* this_, TclList<T>& list) {
+    int _ret_list(TclList<T>& list) {
         this->object = list.tcl_obj();
         this->cmd_status = e_TclCommandStatus::TCL_CMD_SUCCESS_LIST;
 
