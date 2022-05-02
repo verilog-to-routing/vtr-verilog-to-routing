@@ -385,7 +385,6 @@ struct ArchReader {
                    const char* name,
                    t_sub_tile& sub_tile,
                    t_physical_tile_type& type) {
-
         vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
         auto ltype = get_type_by_name<t_logical_block_type>(name, ltypes_);
 
@@ -446,7 +445,7 @@ struct ArchReader {
             auto alt_sites_pins = site_in_tile->getAltPinsToPrimaryPins();
 
             if (take_sites_.count(site_type.getName()) != 0) {
-                std::function<int(int)> map = [](int x){ return x; };
+                std::function<int(int)> map = [](int x) { return x; };
                 add_ltype(map, sub_tile.name, sub_tile, type);
             }
 
@@ -458,7 +457,7 @@ struct ArchReader {
 
                 auto pin_map = alt_sites_pins[i];
 
-                std::function<int(int)> map = [pin_map, site_type, port_name_to_sub_tile_idx, this](int x){
+                std::function<int(int)> map = [pin_map, site_type, port_name_to_sub_tile_idx, this](int x) {
                     auto pin = site_type.getPins()[pin_map.getPins()[x]];
                     return (*port_name_to_sub_tile_idx)[str(pin.getName())];
                 };
@@ -466,7 +465,7 @@ struct ArchReader {
                 add_ltype(map, str(alt_site.getName()).c_str(), sub_tile, type);
             }
         } else {
-            std::function<int(int)> map = [](int x){ return x; };
+            std::function<int(int)> map = [](int x) { return x; };
             add_ltype(map, sub_tile.name, sub_tile, type);
         }
 
@@ -743,7 +742,7 @@ struct ArchReader {
                 if (found)
                     take_sites_.insert(site_type.getName());
 
-                for(auto alt_site_idx : site_type.getAltSiteTypes()) {
+                for (auto alt_site_idx : site_type.getAltSiteTypes()) {
                     auto alt_site = site_types[alt_site_idx];
                     found = false;
                     for (auto bel : alt_site.getBels()) {
@@ -1891,7 +1890,7 @@ struct ArchReader {
             for (auto site_type : tile.getSiteTypes()) {
                 auto site_ = siteTypeList[site_type.getPrimaryType()];
                 has_valid_sites |= take_sites_.count(site_.getName()) != 0;
-                for (auto alt_site_idx : site_.getAltSiteTypes()){
+                for (auto alt_site_idx : site_.getAltSiteTypes()) {
                     auto alt_site_ = siteTypeList[alt_site_idx];
                     has_valid_sites |= take_sites_.count(alt_site_.getName()) != 0;
                 }
@@ -1936,7 +1935,7 @@ struct ArchReader {
 
             auto site = siteTypeList[site_in_tile.getPrimaryType()];
             site_taken |= take_sites_.count(site.getName()) != 0;
-            for (auto alt_site_idx : site.getAltSiteTypes()){
+            for (auto alt_site_idx : site.getAltSiteTypes()) {
                 auto alt_site = siteTypeList[alt_site_idx];
                 site_taken |= take_sites_.count(alt_site.getName()) != 0;
             }

@@ -1311,7 +1311,7 @@ struct InterchangeRRGraphBuilder {
 
             if (found)
                 break;
-            for(auto alt_site_idx : site_type.getAltSiteTypes()) {
+            for (auto alt_site_idx : site_type.getAltSiteTypes()) {
                 auto alt_site = site_types[alt_site_idx];
                 for (auto bel : alt_site.getBels()) {
                     auto bel_name = bel.getName();
