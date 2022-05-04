@@ -24,7 +24,7 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
     }
 
 	if(helper_ctx.num_used_type_instances[block_type] ==  num_instances) {
-		VTR_LOG("The utilization fo block_type %s is 100%. No space for new clusters\n", block_type->name);
+		VTR_LOG("The utilization of block_type %s is 100%. No space for new clusters\n", block_type->name);
 		VTR_LOG("Atom %d move aborted\n", atom_id);
 		return false;
 	}

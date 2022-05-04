@@ -6,11 +6,14 @@
 #include "cluster_router.h"
 #include "cluster_placement.h"
 
+#include <cstring>
 static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
 static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin);
 static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type, t_pb_routes& pb_route);
-static int count_children_pbs(const t_pb* pb);
+static bool count_children_pbs(const t_pb* pb);
 
+
+const char* name_suffix = "_m";
 ClusterBlockId atom_to_cluster(const AtomBlockId& atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
     return (atom_ctx.lookup.atom_clb(atom));
@@ -43,17 +46,33 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
 	if(is_cluster_legal) {
 		t_pb* temp = const_cast<t_pb*>(atom_ctx.lookup.atom_pb(atom_id));
 		t_pb* next = temp->parent_pb;
-        
+        //char* atom_name = vtr::strdup(temp->name);
+		bool has_more_children;
+
 		revert_place_atom_block(atom_id, router_data);
+		//delete atom pb
 		cleanup_pb(temp);
 
-		int num_children_pbs = count_children_pbs(next);
-		while(num_children_pbs == 0) {
+		has_more_children  = count_children_pbs(next);
+		//keep deleting the parent pbs if they were created only for the removed atom
+		while(!has_more_children) {
 			temp = next;
 			next = next->parent_pb;
 			cleanup_pb(temp);
-			num_children_pbs = count_children_pbs(next);
+			has_more_children = count_children_pbs(next);
 		}
+
+		//if the parents' names are the same as the removed atom names,
+		//update the name to prevent double the name when creating a new cluster for 
+		// the removed atom
+		/*
+		while(next != nullptr && *(next->name) == *atom_name) {
+			next->name = vtr::strdup(child_name);
+			if(next->parent_pb == nullptr)
+			next = next->parent_pb;
+		}
+		*/
+
 		cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
 		cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
 	}
@@ -144,8 +163,9 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
         if (pb->name != nullptr) {
             free(pb->name);
         }
-        pb->name = vtr::strdup(root_atom_name.c_str());
-        clb_index = cluster_ctx.clb_nlist.create_block(root_atom_name.c_str(), pb, type);
+        std::string new_name = root_atom_name + name_suffix;
+        pb->name = vtr::strdup(new_name.c_str());
+        clb_index = cluster_ctx.clb_nlist.create_block(new_name.c_str(), pb, type);
         helper_ctx.total_clb_num++;
 
         cluster_ctx.clb_nlist.block_pb(clb_index)->pb_route = alloc_and_load_pb_route((*router_data)->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node);
@@ -201,8 +221,9 @@ void fix_cluster_net_after_moving(const AtomBlockId& atom_id,
 
 	for(auto& atom_blk : cluster_to_atoms(new_clb))
 		fix_atom_pin_mapping(atom_blk);
+
 	
-	cluster_ctx.clb_nlist.compress();
+	cluster_ctx.clb_nlist.remove_and_compress();
 	load_internal_to_block_net_nums(cluster_ctx.clb_nlist.block_type(old_clb), cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route);
 	load_internal_to_block_net_nums(cluster_ctx.clb_nlist.block_type(new_clb), cluster_ctx.clb_nlist.block_pb(new_clb)->pb_route);
 }
@@ -257,7 +278,6 @@ void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
 	int j,k, ipin, rr_node_index;
 
 	ipin = 0;
-
 	for (j = 0; j < num_input_ports; j++) {
 		ClusterPortId input_port_id = cluster_ctx.clb_nlist.find_port(clb_index, block_type->pb_type->ports[j].name);
 		for (k = 0; k < pb->pb_graph_node->num_input_pins[j]; k++) {
@@ -337,7 +357,6 @@ void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
 		}
 
 	}
-	//cluster_ctx.clb_nlist.verify();
 }
 
 
@@ -361,7 +380,7 @@ void check_net_absorbtion(const AtomNetId atom_net_id,
 	else {
 		previously_absorbed = false;
 		for(auto& cluster_pin : cluster_ctx.clb_nlist.net_pins(clb_net_id)) {
-			if(cluster_ctx.clb_nlist.pin_block(cluster_pin) == old_clb) {
+			if(cluster_pin && cluster_ctx.clb_nlist.pin_block(cluster_pin) == old_clb) {
 				cluster_pin_id = cluster_pin;
 				break;
 			}
@@ -503,17 +522,16 @@ static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin) {
     pb_route[driver].sink_pb_pin_ids.push_back(ipin);
 }
 
-static int count_children_pbs(const t_pb* pb) {
-
+static bool count_children_pbs(const t_pb* pb) {
 	if(pb == nullptr)
 		return 0;
 
-	int num_pbs = 0;
 	for (int i = 0; i < pb->get_num_child_types(); i++) {
         for (int j = 0; j < pb->get_num_children_of_type(i); j++) {
-          	if(pb->child_pbs[i] != nullptr && pb->child_pbs[i][j].name != nullptr)
-            	++num_pbs;
+          	if(pb->child_pbs[i] != nullptr && pb->child_pbs[i][j].name != nullptr) {
+            	return true;
+          	}
         }
     }
-    return num_pbs;
+    return false;
 }
