@@ -34,8 +34,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   std::vector<t_segment_inf>& segment_inf,
                                   ClbNetPinsMatrix<float>& net_delay,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                  std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                                  std::vector<t_lb_type_rr_node>* lb_type_rr_graphs);
+                                  std::shared_ptr<RoutingDelayCalculator> delay_calc);
 
 t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_type graph_directionality);
 

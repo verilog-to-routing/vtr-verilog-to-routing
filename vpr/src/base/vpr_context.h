@@ -28,6 +28,7 @@
 #include "metadata_storage.h"
 #include "vpr_constraints.h"
 
+
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
  *
@@ -289,7 +290,8 @@ struct ClusteringHelperContext : public Context {
     int feasible_block_array_size;
 
     int total_clb_num;
-    
+    std::vector<t_lb_type_rr_node>* lb_type_rr_graphs;
+
     ~ClusteringHelperContext() {
         free(primitives_list);
         free_cluster_placement_stats(cluster_placement_stats);

@@ -425,8 +425,7 @@ void try_place(const t_placer_opts& placer_opts,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_direct_inf* directs,
-               int num_directs,
-               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+               int num_directs) {
     /* Does almost all the work of placing a circuit.  Width_fac gives the   *
      * width of the widest channel.  Place_cost_exp says what exponent the   *
      * width should be taken to when calculating costs.  This allows a       *
@@ -435,6 +434,7 @@ void try_place(const t_placer_opts& placer_opts,
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     const auto& p_timing_ctx = g_placer_ctx.timing();
     const auto& p_runtime_ctx = g_placer_ctx.runtime();
@@ -514,34 +514,6 @@ void try_place(const t_placer_opts& placer_opts,
 
 /************* Elgammal ********************/
 
-    VTR_LOG("$$$$$$$$$$$$$$$$$$$$$%zu\n",atom_ctx.atom_molecules.size());
-
-/*
-    for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        VTR_LOG("\n# block id = %d\n", blk_id);
-        VTR_LOG("type = %d\n atoms:\n ", cluster_ctx.clb_nlist.block_type(blk_id)->index);
-        for(auto atom : cluster_to_atoms(blk_id)) {
-            t_pack_molecule* cur_molecule = atom_ctx.atom_molecules.find(atom)->second;
-            
-            VTR_LOG("\tatom = %d, mol_type=%d\n",atom, cur_molecule->root);
-            //if(cur_molecule->type == MOLECULE_FORCED_PACK || cur_molecule->type == MOLECULE_SINGLE_ATOM)
-            //if(cur_molecule->valid)
-            VTR_LOG("HEEEEEEEEEEEEEEEEEEEEEEEEEH\n");
-        }
-    }
-*/
-
-/*
-    for(auto atom_id : atom_ctx.nlist.blocks()) {
-        //VTR_LOG("BBBBBBBB: %zu\n", atom_ctx.atom_molecules.find(atom_id)->second->atom_block_ids[0]);
-        auto itr = atom_ctx.atom_molecules.find(atom_id);
-        if(itr == atom_ctx.atom_molecules.end())
-            VTR_LOG("CCC: %zu, not found",atom_id);
-        else
-            VTR_LOG("CCC: %zu, %zu\n", atom_id, itr->second->atom_block_ids[0]);
-    }
-*/
-
     for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         VTR_LOG("\n# block id = %d\n", blk_id);
         VTR_LOG("type = %d\n atoms:\n ", cluster_ctx.clb_nlist.block_type(blk_id)->index);
@@ -560,11 +532,32 @@ void try_place(const t_placer_opts& placer_opts,
             VTR_LOG("\t port = %d\n", port);
     }
 
+    auto& helper_ctx = g_vpr_ctx.helper();
+    bool is_removed = move_atom_to_new_cluster(AtomBlockId(4125), helper_ctx.lb_type_rr_graphs);
+    if(is_removed) {
+        place_ctx.block_locs.resize(place_ctx.block_locs.size()+1);
+        VTR_LOG("@@@@ Atom is removed\n");
+    }
 
-    std::vector<AtomBlockId> atoms_before = cluster_to_atoms(ClusterBlockId(0));
-    bool is_removed = move_atom_to_new_cluster(AtomBlockId(3), lb_type_rr_graphs);
-    VTR_LOG("@@@@ Atom is removed? %d\n", is_removed);
-    std::vector<AtomBlockId> atoms_after = cluster_to_atoms(ClusterBlockId(0));
+    is_removed = move_atom_to_new_cluster(AtomBlockId(550), helper_ctx.lb_type_rr_graphs);
+    if(is_removed) {
+        place_ctx.block_locs.resize(place_ctx.block_locs.size()+1);
+        VTR_LOG("@@@@ Atom is removed\n");
+    }
+
+    is_removed = move_atom_to_new_cluster(AtomBlockId(3657), helper_ctx.lb_type_rr_graphs);
+    if(is_removed) {
+        place_ctx.block_locs.resize(place_ctx.block_locs.size()+1);
+        VTR_LOG("@@@@ Atom is removed\n");
+    }
+
+    is_removed = move_atom_to_new_cluster(AtomBlockId(4290), helper_ctx.lb_type_rr_graphs);
+    if(is_removed) {
+        place_ctx.block_locs.resize(place_ctx.block_locs.size()+1);
+        VTR_LOG("@@@@ Atom is removed\n");
+    }
+
+    
 
 /*
     for (auto& blk_id : cluster_ctx.clb_nlist.blocks()) {

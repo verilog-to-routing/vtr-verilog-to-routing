@@ -61,8 +61,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   std::vector<t_segment_inf>& segment_inf,
                                   ClbNetPinsMatrix<float>& net_delay,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                  std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                                  std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+                                  std::shared_ptr<RoutingDelayCalculator> delay_calc) {
     vtr::vector<ClusterNetId, t_trace*> best_routing; /* Saves the best routing found so far. */
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
@@ -179,7 +178,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
             placer_opts.place_chan_width = current;
             try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
                       arch->Chans, det_routing_arch, segment_inf,
-                      arch->Directs, arch->num_directs, lb_type_rr_graphs);
+                      arch->Directs, arch->num_directs);
         }
         success = try_route(current,
                             router_opts,
@@ -311,7 +310,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                 placer_opts.place_chan_width = current;
                 try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
                           arch->Chans, det_routing_arch, segment_inf,
-                          arch->Directs, arch->num_directs, lb_type_rr_graphs);
+                          arch->Directs, arch->num_directs);
             }
             success = try_route(current,
                                 router_opts,
