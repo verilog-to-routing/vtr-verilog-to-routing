@@ -224,7 +224,7 @@
     <!-- DSP Primitives -->
 
     <!-- independent multiplier mode -->
-    <model name="fourteennm_mac.opmode{m18×18_full}.input_type{reg}.output_type{comb}">
+    <model name="fourteennm_mac.opmode{m18x18_full}.input_type{reg}.output_type{comb}">
       <input_ports>
         <port name="clr" clock="clk"/>
         <port name="clk" is_clock="1"/>
@@ -249,7 +249,7 @@
       </output_ports>    
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_full}.input_type{comb}.output_type{reg}">
+    <model name="fourteennm_mac.opmode{m18x18_full}.input_type{comb}.output_type{reg}">
       <input_ports>
         <port name="clr" clock="clk"/>
         <port name="clk" is_clock="1"/>
@@ -274,7 +274,7 @@
       </output_ports>    
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_full}.input_type{comb}.output_type{comb}">
+    <model name="fourteennm_mac.opmode{m18x18_full}.input_type{comb}.output_type{comb}">
       <input_ports>
         <port name="clr" combinational_sink_ports="resulta resultb"/>
         <port name="ax" combinational_sink_ports="resulta dftout"/>
@@ -298,7 +298,7 @@
       </output_ports>    
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_full}.input_type{reg}.output_type{reg}">
+    <model name="fourteennm_mac.opmode{m18x18_full}.input_type{reg}.output_type{reg}">
       <input_ports>
         <port name="clr" clock="clk"/>
         <port name="clk" is_clock="1"/>
@@ -324,7 +324,7 @@
     </model>
 
     <!-- multiplier adder sum mode -->
-    <model name="fourteennm_mac.opmode{m18×18_sumof2}.input_type{reg}.output_type{comb}">
+    <model name="fourteennm_mac.opmode{m18x18_sumof2}.input_type{reg}.output_type{comb}">
       <input_ports>
         <port name="accumulate" clock="clk"/>
         <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
@@ -354,7 +354,7 @@
       </output_ports>
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_sumof2}.input_type{comb}.output_type{reg}">
+    <model name="fourteennm_mac.opmode{m18x18_sumof2}.input_type{comb}.output_type{reg}">
       <input_ports>
         <port name="accumulate" clock="clk"/>
         <port name="chainin" combinational_sink_ports="resulta chainout"/>
@@ -384,7 +384,7 @@
       </output_ports>
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_sumof2}.input_type{comb}.output_type{comb}">
+    <model name="fourteennm_mac.opmode{m18x18_sumof2}.input_type{comb}.output_type{comb}">
       <input_ports>
         <port name="accumulate" combinational_sink_ports="resulta chainout dftout"/>
         <port name="chainin" combinational_sink_ports="resulta chainout dftout"/>
@@ -413,7 +413,7 @@
       </output_ports>
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_sumof2}.input_type{reg}.output_type{reg}">
+    <model name="fourteennm_mac.opmode{m18x18_sumof2}.input_type{reg}.output_type{reg}">
       <input_ports>
         <port name="accumulate" clock="clk"/>
         <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
@@ -445,7 +445,7 @@
 
     <!--  18x19 multiplication summed with 36-bit input -->
 
-    <model name="fourteennm_mac.opmode{m18×18_plus36}.input_type{reg}.output_type{comb}">
+    <model name="fourteennm_mac.opmode{m18x18_plus36}.input_type{reg}.output_type{comb}">
       <input_ports> 
         <port name="accumulate" clock="clk"/>
         <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
@@ -469,7 +469,7 @@
       </output_ports> 
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_plus36}.input_type{comb}.output_type{reg}">
+    <model name="fourteennm_mac.opmode{m18x18_plus36}.input_type{comb}.output_type{reg}">
       <input_ports> 
         <port name="accumulate" clock="clk"/>
         <port name="chainin" combinational_sink_ports="resulta chainout"/>
@@ -493,7 +493,7 @@
       </output_ports> 
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_plus36}.input_type{comb}.output_type{comb}">
+    <model name="fourteennm_mac.opmode{m18x18_plus36}.input_type{comb}.output_type{comb}">
       <input_ports> 
         <port name="accumulate" combinational_sink_ports="resulta chainout dftout"/>
         <port name="chainin" combinational_sink_ports="resulta chainout dftout"/>
@@ -517,7 +517,7 @@
       </output_ports> 
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_plus36}.input_type{reg}.output_type{reg}">
+    <model name="fourteennm_mac.opmode{m18x18_plus36}.input_type{reg}.output_type{reg}">
       <input_ports> 
         <port name="accumulate" clock="clk"/>
         <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
@@ -542,7 +542,7 @@
     </model>
 
     <!-- systolic fir mode -->  
-    <model name="fourteennm_mac.opmode{m18×18_systolic}.input_type{reg}.output_type{comb}">
+    <model name="fourteennm_mac.opmode{m18x18_systolic}.input_type{reg}.output_type{comb}">
       <input_ports> 
         <port name="accumulate" clock="clk"/>
         <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
@@ -572,7 +572,7 @@
       </output_ports> 
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_systolic}.input_type{comb}.output_type{reg}">
+    <model name="fourteennm_mac.opmode{m18x18_systolic}.input_type{comb}.output_type{reg}">
       <input_ports> 
         <port name="accumulate" clock="clk"/>
         <port name="chainin" combinational_sink_ports="resulta chainout"/>
@@ -602,7 +602,7 @@
       </output_ports> 
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_systolic}.input_type{comb}.output_type{comb}">
+    <model name="fourteennm_mac.opmode{m18x18_systolic}.input_type{comb}.output_type{comb}">
       <input_ports> 
         <port name="accumulate" combinational_sink_ports="resulta chainout dftout"/>
         <port name="chainin" combinational_sink_ports="resulta chainout dftout"/>
@@ -631,7 +631,7 @@
       </output_ports> 
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_systolic}.input_type{reg}.output_type{reg}">
+    <model name="fourteennm_mac.opmode{m18x18_systolic}.input_type{reg}.output_type{reg}">
       <input_ports> 
         <port name="accumulate" clock="clk"/>
         <port name="chainin" clock="clk" combinational_sink_ports="resulta chainout"/>
@@ -760,7 +760,7 @@
     </model>
 
     <!-- single 18x18 multiplier mode -->
-    <model name="fourteennm_mac.opmode{m18×18_top}.input_type{reg}.output_type{comb}">
+    <model name="fourteennm_mac.opmode{m18x18_top}.input_type{reg}.output_type{comb}">
       <input_ports>       
         <port name="clr" clock="clk"/>
         <port name="clk" is_clock="1"/>
@@ -780,7 +780,7 @@
       </output_ports> 
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_top}.input_type{comb}.output_type{reg}">
+    <model name="fourteennm_mac.opmode{m18x18_top}.input_type{comb}.output_type{reg}">
       <input_ports>       
         <port name="clr" clock="clk"/>
         <port name="clk" is_clock="1"/>
@@ -800,7 +800,7 @@
       </output_ports> 
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_top}.input_type{comb}.output_type{comb}">
+    <model name="fourteennm_mac.opmode{m18x18_top}.input_type{comb}.output_type{comb}">
       <input_ports>       
         <port name="clr" combinational_sink_ports="resulta"/>
         <port name="ax" combinational_sink_ports="resulta scanout dftout"/>
@@ -819,7 +819,7 @@
       </output_ports> 
     </model>
 
-    <model name="fourteennm_mac.opmode{m18×18_top}.input_type{reg}.output_type{reg}">
+    <model name="fourteennm_mac.opmode{m18x18_top}.input_type{reg}.output_type{reg}">
       <input_ports>       
         <port name="clr" clock="clk"/>
         <port name="clk" is_clock="1"/>
@@ -2282,10 +2282,10 @@
         -->
 
         <!-- independent multiplier mode -->
-        <mode name="m18×18_full.input_type{reg}.output_type{comb}">
-            <pb_type name="mac18×18_full" blif_model=".subckt fourteennm_mac.opmode{m18×18_full}.input_type{reg}.output_type{comb}" num_pb="1">
+        <mode name="m18x18_full.input_type{reg}.output_type{comb}">
+            <pb_type name="mac18x18_full" blif_model=".subckt fourteennm_mac.opmode{m18x18_full}.input_type{reg}.output_type{comb}" num_pb="1">
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="18"/>
                 <input name="ay" num_pins="19"/>
                 <input name="az" num_pins="18"/>
@@ -2307,37 +2307,37 @@
 
             <interconnect>
 
-                <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_full.scanin"/>
-                <direct name="scan_out" input="mac18×18_full.scanout" output="DSP.scanout[18:0]"/>
-                <direct name="dft_out" input="mac18×18_full.dftout" output="DSP.dftout"/>
+                <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18x18_full.scanin"/>
+                <direct name="scan_out" input="mac18x18_full.scanout" output="DSP.scanout[18:0]"/>
+                <direct name="dft_out" input="mac18x18_full.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_full.ay"/>
-                <direct name="az_in" input="DSP.datain[54:37]" output="mac18×18_full.az"/>
-                <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_full.bx"/>
-                <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_full.by"/>
-                <direct name="bz_in" input="DSP.datain[109:92]" output="mac18×18_full.bz"/>
+                <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_full.ax"/>
+                <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_full.ay"/>
+                <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_full.az"/>
+                <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_full.bx"/>
+                <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_full.by"/>
+                <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_full.bz"/>
 
-                <direct name="resulta_out" input="mac18×18_full.resulta" output="DSP.result[36:0]"/>
-                <direct name="resultb_out" input="mac18×18_full.resultb" output="DSP.result[73:37]"/>
+                <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
+                <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_full.clr"/>
-                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18×18_full.coefsela"/>
-                <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18×18_full.coefselb"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_full.clr"/>
+                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_full.coefsela"/>
+                <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_full.coefselb"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_full.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_full.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_full.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="mac18×18_full.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="mac18x18_full.clk"/>
 
             </interconnect>
         </mode>
 
-        <mode name="m18×18_full.input_type{comb}.output_type{reg}">
-            <pb_type name="mac18×18_full" blif_model=".subckt fourteennm_mac.opmode{m18×18_full}.input_type{comb}.output_type{reg}" num_pb="1">
+        <mode name="m18x18_full.input_type{comb}.output_type{reg}">
+            <pb_type name="mac18x18_full" blif_model=".subckt fourteennm_mac.opmode{m18x18_full}.input_type{comb}.output_type{reg}" num_pb="1">
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="18"/>
                 <input name="ay" num_pins="19"/>
                 <input name="az" num_pins="18"/>
@@ -2359,35 +2359,35 @@
 
             <interconnect>
 
-                <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_full.scanin"/>
-                <direct name="scan_out" input="mac18×18_full.scanout" output="DSP.scanout[18:0]"/>
-                <direct name="dft_out" input="mac18×18_full.dftout" output="DSP.dftout"/>
+                <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18x18_full.scanin"/>
+                <direct name="scan_out" input="mac18x18_full.scanout" output="DSP.scanout[18:0]"/>
+                <direct name="dft_out" input="mac18x18_full.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_full.ay"/>
-                <direct name="az_in" input="DSP.datain[54:37]" output="mac18×18_full.az"/>
-                <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_full.bx"/>
-                <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_full.by"/>
-                <direct name="bz_in" input="DSP.datain[109:92]" output="mac18×18_full.bz"/>
+                <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_full.ax"/>
+                <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_full.ay"/>
+                <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_full.az"/>
+                <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_full.bx"/>
+                <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_full.by"/>
+                <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_full.bz"/>
 
-                <direct name="resulta_out" input="mac18×18_full.resulta" output="DSP.result[36:0]"/>
-                <direct name="resultb_out" input="mac18×18_full.resultb" output="DSP.result[73:37]"/>
+                <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
+                <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_full.clr"/>
-                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18×18_full.coefsela"/>
-                <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18×18_full.coefselb"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_full.clr"/>
+                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_full.coefsela"/>
+                <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_full.coefselb"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_full.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_full.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_full.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="mac18×18_full.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="mac18x18_full.clk"/>
 
             </interconnect>
         </mode>
 
-        <mode name="m18×18_full.input_type{comb}.output_type{comb}">
-            <pb_type name="mac18×18_full" blif_model=".subckt fourteennm_mac.opmode{m18×18_full}.input_type{comb}.output_type{comb}" num_pb="1">
+        <mode name="m18x18_full.input_type{comb}.output_type{comb}">
+            <pb_type name="mac18x18_full" blif_model=".subckt fourteennm_mac.opmode{m18x18_full}.input_type{comb}.output_type{comb}" num_pb="1">
                 <input name="clr" num_pins="2"/>
                 <input name="ax" num_pins="18"/>
                 <input name="ay" num_pins="19"/>
@@ -2410,35 +2410,35 @@
 
             <interconnect>
 
-                <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_full.scanin"/>
-                <direct name="scan_out" input="mac18×18_full.scanout" output="DSP.scanout[18:0]"/>
-                <direct name="dft_out" input="mac18×18_full.dftout" output="DSP.dftout"/>
+                <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18x18_full.scanin"/>
+                <direct name="scan_out" input="mac18x18_full.scanout" output="DSP.scanout[18:0]"/>
+                <direct name="dft_out" input="mac18x18_full.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_full.ay"/>
-                <direct name="az_in" input="DSP.datain[54:37]" output="mac18×18_full.az"/>
-                <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_full.bx"/>
-                <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_full.by"/>
-                <direct name="bz_in" input="DSP.datain[109:92]" output="mac18×18_full.bz"/>
+                <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_full.ax"/>
+                <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_full.ay"/>
+                <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_full.az"/>
+                <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_full.bx"/>
+                <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_full.by"/>
+                <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_full.bz"/>
 
-                <direct name="resulta_out" input="mac18×18_full.resulta" output="DSP.result[36:0]"/>
-                <direct name="resultb_out" input="mac18×18_full.resultb" output="DSP.result[73:37]"/>
+                <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
+                <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_full.clr"/>
-                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18×18_full.coefsela"/>
-                <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18×18_full.coefselb"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_full.clr"/>
+                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_full.coefsela"/>
+                <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_full.coefselb"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_full.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_full.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_full.dfxmisrena"/>
 
             </interconnect>
         </mode>
 
-        <mode name="m18×18_full.input_type{reg}.output_type{reg}">
-            <pb_type name="mac18×18_full" blif_model=".subckt fourteennm_mac.opmode{m18×18_full}.input_type{reg}.output_type{reg}" num_pb="1">
+        <mode name="m18x18_full.input_type{reg}.output_type{reg}">
+            <pb_type name="mac18x18_full" blif_model=".subckt fourteennm_mac.opmode{m18x18_full}.input_type{reg}.output_type{reg}" num_pb="1">
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="18"/>
                 <input name="ay" num_pins="19"/>
                 <input name="az" num_pins="18"/>
@@ -2460,40 +2460,40 @@
 
             <interconnect>
 
-                <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_full.scanin"/>
-                <direct name="scan_out" input="mac18×18_full.scanout" output="DSP.scanout[18:0]"/>
-                <direct name="dft_out" input="mac18×18_full.dftout" output="DSP.dftout"/>
+                <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18x18_full.scanin"/>
+                <direct name="scan_out" input="mac18x18_full.scanout" output="DSP.scanout[18:0]"/>
+                <direct name="dft_out" input="mac18x18_full.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_full.ay"/>
-                <direct name="az_in" input="DSP.datain[54:37]" output="mac18×18_full.az"/>
-                <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_full.bx"/>
-                <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_full.by"/>
-                <direct name="bz_in" input="DSP.datain[109:92]" output="mac18×18_full.bz"/>
+                <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_full.ax"/>
+                <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_full.ay"/>
+                <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_full.az"/>
+                <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_full.bx"/>
+                <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_full.by"/>
+                <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_full.bz"/>
 
-                <direct name="resulta_out" input="mac18×18_full.resulta" output="DSP.result[36:0]"/>
-                <direct name="resultb_out" input="mac18×18_full.resultb" output="DSP.result[73:37]"/>
+                <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
+                <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_full.clr"/>
-                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18×18_full.coefsela"/>
-                <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18×18_full.coefselb"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_full.clr"/>
+                <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_full.coefsela"/>
+                <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_full.coefselb"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_full.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_full.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_full.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="mac18×18_full.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="mac18x18_full.clk"/>
 
             </interconnect>
         </mode>
 
         <!-- multiplier adder sum mode -->
-        <mode name="m18×18_sumof2.input_type{reg}.output_type{comb}">
-          <pb_type name="mac18×18_sumof2" blif_model=".subckt fourteennm_mac.opmode{m18×18_sumof2}.input_type{reg}.output_type{comb}" num_pb="1">
+        <mode name="m18x18_sumof2.input_type{reg}.output_type{comb}">
+          <pb_type name="mac18x18_sumof2" blif_model=".subckt fourteennm_mac.opmode{m18x18_sumof2}.input_type{reg}.output_type{comb}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="64"/>
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="19"/>
               <input name="az" num_pins="18"/>
@@ -2518,43 +2518,43 @@
 
           <interconnect>
 
-              <direct name="chain_in" input="DSP.chainin" output="mac18×18_sumof2.chainin"/>
-              <direct name="chain_out" input="mac18×18_sumof2.chainout" output="DSP.chainout"/>
-              <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_sumof2.scanin"/>
-              <direct name="scan_out" input="mac18×18_sumof2.scanout" output="DSP.scanout[18:0]"/>
-              <direct name="dft_out" input="mac18×18_sumof2.dftout" output="DSP.dftout"/>
+              <direct name="chain_in" input="DSP.chainin" output="mac18x18_sumof2.chainin"/>
+              <direct name="chain_out" input="mac18x18_sumof2.chainout" output="DSP.chainout"/>
+              <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18x18_sumof2.scanin"/>
+              <direct name="scan_out" input="mac18x18_sumof2.scanout" output="DSP.scanout[18:0]"/>
+              <direct name="dft_out" input="mac18x18_sumof2.dftout" output="DSP.dftout"/>
 
-              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_sumof2.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_sumof2.ay"/>
-              <direct name="az_in" input="DSP.datain[54:37]" output="mac18×18_sumof2.az"/>
-              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_sumof2.bx"/>
-              <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_sumof2.by"/>
-              <direct name="bz_in" input="DSP.datain[109:92]" output="mac18×18_sumof2.bz"/>
+              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_sumof2.ax"/>
+              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_sumof2.ay"/>
+              <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_sumof2.az"/>
+              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_sumof2.bx"/>
+              <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_sumof2.by"/>
+              <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_sumof2.bz"/>
 
-              <direct name="resulta_out" input="mac18×18_sumof2.resulta" output="DSP.result[63:0]"/>
+              <direct name="resulta_out" input="mac18x18_sumof2.resulta" output="DSP.result[63:0]"/>
 
               
-              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_sumof2.clr"/>
-              <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18×18_sumof2.coefsela"/>
-              <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18×18_sumof2.coefselb"/>
-              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_sumof2.ena"/>
-              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_sumof2.dfxlfsrena"/>
-              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_sumof2.dfxmisrena"/>
-              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18×18_sumof2.accumulate"/>
-              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18×18_sumof2.loadconst"/>
-              <direct name="negate_in" input="DSP.controlin[15]" output="mac18×18_sumof2.negate"/>
-              <direct name="sub_in" input="DSP.controlin[16]" output="mac18×18_sumof2.sub"/>
+              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_sumof2.clr"/>
+              <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_sumof2.coefsela"/>
+              <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_sumof2.coefselb"/>
+              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_sumof2.ena"/>
+              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_sumof2.dfxlfsrena"/>
+              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_sumof2.dfxmisrena"/>
+              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18x18_sumof2.accumulate"/>
+              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18x18_sumof2.loadconst"/>
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_sumof2.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_sumof2.sub"/>
 
-              <complete name="clk_in" input="DSP.clk" output="mac18×18_sumof2.clk"/>
+              <complete name="clk_in" input="DSP.clk" output="mac18x18_sumof2.clk"/>
           </interconnect>
         </mode>
 
-        <mode name="m18×18_sumof2.input_type{comb}.output_type{reg}">
-          <pb_type name="mac18×18_sumof2" blif_model=".subckt fourteennm_mac.opmode{m18×18_sumof2}.input_type{comb}.output_type{reg}" num_pb="1">
+        <mode name="m18x18_sumof2.input_type{comb}.output_type{reg}">
+          <pb_type name="mac18x18_sumof2" blif_model=".subckt fourteennm_mac.opmode{m18x18_sumof2}.input_type{comb}.output_type{reg}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="64"/>
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="19"/>
               <input name="az" num_pins="18"/>
@@ -2579,39 +2579,39 @@
 
           <interconnect>
 
-              <direct name="chain_in" input="DSP.chainin" output="mac18×18_sumof2.chainin"/>
-              <direct name="chain_out" input="mac18×18_sumof2.chainout" output="DSP.chainout"/>
-              <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_sumof2.scanin"/>
-              <direct name="scan_out" input="mac18×18_sumof2.scanout" output="DSP.scanout[18:0]"/>
-              <direct name="dft_out" input="mac18×18_sumof2.dftout" output="DSP.dftout"/>
+              <direct name="chain_in" input="DSP.chainin" output="mac18x18_sumof2.chainin"/>
+              <direct name="chain_out" input="mac18x18_sumof2.chainout" output="DSP.chainout"/>
+              <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18x18_sumof2.scanin"/>
+              <direct name="scan_out" input="mac18x18_sumof2.scanout" output="DSP.scanout[18:0]"/>
+              <direct name="dft_out" input="mac18x18_sumof2.dftout" output="DSP.dftout"/>
 
-              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_sumof2.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_sumof2.ay"/>
-              <direct name="az_in" input="DSP.datain[54:37]" output="mac18×18_sumof2.az"/>
-              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_sumof2.bx"/>
-              <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_sumof2.by"/>
-              <direct name="bz_in" input="DSP.datain[109:92]" output="mac18×18_sumof2.bz"/>
+              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_sumof2.ax"/>
+              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_sumof2.ay"/>
+              <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_sumof2.az"/>
+              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_sumof2.bx"/>
+              <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_sumof2.by"/>
+              <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_sumof2.bz"/>
 
-              <direct name="resulta_out" input="mac18×18_sumof2.resulta" output="DSP.result[63:0]"/>
+              <direct name="resulta_out" input="mac18x18_sumof2.resulta" output="DSP.result[63:0]"/>
 
               
-              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_sumof2.clr"/>
-              <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18×18_sumof2.coefsela"/>
-              <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18×18_sumof2.coefselb"/>
-              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_sumof2.ena"/>
-              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_sumof2.dfxlfsrena"/>
-              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_sumof2.dfxmisrena"/>
-              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18×18_sumof2.accumulate"/>
-              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18×18_sumof2.loadconst"/>
-              <direct name="negate_in" input="DSP.controlin[15]" output="mac18×18_sumof2.negate"/>
-              <direct name="sub_in" input="DSP.controlin[16]" output="mac18×18_sumof2.sub"/>
+              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_sumof2.clr"/>
+              <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_sumof2.coefsela"/>
+              <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_sumof2.coefselb"/>
+              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_sumof2.ena"/>
+              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_sumof2.dfxlfsrena"/>
+              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_sumof2.dfxmisrena"/>
+              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18x18_sumof2.accumulate"/>
+              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18x18_sumof2.loadconst"/>
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_sumof2.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_sumof2.sub"/>
 
-              <complete name="clk_in" input="DSP.clk" output="mac18×18_sumof2.clk"/>
+              <complete name="clk_in" input="DSP.clk" output="mac18x18_sumof2.clk"/>
           </interconnect>
         </mode>
 
-        <mode name="m18×18_sumof2.input_type{comb}.output_type{comb}">
-          <pb_type name="mac18×18_sumof2" blif_model=".subckt fourteennm_mac.opmode{m18×18_sumof2}.input_type{comb}.output_type{comb}" num_pb="1">
+        <mode name="m18x18_sumof2.input_type{comb}.output_type{comb}">
+          <pb_type name="mac18x18_sumof2" blif_model=".subckt fourteennm_mac.opmode{m18x18_sumof2}.input_type{comb}.output_type{comb}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="64"/>
               <input name="clr" num_pins="2"/>
@@ -2639,42 +2639,42 @@
 
           <interconnect>
 
-              <direct name="chain_in" input="DSP.chainin" output="mac18×18_sumof2.chainin"/>
-              <direct name="chain_out" input="mac18×18_sumof2.chainout" output="DSP.chainout"/>
-              <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_sumof2.scanin"/>
-              <direct name="scan_out" input="mac18×18_sumof2.scanout" output="DSP.scanout[18:0]"/>
-              <direct name="dft_out" input="mac18×18_sumof2.dftout" output="DSP.dftout"/>
+              <direct name="chain_in" input="DSP.chainin" output="mac18x18_sumof2.chainin"/>
+              <direct name="chain_out" input="mac18x18_sumof2.chainout" output="DSP.chainout"/>
+              <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18x18_sumof2.scanin"/>
+              <direct name="scan_out" input="mac18x18_sumof2.scanout" output="DSP.scanout[18:0]"/>
+              <direct name="dft_out" input="mac18x18_sumof2.dftout" output="DSP.dftout"/>
 
-              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_sumof2.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_sumof2.ay"/>
-              <direct name="az_in" input="DSP.datain[54:37]" output="mac18×18_sumof2.az"/>
-              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_sumof2.bx"/>
-              <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_sumof2.by"/>
-              <direct name="bz_in" input="DSP.datain[109:92]" output="mac18×18_sumof2.bz"/>
+              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_sumof2.ax"/>
+              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_sumof2.ay"/>
+              <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_sumof2.az"/>
+              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_sumof2.bx"/>
+              <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_sumof2.by"/>
+              <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_sumof2.bz"/>
 
-              <direct name="resulta_out" input="mac18×18_sumof2.resulta" output="DSP.result[63:0]"/>
+              <direct name="resulta_out" input="mac18x18_sumof2.resulta" output="DSP.result[63:0]"/>
 
               
-              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_sumof2.clr"/>
-              <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18×18_sumof2.coefsela"/>
-              <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18×18_sumof2.coefselb"/>
-              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_sumof2.ena"/>
-              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_sumof2.dfxlfsrena"/>
-              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_sumof2.dfxmisrena"/>
-              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18×18_sumof2.accumulate"/>
-              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18×18_sumof2.loadconst"/>
-              <direct name="negate_in" input="DSP.controlin[15]" output="mac18×18_sumof2.negate"/>
-              <direct name="sub_in" input="DSP.controlin[16]" output="mac18×18_sumof2.sub"/>
+              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_sumof2.clr"/>
+              <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_sumof2.coefsela"/>
+              <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_sumof2.coefselb"/>
+              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_sumof2.ena"/>
+              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_sumof2.dfxlfsrena"/>
+              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_sumof2.dfxmisrena"/>
+              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18x18_sumof2.accumulate"/>
+              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18x18_sumof2.loadconst"/>
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_sumof2.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_sumof2.sub"/>
 
           </interconnect>
         </mode>
 
-        <mode name="m18×18_sumof2.input_type{reg}.output_type{reg}">
-          <pb_type name="mac18×18_sumof2" blif_model=".subckt fourteennm_mac.opmode{m18×18_sumof2}.input_type{reg}.output_type{reg}" num_pb="1">
+        <mode name="m18x18_sumof2.input_type{reg}.output_type{reg}">
+          <pb_type name="mac18x18_sumof2" blif_model=".subckt fourteennm_mac.opmode{m18x18_sumof2}.input_type{reg}.output_type{reg}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="64"/>
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="19"/>
               <input name="az" num_pins="18"/>
@@ -2699,44 +2699,44 @@
 
           <interconnect>
 
-              <direct name="chain_in" input="DSP.chainin" output="mac18×18_sumof2.chainin"/>
-              <direct name="chain_out" input="mac18×18_sumof2.chainout" output="DSP.chainout"/>
-              <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18×18_sumof2.scanin"/>
-              <direct name="scan_out" input="mac18×18_sumof2.scanout" output="DSP.scanout[18:0]"/>
-              <direct name="dft_out" input="mac18×18_sumof2.dftout" output="DSP.dftout"/>
+              <direct name="chain_in" input="DSP.chainin" output="mac18x18_sumof2.chainin"/>
+              <direct name="chain_out" input="mac18x18_sumof2.chainout" output="DSP.chainout"/>
+              <direct name="scan_in" input="DSP.scanin[18:0]" output="mac18x18_sumof2.scanin"/>
+              <direct name="scan_out" input="mac18x18_sumof2.scanout" output="DSP.scanout[18:0]"/>
+              <direct name="dft_out" input="mac18x18_sumof2.dftout" output="DSP.dftout"/>
 
-              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_sumof2.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_sumof2.ay"/>
-              <direct name="az_in" input="DSP.datain[54:37]" output="mac18×18_sumof2.az"/>
-              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_sumof2.bx"/>
-              <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_sumof2.by"/>
-              <direct name="bz_in" input="DSP.datain[109:92]" output="mac18×18_sumof2.bz"/>
+              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_sumof2.ax"/>
+              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_sumof2.ay"/>
+              <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_sumof2.az"/>
+              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_sumof2.bx"/>
+              <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_sumof2.by"/>
+              <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_sumof2.bz"/>
 
-              <direct name="resulta_out" input="mac18×18_sumof2.resulta" output="DSP.result[63:0]"/>
+              <direct name="resulta_out" input="mac18x18_sumof2.resulta" output="DSP.result[63:0]"/>
 
               
-              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_sumof2.clr"/>
-              <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18×18_sumof2.coefsela"/>
-              <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18×18_sumof2.coefselb"/>
-              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_sumof2.ena"/>
-              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_sumof2.dfxlfsrena"/>
-              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_sumof2.dfxmisrena"/>
-              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18×18_sumof2.accumulate"/>
-              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18×18_sumof2.loadconst"/>
-              <direct name="negate_in" input="DSP.controlin[15]" output="mac18×18_sumof2.negate"/>
-              <direct name="sub_in" input="DSP.controlin[16]" output="mac18×18_sumof2.sub"/>
+              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_sumof2.clr"/>
+              <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_sumof2.coefsela"/>
+              <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_sumof2.coefselb"/>
+              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_sumof2.ena"/>
+              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_sumof2.dfxlfsrena"/>
+              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_sumof2.dfxmisrena"/>
+              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18x18_sumof2.accumulate"/>
+              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18x18_sumof2.loadconst"/>
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_sumof2.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_sumof2.sub"/>
 
-              <complete name="clk_in" input="DSP.clk" output="mac18×18_sumof2.clk"/>
+              <complete name="clk_in" input="DSP.clk" output="mac18x18_sumof2.clk"/>
           </interconnect>
         </mode>  
 
         <!-- 18x19 multiplication summed with 36-bit input -->
-        <mode name="m18×18_plus36.input_type{reg}.output_type{comb}">
-          <pb_type name="mac18×18_plus36" blif_model=".subckt fourteennm_mac.opmode{m18×18_plus36}.input_type{reg}.output_type{comb}" num_pb="1">
+        <mode name="m18x18_plus36.input_type{reg}.output_type{comb}">
+          <pb_type name="mac18x18_plus36" blif_model=".subckt fourteennm_mac.opmode{m18x18_plus36}.input_type{reg}.output_type{comb}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="64"/>
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="19"/>
               <input name="bx" num_pins="18"/>
@@ -2755,37 +2755,37 @@
 
           <interconnect>
 
-              <direct name="chain_in" input="DSP.chainin" output="mac18×18_plus36.chainin"/>
-              <direct name="chain_out" input="mac18×18_plus36.chainout" output="DSP.chainout"/>
-              <direct name="dft_out" input="mac18×18_plus36.dftout" output="DSP.dftout"/>
+              <direct name="chain_in" input="DSP.chainin" output="mac18x18_plus36.chainin"/>
+              <direct name="chain_out" input="mac18x18_plus36.chainout" output="DSP.chainout"/>
+              <direct name="dft_out" input="mac18x18_plus36.dftout" output="DSP.dftout"/>
 
-              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_plus36.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_plus36.ay"/>
-              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_plus36.bx"/>
-              <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_plus36.by"/>
+              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_plus36.ax"/>
+              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_plus36.ay"/>
+              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_plus36.bx"/>
+              <direct name="by_in" input="DSP.datain[90:73]" output="mac18x18_plus36.by"/>
 
-              <direct name="resulta_out" input="mac18×18_plus36.resulta" output="DSP.result[63:0]"/>
+              <direct name="resulta_out" input="mac18x18_plus36.resulta" output="DSP.result[63:0]"/>
 
               
-              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_plus36.clr"/>
-              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_plus36.ena"/>
-              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_plus36.dfxlfsrena"/>
-              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_plus36.dfxmisrena"/>
-              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18×18_plus36.accumulate"/>
-              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18×18_plus36.loadconst"/>
-              <direct name="negate_in" input="DSP.controlin[15]" output="mac18×18_plus36.negate"/>
-              <direct name="sub_in" input="DSP.controlin[16]" output="mac18×18_plus36.sub"/>
+              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_plus36.clr"/>
+              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_plus36.ena"/>
+              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_plus36.dfxlfsrena"/>
+              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_plus36.dfxmisrena"/>
+              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18x18_plus36.accumulate"/>
+              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18x18_plus36.loadconst"/>
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_plus36.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_plus36.sub"/>
 
-              <complete name="clk_in" input="DSP.clk" output="mac18×18_plus36.clk"/>
+              <complete name="clk_in" input="DSP.clk" output="mac18x18_plus36.clk"/>
           </interconnect>
         </mode>
 
-        <mode name="m18×18_plus36.input_type{comb}.output_type{reg}">
-          <pb_type name="mac18×18_plus36" blif_model=".subckt fourteennm_mac.opmode{m18×18_plus36}.input_type{comb}.output_type{reg}" num_pb="1">
+        <mode name="m18x18_plus36.input_type{comb}.output_type{reg}">
+          <pb_type name="mac18x18_plus36" blif_model=".subckt fourteennm_mac.opmode{m18x18_plus36}.input_type{comb}.output_type{reg}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="64"/>
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="19"/>
               <input name="bx" num_pins="18"/>
@@ -2804,33 +2804,33 @@
 
           <interconnect>
 
-              <direct name="chain_in" input="DSP.chainin" output="mac18×18_plus36.chainin"/>
-              <direct name="chain_out" input="mac18×18_plus36.chainout" output="DSP.chainout"/>
-              <direct name="dft_out" input="mac18×18_plus36.dftout" output="DSP.dftout"/>
+              <direct name="chain_in" input="DSP.chainin" output="mac18x18_plus36.chainin"/>
+              <direct name="chain_out" input="mac18x18_plus36.chainout" output="DSP.chainout"/>
+              <direct name="dft_out" input="mac18x18_plus36.dftout" output="DSP.dftout"/>
 
-              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_plus36.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_plus36.ay"/>
-              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_plus36.bx"/>
-              <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_plus36.by"/>
+              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_plus36.ax"/>
+              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_plus36.ay"/>
+              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_plus36.bx"/>
+              <direct name="by_in" input="DSP.datain[90:73]" output="mac18x18_plus36.by"/>
 
-              <direct name="resulta_out" input="mac18×18_plus36.resulta" output="DSP.result[63:0]"/>
+              <direct name="resulta_out" input="mac18x18_plus36.resulta" output="DSP.result[63:0]"/>
 
               
-              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_plus36.clr"/>
-              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_plus36.ena"/>
-              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_plus36.dfxlfsrena"/>
-              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_plus36.dfxmisrena"/>
-              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18×18_plus36.accumulate"/>
-              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18×18_plus36.loadconst"/>
-              <direct name="negate_in" input="DSP.controlin[15]" output="mac18×18_plus36.negate"/>
-              <direct name="sub_in" input="DSP.controlin[16]" output="mac18×18_plus36.sub"/>
+              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_plus36.clr"/>
+              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_plus36.ena"/>
+              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_plus36.dfxlfsrena"/>
+              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_plus36.dfxmisrena"/>
+              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18x18_plus36.accumulate"/>
+              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18x18_plus36.loadconst"/>
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_plus36.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_plus36.sub"/>
 
-              <complete name="clk_in" input="DSP.clk" output="mac18×18_plus36.clk"/>
+              <complete name="clk_in" input="DSP.clk" output="mac18x18_plus36.clk"/>
           </interconnect>
         </mode>
 
-        <mode name="m18×18_plus36.input_type{comb}.output_type{comb}">
-          <pb_type name="mac18×18_plus36" blif_model=".subckt fourteennm_mac.opmode{m18×18_plus36}.input_type{comb}.output_type{comb}" num_pb="1">
+        <mode name="m18x18_plus36.input_type{comb}.output_type{comb}">
+          <pb_type name="mac18x18_plus36" blif_model=".subckt fourteennm_mac.opmode{m18x18_plus36}.input_type{comb}.output_type{comb}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="64"/>
               <input name="clr" num_pins="2"/>
@@ -2852,36 +2852,36 @@
 
           <interconnect>
 
-              <direct name="chain_in" input="DSP.chainin" output="mac18×18_plus36.chainin"/>
-              <direct name="chain_out" input="mac18×18_plus36.chainout" output="DSP.chainout"/>
-              <direct name="dft_out" input="mac18×18_plus36.dftout" output="DSP.dftout"/>
+              <direct name="chain_in" input="DSP.chainin" output="mac18x18_plus36.chainin"/>
+              <direct name="chain_out" input="mac18x18_plus36.chainout" output="DSP.chainout"/>
+              <direct name="dft_out" input="mac18x18_plus36.dftout" output="DSP.dftout"/>
 
-              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_plus36.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_plus36.ay"/>
-              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_plus36.bx"/>
-              <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_plus36.by"/>
+              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_plus36.ax"/>
+              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_plus36.ay"/>
+              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_plus36.bx"/>
+              <direct name="by_in" input="DSP.datain[90:73]" output="mac18x18_plus36.by"/>
 
-              <direct name="resulta_out" input="mac18×18_plus36.resulta" output="DSP.result[63:0]"/>
+              <direct name="resulta_out" input="mac18x18_plus36.resulta" output="DSP.result[63:0]"/>
 
               
-              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_plus36.clr"/>
-              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_plus36.ena"/>
-              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_plus36.dfxlfsrena"/>
-              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_plus36.dfxmisrena"/>
-              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18×18_plus36.accumulate"/>
-              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18×18_plus36.loadconst"/>
-              <direct name="negate_in" input="DSP.controlin[15]" output="mac18×18_plus36.negate"/>
-              <direct name="sub_in" input="DSP.controlin[16]" output="mac18×18_plus36.sub"/>
+              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_plus36.clr"/>
+              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_plus36.ena"/>
+              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_plus36.dfxlfsrena"/>
+              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_plus36.dfxmisrena"/>
+              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18x18_plus36.accumulate"/>
+              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18x18_plus36.loadconst"/>
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_plus36.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_plus36.sub"/>
 
           </interconnect>
         </mode>
 
-        <mode name="m18×18_plus36.input_type{reg}.output_type{reg}">
-          <pb_type name="mac18×18_plus36" blif_model=".subckt fourteennm_mac.opmode{m18×18_plus36}.input_type{reg}.output_type{reg}" num_pb="1">
+        <mode name="m18x18_plus36.input_type{reg}.output_type{reg}">
+          <pb_type name="mac18x18_plus36" blif_model=".subckt fourteennm_mac.opmode{m18x18_plus36}.input_type{reg}.output_type{reg}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="64"/>
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="19"/>
               <input name="bx" num_pins="18"/>
@@ -2900,38 +2900,38 @@
 
           <interconnect>
 
-              <direct name="chain_in" input="DSP.chainin" output="mac18×18_plus36.chainin"/>
-              <direct name="chain_out" input="mac18×18_plus36.chainout" output="DSP.chainout"/>
-              <direct name="dft_out" input="mac18×18_plus36.dftout" output="DSP.dftout"/>
+              <direct name="chain_in" input="DSP.chainin" output="mac18x18_plus36.chainin"/>
+              <direct name="chain_out" input="mac18x18_plus36.chainout" output="DSP.chainout"/>
+              <direct name="dft_out" input="mac18x18_plus36.dftout" output="DSP.dftout"/>
 
-              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18×18_plus36.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18×18_plus36.ay"/>
-              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18×18_plus36.bx"/>
-              <direct name="by_in" input="DSP.datain[91:73]" output="mac18×18_plus36.by"/>
+              <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_plus36.ax"/>
+              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_plus36.ay"/>
+              <direct name="bx_in" input="DSP.datain[72:55]" output="mac18x18_plus36.bx"/>
+              <direct name="by_in" input="DSP.datain[90:73]" output="mac18x18_plus36.by"/>
 
-              <direct name="resulta_out" input="mac18×18_plus36.resulta" output="DSP.result[63:0]"/>
+              <direct name="resulta_out" input="mac18x18_plus36.resulta" output="DSP.result[63:0]"/>
 
               
-              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18×18_plus36.clr"/>
-              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18×18_plus36.ena"/>
-              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18×18_plus36.dfxlfsrena"/>
-              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18×18_plus36.dfxmisrena"/>
-              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18×18_plus36.accumulate"/>
-              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18×18_plus36.loadconst"/>
-              <direct name="negate_in" input="DSP.controlin[15]" output="mac18×18_plus36.negate"/>
-              <direct name="sub_in" input="DSP.controlin[16]" output="mac18×18_plus36.sub"/>
+              <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_plus36.clr"/>
+              <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_plus36.ena"/>
+              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="mac18x18_plus36.dfxlfsrena"/>
+              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac18x18_plus36.dfxmisrena"/>
+              <direct name="accumulate_in" input="DSP.controlin[13]" output="mac18x18_plus36.accumulate"/>
+              <direct name="loadconst_in" input="DSP.controlin[14]" output="mac18x18_plus36.loadconst"/>
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_plus36.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_plus36.sub"/>
 
-              <complete name="clk_in" input="DSP.clk" output="mac18×18_plus36.clk"/>
+              <complete name="clk_in" input="DSP.clk" output="mac18x18_plus36.clk"/>
           </interconnect>
         </mode>
 
         <!-- systolic fir mode -->
-        <mode name="m18×18_systolic.input_type{reg}.output_type{comb}">
-          <pb_type name="mac18×18_systolic" blif_model=".subckt fourteennm_mac.opmode{m18×18_systolic}.input_type{reg}.output_type{comb}" num_pb="1">
+        <mode name="m18x18_systolic.input_type{reg}.output_type{comb}">
+          <pb_type name="mac18x18_systolic" blif_model=".subckt fourteennm_mac.opmode{m18x18_systolic}.input_type{reg}.output_type{comb}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="43"/>
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="19"/>
               <input name="az" num_pins="18"/>
@@ -2987,12 +2987,12 @@
           </interconnect>
         </mode>
 
-        <mode name="m18×18_systolic.input_type{comb}.output_type{reg}">
-          <pb_type name="mac18×18_systolic" blif_model=".subckt fourteennm_mac.opmode{m18×18_systolic}.input_type{comb}.output_type{reg}" num_pb="1">
+        <mode name="m18x18_systolic.input_type{comb}.output_type{reg}">
+          <pb_type name="mac18x18_systolic" blif_model=".subckt fourteennm_mac.opmode{m18x18_systolic}.input_type{comb}.output_type{reg}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="43"/>
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="19"/>
               <input name="az" num_pins="18"/>
@@ -3048,8 +3048,8 @@
           </interconnect>
         </mode>
 
-        <mode name="m18×18_systolic.input_type{comb}.output_type{comb}">
-          <pb_type name="mac18×18_systolic" blif_model=".subckt fourteennm_mac.opmode{m18×18_systolic}.input_type{comb}.output_type{comb}" num_pb="1">
+        <mode name="m18x18_systolic.input_type{comb}.output_type{comb}">
+          <pb_type name="mac18x18_systolic" blif_model=".subckt fourteennm_mac.opmode{m18x18_systolic}.input_type{comb}.output_type{comb}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="43"/>
               <input name="clr" num_pins="2"/>
@@ -3107,12 +3107,12 @@
           </interconnect>
         </mode>
 
-        <mode name="m18×18_systolic.input_type{reg}.output_type{reg}">
-          <pb_type name="mac18×18_systolic" blif_model=".subckt fourteennm_mac.opmode{m18×18_systolic}.input_type{reg}.output_type{reg}" num_pb="1">
+        <mode name="m18x18_systolic.input_type{reg}.output_type{reg}">
+          <pb_type name="mac18x18_systolic" blif_model=".subckt fourteennm_mac.opmode{m18x18_systolic}.input_type{reg}.output_type{reg}" num_pb="1">
               <input name="accumulate" num_pins="1"/>
               <input name="chainin" num_pins="43"/>
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="19"/>
               <input name="az" num_pins="18"/>
@@ -3174,7 +3174,7 @@
                 <input name="accumulate" num_pins="1"/>
                 <input name="chainin" num_pins="64"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="27"/>
                 <input name="ay" num_pins="27"/>
                 <input name="az" num_pins="26"/>
@@ -3226,7 +3226,7 @@
                 <input name="accumulate" num_pins="1"/>
                 <input name="chainin" num_pins="64"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="27"/>
                 <input name="ay" num_pins="27"/>
                 <input name="az" num_pins="26"/>
@@ -3328,7 +3328,7 @@
                 <input name="accumulate" num_pins="1"/>
                 <input name="chainin" num_pins="64"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="27"/>
                 <input name="ay" num_pins="27"/>
                 <input name="az" num_pins="26"/>
@@ -3376,10 +3376,10 @@
         </mode>
 
         <!-- single 18x18 multiplier mode -->
-        <mode name="m18×18_top.input_type{reg}.output_type{comb}">
-          <pb_type name="mac18×18_top" blif_model=".subckt fourteennm_mac.opmode{m18×18_top}.input_type{reg}.output_type{comb}" num_pb="1">
+        <mode name="m18x18_top.input_type{reg}.output_type{comb}">
+          <pb_type name="mac18x18_top" blif_model=".subckt fourteennm_mac.opmode{m18x18_top}.input_type{reg}.output_type{comb}" num_pb="1">
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="18"/>
               <input name="az" num_pins="18"/>
@@ -3401,8 +3401,8 @@
               <direct name="dft_out" input="mac18x18_top.dftout" output="DSP.dftout"/>
 
               <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_top.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_top.ay"/>
-              <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_top.az"/>
+              <direct name="ay_in" input="DSP.datain[35:18]" output="mac18x18_top.ay"/>
+              <direct name="az_in" input="DSP.datain[53:36]" output="mac18x18_top.az"/>
 
               <direct name="resulta_out" input="mac18x18_top.resulta" output="DSP.result[36:0]"/>
               
@@ -3417,10 +3417,10 @@
           </interconnect>
         </mode>
 
-        <mode name="m18×18_top.input_type{comb}.output_type{reg}">
-          <pb_type name="mac18×18_top" blif_model=".subckt fourteennm_mac.opmode{m18×18_top}.input_type{comb}.output_type{reg}" num_pb="1">
+        <mode name="m18x18_top.input_type{comb}.output_type{reg}">
+          <pb_type name="mac18x18_top" blif_model=".subckt fourteennm_mac.opmode{m18x18_top}.input_type{comb}.output_type{reg}" num_pb="1">
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="18"/>
               <input name="az" num_pins="18"/>
@@ -3442,8 +3442,8 @@
               <direct name="dft_out" input="mac18x18_top.dftout" output="DSP.dftout"/>
 
               <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_top.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_top.ay"/>
-              <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_top.az"/>
+              <direct name="ay_in" input="DSP.datain[35:18]" output="mac18x18_top.ay"/>
+              <direct name="az_in" input="DSP.datain[53:36]" output="mac18x18_top.az"/>
 
               <direct name="resulta_out" input="mac18x18_top.resulta" output="DSP.result[36:0]"/>
               
@@ -3458,8 +3458,8 @@
           </interconnect>
         </mode>
 
-        <mode name="m18×18_top.input_type{comb}.output_type{comb}">
-          <pb_type name="mac18×18_top" blif_model=".subckt fourteennm_mac.opmode{m18×18_top}.input_type{comb}.output_type{comb}" num_pb="1">
+        <mode name="m18x18_top.input_type{comb}.output_type{comb}">
+          <pb_type name="mac18x18_top" blif_model=".subckt fourteennm_mac.opmode{m18x18_top}.input_type{comb}.output_type{comb}" num_pb="1">
               <input name="clr" num_pins="2"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="18"/>
@@ -3482,8 +3482,8 @@
               <direct name="dft_out" input="mac18x18_top.dftout" output="DSP.dftout"/>
 
               <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_top.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_top.ay"/>
-              <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_top.az"/>
+              <direct name="ay_in" input="DSP.datain[35:18]" output="mac18x18_top.ay"/>
+              <direct name="az_in" input="DSP.datain[53:36]" output="mac18x18_top.az"/>
 
               <direct name="resulta_out" input="mac18x18_top.resulta" output="DSP.result[36:0]"/>
               
@@ -3496,10 +3496,10 @@
           </interconnect>
         </mode>
 
-        <mode name="m18×18_top.input_type{reg}.output_type{reg}">
-          <pb_type name="mac18×18_top" blif_model=".subckt fourteennm_mac.opmode{m18×18_top}.input_type{reg}.output_type{reg}" num_pb="1">
+        <mode name="m18x18_top.input_type{reg}.output_type{reg}">
+          <pb_type name="mac18x18_top" blif_model=".subckt fourteennm_mac.opmode{m18x18_top}.input_type{reg}.output_type{reg}" num_pb="1">
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ax" num_pins="18"/>
               <input name="ay" num_pins="18"/>
               <input name="az" num_pins="18"/>
@@ -3521,8 +3521,8 @@
               <direct name="dft_out" input="mac18x18_top.dftout" output="DSP.dftout"/>
 
               <direct name="ax_in" input="DSP.datain[17:0]" output="mac18x18_top.ax"/>
-              <direct name="ay_in" input="DSP.datain[36:18]" output="mac18x18_top.ay"/>
-              <direct name="az_in" input="DSP.datain[54:37]" output="mac18x18_top.az"/>
+              <direct name="ay_in" input="DSP.datain[35:18]" output="mac18x18_top.ay"/>
+              <direct name="az_in" input="DSP.datain[53:36]" output="mac18x18_top.az"/>
 
               <direct name="resulta_out" input="mac18x18_top.resulta" output="DSP.result[36:0]"/>
               
@@ -3542,7 +3542,7 @@
            <pb_type name="fp_mac_mult" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult}.input_type{reg}.output_type{comb}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
                 <input name="ena" num_pins="3"/>
@@ -3564,7 +3564,7 @@
                 <direct name="chain_out" input="fp_mac_mult.chainout[31:0]" output="DSP.chainout[31:0]"/>
                 <direct name="dft_out" input="fp_mac_mult.dftout" output="DSP.dftout"/>
 
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_mult.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_mult.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_mult.az"/>
 
                 <direct name="resulta_out" input="fp_mac_mult.resulta" output="DSP.result[31:0]"/>
@@ -3588,7 +3588,7 @@
            <pb_type name="fp_mac_mult" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult}.input_type{comb}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
                 <input name="ena" num_pins="3"/>
@@ -3610,7 +3610,7 @@
                 <direct name="chain_out" input="fp_mac_mult.chainout[31:0]" output="DSP.chainout[31:0]"/>
                 <direct name="dft_out" input="fp_mac_mult.dftout" output="DSP.dftout"/>
 
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_mult.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_mult.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_mult.az"/>
 
                 <direct name="resulta_out" input="fp_mac_mult.resulta" output="DSP.result[31:0]"/>
@@ -3655,7 +3655,7 @@
                 <direct name="chain_out" input="fp_mac_mult.chainout[31:0]" output="DSP.chainout[31:0]"/>
                 <direct name="dft_out" input="fp_mac_mult.dftout" output="DSP.dftout"/>
 
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_mult.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_mult.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_mult.az"/>
 
                 <direct name="resulta_out" input="fp_mac_mult.resulta" output="DSP.result[31:0]"/>
@@ -3678,7 +3678,7 @@
            <pb_type name="fp_mac_mult" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult}.input_type{reg}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
                 <input name="ena" num_pins="3"/>
@@ -3700,7 +3700,7 @@
                 <direct name="chain_out" input="fp_mac_mult.chainout[31:0]" output="DSP.chainout[31:0]"/>
                 <direct name="dft_out" input="fp_mac_mult.dftout" output="DSP.dftout"/>
 
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_mult.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_mult.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_mult.az"/>
 
                 <direct name="resulta_out" input="fp_mac_mult.resulta" output="DSP.result[31:0]"/>
@@ -3725,7 +3725,7 @@
           <pb_type name="fp_mac_multacc" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{reg}.output_type{comb}" num_pb="1">
               <input name="chainin" num_pins="32"/>
               <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="3"/>
+              <clock name="clk" num_pins="1"/>
               <input name="ay" num_pins="32"/>
               <input name="az" num_pins="32"/>
               <input name="ena" num_pins="3"/>
@@ -3747,30 +3747,30 @@
 
           <interconnect>
 
-              <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-              <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-              <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+              <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_multacc.chainin"/>
+              <direct name="chain_out" input="fp_mac_multacc.chainout[31:0]" output="DSP.chainout[31:0]"/>
+              <direct name="dft_out" input="fp_mac_multacc.dftout" output="DSP.dftout"/>
 
-              <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ay"/>
-              <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+              <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multacc.ay"/>
+              <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_multacc.az"/>
 
-              <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-              <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-              <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-              <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-              <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-              <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-              <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-              <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-              <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+              <direct name="resulta_out" input="fp_mac_multacc.resulta" output="DSP.result[31:0]"/>
+              <direct name="adder_inexact_out" input="fp_mac_multacc.adder_inexact" output="DSP.result[32]" />
+              <direct name="adder_invalid_out" input="fp_mac_multacc.adder_invalid" output="DSP.result[33]" />
+              <direct name="adder_overflow_out" input="fp_mac_multacc.adder_overflow" output="DSP.result[34]" />
+              <direct name="adder_underflow_out" input="fp_mac_multacc.adder_underflow" output="DSP.result[35]" />
+              <direct name="mult_inexact_out" input="fp_mac_multacc.mult_inexact" output="DSP.result[36]" />
+              <direct name="mult_invlid_out" input="fp_mac_multacc.mult_invalid" output="DSP.result[37]" />
+              <direct name="mult_overflow_out" input="fp_mac_multacc.mult_overflow" output="DSP.result[38]" />
+              <direct name="mult_underflow_out" input="fp_mac_multacc.mult_underflow" output="DSP.result[39]" />
 
               
-              <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-              <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+              <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_multacc.clr"/>
+              <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_multacc.ena"/>
+              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_multacc.dfxlfsrena"/>
+              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_multacc.dfxmisrena"/>
 
-              <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+              <complete name="clk_in" input="DSP.clk" output="fp_mac_multacc.clk"/>
           </interconnect> 
         </mode>
 
@@ -3778,7 +3778,7 @@
           <pb_type name="fp_mac_multacc" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{comb}.output_type{reg}" num_pb="1">
             <input name="chainin" num_pins="32"/>
             <input name="clr" num_pins="2"/>
-            <clock name="clk" num_pins="3"/>
+            <clock name="clk" num_pins="1"/>
             <input name="ay" num_pins="32"/>
             <input name="az" num_pins="32"/>
             <input name="ena" num_pins="3"/>
@@ -3800,30 +3800,30 @@
 
           <interconnect>
 
-            <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-            <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-            <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+            <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_multacc.chainin"/>
+            <direct name="chain_out" input="fp_mac_multacc.chainout[31:0]" output="DSP.chainout[31:0]"/>
+            <direct name="dft_out" input="fp_mac_multacc.dftout" output="DSP.dftout"/>
 
-            <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ay"/>
-            <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+            <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multacc.ay"/>
+            <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_multacc.az"/>
 
-            <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-            <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-            <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-            <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-            <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-            <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-            <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-            <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-            <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+            <direct name="resulta_out" input="fp_mac_multacc.resulta" output="DSP.result[31:0]"/>
+            <direct name="adder_inexact_out" input="fp_mac_multacc.adder_inexact" output="DSP.result[32]" />
+            <direct name="adder_invalid_out" input="fp_mac_multacc.adder_invalid" output="DSP.result[33]" />
+            <direct name="adder_overflow_out" input="fp_mac_multacc.adder_overflow" output="DSP.result[34]" />
+            <direct name="adder_underflow_out" input="fp_mac_multacc.adder_underflow" output="DSP.result[35]" />
+            <direct name="mult_inexact_out" input="fp_mac_multacc.mult_inexact" output="DSP.result[36]" />
+            <direct name="mult_invlid_out" input="fp_mac_multacc.mult_invalid" output="DSP.result[37]" />
+            <direct name="mult_overflow_out" input="fp_mac_multacc.mult_overflow" output="DSP.result[38]" />
+            <direct name="mult_underflow_out" input="fp_mac_multacc.mult_underflow" output="DSP.result[39]" />
 
             
-            <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-            <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-            <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-            <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+            <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_multacc.clr"/>
+            <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_multacc.ena"/>
+            <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_multacc.dfxlfsrena"/>
+            <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_multacc.dfxmisrena"/>
 
-            <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+            <complete name="clk_in" input="DSP.clk" output="fp_mac_multacc.clk"/>
 
           </interconnect> 
         </mode>
@@ -3853,28 +3853,28 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_multacc.chainin"/>
+                <direct name="chain_out" input="fp_mac_multacc.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_multacc.dftout" output="DSP.dftout"/>
 
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ay"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multacc.ay"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_multacc.az"/>
 
-                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="fp_mac_multacc.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_multacc.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_multacc.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_multacc.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_multacc.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac_multacc.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac_multacc.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac_multacc.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac_multacc.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_multacc.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_multacc.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_multacc.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_multacc.dfxmisrena"/>
 
 
             </interconnect> 
@@ -3884,7 +3884,7 @@
             <pb_type name="fp_mac_multacc" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{reg}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
                 <input name="ena" num_pins="3"/>
@@ -3906,30 +3906,30 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_multacc.chainin"/>
+                <direct name="chain_out" input="fp_mac_multacc.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_multacc.dftout" output="DSP.dftout"/>
 
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ay"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multacc.ay"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_multacc.az"/>
 
-                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="fp_mac_multacc.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_multacc.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_multacc.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_multacc.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_multacc.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac_multacc.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac_multacc.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac_multacc.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac_multacc.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_multacc.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_multacc.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_multacc.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_multacc.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="fp_mac_multacc.clk"/>
 
             </interconnect> 
         </mode>
@@ -3939,7 +3939,7 @@
             <pb_type name="fp_mac_multadd" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult_add}.input_type{reg}.output_type{comb}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
@@ -3993,7 +3993,7 @@
             <pb_type name="fp_mac_multadd" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult_add}.input_type{comb}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
@@ -4101,7 +4101,7 @@
             <pb_type name="fp_mac_multadd" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult_add}.input_type{reg}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
@@ -4157,7 +4157,7 @@
             <pb_type name="fp_mac_add" blif_model=".subckt fourteennm_fp_mac.opmode{sp_add}.input_type{reg}.output_type{comb}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="ena" num_pins="3"/>
@@ -4202,7 +4202,7 @@
             <pb_type name="fp_mac_add" blif_model=".subckt fourteennm_fp_mac.opmode{sp_add}.input_type{comb}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="ena" num_pins="3"/>
@@ -4290,7 +4290,7 @@
             <pb_type name="fp_mac_add" blif_model=".subckt fourteennm_fp_mac.opmode{sp_add}.input_type{reg}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="ena" num_pins="3"/>
@@ -4336,7 +4336,7 @@
             <pb_type name="fp_mac_vect1" blif_model=".subckt fourteennm_fp_mac.opmode{sp_vector1}.input_type{reg}.output_type{comb}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
@@ -4359,31 +4359,31 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_vect1.chainin"/>
+                <direct name="chain_out" input="fp_mac_vect1.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_vect1.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect1.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect1.az"/>
 
-                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="fp_mac_vect1.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_vect1.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_vect1.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_vect1.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_vect1.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac_vect1.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac_vect1.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac_vect1.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac_vect1.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_vect1.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_vect1.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_vect1.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_vect1.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="fp_mac_vect1.clk"/>
 
             </interconnect> 
         </mode>
@@ -4392,7 +4392,7 @@
             <pb_type name="fp_mac_vect1" blif_model=".subckt fourteennm_fp_mac.opmode{sp_vector1}.input_type{comb}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
@@ -4415,31 +4415,31 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_vect1.chainin"/>
+                <direct name="chain_out" input="fp_mac_vect1.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_vect1.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect1.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect1.az"/>
 
-                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="fp_mac_vect1.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_vect1.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_vect1.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_vect1.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_vect1.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac_vect1.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac_vect1.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac_vect1.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac_vect1.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_vect1.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_vect1.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_vect1.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_vect1.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="fp_mac_vect1.clk"/>
 
             </interconnect> 
         </mode>
@@ -4470,29 +4470,29 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_vect1.chainin"/>
+                <direct name="chain_out" input="fp_mac_vect1.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_vect1.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect1.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect1.az"/>
 
-                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="fp_mac_vect1.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_vect1.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_vect1.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_vect1.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_vect1.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac_vect1.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac_vect1.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac_vect1.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac_vect1.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_vect1.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_vect1.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_vect1.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_vect1.dfxmisrena"/>
 
 
             </interconnect> 
@@ -4502,7 +4502,7 @@
             <pb_type name="fp_mac_vect1" blif_model=".subckt fourteennm_fp_mac.opmode{sp_vector1}.input_type{reg}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
@@ -4525,31 +4525,31 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_vect1.chainin"/>
+                <direct name="chain_out" input="fp_mac_vect1.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_vect1.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect1.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect1.az"/>
 
-                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="fp_mac_vect1.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_vect1.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_vect1.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_vect1.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_vect1.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac_vect1.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac_vect1.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac_vect1.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac_vect1.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_vect1.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_vect1.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_vect1.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_vect1.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="fp_mac_vect1.clk"/>
 
             </interconnect> 
         </mode>
@@ -4559,7 +4559,7 @@
             <pb_type name="fp_mac_vect2" blif_model=".subckt fourteennm_fp_mac.opmode{sp_vector2}.input_type{reg}.output_type{comb}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
@@ -4582,31 +4582,31 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="sp_vector2.chainin"/>
+                <direct name="chain_out" input="sp_vector2.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="sp_vector2.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="sp_vector2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="sp_vector2.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="sp_vector2.az"/>
 
-                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="sp_vector2.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="sp_vector2.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="sp_vector2.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="sp_vector2.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="sp_vector2.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="sp_vector2.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="sp_vector2.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="sp_vector2.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="sp_vector2.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="sp_vector2.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="sp_vector2.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="sp_vector2.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="sp_vector2.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="sp_vector2.clk"/>
 
             </interconnect> 
         </mode>
@@ -4615,7 +4615,7 @@
             <pb_type name="fp_mac_vect2" blif_model=".subckt fourteennm_fp_mac.opmode{sp_vector2}.input_type{comb}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
@@ -4638,31 +4638,31 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="sp_vector2.chainin"/>
+                <direct name="chain_out" input="sp_vector2.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="sp_vector2.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="sp_vector2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="sp_vector2.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="sp_vector2.az"/>
 
-                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="sp_vector2.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="sp_vector2.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="sp_vector2.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="sp_vector2.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="sp_vector2.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="sp_vector2.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="sp_vector2.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="sp_vector2.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="sp_vector2.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="sp_vector2.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="sp_vector2.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="sp_vector2.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="sp_vector2.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="sp_vector2.clk"/>
 
             </interconnect> 
         </mode>
@@ -4693,29 +4693,29 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="sp_vector2.chainin"/>
+                <direct name="chain_out" input="sp_vector2.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="sp_vector2.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="sp_vector2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="sp_vector2.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="sp_vector2.az"/>
 
-                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="sp_vector2.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="sp_vector2.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="sp_vector2.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="sp_vector2.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="sp_vector2.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="sp_vector2.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="sp_vector2.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="sp_vector2.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="sp_vector2.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="sp_vector2.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="sp_vector2.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="sp_vector2.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="sp_vector2.dfxmisrena"/>
 
 
             </interconnect> 
@@ -4725,7 +4725,7 @@
             <pb_type name="fp_mac_vect2" blif_model=".subckt fourteennm_fp_mac.opmode{sp_vector2}.input_type{reg}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
-                <clock name="clk" num_pins="3"/>
+                <clock name="clk" num_pins="1"/>
                 <input name="ax" num_pins="32"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
@@ -4748,31 +4748,31 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac18x18_full.chainin"/>
-                <direct name="chain_out" input="fp_mac18x18_full.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="fp_mac18x18_full.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="sp_vector2.chainin"/>
+                <direct name="chain_out" input="sp_vector2.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="sp_vector2.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac18x18_full.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac18x18_full.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac18x18_full.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="sp_vector2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="sp_vector2.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="sp_vector2.az"/>
 
-                <direct name="resulta_out" input="fp_mac18x18_full.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="fp_mac18x18_full.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="fp_mac18x18_full.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="fp_mac18x18_full.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="fp_mac18x18_full.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="fp_mac18x18_full.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="fp_mac18x18_full.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="fp_mac18x18_full.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="fp_mac18x18_full.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="sp_vector2.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="sp_vector2.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="sp_vector2.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="sp_vector2.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="sp_vector2.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="sp_vector2.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="sp_vector2.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="sp_vector2.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="sp_vector2.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac18x18_full.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac18x18_full.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac18x18_full.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac18x18_full.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="sp_vector2.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="sp_vector2.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="sp_vector2.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="sp_vector2.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="fp_mac18x18_full.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="sp_vector2.clk"/>
 
             </interconnect> 
         </mode>
