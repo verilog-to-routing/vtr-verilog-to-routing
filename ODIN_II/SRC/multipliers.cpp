@@ -1769,10 +1769,9 @@ bool is_ast_multiplier(ast_node_t* node) {
  * we need to expand output pins with pad pins
  * 
  * @param node pointer to the multiplication node
- * @param netlist pointer to the current netlist file
  * -----------------------------------------------------------------------
  */
-void check_multiplier_port_size(nnode_t* node, netlist_t* netlist) {
+void check_multiplier_port_size(nnode_t* node) {
     /* Can only perform the optimisation if hard multipliers exist! */
     if (hard_multipliers == NULL)
         return;
@@ -1795,8 +1794,16 @@ void check_multiplier_port_size(nnode_t* node, netlist_t* netlist) {
         for (int i = 0; i < node->num_output_pins; i++) {
             if (i < sizeout)
                 node->output_pins[i] = old_output_pins[i];
-            else
-                add_output_pin_to_node(node, get_pad_pin(netlist), i);
+            else {
+                npin_t* new_pin = allocate_npin();
+                new_pin->name = append_string("", "%s~dummy_output~%d", node->name, 0);
+                nnet_t* new_net = allocate_nnet();
+
+                // hook the output pin into the node
+                add_output_pin_to_node(node, new_pin, i);
+                // hook up new pin 1 into the new net
+                add_driver_pin_to_net(new_net, new_pin);
+            }
         }
         // CLEAN UP
         vtr::free(old_output_pins);
