@@ -67,6 +67,7 @@
 #define GRAPH_CRUNCH 17
 #define STATS 18
 #define SEQUENTIAL_LEVELIZE 19
+#define NETLIST_DISCONTINUITY_TRAVERSE_VALUE 11
 /* a unique mark for the BLIF elaboration DFS traversal */
 #define BLIF_ELABORATE_TRAVERSE_VALUE 30
 
