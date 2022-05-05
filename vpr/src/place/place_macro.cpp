@@ -389,6 +389,13 @@ void get_imacro_from_iblk(int* imacro, ClusterBlockId iblk, const std::vector<t_
     }
 }
 
+void set_imacro_for_iblk(int* imacro, ClusterBlockId blk_id) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    f_imacro_from_iblk.resize(cluster_ctx.clb_nlist.blocks().size());
+    f_imacro_from_iblk.insert(blk_id, *imacro);
+}
+
 /* Allocates and loads imacro_from_iblk array. */
 static void alloc_and_load_imacro_from_iblk(const std::vector<t_pl_macro>& macros) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
