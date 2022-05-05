@@ -156,15 +156,15 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 	void setup_tokens (tokmap* tokens);
 
 //Execution Functions
-void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch);
+void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch, string device);
 	void subckt_prep(t_model* cur_model);
 	void init_blif_subckts (t_node **vqm_nodes, int number_of_vqm_nodes, 
-						t_model *arch_models, t_blif_model* my_model);
+						t_model *arch_models, t_blif_model* my_model, string device);
 
 	//1-to-1 Subcircuit Function
 	//Translates one VQM Node into one BLIF Subcircuit, appends a mode-hash based on 
 	//parameters if elab_mode is MODES or MODES_TIMING.
-	void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts);
+	void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts, string device);
 
 	//Atomize Subcircuit Function
 	//Uses select parameters and a dictionary to atomize each block and
@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
     processStart = clock();
 
     preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets, elaborate_ram_clocks,
-                       single_clock_primitives, split_carry_chain_logic, remove_const_nets);
+                       single_clock_primitives, split_carry_chain_logic, remove_const_nets, device);
 	
     if (debug_mode){
 		//Print debug info to "<project_path>_module.echo"
@@ -414,7 +414,7 @@ int main(int argc, char* argv[])
 
 	processStart = clock();
 
-	init_blif_models( &my_model, my_module, &arch );
+	init_blif_models( &my_model, my_module, &arch, device);
 			
 	if(debug_mode){			
 		//Print debug info to "<project_path>_blif.echo"
@@ -769,7 +769,7 @@ void setup_tokens (tokmap* tokens){
 //			EXECUTION FUNCTIONS
 //============================================================================================
 
-void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch){
+void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch, string device){
 /*  Populates a BLIF model structure with appropriate parser data.
  *
  *	ARGUMENTS
@@ -846,7 +846,7 @@ void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch)
 		init_blif_subckts (	my_module->array_of_nodes, 
 						my_module->number_of_nodes,
 						arch->models,
-						my_model	);
+						my_model, device);
 	}
 	
 	if(verbose_mode){
@@ -859,7 +859,7 @@ void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch)
 void 	init_blif_subckts (	t_node **vqm_nodes, 
 					int number_of_vqm_nodes,
 					t_model *arch_models,
-					t_blif_model* my_model	){
+					t_blif_model* my_model, string device){
 /*  Initializes the subcircuits vector within a t_blif_model based on a t_node array.
  *
  *	ARGUMENTS
@@ -896,7 +896,7 @@ void 	init_blif_subckts (	t_node **vqm_nodes,
 		if ((lut_mode == BLIF)&&(is_lut(temp_node))){
 			push_lut ( temp_node, &(my_model->luts) );
 		} else if ((elab_mode == NONE)||(elab_mode == MODES)||(elab_mode == MODES_TIMING)){
-			push_node_1_to_1 (temp_node, arch_models, &(my_model->subckts));
+			push_node_1_to_1 (temp_node, arch_models, &(my_model->subckts), device);
 		} else if (elab_mode == ATOMS){
 			push_node_atomize (temp_node, arch_models, &(my_model->subckts));
 		} else {
@@ -951,7 +951,7 @@ void subckt_prep(t_model* cur_model){
 
 //============================================================================================
 //============================================================================================
-void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts){
+void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts, string device){
 /*  Interprets each VQM block as a single instance of a BLIF subcircuit. Depending on 
  *  the global elab_mode, the Architecture will be searched either for the VQM block name as-is
  *  or a name appended with a special mode-hash, generated from parameters of the VQM block.
@@ -987,7 +987,7 @@ void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_sub
 
 	} else if (elab_mode == MODES || elab_mode == MODES_TIMING){
 		//search for an Architecture model based on the block name and the parameters
-		search = generate_opname(vqm_node, arch_models);  //generate the simple mode-hashed name based on parameters.
+		search = generate_opname(vqm_node, arch_models, device);  //generate the simple mode-hashed name based on parameters.
 
 	} else {
 		//should never get here, based on condition in init_blif_subckts()

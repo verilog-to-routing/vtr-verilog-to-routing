@@ -17,9 +17,9 @@
 //============================================================================================
 
 //Functions to identify and decompose inout pins
-void decompose_inout_pins(t_module* module, t_arch* arch);
+void decompose_inout_pins(t_module* module, t_arch* arch, string device);
 
-t_model* find_model_in_architecture(t_model* arch_models, t_node* node);
+t_model* find_model_in_architecture(t_model* arch_models, t_node* node, string device);
 
 t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_association* node_port);
 
@@ -52,7 +52,7 @@ void decompose_carry_chains(t_module* module);
 bool is_arithmetic_port(t_node_port_association* node_port);
 
 //Functions to fix connections between clock nets and non-clock ports
-void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types);
+void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, string device);
 t_pin_def* find_associated_clock_net(t_node* node, t_pin_def* clock_net, t_global_nets clock_nets);
 
 //Functions to identify dual-clock RAMs and split them into seperate blocks
@@ -71,13 +71,13 @@ t_node_parameter* duplicate_param(t_node_parameter* orig_param);
 t_node_port_association* duplicate_port(t_node_port_association* orig_port);
 
 //Functions to identify global nets
-void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types);
+void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, string device);
 
 t_global_ports identify_primitive_global_pins(t_arch* arch, t_logical_block_type* arch_types, int num_types, bool clock_only);
 
 t_global_nets identify_global_nets(t_module* module, t_global_ports global_port_vec);
 
-t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_ports global_ports, t_global_nets global_nets);
+t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_ports global_ports, t_global_nets global_nets, string device);
  
 t_assign_vec_pair identify_global_local_assignments(t_module* module, t_global_nets global_nets, t_net_driver_map net_driver_map);
 
@@ -108,7 +108,7 @@ int get_next_port_idx(const t_node* node, std::set<int>& existing_idxs);
 //============================================================================================
 void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, 
                         t_boolean fix_global_nets, t_boolean elaborate_ram_clocks, t_boolean single_clock_primitives,
-                        t_boolean split_carry_chain_logic, t_boolean remove_const_nets){
+                        t_boolean split_carry_chain_logic, t_boolean remove_const_nets, string device){
     /*
      * Put all netlist pre-processing function calls here
      */
@@ -116,7 +116,7 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* ar
     //Clean up 'inout' pins by replacing them with
     // seperate 'input' and 'output' pins
     cout << "\t>> Preprocessing Netlist to decompose inout pins" << endl;
-    decompose_inout_pins(module, arch);
+    decompose_inout_pins(module, arch, device);
     cout << endl;
 
     cout << "\t>> Preprocessing Netlist to identify LUTRAM/MLAB acting as ROM" << endl;
@@ -156,7 +156,7 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* ar
         //VPR may falsely identify nets connected to clock pins, but not driven by clock
         //ports as clock nets, and then error out if they connected to non-clock pins.
         //This works around the issue by removing connections to clock pins for such nets.
-        check_and_fix_clock_to_normal_port_connections(module, arch, arch_types, num_types);
+        check_and_fix_clock_to_normal_port_connections(module, arch, arch_types, num_types, device);
     }
 
     if(fix_global_nets) {
@@ -164,14 +164,14 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* ar
         // routed on 'global' networks, but still drive non-global signals (e.g. LUT
         // inputs, output pins etc.).
         cout << "\t>> Preprocessing Netlist to insert global to non-global buffers" << endl;
-        add_global_to_nonglobal_buffers(module, arch, arch_types, num_types);
+        add_global_to_nonglobal_buffers(module, arch, arch_types, num_types, device);
     }
     cout << endl;
 }
 
 //============================================================================================
 //============================================================================================
-void decompose_inout_pins(t_module* module, t_arch* arch){
+void decompose_inout_pins(t_module* module, t_arch* arch, string device){
     /*
      * Example inout pin connectivity:
      *
@@ -316,7 +316,7 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
                         t_model_ports* arch_model_port;
 
                         //Find the model
-                        arch_model = find_model_in_architecture(arch->models, node);
+                        arch_model = find_model_in_architecture(arch->models, node, device);
 
                         //Find the architecure model port
                         arch_model_port = find_port_in_architecture_model(arch_model, node_port);
@@ -370,7 +370,7 @@ void decompose_inout_pins(t_module* module, t_arch* arch){
     cout << "\t>> Decomposed " << number_of_inout_pins_found << " 'inout' pin(s), moving " << number_of_nets_moved << " net(s)" << endl;
 }
 
-t_model* find_model_in_architecture(t_model* arch_models, t_node* node) {
+t_model* find_model_in_architecture(t_model* arch_models, t_node* node, string device) {
     /*
      * Finds the archtecture module corresponding to the node type
      *
@@ -382,7 +382,7 @@ t_model* find_model_in_architecture(t_model* arch_models, t_node* node) {
 
     //The VQM name may not match the architecture name if the architecture contians elaborated modes
     //  So generate the elaborated mode name for this node
-    string elaborated_name = generate_opname(node, arch_models);
+    string elaborated_name = generate_opname(node, arch_models, device);
 
     //Find the correct model, by name matching
     t_model* arch_model = arch_models;
@@ -1196,7 +1196,7 @@ void expand_ram_clocks(t_module* module) {
 
 }
 
-void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types) {
+void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, string device) {
     //Removes connections to clock ports if the net is not driven by a clock port.
     //VPR does not allow clock nets (anything that touches a clock pin) to connect
     //to non-clock pins.
@@ -1257,7 +1257,7 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
                         //check whether it is the driver
 
                         //Find the model
-                        t_model* arch_model = find_model_in_architecture(arch->models, node);
+                        t_model* arch_model = find_model_in_architecture(arch->models, node, device);
 
                         //Look-up the arch model port
                         t_model_ports* arch_model_port = find_port_in_architecture_model(arch_model, node_port);
@@ -1379,7 +1379,7 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
                 t_node_port_association* node_port = node->array_of_ports[j];
 
                 //Find the model
-                t_model* arch_model = find_model_in_architecture(arch->models, node);
+                t_model* arch_model = find_model_in_architecture(arch->models, node, device);
 
                 //Look-up the arch model port
                 t_model_ports* arch_model_port = find_port_in_architecture_model(arch_model, node_port);
@@ -1981,7 +1981,7 @@ map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_no
 
 //============================================================================================
 //============================================================================================
-void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types){
+void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, string device){
 
     //Identify architecture block pins which are globals
     t_global_ports global_ports = identify_primitive_global_pins(arch, arch_types, num_types, false);
@@ -1991,7 +1991,7 @@ void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_b
     t_global_nets global_nets = identify_global_nets(module, global_ports);
 
     //Create an STL map which identifies the driver of each global net
-    t_net_driver_map net_driver_map = identify_net_drivers(module, arch, global_ports, global_nets);
+    t_net_driver_map net_driver_map = identify_net_drivers(module, arch, global_ports, global_nets, device);
 
     //Identify global to local assignment connections
     t_assign_vec_pair global_local_assignments = identify_global_local_assignments(module, global_nets, net_driver_map);
@@ -2216,7 +2216,7 @@ t_global_nets identify_global_nets(t_module* module, t_global_ports global_ports
     return global_nets;
 }
 
-t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_ports global_ports, t_global_nets global_nets) {
+t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_ports global_ports, t_global_nets global_nets, string device) {
     t_net_driver_map net_driver_map;
 
     int total_num_global_sinks = 0;
@@ -2280,7 +2280,7 @@ t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_p
                     t_model_ports* arch_model_port;
 
                     //Find the model
-                    arch_model = find_model_in_architecture(arch->models, node);
+                    arch_model = find_model_in_architecture(arch->models, node, device);
 
                     //Find the architecure model port
                     arch_model_port = find_port_in_architecture_model(arch_model, node_port);

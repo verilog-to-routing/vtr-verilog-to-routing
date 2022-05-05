@@ -214,12 +214,14 @@ string get_wire_name(t_pin_def* net, int index){
 //============================================================================================
 //============================================================================================
 
-string generate_opname (t_node* vqm_node, t_model* arch_models){
+string generate_opname (t_node* vqm_node, t_model* arch_models, string device){
     //Add support for different architectures here.
-    // Currently only support Stratix IV
-    std::cout << " ########################################______####################################" << std::endl;
-    string mode_hash1 = generate_opname_stratix10(vqm_node, arch_models);    
-    string mode_hash = generate_opname_stratixiv(vqm_node, arch_models);
+    // Currently only support Stratix IV and Stratix 10
+    string mode_hash;
+    if(device == "stratix10")
+        mode_hash = generate_opname_stratix10(vqm_node, arch_models);    
+    if(device == "stratixiv")
+        mode_hash = generate_opname_stratixiv(vqm_node, arch_models);
     
     //Final sanity check
     if (NULL == find_arch_model_by_name(mode_hash, arch_models)){
@@ -741,9 +743,9 @@ void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* /*arch_models*/, 
     //
     // The boolean variable dsp_mode indicates wether the dsp block is in fixed point mode (dsp_mode = 0) or floating point mode (dsp_mode = 1)
     if(dsp_mode == 0)
-        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_mac=") == 0);
+        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_mac") == 0);
     else
-        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_fp_mac=") == 0);
+        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_fp_mac") == 0);
 
     if(elab_mode == MODES_TIMING) {
         //Only elaborate registered/combinational behaviour if in timing accurate

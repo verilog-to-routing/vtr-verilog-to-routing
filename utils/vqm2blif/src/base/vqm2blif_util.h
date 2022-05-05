@@ -142,7 +142,7 @@ void construct_filename (char* filename, const char* path, const char* ext);	//c
 
 //Naming Conventions
 
-string generate_opname (t_node* vqm_node, t_model* arch_models);	//generates a mode-hashed name for a subcircuit instance
+string generate_opname (t_node* vqm_node, t_model* arch_models, string device);	//generates a mode-hashed name for a subcircuit instance
 
 string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models); //mode-hash for Stratix IV
 void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV RAM blocks
