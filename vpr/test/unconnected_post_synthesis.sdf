@@ -1,0 +1,314 @@
+(DELAYFILE
+    (SDFVERSION "2.1")
+    (DESIGN "unconnected")
+    (VENDOR "verilog-to-routing")
+    (PROGRAM "vpr")
+    (VERSION "8.1.0-dev+3d100b1c9")
+    (DIVIDER /)
+    (TIMESCALE 1 ps)
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_a\[0\]_output_0_0_to_dsp_inst_input_0_0)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (183.27:183.27:183.27) (183.27:183.27:183.27))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_a\[1\]_output_0_0_to_dsp_inst_input_0_1)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (183.27:183.27:183.27) (183.27:183.27:183.27))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_a\[2\]_output_0_0_to_dsp_inst_input_0_2)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (251.64:251.64:251.64) (251.64:251.64:251.64))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_a\[3\]_output_0_0_to_dsp_inst_input_0_3)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (183.27:183.27:183.27) (183.27:183.27:183.27))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_b\[0\]_output_0_0_to_dsp_inst_input_1_0)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (251.64:251.64:251.64) (251.64:251.64:251.64))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_b\[1\]_output_0_0_to_dsp_inst_input_1_1)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (251.64:251.64:251.64) (251.64:251.64:251.64))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_b\[2\]_output_0_0_to_dsp_inst_input_1_2)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (320.01:320.01:320.01) (320.01:320.01:320.01))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_b\[3\]_output_0_0_to_dsp_inst_input_1_3)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (251.64:251.64:251.64) (251.64:251.64:251.64))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_b\[4\]_output_0_0_to_dsp_inst_input_1_4)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (183.27:183.27:183.27) (183.27:183.27:183.27))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_b\[5\]_output_0_0_to_dsp_inst_input_1_5)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (183.27:183.27:183.27) (183.27:183.27:183.27))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_b\[6\]_output_0_0_to_dsp_inst_input_1_6)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (183.27:183.27:183.27) (183.27:183.27:183.27))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_b\[7\]_output_0_0_to_dsp_inst_input_1_7)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (183.27:183.27:183.27) (183.27:183.27:183.27))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_dsp_inst_output_0_0_to_o\[0\]_input_0_0)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (223.15:223.15:223.15) (223.15:223.15:223.15))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_dsp_inst_output_0_1_to_o\[1\]_input_0_0)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (223.15:223.15:223.15) (223.15:223.15:223.15))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_dsp_inst_output_0_2_to_o\[2\]_input_0_0)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (359.89:359.89:359.89) (359.89:359.89:359.89))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_dsp_inst_output_0_3_to_o\[3\]_input_0_0)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (291.52:291.52:291.52) (291.52:291.52:291.52))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_dsp_inst_output_0_4_to_o\[4\]_input_0_0)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (223.15:223.15:223.15) (223.15:223.15:223.15))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_dsp_inst_output_0_5_to_o\[5\]_input_0_0)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (154.78:154.78:154.78) (154.78:154.78:154.78))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_dsp_inst_output_0_6_to_o\[6\]_input_0_0)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (291.52:291.52:291.52) (291.52:291.52:291.52))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "fpga_interconnect")
+        (INSTANCE routing_segment_dsp_inst_output_0_7_to_o\[7\]_input_0_0)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH datain dataout (291.52:291.52:291.52) (291.52:291.52:291.52))
+            )
+        )
+    )
+
+    (CELL
+        (CELLTYPE "dsp")
+        (INSTANCE dsp_inst)
+        (DELAY
+            (ABSOLUTE
+                (IOPATH a\[0\] out\[0\] (100:100:100))
+                (IOPATH a\[1\] out\[0\] (100:100:100))
+                (IOPATH a\[2\] out\[0\] (100:100:100))
+                (IOPATH a\[3\] out\[0\] (100:100:100))
+                (IOPATH b\[0\] out\[0\] (100:100:100))
+                (IOPATH b\[1\] out\[0\] (100:100:100))
+                (IOPATH b\[2\] out\[0\] (100:100:100))
+                (IOPATH b\[3\] out\[0\] (100:100:100))
+                (IOPATH b\[4\] out\[0\] (100:100:100))
+                (IOPATH b\[5\] out\[0\] (100:100:100))
+                (IOPATH b\[6\] out\[0\] (100:100:100))
+                (IOPATH b\[7\] out\[0\] (100:100:100))
+                (IOPATH a\[0\] out\[1\] (100:100:100))
+                (IOPATH a\[1\] out\[1\] (100:100:100))
+                (IOPATH a\[2\] out\[1\] (100:100:100))
+                (IOPATH a\[3\] out\[1\] (100:100:100))
+                (IOPATH b\[0\] out\[1\] (100:100:100))
+                (IOPATH b\[1\] out\[1\] (100:100:100))
+                (IOPATH b\[2\] out\[1\] (100:100:100))
+                (IOPATH b\[3\] out\[1\] (100:100:100))
+                (IOPATH b\[4\] out\[1\] (100:100:100))
+                (IOPATH b\[5\] out\[1\] (100:100:100))
+                (IOPATH b\[6\] out\[1\] (100:100:100))
+                (IOPATH b\[7\] out\[1\] (100:100:100))
+                (IOPATH a\[0\] out\[2\] (100:100:100))
+                (IOPATH a\[1\] out\[2\] (100:100:100))
+                (IOPATH a\[2\] out\[2\] (100:100:100))
+                (IOPATH a\[3\] out\[2\] (100:100:100))
+                (IOPATH b\[0\] out\[2\] (100:100:100))
+                (IOPATH b\[1\] out\[2\] (100:100:100))
+                (IOPATH b\[2\] out\[2\] (100:100:100))
+                (IOPATH b\[3\] out\[2\] (100:100:100))
+                (IOPATH b\[4\] out\[2\] (100:100:100))
+                (IOPATH b\[5\] out\[2\] (100:100:100))
+                (IOPATH b\[6\] out\[2\] (100:100:100))
+                (IOPATH b\[7\] out\[2\] (100:100:100))
+                (IOPATH a\[0\] out\[3\] (100:100:100))
+                (IOPATH a\[1\] out\[3\] (100:100:100))
+                (IOPATH a\[2\] out\[3\] (100:100:100))
+                (IOPATH a\[3\] out\[3\] (100:100:100))
+                (IOPATH b\[0\] out\[3\] (100:100:100))
+                (IOPATH b\[1\] out\[3\] (100:100:100))
+                (IOPATH b\[2\] out\[3\] (100:100:100))
+                (IOPATH b\[3\] out\[3\] (100:100:100))
+                (IOPATH b\[4\] out\[3\] (100:100:100))
+                (IOPATH b\[5\] out\[3\] (100:100:100))
+                (IOPATH b\[6\] out\[3\] (100:100:100))
+                (IOPATH b\[7\] out\[3\] (100:100:100))
+                (IOPATH a\[0\] out\[4\] (100:100:100))
+                (IOPATH a\[1\] out\[4\] (100:100:100))
+                (IOPATH a\[2\] out\[4\] (100:100:100))
+                (IOPATH a\[3\] out\[4\] (100:100:100))
+                (IOPATH b\[0\] out\[4\] (100:100:100))
+                (IOPATH b\[1\] out\[4\] (100:100:100))
+                (IOPATH b\[2\] out\[4\] (100:100:100))
+                (IOPATH b\[3\] out\[4\] (100:100:100))
+                (IOPATH b\[4\] out\[4\] (100:100:100))
+                (IOPATH b\[5\] out\[4\] (100:100:100))
+                (IOPATH b\[6\] out\[4\] (100:100:100))
+                (IOPATH b\[7\] out\[4\] (100:100:100))
+                (IOPATH a\[0\] out\[5\] (100:100:100))
+                (IOPATH a\[1\] out\[5\] (100:100:100))
+                (IOPATH a\[2\] out\[5\] (100:100:100))
+                (IOPATH a\[3\] out\[5\] (100:100:100))
+                (IOPATH b\[0\] out\[5\] (100:100:100))
+                (IOPATH b\[1\] out\[5\] (100:100:100))
+                (IOPATH b\[2\] out\[5\] (100:100:100))
+                (IOPATH b\[3\] out\[5\] (100:100:100))
+                (IOPATH b\[4\] out\[5\] (100:100:100))
+                (IOPATH b\[5\] out\[5\] (100:100:100))
+                (IOPATH b\[6\] out\[5\] (100:100:100))
+                (IOPATH b\[7\] out\[5\] (100:100:100))
+                (IOPATH a\[0\] out\[6\] (100:100:100))
+                (IOPATH a\[1\] out\[6\] (100:100:100))
+                (IOPATH a\[2\] out\[6\] (100:100:100))
+                (IOPATH a\[3\] out\[6\] (100:100:100))
+                (IOPATH b\[0\] out\[6\] (100:100:100))
+                (IOPATH b\[1\] out\[6\] (100:100:100))
+                (IOPATH b\[2\] out\[6\] (100:100:100))
+                (IOPATH b\[3\] out\[6\] (100:100:100))
+                (IOPATH b\[4\] out\[6\] (100:100:100))
+                (IOPATH b\[5\] out\[6\] (100:100:100))
+                (IOPATH b\[6\] out\[6\] (100:100:100))
+                (IOPATH b\[7\] out\[6\] (100:100:100))
+                (IOPATH a\[0\] out\[7\] (100:100:100))
+                (IOPATH a\[1\] out\[7\] (100:100:100))
+                (IOPATH a\[2\] out\[7\] (100:100:100))
+                (IOPATH a\[3\] out\[7\] (100:100:100))
+                (IOPATH b\[0\] out\[7\] (100:100:100))
+                (IOPATH b\[1\] out\[7\] (100:100:100))
+                (IOPATH b\[2\] out\[7\] (100:100:100))
+                (IOPATH b\[3\] out\[7\] (100:100:100))
+                (IOPATH b\[4\] out\[7\] (100:100:100))
+                (IOPATH b\[5\] out\[7\] (100:100:100))
+                (IOPATH b\[6\] out\[7\] (100:100:100))
+                (IOPATH b\[7\] out\[7\] (100:100:100))
+            )
+        )
+    )
+)

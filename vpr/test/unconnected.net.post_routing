@@ -1,0 +1,392 @@
+<?xml version="1.0"?>
+<block name="unconnected.net.post_routing" instance="FPGA_packed_netlist[0]" architecture_id="SHA256:f8c2978522c4ee24b52a47a3d112c2cd647f717ee6a7baed70905e69c0de146d" atom_netlist_id="SHA256:f2f67b7632dd6b46e2391d59bf7f21ee4602e61f78bcb7a3b42e54b7e4186d37">
+	<inputs>a[0] a[1] a[2] a[3] b[0] b[1] b[2] b[3] b[4] b[5] b[6] b[7]</inputs>
+	<outputs>out:o[0] out:o[1] out:o[2] out:o[3] out:o[4] out:o[5] out:o[6] out:o[7]</outputs>
+	<clocks></clocks>
+	<block name="inst" instance="dsp[0]" mode="default">
+		<inputs>
+			<port name="a">open a[0] a[1] open open a[3] a[2] open</port>
+			<port name="b">b[0] b[6] b[4] b[2] b[1] b[5] b[7] b[3]</port>
+			<port name="addsub">open</port>
+		</inputs>
+		<outputs>
+			<port name="out">dsp_bel[0].out[0]-&gt;direct_out dsp_bel[0].out[1]-&gt;direct_out dsp_bel[0].out[2]-&gt;direct_out dsp_bel[0].out[3]-&gt;direct_out dsp_bel[0].out[4]-&gt;direct_out dsp_bel[0].out[5]-&gt;direct_out dsp_bel[0].out[6]-&gt;direct_out dsp_bel[0].out[7]-&gt;direct_out open open open open open open open open</port>
+			<port name="carry">open</port>
+		</outputs>
+		<clocks />
+		<block name="inst" instance="dsp_bel[0]">
+			<attributes />
+			<parameters />
+			<inputs>
+				<port name="a">dsp.a[1]-&gt;xbar_a dsp.a[2]-&gt;xbar_a dsp.a[6]-&gt;xbar_a dsp.a[5]-&gt;xbar_a open open open open</port>
+				<port name="b">dsp.b[0]-&gt;xbar_b dsp.b[4]-&gt;xbar_b dsp.b[3]-&gt;xbar_b dsp.b[7]-&gt;xbar_b dsp.b[2]-&gt;xbar_b dsp.b[5]-&gt;xbar_b dsp.b[1]-&gt;xbar_b dsp.b[6]-&gt;xbar_b</port>
+				<port name="addsub">open</port>
+			</inputs>
+			<outputs>
+				<port name="out">o[0] o[1] o[2] o[3] o[4] o[5] o[6] o[7] open open open open open open open open</port>
+				<port name="carry">open</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="out:o[0]" instance="io[1]" mode="outpad">
+		<inputs>
+			<port name="outpad">o[0]</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">open</port>
+		</outputs>
+		<clocks />
+		<block name="out:o[0]" instance="outpad[0]">
+			<attributes />
+			<parameters />
+			<inputs>
+				<port name="outpad">io.outpad[0]-&gt;outpad</port>
+			</inputs>
+			<outputs />
+			<clocks />
+		</block>
+	</block>
+	<block name="out:o[1]" instance="io[2]" mode="outpad">
+		<inputs>
+			<port name="outpad">o[1]</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">open</port>
+		</outputs>
+		<clocks />
+		<block name="out:o[1]" instance="outpad[0]">
+			<attributes />
+			<parameters />
+			<inputs>
+				<port name="outpad">io.outpad[0]-&gt;outpad</port>
+			</inputs>
+			<outputs />
+			<clocks />
+		</block>
+	</block>
+	<block name="out:o[2]" instance="io[3]" mode="outpad">
+		<inputs>
+			<port name="outpad">o[2]</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">open</port>
+		</outputs>
+		<clocks />
+		<block name="out:o[2]" instance="outpad[0]">
+			<attributes />
+			<parameters />
+			<inputs>
+				<port name="outpad">io.outpad[0]-&gt;outpad</port>
+			</inputs>
+			<outputs />
+			<clocks />
+		</block>
+	</block>
+	<block name="out:o[3]" instance="io[4]" mode="outpad">
+		<inputs>
+			<port name="outpad">o[3]</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">open</port>
+		</outputs>
+		<clocks />
+		<block name="out:o[3]" instance="outpad[0]">
+			<attributes />
+			<parameters />
+			<inputs>
+				<port name="outpad">io.outpad[0]-&gt;outpad</port>
+			</inputs>
+			<outputs />
+			<clocks />
+		</block>
+	</block>
+	<block name="out:o[4]" instance="io[5]" mode="outpad">
+		<inputs>
+			<port name="outpad">o[4]</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">open</port>
+		</outputs>
+		<clocks />
+		<block name="out:o[4]" instance="outpad[0]">
+			<attributes />
+			<parameters />
+			<inputs>
+				<port name="outpad">io.outpad[0]-&gt;outpad</port>
+			</inputs>
+			<outputs />
+			<clocks />
+		</block>
+	</block>
+	<block name="out:o[5]" instance="io[6]" mode="outpad">
+		<inputs>
+			<port name="outpad">o[5]</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">open</port>
+		</outputs>
+		<clocks />
+		<block name="out:o[5]" instance="outpad[0]">
+			<attributes />
+			<parameters />
+			<inputs>
+				<port name="outpad">io.outpad[0]-&gt;outpad</port>
+			</inputs>
+			<outputs />
+			<clocks />
+		</block>
+	</block>
+	<block name="out:o[6]" instance="io[7]" mode="outpad">
+		<inputs>
+			<port name="outpad">o[6]</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">open</port>
+		</outputs>
+		<clocks />
+		<block name="out:o[6]" instance="outpad[0]">
+			<attributes />
+			<parameters />
+			<inputs>
+				<port name="outpad">io.outpad[0]-&gt;outpad</port>
+			</inputs>
+			<outputs />
+			<clocks />
+		</block>
+	</block>
+	<block name="out:o[7]" instance="io[8]" mode="outpad">
+		<inputs>
+			<port name="outpad">o[7]</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">open</port>
+		</outputs>
+		<clocks />
+		<block name="out:o[7]" instance="outpad[0]">
+			<attributes />
+			<parameters />
+			<inputs>
+				<port name="outpad">io.outpad[0]-&gt;outpad</port>
+			</inputs>
+			<outputs />
+			<clocks />
+		</block>
+	</block>
+	<block name="a[0]" instance="io[9]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="a[0]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">a[0]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="a[1]" instance="io[10]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="a[1]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">a[1]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="a[2]" instance="io[11]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="a[2]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">a[2]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="a[3]" instance="io[12]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="a[3]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">a[3]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="b[0]" instance="io[13]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="b[0]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">b[0]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="b[1]" instance="io[14]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="b[1]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">b[1]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="b[2]" instance="io[15]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="b[2]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">b[2]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="b[3]" instance="io[16]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="b[3]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">b[3]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="b[4]" instance="io[17]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="b[4]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">b[4]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="b[5]" instance="io[18]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="b[5]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">b[5]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="b[6]" instance="io[19]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="b[6]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">b[6]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+	<block name="b[7]" instance="io[20]" mode="inpad">
+		<inputs>
+			<port name="outpad">open</port>
+		</inputs>
+		<outputs>
+			<port name="inpad">inpad[0].inpad[0]-&gt;inpad</port>
+		</outputs>
+		<clocks />
+		<block name="b[7]" instance="inpad[0]">
+			<attributes />
+			<parameters />
+			<inputs />
+			<outputs>
+				<port name="inpad">b[7]</port>
+			</outputs>
+			<clocks />
+		</block>
+	</block>
+</block>
