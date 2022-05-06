@@ -58,8 +58,8 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist);
 void instantiate_not_logic(nnode_t* node, short mark, netlist_t* netlist);
 bool eliminate_buffer(nnode_t* node, short, netlist_t*);
 void instantiate_bitwise_logic(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
-void instantiate_bitwise_reduction(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
-void instantiate_logical_logic(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
+void instantiate_bitwise_reduction(nnode_t* node, operation_list op, short mark);
+void instantiate_logical_logic(nnode_t* node, operation_list op, short mark);
 void instantiate_EQUAL(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
 void instantiate_GE(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
 void instantiate_GT(nnode_t* node, operation_list type, short mark, netlist_t* netlist);
@@ -155,7 +155,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             if (node->num_input_port_sizes >= 2) {
                 instantiate_bitwise_logic(node, node->type, traverse_number, netlist);
             } else if (node->num_input_port_sizes == 1) {
-                instantiate_bitwise_reduction(node, node->type, traverse_number, netlist);
+                instantiate_bitwise_reduction(node, node->type, traverse_number);
             } else
                 oassert(false);
             break;
@@ -167,7 +167,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         case LOGICAL_XOR:
         case LOGICAL_XNOR:
             if (node->num_input_port_sizes == 2) {
-                instantiate_logical_logic(node, node->type, traverse_number, netlist);
+                instantiate_logical_logic(node, node->type, traverse_number);
             }
             break;
 
@@ -602,7 +602,7 @@ bool eliminate_buffer(nnode_t* node, short, netlist_t*) {
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_logical_logic )
  *-------------------------------------------------------------------------------------------*/
-void instantiate_logical_logic(nnode_t* node, operation_list op, short mark, netlist_t* netlist) {
+void instantiate_logical_logic(nnode_t* node, operation_list op, short mark) {
     int i;
     int port_B_offset;
     int width_a;
@@ -627,28 +627,18 @@ void instantiate_logical_logic(nnode_t* node, operation_list op, short mark, net
     /* connect inputs.  In the case that a signal is smaller than the other then zero pad */
     for (i = 0; i < width_a; i++) {
         /* Joining the inputs to the input 1 of that gate */
-        if (i < width_a) {
-            remap_pin_to_new_node(node->input_pins[i], reduction1, i);
-        } else {
-            /* ELSE - the B input does not exist, so this answer goes right through */
-            add_input_pin_to_node(reduction1, get_zero_pin(netlist), i);
-        }
+        remap_pin_to_new_node(node->input_pins[i], reduction1, i);
     }
     for (i = 0; i < width_b; i++) {
         /* Joining the inputs to the input 1 of that gate */
-        if (i < width_b) {
-            remap_pin_to_new_node(node->input_pins[i + port_B_offset], reduction2, i);
-        } else {
-            /* ELSE - the B input does not exist, so this answer goes right through */
-            add_input_pin_to_node(reduction2, get_zero_pin(netlist), i);
-        }
+        remap_pin_to_new_node(node->input_pins[i + port_B_offset], reduction2, i);
     }
 
     connect_nodes(reduction1, 0, new_logic_cell, 0);
     connect_nodes(reduction2, 0, new_logic_cell, 1);
 
-    instantiate_bitwise_reduction(reduction1, BITWISE_OR, mark, netlist);
-    instantiate_bitwise_reduction(reduction2, BITWISE_OR, mark, netlist);
+    instantiate_bitwise_reduction(reduction1, BITWISE_OR, mark);
+    instantiate_bitwise_reduction(reduction2, BITWISE_OR, mark);
 
     remap_pin_to_new_node(node->output_pins[0], new_logic_cell, 0);
     free_nnode(node);
@@ -657,7 +647,7 @@ void instantiate_logical_logic(nnode_t* node, operation_list op, short mark, net
  * (function: instantiate_bitwise_reduction )
  * 	Makes 2 input gates to break into bitwise
  *-------------------------------------------------------------------------------------------*/
-void instantiate_bitwise_reduction(nnode_t* node, operation_list op, short mark, netlist_t* netlist) {
+void instantiate_bitwise_reduction(nnode_t* node, operation_list op, short mark) {
     int i;
     int width_a;
     nnode_t* new_logic_cell;
@@ -705,12 +695,7 @@ void instantiate_bitwise_reduction(nnode_t* node, operation_list op, short mark,
     /* connect inputs.  In the case that a signal is smaller than the other then zero pad */
     for (i = 0; i < width_a; i++) {
         /* Joining the inputs to the input 1 of that gate */
-        if (i < width_a) {
-            remap_pin_to_new_node(node->input_pins[i], new_logic_cell, i);
-        } else {
-            /* ELSE - the B input does not exist, so this answer goes right through */
-            add_input_pin_to_node(new_logic_cell, get_zero_pin(netlist), i);
-        }
+        remap_pin_to_new_node(node->input_pins[i], new_logic_cell, i);
     }
 
     remap_pin_to_new_node(node->output_pins[0], new_logic_cell, 0);
