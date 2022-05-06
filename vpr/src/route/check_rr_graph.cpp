@@ -212,8 +212,8 @@ void check_rr_graph(const t_graph_type graph_type,
         int ylow = rr_graph.node_ylow(rr_node);
         t_physical_tile_type_ptr type = device_ctx.grid[xlow][ylow].type;
         if(rr_type == IPIN || rr_type == OPIN) {
-            auto pb_pin = get_pb_pin_from_pin_physical_num(type, ptc_num);
-            if(!pb_pin->is_root_block_pin())
+            // No edges are added for internal pins.
+            if(ptc_num >= type->num_pins)
                 continue;
         }
 
@@ -423,14 +423,16 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                       "in check_rr_node: inode %d (type %d) had a ptc_num of %d - max_ptc = %d.\n", inode, rr_type, ptc_num, max_ptc);
         }
         if(is_flat) {
-            auto pb_pin = get_pb_pin_from_pin_physical_num(type, ptc_num);
             /* In flat routing, classes are defined only for primitive pins */
             /* TODO: Only primitive pins are assigned to a class - This should be changed */
-            if(pb_pin->is_primitive_pin()) {
-                auto logical_block = get_logical_block_from_pin_physical_num(type, ptc_num);
-                if (logical_block->primitive_class_inf[logical_block->pb_pin_class_map.at(pb_pin)].type != pin_type) {
-                    VPR_ERROR(VPR_ERROR_ROUTE,
-                              "in check_rr_node: inode %d (type %d) type is not equal to DRIVER.\n", inode, rr_type, ptc_num);
+            if(ptc_num >= type->num_pins) {
+                auto pb_pin = get_pb_pin_from_pin_physical_num(type, ptc_num);
+                if(pb_pin->is_primitive_pin()) {
+                    auto logical_block = get_logical_block_from_pin_physical_num(type, ptc_num);
+                    if (logical_block->primitive_class_inf[logical_block->pb_pin_class_map.at(pb_pin)].type != pin_type) {
+                        VPR_ERROR(VPR_ERROR_ROUTE,
+                                  "in check_rr_node: inode %d (type %d) type is not equal to DRIVER.\n", inode, rr_type, ptc_num);
+                    }
                 }
             }
         } else {
@@ -484,13 +486,12 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             //Don't worry about disconnect PINs which have no adjacent channels (i.e. on the device perimeter)
             bool check_for_out_edges = true;
             if (rr_type == IPIN || rr_type == OPIN) {
-                auto pb_pin = get_pb_pin_from_pin_physical_num(type, ptc_num);
-                if(pb_pin->is_root_block_pin()) {
+                if(ptc_num < type->num_pins) {
+                    // If the node is related to the pins on the physical tile
                     if (!has_adjacent_channel(rr_graph.rr_nodes()[inode], device_ctx.grid)) {
                         check_for_out_edges = false;
                     }
                 } else {
-                    VTR_ASSERT(!pb_pin->is_root_block_pin());
                     check_for_out_edges = false;
                 }
             }
