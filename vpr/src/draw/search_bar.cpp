@@ -328,7 +328,8 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app){
     GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
     if (!type) return;
     if (type[0] == '\0') return;
-    if (type == "Block Name"){
+    std::string searchType(type);
+    if (searchType == "Block Name"){
         GtkEntryCompletion* blockCompleter = GTK_ENTRY_COMPLETION(app->get_object("BlockNameCompleter"));
         gtk_entry_set_completion(searchBar, blockCompleter);
     } else {
@@ -343,8 +344,10 @@ void load_block_names(ezgl::application* app){
     for(ClusterBlockId id : cluster_ctx.clb_nlist.blocks()){
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter, 
-        0, cluster_ctx.clb_nlist.block_name(id), -1);
+        0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
+        std::cout << cluster_ctx.clb_nlist.block_name(id) << " ";
     }
+    std::cout << std::endl;
 }
 
 #endif /* NO_GRAPHICS */
