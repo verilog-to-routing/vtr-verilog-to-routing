@@ -187,6 +187,7 @@ static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*d
 static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void run_graphics_commands(std::string commands);
 
+
 /************************** File Scope Variables ****************************/
 
 //The arrow head position for turning/straight-thru connections in a switch box
@@ -360,7 +361,8 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
                                    "RR Node ID");           // index 4
     gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
-
+    g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
+    load_block_names(app);
     button_for_toggle_nets();
     button_for_net_max_fanout();
     button_for_net_alpha();
@@ -443,6 +445,8 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
                                    "RR Node ID");
     gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
+    g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
+    load_block_names(app);
 
     button_for_toggle_nets();
     button_for_net_max_fanout();

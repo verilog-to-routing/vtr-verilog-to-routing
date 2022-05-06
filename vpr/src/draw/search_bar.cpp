@@ -323,4 +323,28 @@ void warning_dialog_box(const char* message) {
     return;
 }
 
+void search_type_changed(GtkComboBox* self, ezgl::application* app){
+    auto type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(self));
+    GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
+    if (!type) return;
+    if (type[0] == '\0') return;
+    if (type == "Block Name"){
+        GtkEntryCompletion* blockCompleter = GTK_ENTRY_COMPLETION(app->get_object("BlockNameCompleter"));
+        gtk_entry_set_completion(searchBar, blockCompleter);
+    } else {
+        gtk_entry_set_completion(searchBar, nullptr);
+    }
+}
+
+void load_block_names(ezgl::application* app){
+    auto blockStorage = GTK_LIST_STORE(app->get_object("BlockNames"));
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    GtkTreeIter iter;
+    for(ClusterBlockId id : cluster_ctx.clb_nlist.blocks()){
+        gtk_list_store_append(blockStorage, &iter);
+        gtk_list_store_set(blockStorage, &iter, 
+        0, cluster_ctx.clb_nlist.block_name(id), -1);
+    }
+}
+
 #endif /* NO_GRAPHICS */
