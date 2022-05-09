@@ -191,7 +191,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         AtomNetId net_id = curr_model().create_net(nets[nets.size() - 1]);
         AtomPortId output_port_id = curr_model().create_port(blk_id, blk_model->outputs);
         curr_model().create_pin(output_port_id, 0, net_id, PinType::DRIVER, output_is_const);
-    }
+  }
 
     void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
         if (type == blifparse::LatchType::UNSPECIFIED) {
