@@ -161,7 +161,7 @@ std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type
 
 ///@brief Returns the name of the pin_index'th pin on the specified block type
 // #TODO: is_flat shouldn't have a default value - This should be modified ASAP!
-std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_index, bool is_flat = false);
+std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat = false);
 
 ///@brief Returns the name of the class_index'th pin class on the specified block type
 std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_type_ptr type, int class_index);

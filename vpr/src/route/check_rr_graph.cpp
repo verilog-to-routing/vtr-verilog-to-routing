@@ -212,12 +212,12 @@ void check_rr_graph(const t_graph_type graph_type,
         int ylow = rr_graph.node_ylow(rr_node);
         t_physical_tile_type_ptr type = device_ctx.grid[xlow][ylow].type;
         if(rr_type == IPIN || rr_type == OPIN) {
-            // No edges are added for internal pins.
+            // #TODO: No edges are added for internal pins. However, they needs to be checks somehow!
             if(ptc_num >= type->num_pins)
                 continue;
         }
-
-        if (rr_type != SOURCE) {
+        // #TODO: For current implementation, OPINs on the tile doesn't have any fanin. If I remove rr_type != OPIN, several errors would rise - Proper checking for OPINs should be added
+        if (rr_type != SOURCE && rr_type != OPIN) {
             if (total_edges_to_node[inode] < 1 && !rr_node_is_global_clb_ipin(rr_node)) {
                 /* A global CLB input pin will not have any edges, and neither will  *
                  * a SOURCE or the start of a carry-chain.  Anything else is an error.
