@@ -369,7 +369,7 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
         SRAM_bits[1 << i] = '\0';
     }
 
-    dens = (float*)vtr::malloc(lut_size * sizeof(float));
+    dens = new float[lut_size];
     prob = (float*)vtr::malloc(lut_size * sizeof(float));
     for (int i = 0; i < lut_size; i++) {
         dens[i] = 1;
@@ -379,7 +379,7 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
                     dens, power_callib_period);
 
     free(SRAM_bits);
-    free(dens);
+    delete (dens);
     free(prob);
 
     return power_sum_usage(&power_usage);
