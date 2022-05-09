@@ -78,9 +78,28 @@ struct t_cluster_progress_stats {
 struct t_clustering_data {
     vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*> intra_lb_routing;
     int* hill_climbing_inputs_avail;
+
+    /* Keeps a linked list of the unclustered blocks to speed up looking for *                                                                  
+     * unclustered blocks with a certain number of *external* inputs.        *
+     * [0..lut_size].  Unclustered_list_head[i] points to the head of the    *
+     * list of blocks with i inputs to be hooked up via external interconnect. */
     t_molecule_link* unclustered_list_head = nullptr;
+
+
     t_molecule_link* memory_pool = nullptr;
+
+    /* Does the atom block that drives the output of this atom net also appear as a   *
+     * receiver (input) pin of the atom net? If so, then by how much?
+     *
+     * This is used in the gain routines to avoid double counting the connections from   *
+     * the current cluster to other blocks (hence yielding better clusterings). *
+     * The only time an atom block should connect to the same atom net *
+     * twice is when one connection is an output and the other is an input, *
+     * so this should take care of all multiple connections.                */
+    std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
+
 };
+
 /***********************************/
 /*   Clustering helper functions   */
 /***********************************/
@@ -117,9 +136,15 @@ bool check_cluster_legality(const int& verbosity,
 bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb);
 
 void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
-                                         std::map<AtomBlockId, float>& gain,
-                                         t_pb* pb,
-                                         int max_queue_size);
+                                                std::map<AtomBlockId, float>& gain,
+                                                t_pb* pb,
+                                                int max_queue_size,
+                                                AttractionInfo& attraction_groups);
+
+void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
+                                                     t_pb* pb);
+
+
 
 void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
                                t_cluster_placement_stats** cluster_placement_stats,
@@ -163,12 +188,18 @@ t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb* cur_pb
 
 void print_pack_status_header();
 
-void print_pack_status(int num_clb,
-                       int tot_num_molecules,
-                       int num_molecules_processed,
-                       int& mols_since_last_print,
-                       int device_width,
-                       int device_height);
+static void print_pack_status(int num_clb,
+                              int tot_num_molecules,
+                              int num_molecules_processed,
+                              int& mols_since_last_print,
+                              int device_width,
+                              int device_height,
+                              AttractionInfo& attraction_groups);
+
+static void rebuild_attraction_groups(AttractionInfo& attraction_groups);
+
+static void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb);
+
 
 enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
                                            t_pack_molecule* molecule,
@@ -207,7 +238,8 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       e_block_pack_status& block_pack_status,
                       t_molecule_link* unclustered_list_head,
                       const int& unclustered_list_head_size,
-                      std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input);
+                      std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
+                      std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 t_pack_molecule* save_cluster_routing_and_pick_new_seed(const t_packer_opts& packer_opts,
                                                         const int& num_clb,
@@ -317,27 +349,33 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            const ClusterBlockId cluster_index,
                                            bool prioritize_transitive_connectivity,
                                            int transitive_fanout_threshold,
-                                           const int feasible_block_array_size);
+                                           const int feasible_block_array_size,
+                                           std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                const int feasible_block_array_size);
+                                                                const int feasible_block_array_size,
+                                                                AttractionInfo& attraction_groups);
 
 void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                const int feasible_block_array_size);
+                                                                const int feasible_block_array_size,
+                                                                AttractionInfo& attraction_groups);
 
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
-                                                         t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                         AttractionInfo& attraction_groups,
-                                                         const int feasible_block_array_size);
+                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                AttractionInfo& attraction_groups,
+                                                                const int feasible_block_array_size,
+                                                                ClusterBlockId clb_index,
+                                                                std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,
                                                                 vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                                                 const ClusterBlockId cluster_index,
                                                                 int transitive_fanout_threshold,
-                                                                const int feasible_block_array_size);
+                                                                const int feasible_block_array_size,
+                                                                AttractionInfo& attraction_groups);
 
 bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule, t_cluster_placement_stats* cluster_placement_stats_ptr);
 
@@ -353,7 +391,8 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                           ClusterBlockId cluster_index,
                                           int verbosity,
                                           t_molecule_link* unclustered_list_head,
-                                          const int& unclustered_list_head_size);
+                                          const int& unclustered_list_head_size,
+                                          std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 void mark_all_molecules_valid(t_pack_molecule* molecule_head);
 
