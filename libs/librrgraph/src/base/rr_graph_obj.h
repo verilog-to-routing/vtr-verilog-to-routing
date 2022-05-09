@@ -206,7 +206,7 @@
 #include "arch_types.h"
 
 /* VPR header files go third */
-#include "vpr_types.h"
+#include "rr_node_types.h"
 #include "rr_graph_fwd.h"
 
 class RRGraph {

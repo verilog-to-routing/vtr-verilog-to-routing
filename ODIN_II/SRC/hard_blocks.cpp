@@ -273,7 +273,7 @@ void instantiate_hard_block(nnode_t* node, short mark, netlist_t* /*netlist*/) {
     /* Give names to the output pins */
     for (i = 0; i < node->num_output_pins; i++) {
         if (node->output_pins[i]->name == NULL)
-            node->output_pins[i]->name = make_full_ref_name(node->name, NULL, NULL, node->output_pins[i]->mapping, -1);
+            node->output_pins[i]->name = make_full_ref_name(node->name, NULL, NULL, node->output_pins[i]->mapping, (configuration.elaborator_type == elaborator_e::_YOSYS) ? i : -1);
 
         index++;
         if (node->output_port_sizes[port] == index) {

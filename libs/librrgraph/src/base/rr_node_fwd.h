@@ -2,7 +2,7 @@
 #define RR_NODE_FWD_H
 
 #include <iterator>
-#include "vpr_types.h"
+#include "rr_node_types.h"
 
 //Forward declaration
 class t_rr_node;

@@ -102,7 +102,8 @@ ClusterBlockId pick_from_block();
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc from,
-                         t_pl_loc& to);
+                         t_pl_loc& to,
+                         ClusterBlockId b_from);
 
 // Accessor f_placer_breakpoint_reached
 // return true when a placer breakpoint is reached
@@ -125,7 +126,7 @@ void set_placer_breakpoint_reached(bool);
  *  @param limit_coords: the region where I can move the block to
  *  @param to_loc: the new location that the function picked for the block
  */
-bool find_to_loc_median(t_logical_block_type_ptr blk_type, const t_pl_loc& from_loc, const t_bb* limit_coords, t_pl_loc& to_loc);
+bool find_to_loc_median(t_logical_block_type_ptr blk_type, const t_pl_loc& from_loc, const t_bb* limit_coords, t_pl_loc& to_loc, ClusterBlockId b_from);
 
 /**
  * @brief Find a legal swap to location for the given type in a range around a specific location.
@@ -145,7 +146,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_pl_loc& from_loc,
                           const t_pl_loc& centeroid,
                           const t_range_limiters& range_limiters,
-                          t_pl_loc& to_loc);
+                          t_pl_loc& to_loc,
+                          ClusterBlockId b_from);
 
 std::string move_type_to_string(e_move_type);
 
@@ -170,6 +172,23 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, int cx, int cy, t
  * is_median: true if this is called from find_to_loc_median
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type, int min_cx, int max_cx, int min_cy, int max_cy, int delta_cx, int cx_from, int cy_from, int& cx_to, int& cy_to, bool is_median);
+
+/*
+ * If the block to be moved (b_from) has a floorplan constraint, this routine changes the max and min coords
+ * in the compressed grid (min_cx, min_cy, max_cx, max_cy) to make sure the range limit is within the floorplan constraint.
+ *
+ * Returns false if there is no intersection between the range limit and the floorplan constraint,
+ * true otherwise.
+ *
+ *
+ * If region size of the block's floorplan constraints is greater than 1, the block is constrained to more than one rectangular region.
+ * In this case, we return true (i.e. the range limit intersects with
+ * the floorplan constraints) to simplify the problem. This simplification can be done because
+ * this routine is done for cpu time optimization, so we do not have to necessarily check each
+ * complicated case to get correct functionality during place moves.
+ *
+ */
+bool intersect_range_limit_with_floorplan_constraints(t_logical_block_type_ptr type, ClusterBlockId b_from, int& min_cx, int& min_cy, int& max_cx, int& max_cy, int& delta_cx);
 
 std::string e_move_result_to_string(e_move_result move_outcome);
 

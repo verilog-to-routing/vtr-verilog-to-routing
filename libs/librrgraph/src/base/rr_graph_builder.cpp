@@ -7,11 +7,9 @@
 
 //#include "globals.h"
 
-RRGraphBuilder::RRGraphBuilder(t_rr_graph_storage* node_storage)
-    : node_storage_(*node_storage) {
-}
+RRGraphBuilder::RRGraphBuilder() {}
 
-t_rr_graph_storage& RRGraphBuilder::node_storage() {
+t_rr_graph_storage& RRGraphBuilder::rr_nodes() {
     return node_storage_;
 }
 
@@ -63,6 +61,7 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
 
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
+    node_storage_.clear();
     rr_node_metadata_.clear();
     rr_edge_metadata_.clear();
     rr_segments_.clear();
@@ -125,7 +124,9 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
     for (auto u : src_order)
         dest_order[u] = RRNodeId(cur_idx++);
 
+    VTR_ASSERT_SAFE(node_storage_.validate(rr_switch_inf_));
     node_storage_.reorder(dest_order, src_order);
+    VTR_ASSERT_SAFE(node_storage_.validate(rr_switch_inf_));
 
     node_lookup().reorder(dest_order);
 

@@ -2024,6 +2024,22 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.floorplan_num_horizontal_partitions, "--floorplan_num_horizontal_partitions")
+        .help(
+            "An argument used for generating test constraints files. Specifies how many partitions to "
+            "make in the horizontal dimension. Must be used in conjunction with "
+            "--floorplan_num_vertical_partitions")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.floorplan_num_vertical_partitions, "--floorplan_num_vertical_partitions")
+        .help(
+            "An argument used for generating test constraints files. Specifies how many partitions to "
+            "make in the vertical dimension. Must be used in conjunction with "
+            "--floorplan_num_horizontal_partitions")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     /*
      * place_grp.add_argument(args.place_timing_cost_func, "--place_timing_cost_func")
      * .help(
@@ -2512,6 +2528,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     analysis_grp.add_argument<bool, ParseOnOff>(args.Generate_Post_Synthesis_Netlist, "--gen_post_synthesis_netlist")
         .help(
             "Generates the post-synthesis netlist (in BLIF and Verilog) along with delay information (in SDF)."
+            " Used for post-implementation simulation and verification")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument<bool, ParseOnOff>(args.Generate_Post_Implementation_Merged_Netlist, "--gen_post_implementation_merged_netlist")
+        .help(
+            "Generates the post-implementation netlist with merged top module ports"
             " Used for post-implementation simulation and verification")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);

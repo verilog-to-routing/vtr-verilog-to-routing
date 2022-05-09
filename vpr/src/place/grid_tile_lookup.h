@@ -15,13 +15,22 @@
 
 class GridTileLookup {
   public:
+    GridTileLookup() {
+        auto& device_ctx = g_vpr_ctx.device();
+
+        //Will store the max number of tile locations for each logical block type
+        max_placement_locations.resize(device_ctx.logical_block_types.size());
+
+        for (const auto& type : device_ctx.logical_block_types) {
+            vtr::NdMatrix<int, 2> type_count({device_ctx.grid.width(), device_ctx.grid.height()});
+            fill_type_matrix(&type, type_count);
+            block_type_matrices.push_back(type_count);
+        }
+    }
+
     vtr::NdMatrix<int, 2>& get_type_grid(t_logical_block_type_ptr block_type);
 
-    void initialize_grid_tile_matrices();
-
     void fill_type_matrix(t_logical_block_type_ptr block_type, vtr::NdMatrix<int, 2>& type_count);
-
-    void print_type_matrix(vtr::NdMatrix<int, 2>& type_count);
 
     int region_tile_count(const Region& reg, t_logical_block_type_ptr block_type);
 

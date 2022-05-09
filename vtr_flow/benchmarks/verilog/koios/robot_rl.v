@@ -4921,16 +4921,16 @@ endmodule
 
 // LFSR_8bit: used to supplement the 2 bit random number generator
 module LFSR_8bit ( input clk, input reset, output reg [7:0]random);
-reg bit;
+reg bit_;
 
 always @ (posedge clk)  begin
 
 if (reset) random <= 8'd85;
 
 else begin
-	bit = random[7] ^ random[6] ^ random[5] ^ random[4];
+	bit_ = random[7] ^ random[6] ^ random[5] ^ random[4];
 	random[7:1] = random[6:0]; 
-	random[0] = bit;
+	random[0] = bit_;
 end
 end
 

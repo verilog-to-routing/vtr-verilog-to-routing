@@ -42,8 +42,16 @@ If you download a different version of those tools, then those versions may not 
 
 To verfiy that VTR has been installed correctly run::
 
-    ./vtr_flow/scripts/run_vtr_task.py basic_flow
+    ./vtr_flow/scripts/run_vtr_task.py regression_tests/vtr_reg_basic/basic_timing
 
 The expected output is::
+    
+    k6_N10_mem32K_40nm/single_ff            OK
+    k6_N10_mem32K_40nm/single_ff            OK
+    k6_N10_mem32K_40nm/single_wire          OK
+    k6_N10_mem32K_40nm/single_wire          OK
+    k6_N10_mem32K_40nm/diffeq1              OK
+    k6_N10_mem32K_40nm/diffeq1              OK
+    k6_N10_mem32K_40nm/ch_intrinsics                OK
+    k6_N10_mem32K_40nm/ch_intrinsics                OK
 
-    k6_N10_memSize16384_memData64_40nm_timing/ch_intrinsics...OK

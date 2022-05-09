@@ -2,10 +2,10 @@
     "output/multiple_declarations/no_arch": {
         "test_name": "output/multiple_declarations/no_arch",
         "verilog": "multiple_declarations.v",
-        "exit": 134,
-        "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
-        ]
+        "Pi": 11,
+        "Po": 11,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "output/output_port_failure/no_arch": {
         "test_name": "output/output_port_failure/no_arch",

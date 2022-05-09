@@ -6,6 +6,7 @@
 #include "pack_types.h"
 #include "echo_files.h"
 #include "vpr_utils.h"
+#include "constraints_report.h"
 
 #include "timing_info.h"
 #include "PreClusterDelayCalculator.h"
@@ -98,12 +99,13 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
 void free_clustering_data(const t_packer_opts& packer_opts,
                           t_clustering_data& clustering_data);
 
-//check ckustering legality and output it
+//check clustering legality and output it
 void check_and_output_clustering(const t_packer_opts& packer_opts,
                                  const std::unordered_set<AtomNetId>& is_clock,
                                  const t_arch* arch,
                                  const int& num_clb,
-                                 const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing);
+                                 const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
+                                 bool& floorplan_regions_overfull);
 
 void get_max_cluster_size_and_pb_depth(int& max_cluster_size,
                                        int& max_pb_depth);

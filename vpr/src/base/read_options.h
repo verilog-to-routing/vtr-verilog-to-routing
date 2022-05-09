@@ -135,6 +135,8 @@ struct t_options {
     argparse::ArgValue<float> place_crit_limit;
     argparse::ArgValue<int> place_constraint_expand;
     argparse::ArgValue<bool> place_constraint_subtile;
+    argparse::ArgValue<int> floorplan_num_horizontal_partitions;
+    argparse::ArgValue<int> floorplan_num_vertical_partitions;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
@@ -206,6 +208,7 @@ struct t_options {
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;
     argparse::ArgValue<bool> Generate_Post_Synthesis_Netlist;
+    argparse::ArgValue<bool> Generate_Post_Implementation_Merged_Netlist;
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;

@@ -1,8 +1,8 @@
+#include <climits>
+#include "arch_types.h"
 #include "rr_graph_storage.h"
 
 #include <algorithm>
-
-#include "globals.h"
 
 void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_src_node_.reserve(num_edges);
@@ -488,8 +488,7 @@ void t_rr_graph_storage::mark_edges_as_rr_switch_ids() {
     remapped_edges_ = true;
 }
 
-/* TODO: This API should be moved to RRGraphBuilder */
-void t_rr_graph_storage::partition_edges() {
+void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) {
     if (partitioned_) {
         return;
     }
@@ -504,25 +503,23 @@ void t_rr_graph_storage::partition_edges() {
     std::sort(
         edge_sort_iterator(this, 0),
         edge_sort_iterator(this, edge_src_node_.size()),
-        edge_compare_src_node_and_configurable_first(g_vpr_ctx.mutable_device().rr_graph_builder.rr_switch()));
+        edge_compare_src_node_and_configurable_first(rr_switches));
 
     partitioned_ = true;
 
     assign_first_edges();
 
-    VTR_ASSERT_SAFE(validate());
+    VTR_ASSERT_SAFE(validate(rr_switches));
 }
 
-t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const {
+t_edge_size t_rr_graph_storage::num_configurable_edges(RRNodeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
     VTR_ASSERT(!node_first_edge_.empty() && remapped_edges_);
 
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
     auto first_id = size_t(node_first_edge_[id]);
     auto last_id = size_t((&node_first_edge_[id])[1]);
     for (size_t idx = first_id; idx < last_id; ++idx) {
         auto switch_idx = edge_switch_[RREdgeId(idx)];
-        if (!rr_graph.rr_switch_inf(RRSwitchId(switch_idx)).configurable()) {
+        if (!rr_switches[RRSwitchId(switch_idx)].configurable()) {
             return idx - first_id;
         }
     }
@@ -530,14 +527,41 @@ t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const
     return last_id - first_id;
 }
 
-t_edge_size t_rr_graph_storage::num_non_configurable_edges(const RRNodeId& id) const {
-    return num_edges(id) - num_configurable_edges(id);
+t_edge_size t_rr_graph_storage::num_non_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+    return num_edges(node) - num_configurable_edges(node, rr_switches);
 }
 
-bool t_rr_graph_storage::validate() const {
+bool t_rr_graph_storage::edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+  auto iswitch = edge_switch(id, iedge);
+  return rr_switches[RRSwitchId(iswitch)].configurable();
+}
+
+bool t_rr_graph_storage::validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+   t_edge_size iedge = 0;
+   for (auto edge : edges(node_id)) {
+       if (edge < num_configurable_edges(node_id, rr_switches)) {
+           if (!edge_is_configurable(node_id, edge, rr_switches)) {
+               VTR_LOG_ERROR("RR Node non-configurable edge found in configurable edge list");
+           }
+       } else {
+           if (edge_is_configurable(node_id, edge, rr_switches)) {
+               VTR_LOG_ERROR("RR Node configurable edge found in non-configurable edge list");
+           }
+       }
+       ++iedge;
+   }
+
+   if (iedge != num_edges(node_id)) {
+       VTR_LOG_ERROR("RR Node Edge iteration does not match edge size");
+   }
+
+   return true;
+}
+
+bool t_rr_graph_storage::validate(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
     bool all_valid = verify_first_edges();
     for (size_t inode = 0; inode < size(); ++inode) {
-        all_valid = (*this)[inode].validate() || all_valid;
+        all_valid = validate_node(RRNodeId(inode), rr_switches) || all_valid;
     }
     return all_valid;
 }
@@ -567,37 +591,26 @@ const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
     return SIDE_STRING[NUM_SIDES];
 }
 
-float t_rr_graph_storage::node_R(RRNodeId id) const {
-    auto& device_ctx = g_vpr_ctx.device();
-    return device_ctx.rr_rc_data[node_rc_index(id)].R;
-}
-
-float t_rr_graph_storage::node_C(RRNodeId id) const {
-    auto& device_ctx = g_vpr_ctx.device();
-    VTR_ASSERT(node_rc_index(id) < (short)device_ctx.rr_rc_data.size());
-    return device_ctx.rr_rc_data[node_rc_index(id)].C;
-}
-
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, short new_ptc_num) {
     node_ptc_[id].ptc_.pin_num = new_ptc_num; //TODO: eventually remove
 }
 void t_rr_graph_storage::set_node_pin_num(RRNodeId id, short new_pin_num) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'", node_type_string(id));
+        VTR_LOG_ERROR("Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.pin_num = new_pin_num;
 }
 
 void t_rr_graph_storage::set_node_track_num(RRNodeId id, short new_track_num) {
     if (node_type(id) != CHANX && node_type(id) != CHANY) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
+        VTR_LOG_ERROR("Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.track_num = new_track_num;
 }
 
 void t_rr_graph_storage::set_node_class_num(RRNodeId id, short new_class_num) {
     if (node_type(id) != SOURCE && node_type(id) != SINK) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'", node_type_string(id));
+        VTR_LOG_ERROR("Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.class_num = new_class_num;
 }
@@ -612,7 +625,7 @@ static short get_node_pin_num(
     RRNodeId id) {
     auto node_type = node_storage[id].type_;
     if (node_type != IPIN && node_type != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", rr_node_typename[node_type]);
+        VTR_LOG_ERROR("Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.pin_num;
 }
@@ -623,7 +636,7 @@ static short get_node_track_num(
     RRNodeId id) {
     auto node_type = node_storage[id].type_;
     if (node_type != CHANX && node_type != CHANY) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", rr_node_typename[node_type]);
+        VTR_LOG_ERROR("Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.track_num;
 }
@@ -634,7 +647,7 @@ static short get_node_class_num(
     RRNodeId id) {
     auto node_type = node_storage[id].type_;
     if (node_type != SOURCE && node_type != SINK) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", rr_node_typename[node_type]);
+        VTR_LOG_ERROR("Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.class_num;
 }
@@ -684,8 +697,8 @@ void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, s
 void t_rr_graph_storage::set_node_cost_index(RRNodeId id, RRIndexedDataId new_cost_index) {
     auto& node = node_storage_[id];
     if ((size_t)new_cost_index >= std::numeric_limits<decltype(node.cost_index_)>::max()) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set cost_index_ %zu above cost_index storage max value.",
-                        new_cost_index);
+        VTR_LOG_ERROR("Attempted to set cost_index_ %zu above cost_index storage max value.",
+                      new_cost_index);
     }
     node.cost_index_ = (size_t)new_cost_index;
 }
@@ -701,19 +714,19 @@ void t_rr_graph_storage::set_node_capacity(RRNodeId id, short new_capacity) {
 
 void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction) {
     if (node_type(id) != CHANX && node_type(id) != CHANY) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'direction' for non-channel type '%s'", node_type_string(id));
+        VTR_LOG_ERROR("Attempted to set RR node 'direction' for non-channel type '%s'", node_type_string(id));
     }
     node_storage_[id].dir_side_.direction = new_direction;
 }
 
 void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
+        VTR_LOG_ERROR("Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
     }
     std::bitset<NUM_SIDES> side_bits = node_storage_[id].dir_side_.sides;
     side_bits[size_t(new_side)] = true;
     if (side_bits.to_ulong() > CHAR_MAX) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid side '%s' to be added to rr node %u", SIDE_STRING[new_side], size_t(id));
+        VTR_LOG_ERROR("Invalid side '%s' to be added to rr node %u", SIDE_STRING[new_side], size_t(id));
     }
     node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
 }
@@ -760,7 +773,6 @@ t_rr_graph_view t_rr_graph_storage::view() const {
 //       should generally be called before creating such references.
 void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                                  const vtr::vector<RRNodeId, RRNodeId>& inverse_order) {
-    VTR_ASSERT_SAFE(validate());
     VTR_ASSERT(order.size() == inverse_order.size());
     {
         auto old_node_storage = node_storage_;
@@ -805,6 +817,4 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
             node_fan_in_[order[RRNodeId(i)]] = old_node_fan_in[RRNodeId(i)];
         }
     }
-
-    VTR_ASSERT_SAFE(validate());
 }

@@ -17,7 +17,9 @@
  */
 #include "vtr_geometry.h"
 #include "vtr_vector.h"
-#include "vpr_types.h"
+#include "physical_types.h"
+#include "rr_node_types.h"
+#include "rr_graph_fwd.h"
 
 class RRSpatialLookup {
     /* -- Constructors -- */

@@ -72,17 +72,18 @@
 #include "tatum/TimingReporter.hpp"
 
 #include "re_cluster_util.h"
+#include "constraints_report.h"
 
-/*****************************************/
-/*local functions*/
-/*****************************************/
+/*
+ * When attraction groups are created, the purpose is to pack more densely by adding more molecules
+ * from the cluster's attraction group to the cluster. In a normal flow, (when attraction groups are
+ * not on), the cluster keeps being packed until the get_molecule routines return either a repeated
+ * molecule or a nullptr. When attraction groups are on, we want to keep exploring molecules for the
+ * cluster until a nullptr is returned. So, the number of repeated molecules is changed from 1 to 500,
+ * effectively making the clusterer pack a cluster until a nullptr is returned.
+ */
+#define ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES 500
 
-#if 0
-static void check_for_duplicate_inputs ();
-#endif
-
-/*****************************************/
-/*globally accessible function*/
 std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
                                                          const t_analysis_opts& analysis_opts,
                                                          const t_arch* arch,
@@ -96,7 +97,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          const t_ext_pin_util_targets& ext_pin_util_targets,
                                                          const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                                          AttractionInfo& attraction_groups,
+                                                         bool& floorplan_regions_overfull,
                                                          t_clustering_data& clustering_data) {
+
     /* Does the actual work of clustering multiple netlist blocks *
      * into clusters.                                                  */
 
@@ -105,6 +108,12 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
      * 2.  Populate started cluster
      * 3.  Repeat 1 until no more blocks need to be clustered
      *
+     */
+
+    /* This routine returns a map that details the number of used block type instances.
+     * The bool floorplan_regions_overfull also acts as a return value - it is set to
+     * true when one or more floorplan regions have more blocks assigned to them than
+     * they can fit.
      */
 
     /****************************************************************
@@ -261,7 +270,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               cluster_stats.num_molecules_processed,
                               cluster_stats.mols_since_last_print,
                               device_ctx.grid.width(),
-                              device_ctx.grid.height());
+                              device_ctx.grid.height(),
+                              attraction_groups);
 
             VTR_LOGV(verbosity > 2,
                      "Complex block %d: '%s' (%s) ", helper_ctx.total_clb_num,
@@ -304,14 +314,34 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      clb_index,
                                                      verbosity,
                                                      clustering_data.unclustered_list_head,
-                                                     unclustered_list_head_size);
+                                                     unclustered_list_head_size,
+                                                     primitive_candidate_block_types);
             prev_molecule = istart;
-            while (next_molecule != nullptr && prev_molecule != next_molecule) {
+
+            /*
+             * When attraction groups are created, the purpose is to pack more densely by adding more molecules
+             * from the cluster's attraction group to the cluster. In a normal flow, (when attraction groups are
+             * not on), the cluster keeps being packed until the get_molecule routines return either a repeated
+             * molecule or a nullptr. When attraction groups are on, we want to keep exploring molecules for the
+             * cluster until a nullptr is returned. So, the number of repeated molecules allowed is increased to a
+             * large value.
+             */
+            int max_num_repeated_molecules = 0;
+            if (attraction_groups.num_attraction_groups() > 0) {
+                max_num_repeated_molecules = ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES;
+            } else {
+                max_num_repeated_molecules = 1;
+            }
+            int num_repeated_molecules = 0;
+
+            while (next_molecule != nullptr && num_repeated_molecules < max_num_repeated_molecules) {
                 prev_molecule = next_molecule;
 
                 try_fill_cluster(packer_opts,
                                  cur_cluster_placement_stats_ptr,
+                                 prev_molecule,
                                  next_molecule,
+                                 num_repeated_molecules,
                                  helper_ctx.primitives_list,
                                  cluster_stats,
                                  helper_ctx.total_clb_num,
@@ -331,7 +361,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  block_pack_status,
                                  clustering_data.unclustered_list_head,
                                  unclustered_list_head_size,
-                                 net_output_feeds_driving_block_input);
+                                 net_output_feeds_driving_block_input,
+                                 primitive_candidate_block_types);
             }
 
             is_cluster_legal = check_cluster_legality(verbosity, detailed_routing_stage, router_data);

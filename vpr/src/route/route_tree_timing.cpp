@@ -80,7 +80,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
     /* Allocates any structures needed to build the routing trees. */
 
     auto& device_ctx = g_vpr_ctx.device();
-    bool route_tree_structs_are_allocated = (rr_node_to_rt_node.size() == size_t(device_ctx.rr_nodes.size())
+    bool route_tree_structs_are_allocated = (rr_node_to_rt_node.size() == size_t(device_ctx.rr_graph.num_nodes())
                                              || rt_node_free_list != nullptr);
     if (route_tree_structs_are_allocated) {
         if (exists_ok) {
@@ -91,7 +91,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
         }
     }
 
-    rr_node_to_rt_node = std::vector<t_rt_node*>(device_ctx.rr_nodes.size(), nullptr);
+    rr_node_to_rt_node = std::vector<t_rt_node*>(device_ctx.rr_graph.num_nodes(), nullptr);
 
     return true;
 }
@@ -322,7 +322,7 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
     std::unordered_set<int> all_visited;         //does not include sink
     inode = hptr->prev_node();
     RREdgeId edge = hptr->prev_edge();
-    short iswitch = device_ctx.rr_nodes.edge_switch(edge);
+    short iswitch = rr_graph.rr_nodes().edge_switch(edge);
 
     /* For all "new" nodes in the main path */
     // inode is node index of previous node
@@ -361,7 +361,7 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
         downstream_rt_node = rt_node;
         edge = route_ctx.rr_node_route_inf[inode].prev_edge;
         inode = route_ctx.rr_node_route_inf[inode].prev_node;
-        iswitch = device_ctx.rr_nodes.edge_switch(edge);
+        iswitch = rr_graph.rr_nodes().edge_switch(edge);
     }
 
     //Inode is now the branch point to the old routing; do not need
@@ -422,7 +422,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
         }
         for (int iedge : rr_graph.non_configurable_edges(RRNodeId(rr_node))) {
             //Recursive case: expand children
-            VTR_ASSERT(!device_ctx.rr_nodes[rr_node].edge_is_configurable(iedge));
+            VTR_ASSERT(!rr_graph.edge_is_configurable(RRNodeId(rr_node), iedge));
             int to_rr_node = size_t(rr_graph.edge_sink_node(RRNodeId(rr_node), iedge));
 
             //Recurse

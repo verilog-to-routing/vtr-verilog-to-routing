@@ -391,16 +391,35 @@ The ``.param`` statement allows parameters (e.g. primitive modes) to be tagged o
 
 .. note:: ``.param`` statements apply to the previous primitive instantiation.
 
+Parameters can have one of the three available types. Type is inferred from the format in which a parameter is provided.
+
+ * **string**
+    Whenever a parameter value is quoted it is considered to be a string. BLIF parser does not allow escaped characters hence those are illegal and will cause syntax errors.
+
+ * **binary word**
+    Binary words are specified using strings of characters ``0`` and ``1``. No other characters are allowed. Number of characters denotes the word length.
+
+ * **real number**
+    Real numbers are stored as decimals where the dot ``.`` character separates the integer and fractional part. Presence of the dot character implies that the value is to be treated as a real number.
+
 For example:
 
 .. code-block:: none
 
-    .subckt dsp a=a_in b=b_in cin=c_in cout=c_out s=sum_out
-    .param mode adder
+    .subckt pll clk_in=gclk clk_out=pclk
+    .param feedback "internal"
+    .param multiplier 0.50
+    .param power 001101
 
-Would set the parameter ``mode`` of the above ``dsp`` ``.subckt`` to ``adder``.
+Would set the parameters ``feedback``, ``multiplier`` and ``power``  of the above ``pll`` ``.subckt`` to ``"internal"``, ``0.50`` and ``001101`` respectively.
+
+.. warning:: Integers in notation other than binary (e.g. decimal, hexadecimal) are not supported. Occurrence of params with digits other than 1 and 0 for binary words, not quoted (strings) or not separated with dot ``.`` (real numbers) are considered to be illegal.
+
+Interpretation of parameter values is out of scope of the BLIF format extension.
 
 ``.param`` statements propagate to ``<parameter>`` elements in the packed netlist.
+
+Paramerer values propagate also to the post-route Verilog netlist, if it is generated. Strings and real numbers are passed directly while binary words are prepended with the ``<N>'b`` prefix where ``N`` denotes a binary word length.
 
 .attr
 ~~~~~

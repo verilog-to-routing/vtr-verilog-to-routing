@@ -40,6 +40,7 @@ class RRGraphView {
                 const MetadataStorage<int>& rr_node_metadata,
                 const MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata,
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                const std::vector<t_rr_rc_data>& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                 const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
 
@@ -69,12 +70,22 @@ class RRGraphView {
      *      } 
      */
     inline vtr::StrongIdRange<RRNodeId> nodes() const {
-        return vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(size()));
+        return vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(num_nodes()));
     }
 
     /** @brief Return number of nodes. This function is inlined for runtime optimization. */
-    inline size_t size() const {
+    inline size_t num_nodes() const {
         return node_storage_.size();
+    }
+    /** @brief Is the RR graph currently empty? */
+    inline bool empty() const {
+        return node_storage_.empty();
+    }
+
+    /** @brief Returns a range of RREdgeId's belonging to RRNodeId id.
+     * If this range is empty, then RRNodeId id has no edges.*/
+    inline vtr::StrongIdRange<RREdgeId> edge_range(RRNodeId id) const {
+        return vtr::StrongIdRange<RREdgeId>(node_storage_.first_edge(id), node_storage_.last_edge(id));
     }
 
     /** @brief Get the type of a routing resource node. This function is inlined for runtime optimization. */
@@ -109,12 +120,14 @@ class RRGraphView {
 
     /** @brief Get the capacitance of a routing resource node. This function is inlined for runtime optimization. */
     inline float node_C(RRNodeId node) const {
-        return node_storage_.node_C(node);
+        VTR_ASSERT(node_rc_index(node) < (short)rr_rc_data_.size());
+        return rr_rc_data_[node_rc_index(node)].C;
     }
 
     /** @brief Get the resistance of a routing resource node. This function is inlined for runtime optimization. */
     inline float node_R(RRNodeId node) const {
-        return node_storage_.node_R(node);
+        VTR_ASSERT(node_rc_index(node) < (short)rr_rc_data_.size());
+        return rr_rc_data_[node_rc_index(node)].R;
     }
 
     /** @brief Get the rc_index of a routing resource node. This function is inlined for runtime optimization. */
@@ -294,14 +307,19 @@ class RRGraphView {
         return node_storage_.edge_sink_node(id, iedge);
     }
 
+    /** @brief Detect if the edge is a configurable edge (controlled by a programmable routing multipler or a tri-state switch). */
+    inline bool edge_is_configurable(RRNodeId id, t_edge_size iedge) const {
+        return node_storage_.edge_is_configurable(id, iedge, rr_switch_inf_);
+    }
+
     /** @brief Get the number of configurable edges. This function is inlined for runtime optimization. */
     inline t_edge_size num_configurable_edges(RRNodeId node) const {
-        return node_storage_.num_configurable_edges(node);
+        return node_storage_.num_configurable_edges(node, rr_switch_inf_);
     }
 
     /** @brief Get the number of non-configurable edges. This function is inlined for runtime optimization. */
     inline t_edge_size num_non_configurable_edges(RRNodeId node) const {
-        return node_storage_.num_non_configurable_edges(node);
+        return node_storage_.num_non_configurable_edges(node, rr_switch_inf_);
     }
 
     /** @brief A configurable edge represents a programmable switch between routing resources, which could be 
@@ -310,7 +328,7 @@ class RRGraphView {
      * a pass gate 
      * This API gets ID range for configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range configurable_edges(RRNodeId node) const {
-        return node_storage_.configurable_edges(node);
+        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)));
     }
 
     /** @brief A non-configurable edge represents a hard-wired connection between routing resources, which could be 
@@ -318,7 +336,7 @@ class RRGraphView {
      * a short metal connection that can not be turned off
      * This API gets ID range for non-configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range non_configurable_edges(RRNodeId node) const {
-        return node_storage_.non_configurable_edges(node);
+        return vtr::make_range(edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)), edge_idx_iterator(num_edges(node)));
     }
 
     /** @brief Get outgoing edges for a node.
@@ -421,6 +439,11 @@ class RRGraphView {
     const RRSpatialLookup& node_lookup() const {
         return node_lookup_;
     }
+    /** @brief Return the node-level storage structure for queries from client functions */
+    inline const t_rr_graph_storage& rr_nodes() const {
+        return node_storage_;
+    }
+
     /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
      *  e.g., node_lookup! */
     MetadataStorage<int> rr_node_metadata_data() const {
@@ -429,6 +452,16 @@ class RRGraphView {
 
     MetadataStorage<std::tuple<int, int, short>> rr_edge_metadata_data() const {
         return rr_edge_metadata_;
+    }
+
+  public: /* Validators */
+    /** brief Validate that edge data is partitioned correctly
+     * @note This function is used to validate the correctness of the routing resource graph in terms
+     * of graph attributes. Strongly recommend to call it when you finish the building a routing resource
+     * graph. If you need more advance checks, which are related to architecture features, you should
+     * consider to use the check_rr_graph() function or build your own check_rr_graph() function. */
+    inline bool validate_node(RRNodeId node_id) const {
+        return node_storage_.validate_node(node_id, rr_switch_inf_);
     }
 
     /* -- Internal data storage -- */
@@ -464,6 +497,10 @@ class RRGraphView {
     const MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata_;
     /* rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string() */
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
+
+    /* RC data for nodes. This is a flyweight data */ 
+    const std::vector<t_rr_rc_data>& rr_rc_data_;
+
     /* Segment info for rr nodes */
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
     /* switch info for rr nodes */

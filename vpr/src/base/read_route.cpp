@@ -126,7 +126,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     recompute_occupancy_from_scratch();
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
-    OveruseInfo overuse_info(device_ctx.rr_nodes.size());
+    OveruseInfo overuse_info(device_ctx.rr_graph.num_nodes());
     pathfinder_update_acc_cost_and_overuse_info(router_opts.acc_fac, overuse_info);
 
     reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
@@ -505,21 +505,19 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
     if (prev_node == node) return false;
 
     auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_nodes;
-    /*TODO We need to remove temp_rr_graph once rr_graph is resolved*/
-    const auto& temp_rr_graph = device_ctx.rr_graph;
+    const auto& rr_graph = device_ctx.rr_graph;
     // If it's starting a new sub branch this is ok
-    if (device_ctx.rr_graph.node_type(prev_node) == SINK) return true;
+    if (rr_graph.node_type(prev_node) == SINK) return true;
 
     for (RREdgeId edge : rr_graph.edge_range(prev_node)) {
         //If the sink node is reachable by previous node return true
-        if (rr_graph.edge_sink_node(edge) == node) {
+        if (rr_graph.rr_nodes().edge_sink_node(edge) == node) {
             return true;
         }
 
         // If there are any non-configurable branches return true
-        short edge_switch = rr_graph.edge_switch(edge);
-        if (!(temp_rr_graph.rr_switch_inf(RRSwitchId(edge_switch)).configurable())) return true;
+        short edge_switch = rr_graph.rr_nodes().edge_switch(edge);
+        if (!(rr_graph.rr_switch_inf(RRSwitchId(edge_switch)).configurable())) return true;
     }
 
     // If it's part of a non configurable node list, return true

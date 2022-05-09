@@ -635,7 +635,8 @@ bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     //Write out a vpr floorplanning constraints file if the option is specified
     if (!filename_opts.write_vpr_constraints_file.empty()) {
-        write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile);
+        write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile,
+                                        placer_opts.floorplan_num_horizontal_partitions, placer_opts.floorplan_num_vertical_partitions);
     }
 
     return true;
@@ -1282,6 +1283,11 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
             netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc,
                            vpr_setup.AnalysisOpts);
+        }
+
+        //Write the post-implementation merged netlist
+        if (vpr_setup.AnalysisOpts.gen_post_implementation_merged_netlist) {
+            merged_netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc, vpr_setup.AnalysisOpts);
         }
 
         //Do power analysis

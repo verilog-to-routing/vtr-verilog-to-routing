@@ -166,15 +166,11 @@ A 36x36 multiplier fracturable into 18x18s and 9x9s
           </interconnect>
         </mode>
 
-
-
       <fc_in type="frac"> 0.15</fc_in>
       <fc_out type="frac"> 0.125</fc_out>
+
       <pinlocations pattern="spread"/>
 
-      <gridlocations>
-        <loc type="col" start="4" repeat="5" priority="2"/>
-      </gridlocations>
     </pb_type>
 
 

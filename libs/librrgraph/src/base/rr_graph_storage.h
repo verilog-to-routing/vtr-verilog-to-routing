@@ -1,17 +1,20 @@
-#ifndef _RR_GRAPH_STORAGE_
-#define _RR_GRAPH_STORAGE_
+#ifndef RR_GRAPH_STORAGE
+#define RR_GRAPH_STORAGE
 
 #include <exception>
 #include <bitset>
 
+#include "vtr_vector.h"
+#include "physical_types.h"
+#include "rr_node_types.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_fwd.h"
 #include "rr_edge.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
-#include "vpr_utils.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
+#include "rr_graph_utils.h"
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -166,8 +169,6 @@ class t_rr_graph_storage {
     int16_t node_rc_index(RRNodeId id) const {
         return node_storage_[id].rc_index_;
     }
-    float node_R(RRNodeId id) const;
-    float node_C(RRNodeId id) const;
 
     short node_xlow(RRNodeId id) const {
         return node_storage_[id].xlow_;
@@ -257,18 +258,20 @@ class t_rr_graph_storage {
     edge_idx_range edges(const RRNodeId& id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
-    edge_idx_range configurable_edges(const RRNodeId& id) const {
-        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id)));
+
+    edge_idx_range configurable_edges(const RRNodeId& id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id, rr_switches)));
     }
-    edge_idx_range non_configurable_edges(const RRNodeId& id) const {
-        return vtr::make_range(edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id)), edge_idx_iterator(num_edges(id)));
+    edge_idx_range non_configurable_edges(const RRNodeId& id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+        return vtr::make_range(edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id, rr_switches)), edge_idx_iterator(num_edges(id)));
     }
 
     t_edge_size num_edges(const RRNodeId& id) const {
         return size_t(last_edge(id)) - size_t(first_edge(id));
     }
-    t_edge_size num_configurable_edges(const RRNodeId& id) const;
-    t_edge_size num_non_configurable_edges(const RRNodeId& id) const;
+    bool edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
+    t_edge_size num_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
+    t_edge_size num_non_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
 
     // Get the first and last RREdgeId for the specified RRNodeId.
     //
@@ -572,10 +575,11 @@ class t_rr_graph_storage {
 
     // Sorts edge data such that configurable edges appears before
     // non-configurable edges.
-    void partition_edges();
+    void partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches);
 
     // Validate that edge data is partitioned correctly.
-    bool validate() const;
+    bool validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
+    bool validate(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
 
     /******************
      * Fan-in methods *
@@ -593,9 +597,8 @@ class t_rr_graph_storage {
         RRNodeId id) {
         auto& node_data = node_storage[id];
         if (node_data.type_ != CHANX && node_data.type_ != CHANY) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Attempted to access RR node 'direction' for non-channel type '%s'",
-                            rr_node_typename[node_data.type_]);
+            VTR_LOG_ERROR("Attempted to access RR node 'direction' for non-channel type '%s'",
+                          rr_node_typename[node_data.type_]);
         }
         return node_storage[id].dir_side_.direction;
     }
@@ -607,9 +610,8 @@ class t_rr_graph_storage {
         const e_side& side) {
         auto& node_data = node_storage[id];
         if (node_data.type_ != IPIN && node_data.type_ != OPIN) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
-                            rr_node_typename[node_data.type_]);
+            VTR_LOG_ERROR("Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
+                          rr_node_typename[node_data.type_]);
         }
         // Return a vector showing only the sides that the node appears
         std::bitset<NUM_SIDES> side_tt = node_storage[id].dir_side_.sides;
@@ -669,6 +671,7 @@ class t_rr_graph_storage {
     /***************
      * State flags *
      ***************/
+  public: /* Since rr_node_storage is an internal data of RRGraphView and RRGraphBuilder, expose these flags as public */
 
     // Has any edges been read?
     //

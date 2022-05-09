@@ -21,7 +21,7 @@ class RRGraphBuilder {
     /* -- Constructors -- */
   public:
     /* See detailed comments about the data structures in the internal data storage section of this file */
-    RRGraphBuilder(t_rr_graph_storage* node_storage);
+    RRGraphBuilder();
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -35,7 +35,7 @@ class RRGraphBuilder {
     /* -- Mutators -- */
   public:
     /** @brief Return a writable object for rr_nodes */
-    t_rr_graph_storage& node_storage();
+    t_rr_graph_storage& rr_nodes();
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
     /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
@@ -212,6 +212,11 @@ class RRGraphBuilder {
     inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
         node_storage_.emplace_back_edge(src, dest, edge_switch);
     }
+    /** @brief Append 1 more RR node to the RR graph. */
+    inline void emplace_back() {
+        // No edges can be assigned if mutating the rr node array.
+        node_storage_.emplace_back();
+    }
 
     /** @brief alloc_and_load_edges; It adds a batch of edges.  */
     inline void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create) {
@@ -280,19 +285,19 @@ class RRGraphBuilder {
         rr_switch_inf_.resize(size);
     }
 
-    /** brief Validate that edge data is partitioned correctly
+    /** @brief Validate that edge data is partitioned correctly
      * @note This function is used to validate the correctness of the routing resource graph in terms
      * of graph attributes. Strongly recommend to call it when you finish the building a routing resource
      * graph. If you need more advance checks, which are related to architecture features, you should
      * consider to use the check_rr_graph() function or build your own check_rr_graph() function. */
     inline bool validate() const {
-        return node_storage_.validate();
+        return node_storage_.validate(rr_switch_inf_);
     }
 
     /** @brief Sorts edge data such that configurable edges appears before
      *  non-configurable edges. */
     inline void partition_edges() {
-        node_storage_.partition_edges();
+        return node_storage_.partition_edges(rr_switch_inf_);
     }
 
     /** @brief Init per node fan-in data.  Should only be called after all edges have
@@ -316,7 +321,7 @@ class RRGraphBuilder {
      * That explains why the reference is used here temporarily
      */
     /* node-level storage including edge storages */
-    t_rr_graph_storage& node_storage_;
+    t_rr_graph_storage node_storage_;
     /* Fast look-up for rr nodes */
     RRSpatialLookup node_lookup_;
 

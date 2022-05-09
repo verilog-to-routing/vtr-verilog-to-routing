@@ -30,7 +30,7 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
 
     t_pl_loc to;
 
-    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to)) {
+    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from)) {
         return e_create_move::ABORT;
     }
 

@@ -50,15 +50,15 @@ void check_rr_graph(const t_graph_type graph_type,
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    auto total_edges_to_node = std::vector<int>(device_ctx.rr_nodes.size());
-    auto switch_types_from_current_to_node = std::vector<unsigned char>(device_ctx.rr_nodes.size());
+    auto total_edges_to_node = std::vector<int>(rr_graph.num_nodes());
+    auto switch_types_from_current_to_node = std::vector<unsigned char>(rr_graph.num_nodes());
     const int num_rr_switches = rr_graph.num_rr_switches();
 
     std::vector<std::pair<int, int>> edges;
 
-    for (const RRNodeId& rr_node : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId& rr_node : rr_graph.nodes()) {
         size_t inode = (size_t)rr_node;
-        device_ctx.rr_nodes[inode].validate();
+        rr_graph.validate_node(rr_node);
 
         /* Ignore any uninitialized rr_graph nodes */
         if (!rr_graph.node_is_initialized(rr_node)) {
@@ -82,7 +82,7 @@ void check_rr_graph(const t_graph_type graph_type,
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
 
-            if (to_node < 0 || to_node >= (int)device_ctx.rr_nodes.size()) {
+            if (to_node < 0 || to_node >= (int)rr_graph.num_nodes()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_graph: node %d has an edge %d.\n"
                                 "\tEdge is out of range.\n",
@@ -185,14 +185,14 @@ void check_rr_graph(const t_graph_type graph_type,
 
         //Check that all config/non-config edges are appropriately organized
         for (auto edge : rr_graph.configurable_edges(RRNodeId(inode))) {
-            if (!device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
+            if (!rr_graph.edge_is_configurable(RRNodeId(inode), edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is non-configurable, but in configurable edges",
                                 inode, edge);
             }
         }
 
         for (auto edge : rr_graph.non_configurable_edges(RRNodeId(inode))) {
-            if (device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
+            if (rr_graph.edge_is_configurable(RRNodeId(inode), edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is configurable, but in non-configurable edges",
                                 inode, edge);
             }
@@ -224,7 +224,7 @@ void check_rr_graph(const t_graph_type graph_type,
                     }
                 }
 
-                const auto& node = device_ctx.rr_nodes[inode];
+                const auto& node = rr_graph.rr_nodes()[inode];
 
                 bool is_fringe = ((rr_graph.node_xlow(rr_node) == 1)
                                   || (rr_graph.node_ylow(rr_node) == 1)
@@ -494,7 +494,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             //Don't worry about disconnect PINs which have no adjacent channels (i.e. on the device perimeter)
             bool check_for_out_edges = true;
             if (rr_type == IPIN || rr_type == OPIN) {
-                if (!has_adjacent_channel(device_ctx.rr_nodes[inode], device_ctx.grid)) {
+                if (!has_adjacent_channel(rr_graph.rr_nodes()[inode], device_ctx.grid)) {
                     check_for_out_edges = false;
                 }
             }

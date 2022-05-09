@@ -4838,16 +4838,16 @@
         "Latch Drivers": 1,
         "Pi": 2,
         "Po": 384,
-        "logic element": 7498,
-        "latch": 1876,
-        "Adder": 1188,
+        "logic element": 9718,
+        "latch": 2596,
+        "Adder": 1788,
         "Multiplier": 24,
         "Memory": 48,
         "generic logic size": 4,
-        "Longest Path": 129,
+        "Longest Path": 139,
         "Average Path": 4,
-        "Estimated LUTs": 7718,
-        "Total Node": 10635
+        "Estimated LUTs": 9938,
+        "Total Node": 14175
     },
     "koios/softmax/k6FracN10LB_mem20K_complexDSP_customSB_22nm": {
         "test_name": "koios/softmax/k6FracN10LB_mem20K_complexDSP_customSB_22nm",

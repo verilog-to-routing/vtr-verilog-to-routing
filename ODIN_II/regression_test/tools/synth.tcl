@@ -4,7 +4,7 @@ yosys -import
 # Feel free to specify file paths using "$env(VTR_ROOT)/ ..." 
 
 # Read the hardware decription Verilog
-read_verilog -nomem2reg -nolatches $env(TCL_CIRCUIT);
+read_verilog -sv -nomem2reg -nolatches $env(TCL_CIRCUIT);
 # Check that cells match libraries and find top module
 hierarchy -check -auto-top -purge_lib;
 
