@@ -6,6 +6,7 @@
 
 #include "vtr_math.h"
 #include "SetupGrid.h"
+
 /**********************************/
 /* Global variables in clustering */
 /**********************************/

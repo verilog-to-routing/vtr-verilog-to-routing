@@ -2,7 +2,7 @@
 #include "re_cluster_util.h"
 
 bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
-							  const t_placer_opts& placer_opts,
+							  const enum e_pad_loc_type& pad_loc_type,
 							  std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
 							  t_clustering_data& clustering_data,
 							  bool during_packing) {
@@ -34,7 +34,7 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 	}
 	
 
-	//remove the atom from its current cluster
+	//remove the atom from its current cluster and check its legality
 	is_removed = remove_atom_from_cluster(atom_id, lb_type_rr_graphs, old_clb, clustering_data, imacro, during_packing);
 	if(!is_removed) {
 		VTR_LOG("Atom: %zu move failed. Can't remove it from the old cluster\n", atom_id);
@@ -42,10 +42,10 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 	}
 	
 
-	//Create new cluster of the same type and mode
+	//Create new cluster of the same type and mode.
 	ClusterBlockId new_clb (helper_ctx.total_clb_num);
 	is_created = start_new_cluster_for_atom(atom_id,
-											placer_opts,
+											pad_loc_type,
 											block_type,
 											block_mode,
 											helper_ctx.feasible_block_array_size,
@@ -58,16 +58,17 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 											clustering_data,
 											during_packing);
 
+	//Print the move result
 	if(is_created)
 		VTR_LOG("Atom:%zu is moved to a new cluster");
 	else
 		VTR_LOG("Atom:%zu move failed. Can't start a new cluster of the same type and mode\n", atom_id);
 	
+
 	//If the move is done after packing not during it, some fixes need to be done on the 
 	//clustered netlist
 	if(is_created && !during_packing) {
-		fix_cluster_port_after_moving(new_clb);
-		fix_cluster_net_after_moving(atom_id, old_clb, new_clb);		
+		fix_clustered_netlist(atom_id, old_clb, new_clb);		
 	}
 
 	return(is_created);

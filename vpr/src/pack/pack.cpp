@@ -215,8 +215,9 @@ bool try_pack(t_packer_opts* packer_opts,
     }
 
     
-    /* Packing iteratuive improvement can be done here */
+    /* Packing iterative improvement can be done here */
     /******************* Start *************************/
+
     /******************** End **************************/
 
     //check clustering and output it

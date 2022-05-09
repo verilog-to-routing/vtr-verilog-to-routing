@@ -7,15 +7,34 @@
 #include "cluster_placement.h"
 #include "place_macro.h"
 #include "initial_placement.h"
+#include "read_netlist.h"
 #include <cstring>
 
-static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
+//The name suffix of the new block (if exists)
+const char* name_suffix = "_m";
+
+
+/******************* Static Functions ********************/
+//static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
 static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin);
 static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type, t_pb_routes& pb_route);
 static bool count_children_pbs(const t_pb* pb);
+static void fix_atom_pin_mapping(const AtomBlockId blk);
 
+static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index);
+static void check_net_absorbtion(const AtomNetId atom_net_id,
+                                const ClusterBlockId new_clb,
+                                const ClusterBlockId old_clb,
+                                ClusterPinId& cluster_pin_id,
+                                bool& previously_absorbed,
+                                bool& now_abosrbed);
 
-const char* name_suffix = "_m";
+static void fix_cluster_port_after_moving(const ClusterBlockId clb_index);
+
+static void fix_cluster_net_after_moving(const AtomBlockId& atom_id,
+                                  const ClusterBlockId& old_clb,
+                                  const ClusterBlockId& new_clb);
+
 ClusterBlockId atom_to_cluster(const AtomBlockId& atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
     return (atom_ctx.lookup.atom_clb(atom));
@@ -115,7 +134,7 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
 }
 
 bool start_new_cluster_for_atom(const AtomBlockId atom_id,
-					   const t_placer_opts& placer_opts,
+					   const enum e_pad_loc_type& pad_loc_type,
 					   const t_logical_block_type_ptr& type,
 					   const int mode,
 					   const int feasible_block_array_size,
@@ -190,7 +209,7 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
         else {
 			g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size()+1);
 			set_imacro_for_iblk(&imacro, clb_index);
-			place_one_block(clb_index, placer_opts.pad_loc_type);
+			place_one_block(clb_index, pad_loc_type);
         }
 
         cluster_ctx.clb_nlist.block_pb(clb_index)->pb_route = alloc_and_load_pb_route((*router_data)->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node);
@@ -208,9 +227,19 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
     return (pack_result == BLK_PASSED);
 }
 
+void fix_clustered_netlist(const AtomBlockId& atom_id,
+                        const ClusterBlockId& old_clb,
+                        const ClusterBlockId& new_clb) {
+	fix_cluster_port_after_moving(new_clb);
+	fix_cluster_net_after_moving(atom_id, old_clb, new_clb);
+}
 
 
-void fix_cluster_net_after_moving(const AtomBlockId& atom_id, 
+/*******************************************/
+/************ static functions *************/
+/*******************************************/
+
+static void fix_cluster_net_after_moving(const AtomBlockId& atom_id, 
 								  const ClusterBlockId& old_clb,
 								  const ClusterBlockId& new_clb) {
 
@@ -255,13 +284,7 @@ void fix_cluster_net_after_moving(const AtomBlockId& atom_id,
 	load_internal_to_block_net_nums(cluster_ctx.clb_nlist.block_type(new_clb), cluster_ctx.clb_nlist.block_pb(new_clb)->pb_route);
 }
 
-
-
-
-/************ static functions *************/
-/*******************************************/
-
-void fix_cluster_port_after_moving(const ClusterBlockId clb_index) {
+static void fix_cluster_port_after_moving(const ClusterBlockId clb_index) {
 	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 	const t_pb* pb = cluster_ctx.clb_nlist.block_pb(clb_index);
 	
@@ -287,7 +310,7 @@ void fix_cluster_port_after_moving(const ClusterBlockId clb_index) {
 }
 
 
-void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
+static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
 	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 	auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
@@ -387,7 +410,7 @@ void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
 }
 
 
-void check_net_absorbtion(const AtomNetId atom_net_id,
+static void check_net_absorbtion(const AtomNetId atom_net_id,
 								const ClusterBlockId new_clb,
 								const ClusterBlockId old_clb,
 								ClusterPinId& cluster_pin_id,
@@ -427,11 +450,7 @@ void check_net_absorbtion(const AtomNetId atom_net_id,
 	}
 }
 
-void delete_cluster_net_of_atom_net(const AtomNetId& ) {
-	return;
-}
-
-void fix_atom_pin_mapping(const AtomBlockId blk) {
+static void fix_atom_pin_mapping(const AtomBlockId blk) {
 	auto& atom_ctx = g_vpr_ctx.atom();
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -483,40 +502,6 @@ void fix_atom_pin_mapping(const AtomBlockId blk) {
 	        set_atom_pin_mapping(cluster_ctx.clb_nlist, blk, port, gpin);
 	    }
 	}
-}
-
-static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin) {
-    auto& atom_ctx = g_vpr_ctx.mutable_atom();
-
-    VTR_ASSERT(atom_ctx.nlist.port_block(atom_port) == atom_blk);
-
-    ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk);
-    VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
-
-    const t_pb* clb_pb = clb_nlist.block_pb(clb_index);
-    if (!clb_pb->pb_route.count(gpin->pin_count_in_cluster)) {
-        return;
-    }
-
-    const t_pb_route* pb_route = &clb_pb->pb_route[gpin->pin_count_in_cluster];
-
-    if (!pb_route->atom_net_id) {
-        return;
-    }
-
-    const t_pb* atom_pb = atom_ctx.lookup.atom_pb(atom_blk);
-
-    //This finds the index within the atom port to which the current gpin
-    //is mapped. Note that this accounts for any applied pin rotations
-    //(e.g. on LUT inputs)
-    BitIndex atom_pin_bit_index = atom_pb->atom_pin_bit_index(gpin);
-
-    AtomPinId atom_pin = atom_ctx.nlist.port_pin(atom_port, atom_pin_bit_index);
-
-    VTR_ASSERT(pb_route->atom_net_id == atom_ctx.nlist.pin_net(atom_pin));
-
-    //Save the mapping
-    atom_ctx.lookup.set_atom_pin_pb_graph_pin(atom_pin, gpin);
 }
 
 static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type, t_pb_routes& pb_route) {

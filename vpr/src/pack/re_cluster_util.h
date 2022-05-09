@@ -10,6 +10,7 @@
 /**
  * @file
  * @brief This files defines some helper functions for the re-clustering
+ *
  * API that uses to move atoms between clusters after the cluster is done.
  * Note: Some of the helper functions defined here might be useful in different places in VPR
  * 
@@ -56,7 +57,7 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
  * the higher level routine.
  */
 bool start_new_cluster_for_atom(const AtomBlockId atom_id,
-                       const t_placer_opts& placer_opts,
+                       const enum e_pad_loc_type& pad_loc_type,
                        const t_logical_block_type_ptr& type,
                        const int mode,
                        const int feasible_block_array_size,
@@ -69,27 +70,12 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
                        t_clustering_data& clustering_data,
                        bool during_packing);
 
-void fix_cluster_net_after_moving(const AtomBlockId& atom_id,
-                                  const ClusterBlockId& old_clb,
-                                  const ClusterBlockId& new_clb);
-
-void fix_cluster_port_after_moving(const ClusterBlockId clb_index);
-
-void fix_cluster_pins_after_moving(const ClusterBlockId clb_index);
-
-
-
-void check_net_absorbtion(const AtomNetId atom_net_id,
-                                const ClusterBlockId new_clb,
-                                const ClusterBlockId old_clb,
-                                ClusterPinId& cluster_pin_id,
-                                bool& previously_absorbed,
-                                bool& now_abosrbed);
-
-void create_cluster_net_for_atom_net(const AtomNetId& atom_net_id);
-void delete_cluster_net_of_atom_net(const AtomNetId& );
-
-void create_cluster_pin_for_atom_pin(const AtomPinId& atom_pin_id);
-void fix_atom_pin_mapping(const AtomBlockId blk);
+/**
+ * @brief A function that fix the clustered netlist if the move is performed
+ * after the packing is done and clustered netlist is built
+ */
+void fix_clustered_netlist(const AtomBlockId& atom_id,
+                        const ClusterBlockId& old_clb,
+                        const ClusterBlockId& new_clb);
 
 #endif
