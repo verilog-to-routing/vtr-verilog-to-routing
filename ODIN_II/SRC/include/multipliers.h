@@ -56,7 +56,7 @@ extern void define_mult_function(nnode_t* node, FILE* out);
 extern void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* netlist);
 extern void iterate_multipliers(netlist_t* netlist);
 extern bool check_constant_multipication(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
-extern void check_multiplier_port_size(nnode_t* node, netlist_t* netlist);
+extern void check_multiplier_port_size(nnode_t* node);
 extern bool is_ast_multiplier(ast_node_t* node);
 extern void clean_multipliers();
 extern void free_multipliers();
