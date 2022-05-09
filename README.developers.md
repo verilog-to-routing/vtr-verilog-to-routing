@@ -183,52 +183,57 @@ Python files are automatically checked using `pylint` to ensure they follow esta
 
 VTR has a variety of tests which are used to check for correctness, performance and Quality of Result (QoR).
 
+## Tests
 There are 4 main regression testing suites:
 
-* `vtr_reg_basic`: ~1 minute serial
+### vtr_reg_basic
 
-    **Goal:** Fast functionality check
+~1 minute serial
 
-    **Feature Coverage:** Low
+**Goal:** Fast functionality check
 
-    **Benchmarks:** A few small and simple circuits
+**Feature Coverage:** Low
 
-    **Architectures:** A few simple architectures
+**Benchmarks:** A few small and simple circuits
 
-    This regression test is *not* suitable for evaluating QoR or performance.
-    It's primary purpose is to make sure the various tools do not crash/fail in the basic VTR flow.
+**Architectures:** A few simple architectures
 
-    QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
-    Occasionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
+This regression test is *not* suitable for evaluating QoR or performance.
+It's primary purpose is to make sure the various tools do not crash/fail in the basic VTR flow.
 
-* `vtr_reg_strong`: ~20 minutes serial, ~15 minutes with `-j4`
+QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
+Occasionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
-    **Goal:** Broad functionality check
+### vtr_reg_strong
 
-    **Feature Coverage:** High
+~20 minutes serial, ~15 minutes with `-j4`
 
-    **Benchmarks:** A few small circuits, with some special benchmarks to exercise specific features
+**Goal:** Broad functionality check
 
-    **Architectures:** A variety of architectures, including special architectures to exercise specific features
+**Feature Coverage:** High
 
-    This regression test is *not* suitable for evaluating QoR or performance.
-    It's primary purpose is try and achieve high functionality coverage.
+**Benchmarks:** A few small circuits, with some special benchmarks to exercise specific features
 
-    QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
-    Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
+**Architectures:** A variety of architectures, including special architectures to exercise specific features
+
+This regression test is *not* suitable for evaluating QoR or performance.
+It's primary purpose is try and achieve high functionality coverage.
+
+QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
+Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
     
-* `vtr_reg_nightly_test#, #:1-3`:
+### vtr_reg_nightly_test1-3
 
-    **Goal:** Basic QoR and Performance evaluation 
-  
-    **Feature Coverage:** Medium
-    
-    **Architectures:** A wider variety of architectures
-    
-    **Benchmarks:** Small-medium size, diverse. All include: 
-    
-    * VTR benchmarks
-    * Additional benchmarks for each suite. 
+**Goal:** Basic QoR and Performance evaluation 
+
+**Feature Coverage:** Medium
+
+**Architectures:** A wider variety of architectures
+
+**Benchmarks:** Small-medium size, diverse. All include: 
+
+* VTR benchmarks
+* Additional benchmarks for each suite. 
 
    QoR checks in these regression suites are aimed at evaluating quality and run-time of the VTR flow.
    As a result any QoR failures are a concern and should be investigated and understood.
@@ -237,24 +242,26 @@ There are 4 main regression testing suites:
    
    These suites comproise a single large suite, `vtr_reg_nightly` and should be run together to test nightly level regression. They are mostly similar in benchmark coverage interms of size and diversity however each suite tests some unique benchmarks in addition to the VTR benchmarks.  
     
-	| suite | wall-clock time| Additional benchmarks|
-	|-------|----------------|----------------------|
-	|vtr_reg_nightly_test1|~4.5 hours with `-j8`|ISPD and MCNC20 |
-	|vtr_reg_nightly_test2|~6 hours with `-j8`|Titan23 and Titan `other`|
-	|vtr_reg_nightly_test3|~5.5 hours with `-j8`|none|
-	
-* `vtr_reg_weekly`: ~42 hours with `-j4`
+    | suite | wall-clock time| Additional benchmarks|
+    |-------|----------------|----------------------|
+    |vtr_reg_nightly_test1|~4.5 hours with `-j8`|ISPD and MCNC20 |
+    |vtr_reg_nightly_test2|~6 hours with `-j8`|Titan23 and Titan `other`|
+    |vtr_reg_nightly_test3|~5.5 hours with `-j8`|none|
 
-    **Goal:** Full QoR and Performance evaluation.
+### vtr_reg_weekly
 
-    **Feature Coverage:** Medium
+~42 hours with `-j4`
 
-    **Benchmarks:** Medium-Large size, diverse. Includes:
+**Goal:** Full QoR and Performance evaluation.
 
-    * VTR benchmarks
-    * Titan23 benchmarks
+**Feature Coverage:** Medium
 
-    **Architectures:** A wide variety of architectures
+**Benchmarks:** Medium-Large size, diverse. Includes:
+
+* VTR benchmarks
+* Titan23 benchmarks
+
+**Architectures:** A wide variety of architectures
 
    QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
    As a result any QoR failures are a concern and should be investigated and understood.
@@ -671,8 +678,8 @@ k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml lstm.v  common  38901.96        
 ### Example: CI Tests QoR Measurement
 Once the changes are pushed into the remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
 will be triggered. The following tests are included in the workflow:
-* [vtr_reg_nightly_test#](https://docs.verilogtorouting.org/en/latest/README.developers/#running-tests), #:1-3
-* [vtr_reg_strong](https://docs.verilogtorouting.org/en/latest/README.developers/#running-tests)
+* [vtr_reg_nightly_test1-3](./README.developers.md#vtr_reg_nightly_test1-3)
+* [vtr_reg_strong](./README.developers.md#vtr_reg_strong)
 * vtr_reg_yosys
 * vtr_reg_yosys_odin
 * odin_tech_strong
