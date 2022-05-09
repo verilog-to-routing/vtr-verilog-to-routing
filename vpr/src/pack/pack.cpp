@@ -22,6 +22,7 @@
 #include "read_blif.h"
 #include "cluster.h"
 #include "SetupGrid.h"
+#include "re_cluster.h"
 
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
@@ -48,6 +49,7 @@ bool try_pack(t_packer_opts* packer_opts,
     std::unordered_set<AtomNetId> is_clock;
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
     const t_model* cur_model;
+    t_clustering_data clustering_data;
     //int num_models;
     std::vector<t_pack_patterns> list_of_packing_patterns;
     //std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules(nullptr, free_pack_molecules);
@@ -136,6 +138,9 @@ bool try_pack(t_packer_opts* packer_opts,
     int pack_iteration = 1;
 
     while (true) {
+
+        free_clustering_data(*packer_opts, clustering_data);
+
         //Cluster the netlist
         helper_ctx.num_used_type_instances = do_clustering(
             *packer_opts,
@@ -148,7 +153,8 @@ bool try_pack(t_packer_opts* packer_opts,
             lb_type_rr_graphs,
             target_external_pin_util,
             high_fanout_thresholds,
-            attraction_groups);
+            attraction_groups,
+            clustering_data);
 
         //Try to size/find a device
         bool fits_on_device = try_size_device_grid(*arch, helper_ctx.num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
@@ -208,6 +214,17 @@ bool try_pack(t_packer_opts* packer_opts,
         ++pack_iteration;
     }
 
+    
+    /* Packing iteratuive improvement can be done here */
+    /******************* Start *************************/
+    /******************** End **************************/
+
+    //check clustering and output it
+    check_and_output_clustering(*packer_opts, is_clock, arch, helper_ctx.total_clb_num, clustering_data.intra_lb_routing);
+
+    // Free Data Structures
+    free_clustering_data(*packer_opts, clustering_data);
+    
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");
     VTR_LOG("\n");

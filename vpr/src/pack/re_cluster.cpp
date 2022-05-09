@@ -2,7 +2,9 @@
 #include "re_cluster_util.h"
 
 bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
-							  std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+							  std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+							  t_clustering_data& clustering_data,
+							  bool during_packing) {
 
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 	auto& helper_ctx = g_vpr_ctx.mutable_helper();
@@ -31,7 +33,7 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 	
 
 	//remove the atom from its current cluster
-	is_removed = remove_atom_from_cluster(atom_id, lb_type_rr_graphs, old_clb);
+	is_removed = remove_atom_from_cluster(atom_id, lb_type_rr_graphs, old_clb, clustering_data, during_packing);
 	if(!is_removed) {
 		VTR_LOG("Atom: %zu move failed. Can't remove it from the old cluster\n", atom_id);
 		return (is_removed);
@@ -48,11 +50,18 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 											new_clb,
 											&router_data,
 											lb_type_rr_graphs,
-											temp_cluster_pr);
+											temp_cluster_pr,
+											clustering_data,
+											during_packing);
 
-	if(!is_created)
-		VTR_LOG("Atom: %zu move failed. Can't start a new cluster of the same type and mode\n", atom_id);
-	else {
+	if(is_created)
+		VTR_LOG("Atom:%zu is moved to a new cluster");
+	else
+		VTR_LOG("Atom:%zu move failed. Can't start a new cluster of the same type and mode\n", atom_id);
+	
+	//If the move is done after packing not during it, some fixes need to be done on the 
+	//clustered netlist
+	if(is_created && !during_packing) {
 		fix_cluster_port_after_moving(new_clb);
 		fix_cluster_net_after_moving(atom_id, old_clb, new_clb);		
 	}

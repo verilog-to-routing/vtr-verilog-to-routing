@@ -533,8 +533,9 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     /*
+    t_clustering_data clustering_data;
     auto& helper_ctx = g_vpr_ctx.helper();
-    bool is_removed = move_atom_to_new_cluster(AtomBlockId(4), helper_ctx.lb_type_rr_graphs);
+    bool is_removed = move_atom_to_new_cluster(AtomBlockId(3), helper_ctx.lb_type_rr_graphs, clustering_data, false);
     if(is_removed) {
         place_ctx.block_locs.resize(place_ctx.block_locs.size()+1);
         VTR_LOG("@@@@ Atom is removed\n");
@@ -609,18 +610,6 @@ void try_place(const t_placer_opts& placer_opts,
     vtr::ScopedStartFinishTimer timer("Placement");
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str());
-
-    auto& helper_ctx = g_vpr_ctx.helper();
-    int imacro;
-    get_imacro_from_iblk(&imacro, ClusterBlockId(0), place_ctx.pl_macros);
-    bool is_removed = move_atom_to_new_cluster(AtomBlockId(4), helper_ctx.lb_type_rr_graphs);
-    if(is_removed) {
-        place_ctx.block_locs.resize(place_ctx.block_locs.size()+1);
-        set_imacro_for_iblk(&imacro, ClusterBlockId(4));
-        place_one_block(ClusterBlockId(4), placer_opts.pad_loc_type);
-        VTR_LOG("@@@@ Atom is removed\n");
-    }
-
 
 #ifdef ENABLE_ANALYTIC_PLACE
     /*

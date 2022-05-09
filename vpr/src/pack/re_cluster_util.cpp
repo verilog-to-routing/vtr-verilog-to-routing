@@ -26,7 +26,9 @@ std::vector<AtomBlockId> cluster_to_atoms(const ClusterBlockId& cluster) {
 
 bool remove_atom_from_cluster(const AtomBlockId& atom_id, 
 							  std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-							  ClusterBlockId& old_clb) {
+							  ClusterBlockId& old_clb,
+							  t_clustering_data& clustering_data,
+							  bool during_packing) {
     
 	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 	auto& atom_ctx = g_vpr_ctx.mutable_atom();
@@ -44,6 +46,7 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
 	bool is_cluster_legal = check_cluster_legality(0, E_DETAILED_ROUTE_AT_END_ONLY, router_data);
 
 	if(is_cluster_legal) {
+
 		t_pb* temp = const_cast<t_pb*>(atom_ctx.lookup.atom_pb(atom_id));
 		t_pb* next = temp->parent_pb;
         //char* atom_name = vtr::strdup(temp->name);
@@ -75,14 +78,18 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
 
 		cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
 		cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
+
+		if(during_packing)
+			clustering_data.intra_lb_routing[old_clb] = router_data->saved_lb_nets;
 	}
 	else {
         VTR_LOG("re-cluster: Cluster is illegal after removing an atom\n");
+        //free router_data memory
+		free_router_data(router_data);
+		router_data = nullptr;
 	}
 
-	//free router_data memory
-	free_router_data(router_data);
-	router_data = nullptr;
+	
 
 	//return true if succeeded
 	return(is_cluster_legal);
@@ -110,7 +117,9 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
 					   ClusterBlockId clb_index,
 					   t_lb_router_data** router_data,
 					   std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-					   PartitionRegion& temp_cluster_pr) {
+					   PartitionRegion& temp_cluster_pr,
+					   t_clustering_data& clustering_data,
+					   bool during_packing) {
 	auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& helper_ctx = g_vpr_ctx.mutable_helper();
@@ -158,6 +167,7 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
 
     // If clustering succeeds, add it to the clb netlist
     if(pack_result == BLK_PASSED) {
+
     	VTR_LOGV(verbosity > 2, "\tPASSED_SEED: Block Type %s\n", type->name);
         //Once clustering succeeds, add it to the clb netlist
         if (pb->name != nullptr) {
@@ -168,15 +178,22 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
         clb_index = cluster_ctx.clb_nlist.create_block(new_name.c_str(), pb, type);
         helper_ctx.total_clb_num++;
 
+        if(during_packing)
+			clustering_data.intra_lb_routing.push_back((*router_data)->saved_lb_nets);
+        else
+			g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size()+1);
+		
         cluster_ctx.clb_nlist.block_pb(clb_index)->pb_route = alloc_and_load_pb_route((*router_data)->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node);
+
     } else {
         free_pb(pb);
         delete pb;
+        //Free failed clustering
+    	free_router_data(*router_data);
+    	*router_data = nullptr;
     }
     
-    //Free failed clustering
-    free_router_data(*router_data);
-    *router_data = nullptr;
+    
 
     return (pack_result == BLK_PASSED);
 }

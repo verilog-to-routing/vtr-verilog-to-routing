@@ -6,6 +6,7 @@
 #include "atom_netlist_fwd.h"
 #include "globals.h"
 #include "pack_types.h"
+#include "cluster_util.h"
 /**
  * @file
  * @brief This files defines some helper functions for the re-clustering
@@ -42,7 +43,9 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
  */
 bool remove_atom_from_cluster(const AtomBlockId& atom_id, 
                               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                              ClusterBlockId& old_clb);
+                              ClusterBlockId& old_clb,
+                              t_clustering_data& clustering_data,
+                              bool during_packing);
 
 
 /**
@@ -59,7 +62,9 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
                        ClusterBlockId clb_index,
                        t_lb_router_data** router_data,
                        std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                       PartitionRegion& temp_cluster_pr);
+                       PartitionRegion& temp_cluster_pr,
+                       t_clustering_data& clustering_data,
+                       bool during_packing);
 
 void fix_cluster_net_after_moving(const AtomBlockId& atom_id,
                                   const ClusterBlockId& old_clb,

@@ -227,19 +227,16 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
 
 //Free the clustering data structures
 void free_clustering_data(const t_packer_opts& packer_opts,
-                          vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
-                          int* hill_climbing_inputs_avail,
-                          t_molecule_link* unclustered_list_head,
-                          t_molecule_link* memory_pool) {
+                          t_clustering_data& clustering_data) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
-        free_intra_lb_nets(intra_lb_routing[blk_id]);
+        free_intra_lb_nets(clustering_data.intra_lb_routing[blk_id]);
 
-    intra_lb_routing.clear();
+    clustering_data.intra_lb_routing.clear();
 
     if (packer_opts.hill_climbing_flag)
-        free(hill_climbing_inputs_avail);
+        free(clustering_data.hill_climbing_inputs_avail);
 
     //free_cluster_placement_stats(cluster_placement_stats);
 
@@ -248,8 +245,8 @@ void free_clustering_data(const t_packer_opts& packer_opts,
 
     cluster_ctx.clb_nlist = ClusteredNetlist();
 
-    free(unclustered_list_head);
-    free(memory_pool);
+    free(clustering_data.unclustered_list_head);
+    free(clustering_data.memory_pool);
 
     //free(primitives_list);
 }

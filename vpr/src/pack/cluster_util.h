@@ -1,3 +1,6 @@
+#ifndef CLUSTER_UTIL_H
+#define CLUSTER_UTIL_H
+
 #include "globals.h"
 #include "atom_netlist.h"
 #include "pack_types.h"
@@ -70,6 +73,13 @@ struct t_cluster_progress_stats {
     int num_unrelated_clustering_attempts = 0;
 };
 
+/* Useful data structures for packing */
+struct t_clustering_data {
+    vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*> intra_lb_routing;
+    int* hill_climbing_inputs_avail;
+    t_molecule_link* unclustered_list_head = nullptr;
+    t_molecule_link* memory_pool = nullptr;
+};
 /***********************************/
 /*   Clustering helper functions   */
 /***********************************/
@@ -86,10 +96,7 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
 
 //free the clustering data structures
 void free_clustering_data(const t_packer_opts& packer_opts,
-                          vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
-                          int* hill_climbing_inputs_avail,
-                          t_molecule_link* unclustered_list_head,
-                          t_molecule_link* memory_pool);
+                          t_clustering_data& clustering_data);
 
 //check ckustering legality and output it
 void check_and_output_clustering(const t_packer_opts& packer_opts,
@@ -400,3 +407,5 @@ t_pb* get_top_level_pb(t_pb* pb);
 bool cleanup_pb(t_pb* pb);
 
 void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_size);
+
+#endif
