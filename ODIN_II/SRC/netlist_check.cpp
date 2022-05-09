@@ -748,7 +748,13 @@ void check_discontinuity(netlist_t* netlist)
     }
 
     //Detect discontinuity
-    if (num_of_forward_elements != num_of_backward_elements) printf("\nWARNING! discontinuity detected within the netlist.\n");
+    if (num_of_forward_elements != num_of_backward_elements)
+    {
+        printf("\n\x1B[33mWARNING! discontinuity detected within the netlist.\n");
+        printf("# of %s node(s) found in forward traverse: %lld\n", operation_list_STR[op][ODIN_LONG_STRING], num_of_forward_elements);
+        printf("# of %s node(s) found in backward traverse: %lld\n", operation_list_STR[op][ODIN_LONG_STRING], num_of_backward_elements);
+        printf("\033[0m\n");
+    }
 }
 
 /**
@@ -759,19 +765,24 @@ void check_discontinuity(netlist_t* netlist)
  * @param num_of_forward_elements number of marked nodes of a same type found in forward search
  * @param mark traverse mark value
  */
-void discontinuity_check_forward_traverse(nnode_t* node, operation_list op, long long &num_of_forward_elements, unsigned short mark) {
-    int i, j;
-
+void discontinuity_check_forward_traverse(nnode_t* node, operation_list op, long long& num_of_forward_elements, unsigned short mark)
+{
     if (node->traverse_visited == mark) return;
     node->traverse_visited = mark;
     if (node->type == op) num_of_forward_elements++;
-    for (i = 0; i < node->num_output_pins; i++) {
-        if (node->output_pins[i]->net) {
-            nnet_t* next_net = node->output_pins[i]->net;
-            if (next_net->fanout_pins) {
-                for (j = 0; j < next_net->num_fanout_pins; j++) {
-                    if (next_net->fanout_pins[j]) {
-                        if (next_net->fanout_pins[j]->node) {
+    if (node->num_output_pins)
+    {
+        for (int i = 0; i < node->num_output_pins; i++)
+        {
+            if (node->output_pins[i] && node->output_pins[i]->net)
+            {
+                nnet_t* next_net = node->output_pins[i]->net;
+                if (next_net->num_fanout_pins)
+                {
+                    for (int j = 0; j < next_net->num_fanout_pins; j++)
+                    {
+                        if (next_net->fanout_pins[j] && next_net->fanout_pins[j]->node)
+                        {
                             /* recursive call point */
                             discontinuity_check_forward_traverse(next_net->fanout_pins[j]->node, op, num_of_forward_elements, mark);
                         }
@@ -786,22 +797,33 @@ void discontinuity_check_forward_traverse(nnode_t* node, operation_list op, long
  * @brief Recursive function that will mark the nodes present in the netlist by traversing backward starting from a top output node.
  * This function will be called within the check_discontinuity(...) function.
  * 
- * @param node starting top input node
+ * @param node starting top output node
  * @param num_of_backward_elements number of marked nodes of a same type found in backward search
  * @param mark traverse mark value
  */
-void discontinuity_check_backward_traverse(nnode_t* node, operation_list op, long long &num_of_backward_elements, unsigned short mark) {
-    if (node->traverse_visited == mark) return; // Already visited
-    node->traverse_visited = mark; // Mark as visited
+void discontinuity_check_backward_traverse(nnode_t* node, operation_list op, long long& num_of_backward_elements, unsigned short mark)
+{
+    if (node->traverse_visited == mark) return;
+    node->traverse_visited = mark;
     if (node->type == op) num_of_backward_elements++;
-    int i;
-    for (i = 0; i < node->num_input_pins; i++) {
-        // ensure this net has a driver (i.e. skip undriven outputs)
-        for (int j = 0; j < node->input_pins[i]->net->num_driver_pins; j++) {
-            if (node->input_pins[i]->net->driver_pins[j]->node)
-                // Visit the drivers of this node
-                discontinuity_check_backward_traverse(node->input_pins[i]->net->driver_pins[j]->node, op, num_of_backward_elements, mark);
+    if (node->num_input_pins)
+    {
+        for (int i = 0; i < node->num_input_pins; i++)
+        {
+            if (node->input_pins[i] && node->input_pins[i]->net)
+            {
+                nnet_t* previous_net = node->input_pins[i]->net;
+                if (previous_net->num_driver_pins)
+                {
+                    for (int j = 0; j < previous_net->num_driver_pins; j++)
+                    {
+                        if (previous_net->driver_pins[j] && previous_net->driver_pins[j]->node)
+                        {
+                            discontinuity_check_backward_traverse(node->input_pins[i]->net->driver_pins[j]->node, op, num_of_backward_elements, mark);
+                        }
+                    }
+                }
+            }
         }
     }
 }
-
