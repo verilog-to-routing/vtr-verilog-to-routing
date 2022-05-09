@@ -339,6 +339,12 @@ def vtr_command_argparser(prog=None):
         help="List of include files to a benchmark circuit(pass to Odin as a benchmark design set)",
     )
     odin.add_argument(
+        "-top_module",
+        default=None,
+        dest="top_module",
+        help="Specify the name of the module in the design that should be considered as top",
+    )
+    odin.add_argument(
         "-coarsen",
         default=False,
         action="store_true",
@@ -664,6 +670,7 @@ def process_odin_args(args):
     """
     odin_args = OrderedDict()
     odin_args["adder_type"] = args.adder_type
+    odin_args["top_module"] = args.top_module
     odin_args["elaborator"] = args.elaborator
 
     if args.adder_cin_global:

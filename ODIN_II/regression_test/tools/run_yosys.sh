@@ -362,7 +362,7 @@ function run_single_hdl() {
     for circuit in "${_VERILOG_INPUT_LIST[@]}"
     do
         # validate input file
-        if [ "${circuit: -2}" != ".v" ]; then
+        if ["${circuit: -3}" != ".sv" and "${circuit: -2}" != ".v" ]; then
             echo "Invalid input Verilog file (${circuit})"
             _exit_with_code "-1"
         fi

@@ -485,7 +485,7 @@ static void resolve_arithmetic_nodes(nnode_t* node, uintptr_t traverse_mark_numb
             if (!hard_multipliers)
                 check_constant_multipication(node, traverse_mark_number, netlist);
             else
-                check_multiplier_port_size(node, netlist);
+                check_multiplier_port_size(node);
 
             /* Adding to mult_list for future checking on hard blocks */
             mult_list = insert_in_vptr_list(mult_list, node);

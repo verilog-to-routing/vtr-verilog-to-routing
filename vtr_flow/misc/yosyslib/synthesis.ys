@@ -15,7 +15,7 @@
 #################################################################
 
 # XXX (input circuit) is replaced with filename by the run_vtr_flow script
-read_verilog -nolatches XXX
+read_verilog -sv -nolatches XXX
 
 # These commands follow the generic `synth'
 # command script inside Yosys
