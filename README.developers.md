@@ -668,6 +668,35 @@ k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml clstm_like.large.v      common  
 k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml lstm.v  common  38901.96                35.76   651868  7       30532.88        -1      -1     606240   -1      -1      6626    17      305     -1      success v8.0.0-4470-ge625fdfe9  release IPO VTR_ASSERT_LEVEL=2  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64    2021-06-18T14:02:07     jupiter0        /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks     6036204 17     19       252939  204226  1       121211  7577    200     200     40000   dsp_top auto    4576.24 1453809 1136.46 3.95    8.38544 -386636 -8.385448.38544 54.87   0.944433        0.763732        237.758 176.282 -1      1876011 15      1.28987e+09     3.81683e+08     8.80433e+08     22010.877.53    284.979 214.902 -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1     -1       -1      -1
 ```
 
+### Example: CI Tests QoR Measurement
+Once the changes are pushed into the remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
+will be triggered. The following tests are included in the workflow:
+* [vtr_reg_nightly_test#](https://docs.verilogtorouting.org/en/latest/README.developers/#running-tests), #:1-3
+* [vtr_reg_strong](https://docs.verilogtorouting.org/en/latest/README.developers/#running-tests)
+* vtr_reg_yosys
+* vtr_reg_yosys_odin
+* odin_tech_strong
+* odin_reg_strong
+
+To get the QoR results of the above tests, go to the "Action" tab. On the menu on the left,
+choose "Test" and select your workflow. If running the test is done, scroll down and click on "artifact".
+This would download the results for all CI tests.
+
+1. Go to "Action" tab
+![Action Button](./doc/src/dev/eval_qor/action_button.png)
+2. Select "Test" and choose your workflow
+![Test Button](./doc/src/dev/eval_qor/test.png)
+3. Scroll down and download "artifact"
+![Artifact](./doc/src/dev/eval_qor/artifact.png)
+
+Assume that we want to get the QoR results for "vtr_reg_nightly_test3". In artifact, there is a file named 
+"qor_results_vtr_reg_nightly_test3.tar.gz." After unzipping this file, a new directory named "vtr_flow" would be
+created. Go to "vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3." In this directory, you can find the **parsed**
+results of this test.
+
+
+
+
 ## Comparing QoR Measurements
 Once you have two (or more) sets of QoR measurements they now need to be compared.
 
