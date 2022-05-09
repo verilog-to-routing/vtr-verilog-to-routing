@@ -5,8 +5,10 @@
 #include "cluster_util.h"
 #include "cluster_router.h"
 #include "cluster_placement.h"
-
+#include "place_macro.h"
+#include "initial_placement.h"
 #include <cstring>
+
 static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
 static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin);
 static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type, t_pb_routes& pb_route);
@@ -28,6 +30,7 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
 							  std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
 							  ClusterBlockId& old_clb,
 							  t_clustering_data& clustering_data,
+							  int& imacro,
 							  bool during_packing) {
     
 	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
@@ -81,6 +84,8 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
 
 		if(during_packing)
 			clustering_data.intra_lb_routing[old_clb] = router_data->saved_lb_nets;
+		else
+			get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
 	}
 	else {
         VTR_LOG("re-cluster: Cluster is illegal after removing an atom\n");
@@ -110,9 +115,11 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
 }
 
 bool start_new_cluster_for_atom(const AtomBlockId atom_id,
+					   const t_placer_opts& placer_opts,
 					   const t_logical_block_type_ptr& type,
 					   const int mode,
 					   const int feasible_block_array_size,
+					   int& imacro,
 					   bool enable_pin_feasibility_filter,
 					   ClusterBlockId clb_index,
 					   t_lb_router_data** router_data,
@@ -180,9 +187,12 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
 
         if(during_packing)
 			clustering_data.intra_lb_routing.push_back((*router_data)->saved_lb_nets);
-        else
+        else {
 			g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size()+1);
-		
+			set_imacro_for_iblk(&imacro, clb_index);
+			place_one_block(clb_index, placer_opts.pad_loc_type);
+        }
+
         cluster_ctx.clb_nlist.block_pb(clb_index)->pb_route = alloc_and_load_pb_route((*router_data)->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node);
 
     } else {

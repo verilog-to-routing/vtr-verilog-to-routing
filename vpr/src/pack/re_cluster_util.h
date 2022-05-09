@@ -45,6 +45,7 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
                               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               ClusterBlockId& old_clb,
                               t_clustering_data& clustering_data,
+                              int& imacro,
                               bool during_packing);
 
 
@@ -55,9 +56,11 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
  * the higher level routine.
  */
 bool start_new_cluster_for_atom(const AtomBlockId atom_id,
+                       const t_placer_opts& placer_opts,
                        const t_logical_block_type_ptr& type,
                        const int mode,
                        const int feasible_block_array_size,
+                       int& imacro,
                        bool enable_pin_feasibility_filter,
                        ClusterBlockId clb_index,
                        t_lb_router_data** router_data,

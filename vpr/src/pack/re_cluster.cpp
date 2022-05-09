@@ -2,6 +2,7 @@
 #include "re_cluster_util.h"
 
 bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
+							  const t_placer_opts& placer_opts,
 							  std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
 							  t_clustering_data& clustering_data,
 							  bool during_packing) {
@@ -13,6 +14,7 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 	bool is_removed, is_created;
 	ClusterBlockId old_clb;
 	PartitionRegion temp_cluster_pr;
+	int imacro;
 	t_lb_router_data* router_data = nullptr;
 
 	//Check that there is a place for a new cluster of the same type
@@ -33,7 +35,7 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 	
 
 	//remove the atom from its current cluster
-	is_removed = remove_atom_from_cluster(atom_id, lb_type_rr_graphs, old_clb, clustering_data, during_packing);
+	is_removed = remove_atom_from_cluster(atom_id, lb_type_rr_graphs, old_clb, clustering_data, imacro, during_packing);
 	if(!is_removed) {
 		VTR_LOG("Atom: %zu move failed. Can't remove it from the old cluster\n", atom_id);
 		return (is_removed);
@@ -43,9 +45,11 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 	//Create new cluster of the same type and mode
 	ClusterBlockId new_clb (helper_ctx.total_clb_num);
 	is_created = start_new_cluster_for_atom(atom_id,
+											placer_opts,
 											block_type,
 											block_mode,
 											helper_ctx.feasible_block_array_size,
+											imacro,
 											helper_ctx.enable_pin_feasibility_filter,
 											new_clb,
 											&router_data,

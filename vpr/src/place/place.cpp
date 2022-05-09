@@ -434,7 +434,6 @@ void try_place(const t_placer_opts& placer_opts,
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     const auto& p_timing_ctx = g_placer_ctx.timing();
     const auto& p_runtime_ctx = g_placer_ctx.runtime();
@@ -532,15 +531,9 @@ void try_place(const t_placer_opts& placer_opts,
             VTR_LOG("\t port = %d\n", port);
     }
 
-    /*
-    t_clustering_data clustering_data;
-    auto& helper_ctx = g_vpr_ctx.helper();
-    bool is_removed = move_atom_to_new_cluster(AtomBlockId(3), helper_ctx.lb_type_rr_graphs, clustering_data, false);
-    if(is_removed) {
-        place_ctx.block_locs.resize(place_ctx.block_locs.size()+1);
-        VTR_LOG("@@@@ Atom is removed\n");
-    }
-    */
+    
+    
+    
 
     /*
     bool is_removed = move_atom_to_new_cluster(AtomBlockId(4125), helper_ctx.lb_type_rr_graphs);
@@ -611,6 +604,16 @@ void try_place(const t_placer_opts& placer_opts,
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str());
 
+    /*
+    t_clustering_data clustering_data;
+    auto& helper_ctx = g_vpr_ctx.helper();
+    bool is_removed = move_atom_to_new_cluster(AtomBlockId(3), placer_opts, helper_ctx.lb_type_rr_graphs, clustering_data, false);
+    if(is_removed) {
+        //place_ctx.block_locs.resize(place_ctx.block_locs.size()+1);
+        VTR_LOG("@@@@ Atom is removed\n");
+    }
+    */
+
 #ifdef ENABLE_ANALYTIC_PLACE
     /*
      * Analytic Placer:
@@ -635,11 +638,6 @@ void try_place(const t_placer_opts& placer_opts,
     //Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist,
                                                   atom_ctx.nlist, pb_gpin_lookup);
-
-/*
-    for(auto i : atom_ctx.nlist.block_pins(AtomBlockId(3)))
-        ClusterPinId teemp =  netlist_pin_lookup.connected_clb_pin(i);
-*/
 
     /* Gets initial cost and loads bounding boxes. */
 
