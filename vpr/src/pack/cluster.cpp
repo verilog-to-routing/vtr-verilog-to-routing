@@ -73,7 +73,6 @@
 
 #include "re_cluster_util.h"
 
-
 /*****************************************/
 /*local functions*/
 /*****************************************/
@@ -81,7 +80,6 @@
 #if 0
 static void check_for_duplicate_inputs ();
 #endif
-
 
 /*****************************************/
 /*globally accessible function*/
@@ -134,7 +132,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     bool is_cluster_legal;
     enum e_block_pack_status block_pack_status;
 
-    t_cluster_placement_stats *cur_cluster_placement_stats_ptr;
+    t_cluster_placement_stats* cur_cluster_placement_stats_ptr;
     t_lb_router_data* router_data = nullptr;
     t_pack_molecule *istart, *next_molecule, *prev_molecule;
 
@@ -184,7 +182,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     if (packer_opts.hill_climbing_flag) {
         clustering_data.hill_climbing_inputs_avail = (int*)vtr::calloc(helper_ctx.max_cluster_size + 1,
-                                                       sizeof(int));
+                                                                       sizeof(int));
     } else {
         clustering_data.hill_climbing_inputs_avail = nullptr; /* if used, die hard */
     }
@@ -195,7 +193,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     alloc_and_init_clustering(max_molecule_stats,
                               &(helper_ctx.cluster_placement_stats), &(helper_ctx.primitives_list), molecule_head,
                               clustering_data.memory_pool, clustering_data.unclustered_list_head, net_output_feeds_driving_block_input,
-                              unclustered_list_head_size,  cluster_stats.num_molecules);
+                              unclustered_list_head_size, cluster_stats.num_molecules);
 
     auto primitive_candidate_block_types = identify_primitive_candidate_block_types();
     // find the cluster type that has lut primitives

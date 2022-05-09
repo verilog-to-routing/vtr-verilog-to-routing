@@ -351,7 +351,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     auto& helper_ctx = g_vpr_ctx.mutable_helper();
     helper_ctx.lb_type_rr_graphs = vpr_setup->PackerRRGraph;
-
 }
 
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {

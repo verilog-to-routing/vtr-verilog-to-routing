@@ -500,7 +500,6 @@ void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const
 
 static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              enum e_pad_loc_type pad_loc_type) {
-
     for (auto blk_id : sorted_blocks) {
         place_one_block(blk_id, pad_loc_type);
     }
@@ -508,7 +507,6 @@ static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
 
 void place_one_block(const ClusterBlockId& blk_id,
                      enum e_pad_loc_type pad_loc_type) {
-
     auto& place_ctx = g_vpr_ctx.placement();
 
     //Check if block has already been placed

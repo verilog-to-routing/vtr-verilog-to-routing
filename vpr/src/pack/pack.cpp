@@ -27,7 +27,6 @@
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
-
 static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
 
 static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs);
@@ -43,7 +42,6 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_model* library_models,
               float interc_delay,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
-
     auto& helper_ctx = g_vpr_ctx.mutable_helper();
 
     std::unordered_set<AtomNetId> is_clock;
@@ -72,7 +70,6 @@ bool try_pack(t_packer_opts* packer_opts,
 
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
-
 
     size_t num_p_inputs = 0;
     size_t num_p_outputs = 0;
@@ -103,8 +100,8 @@ bool try_pack(t_packer_opts* packer_opts,
                                                                                                                                      list_of_packing_patterns_deleter);
 
     atom_mutable_ctx.list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
-                                                               expected_lowest_cost_pb_gnode,
-                                                               list_of_packing_patterns.size()));
+                                                                                expected_lowest_cost_pb_gnode,
+                                                                                list_of_packing_patterns.size()));
 
     AttractionInfo attraction_groups(packer_opts->use_attraction_groups);
     VTR_LOG("%d attraction groups were created during prepacking.\n", attraction_groups.num_attraction_groups());
@@ -138,7 +135,6 @@ bool try_pack(t_packer_opts* packer_opts,
     int pack_iteration = 1;
 
     while (true) {
-
         free_clustering_data(*packer_opts, clustering_data);
 
         //Cluster the netlist
@@ -214,7 +210,6 @@ bool try_pack(t_packer_opts* packer_opts,
         ++pack_iteration;
     }
 
-    
     /* Packing iterative improvement can be done here */
     /******************* Start *************************/
 
@@ -225,7 +220,7 @@ bool try_pack(t_packer_opts* packer_opts,
 
     // Free Data Structures
     free_clustering_data(*packer_opts, clustering_data);
-    
+
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");
     VTR_LOG("\n");

@@ -28,7 +28,6 @@
 #include "metadata_storage.h"
 #include "vpr_constraints.h"
 
-
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
  *
@@ -56,7 +55,8 @@ struct AtomContext : public Context {
     /********************************************************************
      * Atom Netlist
      ********************************************************************/
-    AtomContext(): list_of_pack_molecules (nullptr, free_pack_molecules){};
+    AtomContext()
+        : list_of_pack_molecules(nullptr, free_pack_molecules){};
     ///@brief Atom netlist
     AtomNetlist nlist;
 
@@ -481,8 +481,8 @@ class VprContext : public Context {
     const ClusteringContext& clustering() const { return clustering_; }
     ClusteringContext& mutable_clustering() { return clustering_; }
 
-    const ClusteringHelperContext& helper() const {return helper_;}
-    ClusteringHelperContext& mutable_helper() {return helper_;}
+    const ClusteringHelperContext& helper() const { return helper_; }
+    ClusteringHelperContext& mutable_helper() { return helper_; }
 
     const PlacementContext& placement() const { return placement_; }
     PlacementContext& mutable_placement() { return placement_; }
@@ -503,7 +503,7 @@ class VprContext : public Context {
 
     ClusteringContext clustering_;
     ClusteringHelperContext helper_;
-    
+
     PlacementContext placement_;
     RoutingContext routing_;
     FloorplanningContext constraints_;
