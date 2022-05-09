@@ -85,7 +85,6 @@ struct t_clustering_data {
      * list of blocks with i inputs to be hooked up via external interconnect. */
     t_molecule_link* unclustered_list_head = nullptr;
 
-
     t_molecule_link* memory_pool = nullptr;
 
     /* Does the atom block that drives the output of this atom net also appear as a   *
@@ -97,7 +96,6 @@ struct t_clustering_data {
      * twice is when one connection is an output and the other is an input, *
      * so this should take care of all multiple connections.                */
     std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
-
 };
 
 /***********************************/
@@ -136,15 +134,13 @@ bool check_cluster_legality(const int& verbosity,
 bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb);
 
 void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
-                                                std::map<AtomBlockId, float>& gain,
-                                                t_pb* pb,
-                                                int max_queue_size,
-                                                AttractionInfo& attraction_groups);
+                                         std::map<AtomBlockId, float>& gain,
+                                         t_pb* pb,
+                                         int max_queue_size,
+                                         AttractionInfo& attraction_groups);
 
 void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
-                                                     t_pb* pb);
-
-
+                                              t_pb* pb);
 
 void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
                                t_cluster_placement_stats** cluster_placement_stats,
@@ -199,7 +195,6 @@ static void print_pack_status(int num_clb,
 static void rebuild_attraction_groups(AttractionInfo& attraction_groups);
 
 static void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb);
-
 
 enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
                                            t_pack_molecule* molecule,
@@ -363,11 +358,11 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
                                                                 AttractionInfo& attraction_groups);
 
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                AttractionInfo& attraction_groups,
-                                                                const int feasible_block_array_size,
-                                                                ClusterBlockId clb_index,
-                                                                std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
+                                                         t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                         AttractionInfo& attraction_groups,
+                                                         const int feasible_block_array_size,
+                                                         ClusterBlockId clb_index,
+                                                         std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
                                                                 t_cluster_placement_stats* cluster_placement_stats_ptr,

@@ -99,7 +99,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          AttractionInfo& attraction_groups,
                                                          bool& floorplan_regions_overfull,
                                                          t_clustering_data& clustering_data) {
-
     /* Does the actual work of clustering multiple netlist blocks *
      * into clusters.                                                  */
 

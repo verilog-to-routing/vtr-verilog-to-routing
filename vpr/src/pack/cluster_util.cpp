@@ -404,7 +404,6 @@ static void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
     pb->pb_stats->num_feasible_blocks--;
 }
 
-
 /* Add blk to list of feasible blocks sorted according to gain */
 void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
                                          std::map<AtomBlockId, float>& gain,
@@ -2271,11 +2270,11 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
  * from the associated attraction group to the list of feasible blocks for the cluster.
  */
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                AttractionInfo& attraction_groups,
-                                                                const int feasible_block_array_size,
-                                                                ClusterBlockId clb_index,
-                                                                std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+                                                         t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                         AttractionInfo& attraction_groups,
+                                                         const int feasible_block_array_size,
+                                                         ClusterBlockId clb_index,
+                                                         std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -2383,7 +2382,6 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
         }
     }
 }
-
 
 /* Add molecules based on transitive connections (eg. 2 hops away) with current cluster*/
 void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
