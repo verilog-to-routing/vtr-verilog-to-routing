@@ -686,7 +686,7 @@ will be triggered. The following tests are included in the workflow:
 * odin_reg_strong
 
 To get the QoR results of the above tests, go to the "Action" tab. On the menu on the left,
-choose "Test" and select your workflow. If running the test is done, scroll down and click on "artifact".
+choose "Test" and select your workflow. If running the tests is done, scroll down and click on "artifact".
 This would download the results for all CI tests.
 
 1. Go to "Action" tab
@@ -700,6 +700,9 @@ Assume that we want to get the QoR results for "vtr_reg_nightly_test3". In artif
 "qor_results_vtr_reg_nightly_test3.tar.gz." After unzipping this file, a new directory named "vtr_flow" would be
 created. Go to "vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3." In this directory, you can find the **parsed**
 results of this test.
+
+In the case that you want to re-run the CI tests, go to the "Action" tab and find your workflow under Test Workflow.
+Select the test which you want to re-run. There is a re-run button on the top-right corner of the newly appeared window.
 
 
 
