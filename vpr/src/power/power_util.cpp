@@ -405,7 +405,9 @@ static void init_mux_arch_default(t_mux_arch* mux_arch, int levels, int num_inpu
  * Allocates a builds a multiplexer graph with given # inputs and levels
  */
 static t_mux_node* alloc_and_load_mux_graph(int num_inputs, int levels) {
-    t_mux_node* node = new t_mux_node;
+    t_mux_node* node;
+
+    node = (t_mux_node*)vtr::malloc(sizeof(t_mux_node));
     alloc_and_load_mux_graph_recursive(node, num_inputs, levels - 1, 0);
 
     return node;
