@@ -703,7 +703,7 @@ results of this test.
 
 In the case that you want to re-run the CI tests, go to the "Action" tab and find your workflow under Test Workflow.
 Select the test which you want to re-run. There is a re-run button on the top-right corner of the newly appeared window.
-
+![Rerun CI Test](./doc/src/dev/eval_qor/re_run_tests.png)
 
 
 
