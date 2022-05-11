@@ -380,7 +380,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             int type_len = strlen(pb_type->name);
             int name_len = strlen(pb->name);
             int tot_len = type_len + name_len;
-            char* blk_tag = (char*)vtr::malloc((tot_len + 8) * sizeof(char));
+            char* blk_tag = new char[(tot_len + 8)];
 
             sprintf(blk_tag, "%s (%s)", pb_type->name, pb->name);
 
@@ -392,7 +392,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
                     abs_bbox.height());
             }
 
-            free(blk_tag);
+            delete[] (blk_tag);
         } else {
             // else (ie. has chilren, and isn't at the lowest displayed level)
             // just label its type, and put it up at the top so we can see it
