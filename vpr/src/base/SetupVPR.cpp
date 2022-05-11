@@ -646,7 +646,7 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
         if (!Arch->power)
             Arch->power = (t_power_arch*)vtr::malloc(sizeof(t_power_arch));
         if (!Arch->clocks)
-           Arch->clocks = (t_clock_arch*)vtr::malloc(sizeof(t_clock_arch));
+            Arch->clocks = (t_clock_arch*)vtr::malloc(sizeof(t_clock_arch));
         device_ctx.clock_arch = Arch->clocks;
     } else {
         Arch->power = nullptr;
