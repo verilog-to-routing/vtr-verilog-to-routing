@@ -179,6 +179,7 @@ struct t_options {
     argparse::ArgValue<e_rr_node_reorder_algorithm> reorder_rr_graph_nodes_algorithm;
     argparse::ArgValue<int> reorder_rr_graph_nodes_threshold;
     argparse::ArgValue<int> reorder_rr_graph_nodes_seed;
+    argparse::ArgValue<bool> flat_routing;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;

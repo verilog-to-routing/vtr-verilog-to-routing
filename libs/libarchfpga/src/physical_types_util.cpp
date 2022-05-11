@@ -156,7 +156,7 @@ static int get_logical_block_physical_pin_num_offset(t_physical_tile_type_ptr ph
     for(auto eq_site : curr_sub_tile->equivalent_sites) {
         if(eq_site == curr_logical_block)
             break;
-        offset += (int)eq_site->pb_pin_idx_bimap.size();
+        offset += (int)eq_site->pb_pin_num_map.size();
 
     }
     return offset;
@@ -740,7 +740,7 @@ int get_pin_physical_num_from_class_physical_num(t_physical_tile_type_ptr physic
     std::tie(sub_tile, sub_tile_cap) = get_sub_tile_from_class_physical_num(physical_tile, physical_class_num);
     VTR_ASSERT(sub_tile_cap != -1);
     auto logical_block = get_logical_block_from_class_physical_num(physical_tile, physical_class_num);
-    auto pb_pin = logical_block->pb_pin_idx_bimap[pin_logical_num];
+    auto pb_pin = logical_block->pb_pin_num_map.at(pin_logical_num);
     return get_pb_pin_physical_num(physical_tile,
                                    sub_tile,
                                    logical_block,
@@ -922,11 +922,11 @@ t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile
 
 
     for(auto tmp_logical_block : sub_tile->equivalent_sites) {
-        if(physical_num < (num_seen_pins + (int)tmp_logical_block->pb_pin_idx_bimap.size()) ) {
+        if(physical_num < (num_seen_pins + (int)tmp_logical_block->pb_pin_num_map.size()) ) {
             target_logical_block = tmp_logical_block;
             break;
         } else {
-            num_seen_pins += (int)tmp_logical_block->pb_pin_idx_bimap.size();
+            num_seen_pins += (int)tmp_logical_block->pb_pin_num_map.size();
         }
     }
 
@@ -939,7 +939,7 @@ const t_pb_graph_pin* get_pb_pin_from_pin_physical_num (t_physical_tile_type_ptr
     auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, physical_num);
     VTR_ASSERT(logical_block != nullptr);
     int logical_num = get_pin_logical_num_from_pin_physical_num(physical_tile, physical_num);
-    return logical_block->pb_pin_idx_bimap[logical_num];
+    return logical_block->pb_pin_num_map.at(logical_num);
 
 }
 
@@ -994,7 +994,7 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                             int relative_cap,
                             const t_pb_graph_pin* pin) {
     int pin_ptc;
-    int logical_pin_num = logical_block->pb_pin_idx_bimap[pin];
+    int logical_pin_num = pin->pin_count_in_cluster;
     int offset = get_logical_block_physical_pin_num_offset(physical_tile,
                                                            sub_tile,
                                                            logical_block,
@@ -1041,7 +1041,7 @@ std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node*
 int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile) {
     int num_pins = 0;
     for(auto eq_site : sub_tile->equivalent_sites) {
-        num_pins += (int)eq_site->pb_pin_idx_bimap.size();
+        num_pins += (int)eq_site->pb_pin_num_map.size();
     }
     num_pins *= sub_tile->capacity.total();
     return num_pins;

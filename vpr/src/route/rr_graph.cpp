@@ -382,8 +382,8 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const t_direct_inf* directs,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
-                           int* Warnings,
-                           bool is_flat = false);
+                           bool is_flat,
+                           int* Warnings);
 
 /******************* Subroutine definitions *******************************/
 
@@ -445,6 +445,7 @@ void create_rr_graph(const t_graph_type graph_type,
                        router_opts.clock_modeling,
                        directs, num_directs,
                        &det_routing_arch->wire_to_rr_ipin_switch,
+                       router_opts.flat_routing,
                        Warnings);
         if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
             mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
@@ -512,8 +513,8 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const t_direct_inf* directs,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
-                           int* Warnings,
-                           bool is_flat) {
+                           bool is_flat,
+                           int* Warnings) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
     /* Reset warning flag */
@@ -668,8 +669,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* Alloc node lookups, count nodes, alloc rr nodes */
     int num_rr_nodes = 0;
 
-    // #TODO: This should be deleted!
-    is_flat = false;
     // Add routing resources to rr_graph lookup table
     alloc_and_load_rr_node_indices(device_ctx.rr_graph_builder,
                                    max_chan_width, grid,

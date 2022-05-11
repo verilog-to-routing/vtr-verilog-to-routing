@@ -840,7 +840,7 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
-    vtr::unordered_bimap<const t_pb_graph_pin*, int> pb_pin_idx_bimap; /* {pin, intra_cluster_pin_idx} */
+    std::unordered_map<int, const t_pb_graph_pin*> pb_pin_num_map; /* {pin, intra_cluster_pin_idx} */
     std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* {pb_pin_ptr, class_inf_idx} */
     std::vector<t_class> primitive_class_inf; /* {primitive_pin, class_number} */
 

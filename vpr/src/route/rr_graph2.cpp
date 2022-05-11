@@ -1293,8 +1293,8 @@ static void add_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
         return;
 
     // Add all pins except for root-block pins
-    for (auto pin_pair : logical_block->pb_pin_idx_bimap) {
-        auto pb_graph_pin = pin_pair.first;
+    for (auto pin_pair : logical_block->pb_pin_num_map) {
+        auto pb_graph_pin = pin_pair.second;
         int pin_num;
         bool assigned_to_rr_node = false;
         pin_num = get_pb_pin_physical_num(type,

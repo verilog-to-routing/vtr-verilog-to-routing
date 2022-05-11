@@ -385,7 +385,7 @@ static void set_logical_block_all_pins_indices(t_logical_block_type* logical_blo
     auto root_pb_graph_node = logical_block->pb_graph_head;
     std::queue<t_pb_graph_node*> pb_graph_node_to_set_pin_index_q;
 
-    vtr::unordered_bimap<const t_pb_graph_pin*, int>& pb_pin_idx_map = logical_block->pb_pin_idx_bimap;
+    std::unordered_map<int, const t_pb_graph_pin*>& pb_pin_idx_map = logical_block->pb_pin_num_map;
     int offset = 0;
 
     pb_graph_node_to_set_pin_index_q.push(root_pb_graph_node);
@@ -415,8 +415,7 @@ static void set_logical_block_all_pins_indices(t_logical_block_type* logical_blo
             for (int port_idx = 0; port_idx < num_ports; port_idx++) {
                 for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
                     auto curr_pb_graph_pin = &pins[port_idx][pin_idx];
-                    auto curr_pb_graph_l_idx = curr_pb_graph_pin->port->absolute_first_pin_index + curr_pb_graph_pin->pin_number + offset;
-                    pb_pin_idx_map.insert(curr_pb_graph_pin, curr_pb_graph_l_idx);
+                    pb_pin_idx_map.insert(std::make_pair(curr_pb_graph_pin->pin_count_in_cluster, curr_pb_graph_pin));
                 }
             }
         }
@@ -572,7 +571,7 @@ void static set_primitive_port_pin_classes(t_logical_block_type* logical_block,
 
             for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
                 auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
-                class_inf.pinlist.push_back(logical_block->pb_pin_idx_bimap[pb_graph_pin]);
+                class_inf.pinlist.push_back(pb_graph_pin->pin_count_in_cluster);
                 logical_block->pb_pin_class_map.insert(std::make_pair(pb_graph_pin, class_num));
             }
             primitive_class_inf.push_back(class_inf);
@@ -591,7 +590,7 @@ void static set_primitive_port_pin_classes(t_logical_block_type* logical_block,
                 }
 
                 auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
-                class_inf.pinlist.push_back(logical_block->pb_pin_idx_bimap[pb_graph_pin]);
+                class_inf.pinlist.push_back(pb_graph_pin->pin_count_in_cluster);
                 logical_block->pb_pin_class_map.insert(std::make_pair(pb_graph_pin, class_num));
                 primitive_class_inf.push_back(class_inf);
             }
