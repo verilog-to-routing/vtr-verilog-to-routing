@@ -94,6 +94,8 @@ struct BlifAllocCallback : public blifparse::Callback {
         for (const auto& input : input_names) {
             AtomBlockId blk_id = curr_model().create_block(input, blk_model);
             AtomPortId port_id = curr_model().create_port(blk_id, blk_model->outputs);
+            const std::string& input_port = curr_model().port_name(port_id);
+            printf(" port created is given as::%s\n", input_port.c_str());
             AtomNetId net_id = curr_model().create_net(input);
             curr_model().create_pin(port_id, 0, net_id, PinType::DRIVER);
         }
@@ -190,8 +192,11 @@ struct BlifAllocCallback : public blifparse::Callback {
         //Create output
         AtomNetId net_id = curr_model().create_net(nets[nets.size() - 1]);
         AtomPortId output_port_id = curr_model().create_port(blk_id, blk_model->outputs);
+        const std::string& input_port1 = curr_model().port_name(output_port_id);
+        printf(" \nport created in instance is given as::%s\n", input_port1.c_str());
+
         curr_model().create_pin(output_port_id, 0, net_id, PinType::DRIVER, output_is_const);
-  }
+    }
 
     void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
         if (type == blifparse::LatchType::UNSPECIFIED) {

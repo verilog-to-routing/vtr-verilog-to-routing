@@ -7,40 +7,40 @@
 
 #define BUFFER_MAX 512
 
-void reverse(struct SNode* head) {
-    // Initialize current, previous and
-    // next pointers
-    SNode* current = head;
-    SNode *prev = NULL, *next = NULL;
-
-    while (current != NULL) {
-        // Store next
-        next = current->next;
-
-        // Reverse current node's pointer
-        current->next = prev;
-
-        // Move pointers one position ahead.
-        prev = current;
-        current = next;
-    }
-    head = prev;
-}
-
-//reverse (head);
-void print_linklist(struct SNode* head) {
-    struct SNode* current = head;
-    while (current != NULL) {
-        if (current->type == 0) { printf("\nThe list starts here with the value %d", current->list_counter); }
-
-        if (current->type == 1) { printf("\nThe string is  %s", current->value); }
-        if (current->type == 2) { printf("\nThe symbol is  %s", current->value); }
-        if (current->type == 3) { printf("\nThe integer is  %c", *current->value); }
-        if (current->type == 4) { printf("\nThe float is  %f", current->value); }
-        if (current->type == 5) { printf("\nThe list ends here with the value %d", current->list_counter); }
-        current = current->next;
-    }
-}
+/*void reverse(struct SNode* head) {
+ * // Initialize current, previous and
+ * // next pointers
+ * SNode* current = head;
+ * SNode *prev = NULL, *next = NULL;
+ *
+ * while (current != NULL) {
+ * // Store next
+ * next = current->next;
+ *
+ * // Reverse current node's pointer
+ * current->next = prev;
+ *
+ * // Move pointers one position ahead.
+ * prev = current;
+ * current = next;
+ * }
+ * head = prev;
+ * }
+ *
+ * //reverse (head);
+ * void print_linklist(struct SNode* head) {
+ * struct SNode* current = head;
+ * while (current != NULL) {
+ * if (current->type == 0) { printf("\nThe list starts here with the value %d", current->list_counter); }
+ *
+ * if (current->type == 1) { printf("\nThe string is  %s", current->value); }
+ * if (current->type == 2) { printf("\nThe symbol is  %s", current->value); }
+ * if (current->type == 3) { printf("\nThe integer is  %c", *current->value); }
+ * if (current->type == 4) { printf("\nThe float is  %f", current->value); }
+ * if (current->type == 5) { printf("\nThe list ends here with the value %d", current->list_counter); }
+ * current = current->next;
+ * }
+ * }*/
 int is_float(char* str) {
     // printf ("\n entering is_float function to check %s", str );
     char* ptr = NULL;
@@ -142,21 +142,21 @@ struct SNode* snode_parse(FILE* fp) {
 void snode_free(struct SNode* node) {
     while (node != NULL) {
         struct SNode* tmp = node;
-        if (node->type == LIST_START) {
-            snode_free(node->list);
-            node->list_counter = NULL;
-        }
-        if (node->type == LIST_END) {
-            snode_free(node->list);
-            node->list_counter = NULL;
-        } else {
-            // Free current value
-            free(node->value);
-            node->value = NULL;
-        }
-        node = node->next;
-        // Free current node
+        /*if (node->type == LIST_START) {
+         * snode_free(node->list);
+         * node->list_counter = NULL;
+         * }
+         * if (node->type == LIST_END) {
+         * snode_free(node->list);
+         * node->list_counter = NULL;
+         * } else {
+         * // Free current value
+         * free(node->value);
+         * node->value = NULL;
+         * }
+         * node = node->next;
+         * // Free current node*/
         free(tmp);
-        tmp = NULL;
+        //tmp = NULL;
     }
 }
