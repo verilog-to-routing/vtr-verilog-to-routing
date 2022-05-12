@@ -947,14 +947,14 @@ void free_draw_structs() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     if (draw_coords != nullptr) {
-        delete (draw_coords->tile_x);
+        delete[] (draw_coords->tile_x);
         draw_coords->tile_x = nullptr;
-        delete (draw_coords->tile_y);
+        delete[] (draw_coords->tile_y);
         draw_coords->tile_y = nullptr;
     }
 
     if (draw_state != nullptr) {
-        delete (draw_state->draw_rr_node);
+        delete[] (draw_state->draw_rr_node);
         draw_state->draw_rr_node = nullptr;
     }
 #else
