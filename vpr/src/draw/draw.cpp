@@ -978,9 +978,7 @@ void init_draw_coords(float width_val) {
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
     if (rr_graph.num_nodes() != 0) {
-        draw_state->draw_rr_node = (t_draw_rr_node*)vtr::realloc(
-            draw_state->draw_rr_node,
-            (rr_graph.num_nodes()) * sizeof(t_draw_rr_node));
+        draw_state->draw_rr_node = new t_draw_rr_node[rr_graph.num_nodes()];
         /*FIXME: the type cast should be eliminated by making draw_rr_node adapt RRNodeId */
         for (const RRNodeId& rr_id : rr_graph.nodes()) {
             draw_state->draw_rr_node[(size_t)rr_id].color = DEFAULT_RR_NODE_COLOR;

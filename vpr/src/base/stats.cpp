@@ -364,7 +364,7 @@ void print_wirelen_prob_dist() {
                 VTR_LOG("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
                 incr = index - prob_dist_size + 2;
                 prob_dist_size += incr;
-                prob_dist = (float*)vtr::realloc(prob_dist, prob_dist_size * sizeof(float));
+                prob_dist = new float[prob_dist_size];
                 for (i = prob_dist_size - incr; i < prob_dist_size; i++)
                     prob_dist[i] = 0.0;
             }
@@ -377,8 +377,7 @@ void print_wirelen_prob_dist() {
                 VTR_LOG("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
                 incr = index - prob_dist_size + 2;
                 prob_dist_size += incr;
-                prob_dist = (float*)vtr::realloc(prob_dist,
-                                                 prob_dist_size * sizeof(float));
+                prob_dist = new float[prob_dist_size];
                 for (i = prob_dist_size - incr; i < prob_dist_size; i++)
                     prob_dist[i] = 0.0;
             }
