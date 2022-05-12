@@ -329,8 +329,8 @@ float power_usage_mux_for_callibration(int num_inputs, float transistor_size) {
     float* dens;
     float* prob;
 
-    dens = (float*)vtr::malloc(num_inputs * sizeof(float));
-    prob = (float*)vtr::malloc(num_inputs * sizeof(float));
+    dens = new float[num_inputs];
+    prob = new float[num_inputs];
     for (int i = 0; i < num_inputs; i++) {
         dens[i] = 2;
         prob[i] = 0.5;
@@ -340,8 +340,8 @@ float power_usage_mux_for_callibration(int num_inputs, float transistor_size) {
                                power_get_mux_arch(num_inputs, transistor_size), prob, dens, 0,
                                false, power_callib_period);
 
-    free(dens);
-    free(prob);
+    delete[] dens;
+    delete[] prob;
 
     return power_sum_usage(&power_usage);
 }
@@ -356,7 +356,7 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
     /* Initialize an SRAM pattern that guarantees the outputs toggle with
      * every input toggle.
      */
-    SRAM_bits = (char*)vtr::malloc(((1 << lut_size) + 1) * sizeof(char));
+    SRAM_bits = new char[((1 << lut_size) + 1)];
     for (int i = 1; i <= lut_size; i++) {
         if (i == 1) {
             SRAM_bits[0] = '1';
@@ -369,8 +369,8 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
         SRAM_bits[1 << i] = '\0';
     }
 
-    dens = (float*)vtr::malloc(lut_size * sizeof(float));
-    prob = (float*)vtr::malloc(lut_size * sizeof(float));
+    dens = new float[lut_size];
+    prob = new float[lut_size];
     for (int i = 0; i < lut_size; i++) {
         dens[i] = 1;
         prob[i] = 0.5;
@@ -378,9 +378,9 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
     power_usage_lut(&power_usage, lut_size, transistor_size, SRAM_bits, prob,
                     dens, power_callib_period);
 
-    free(SRAM_bits);
-    free(dens);
-    free(prob);
+    delete[] SRAM_bits;
+    delete[] dens;
+    delete[] prob;
 
     return power_sum_usage(&power_usage);
 }
