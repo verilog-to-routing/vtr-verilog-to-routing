@@ -342,7 +342,7 @@ void print_wirelen_prob_dist() {
     int prob_dist_size, i, incr;
 
     prob_dist_size = device_ctx.grid.width() + device_ctx.grid.height() + 10;
-    prob_dist = new float[prob_dist_size];
+    prob_dist = new float[prob_dist_size]();
     norm_fac = 0.;
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -408,7 +408,7 @@ void print_wirelen_prob_dist() {
     VTR_LOG("Expected value of 2-pin net length (R): ;%g;\n", av_length);
     VTR_LOG("Total wirelength: ;%g;\n", norm_fac * av_length);
 
-    delete prob_dist;
+    delete[] prob_dist;
 }
 
 /**
