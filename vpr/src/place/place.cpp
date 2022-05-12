@@ -2559,15 +2559,17 @@ static void free_fast_cost_update() {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (size_t i = 0; i < device_ctx.grid.height(); i++) {
-        free(chanx_place_cost_fac[i]);
+        delete[](chanx_place_cost_fac[i]);
+	chanx_place_cost_fac[i] = nullptr;
     }
-    free(chanx_place_cost_fac);
+    delete[](chanx_place_cost_fac);
     chanx_place_cost_fac = nullptr;
 
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        free(chany_place_cost_fac[i]);
+        delete[](chany_place_cost_fac[i]);
+	chany_place_cost_fac[i] = nullptr;
     }
-    free(chany_place_cost_fac);
+    delete[](chany_place_cost_fac);
     chany_place_cost_fac = nullptr;
 }
 
@@ -2590,15 +2592,13 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
      * subhigh must be greater than or equal to sublow, we only need to       *
      * allocate storage for the lower half of a matrix.                       */
 
-    chanx_place_cost_fac = (float**)vtr::malloc(
-        (device_ctx.grid.height()) * sizeof(float*));
+    chanx_place_cost_fac = new float*[(device_ctx.grid.height())];
     for (size_t i = 0; i < device_ctx.grid.height(); i++)
-        chanx_place_cost_fac[i] = (float*)vtr::malloc((i + 1) * sizeof(float));
+        chanx_place_cost_fac[i] = new float[(i + 1)];
 
-    chany_place_cost_fac = (float**)vtr::malloc(
-        (device_ctx.grid.width() + 1) * sizeof(float*));
+    chany_place_cost_fac = new float*[(device_ctx.grid.width() + 1)];
     for (size_t i = 0; i < device_ctx.grid.width(); i++)
-        chany_place_cost_fac[i] = (float*)vtr::malloc((i + 1) * sizeof(float));
+        chany_place_cost_fac[i] = new float[(i + 1)];
 
     /* First compute the number of tracks between channel high and channel *
      * low, inclusive, in an efficient manner.                             */
