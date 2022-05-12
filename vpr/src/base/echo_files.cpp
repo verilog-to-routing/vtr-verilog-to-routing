@@ -45,8 +45,10 @@ void setEchoFileEnabled(enum e_echo_files echo_option, bool value) {
 void setEchoFileName(enum e_echo_files echo_option, const char* name) {
     if (echoFileNames[(int)echo_option] != nullptr) {
         delete[] (echoFileNames[(int)echo_option]);
+        echoFileNames[(int)echo_option] = nullptr;
     }
-    echoFileNames[(int)echo_option] = vtr::strdup(name);
+    echoFileNames[(int)echo_option] = new char[strlen(name)+1];
+    strcpy(echoFileNames[(int)echo_option], name);
 }
 
 bool isEchoFileEnabled(enum e_echo_files echo_option) {
