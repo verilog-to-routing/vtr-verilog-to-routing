@@ -49,10 +49,12 @@ struct EDIFReader {
         printf("\n\n after setting block types");
         main_netlist_.set_block_types(inpad_model_, outpad_model_);
         VTR_LOG("Reading IOs...\n");
+        read_nets();
         read_ios();
         VTR_LOG("Reading blocks...\n");
         read_blocks();
         read_nets();
+        //find_corresponding_net (std::string port_name);
     }
     // Define top module
 
@@ -71,6 +73,7 @@ struct EDIFReader {
     std::vector<std::tuple<std::string, std::string, std::string>> ports_vec;
     std::string top_cell_;
     struct SNode* node_;
+    int num_ports;
 
     void read_ios() {
         printf("\n===================reading inputs==================\n");
@@ -93,15 +96,27 @@ struct EDIFReader {
             std::string size = std::get<2>(ports_vec[i]);
             auto size_port = stoi(size);
 
+
             printf(" direction is given as::%s\n", dir.c_str());
             printf(" size in string is is given as::%s\n", size.c_str());
             printf(" Size given as::%d\n", size_port);
             std::string cmp_string_out = "OUTPUT";
             std::string cmp_string_in = "INPUT";
-
+            AtomNetId netID;
+            AtomPinId pinID;
+            std::string temp_name;
             if (dir == cmp_string_in) {
-                blk_id = main_netlist_.create_block(const_cast<char*>(port_name.c_str()), input_model);
+            	for (num_ports=0;num_ports<size_port; num_ports++){
+            	std::string num_ports_str= std::to_string(num_ports);
+            	temp_name= port_name+num_ports_str;
+            	printf("\n final port name for read ios input is %s" , temp_name.c_str());
+                blk_id = main_netlist_.create_block(const_cast<char*>(temp_name.c_str()), input_model);
                 port_id = main_netlist_.create_port(blk_id, input_model->outputs);
+
+                 netID = main_netlist_.find_net( find_corresponding_net(temp_name));
+                pinID = main_netlist_.create_pin(port_id, 0, netID, PinType::DRIVER);
+
+
                 const std::string& in_blk = main_netlist_.block_name(blk_id);
                 const std::string& input_port = main_netlist_.port_name(port_id);
                 const std::string& netlistname = main_netlist_.netlist_name();
@@ -110,10 +125,16 @@ struct EDIFReader {
                 printf(" port created is given as::%s\n", input_port.c_str());
 
                 printf("NETLIST name is given as::%s\n", netlistname.c_str());
+            	}
             }
             if (dir == cmp_string_out) {
-                blk_id = main_netlist_.create_block(const_cast<char*>(port_name.c_str()), output_model);
+            	for (num_ports=0;num_ports<size_port; num_ports++){
+            	   std::string num_ports_str= std::to_string(num_ports);
+            	  temp_name= port_name+num_ports_str;
+                blk_id = main_netlist_.create_block(const_cast<char*>(temp_name.c_str()), output_model);
                 port_id = main_netlist_.create_port(blk_id, output_model->inputs);
+                 netID = main_netlist_.find_net( find_corresponding_net(temp_name));
+                 pinID = main_netlist_.create_pin(port_id, 0, netID, PinType::SINK);
                 const std::string& out_blk = main_netlist_.block_name(blk_id);
                 const std::string& output_port = main_netlist_.port_name(port_id);
                 const std::string& netlistname = main_netlist_.netlist_name();
@@ -122,6 +143,7 @@ struct EDIFReader {
                 printf(" port created is given as::%s\n", output_port.c_str());
                 printf("NETLIST name is given as::%s\n", netlistname.c_str());
             }
+            }
         }
     }
     void read_blocks() {
@@ -129,7 +151,8 @@ struct EDIFReader {
 
         std::string top_cell = (edif_.find_top_(node_));
         edif_.find_cell_instances(node_, top_cell);
-        edif_.find_cell_net(node_, top_cell);
+        AtomNetId netID;
+                    AtomPinId pinID;
         for (size_t k = 0; k < edif_.instance_vec.size(); k++) {
             std::string model_name = std::get<1>(edif_.instance_vec[k]);
 
@@ -152,30 +175,33 @@ struct EDIFReader {
                 std::string cmp_string_in = "INPUT";
 
                 if (dir == cmp_string_in) {
-                    // blk_model->inputs->name = const_cast<char*>(port_name.c_str());
 
-                    // blk_model->inputs->dir = IN_PORT;
-                    // blk_model->inputs->size = size_port;
-                    // blk_model->inputs->min_size = 0;
-
+                     blk_model->inputs->size = size_port;
                     AtomPortId port_id = main_netlist_.create_port(blk_ins, blk_model->inputs);
+                    for (num_ports=0;num_ports<size_port; num_ports++){
+                     std::string num_ports_str= std::to_string(num_ports);
+                     std::string temp_name= port_name+num_ports_str;
+                      netID = main_netlist_.find_net( find_corresponding_net(temp_name));
+                       pinID = main_netlist_.create_pin(port_id, num_ports, netID, PinType::SINK);
 
                     const std::string& input_port = main_netlist_.port_name(port_id);
                     const std::string& netlistname = main_netlist_.netlist_name();
 
-                    //  printf(" block created is given as::%s\n", in_blk.c_str());
+
                     printf(" port created is given as::%s\n", input_port.c_str());
 
                     printf("NETLIST name is given as::%s\n", netlistname.c_str());
+                    }
                 }
                 if (dir == cmp_string_out) {
-                    // blk_model->outputs->name = const_cast<char*>(port_name.c_str());
-                    // blk_model->outputs->dir = OUT_PORT;
-                    // blk_model->outputs->size = size_port;
-                    // blk_model->outputs->min_size = 0;
-                    //blk_model->outputs = outputs;
-                    //  AtomBlockId blk_ins = main_netlist_.create_block(port_name, blk_model);
-                    main_netlist_.create_port(blk_ins, blk_model->outputs);
+                     blk_model->outputs->size = size_port;
+                     AtomPortId  port_id=  main_netlist_.create_port(blk_ins, blk_model->outputs);
+                    for (num_ports=0;num_ports<size_port; num_ports++){
+                       std::string num_ports_str= std::to_string(num_ports);
+                       std::string temp_name= port_name+num_ports_str;
+                       netID = main_netlist_.find_net( find_corresponding_net(temp_name));
+                       pinID = main_netlist_.create_pin(port_id, num_ports, netID, PinType::DRIVER);
+                }
                 }
             }
 
@@ -205,80 +231,16 @@ struct EDIFReader {
     }
     void read_nets() {
         printf("Entering the net connection vector");
+        std::string top_cell = (edif_.find_top_(node_));
+        edif_.find_cell_net(node_, top_cell);
+       // printf("the size of map is %d",edif_.nets.size() );
         std::string net_name;
         std::vector<std::tuple<std::string, std::string, std::string>> temp_vec22;
         for (auto it = edif_.nets.begin(); it != edif_.nets.end(); it++) {
             net_name = it->first;
             printf("\n a net is created with a name of %s\n ", net_name.c_str());
             AtomNetId net_id = main_netlist_.create_net(net_name);
-            temp_vec22 = (*it).second;
-            int k;
-            for (k = (temp_vec22.size() - 1); k >= 0; k--) {
-                printf("\n\n\n k=%d ", k);
-                std::string port_ref = std::get<0>(temp_vec22[k]);
-                printf("\n The port_ref is %s \n ", port_ref.c_str());
-                std::string port_bit = std::get<1>(temp_vec22[k]);
-                printf("\n The port_bit is %s \n ", port_bit.c_str());
-                std::string inst_ref = std::get<2>(temp_vec22[k]);
-                printf("\n The inst_ref is %s \n ", inst_ref.c_str());
-                BitIndex port_bit_i = stoi(port_bit);
-                // BitIndex port_bit_i = 0;
-                printf(" \nport bit is  is given as::%d\n", port_bit_i);
-                AtomBlockId blk_id = main_netlist_.find_block(port_ref);
-                AtomBlockId blk_id1 = main_netlist_.find_block(inst_ref);
 
-                //const std::string& out_blk = main_netlist_.block_name(blk_id);
-                //printf(" block created is from read block section============ ::%s\n", out_blk.c_str());
-                std::string outpad_str = "outpad";
-                AtomPortId port_id_ = main_netlist_.find_port(blk_id, outpad_str);
-
-                std::string outpad_str1 = "inpad";
-                AtomPortId port_id_1 = main_netlist_.find_port(blk_id, outpad_str1);
-
-                std::string out_str = "out";
-                AtomPortId port_id_2 = main_netlist_.find_port(blk_id1, out_str);
-
-                std::string in_str = "in";
-                AtomPortId port_id_3 = main_netlist_.find_port(blk_id1, in_str);
-
-                std::string top_cell = (edif_.find_top_(node_));
-                if (main_netlist_.port_type(port_id_1) == PortType::OUTPUT)
-                // for (AtomPortId port_id_ : main_netlist_.block_input_ports(blk_id)) {
-                {
-                    printf("\nCondition 2 satisfied");
-                    AtomPinId pin = main_netlist_.create_pin(port_id_1, port_bit_i, net_id, PinType::DRIVER);
-                    const std::string& pin_name_out = main_netlist_.pin_name(pin);
-                    printf("\n \n pin in DRIVER ==================== ::%s\n", pin_name_out.c_str());
-
-                }
-
-                else if (main_netlist_.port_type(port_id_) == PortType::INPUT)
-                // for (AtomPortId port_id_ : main_netlist_.block_input_ports(blk_id)) {
-                {
-                    printf("\nCondition 1 satisfied");
-                    AtomPinId pin = main_netlist_.create_pin(port_id_, port_bit_i, net_id, PinType::SINK);
-                    const std::string& pin_name_in = main_netlist_.pin_name(pin);
-                    printf(" \n \n pin in SINK ====================================::%s\n", pin_name_in.c_str());
-                }
-
-                else if (main_netlist_.port_type(port_id_3) == PortType::INPUT)
-                // for (AtomPortId port_id_ : main_netlist_.block_input_ports(blk_id)) {
-                {
-                    printf("\nCondition 1 satisfied");
-                    AtomPinId pin = main_netlist_.create_pin(port_id_3, port_bit_i, net_id, PinType::SINK);
-                    const std::string& pin_name_in = main_netlist_.pin_name(pin);
-                    printf(" \n \n pin in SINK ====================================::%s\n", pin_name_in.c_str());
-                }
-
-                else if (main_netlist_.port_type(port_id_2) == PortType::OUTPUT)
-                // for (AtomPortId port_id_ : main_netlist_.block_input_ports(blk_id)) {
-                {
-                    printf("\nCondition 2 satisfied");
-                    AtomPinId pin = main_netlist_.create_pin(port_id_2, port_bit_i, net_id, PinType::DRIVER);
-                    const std::string& pin_name_out = main_netlist_.pin_name(pin);
-                    printf("\n \n pin in DRIVER ==================== ::%s\n", pin_name_out.c_str());
-                }
-            }
         }
     }
 
@@ -311,6 +273,32 @@ struct EDIFReader {
 
         return nullptr;
     }
+    std::string find_corresponding_net (std::string port_name)
+    {
+    	//printf("\n\n\n\nEntering the find_coreesponding nets\n");
+    //	printf("the size of map is %d",edif_.nets.size() );
+    	 std::string net_name;
+    	 std::vector<std::tuple<std::string, std::string, std::string>> temp_vec99;
+    	        for (auto newit = edif_.nets.begin(); newit != edif_.nets.end(); newit++) {
+    	             net_name = newit->first;
+    	             printf("Entering the map");
+    	            temp_vec99 = (*newit).second;
+    	            size_t k;
+    	            for (k = 0; k < temp_vec99.size(); k++) {
+    	            	std::string port_ref = std::get<0>(temp_vec99[k]);
+    	            	printf("\n net checking %s against %s\n ",port_ref.c_str(), port_name.c_str());
+
+    	            	if (port_name== port_ref )
+    	            	{
+    	            		printf("\n port matched\n");
+    	            		printf("\n a net is found of %s\n ", net_name.c_str());
+    	            		return net_name;
+    	            	}
+    	            }
+    	        }
+    	return net_name;
+    }
+
 };
 AtomNetlist read_edif(e_circuit_format circuit_format,
                       const char* edif_file,
@@ -318,7 +306,7 @@ AtomNetlist read_edif(e_circuit_format circuit_format,
                       const t_model* library_models) {
     AtomNetlist netlist;
     t_model* blk_model;
-    blk_model = new t_model;
+    //blk_model = new t_model;
     // main_netlist_ = AtomNetlist(top_cell_, netlist_id);
     printf("reading inputs");
     FILE* fp = fopen("/home/users/raza.jafari/netlists/edif/and2_or2_output_edif.edn", "r");

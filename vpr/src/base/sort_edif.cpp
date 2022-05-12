@@ -369,8 +369,10 @@ class usefull_data {
                                                         }
                                                     }
                                                 }
-                                                port_ref = port_ref + instance_ref;
+                                                port_ref = port_ref + instance_ref ;
+                                                port_ref= port_ref + member_num;
                                                 //printf ("\n\n\n\n%s",port_ref.c_str() );
+
                                                 con_vec.push_back(std::make_tuple(port_ref, member_num, instance_ref));
                                                 //printf("\nthe port_ref is %s\n", port_ref.c_str());
                                             }
@@ -378,6 +380,7 @@ class usefull_data {
                                     }
                                     // printf ("\n The net name is %s", net_name.c_str());
                                     nets.insert({net_name, con_vec});
+                                    printf("The size of nets map is %d", nets.size());
                                     con_vec.clear();
                                 }
                             }
