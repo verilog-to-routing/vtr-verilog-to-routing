@@ -134,14 +134,13 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
         if (is_io_type(physical_tile)) {
             for (j = 0; j < logical_block->pb_type->num_pins; j++) {
                 int physical_pin = get_physical_pin(physical_tile, logical_block, j);
-                auto pin_class = physical_tile->pin_class[physical_pin];
-                auto class_inf = physical_tile->class_inf[pin_class];
 
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
-                    if (class_inf.type == DRIVER) {
+                    auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
+                    if (pin_type == DRIVER) {
                         L_num_p_inputs++;
                     } else {
-                        VTR_ASSERT(class_inf.type == RECEIVER);
+                        VTR_ASSERT(pin_type == RECEIVER);
                         L_num_p_outputs++;
                     }
                 }

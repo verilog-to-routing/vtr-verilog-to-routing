@@ -429,8 +429,7 @@ void print_lambda() {
         VTR_ASSERT(type != nullptr);
         if (!is_io_type(type)) {
             for (ipin = 0; ipin < type->num_pins; ipin++) {
-                iclass = type->pin_class[ipin];
-                if (type->class_inf[iclass].type == RECEIVER) {
+                if (get_pin_type_from_pin_physical_num(type, ipin) == RECEIVER) {
                     ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
                     if (net_id != ClusterNetId::INVALID())                 /* Pin is connected? */
                         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Not a global clock */

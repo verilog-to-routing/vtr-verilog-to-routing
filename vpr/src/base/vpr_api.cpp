@@ -972,8 +972,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
         VTR_ASSERT_MSG(Fc >= 0 && Fc <= 1., "Fc should be fractional");
 
         for (int ipin : fc_spec.pins) {
-            int iclass = type->pin_class[ipin];
-            e_pin_type pin_type = type->class_inf[iclass].type;
+            e_pin_type pin_type = get_pin_type_from_pin_physical_num(type, ipin);
 
             if (pin_type == DRIVER) {
                 Fc_out = std::max(Fc, Fc_out);
