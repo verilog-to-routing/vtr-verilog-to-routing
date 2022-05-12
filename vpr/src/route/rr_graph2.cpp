@@ -67,22 +67,13 @@ static void reserve_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
                                        const int y,
                                        const std::vector<e_side>& wanted_sides);
 
-static void add_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
-                                   t_physical_tile_type_ptr type,
-                                   const t_sub_tile* sub_tile,
-                                   t_logical_block_type_ptr logical_block,
-                                   int relative_capacity,
-                                   const int x,
-                                   const int y,
-                                   int* rr_index);
-
-static void add_top_level_sink_src(RRGraphBuilder& rr_graph_builder,
+static void add_cluster_sink_src(RRGraphBuilder& rr_graph_builder,
                        const DeviceGrid& grid,
                        int x,
                        int y,
                        int* index);
 
-static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
+static void add_flat_sink_src(RRGraphBuilder& rr_graph_builder,
                                    const DeviceGrid& grid,
                                    int x,
                                    int y,
@@ -1036,10 +1027,10 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                 //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
                 if(is_flat) {
-                    add_primitive_sink_src(rr_graph_builder, grid, x, y, index);
+                    add_flat_sink_src(rr_graph_builder, grid, x, y, index);
                 }
                 else {
-                    add_top_level_sink_src(rr_graph_builder, grid, x, y, index);
+                    add_cluster_sink_src(rr_graph_builder, grid, x, y, index);
                 }
 
                 /* Limited sides for grids
@@ -1141,24 +1132,34 @@ static void add_all_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
 
     reserve_logical_block_pins_lookup(rr_graph_builder, type, x, y, wanted_sides);
 
-    /* Assign indices for internal-pins */
-    // Add pins on the border of the tile
+    /* We add pins on the tile in a separate function because these pins have pre-defined sides which need to be considered */
     assign_tile_pins_indices(rr_graph_builder,
                              grid,
                              x,
                              y,
                              index,
                              wanted_sides);
-    // Add logical block pins
-    for(const t_sub_tile& sub_tile : type->sub_tiles) {
-        for(auto eq_site : sub_tile.equivalent_sites) {
-            for (int sub_tile_idx = 0; sub_tile_idx < sub_tile.capacity.total(); sub_tile_idx++) {
-                add_logical_block_pins_lookup(rr_graph_builder, type, &sub_tile, eq_site,
-                                       sub_tile_idx, x, y, index);
 
-            }
+    // Add logical block pins
+    auto internal_pins_num = get_tile_internal_pins_num(type);
+    for (auto pin_num : internal_pins_num) {
+        bool assigned_to_rr_node = false;
+        auto pin_type = get_pin_type_from_pin_physical_num(type, pin_num);
+        // It is assumed that all internal pins are on the top side
+        // Also, in the case that the tile's height or width is > 1, internal pins are only accessible from the root location
+        if (pin_type == RECEIVER) {
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, IPIN, pin_num, e_side::TOP);
+            assigned_to_rr_node = true;
+        } else {
+            VTR_ASSERT(pin_type == DRIVER);
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, OPIN, pin_num, e_side::TOP);
+            assigned_to_rr_node = true;
         }
+
+        if (assigned_to_rr_node)
+            ++(*index);
     }
+
 }
 
 
@@ -1209,13 +1210,12 @@ static void assign_tile_pins_indices(RRGraphBuilder& rr_graph_builder,
                 for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                     int y_tile = y + height_offset;
                     if (type->pinloc[width_offset][height_offset][side][ipin]) {
-                        int iclass = type->pin_class[ipin];
-                        auto class_type = type->class_inf[iclass].type;
-                        if (class_type == DRIVER) {
+                        auto pin_type = get_pin_type_from_pin_physical_num(type, ipin);
+                        if (pin_type == DRIVER) {
                             rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, OPIN, ipin, side);
                             assigned_to_rr_node = true;
                         } else {
-                            VTR_ASSERT(class_type == RECEIVER);
+                            VTR_ASSERT(pin_type == RECEIVER);
                             rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, IPIN, ipin, side);
                             assigned_to_rr_node = true;
                         }
@@ -1279,50 +1279,7 @@ static void reserve_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-static void add_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
-                                   t_physical_tile_type_ptr type,
-                                   const t_sub_tile* sub_tile,
-                                   t_logical_block_type_ptr logical_block,
-                                   int relative_capacity,
-                                   const int x,
-                                   const int y,
-                                   int* rr_index) {
-
-    const t_pb_graph_node* pb_graph_node = logical_block->pb_graph_head;
-    if(!pb_graph_node)
-        return;
-
-    // Add all pins except for root-block pins
-    for (auto pin_pair : logical_block->pb_pin_num_map) {
-        auto pb_graph_pin = pin_pair.second;
-        int pin_num;
-        bool assigned_to_rr_node = false;
-        pin_num = get_pb_pin_physical_num(type,
-                                 sub_tile,
-                                 logical_block,
-                                 relative_capacity,
-                                 pb_graph_pin);
-
-        auto port_type = pb_graph_pin->port->type;
-        // It is assumed that all internal pins are on the top side
-        // Also, in the case that the tile's height or width is > 1, internal pins are only accessible from the root location
-        if (port_type == IN_PORT) {
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x, y, IPIN, pin_num, e_side::TOP);
-            assigned_to_rr_node = true;
-        } else {
-            VTR_ASSERT(port_type == OUT_PORT);
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*rr_index), x, y, OPIN, pin_num, e_side::TOP);
-            assigned_to_rr_node = true;
-        }
-
-        if (assigned_to_rr_node)
-            ++(*rr_index);
-    }
-
-
-}
-
-static void add_top_level_sink_src(RRGraphBuilder& rr_graph_builder,
+static void add_cluster_sink_src(RRGraphBuilder& rr_graph_builder,
                                    const DeviceGrid& grid,
                                    int x,
                                    int y,
@@ -1342,17 +1299,18 @@ static void add_top_level_sink_src(RRGraphBuilder& rr_graph_builder,
 
 }
 
-static void add_primitive_sink_src(RRGraphBuilder& rr_graph_builder,
-                                   const DeviceGrid& grid,
-                                   int x,
-                                   int y,
-                                   int* index) {
+static void add_flat_sink_src(RRGraphBuilder& rr_graph_builder,
+                              const DeviceGrid& grid,
+                              int x,
+                              int y,
+                              int* index) {
 
     auto type = grid[x][y].type;
 
 
-    auto tile_primitive_classes_map = get_tile_primitive_classes_map(type);
-    for (auto class_pair : tile_primitive_classes_map) {
+    auto tile_classes_map = get_flat_tile_classes_map(type);
+    // Add internal classes
+    for (auto class_pair : tile_classes_map) {
         int class_num = class_pair.first;
         auto primitive_class = class_pair.second;
         auto class_type = primitive_class->type;

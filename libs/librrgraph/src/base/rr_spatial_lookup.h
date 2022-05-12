@@ -48,7 +48,7 @@ class RRSpatialLookup {
      * @note All ptcs start at 0 and are positive.
      *       Depending on what type of resource this is, ptc can be 
      *         - the class number of a common SINK/SOURCE node of grid, 
-     *           starting at 0 and go up to class_inf size - 1 of SOURCEs + SINKs in a grid
+     *           starting at 0 and go up to logical_class_inf size - 1 of SOURCEs + SINKs in a grid
      *         - pin number of an input/output pin of a grid. They would normally start at 0
      *           and go to the number of pins on a block at that (x, y) location
      *         - track number of a routing wire in a channel. They would normally go from 0

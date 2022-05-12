@@ -331,8 +331,8 @@ int get_num_wire_types(const int num_segments, const t_segment_inf* segment_inf)
 int get_max_Fc(const int* Fc_array, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type) {
     int Fc = 0;
     for (int ipin = 0; ipin < block_type->num_pins; ++ipin) {
-        int iclass = block_type->pin_class[ipin];
-        if (Fc_array[ipin] > Fc && block_type->class_inf[iclass].type == pin_type) {
+        auto curr_pin_type = get_pin_type_from_pin_physical_num(block_type, ipin);
+        if (Fc_array[ipin] > Fc && curr_pin_type == pin_type) {
             /* currently I'm assuming that the Fc for all pins are the same. Check this here. */
             if (Fc != 0 && Fc_array[ipin] != Fc) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Two pins of the same type have different Fc values. This is currently not allowed for CB metrics\n");
@@ -585,7 +585,7 @@ static void get_pin_locations(const t_physical_tile_type_ptr block_type, const e
         /* go through each pin of the block */
         for (int ipin = 0; ipin < block_type->num_pins; ipin++) {
             /* if this pin is not of the correct type, skip it */
-            e_pin_type this_pin_type = block_type->class_inf[block_type->pin_class[ipin]].type;
+            e_pin_type this_pin_type = get_pin_type_from_pin_physical_num(block_type, ipin);
             if (this_pin_type != pin_type) {
                 continue;
             }
@@ -1011,8 +1011,8 @@ static void get_xbar_matrix(const int***** conn_block, const t_physical_tile_typ
         }
 
         /* skip if specified pin isn't of 'pin_type' */
-        int pin_class_index = block_type->pin_class[pin];
-        if (pin_type != block_type->class_inf[pin_class_index].type) {
+        auto curr_pin_type = get_pin_type_from_pin_physical_num(block_type, pin);
+        if (pin_type != curr_pin_type) {
             continue;
         }
         /* skip if specified pin doesn't connect to tracks on the specified side */
@@ -1410,7 +1410,7 @@ void make_poor_cb_pattern(const e_pin_type pin_type, const t_physical_tile_type_
                     }
 
                     /* if this pin is not of the correct type, skip it */
-                    e_pin_type this_pin_type = block_type->class_inf[block_type->pin_class[pin]].type;
+                    e_pin_type this_pin_type = get_pin_type_from_pin_physical_num(block_type, pin);
                     if (this_pin_type != pin_type || block_type->is_ignored_pin[pin]) {
                         continue;
                     }

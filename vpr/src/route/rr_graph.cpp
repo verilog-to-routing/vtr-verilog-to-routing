@@ -1470,7 +1470,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
         /* We only are working with opins so skip non-drivers */
-        if (type->class_inf[type->pin_class[pin_index]].type != DRIVER) {
+        if (get_pin_type_from_pin_physical_num(type, pin_index) != DRIVER) {
             continue;
         }
 
@@ -1649,7 +1649,7 @@ static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
 
 
 
-    auto classes = get_tile_primitive_classes_map(physical_tile);
+    auto classes = get_flat_tile_classes_map(physical_tile);
     /* Initialize SINK/SOURCE nodes and connect them to their respective pins */
     for (auto class_pair : classes) {
         int class_id = class_pair.first;
@@ -1667,8 +1667,7 @@ static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
 
 
     /* Initialize IPIN/OPIN */
-    // #TODO: Direct access to the underlying data structure (pb_pin) - Ideally only pin_ptc should be needed - Create API or helper function
-    int num_tile_pins = get_tile_max_ptc(physical_tile, true);
+    int num_tile_pins = get_tile_ipin_opin_max_ptc(physical_tile, true);
     for (int ipin = 0; ipin < num_tile_pins; ipin++) {
         bool is_tile_pin = is_pin_on_tile(physical_tile, ipin);
         int max_width_offset;
@@ -2358,8 +2357,8 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
         /* determine the maximum Fc to this segment type across all pins */
         int max_Fc = 0;
         for (int pin_index = 0; pin_index < Type->num_pins; ++pin_index) {
-            int pin_class = Type->pin_class[pin_index];
-            if (Fc[pin_index][iseg] > max_Fc && Type->class_inf[pin_class].type == pin_type) {
+            auto curr_pin_type = get_pin_type_from_pin_physical_num(Type, pin_index);
+            if (Fc[pin_index][iseg] > max_Fc && curr_pin_type == pin_type) {
                 max_Fc = Fc[pin_index][iseg];
             }
         }
@@ -2391,8 +2390,8 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
         /* determine the maximum Fc to this segment type across all pins */
         int max_Fc = 0;
         for (int pin_index = 0; pin_index < Type->num_pins; ++pin_index) {
-            int pin_class = Type->pin_class[pin_index];
-            if (Fc[pin_index][iseg] > max_Fc && Type->class_inf[pin_class].type == pin_type) {
+            auto curr_pin_type = get_pin_type_from_pin_physical_num(Type, pin_index);
+            if (Fc[pin_index][iseg] > max_Fc && curr_pin_type == pin_type) {
                 max_Fc = Fc[pin_index][iseg];
             }
         }
@@ -2493,8 +2492,8 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
 
     //Record the physical pin locations and counts per side/offsets combination
     for (int pin = 0; pin < Type->num_pins; ++pin) {
-        int pin_class = Type->pin_class[pin];
-        if (Type->class_inf[pin_class].type != pin_type) /* Doing either ipins OR opins */
+        auto curr_pin_type = get_pin_type_from_pin_physical_num(Type, pin);
+        if (curr_pin_type != pin_type) /* Doing either ipins OR opins */
             continue;
 
         /* Pins connecting only to global resources get no switches -> keeps area model accurate. */
@@ -3153,8 +3152,8 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
     /* Go through each pin and find its fanout. */
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
         /* Skip global pins and pins that are not of DRIVER type */
-        int class_index = type->pin_class[pin_index];
-        if (type->class_inf[class_index].type != DRIVER) {
+        auto pin_type = get_pin_type_from_pin_physical_num(type, pin_index);
+        if (pin_type != DRIVER) {
             continue;
         }
         if (type->is_ignored_pin[pin_index]) {
@@ -3487,8 +3486,8 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
 
     /* get Fc_max */
     for (i = 0; i < type->num_pins; ++i) {
-        iclass = type->pin_class[i];
-        if (Fc_out[i][0] > Fc_max && type->class_inf[iclass].type == DRIVER) {
+        auto pin_type = get_pin_type_from_pin_physical_num(type, i);
+        if (Fc_out[i][0] > Fc_max && pin_type == DRIVER) {
             Fc_max = Fc_out[i][0];
         }
     }

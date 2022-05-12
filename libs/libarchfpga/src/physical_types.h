@@ -450,6 +450,10 @@ struct t_class {
 struct t_class_range {
     int low = 0;
     int high = 0;
+
+    int total() const {
+        return high - low + 1;
+    }
 };
 
 enum e_power_wire_type {
@@ -842,7 +846,7 @@ struct t_logical_block_type {
 
     std::unordered_map<int, const t_pb_graph_pin*> pb_pin_num_map; /* {pin, intra_cluster_pin_idx} */
     std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* {pb_pin_ptr, class_inf_idx} */
-    std::vector<t_class> primitive_class_inf; /* {primitive_pin, class_number} */
+    std::vector<t_class> logical_class_inf; /* {primitive_pin, class_number} */
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;

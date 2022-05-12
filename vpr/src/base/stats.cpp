@@ -418,7 +418,7 @@ void print_wirelen_prob_dist() {
  * (i.e. the clock when it is marked global).
  */
 void print_lambda() {
-    int ipin, iclass;
+    int ipin;
     int num_inputs_used = 0;
     float lambda;
 

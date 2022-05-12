@@ -401,25 +401,25 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     /* Check that it's capacities and such make sense. */
 
     if(rr_type == SOURCE || rr_type == SINK) {
-        int max_ptc = (is_flat) ? get_tile_num_primitive_classes(type) : (int)type->class_inf.size();
+        int max_ptc = get_tile_class_max_ptc(type, is_flat);
         e_pin_type pin_type = (rr_type == SINK) ? RECEIVER : DRIVER;
         if(ptc_num >= max_ptc){
             VPR_ERROR(VPR_ERROR_ROUTE,
-                      "in check_rr_node: inode %d (type %d) had a ptc_num of %d - max_ptc = %d.\n", inode, rr_type, ptc_num, max_ptc);
+                      "in check_rr_node: inode %d (type %d) has a ptc_num of %d - max_ptc = %d.\n", inode, rr_type, ptc_num, max_ptc);
         }
-        auto class_type = get_class_type_from_class_physical_num(type, ptc_num, is_flat);
+        auto class_type = get_class_type_from_class_physical_num(type, ptc_num);
         if (class_type != pin_type) {
             VPR_ERROR(VPR_ERROR_ROUTE,
                       "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
         }
-        int class_num_pins = get_class_num_pins_from_class_physical_num(type, ptc_num, is_flat);
+        int class_num_pins = get_class_num_pins_from_class_physical_num(type, ptc_num);
         if (class_num_pins != capacity) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_rr_node: inode %d (type %d) had a capacity of %d.\n", inode, rr_type, capacity);
         }
 
     } else if(rr_type == IPIN || rr_type == OPIN) {
-        int max_ptc = get_tile_max_ptc(type, is_flat);
+        int max_ptc = get_tile_ipin_opin_max_ptc(type, is_flat);
         e_pin_type pin_type = (rr_type == IPIN) ? RECEIVER : DRIVER;
         if (ptc_num >= max_ptc) {
             VPR_ERROR(VPR_ERROR_ROUTE,
@@ -432,7 +432,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                 auto pb_pin = get_pb_pin_from_pin_physical_num(type, ptc_num);
                 if(pb_pin->is_primitive_pin()) {
                     auto logical_block = get_logical_block_from_pin_physical_num(type, ptc_num);
-                    if (logical_block->primitive_class_inf[logical_block->pb_pin_class_map.at(pb_pin)].type != pin_type) {
+                    if (logical_block->logical_class_inf[logical_block->pb_pin_class_map.at(pb_pin)].type != pin_type) {
                         VPR_ERROR(VPR_ERROR_ROUTE,
                                   "in check_rr_node: inode %d (type %d) type is not equal to DRIVER.\n", inode, rr_type, ptc_num);
                     }
@@ -440,7 +440,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             }
         } else {
             VTR_ASSERT(is_flat == false);
-            if(type->class_inf[type->pin_class[ptc_num]].type != pin_type) {
+            if(get_pin_type_from_pin_physical_num(type, ptc_num) != pin_type) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: inode %d (type %d) type is not equal to DRIVER.\n", inode, rr_type, ptc_num);
             }

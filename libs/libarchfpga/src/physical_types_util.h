@@ -313,23 +313,23 @@ std::tuple<const t_sub_tile*, int> get_sub_tile_from_class_physical_num(t_physic
 
 t_logical_block_type_ptr get_logical_block_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
 
-int get_class_logical_num_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
+e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
 
-e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num, bool is_flat);
-
-int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num, bool is_flat);
+int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
 
 int get_pin_physical_num_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num, int pin_logical_num);
+
+bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_physical_num);
 /** **/
 
 /** get classes under different blocks **/
-std::unordered_map<int, const t_class*> get_tile_primitive_classes_map(t_physical_tile_type_ptr physical_tile);
+std::unordered_map<int, const t_class*> get_flat_tile_classes_map(t_physical_tile_type_ptr physical_tile);
 
-std::unordered_map<int, const t_class*> get_sub_tile_inst_primitive_classes_map(t_physical_tile_type_ptr physical_tile,
+std::unordered_map<int, const t_class*> get_sub_tile_inst_classes_map(t_physical_tile_type_ptr physical_tile,
                                                                            const t_sub_tile* sub_tile,
                                                                            int relative_cap);
 
-std::unordered_map<int, const t_class*> get_logical_block_primitive_classes_map(t_physical_tile_type_ptr physical_tile,
+std::unordered_map<int, const t_class*> get_logical_block_classes_map(t_physical_tile_type_ptr physical_tile,
                                                                                 const t_sub_tile* sub_tile,
                                                                                 t_logical_block_type_ptr logical_block,
                                                                                 int relative_cap);
@@ -340,21 +340,24 @@ std::unordered_map<int, const t_class*> get_primitive_block_classes_map(t_physic
                                                                         int sub_tile_relative_cap,
                                                                         const t_pb_graph_node* primitive_pb_graph_node);
 /** **/
+int get_total_num_sub_tile_internal_classes(const t_sub_tile* sub_tile);
 
-int get_tile_num_primitive_classes(t_physical_tile_type_ptr physical_tile);
+int get_total_num_tile_internal_classes(t_physical_tile_type_ptr physical_tile);
+
+int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 
 /*  */
 
 /* Access information related to pins */
 
 /** get information given pin physical number **/
+std::vector<int> get_tile_internal_pins_num(t_physical_tile_type_ptr physical_type);
+
 std::tuple<const t_sub_tile*, int> get_sub_tile_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
 t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
 const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
-
-int get_pin_logical_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
 e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
@@ -373,7 +376,7 @@ int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile);
 
 int get_total_num_tile_internal_pins(t_physical_tile_type_ptr tile);
 
-int get_tile_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
+int get_tile_ipin_opin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 
 /* */
 
