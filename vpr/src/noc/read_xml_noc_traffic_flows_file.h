@@ -21,7 +21,7 @@ constexpr int NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE = -1;
  * 
  * @param noc_flows_file Name of the noc '.flows' file
  */
-void read_xml_noc_traffic_flows_file(char* noc_flows_file);
+void read_xml_noc_traffic_flows_file(const char* noc_flows_file);
 
 
 

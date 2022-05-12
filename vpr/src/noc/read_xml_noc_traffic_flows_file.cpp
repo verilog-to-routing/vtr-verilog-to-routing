@@ -50,7 +50,7 @@ static void check_that_all_router_blocks_have_an_associated_traffic_flow(NocCont
  * 
  * @param noc_flows_file Name of the '.flows' file
  */
-void read_xml_noc_traffic_flows_file(char* noc_flows_file){
+void read_xml_noc_traffic_flows_file(const char* noc_flows_file){
 
     // start by checking that the provided file is a ".flows" file
     if (vtr::check_file_name_extension(noc_flows_file, ".flows") == false){
@@ -96,7 +96,7 @@ void read_xml_noc_traffic_flows_file(char* noc_flows_file){
 
     }
     catch(pugiutil::XmlError& e) { // used for identifying any of the xml parsing library errors
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, noc_flows_file, e.line(), "%s", e.what());
+        vpr_throw(VPR_ERROR_OTHER, noc_flows_file, e.line(), e.what());
     }
 
     // make sure that all the router modules in the design have an associated traffic flow
@@ -183,12 +183,12 @@ static void verify_traffic_flow_router_modules(std::string source_router_name, s
     // check that the router module names were legal
     if ((source_router_name.compare("") == 0) || (destination_router_name.compare("") == 0)){
         
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "%s", "Invalid names for the source and dstination NoC router modules.");
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Invalid names for the source and destination NoC router modules.");
     }// check if the source and destination routers have the same name
     else if (source_router_name.compare(destination_router_name) == 0)
     {
         // Cannot have the source and destination routers have the same name (they need to be different). A flow cant go to a single router.
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "%s", "Source and destination NoC routers cannot be the same modules.");
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Source and destination NoC routers cannot be the same modules.");
     }
 
     return;
@@ -212,7 +212,7 @@ static void verify_traffic_flow_properties(double traffic_flow_bandwidth, double
     // check that the bandwidth and max latency are positive values
     if ((traffic_flow_bandwidth < 0) || (max_traffic_flow_latency < 0)){
         
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "%s", "THe traffic flow bandwidth and latency constraints need to be positive values.");
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The traffic flow bandwidth and latency constraints need to be positive values.");
     }
 
     return;
@@ -240,7 +240,7 @@ static ClusterBlockId get_router_module_cluster_id(std::string router_module_nam
     // check if a valid block id was found
     if ((size_t)router_module_id == (size_t)ClusterBlockId::INVALID){
         // if here then the module did not exist in the design, so throw an error
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "%s", "The router module '%s' does not exist in the design.", router_module_id);
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The router module '%s' does not exist in the design.", router_module_id);
     }
 
     return router_module_id;
@@ -276,7 +276,7 @@ static void check_traffic_flow_router_module_type(std::string router_module_name
     */
     if (!is_tile_compatible(noc_router_tile_type, router_module_logical_type)){
         
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "%s", "The supplied module name '%s' is not a NoC router.", router_module_name);
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "%s", "The supplied module name '%s' is not a NoC router. Found in file: %s, line: %d.", router_module_name, loc_data.filename_c_str(), loc_data.line(single_flow_tag));
     }
    
     return;
@@ -342,11 +342,12 @@ static void check_that_all_router_blocks_have_an_associated_traffic_flow(NocCont
     }
 
     /*
-        Every router block in the design needs to be part of a traffic flow. There can never be a router that isnt part of a traffic flow, other wise the router is doing nothing. So check that the number of unique routers in all traffic flows equals the number of router blocks in the design, otherwise throw an error.
+        Every router block in the design needs to be part of a traffic flow. There can never be a router that isnt part of a traffic flow, other wise the router is doing nothing. So check that the number of unique routers in all traffic flows equals the number of router blocks in the design, otherwise throw an warning to let the user know. If there aren't
+        any traffic flows for any routers then the NoC is not being used.
     */
     if (noc_ctx.noc_traffic_flows_storage.get_number_of_routers_used_in_traffic_flows() != number_of_router_blocks_in_design){
 
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "NoC traffic flows file '%s' does not contain all router modules in the design. Every router module in the design must be part of a traffic flow (communicationg to another router).", noc_flows_file);
+        VTR_LOG_WARN("NoC traffic flows file '%s' does not contain all router modules in the design. Every router module in the design must be part of a traffic flow (communicationg to another router).", noc_flows_file);
     }
 
     return;
