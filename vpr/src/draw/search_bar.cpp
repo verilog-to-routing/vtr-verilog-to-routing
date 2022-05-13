@@ -323,31 +323,49 @@ void warning_dialog_box(const char* message) {
     return;
 }
 
+/**
+ * @brief manages auto-complete options when search type is changed
+ * 
+ * Selects appropriate gtkEntryCompletion item when changed signal is sent
+ * from gtkComboBox SearchType. Currently only sets a completion model for Block Name options, 
+ * sets null for anything else. brh
+ * 
+ * @param self GtkComboBox that holds current Search Setting
+ * @param app ezgl app used to access other objects
+ */
 void search_type_changed(GtkComboBox* self, ezgl::application* app){
     auto type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(self));
     GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
+    //Ensuring a valid type was selected
     if (!type) return;
     if (type[0] == '\0') return;
     std::string searchType(type);
-    if (searchType == "Block Name"){
+    //Setting active completion model to blockCompleter if type selected is block Name
+    if (searchType == "Block Name") {
         GtkEntryCompletion* blockCompleter = GTK_ENTRY_COMPLETION(app->get_object("BlockNameCompleter"));
         gtk_entry_set_completion(searchBar, blockCompleter);
-    } else {
+    } else { //If not, setting to null
         gtk_entry_set_completion(searchBar, nullptr);
     }
 }
 
+
+/**
+ * @brief loads block names into gtk list store item used for completion
+ * 
+ * @param app ezgl application
+ */
 void load_block_names(ezgl::application* app){
     auto blockStorage = GTK_LIST_STORE(app->get_object("BlockNames"));
     auto& cluster_ctx = g_vpr_ctx.clustering();
     GtkTreeIter iter;
+    //Getting and storing all block names
     for(ClusterBlockId id : cluster_ctx.clb_nlist.blocks()){
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter, 
         0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
-        std::cout << cluster_ctx.clb_nlist.block_name(id) << " ";
+        ++i;
     }
-    std::cout << std::endl;
 }
 
 #endif /* NO_GRAPHICS */
