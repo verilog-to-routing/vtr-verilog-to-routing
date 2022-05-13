@@ -349,7 +349,6 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
     }
 }
 
-
 /**
  * @brief loads block names into gtk list store item used for completion
  * 
@@ -362,7 +361,7 @@ void load_block_names(ezgl::application* app) {
     //Getting and storing all block names
     for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
-        gtk_list_store_set(blockStorage, &iter, 
+        gtk_list_store_set(blockStorage, &iter,
                            0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
     }
 }
