@@ -121,8 +121,7 @@ void check_and_output_clustering(const t_packer_opts& packer_opts,
                                  const std::unordered_set<AtomNetId>& is_clock,
                                  const t_arch* arch,
                                  const int& num_clb,
-                                 const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
-                                 bool& floorplan_regions_overfull);
+                                 const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing);
 
 void get_max_cluster_size_and_pb_depth(int& max_cluster_size,
                                        int& max_pb_depth);
@@ -184,7 +183,7 @@ t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb* cur_pb
 
 void print_pack_status_header();
 
-static void print_pack_status(int num_clb,
+void print_pack_status(int num_clb,
                               int tot_num_molecules,
                               int num_molecules_processed,
                               int& mols_since_last_print,
@@ -192,9 +191,9 @@ static void print_pack_status(int num_clb,
                               int device_height,
                               AttractionInfo& attraction_groups);
 
-static void rebuild_attraction_groups(AttractionInfo& attraction_groups);
+void rebuild_attraction_groups(AttractionInfo& attraction_groups);
 
-static void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb);
+void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb);
 
 enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
                                            t_pack_molecule* molecule,
@@ -213,7 +212,9 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
 
 void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_cluster_placement_stats* cur_cluster_placement_stats_ptr,
+                      t_pack_molecule*& prev_molecule,
                       t_pack_molecule*& next_molecule,
+                      int& num_same_molecules,
                       t_pb_graph_node** primitives_list,
                       t_cluster_progress_stats& cluster_stats,
                       int num_clb,
@@ -348,29 +349,29 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                const int feasible_block_array_size,
-                                                                AttractionInfo& attraction_groups);
+                                                                       t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                       const int feasible_block_array_size,
+                                                                       AttractionInfo& attraction_groups);
 
 void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                const int feasible_block_array_size,
-                                                                AttractionInfo& attraction_groups);
+                                                                       t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                       const int feasible_block_array_size,
+                                                                       AttractionInfo& attraction_groups);
 
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
-                                                         t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                         AttractionInfo& attraction_groups,
-                                                         const int feasible_block_array_size,
-                                                         ClusterBlockId clb_index,
-                                                         std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
+                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                AttractionInfo& attraction_groups,
+                                                                const int feasible_block_array_size,
+                                                                ClusterBlockId clb_index,
+                                                                std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
-                                                                const ClusterBlockId cluster_index,
-                                                                int transitive_fanout_threshold,
-                                                                const int feasible_block_array_size,
-                                                                AttractionInfo& attraction_groups);
+                                                                       t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                       vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
+                                                                       const ClusterBlockId cluster_index,
+                                                                       int transitive_fanout_threshold,
+                                                                       const int feasible_block_array_size,
+                                                                       AttractionInfo& attraction_groups);
 
 bool check_free_primitives_for_molecule_atoms(t_pack_molecule* molecule, t_cluster_placement_stats* cluster_placement_stats_ptr);
 
@@ -403,7 +404,8 @@ std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
 
 t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::vector<AtomBlockId> seed_atoms);
 
-float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain);
+float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain, AttractGroupId cluster_attraction_group_id, AttractionInfo& attraction_groups, int num_molecule_failures);
+
 int compare_molecule_gain(const void* a, const void* b);
 int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id);
 

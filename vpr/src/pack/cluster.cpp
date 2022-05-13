@@ -382,6 +382,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
         print_le_count(le_count, le_pb_type);
     }
 
+    //check_floorplan_regions(floorplan_regions_overfull);
+    floorplan_regions_overfull = floorplan_constraints_regions_overfull();
+
     return num_used_type_instances;
 }
 

@@ -257,8 +257,7 @@ void check_and_output_clustering(const t_packer_opts& packer_opts,
                                  const std::unordered_set<AtomNetId>& is_clock,
                                  const t_arch* arch,
                                  const int& num_clb,
-                                 const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing,
-                                 bool& floorplan_regions_overfull) {
+                                 const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*>& intra_lb_routing) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     VTR_ASSERT(num_clb == (int)cluster_ctx.clb_nlist.blocks().size());
@@ -269,9 +268,6 @@ void check_and_output_clustering(const t_packer_opts& packer_opts,
     }
 
     output_clustering(intra_lb_routing, packer_opts.global_clocks, is_clock, arch->architecture_id, packer_opts.output_file.c_str(), false);
-
-    //check_floorplan_regions(floorplan_regions_overfull);
-    floorplan_regions_overfull = floorplan_constraints_regions_overfull();
 
     VTR_ASSERT(cluster_ctx.clb_nlist.blocks().size() == intra_lb_routing.size());
 }
@@ -331,11 +327,13 @@ void print_pack_status_header() {
 
 /*incrementally print progress updates during clustering*/
 void print_pack_status(int num_clb,
-                       int tot_num_molecules,
-                       int num_molecules_processed,
-                       int& mols_since_last_print,
-                       int device_width,
-                       int device_height) {
+                              int tot_num_molecules,
+                              int num_molecules_processed,
+                              int& mols_since_last_print,
+                              int device_width,
+                              int device_height,
+                              AttractionInfo& attraction_groups) {
+    //Print a packing update each time another 4% of molecules have been packed.
     const float print_frequency = 0.04;
 
     double percentage = (num_molecules_processed / (double)tot_num_molecules) * 100;
@@ -359,6 +357,33 @@ void print_pack_status(int num_clb,
         VTR_LOG("\n");
         fflush(stdout);
         mols_since_last_print = 0;
+        if (attraction_groups.num_attraction_groups() > 0) {
+            rebuild_attraction_groups(attraction_groups);
+        }
+    }
+}
+
+/*
+ * Periodically rebuild the attraction groups to reflect which atoms in them
+ * are still available for new clusters (i.e. remove the atoms that have already
+ * been packed from the attraction group).
+ */
+void rebuild_attraction_groups(AttractionInfo& attraction_groups) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    for (int igroup = 0; igroup < attraction_groups.num_attraction_groups(); igroup++) {
+        AttractGroupId group_id(igroup);
+        AttractionGroup& group = attraction_groups.get_attraction_group_info(group_id);
+        AttractionGroup new_att_group_info;
+
+        for (AtomBlockId atom : group.group_atoms) {
+            //If the ClusterBlockId is anything other than invalid, the atom has been packed already
+            if (atom_ctx.lookup.atom_clb(atom) == ClusterBlockId::INVALID()) {
+                new_att_group_info.group_atoms.push_back(atom);
+            }
+        }
+
+        attraction_groups.set_attraction_group_info(group_id, new_att_group_info);
     }
 }
 
@@ -379,7 +404,7 @@ bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
 /* Remove blk from list of feasible blocks sorted according to gain
  * Useful for removing blocks that are repeatedly failing. If a block
  * has been found to be illegal, we don't repeatedly consider it.*/
-static void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
+void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
                                                      t_pb* pb) {
     int molecule_index;
     bool found_molecule = false;
@@ -881,7 +906,14 @@ bool cleanup_pb(t_pb* pb) {
 }
 
 /**
- * Try pack molecule into current cluster
+ * Performs legality checks to see whether the selected molecule can be
+ * packed into the current cluster. The legality checks are related to
+ * floorplanning, pin feasibility, and routing (if detailed route
+ * checking is enabled). The routine returns BLK_PASSED if the molecule
+ * can be packed in the cluster. If the block passes, the routine commits
+ * it to the current cluster and updates the appropriate data structures.
+ * Otherwise, it returns the appropriate failed pack status based on which
+ * legality check the molecule failed.
  */
 enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_placement_stats_ptr,
                                            t_pack_molecule* molecule,
@@ -932,6 +964,8 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
     // macros that limit placement flexibility.
     if (cluster_placement_stats_ptr->has_long_chain && molecule->is_chain() && molecule->chain_info->is_long_chain) {
         VTR_LOGV(verbosity > 4, "\t\t\tFAILED Placement Feasibility Filter: Only one long chain per cluster is allowed\n");
+        //Record the failure of this molecule in the current pb stats
+        record_molecule_failure(molecule, pb);
         return BLK_FAILED_FEASIBLE;
     }
 
@@ -947,6 +981,8 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
                                                                  temp_cluster_pr,
                                                                  cluster_pr_needs_update);
             if (block_pack_status == BLK_FAILED_FLOORPLANNING) {
+                //Record the failure of this molecule in the current pb stats
+                record_molecule_failure(molecule, pb);
                 return block_pack_status;
             }
             if (cluster_pr_needs_update == true) {
@@ -1093,6 +1129,9 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
                     }
                 }
 
+                //Record the failure of this molecule in the current pb stats
+                record_molecule_failure(molecule, pb);
+
                 /* Packing failed, but a part of the pb tree is still allocated and pbs have their modes set.
                  * Before trying to pack next molecule the unused pbs need to be freed and, the most important,
                  * their modes reset. This task is performed by the cleanup_pb() function below. */
@@ -1108,6 +1147,23 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
         }
     }
     return block_pack_status;
+}
+
+
+/* Record the failure of the molecule in this cluster in the current pb stats.
+ * If a molecule fails repeatedly, it's gain will be penalized if packing with
+ * attraction groups on. */
+void record_molecule_failure(t_pack_molecule* molecule, t_pb* pb) {
+    //Only have to record the failure for the first atom in the molecule.
+    //The convention when checking if a molecule has failed to pack in the cluster
+    //is to check whether the first atoms has been recorded as having failed
+
+    auto got = pb->pb_stats->atom_failures.find(molecule->atom_block_ids[0]);
+    if (got == pb->pb_stats->atom_failures.end()) {
+        pb->pb_stats->atom_failures.insert({molecule->atom_block_ids[0], 1});
+    } else {
+        got->second++;
+    }
 }
 
 /**
@@ -1424,7 +1480,9 @@ void update_connection_gain_values(const AtomNetId net_id, const AtomBlockId clu
 
 void try_fill_cluster(const t_packer_opts& packer_opts,
                       t_cluster_placement_stats* cur_cluster_placement_stats_ptr,
+                      t_pack_molecule*& prev_molecule,
                       t_pack_molecule*& next_molecule,
+                      int& num_same_molecules,
                       t_pb_graph_node** primitives_list,
                       t_cluster_progress_stats& cluster_stats,
                       int num_clb,
@@ -1504,6 +1562,9 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                                                  unclustered_list_head,
                                                  unclustered_list_head_size,
                                                  primitive_candidate_block_types);
+        if (prev_molecule == next_molecule) {
+            num_same_molecules++;
+        }
         return;
     }
 
@@ -1524,7 +1585,8 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                       cluster_stats.num_molecules_processed,
                       cluster_stats.mols_since_last_print,
                       device_ctx.grid.width(),
-                      device_ctx.grid.height());
+                      device_ctx.grid.height(),
+                      attraction_groups);
 
     update_cluster_stats(next_molecule, clb_index,
                          is_clock, //Set of all clocks
@@ -1554,6 +1616,10 @@ void try_fill_cluster(const t_packer_opts& packer_opts,
                                              unclustered_list_head,
                                              unclustered_list_head_size,
                                              primitive_candidate_block_types);
+
+    if (prev_molecule == next_molecule) {
+        num_same_molecules++;
+    }
 }
 
 t_pack_molecule* save_cluster_routing_and_pick_new_seed(const t_packer_opts& packer_opts,
@@ -2178,7 +2244,8 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
     }
 
     // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
-    add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, attraction_groups, feasible_block_array_size, attraction_groups);
+    add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, attraction_groups,
+                                                feasible_block_array_size, cluster_index, primitive_candidate_block_types);
 
     /* Grab highest gain molecule */
     t_pack_molecule* molecule = nullptr;
@@ -2195,9 +2262,9 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
 
 /* Add molecules with strong connectedness to the current cluster to the list of feasible blocks. */
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                const int feasible_block_array_size,
-                                                                AttractionInfo& attraction_groups) {
+                                                                       t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                       const int feasible_block_array_size,
+                                                                       AttractionInfo& attraction_groups) {
     VTR_ASSERT(cur_pb->pb_stats->num_feasible_blocks == NOT_VALID);
 
     cur_pb->pb_stats->num_feasible_blocks = 0;
@@ -2214,8 +2281,7 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
                     bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
                     if (success) {
                         add_molecule_to_pb_stats_candidates(molecule,
-                                                            cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size,
-                                                            attraction_groups);
+                                                            cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
                     }
                 }
             }
@@ -2225,9 +2291,9 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
 
 /* Add molecules based on weak connectedness (connected by high fanout nets) with current cluster */
 void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                const int feasible_block_array_size,
-                                                                AttractionInfo& attraction_groups) {
+                                                                       t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                       const int feasible_block_array_size,
+                                                                       AttractionInfo& attraction_groups) {
     /* Because the packer ignores high fanout nets when marking what blocks
      * to consider, use one of the ignored high fanout net to fill up lightly
      * related blocks */
@@ -2253,8 +2319,7 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
                     bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
                     if (success) {
                         add_molecule_to_pb_stats_candidates(molecule,
-                                                            cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE),
-                                                            attraction_groups);
+                                                            cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE), attraction_groups);
                         count++;
                     }
                 }
@@ -2268,13 +2333,16 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
  * If the current cluster being packed has an attraction group associated with it
  * (i.e. there are atoms in it that belong to an attraction group), this routine adds molecules
  * from the associated attraction group to the list of feasible blocks for the cluster.
+ * Attraction groups can be very large, so we only add some randomly selected molecules for efficiency
+ * if the number of atoms in the group is greater than 500. Therefore, the molecules added to the candidates
+ * will vary each time you call this function.
  */
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
-                                                         t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                         AttractionInfo& attraction_groups,
-                                                         const int feasible_block_array_size,
-                                                         ClusterBlockId clb_index,
-                                                         std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                AttractionInfo& attraction_groups,
+                                                                const int feasible_block_array_size,
+                                                                ClusterBlockId clb_index,
+                                                                std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -2385,14 +2453,13 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
 
 /* Add molecules based on transitive connections (eg. 2 hops away) with current cluster*/
 void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
-                                                                const ClusterBlockId cluster_index,
-                                                                int transitive_fanout_threshold,
-                                                                const int feasible_block_array_size,
-                                                                AttractionInfo& attraction_groups) {
-    //TODO: For now, only done by fan-out; should also consider fan-in
-
+                                                                       t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                       vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
+                                                                       const ClusterBlockId cluster_index,
+                                                                       int transitive_fanout_threshold,
+                                                                       const int feasible_block_array_size,
+                                                                       AttractionInfo& attraction_groups) {
+    //TODO: For now, only done by fan-out; should also consider fan-in    
     cur_pb->pb_stats->explore_transitive_fanout = false;
 
     /* First time finding transitive fanout candidates therefore alloc and load them */
@@ -2407,8 +2474,7 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
             bool success = check_free_primitives_for_molecule_atoms(molecule, cluster_placement_stats_ptr);
             if (success) {
                 add_molecule_to_pb_stats_candidates(molecule,
-                                                    cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE),
-                                                    attraction_groups);
+                                                    cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE), attraction_groups);
             }
         }
     }
@@ -2788,13 +2854,15 @@ t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::vecto
  * + molecule_base_gain*some_factor
  * - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
  */
-float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain) {
+float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain, AttractGroupId cluster_attraction_group_id, AttractionInfo& attraction_groups, int num_molecule_failures) {
     float gain;
     int i;
     int num_introduced_inputs_of_indirectly_related_block;
     auto& atom_ctx = g_vpr_ctx.atom();
 
     gain = 0;
+    float attraction_group_penalty = 0.1;
+
     num_introduced_inputs_of_indirectly_related_block = 0;
     for (i = 0; i < get_array_size_of_molecule(molecule); i++) {
         auto blk_id = molecule->atom_block_ids[i];
@@ -2823,11 +2891,22 @@ float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>&
                     }
                 }
             }
+            AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
+            if (atom_grp_id == cluster_attraction_group_id && cluster_attraction_group_id != AttractGroupId::INVALID()) {
+                float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
+                gain += att_grp_gain;
+            } else if (cluster_attraction_group_id != AttractGroupId::INVALID() && atom_grp_id != cluster_attraction_group_id) {
+                gain -= attraction_group_penalty;
+            }
         }
     }
 
     gain += molecule->base_gain * 0.0001; /* Use base gain as tie breaker TODO: need to sweep this value and perhaps normalize */
     gain -= num_introduced_inputs_of_indirectly_related_block * (0.001);
+
+    if (num_molecule_failures > 0 && attraction_groups.num_attraction_groups() > 0) {
+        gain -= 0.1 * num_molecule_failures;
+    }
 
     return gain;
 }
