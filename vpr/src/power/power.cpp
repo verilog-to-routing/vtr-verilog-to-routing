@@ -147,8 +147,8 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
 
         LUT_size = pb_graph_node->num_input_pins[0];
 
-        input_probabilities = (float*)vtr::calloc(LUT_size, sizeof(float));
-        input_densities = (float*)vtr::calloc(LUT_size, sizeof(float));
+        input_probabilities = new float[LUT_size]();
+        input_densities = new float[LUT_size]();
 
         for (pin_idx = 0; pin_idx < LUT_size; pin_idx++) {
             t_pb_graph_pin* pin = &pb_graph_node->input_pins[0][pin_idx];
@@ -169,8 +169,8 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
                         input_probabilities, input_densities, power_ctx.solution_inf.T_crit);
         power_add_usage(power_usage, &sub_power_usage);
         free(SRAM_values);
-        free(input_probabilities);
-        free(input_densities);
+        delete[](input_probabilities);
+        delete[](input_densities);
     } else if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_LATCH) == 0) {
         /* Flip-Flop */
 
@@ -1214,10 +1214,8 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 max_IPIN_fanin = std::max(max_IPIN_fanin, node_fan_in);
                 max_fanin = std::max(max_fanin, node_fan_in);
 
-                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
-                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
+                node_power->in_dens = new float[node_fan_in]();
+                node_power->in_prob = new float[node_fan_in]();
                 break;
             case CHANX:
             case CHANY:
@@ -1233,10 +1231,8 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 max_seg_to_seg_fanout = std::max(max_seg_to_seg_fanout, fanout_to_seg);
                 max_fanin = std::max(max_fanin, node_fan_in);
 
-                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
-                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
+                node_power->in_dens = new float[node_fan_in]();
+                node_power->in_prob = new float[node_fan_in]();
                 break;
             default:
                 /* Do nothing */
@@ -1363,8 +1359,8 @@ bool power_uninit() {
             case CHANY:
             case IPIN:
                 if (rr_graph.node_fan_in(rr_id)) {
-                    free(node_power->in_dens);
-                    free(node_power->in_prob);
+                    delete[](node_power->in_dens);
+                    delete[](node_power->in_prob);
                 }
                 break;
             default:
