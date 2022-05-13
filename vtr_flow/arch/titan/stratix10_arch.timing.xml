@@ -1522,6 +1522,52 @@
       </sub_tile>
     </tile>
   </tiles>
+
+  <layout>
+    <auto_layout aspect_ratio="1.35">
+      <!-- Stratix IV IO blocks connect to both horizontal and vertical
+             routing channels. We approximate this by placing them one unit
+             'in' from the true perimeter (which is left empty). This means
+             that they are fully surrounded by routing channels, allowing them
+             to connect to both horizontal and vertical channels. This is a
+             minor approximation since on real Stratix IV devices there is no 
+             perimeter-side vertical routing channel -->
+      <perimeter type="EMPTY" priority="5000"/>
+
+      <!-- In Stratix 10 devices, IO pins are located in two columns each with a 20% margin from the side borders -->
+
+      <!--Column of 'IO' declared with 'EMPTY' blocks of length 1 wherever an IO block of length 4 does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="EMPTY" startx="W/5" priority="1000"/>
+      <col type="io" startx="W/5" priority="1001"/>
+      <!-- Left column -->
+      <col type="EMPTY" startx="4*W/5" priority="1000"/>
+      <col type="io" startx="4*W/5" priority="1001"/>
+      <!-- Right column -->
+
+
+
+      <!-- Stratix 10 devices support up to 24 PLLs and OCTs located 
+            in the same columns as IOs occuring after every 6 consecutive IO blocks-->
+      <!-- It's been assumed that PLL and OCT each take half their actual length. A more accurate alternative that can be implemented in the future is to define them as subtime belonging to the same tile -->
+      <row type="PLL" x="W/5" y="1" repeaty="36" priority="1997"/>
+      <row type="PLL" x="4*W/5" y="1" repeaty="36" priority="1997"/>
+
+      <row type="OCT" x="W/5" y="13" repeaty="36" priority="1996"/>
+      <row type="OCT" x="4*W/5" y="13" repeaty="36" priority="1996"/> 
+
+      <!--Fill with 'LAB'-->
+      <fill type="LAB" priority="10"/>
+      <!--Column of 'DSP' with 'EMPTY' blocks wherever a 'DSP' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="DSP" startx="20" starty="2" repeatx="20" priority="150"/>
+      <col type="EMPTY" startx="20" repeatx="20" starty="1" priority="149"/>
+      <!--Column of 'M20K' with 'EMPTY' blocks wherever a 'M20K' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="M20K" startx="5" starty="2" repeatx="10" priority="50"/>
+      <col type="EMPTY" startx="5" repeatx="10" starty="1" priority="49"/>
+
+    </auto_layout>
+
+  </layout>
+
   <complexblocklist>
 
     <pb_type name="PLL" num_pb="1">
