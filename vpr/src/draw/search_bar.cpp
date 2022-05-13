@@ -59,9 +59,9 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     GObject* combo_box = (GObject*)app->get_object("SearchType");
     gchar* type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box));
     //Checking that a type is selected
-    if(type && type[0] == '\0'){
+    if (type && type[0] == '\0') {
         warning_dialog_box("Please select a search type");
-        app -> refresh_drawing();
+        app->refresh_drawing();
         return;
     }
 
@@ -333,7 +333,7 @@ void warning_dialog_box(const char* message) {
  * @param self GtkComboBox that holds current Search Setting
  * @param app ezgl app used to access other objects
  */
-void search_type_changed(GtkComboBox* self, ezgl::application* app){
+void search_type_changed(GtkComboBox* self, ezgl::application* app) {
     auto type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(self));
     GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
     //Ensuring a valid type was selected
@@ -355,16 +355,15 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app){
  * 
  * @param app ezgl application
  */
-void load_block_names(ezgl::application* app){
+void load_block_names(ezgl::application* app) {
     auto blockStorage = GTK_LIST_STORE(app->get_object("BlockNames"));
     auto& cluster_ctx = g_vpr_ctx.clustering();
     GtkTreeIter iter;
     //Getting and storing all block names
-    for(ClusterBlockId id : cluster_ctx.clb_nlist.blocks()){
+    for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter, 
-        0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
-        ++i;
+                           0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
     }
 }
 
