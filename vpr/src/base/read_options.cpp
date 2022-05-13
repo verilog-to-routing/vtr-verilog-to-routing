@@ -2620,6 +2620,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "This should be on only when the FPGA device contains a NoC and the provided netlist connects to the NoC.")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
+    
+    noc_grp.add_argument<std::string>(args.noc_flows_file, "--noc_flows_file")
+        .help(
+            "XML file containing the list of traffic flows within the NoC (communication between routers)." 
+            "This is required is required if --noc option is turned on.")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     return parser;
 }
@@ -2802,7 +2809,7 @@ void set_conditional_defaults(t_options& args) {
 
 bool verify_args(const t_options& args) {
     /*
-     * Check for conflicting paramaters
+     * Check for conflicting paramaters or dependencies where one parameter set requires another parameter to be included
      */
     if (args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
         && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
@@ -2823,6 +2830,11 @@ bool verify_args(const t_options& args) {
                         "%s option value 'lookahead' is not compatible with %s 'classic'\n",
                         args.router_initial_timing.argument_name().c_str(),
                         args.router_lookahead_type.argument_name().c_str());
+    }
+
+    if (args.noc.provenance() == Provenance::SPECIFIED && args.noc_flows_file.provenance() != Provenance::SPECIFIED) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "--noc_flows_file option must be specified if --noc is turned on.\n");
     }
 
     return true;
