@@ -327,12 +327,12 @@ void print_pack_status_header() {
 
 /*incrementally print progress updates during clustering*/
 void print_pack_status(int num_clb,
-                              int tot_num_molecules,
-                              int num_molecules_processed,
-                              int& mols_since_last_print,
-                              int device_width,
-                              int device_height,
-                              AttractionInfo& attraction_groups) {
+                       int tot_num_molecules,
+                       int num_molecules_processed,
+                       int& mols_since_last_print,
+                       int device_width,
+                       int device_height,
+                       AttractionInfo& attraction_groups) {
     //Print a packing update each time another 4% of molecules have been packed.
     const float print_frequency = 0.04;
 
@@ -405,7 +405,7 @@ bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
  * Useful for removing blocks that are repeatedly failing. If a block
  * has been found to be illegal, we don't repeatedly consider it.*/
 void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
-                                                     t_pb* pb) {
+                                              t_pb* pb) {
     int molecule_index;
     bool found_molecule = false;
 
@@ -1148,7 +1148,6 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
     }
     return block_pack_status;
 }
-
 
 /* Record the failure of the molecule in this cluster in the current pb stats.
  * If a molecule fails repeatedly, it's gain will be penalized if packing with
@@ -2245,7 +2244,7 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
 
     // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
     add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, attraction_groups,
-                                                feasible_block_array_size, cluster_index, primitive_candidate_block_types);
+                                                        feasible_block_array_size, cluster_index, primitive_candidate_block_types);
 
     /* Grab highest gain molecule */
     t_pack_molecule* molecule = nullptr;
@@ -2262,9 +2261,9 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
 
 /* Add molecules with strong connectedness to the current cluster to the list of feasible blocks. */
 void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
-                                                                       t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                       const int feasible_block_array_size,
-                                                                       AttractionInfo& attraction_groups) {
+                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                const int feasible_block_array_size,
+                                                                AttractionInfo& attraction_groups) {
     VTR_ASSERT(cur_pb->pb_stats->num_feasible_blocks == NOT_VALID);
 
     cur_pb->pb_stats->num_feasible_blocks = 0;
@@ -2291,9 +2290,9 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
 
 /* Add molecules based on weak connectedness (connected by high fanout nets) with current cluster */
 void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
-                                                                       t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                       const int feasible_block_array_size,
-                                                                       AttractionInfo& attraction_groups) {
+                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                const int feasible_block_array_size,
+                                                                AttractionInfo& attraction_groups) {
     /* Because the packer ignores high fanout nets when marking what blocks
      * to consider, use one of the ignored high fanout net to fill up lightly
      * related blocks */
@@ -2338,11 +2337,11 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
  * will vary each time you call this function.
  */
 void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
-                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                AttractionInfo& attraction_groups,
-                                                                const int feasible_block_array_size,
-                                                                ClusterBlockId clb_index,
-                                                                std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+                                                         t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                         AttractionInfo& attraction_groups,
+                                                         const int feasible_block_array_size,
+                                                         ClusterBlockId clb_index,
+                                                         std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -2453,13 +2452,13 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
 
 /* Add molecules based on transitive connections (eg. 2 hops away) with current cluster*/
 void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
-                                                                       t_cluster_placement_stats* cluster_placement_stats_ptr,
-                                                                       vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
-                                                                       const ClusterBlockId cluster_index,
-                                                                       int transitive_fanout_threshold,
-                                                                       const int feasible_block_array_size,
-                                                                       AttractionInfo& attraction_groups) {
-    //TODO: For now, only done by fan-out; should also consider fan-in    
+                                                                t_cluster_placement_stats* cluster_placement_stats_ptr,
+                                                                vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
+                                                                const ClusterBlockId cluster_index,
+                                                                int transitive_fanout_threshold,
+                                                                const int feasible_block_array_size,
+                                                                AttractionInfo& attraction_groups) {
+    //TODO: For now, only done by fan-out; should also consider fan-in
     cur_pb->pb_stats->explore_transitive_fanout = false;
 
     /* First time finding transitive fanout candidates therefore alloc and load them */
