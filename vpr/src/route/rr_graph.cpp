@@ -775,7 +775,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     free_type_track_to_pin_map(track_to_pin_lookup, types, max_chan_width);
     if (clb_to_clb_directs != nullptr) {
-        free(clb_to_clb_directs);
+        delete[](clb_to_clb_directs);
     }
 }
 
@@ -2392,7 +2392,7 @@ static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
     VTR_ASSERT(max_chan_width > 0);
 
     int* num_conns_to_track; /* [0..max_chan_width-1] */
-    num_conns_to_track = (int*)vtr::calloc(max_chan_width, sizeof(int));
+    num_conns_to_track = new int[max_chan_width]();
 
     for (int pin = 0; pin < type->num_pins; ++pin) {
         for (int width = 0; width < type->width; ++width) {
@@ -2415,7 +2415,7 @@ static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
                           track, (ipin_or_opin == DRIVER ? "OPIN" : "IPIN"));
         }
     }
-    free(num_conns_to_track);
+    delete[](num_conns_to_track);
 }
 #endif
 
@@ -2641,14 +2641,14 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    clb_to_clb_directs = (t_clb_to_clb_directs*)vtr::calloc(num_directs, sizeof(t_clb_to_clb_directs));
+    clb_to_clb_directs = new t_clb_to_clb_directs[num_directs]();
 
     tile_name = nullptr;
     port_name = nullptr;
 
     for (i = 0; i < num_directs; i++) {
-        tile_name = (char*)vtr::malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof(char));
-        port_name = (char*)vtr::malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof(char));
+        tile_name = new char[strlen(directs[i].from_pin) + strlen(directs[i].to_pin)];
+        port_name = new char[strlen(directs[i].from_pin) + strlen(directs[i].to_pin)];
 
         // Load from pins
         // Parse out the pb_type name, port name, and pin range
@@ -2725,8 +2725,8 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
             //Use the delayless switch by default
             clb_to_clb_directs[i].switch_index = delayless_switch;
         }
-        free(tile_name);
-        free(port_name);
+        delete[](tile_name);
+        delete[](port_name);
     }
 
     return clb_to_clb_directs;
@@ -2906,7 +2906,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
     max_primes = (int)floor(log((float)num_wire_types) / log(2.0));
     max_primes = std::max(max_primes, 1); //Minimum of 1 to ensure we allocate space for at least one prime_factor
 
-    prime_factors = (int*)vtr::malloc(max_primes * sizeof(int));
+    prime_factors = new int[max_primes];
     for (i = 0; i < max_primes; i++) {
         prime_factors[i] = 0;
     }
@@ -2948,7 +2948,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
             perturb_opins[0] = false;
         }
     }
-    free(prime_factors);
+    delete[](prime_factors);
 
     return perturb_opins;
 }
