@@ -82,7 +82,10 @@
   </device>
 
   <switchlist>
-    <!-- The  switches bellow are pulled from the k6_N10_40nm arch. Values are unchanged -->
+    <!--the following tristate for bidirectional wires is pulled from the k4_n4_v7_bidir arch -->
+    <switch type="tristate" name="01" R="94.841003" Cin="1.537000e-14" Cout="2.194000e-13" Tdel="6.562000e-11"/>
+
+    <!--the following muxes for unidirectional wires are pulled from k6_N10_40nm -->
     <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
     <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="7.247000e-11" mux_trans_size="1.222260" buf_size="auto"/>
   </switchlist>
@@ -99,6 +102,27 @@
 
     <!-- TODO: For proper timing, xilinx specific values for Rmetal and Cmetal are required. 
     For now we approximate using the values given in the k6_N10_40nm arch -->
+
+		<segment axis="x" name="len12_x" freq="0.096774" length="12" type="bidir" Rmetal="101" Cmetal="22.5e-15">
+			<wire_switch name="01"/>
+			<sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
+			<cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1</cb>
+			<opin_switch name="01"/>
+		</segment>
+		<segment axis="y" name="len12_y" freq="0.063158" length="12" type="bidir" Rmetal="101" Cmetal="22.5e-15">
+			<wire_switch name="01"/>
+			<sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
+			<cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1</cb>
+			<opin_switch name="01"/>
+		</segment>
+
+		<!-- No length 18 horizontal chanels -->
+		<segment axis="y" name="len18_y" freq="0.094736" length="18" type="bidir" Rmetal="101" Cmetal="22.5e-15">
+			<wire_switch name="01"/>
+			<sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
+			<cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</cb>
+			<opin_switch name="01"/>
+		</segment>
 		
 		<segment axis="x" name="len1_x" freq="0.258064" length="1" type="unidir" Rmetal="101" Cmetal="22.5e-15">
 			<mux name="0"/>
@@ -140,23 +164,7 @@
 			<cb type="pattern">1 1 1 1 1 1</cb>
 		</segment>
 
-		<segment axis="x" name="len12_x" freq="0.096774" length="12" type="unidir" Rmetal="101" Cmetal="22.5e-15">
-			<mux name="0"/>
-			<sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1</cb>
-		</segment>
-		<segment axis="y" name="len12_y" freq="0.063158" length="12" type="unidir" Rmetal="101" Cmetal="22.5e-15">
-			<mux name="0"/>
-			<sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1</cb>
-		</segment>
-
-		<!-- No length 18 horizontal chanels -->
-		<segment axis="y" name="len18_y" freq="0.094736" length="18" type="unidir" Rmetal="101" Cmetal="22.5e-15">
-			<mux name="0"/>
-			<sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</cb>
-		</segment>
+	
 
   <!-- TODO: Support in VPR for diagonal wires is currently in the works. 
   Until full support for this feature is implemented, this part of the 
