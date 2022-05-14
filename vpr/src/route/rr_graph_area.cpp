@@ -490,7 +490,7 @@ static float get_cblock_trans(int* num_inputs_to_cblock, int wire_to_ipin_switch
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    trans_per_cblock = new float[(max_inputs_to_cblock + 1)]();
+    trans_per_cblock = new float[(max_inputs_to_cblock + 1)];
 
     trans_per_cblock[0] = 0.; /* i.e., not an IPIN or no inputs */
 
@@ -527,7 +527,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit, flo
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    unsharable_switch_trans = new float[num_switch]();
+    unsharable_switch_trans = new float[num_switch];
 
     for (i = 0; i < num_switch; i++) {
         if (rr_graph.rr_switch_inf(RRSwitchId(i)).type() == SwitchType::SHORT) {
@@ -567,7 +567,7 @@ alloc_and_load_sharable_switch_trans(int num_switch,
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    sharable_switch_trans = new float[num_switch]();
+    sharable_switch_trans = new float[num_switch];
 
     for (i = 0; i < num_switch; i++) {
         if (!rr_graph.rr_switch_inf(RRSwitchId(i)).buffered()) {
