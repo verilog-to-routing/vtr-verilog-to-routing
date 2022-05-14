@@ -1363,8 +1363,8 @@ bool power_uninit() {
             case CHANY:
             case IPIN:
                 if (rr_graph.node_fan_in(rr_id)) {
-                    delete[](node_power->in_dens);
-                    delete[](node_power->in_prob);
+                    free(node_power->in_dens);
+                    free(node_power->in_prob);
                 }
                 break;
             default:
