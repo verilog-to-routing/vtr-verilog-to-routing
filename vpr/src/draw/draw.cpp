@@ -955,7 +955,7 @@ void free_draw_structs() {
     }
 
     if (draw_state != nullptr) {
-        delete[] (draw_state->draw_rr_node);
+        free(draw_state->draw_rr_node);
         draw_state->draw_rr_node = nullptr;
     }
 #else
