@@ -56,7 +56,7 @@ struct AtomContext : public Context {
      * Atom Netlist
      ********************************************************************/
     AtomContext()
-        : list_of_pack_molecules(nullptr, free_pack_molecules){};
+        : list_of_pack_molecules(nullptr, free_pack_molecules) {}
     ///@brief Atom netlist
     AtomNetlist nlist;
 
