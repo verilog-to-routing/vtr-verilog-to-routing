@@ -58,6 +58,13 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
 
     GObject* combo_box = (GObject*)app->get_object("SearchType");
     gchar* type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box));
+    //Checking that a type is selected
+    if (type && type[0] == '\0') {
+        warning_dialog_box("Please select a search type");
+        app->refresh_drawing();
+        return;
+    }
+
     std::string search_type(type);
 
     // reset
