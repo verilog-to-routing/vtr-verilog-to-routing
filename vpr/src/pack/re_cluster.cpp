@@ -6,6 +6,7 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
                               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               t_clustering_data& clustering_data,
                               bool during_packing) {
+
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& helper_ctx = g_vpr_ctx.mutable_helper();
     auto& device_ctx = g_vpr_ctx.device();
