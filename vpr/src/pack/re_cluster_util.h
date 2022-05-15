@@ -12,7 +12,7 @@
  * @brief This files defines some helper functions for the re-clustering
  *
  * API that uses to move atoms between clusters after the cluster is done.
- * Note: Some of the helper functions defined here might be useful in different places in VPR
+ * Note: Some of the helper functions defined here might be useful in different places in VPR.
  * 
  */
 
