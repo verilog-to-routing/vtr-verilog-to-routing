@@ -199,7 +199,7 @@ There are 4 main regression testing suites:
 **Architectures:** A few simple architectures
 
 This regression test is *not* suitable for evaluating QoR or performance.
-It's primary purpose is to make sure the various tools do not crash/fail in the basic VTR flow.
+Its primary purpose is to make sure the various tools do not crash/fail in the basic VTR flow.
 
 QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
 Occasionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
@@ -217,7 +217,7 @@ Occasionally, code changes can cause QoR failures (e.g. due to CAD noise -- part
 **Architectures:** A variety of architectures, including special architectures to exercise specific features
 
 This regression test is *not* suitable for evaluating QoR or performance.
-It's primary purpose is try and achieve high functionality coverage.
+Its primary purpose is try and achieve high functionality coverage.
 
 QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
 Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
@@ -564,6 +564,10 @@ You need at least two sets of QoR measurements:
 1. The baseline QoR (i.e. unmodified VTR).
 2. The modified QoR (i.e. VTR with your changes).
 
+The following tests can be run locally by running the given commands on the local machine. In addition, since CI tests are run whenever
+changes are pushed to the remote repository, one can use the CI test results to measure the impact
+of his/her changes. The instructions to gather CI tests' results are [here](./README.developers.md#Example:-CI-Tests-QoR-Measurement).
+
 Note that it is important to generate both sets of QoR measurements on the same computing infrastructure to ensure a fair run-time comparison.
 
 The following examples show how a single set of QoR measurements can be produced using the VTR flow infrastructure.
@@ -696,14 +700,26 @@ This would download the results for all CI tests.
 3. Scroll down and download "artifact"
 ![Artifact](./doc/src/dev/eval_qor/artifact.png)
 
-Assume that we want to get the QoR results for "vtr_reg_nightly_test3". In artifact, there is a file named 
-"qor_results_vtr_reg_nightly_test3.tar.gz." After unzipping this file, a new directory named "vtr_flow" would be
-created. Go to "vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3." In this directory, you can find the **parsed**
-results of this test.
+Assume that we want to get the QoR results for "vtr_reg_nightly_test3". In the artifact, there is a file named 
+"qor_results_vtr_reg_nightly_test3.tar.gz." Unzip this file, and a new directory named "vtr_flow" is created. Go to 
+"vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3." In this directory, you can find a directory for each test circuit
+containing in this test suit(vtr_reg_nightly_test3.) For instance, results related to *vtr_reg_qor* are located in
+"vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3/vtr_reg_qor." In this directory, results for each run are stored separately.
+For example, if you want to get the results for the first run, there is a file in *run001* directory named *parse_results.txt*.
+Using these parsed results, you can do a detailed QoR comparison using the instructions given [here](./README.developers.md#Comparing QoR Measurements).
+![Parse File Dir](./doc/src/dev/eval_qor/parse_result_dir.png)
 
-In the case that you want to re-run the CI tests, go to the "Action" tab and find your workflow under Test Workflow.
+#### Re-run CI Tests
+In the case that you want to re-run the CI tests, due to certain issues such as infrastructure failure, 
+go to the "Action" tab and find your workflow under Test Workflow.
 Select the test which you want to re-run. There is a re-run button on the top-right corner of the newly appeared window.
 ![Rerun CI Test](./doc/src/dev/eval_qor/re_run_tests.png)
+
+** **Attention** ** If the previous run is not finished, you will not be able to re-run the CI tests. To circumvent this limitation,
+there are two options:
+1. Cancel the workflow. After a few minutes, you would be able to re-run the workflow
+   ![Rerun CI Test](./doc/src/dev/eval_qor/cancel_workflow.png)
+2. Wait until the workflow finishes, then re-run the failed jobs
 
 
 
