@@ -172,4 +172,4 @@ myst_heading_anchors = 4
 
 
 def setup(app):
-    app.add_stylesheet("css/vtr.css")
+    app.add_css_file("css/vtr.css")
