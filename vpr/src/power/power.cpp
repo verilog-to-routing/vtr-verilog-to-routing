@@ -1079,7 +1079,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
 }
 
 void power_uninit_pb_pin(t_pb_graph_pin* pin) {
-    delete(pin->pin_power);
+    delete (pin->pin_power);
     pin->pin_power = nullptr;
 }
 
