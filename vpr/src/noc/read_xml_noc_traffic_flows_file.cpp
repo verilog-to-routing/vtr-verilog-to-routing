@@ -82,20 +82,18 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file){
         // Root tag should be traffic_flows
         auto traffic_flows_tag = pugiutil::get_single_child(doc, "traffic_flows", loc_data);
 
+        // quick check to make sure that we only have single_flow tags within the traffic_flows tag
+        pugiutil::expect_only_children(traffic_flows_tag, {"single_flow"}, loc_data);
+
         // process the individual traffic flows below
         for (pugi::xml_node single_flow : traffic_flows_tag.children()){
-            // we can only have "single_flow" tags within "traffic_flows" so check that
-            if (single_flow.name() != std::string("single_flow")) {
-                bad_tag(single_flow, loc_data, traffic_flows_tag, {"single_flow"});
-            }
-            else {
-                // current tag is a valid "flow" so process it
-                process_single_flow(single_flow, loc_data, cluster_ctx, noc_ctx, noc_router_tile_type);
-            }
+            // current tag is a valid "flow" so process it
+            process_single_flow(single_flow, loc_data, cluster_ctx, noc_ctx, noc_router_tile_type);
         }
 
     }
     catch(pugiutil::XmlError& e) { // used for identifying any of the xml parsing library errors
+        
         vpr_throw(VPR_ERROR_OTHER, noc_flows_file, e.line(), e.what());
     }
 
@@ -137,9 +135,9 @@ static void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::
     pugiutil::expect_only_attributes(single_flow_tag, expected_single_flow_attributes, loc_data);
     
     // store the names of the routers part of this traffic flow
-    std::string source_router_module_name = pugiutil::get_attribute(single_flow_tag, "src", loc_data, pugiutil::REQUIRED).as_string();
+    std::string source_router_module_name = pugiutil::get_attribute(single_flow_tag, "src", loc_data, pugiutil::REQUIRED).value();
     
-    std::string destination_router_module_name = pugiutil::get_attribute(single_flow_tag, "dst", loc_data, pugiutil::REQUIRED).as_string();
+    std::string destination_router_module_name = pugiutil::get_attribute(single_flow_tag, "dst", loc_data, pugiutil::REQUIRED).value();
 
     //verify whether the router module names are legal
     verify_traffic_flow_router_modules(source_router_module_name, destination_router_module_name, single_flow_tag, loc_data);
@@ -238,9 +236,9 @@ static ClusterBlockId get_router_module_cluster_id(std::string router_module_nam
     ClusterBlockId router_module_id = cluster_ctx.clb_nlist.find_block(router_module_name);
 
     // check if a valid block id was found
-    if ((size_t)router_module_id == (size_t)ClusterBlockId::INVALID){
+    if ((size_t)router_module_id == (size_t)ClusterBlockId::INVALID()){
         // if here then the module did not exist in the design, so throw an error
-        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The router module '%s' does not exist in the design.", router_module_id);
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The router module '%s' does not exist in the design.", router_module_name.c_str());
     }
 
     return router_module_id;
@@ -347,7 +345,7 @@ static void check_that_all_router_blocks_have_an_associated_traffic_flow(NocCont
     */
     if (noc_ctx.noc_traffic_flows_storage.get_number_of_routers_used_in_traffic_flows() != number_of_router_blocks_in_design){
 
-        VTR_LOG_WARN("NoC traffic flows file '%s' does not contain all router modules in the design. Every router module in the design must be part of a traffic flow (communicationg to another router).", noc_flows_file);
+        VTR_LOG_WARN("NoC traffic flows file '%s' does not contain all router modules in the design. Every router module in the design must be part of a traffic flow (communicating to another router). Otherwise the router is being unused.\n", noc_flows_file.c_str());
     }
 
     return;

@@ -770,7 +770,8 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
 }
 
 static void ShowNocOpts(const t_noc_opts& NocOpts){
-    VTR_LOG("NocOpts.noc_flows_file: %s\n", NocOpts.noc_flows_file);
+    VTR_LOG("NocOpts.noc_flows_file: %s\n", NocOpts.noc_flows_file.c_str());
+    VTR_LOG("\n");
 
     // add future options here (routing algorithm etc...)
 }
