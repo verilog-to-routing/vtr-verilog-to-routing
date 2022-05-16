@@ -8,6 +8,7 @@
 
 #include "device_grid.h"
 #include "vpr_types.h"
+#include "rr_graph_builder.h"
 
 enum e_graph_type {
     GRAPH_GLOBAL, /* One node per channel with wire capacity > 1 and full connectivity */
@@ -37,6 +38,10 @@ void create_rr_graph(const t_graph_type graph_type,
                      const t_direct_inf* directs,
                      const int num_directs,
                      int* Warnings);
+
+void add_intra_lb_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                 const DeviceGrid& grid,
+                                 const int delayless_switch);
 
 void free_rr_graph();
 

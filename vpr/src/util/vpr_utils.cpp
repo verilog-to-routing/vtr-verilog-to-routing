@@ -1240,6 +1240,18 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
     pin_id_to_pb_mapping.clear();
 }
 
+std::vector<int> get_pb_pins(t_physical_tile_type_ptr physical_type,
+                             const t_sub_tile* sub_tile,
+                             t_logical_block_type_ptr logical_block,
+                             const t_pb* pb,
+                             int rel_cap) {
+    VTR_ASSERT(pb->pb_graph_node != nullptr);
+    return get_pb_graph_node_pins(physical_type,
+                                  sub_tile,
+                                  logical_block,
+                                  rel_cap,
+                                  pb->pb_graph_node);
+}
 /**
  * Determine cost for using primitive within a complex block, should use primitives of low cost before selecting primitives of high cost
  * For now, assume primitives that have a lot of pins are scarcer than those without so use primitives with less pins before those with more

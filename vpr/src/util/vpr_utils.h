@@ -115,6 +115,12 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int 
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
+std::vector<int> get_pb_pins(t_physical_tile_type_ptr physical_type,
+                             const t_sub_tile* sub_tile,
+                             t_logical_block_type_ptr logical_block,
+                             const t_pb* pb,
+                             int rel_cap);
+
 float compute_primitive_base_cost(const t_pb_graph_node* primitive);
 int num_ext_inputs_atom_block(AtomBlockId blk_id);
 

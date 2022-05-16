@@ -351,8 +351,6 @@ int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 /* Access information related to pins */
 
 /** get information given pin physical number **/
-std::vector<int> get_tile_internal_pins_num(t_physical_tile_type_ptr physical_type);
-
 std::tuple<const t_sub_tile*, int> get_sub_tile_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
 t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
@@ -364,13 +362,24 @@ e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_
 bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num);
 
 /** **/
+std::vector<int> get_tile_internal_pins_num(t_physical_tile_type_ptr physical_type);
+
+std::vector<int> get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
+                                        const t_sub_tile* sub_tile,
+                                        t_logical_block_type_ptr logical_block,
+                                        int relative_cap,
+                                        const t_pb_graph_node* pb_graph_node);
+
+std::vector<int> get_connected_child_pins(t_physical_tile_type_ptr physical_type,
+                                          t_logical_block_type_ptr logical_block,
+                                          int mode_num,
+                                          int pin_physical_num);
+
 int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                             const t_sub_tile* sub_tile,
                             t_logical_block_type_ptr logical_block,
                             int relative_cap,
                             const t_pb_graph_pin* pin);
-
-std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node* pb_graph_node);
 
 int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile);
 
