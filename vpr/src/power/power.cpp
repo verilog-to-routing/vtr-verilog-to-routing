@@ -1031,7 +1031,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
     t_pb_graph_node* node = pin->parent_node;
     bool found;
 
-    pin->pin_power = (t_pb_graph_pin_power*)vtr::malloc(sizeof(t_pb_graph_pin_power));
+    pin->pin_power = new t_pb_graph_pin_power;
     pin->pin_power->C_wire = 0.;
     pin->pin_power->buffer_size = 0.;
     pin->pin_power->scaled_by_pin = nullptr;
@@ -1079,7 +1079,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
 }
 
 void power_uninit_pb_pin(t_pb_graph_pin* pin) {
-    vtr::free(pin->pin_power);
+    delete(pin->pin_power);
     pin->pin_power = nullptr;
 }
 
