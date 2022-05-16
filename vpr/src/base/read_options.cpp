@@ -2624,7 +2624,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     noc_grp.add_argument<std::string>(args.noc_flows_file, "--noc_flows_file")
         .help(
             "XML file containing the list of traffic flows within the NoC (communication between routers)." 
-            "This is required is required if --noc option is turned on.")
+            "This is required if the --noc option is turned on.")
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
