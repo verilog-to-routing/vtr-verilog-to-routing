@@ -2560,14 +2560,14 @@ static void free_fast_cost_update() {
 
     for (size_t i = 0; i < device_ctx.grid.height(); i++) {
         delete[](chanx_place_cost_fac[i]);
-	chanx_place_cost_fac[i] = nullptr;
+        chanx_place_cost_fac[i] = nullptr;
     }
     delete[](chanx_place_cost_fac);
     chanx_place_cost_fac = nullptr;
 
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
         delete[](chany_place_cost_fac[i]);
-	chany_place_cost_fac[i] = nullptr;
+        chany_place_cost_fac[i] = nullptr;
     }
     delete[](chany_place_cost_fac);
     chany_place_cost_fac = nullptr;

@@ -672,4 +672,3 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch) {
     }
     return ipin_cblock_switch_index;
 }
-

@@ -44,9 +44,9 @@ void setEchoFileEnabled(enum e_echo_files echo_option, bool value) {
 
 void setEchoFileName(enum e_echo_files echo_option, const char* name) {
     if (echoFileNames[(int)echo_option] != nullptr) {
-        delete[] (echoFileNames[(int)echo_option]);
+        delete[](echoFileNames[(int)echo_option]);
     }
-    echoFileNames[(int)echo_option] = new char[strlen(name)+1];
+    echoFileNames[(int)echo_option] = new char[strlen(name) + 1];
     strcpy(echoFileNames[(int)echo_option], name);
 }
 
@@ -131,7 +131,7 @@ void free_echo_file_info() {
     if (echoFileEnabled != nullptr) {
         for (i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
             if (echoFileNames[i] != nullptr) {
-                delete[] (echoFileNames[i]);
+                delete[](echoFileNames[i]);
             }
         }
         delete[] echoFileNames;
@@ -146,9 +146,9 @@ void setOutputFileName(enum e_output_files ename, const char* name, const char* 
         alloc_and_load_output_file_names(default_name);
     }
     if (outputFileNames[(int)ename] != nullptr) {
-        delete[] (outputFileNames[(int)ename]);
+        delete[](outputFileNames[(int)ename]);
     }
-    outputFileNames[(int)ename] = new char[strlen(name)+1];
+    outputFileNames[(int)ename] = new char[strlen(name) + 1];
     strcpy(outputFileNames[(int)ename], name);
 }
 
@@ -173,7 +173,7 @@ void alloc_and_load_output_file_names(const std::string default_name) {
         setOutputFileName(E_CRITICALITY_FILE, name, default_name.c_str());
 
         delete[] name;
-	    name = nullptr;
+        name = nullptr;
     }
 }
 
@@ -182,7 +182,7 @@ void free_output_file_names() {
     if (outputFileNames != nullptr) {
         for (i = 0; i < (int)E_FILE_END_TOKEN; i++) {
             if (outputFileNames[i] != nullptr) {
-                delete[] (outputFileNames[i]);
+                delete[](outputFileNames[i]);
                 outputFileNames[i] = nullptr;
             }
         }
