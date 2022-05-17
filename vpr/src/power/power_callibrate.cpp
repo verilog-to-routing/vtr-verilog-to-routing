@@ -152,7 +152,7 @@ void power_print_spice_comparison() {
     for (i = 0; i < (sizeof(LUT_sizes) / sizeof(int)); i++) {
         for (j = 1; j <= LUT_sizes[i]; j++) {
             SRAM_bits.resize((1 << j) + 1);
-            
+
             if (j == 1) {
                 SRAM_bits[0] = '1';
                 SRAM_bits[1] = '0';
@@ -163,9 +163,8 @@ void power_print_spice_comparison() {
             }
             SRAM_bits[1 << j] = '\0';
         }
-	SRAM_bits_chars = new char[SRAM_bits.size()];
-	strcpy(SRAM_bits_chars, SRAM_bits.c_str());	
-
+        SRAM_bits_chars = new char[SRAM_bits.size()];
+        strcpy(SRAM_bits_chars, SRAM_bits.c_str());
 
         delete[] dens;
         delete[] prob;

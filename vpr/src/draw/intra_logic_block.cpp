@@ -376,11 +376,11 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == nullptr) {
             // If this pb is at the lowest displayed level, or has no more children, then
             // label it in the center with its type and name
-	    
-	    std::string pb_type_name(pb_type->name);
-	    std::string pb_name(pb->name);
-            
-	    std::string blk_tag = pb_type_name + pb_name;
+
+            std::string pb_type_name(pb_type->name);
+            std::string pb_name(pb->name);
+
+            std::string blk_tag = pb_type_name + pb_name;
 
             if (draw_state->draw_block_text) {
                 g->draw_text(

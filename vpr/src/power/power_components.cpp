@@ -42,13 +42,14 @@ static void power_usage_mux_rec(t_power_usage* power_usage, float* out_prob, flo
 /************************* FUNCTION DEFINITIONS *********************/
 
 /**
- * Module initializer function, called by power_init
+ * Module initializer function, called by power_init. 
+ * Zero initializes via power_zero_usage.
  */
 void power_components_init() {
     int i;
     auto& power_ctx = g_vpr_ctx.mutable_power();
 
-    power_ctx.by_component.components = new t_power_usage[POWER_COMPONENT_MAX_NUM]();
+    power_ctx.by_component.components = new t_power_usage[POWER_COMPONENT_MAX_NUM];
     for (i = 0; i < POWER_COMPONENT_MAX_NUM; i++) {
         power_zero_usage(&power_ctx.by_component.components[i]);
     }

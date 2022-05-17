@@ -361,10 +361,10 @@ void print_wirelen_prob_dist() {
                 VTR_LOG_WARN("Index (%d) to prob_dist exceeds its allocated size (%d).\n",
                              index, prob_dist_size);
                 VTR_LOG("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
-        
-		/*  Resized to prob_dist + incr. Elements after old prob_dist_size set
-		*   to 0.0.  */
-	        incr = index - prob_dist_size + 2;
+
+                /*  Resized to prob_dist + incr. Elements after old prob_dist_size set
+                 *   to 0.0.  */
+                incr = index - prob_dist_size + 2;
                 prob_dist_size += incr;
                 prob_dist.resize(prob_dist_size);
             }
