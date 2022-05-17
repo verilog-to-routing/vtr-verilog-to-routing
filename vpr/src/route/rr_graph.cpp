@@ -2391,10 +2391,7 @@ static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
     /* Checks that all tracks can be reached by some pin.   */
     VTR_ASSERT(max_chan_width > 0);
 
-    int* num_conns_to_track; /* [0..max_chan_width-1] */
-    num_conns_to_track = new int[max_chan_width];
-    for (auto i = 0; i < max_chan_width; i++)
-        num_conns_to_track[i] = 0;
+    std::vector<int> num_conns_to_track(max_chan_width, 0); /* [0..max_chan_width-1] */
 
     for (int pin = 0; pin < type->num_pins; ++pin) {
         for (int width = 0; width < type->width; ++width) {
@@ -2417,7 +2414,6 @@ static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
                           track, (ipin_or_opin == DRIVER ? "OPIN" : "IPIN"));
         }
     }
-    delete[](num_conns_to_track);
 }
 #endif
 

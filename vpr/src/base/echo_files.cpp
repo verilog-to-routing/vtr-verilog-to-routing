@@ -66,7 +66,7 @@ void alloc_and_load_echo_file_info() {
     echoFileEnabled = new bool[(int)E_ECHO_END_TOKEN];
     echoFileNames = new char*[(int)E_ECHO_END_TOKEN];
     for (auto i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
-        echoFileEnabled[i] = 0;
+        echoFileEnabled[i] = false;
         echoFileNames[i] = NULL;
     }
 
@@ -161,25 +161,21 @@ char* getOutputFileName(enum e_output_files ename) {
 }
 
 void alloc_and_load_output_file_names(const std::string default_name) {
-    char* name;
+    std::string name;
 
     if (outputFileNames == nullptr) {
         outputFileNames = new char*[(int)E_FILE_END_TOKEN];
         for (auto i = 0; i < (int)E_FILE_END_TOKEN; i++)
             outputFileNames[i] = nullptr;
 
-        name = new char[(strlen(default_name.c_str()) + 40)];
-        sprintf(name, "%s.critical_path.out", default_name.c_str());
-        setOutputFileName(E_CRIT_PATH_FILE, name, default_name.c_str());
+        name = default_name + ".critical_path.out";
+        setOutputFileName(E_CRIT_PATH_FILE, name.c_str(), default_name.c_str());
 
-        sprintf(name, "%s.slack.out", default_name.c_str());
-        setOutputFileName(E_SLACK_FILE, name, default_name.c_str());
+        name = default_name + ".slack.out";
+        setOutputFileName(E_SLACK_FILE, name.c_str(), default_name.c_str());
 
-        sprintf(name, "%s.criticality.out", default_name.c_str());
-        setOutputFileName(E_CRITICALITY_FILE, name, default_name.c_str());
-
-        delete[] name;
-        name = nullptr;
+        name = default_name + ".criticality.out";
+        setOutputFileName(E_CRITICALITY_FILE, name.c_str(), default_name.c_str());
     }
 }
 

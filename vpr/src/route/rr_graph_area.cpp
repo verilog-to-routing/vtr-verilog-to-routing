@@ -324,10 +324,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
      * a single mux. We should count this mux only once as we look at the outgoing
      * switches of all rr nodes. Thus we keep track of which muxes we have already
      * counted via the variable below. */
-    bool* chan_node_switch_done;
-    chan_node_switch_done = new bool[rr_graph.num_nodes()];
-    for (size_t m = 0; m < rr_graph.num_nodes(); m++)
-        chan_node_switch_done[m] = 0;
+    std::vector<bool> chan_node_switch_done(rr_graph.num_nodes(), false);
 
     /* The variable below is an accumulator variable that will add up all the   *
      * transistors in the routing.  Make double so that it doesn't stop         *
@@ -482,7 +479,6 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 
     delete[](cblock_counted);
     delete[](num_inputs_to_cblock);
-    delete[](chan_node_switch_done);
 
     ntrans += input_cblock_trans;
 
