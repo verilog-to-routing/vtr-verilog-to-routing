@@ -282,6 +282,7 @@
   </object>
   <object class="GtkEntryCompletion" id="NetNameCompleter">
     <property name="model">NetNames</property>
+    <property name="text_column">0</property>
     <child>
       <object class="GtkCellRendererText" id="NetNameRenderer"/>
       <attributes>

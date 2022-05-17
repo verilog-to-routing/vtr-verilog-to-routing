@@ -355,17 +355,34 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
 /**
  * @brief loads block names into gtk list store item used for completion
  * 
- * @param app ezgl application
+ * @param app ezgl application used for ui
  */
 void load_block_names(ezgl::application* app) {
     auto blockStorage = GTK_LIST_STORE(app->get_object("BlockNames"));
     auto& cluster_ctx = g_vpr_ctx.clustering();
     GtkTreeIter iter;
-    //Getting and storing all block names
+    int i = 0;
     for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter,
                            0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
+    }
+}
+
+/**
+ * @brief loads net names into gtk list store item used for completion
+ * 
+ * @param app ezgl application used for ui
+ */
+void load_net_names(ezgl::application* app){
+    auto netStorage = GTK_LIST_STORE(app->get_object("NetNames"));
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    GtkTreeIter iter;
+    //Loading net names
+    for (ClusterNetId id : cluster_ctx.clb_nlist.nets()) {
+        gtk_list_store_append(netStorage, &iter);
+        gtk_list_store_set(netStorage, &iter,
+                           0, (cluster_ctx.clb_nlist.net_name(id)).c_str(), -1);
     }
 }
 
