@@ -344,7 +344,10 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
     if (searchType == "Block Name") {
         GtkEntryCompletion* blockCompleter = GTK_ENTRY_COMPLETION(app->get_object("BlockNameCompleter"));
         gtk_entry_set_completion(searchBar, blockCompleter);
-    } else { //If not, setting to null
+    } else if(searchType == "Net Name") {   //using netNameCompleter if type is nets
+        GtkEntryCompletion* netCompleter = GTK_ENTRY_COMPLETION(app->get_object("NetNameCompleter"));
+        gtk_entry_set_completion(searchBar, netCompleter);
+    } else {    //setting to null if option does not require auto-complete
         gtk_entry_set_completion(searchBar, nullptr);
     }
 }

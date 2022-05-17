@@ -274,4 +274,19 @@
       </object>
     </child>
   </object>
+  <object class="GtkListStore" id="NetNames">
+    <columns>
+      <!-- column-name Names -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
+  <object class="GtkEntryCompletion" id="NetNameCompleter">
+    <property name="model">NetNames</property>
+    <child>
+      <object class="GtkCellRendererText" id="NetNameRenderer"/>
+      <attributes>
+        <attribute name="text">0</attribute>
+      </attributes>
+    </child>
+  </object>
 </interface>
