@@ -145,11 +145,17 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
         trans_track_to_cblock_buf = 0;
     }
 
-    num_inputs_to_cblock = new int[rr_graph.num_nodes()]();
+    num_inputs_to_cblock = new int[rr_graph.num_nodes()];
+    for (auto i = 0; i < rr_graph.num_nodes(); i++)
+        num_inputs_to_cblock[i] = 0;
 
     maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
-    cblock_counted = new bool[maxlen]();
-    shared_buffer_trans = new float[maxlen]();
+    cblock_counted = new bool[maxlen];
+    shared_buffer_trans = new float[maxlen];
+    for (auto i = 0; i < maxlen; i++) {
+        cblock_counted[i] = 0;
+        shared_buffer_trans[i] = 0;
+    }
 
     unsharable_switch_trans = alloc_and_load_unsharable_switch_trans(num_switch,
                                                                      trans_sram_bit, R_minW_nmos);
@@ -319,7 +325,9 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
      * switches of all rr nodes. Thus we keep track of which muxes we have already
      * counted via the variable below. */
     bool* chan_node_switch_done;
-    chan_node_switch_done = new bool[rr_graph.num_nodes()]();
+    chan_node_switch_done = new bool[rr_graph.num_nodes()];
+    for (auto i = 0; i < rr_graph.num_nodes(); i++)
+        chan_node_switch_done[i] = 0;
 
     /* The variable below is an accumulator variable that will add up all the   *
      * transistors in the routing.  Make double so that it doesn't stop         *
@@ -349,9 +357,14 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
         trans_track_to_cblock_buf = 0;
     }
 
-    num_inputs_to_cblock = new int[rr_graph.num_nodes()]();
+    num_inputs_to_cblock = new int[rr_graph.num_nodes()];
+    for (auto i = 0; i < rr_graph.num_nodes(); i++)
+        num_inputs_to_cblock[i] = 0;
+
     maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
-    cblock_counted = new bool[maxlen]();
+    cblock_counted = new bool[maxlen];
+    for (auto i = 0; i < maxlen; i++)
+        cblock_counted[i] = 0;
 
     ntrans = 0;
     for (const RRNodeId& from_rr_node : device_ctx.rr_graph.nodes()) {

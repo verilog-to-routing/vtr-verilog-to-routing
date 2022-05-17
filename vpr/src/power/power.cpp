@@ -147,8 +147,13 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
 
         LUT_size = pb_graph_node->num_input_pins[0];
 
-        input_probabilities = new float[LUT_size]();
-        input_densities = new float[LUT_size]();
+        input_probabilities = new float[LUT_size];
+        input_densities = new float[LUT_size];
+
+        for (pin_idx = 0; pin_idx < LUT_size; pin_idx++) {
+            input_probabilities[pin_idx] = 0;
+            input_densities[pin_idx] = 0;
+        }
 
         for (pin_idx = 0; pin_idx < LUT_size; pin_idx++) {
             t_pb_graph_pin* pin = &pb_graph_node->input_pins[0][pin_idx];

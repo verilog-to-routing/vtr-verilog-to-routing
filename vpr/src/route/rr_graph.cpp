@@ -2392,7 +2392,9 @@ static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
     VTR_ASSERT(max_chan_width > 0);
 
     int* num_conns_to_track; /* [0..max_chan_width-1] */
-    num_conns_to_track = new int[max_chan_width]();
+    num_conns_to_track = new int[max_chan_width];
+    for (auto i = 0; i < max_chan_width; i++)
+        num_conns_to_track[i] = 0;
 
     for (int pin = 0; pin < type->num_pins; ++pin) {
         for (int width = 0; width < type->width; ++width) {
@@ -2641,12 +2643,20 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    clb_to_clb_directs = new t_clb_to_clb_directs[num_directs]();
+    clb_to_clb_directs = new t_clb_to_clb_directs[num_directs];
 
     tile_name = nullptr;
     port_name = nullptr;
 
     for (i = 0; i < num_directs; i++) {
+        //clb_to_clb_directs[i].from_clb_type;
+        clb_to_clb_directs[i].from_clb_pin_start_index = 0;
+        clb_to_clb_directs[i].from_clb_pin_end_index = 0;
+        //clb_to_clb_directs[i]. t_physical_tile_type_ptr to_clb_type;
+        clb_to_clb_directs[i].to_clb_pin_start_index = 0;
+        clb_to_clb_directs[i].to_clb_pin_end_index = 0;
+        clb_to_clb_directs[i].switch_index = 0;
+
         tile_name = new char[strlen(directs[i].from_pin) + strlen(directs[i].to_pin)];
         port_name = new char[strlen(directs[i].from_pin) + strlen(directs[i].to_pin)];
 

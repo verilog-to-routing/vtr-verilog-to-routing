@@ -41,11 +41,21 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         max_segment_name_length = std::max(max_segment_name_length, static_cast<int>(segment_inf[seg_type].name.size()));
     }
 
-    seg_occ_by_length = new int[max_segment_length + 1]();
-    seg_cap_by_length = new int[max_segment_length + 1]();
+    seg_occ_by_length = new int[max_segment_length + 1];
+    seg_cap_by_length = new int[max_segment_length + 1];
 
-    seg_occ_by_type = new int[segment_inf.size()]();
-    seg_cap_by_type = new int[segment_inf.size()]();
+    for (auto i = 0; i < max_segment_length + 1; i++) {
+        seg_occ_by_length[i] = 0;
+        seg_cap_by_length[i] = 0;
+    }
+
+    seg_occ_by_type = new int[segment_inf.size()];
+    seg_cap_by_type = new int[segment_inf.size()];
+
+    for (auto i = 0; i < segment_inf.size(); i++) {
+        seg_occ_by_type[i] = 0;
+        seg_cap_by_type[i] = 0;
+    }
 
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         size_t inode = (size_t)rr_id;

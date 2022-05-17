@@ -140,7 +140,7 @@ static double power_count_transistors_mux(t_mux_arch* mux_arch) {
     float* max_inputs;
 
     /* SRAM bits */
-    max_inputs = new float[mux_arch->levels]();
+    max_inputs = new float[mux_arch->levels];
     for (lvl_idx = 0; lvl_idx < mux_arch->levels; lvl_idx++) {
         max_inputs[lvl_idx] = 0.;
     }
@@ -745,8 +745,12 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
         int* fanout_per_mode;
         float* wirelength_out_per_mode;
 
-        fanout_per_mode = new int[this_pb_type->num_modes]();
-        wirelength_out_per_mode = new float[this_pb_type->num_modes]();
+        fanout_per_mode = new int[this_pb_type->num_modes];
+        wirelength_out_per_mode = new float[this_pb_type->num_modes];
+        for (auto i = 0; i < this_pb_type->num_modes; i++) {
+            fanout_per_mode[i] = 0;
+            wirelength_out_per_mode[i] = 0;
+        }
 
         for (i = 0; i < list_cnt; i++) {
             int mode_idx = list[i]->parent_mode_index;

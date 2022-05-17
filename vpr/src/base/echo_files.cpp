@@ -63,8 +63,12 @@ char* getEchoFileName(enum e_echo_files echo_option) {
 }
 
 void alloc_and_load_echo_file_info() {
-    echoFileEnabled = new bool[(int)E_ECHO_END_TOKEN]();
-    echoFileNames = new char*[(int)E_ECHO_END_TOKEN]();
+    echoFileEnabled = new bool[(int)E_ECHO_END_TOKEN];
+    echoFileNames = new char*[(int)E_ECHO_END_TOKEN];
+    for (auto i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
+        echoFileEnabled[i] = 0;
+        echoFileNames[i] = NULL;
+    }
 
     setAllEchoFileEnabled(getEchoEnabled());
 
@@ -160,7 +164,9 @@ void alloc_and_load_output_file_names(const std::string default_name) {
     char* name;
 
     if (outputFileNames == nullptr) {
-        outputFileNames = new char*[(int)E_FILE_END_TOKEN]();
+        outputFileNames = new char*[(int)E_FILE_END_TOKEN];
+        for (auto i = 0; i < (int)E_FILE_END_TOKEN; i++)
+            outputFileNames[i] = nullptr;
 
         name = new char[(strlen(default_name.c_str()) + 40)];
         sprintf(name, "%s.critical_path.out", default_name.c_str());
