@@ -146,15 +146,15 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
     }
 
     num_inputs_to_cblock = new int[rr_graph.num_nodes()];
-    for (auto i = 0; i < rr_graph.num_nodes(); i++)
-        num_inputs_to_cblock[i] = 0;
+    for (size_t cb = 0; cb < rr_graph.num_nodes(); cb++)
+        num_inputs_to_cblock[cb] = 0;
 
     maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
     cblock_counted = new bool[maxlen];
     shared_buffer_trans = new float[maxlen];
-    for (auto i = 0; i < maxlen; i++) {
-        cblock_counted[i] = 0;
-        shared_buffer_trans[i] = 0;
+    for (int b = 0; b < maxlen; b++) {
+        cblock_counted[b] = 0;
+        shared_buffer_trans[b] = 0;
     }
 
     unsharable_switch_trans = alloc_and_load_unsharable_switch_trans(num_switch,
@@ -326,8 +326,8 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
      * counted via the variable below. */
     bool* chan_node_switch_done;
     chan_node_switch_done = new bool[rr_graph.num_nodes()];
-    for (auto i = 0; i < rr_graph.num_nodes(); i++)
-        chan_node_switch_done[i] = 0;
+    for (size_t m = 0; m < rr_graph.num_nodes(); m++)
+        chan_node_switch_done[m] = 0;
 
     /* The variable below is an accumulator variable that will add up all the   *
      * transistors in the routing.  Make double so that it doesn't stop         *
@@ -358,13 +358,13 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
     }
 
     num_inputs_to_cblock = new int[rr_graph.num_nodes()];
-    for (auto i = 0; i < rr_graph.num_nodes(); i++)
-        num_inputs_to_cblock[i] = 0;
+    for (size_t c = 0; c < rr_graph.num_nodes(); c++)
+        num_inputs_to_cblock[c] = 0;
 
     maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
     cblock_counted = new bool[maxlen];
-    for (auto i = 0; i < maxlen; i++)
-        cblock_counted[i] = 0;
+    for (auto k = 0; k < maxlen; k++)
+        cblock_counted[k] = 0;
 
     ntrans = 0;
     for (const RRNodeId& from_rr_node : device_ctx.rr_graph.nodes()) {

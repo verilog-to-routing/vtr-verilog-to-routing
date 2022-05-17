@@ -150,7 +150,7 @@ void power_print_spice_comparison() {
     fprintf(power_ctx.output->out, "Energy of LUT (High Activity)\n");
     for (i = 0; i < (sizeof(LUT_sizes) / sizeof(int)); i++) {
         for (j = 1; j <= LUT_sizes[i]; j++) {
-            char temp[((1 << j) + 1)];
+            char* temp = new char[((1 << j) + 1)];
             std::memcpy(&temp, &SRAM_bits, ((1 << j) + 1));
             delete[] SRAM_bits;
             SRAM_bits = new char[((1 << j) + 1)];
@@ -166,6 +166,7 @@ void power_print_spice_comparison() {
                 }
             }
             SRAM_bits[1 << j] = '\0';
+	    delete[] (temp);
         }
 
         delete[] dens;

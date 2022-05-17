@@ -747,9 +747,9 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
 
         fanout_per_mode = new int[this_pb_type->num_modes];
         wirelength_out_per_mode = new float[this_pb_type->num_modes];
-        for (auto i = 0; i < this_pb_type->num_modes; i++) {
-            fanout_per_mode[i] = 0;
-            wirelength_out_per_mode[i] = 0;
+        for (auto j = 0; j < this_pb_type->num_modes; j++) {
+            fanout_per_mode[j] = 0;
+            wirelength_out_per_mode[j] = 0;
         }
 
         for (i = 0; i < list_cnt; i++) {

@@ -44,7 +44,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     seg_occ_by_length = new int[max_segment_length + 1];
     seg_cap_by_length = new int[max_segment_length + 1];
 
-    for (auto i = 0; i < max_segment_length + 1; i++) {
+    for (int i = 0; i < max_segment_length + 1; i++) {
         seg_occ_by_length[i] = 0;
         seg_cap_by_length[i] = 0;
     }
@@ -52,7 +52,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     seg_occ_by_type = new int[segment_inf.size()];
     seg_cap_by_type = new int[segment_inf.size()];
 
-    for (auto i = 0; i < segment_inf.size(); i++) {
+    for (size_t i = 0; i < segment_inf.size(); i++) {
         seg_occ_by_type[i] = 0;
         seg_cap_by_type[i] = 0;
     }
