@@ -343,8 +343,8 @@ void print_wirelen_prob_dist() {
 
     prob_dist_size = device_ctx.grid.width() + device_ctx.grid.height() + 10;
     prob_dist = new float[prob_dist_size];
-    for (auto i = 0; i < prob_dist_size; i++)
-        prob_dist[i] = 0.0;
+    for (int j = 0; j < prob_dist_size; j++)
+        prob_dist[j] = 0.0;
     norm_fac = 0.;
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -367,7 +367,7 @@ void print_wirelen_prob_dist() {
                 incr = index - prob_dist_size + 2;
                 prob_dist_size += incr;
 
-                float temp[prob_dist_size];
+                float* temp = new float[prob_dist_size];
                 std::memcpy(&temp, &prob_dist, prob_dist_size);
                 delete[](prob_dist);
                 prob_dist = new float[prob_dist_size];
@@ -375,6 +375,7 @@ void print_wirelen_prob_dist() {
                     prob_dist[j] = temp[j];
                 for (i = prob_dist_size - incr; i < prob_dist_size; i++)
                     prob_dist[i] = 0;
+                delete[](temp);
             }
             prob_dist[index] += (num_sinks) * (1 - two_point_length + index);
 
@@ -386,7 +387,7 @@ void print_wirelen_prob_dist() {
                 incr = index - prob_dist_size + 2;
                 prob_dist_size += incr;
 
-                float temp[prob_dist_size];
+                float* temp = new float[prob_dist_size];
                 std::memcpy(&temp, &prob_dist, prob_dist_size);
                 delete[](prob_dist);
                 prob_dist = new float[prob_dist_size];
@@ -394,6 +395,7 @@ void print_wirelen_prob_dist() {
                     prob_dist[j] = temp[j];
                 for (i = prob_dist_size - incr; i < prob_dist_size; i++)
                     prob_dist[i] = 0.0;
+                delete[](temp);
             }
             prob_dist[index] += (num_sinks) * (1 - index + two_point_length);
 
