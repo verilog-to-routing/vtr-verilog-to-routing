@@ -200,7 +200,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 #endif
     alloc_and_init_clustering(max_molecule_stats,
                               &(helper_ctx.cluster_placement_stats), &(helper_ctx.primitives_list), molecule_head,
-                              clustering_data.memory_pool, clustering_data.unclustered_list_head, net_output_feeds_driving_block_input,
+                              clustering_data, net_output_feeds_driving_block_input,
                               unclustered_list_head_size, cluster_stats.num_molecules);
 
     auto primitive_candidate_block_types = identify_primitive_candidate_block_types();

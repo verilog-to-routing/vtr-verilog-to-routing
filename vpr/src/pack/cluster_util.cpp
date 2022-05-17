@@ -502,8 +502,7 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
                                t_cluster_placement_stats** cluster_placement_stats,
                                t_pb_graph_node*** primitives_list,
                                t_pack_molecule* molecules_head,
-                               t_molecule_link* memory_pool,
-                               t_molecule_link* unclustered_list_head,
+                               t_clustering_data& clustering_data,
                                std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
                                int& unclustered_list_head_size,
                                int num_molecules) {
@@ -516,11 +515,11 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
     int max_molecule_size;
 
     /* alloc and load list of molecules to pack */
-    unclustered_list_head = (t_molecule_link*)vtr::calloc(max_molecule_stats.num_used_ext_inputs + 1, sizeof(t_molecule_link));
+    clustering_data.unclustered_list_head = (t_molecule_link*)vtr::calloc(max_molecule_stats.num_used_ext_inputs + 1, sizeof(t_molecule_link));
     unclustered_list_head_size = max_molecule_stats.num_used_ext_inputs + 1;
 
     for (int i = 0; i <= max_molecule_stats.num_used_ext_inputs; i++) {
-        unclustered_list_head[i].next = nullptr;
+        clustering_data.unclustered_list_head[i].next = nullptr;
     }
 
     molecule_array = (t_pack_molecule**)vtr::malloc(num_molecules * sizeof(t_pack_molecule*));
@@ -534,8 +533,8 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
     qsort((void*)molecule_array, num_molecules, sizeof(t_pack_molecule*),
           compare_molecule_gain);
 
-    memory_pool = (t_molecule_link*)vtr::malloc(num_molecules * sizeof(t_molecule_link));
-    next_ptr = memory_pool;
+    clustering_data.memory_pool = (t_molecule_link*)vtr::malloc(num_molecules * sizeof(t_molecule_link));
+    next_ptr = clustering_data.memory_pool;
 
     for (int i = 0; i < num_molecules; i++) {
         //Figure out how many external inputs are used by this molecule
@@ -544,8 +543,8 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
 
         //Insert the molecule into the unclustered lists by number of external inputs
         next_ptr->moleculeptr = molecule_array[i];
-        next_ptr->next = unclustered_list_head[ext_inps].next;
-        unclustered_list_head[ext_inps].next = next_ptr;
+        next_ptr->next = clustering_data.unclustered_list_head[ext_inps].next;
+        clustering_data.unclustered_list_head[ext_inps].next = next_ptr;
 
         next_ptr++;
     }
