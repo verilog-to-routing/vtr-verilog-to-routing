@@ -259,14 +259,17 @@ void YYosys::execute() {
             run_pass(std::string("hierarchy -check -auto-top -purge_lib"));
         }
 
-        // Use a readable name convention
-        run_pass(std::string("autoname"));
         // Translate processes to netlist components such as MUXs, FFs and latches
         run_pass(std::string("proc; opt;"));
         // Extraction and optimization of finite state machines
         run_pass(std::string("fsm; opt;"));
         // Collects memories, their port and create multiport memory cells
         run_pass(std::string("memory_collect; memory_dff; opt;"));
+
+        // Use a readable name convention
+        // [NOTE]: the 'autoname' process has a high memory footprint for giant netlists
+        // we run it after basic optimization passes to reduce the overhead (see issue #2031)
+        run_pass(std::string("autoname"));
 
         // Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
         run_pass(std::string("check"));

@@ -3653,12 +3653,12 @@
         "Latch Drivers": 1,
         "Pi": 88,
         "Po": 144,
-        "latch": 70,
+        "latch": 72,
         "Multiplier": 3,
         "generic logic size": 4,
         "Longest Path": 4,
         "Average Path": 3,
-        "Total Node": 74
+        "Total Node": 76
     },
     "micro/bm_match1_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match1_str_arch/k6_N10_40nm",
@@ -3674,12 +3674,12 @@
         "Pi": 88,
         "Po": 144,
         "logic element": 1864,
-        "latch": 70,
+        "latch": 72,
         "generic logic size": 6,
         "Longest Path": 73,
         "Average Path": 5,
         "Estimated LUTs": 1864,
-        "Total Node": 1935
+        "Total Node": 1937
     },
     "micro/bm_match1_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_match1_str_arch/k6_N10_mem32K_40nm",
@@ -3694,12 +3694,12 @@
         "Latch Drivers": 1,
         "Pi": 88,
         "Po": 144,
-        "latch": 70,
+        "latch": 72,
         "Multiplier": 3,
         "generic logic size": 6,
         "Longest Path": 4,
         "Average Path": 3,
-        "Total Node": 74
+        "Total Node": 76
     },
     "micro/bm_match1_str_arch/no_arch": {
         "test_name": "micro/bm_match1_str_arch/no_arch",
@@ -3714,11 +3714,11 @@
         "Pi": 88,
         "Po": 144,
         "logic element": 1864,
-        "latch": 70,
+        "latch": 72,
         "Longest Path": 73,
         "Average Path": 5,
         "Estimated LUTs": 1864,
-        "Total Node": 1935
+        "Total Node": 1937
     },
     "micro/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3899,13 +3899,13 @@
         "Latch Drivers": 1,
         "Pi": 51,
         "Po": 216,
-        "latch": 53,
-        "Adder": 41,
+        "latch": 108,
+        "Adder": 74,
         "Multiplier": 3,
         "generic logic size": 4,
-        "Longest Path": 25,
+        "Longest Path": 41,
         "Average Path": 3,
-        "Total Node": 98
+        "Total Node": 186
     },
     "micro/bm_match4_str_arch/k6_N10_40nm": {
         "test_name": "micro/bm_match4_str_arch/k6_N10_40nm",
@@ -3920,13 +3920,13 @@
         "Latch Drivers": 1,
         "Pi": 51,
         "Po": 216,
-        "logic element": 697,
-        "latch": 53,
+        "logic element": 763,
+        "latch": 108,
         "generic logic size": 6,
-        "Longest Path": 32,
-        "Average Path": 3,
-        "Estimated LUTs": 697,
-        "Total Node": 751
+        "Longest Path": 48,
+        "Average Path": 4,
+        "Estimated LUTs": 763,
+        "Total Node": 872
     },
     "micro/bm_match4_str_arch/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_match4_str_arch/k6_N10_mem32K_40nm",
@@ -3941,14 +3941,14 @@
         "Latch Drivers": 1,
         "Pi": 51,
         "Po": 216,
-        "logic element": 76,
-        "latch": 53,
+        "logic element": 142,
+        "latch": 108,
         "Multiplier": 3,
         "generic logic size": 6,
-        "Longest Path": 25,
+        "Longest Path": 41,
         "Average Path": 3,
-        "Estimated LUTs": 76,
-        "Total Node": 133
+        "Estimated LUTs": 142,
+        "Total Node": 254
     },
     "micro/bm_match4_str_arch/no_arch": {
         "test_name": "micro/bm_match4_str_arch/no_arch",
@@ -3962,12 +3962,12 @@
         "Latch Drivers": 1,
         "Pi": 51,
         "Po": 216,
-        "logic element": 697,
-        "latch": 53,
-        "Longest Path": 32,
-        "Average Path": 3,
-        "Estimated LUTs": 697,
-        "Total Node": 751
+        "logic element": 763,
+        "latch": 108,
+        "Longest Path": 48,
+        "Average Path": 4,
+        "Estimated LUTs": 763,
+        "Total Node": 872
     },
     "micro/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4367,12 +4367,12 @@
         "Pi": 5,
         "Po": 25,
         "logic element": 114,
-        "latch": 8,
+        "latch": 9,
         "generic logic size": 4,
         "Longest Path": 9,
         "Average Path": 3,
         "Estimated LUTs": 116,
-        "Total Node": 123
+        "Total Node": 124
     },
     "micro/bm_stmt_all_mod/k6_N10_40nm": {
         "test_name": "micro/bm_stmt_all_mod/k6_N10_40nm",
@@ -4388,12 +4388,12 @@
         "Pi": 5,
         "Po": 25,
         "logic element": 114,
-        "latch": 8,
+        "latch": 9,
         "generic logic size": 6,
         "Longest Path": 9,
         "Average Path": 3,
         "Estimated LUTs": 114,
-        "Total Node": 123
+        "Total Node": 124
     },
     "micro/bm_stmt_all_mod/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_stmt_all_mod/k6_N10_mem32K_40nm",
@@ -4409,12 +4409,12 @@
         "Pi": 5,
         "Po": 25,
         "logic element": 114,
-        "latch": 8,
+        "latch": 9,
         "generic logic size": 6,
         "Longest Path": 9,
         "Average Path": 3,
         "Estimated LUTs": 114,
-        "Total Node": 123
+        "Total Node": 124
     },
     "micro/bm_stmt_all_mod/no_arch": {
         "test_name": "micro/bm_stmt_all_mod/no_arch",
@@ -4429,11 +4429,11 @@
         "Pi": 5,
         "Po": 25,
         "logic element": 114,
-        "latch": 8,
+        "latch": 9,
         "Longest Path": 9,
         "Average Path": 3,
         "Estimated LUTs": 114,
-        "Total Node": 123
+        "Total Node": 124
     },
     "micro/bm_stmt_compare_padding/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_stmt_compare_padding/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4449,12 +4449,12 @@
         "Pi": 5,
         "Po": 15,
         "logic element": 55,
-        "latch": 6,
+        "latch": 7,
         "generic logic size": 4,
         "Longest Path": 8,
         "Average Path": 3,
         "Estimated LUTs": 55,
-        "Total Node": 62
+        "Total Node": 63
     },
     "micro/bm_stmt_compare_padding/k6_N10_40nm": {
         "test_name": "micro/bm_stmt_compare_padding/k6_N10_40nm",
@@ -4470,12 +4470,12 @@
         "Pi": 5,
         "Po": 15,
         "logic element": 55,
-        "latch": 6,
+        "latch": 7,
         "generic logic size": 6,
         "Longest Path": 8,
         "Average Path": 3,
         "Estimated LUTs": 55,
-        "Total Node": 62
+        "Total Node": 63
     },
     "micro/bm_stmt_compare_padding/k6_N10_mem32K_40nm": {
         "test_name": "micro/bm_stmt_compare_padding/k6_N10_mem32K_40nm",
@@ -4491,12 +4491,12 @@
         "Pi": 5,
         "Po": 15,
         "logic element": 55,
-        "latch": 6,
+        "latch": 7,
         "generic logic size": 6,
         "Longest Path": 8,
         "Average Path": 3,
         "Estimated LUTs": 55,
-        "Total Node": 62
+        "Total Node": 63
     },
     "micro/bm_stmt_compare_padding/no_arch": {
         "test_name": "micro/bm_stmt_compare_padding/no_arch",
@@ -4511,11 +4511,11 @@
         "Pi": 5,
         "Po": 15,
         "logic element": 55,
-        "latch": 6,
+        "latch": 7,
         "Longest Path": 8,
         "Average Path": 3,
         "Estimated LUTs": 55,
-        "Total Node": 62
+        "Total Node": 63
     },
     "micro/bm_tester/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "micro/bm_tester/k6_frac_N10_frac_chain_mem32K_40nm",

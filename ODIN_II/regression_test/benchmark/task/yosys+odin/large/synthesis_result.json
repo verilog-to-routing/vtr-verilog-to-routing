@@ -12,15 +12,15 @@
         "Latch Drivers": 1,
         "Pi": 132,
         "Po": 179,
-        "logic element": 24519,
+        "logic element": 24491,
         "latch": 3500,
-        "Adder": 379,
+        "Adder": 380,
         "Memory": 1192,
         "generic logic size": 4,
-        "Longest Path": 5118,
+        "Longest Path": 5300,
         "Average Path": 5,
-        "Estimated LUTs": 25121,
-        "Total Node": 29591
+        "Estimated LUTs": 25093,
+        "Total Node": 29564
     },
     "large/bgm/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "large/bgm/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -63,7 +63,7 @@
         "Adder": 151,
         "Memory": 32,
         "generic logic size": 4,
-        "Longest Path": 428,
+        "Longest Path": 416,
         "Average Path": 4,
         "Estimated LUTs": 4510,
         "Total Node": 5259
@@ -84,7 +84,7 @@
         "logic element": 5567,
         "latch": 64,
         "generic logic size": 4,
-        "Longest Path": 423,
+        "Longest Path": 424,
         "Average Path": 6,
         "Estimated LUTs": 6633,
         "Total Node": 5632
@@ -171,7 +171,7 @@
         "Multiplier": 32,
         "Memory": 5251,
         "generic logic size": 4,
-        "Longest Path": 4979,
+        "Longest Path": 4942,
         "Average Path": 4,
         "Estimated LUTs": 193255,
         "Total Node": 222261
@@ -195,7 +195,7 @@
         "Multiplier": 64,
         "Memory": 10372,
         "generic logic size": 4,
-        "Longest Path": 5025,
+        "Longest Path": 4987,
         "Average Path": 4,
         "Estimated LUTs": 376132,
         "Total Node": 430866
@@ -285,7 +285,7 @@
         "Adder": 344,
         "Memory": 153,
         "generic logic size": 4,
-        "Longest Path": 383,
+        "Longest Path": 387,
         "Average Path": 4,
         "Estimated LUTs": 5880,
         "Total Node": 7148
@@ -309,7 +309,7 @@
         "Multiplier": 1,
         "Memory": 64,
         "generic logic size": 4,
-        "Longest Path": 1742,
+        "Longest Path": 1732,
         "Average Path": 5,
         "Estimated LUTs": 7444,
         "Total Node": 8336
@@ -331,7 +331,7 @@
         "latch": 837,
         "Adder": 125,
         "generic logic size": 4,
-        "Longest Path": 426,
+        "Longest Path": 424,
         "Average Path": 4,
         "Estimated LUTs": 4728,
         "Total Node": 5397
@@ -376,7 +376,7 @@
         "Adder": 413,
         "Multiplier": 15,
         "generic logic size": 4,
-        "Longest Path": 110,
+        "Longest Path": 111,
         "Average Path": 4,
         "Estimated LUTs": 2995,
         "Total Node": 4391
@@ -415,7 +415,7 @@
         "Multiplier": 15,
         "Memory": 21,
         "generic logic size": 4,
-        "Longest Path": 111,
+        "Longest Path": 108,
         "Average Path": 4,
         "Estimated LUTs": 2775,
         "Total Node": 4198
@@ -439,7 +439,7 @@
         "Multiplier": 1,
         "Memory": 128,
         "generic logic size": 4,
-        "Longest Path": 764,
+        "Longest Path": 744,
         "Average Path": 3,
         "Estimated LUTs": 2920,
         "Total Node": 3072
@@ -458,13 +458,13 @@
         "Pi": 168,
         "Po": 198,
         "logic element": 8356,
-        "latch": 11260,
-        "Adder": 2723,
+        "latch": 11239,
+        "Adder": 2729,
         "generic logic size": 4,
         "Longest Path": 168,
         "Average Path": 4,
         "Estimated LUTs": 8500,
-        "Total Node": 22340
+        "Total Node": 22325
     },
     "large/sv_chip1_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "large/sv_chip1_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -502,15 +502,15 @@
         "Latch Drivers": 1,
         "Pi": 148,
         "Po": 182,
-        "logic element": 10228,
-        "latch": 15705,
-        "Adder": 12477,
+        "logic element": 10324,
+        "latch": 15833,
+        "Adder": 12447,
         "Multiplier": 468,
         "generic logic size": 4,
         "Longest Path": 138,
         "Average Path": 4,
-        "Estimated LUTs": 10242,
-        "Total Node": 38879
+        "Estimated LUTs": 10338,
+        "Total Node": 39073
     },
     "large/sv_chip3_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "large/sv_chip3_hierarchy_no_mem/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -529,7 +529,7 @@
         "latch": 99,
         "Adder": 28,
         "generic logic size": 4,
-        "Longest Path": 76,
+        "Longest Path": 77,
         "Average Path": 4,
         "Estimated LUTs": 1453,
         "Total Node": 1269
