@@ -57,7 +57,7 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 
     //Print the move result
     if (is_created)
-        VTR_LOG("Atom:%zu is moved to a new cluster");
+        VTR_LOG("Atom:%zu is moved to a new cluster\n", atom_id);
     else
         VTR_LOG("Atom:%zu move failed. Can't start a new cluster of the same type and mode\n", atom_id);
 
