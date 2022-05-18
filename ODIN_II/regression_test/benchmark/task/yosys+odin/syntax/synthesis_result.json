@@ -1118,7 +1118,7 @@
         "Adder": 132,
         "Multiplier": 5,
         "generic logic size": 4,
-        "Longest Path": 86,
+        "Longest Path": 126,
         "Average Path": 4,
         "Estimated LUTs": 561,
         "Total Node": 882
@@ -1137,7 +1137,7 @@
         "Po": 96,
         "logic element": 5460,
         "latch": 193,
-        "Longest Path": 1364,
+        "Longest Path": 1580,
         "Average Path": 4,
         "Estimated LUTs": 5460,
         "Total Node": 5654
@@ -2683,7 +2683,7 @@
         "Adder": 31,
         "Multiplier": 13,
         "generic logic size": 4,
-        "Longest Path": 1086,
+        "Longest Path": 1092,
         "Average Path": 7,
         "Estimated LUTs": 3516,
         "Total Node": 3971
@@ -2702,7 +2702,7 @@
         "Po": 7,
         "logic element": 3856,
         "latch": 517,
-        "Longest Path": 1326,
+        "Longest Path": 1332,
         "Average Path": 7,
         "Estimated LUTs": 3856,
         "Total Node": 4374
@@ -2725,7 +2725,7 @@
         "Adder": 41,
         "Multiplier": 9,
         "generic logic size": 4,
-        "Longest Path": 1189,
+        "Longest Path": 1191,
         "Average Path": 8,
         "Estimated LUTs": 13011,
         "Total Node": 11738
@@ -2744,7 +2744,7 @@
         "Po": 11,
         "logic element": 12116,
         "latch": 616,
-        "Longest Path": 1669,
+        "Longest Path": 1646,
         "Average Path": 8,
         "Estimated LUTs": 12116,
         "Total Node": 12733
