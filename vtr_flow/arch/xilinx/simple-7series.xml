@@ -82,9 +82,7 @@
   </device>
 
   <switchlist>
-    <!--the following tristate for bidirectional wires is pulled from the k4_n4_v7_bidir arch -->
-    <switch type="tristate" name="01" R="94.841003" Cin="1.537000e-14" Cout="2.194000e-13" Tdel="6.562000e-11"/>
-
+    
     <!--the following muxes for unidirectional wires are pulled from k6_N10_40nm -->
     <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
     <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="7.247000e-11" mux_trans_size="1.222260" buf_size="auto"/>
@@ -98,39 +96,10 @@
 
     <!-- TODO: To more accurately approximate the seven series, support for both unidirectional and
     bidirectional segments within the same segmentlist is needed. For now we declare all segments as 
-    bidirectional -->
+    unidirectional -->
 
-    <!-- TODO: For proper timing, xilinx specific values for Rmetal and Cmetal are required. 
+    <!-- TODO: For proper timing, Xilinx specific values for Rmetal and Cmetal are required. 
     For now we approximate using the values given in the k6_N10_40nm arch -->
-
-		<segment axis="x" name="len12_x" freq="0.096774" length="12" type="bidir" Rmetal="101" Cmetal="22.5e-15">
-			<wire_switch name="01"/>
-			<sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1</cb>
-			<opin_switch name="01"/>
-		</segment>
-		<segment axis="y" name="len12_y" freq="0.063158" length="12" type="bidir" Rmetal="101" Cmetal="22.5e-15">
-			<wire_switch name="01"/>
-			<sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1</cb>
-			<opin_switch name="01"/>
-		</segment>
-
-		<!-- No length 18 horizontal chanels -->
-    <!-- VPR freaks out if this is not included -->
-    <segment axis="x" name="len18_x" freq="0.000000" length="18" type="bidir" Rmetal="101" Cmetal="22.5e-15">
-			<wire_switch name="01"/>
-			<sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</cb>
-			<opin_switch name="01"/>
-		</segment>
-
-		<segment axis="y" name="len18_y" freq="0.094736" length="18" type="bidir" Rmetal="101" Cmetal="22.5e-15">
-			<wire_switch name="01"/>
-			<sb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</cb>
-			<opin_switch name="01"/>
-		</segment>
 		
 		<segment axis="x" name="len1_x" freq="0.258064" length="1" type="unidir" Rmetal="101" Cmetal="22.5e-15">
 			<mux name="0"/>
@@ -145,37 +114,79 @@
 
 		<segment axis="x" name="len2_x" freq="0.387096" length="2" type="unidir" Rmetal="101" Cmetal="22.5e-15">
 			<mux name="0"/>
-			<sb type="pattern">1 1 1</sb>
+			<sb type="pattern">1 0 1</sb>
 			<cb type="pattern">1 1</cb>
 		</segment>
 		<segment axis="y" name="len2_y" freq="0.084210" length="2" type="unidir" Rmetal="101" Cmetal="22.5e-15">
 			<mux name="0"/>
-			<sb type="pattern">1 1 1</sb>
+			<sb type="pattern">1 0 1</sb>
 			<cb type="pattern">1 1</cb>
 		</segment>
 
-		<segment axis="x" name="len4_x" freq="0.258065" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+		<segment axis="x" name="len4_x" freq="0.225807" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
 			<mux name="0"/>
-			<sb type="pattern">1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1</cb>
+			<sb type="pattern">1 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 1</cb>
 		</segment>
 		<segment axis="y" name="len4_y" freq="0.336842" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
 			<mux name="0"/>
-			<sb type="pattern">1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1</cb>
+			<sb type="pattern">1 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 1</cb>
 		</segment>
+
+    <!-- 12.5% of horizontal len4 wires have the following unique sb pattern -->
+    <segment axis="x" name="len4_stub" freq="0.032258" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 1 0 1</sb>
+			<cb type="pattern">1 0 0 1</cb>
+		</segment>
+
 
 		<!-- No length 6 horizontal chanels -->
     <!-- VPR freaks out if this is not included -->
     <segment axis="x" name="len6_x" freq="0.000000" length="6" type="unidir" Rmetal="101" Cmetal="22.5e-15">
 			<mux name="0"/>
-			<sb type="pattern">1 1 1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1 1 1</cb>
+			<sb type="pattern">1 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 1</cb>
 		</segment>
-		<segment axis="y" name="len6_y" freq="0.252633" length="6" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+		<segment axis="y" name="len6_y" freq="0.189475" length="6" type="unidir" Rmetal="101" Cmetal="22.5e-15">
 			<mux name="0"/>
-			<sb type="pattern">1 1 1 1 1 1 1</sb>
-			<cb type="pattern">1 1 1 1 1 1</cb>
+			<sb type="pattern">1 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 1</cb>
+		</segment>
+
+    <!-- 25% of len6 vertical wires have a unique sb pattern -->
+    <segment axis="y" name="len6_stub" freq="0.063158" length="6" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 1 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 1</cb>
+		</segment>
+
+    <!-- TODO: In xilinx length 12 and 18 wires are bidirectional -->
+
+    <segment axis="x" name="len12_x" freq="0.096774" length="12" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+      <mux name="0"/>
+			<sb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 0 0 0 0 0 0 1</cb>
+		</segment>
+		<segment axis="y" name="len12_y" freq="0.063158" length="12" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 0 0 0 0 0 0 1</cb>
+		</segment>
+
+		<!-- No length 18 horizontal chanels -->
+    <!-- VPR freaks out if this is not included -->
+    <segment axis="x" name="len18_x" freq="0.000000" length="18" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1</cb>
+		</segment>
+
+		<segment axis="y" name="len18_y" freq="0.094736" length="18" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1</cb>
 		</segment>
 
 	
