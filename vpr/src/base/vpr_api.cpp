@@ -385,6 +385,12 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     { //Analysis
         vpr_analysis_flow(vpr_setup, arch, route_status);
     }
+
+    //clean packing-placement data
+    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+    free_cluster_placement_stats(helper_ctx.cluster_placement_stats);
+
+    //close the graphics
     vpr_close_graphics(vpr_setup);
 
     return route_status.success();

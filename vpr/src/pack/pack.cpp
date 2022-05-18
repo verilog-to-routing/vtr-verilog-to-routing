@@ -265,6 +265,7 @@ bool try_pack(t_packer_opts* packer_opts,
     /* Packing iterative improvement can be done here */
     /*       Use the re-cluster API to edit it        */
     /******************* Start *************************/
+
     /******************** End **************************/
 
     //check clustering and output it

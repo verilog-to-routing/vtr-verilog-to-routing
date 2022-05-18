@@ -283,12 +283,9 @@ struct ClusteringHelperContext : public Context {
     int total_clb_num;
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs;
 
-    ///*
     ~ClusteringHelperContext() {
         free(primitives_list);
-        free_cluster_placement_stats(cluster_placement_stats);
     }
-    //*/
 };
 
 /**

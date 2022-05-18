@@ -258,7 +258,6 @@ void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_s
                 free(cur);
                 cur = next;
             }
-            VTR_LOG("HHHHHH\n");
             free(cluster_placement_stats_list[index].valid_primitives[j]);
         }
         free(cluster_placement_stats_list[index].valid_primitives);

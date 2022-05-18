@@ -239,8 +239,6 @@ void free_clustering_data(const t_packer_opts& packer_opts,
     if (packer_opts.hill_climbing_flag)
         free(clustering_data.hill_climbing_inputs_avail);
 
-    //free_cluster_placement_stats(cluster_placement_stats);
-
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
         cluster_ctx.clb_nlist.remove_block(blk_id);
 
@@ -248,8 +246,6 @@ void free_clustering_data(const t_packer_opts& packer_opts,
 
     free(clustering_data.unclustered_list_head);
     free(clustering_data.memory_pool);
-
-    //free(primitives_list);
 }
 
 //check the clustering and output it
