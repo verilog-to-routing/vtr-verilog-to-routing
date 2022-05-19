@@ -98,16 +98,19 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
         cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
         cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
 
-        if (during_packing)
+        if (during_packing) {
             clustering_data.intra_lb_routing[old_clb] = router_data->saved_lb_nets;
+            router_data->saved_lb_nets = nullptr;
+        }
+
         else
             get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
     } else {
         VTR_LOG("re-cluster: Cluster is illegal after removing an atom\n");
-        //free router_data memory
-        free_router_data(router_data);
-        router_data = nullptr;
     }
+
+    free_router_data(router_data);
+    router_data = nullptr;
 
     //return true if succeeded
     return (is_cluster_legal);
@@ -195,23 +198,23 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
         clb_index = cluster_ctx.clb_nlist.create_block(new_name.c_str(), pb, type);
         helper_ctx.total_clb_num++;
 
-        if (during_packing)
+        if (during_packing) {
             clustering_data.intra_lb_routing.push_back((*router_data)->saved_lb_nets);
-        else {
+            (*router_data)->saved_lb_nets = nullptr;
+        } else {
+            cluster_ctx.clb_nlist.block_pb(clb_index)->pb_route = alloc_and_load_pb_route((*router_data)->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node);
             g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size() + 1);
             set_imacro_for_iblk(&imacro, clb_index);
             place_one_block(clb_index, pad_loc_type);
         }
-
-        cluster_ctx.clb_nlist.block_pb(clb_index)->pb_route = alloc_and_load_pb_route((*router_data)->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node);
-
     } else {
         free_pb(pb);
         delete pb;
-        //Free failed clustering
-        free_router_data(*router_data);
-        *router_data = nullptr;
     }
+
+    //Free failed clustering
+    free_router_data(*router_data);
+    *router_data = nullptr;
 
     return (pack_result == BLK_PASSED);
 }
