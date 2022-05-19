@@ -1826,7 +1826,16 @@ Wire Segments
 The content within the ``<segmentlist>`` tag consists of a group of ``<segment>`` tags.
 The ``<segment>`` tag and its contents are described below.
 
-.. arch:tag:: <segment name="unique_name" length="int" type="{bidir|unidir}" freq="float" Rmetal="float" Cmetal="float">content</segment>
+.. arch:tag:: <segment axis="{x|y}" name="unique_name" length="int" type="{bidir|unidir}" freq="float" Rmetal="float" Cmetal="float">content</segment>
+
+
+    :opt_param axis:
+        Specifies if the given segment applies to either x or y channels only. If this tag is not given, it is assumed that the given segment
+        description applies to both x-directed and y-directed channels.
+
+        .. note:: It is required that both x and y segment axis details are given or that at least one segment within ``segmentlist`` 
+            is specified without the ``axis`` tag (i.e. at least one segment applies to both x-directed and y-directed 
+            chanels). 
 
     :req_param name:
         A unique alphanumeric name to identify this segment type.
