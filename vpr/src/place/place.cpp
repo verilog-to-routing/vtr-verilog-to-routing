@@ -2557,8 +2557,8 @@ static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new
 }
 
 static void free_fast_cost_update() {
-   chanx_place_cost_fac.clear();
-   chany_place_cost_fac.clear();
+    chanx_place_cost_fac.clear();
+    chany_place_cost_fac.clear();
 }
 
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
@@ -2588,8 +2588,8 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
     //for (size_t i = 0; i < device_ctx.grid.width(); i++)
     //    chany_place_cost_fac[i] = new float[(i + 1)];
 
-    chanx_place_cost_fac.resize({device_ctx.grid.height(), device_ctx.grid.height()+1});
-    chany_place_cost_fac.resize({device_ctx.grid.width(), device_ctx.grid.width()+1});
+    chanx_place_cost_fac.resize({device_ctx.grid.height(), device_ctx.grid.height() + 1});
+    chany_place_cost_fac.resize({device_ctx.grid.width(), device_ctx.grid.width() + 1});
 
     /* First compute the number of tracks between channel high and channel *
      * low, inclusive, in an efficient manner.                             */
