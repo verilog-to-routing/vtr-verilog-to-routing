@@ -296,7 +296,7 @@ string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models){
      * RAM Blocks
      */
     if(strcmp(vqm_node->type, "stratixiv_ram_block") == 0) {
-        generate_opname_stratixiv_ram(vqm_node, arch_models, mode_hash);
+        generate_opname_ram(vqm_node, arch_models, mode_hash);
     }
 
     return mode_hash;
@@ -524,10 +524,15 @@ void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* /*arch_models
 
 }
         
-void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash) {
-    VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
+void generate_opname_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash, string device) {
     
-    RamInfo ram_info = get_ram_info(vqm_node);
+    if(device == "stratixiv")
+        VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
+    else
+        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_ram_block") == 0);
+
+    
+    RamInfo ram_info = get_ram_info(vqm_node, device);
 
     /*
      *  The following code attempts to identify RAM bocks which do and do not use
@@ -582,10 +587,10 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
      *
      *  This is done in several steps:
      *      1) If it is a single port memory, just append both the opmode and address_width
-     *          e.g. stratixiv_ram_block.opmode{single_port}.port_a_address_width{7}
+     *          e.g. $ram_primitive_name.opmode{single_port}.port_a_address_width{7}
      *
      *      2) If it is a dual_port memory, with two ports of the same width, append the opmode and address_widths
-     *          e.g. stratixiv_ram_block.opmode{dual_port}.port_a_address_width{5}.port_b_address_width{5}
+     *          e.g. $ram_primitive_name.opmode{dual_port}.port_a_address_width{5}.port_b_address_width{5}
      *
      *      3) If it is a dual_port memory, with two ports of different width:
      *          a) Use the simplest name (no extra width or address info appended)
@@ -709,9 +714,9 @@ string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
     /*
      * RAM Blocks
      */
-    /*if(strcmp(vqm_node->type, "") == 0) {
-        generate_opname_stratixiv_ram(vqm_node, arch_models, mode_hash);
-    }*/
+    if(strcmp(vqm_node->type, "fourteennm_ram_block") == 0) {
+        generate_opname_ram(vqm_node, arch_models, mode_hash);
+    }
 
     return mode_hash;
 }
@@ -923,8 +928,11 @@ void verify_module (t_module* module){
 	}
 }
 
-RamInfo get_ram_info(const t_node* vqm_node) {
-    VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
+RamInfo get_ram_info(const t_node* vqm_node, string device) {
+    if(device=="stratixiv")
+        VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
+    if(device=="stratix10")
+        VTR_ASSERT(strcmp(vqm_node->type, "stratix10_ram_block") == 0);
 
     t_node_parameter* operation_mode = NULL;
     
@@ -934,6 +942,16 @@ RamInfo get_ram_info(const t_node* vqm_node) {
     t_node_parameter* port_b_address_clock = NULL;
     t_node_parameter* port_b_data_out_clock = NULL;
     
+    //We need to save clock enable information about the RAM to determine whether clock enables for registers are used - For Stratix 10 only
+    t_node_parameter* clk0_input_clock_enable = NULL;
+    t_node_parameter* clk0_output_clock_enable = NULL;
+    t_node_parameter* clk1_input_clock_enable = NULL;
+    t_node_parameter* clk1_output_clock_enable = NULL;
+
+    //We need to save clear information about the RAM to determine whether clear signals for output registers are used - For Stratix 10 only
+    t_node_parameter* port_a_dataout_clear = NULL;
+    t_node_parameter* port_b_dataout_clear = NULL;
+
     //We need to save the ram data and address widths, to identfy the RAM type (singel port, rom, simple dual port, true dual port)
     t_node_parameter* port_a_data_width = NULL;
     t_node_parameter* port_a_addr_width = NULL;
@@ -970,7 +988,7 @@ RamInfo get_ram_info(const t_node* vqm_node) {
             port_b_addr_width = temp_param;
             continue;
         }
-        if (strcmp (temp_param->name, "port_a_address_clock") == 0){
+        if (strcmp (temp_param->name, "port_a_address_clock") == 0){ // This parameter doesn't exist for Stratix 10 - clock0 is always used for port address_a
             VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
             port_a_address_clock = temp_param;
             continue;
@@ -990,6 +1008,37 @@ RamInfo get_ram_info(const t_node* vqm_node) {
             port_b_data_out_clock = temp_param;
             continue;
         }
+        if (strcmp (temp_param->name, "clk0_input_clock_enable") == 0){
+            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            clk0_input_clock_enable = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "clk0_output_clock_enable") == 0){
+            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            clk0_output_clock_enable = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "clk1_input_clock_enable") == 0){
+            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            clk1_input_clock_enable = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "clk1_output_clock_enable") == 0){
+            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            clk1_output_clock_enable = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_a_dataout_clear") == 0){
+            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            port_a_dataout_clear = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_b_dataout_clear") == 0){
+            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            port_b_dataout_clear = temp_param;
+            continue;
+        }
+        
     }
 
     RamInfo ram_info;
@@ -1022,6 +1071,22 @@ RamInfo get_ram_info(const t_node* vqm_node) {
     t_node_port_association* clk_portaout = nullptr;
     t_node_port_association* clk_portbin = nullptr;
     t_node_port_association* clk_portbout = nullptr;
+
+    //find the enable ports
+    t_node_port_association* ena0_port = nullptr;
+    t_node_port_association* ena1_port = nullptr;
+
+    // find the enables ports correspodning to each register
+    t_node_port_association* clk0_enable_in_port = nullptr;
+    t_node_port_association* clk0_enable_out_port = nullptr;
+    t_node_port_association* clk1_enable_in_port = nullptr;
+    t_node_port_association* clk1_enable_out_port = nullptr;
+
+    // find the clear ports
+    t_node_port_association* sclr_port = nullptr;
+    t_node_port_association* aclr_port = nullptr;
+
+
     for(int i = 0; i < vqm_node->number_of_ports; ++i) {
         t_node_port_association* check_port = vqm_node->array_of_ports[i];
         if(check_port->port_name == std::string("clk0")) {
@@ -1042,6 +1107,18 @@ RamInfo get_ram_info(const t_node* vqm_node) {
         if(check_port->port_name == std::string("clk_portbout")) {
             clk_portbout = check_port;
         }
+        if(check_port->port_name == std::string("ena0")) {
+            ena0_port = check_port;
+        }
+        if(check_port->port_name == std::string("ena1")) {
+            ena1_port = check_port;
+        }
+        if(check_port->port_name == std::string("sclr")) {
+            sclr_port = check_port;
+        }
+        if(check_port->port_name == std::string("aclr")) {
+            aclr_port = check_port;
+        }
     }
 
     if(clk0_port) {
@@ -1051,26 +1128,82 @@ RamInfo get_ram_info(const t_node* vqm_node) {
         VTR_ASSERT(!clk_portbin);
         VTR_ASSERT(!clk_portbout);
 
-        //Port a input clock
+        // set the clock enable_in and enable_out ports for clock0 and clock1 
+        if (clk0_input_clock_enable) {
+            if (clk0_input_clock_enable->value.string_value == std::string("ena0")){
+                VTR_ASSERT(ena0_port);
+                clk0_enable_in_port = ena0_port;
+            } else if (clk0_input_clock_enable->value.string_value == std::string("ena1")) {
+                VTR_ASSERT(ena1_port);
+                clk0_enable_in_port = ena1_port;
+            } else {
+                VTR_ASSERT(clk0_input_clock_enable->value.string_value == std::string("none"));
+                clk0_enable_in_port = nullptr;
+            }
+        }
+        if (clk0_output_clock_enable) {
+            if (clk0_output_clock_enable->value.string_value == std::string("ena0")){
+                VTR_ASSERT(ena0_port);
+                clk0_enable_out_port = ena0_port;
+            } else if (clk0_output_clock_enable->value.string_value == std::string("ena1")) {
+                VTR_ASSERT(ena1_port);
+                clk0_enable_out_port = ena1_port;
+            } else {
+                VTR_ASSERT(clk0_output_clock_enable->value.string_value == std::string("none"));
+                clk0_enable_out_port = nullptr;
+            }
+        }
+        if (clk1_input_clock_enable) {
+            if (clk1_input_clock_enable->value.string_value == std::string("ena0")){
+                VTR_ASSERT(ena0_port);
+                clk1_enable_in_port = ena0_port;
+            } else if (clk1_input_clock_enable->value.string_value == std::string("ena1")) {
+                VTR_ASSERT(ena1_port);
+                clk1_enable_in_port = ena1_port;
+            } else {
+                VTR_ASSERT(clk1_input_clock_enable->value.string_value == std::string("none"));
+                clk1_enable_in_port = nullptr;
+            }
+        }
+        if (clk1_output_clock_enable) {
+            if (clk1_output_clock_enable->value.string_value == std::string("ena0")){
+                VTR_ASSERT(ena0_port);
+                clk1_enable_out_port = ena0_port;
+            } else if (clk1_output_clock_enable->value.string_value == std::string("ena1")) {
+                VTR_ASSERT(ena1_port);
+                clk1_enable_out_port = ena1_port;
+            } else {
+                VTR_ASSERT(clk1_output_clock_enable->value.string_value == std::string("none"));
+                clk1_enable_out_port = nullptr;
+            }
+        }
+
+        //Port a input clock and the corresponding enable
         if(!port_a_address_clock) {
             //Assumed that port a input is always controlled by clk0, 
             //none of the VQM files have produced a port_a_address_clock param
             ram_info.port_a_input_clock = clk0_port;
+            ram_info.port_a_input_ena = clk0_enable_in_port;
+
         } else if (port_a_address_clock->value.string_value == std::string("clock0")){
             ram_info.port_a_input_clock = clk0_port;
+            ram_info.port_a_input_ena = clk0_enable_in_port;
         } else {
             VTR_ASSERT(port_a_address_clock->value.string_value == std::string("clock1"));
             VTR_ASSERT(clk1_port);
             ram_info.port_a_input_clock = clk1_port;
+            ram_info.port_a_input_ena = clk1_enable_in_port;
         }
 
         //Port a output clock
         VTR_ASSERT(port_a_data_out_clock);
         if (port_a_data_out_clock->value.string_value == std::string("clock0")){
             ram_info.port_a_output_clock = clk0_port;
+            ram_info.port_a_output_ena = clk0_enable_out_port;
         } else if (port_a_data_out_clock->value.string_value == std::string("clock1")) {
             VTR_ASSERT(clk1_port);
             ram_info.port_a_output_clock = clk1_port;
+            ram_info.port_a_output_ena = clk1_enable_out_port;
         } else {
             VTR_ASSERT(port_a_data_out_clock->value.string_value == std::string("none"));
             ram_info.port_a_output_clock = nullptr;
@@ -1080,27 +1213,64 @@ RamInfo get_ram_info(const t_node* vqm_node) {
         if (port_b_address_clock) {
             if (port_b_address_clock->value.string_value == std::string("clock0")){
                 ram_info.port_b_input_clock = clk0_port;
+                ram_info.port_b_input_ena = clk0_enable_in_port;
+
             } else if (port_b_address_clock->value.string_value == std::string("clock1")) {
                 VTR_ASSERT(clk1_port);
                 ram_info.port_b_input_clock = clk1_port;
+                ram_info.port_b_input_ena = clk1_enable_in_port;
+
             } else {
                 VTR_ASSERT(port_b_address_clock->value.string_value == std::string("none"));
                 ram_info.port_b_input_clock = nullptr;
+                ram_info.port_b_input_ena = nullptr;
+
             }
         }
 
-        //Port b output clock
+        //Port b output clock and enable
         if (port_b_data_out_clock) {
             if (port_b_data_out_clock->value.string_value == std::string("clock0")){
                 ram_info.port_b_output_clock = clk0_port;
+                ram_info.port_b_output_ena = clk0_enable_out_port;
             } else if (port_b_data_out_clock->value.string_value == std::string("clock1")) {
                 VTR_ASSERT(clk1_port);
                 ram_info.port_b_output_clock = clk1_port;
+                ram_info.port_b_output_ena = clk1_enable_out_port;
             } else {
                 VTR_ASSERT(port_b_data_out_clock->value.string_value == std::string("none"));
                 ram_info.port_b_output_clock = nullptr;
+                ram_info.port_b_output_ena = nullptr;
+
             }
         }
+
+        // set the clear ports for output registers 
+        if (port_a_dataout_clear) {
+            if (port_a_dataout_clear->value.string_value == std::string("aclr")){
+                VTR_ASSERT(aclr_port);
+                ram_info.port_a_dataout_clear = aclr_port;
+            } else if (port_a_dataout_clear->value.string_value == std::string("sclr")) {
+                VTR_ASSERT(sclr_port);
+                ram_info.port_a_dataout_clear = sclr_port;
+            } else {
+                VTR_ASSERT(port_a_dataout_clear->value.string_value == std::string("none"));
+                ram_info.port_a_dataout_clear = nullptr;
+            }
+        }
+        if (port_b_dataout_clear) {
+            if (port_b_dataout_clear->value.string_value == std::string("aclr")){
+                VTR_ASSERT(aclr_port);
+                ram_info.port_b_dataout_clear = aclr_port;
+            } else if (port_b_dataout_clear->value.string_value == std::string("sclr")) {
+                VTR_ASSERT(sclr_port);
+                ram_info.port_b_dataout_clear = sclr_port;
+            } else {
+                VTR_ASSERT(port_b_dataout_clear->value.string_value == std::string("none"));
+                ram_info.port_b_dataout_clear = nullptr;
+            }
+        }
+        
     } else {
         VTR_ASSERT(!clk0_port);
         VTR_ASSERT(!clk1_port);

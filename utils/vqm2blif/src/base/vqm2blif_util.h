@@ -101,14 +101,19 @@ struct RamInfo {
     int port_a_addr_width = 0;
     int port_a_data_width = 0;
     t_node_port_association* port_a_input_clock = nullptr;
+    t_node_port_association* port_a_input_ena = nullptr;
     t_node_port_association* port_a_output_clock = nullptr;
+    t_node_port_association* port_a_output_ena = nullptr;
+    t_node_port_association* port_a_dataout_clear = nullptr;
 
     int port_b_addr_width = 0;
     int port_b_data_width = 0;
     t_node_port_association* port_b_input_clock = nullptr;
+    t_node_port_association* port_b_input_ena = nullptr;
     t_node_port_association* port_b_output_clock = nullptr;
+    t_node_port_association* port_b_output_ena = nullptr;
+    t_node_port_association* port_b_dataout_clear = nullptr;
 };
-
 // stores relevant information for a given FPGA device
 // currently, just storing the strings used to idenitify luts and dff primitives and their ports within the vqm netlist
 // add additional parameters as needed
