@@ -919,10 +919,8 @@ void alloc_draw_structs(const t_arch* arch) {
 
     /* Allocate the structures needed to draw the placement and routing->  Set *
      * up the default colors for blocks and nets.                             */
-    draw_coords->tile_x = (float*)vtr::malloc(
-        device_ctx.grid.width() * sizeof(float));
-    draw_coords->tile_y = (float*)vtr::malloc(
-        device_ctx.grid.height() * sizeof(float));
+    draw_coords->tile_x = new float[device_ctx.grid.width()];
+    draw_coords->tile_y = new float[device_ctx.grid.height()];
 
     /* For sub-block drawings inside clbs */
     draw_internal_alloc_blk();
@@ -956,9 +954,9 @@ void free_draw_structs() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     if (draw_coords != nullptr) {
-        free(draw_coords->tile_x);
+        delete[](draw_coords->tile_x);
         draw_coords->tile_x = nullptr;
-        free(draw_coords->tile_y);
+        delete[](draw_coords->tile_y);
         draw_coords->tile_y = nullptr;
     }
 

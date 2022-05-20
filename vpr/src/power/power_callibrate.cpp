@@ -58,7 +58,8 @@ void power_print_spice_comparison() {
     unsigned int i, j;
     float* dens = nullptr;
     float* prob = nullptr;
-    char* SRAM_bits = nullptr;
+    char* SRAM_bits_chars;
+    std::string SRAM_bits;
     int sram_idx;
     auto& power_ctx = g_vpr_ctx.mutable_power();
     //
@@ -150,8 +151,8 @@ void power_print_spice_comparison() {
     fprintf(power_ctx.output->out, "Energy of LUT (High Activity)\n");
     for (i = 0; i < (sizeof(LUT_sizes) / sizeof(int)); i++) {
         for (j = 1; j <= LUT_sizes[i]; j++) {
-            SRAM_bits = (char*)vtr::realloc(SRAM_bits,
-                                            ((1 << j) + 1) * sizeof(char));
+            SRAM_bits.resize((1 << j) + 1);
+
             if (j == 1) {
                 SRAM_bits[0] = '1';
                 SRAM_bits[1] = '0';
@@ -162,14 +163,19 @@ void power_print_spice_comparison() {
             }
             SRAM_bits[1 << j] = '\0';
         }
+        SRAM_bits_chars = new char[SRAM_bits.size()];
+        strcpy(SRAM_bits_chars, SRAM_bits.c_str());
 
-        dens = (float*)vtr::realloc(dens, LUT_sizes[i] * sizeof(float));
-        prob = (float*)vtr::realloc(prob, LUT_sizes[i] * sizeof(float));
+        delete[] dens;
+        delete[] prob;
+        dens = new float[LUT_sizes[i]];
+        prob = new float[LUT_sizes[i]];
+
         for (j = 0; j < LUT_sizes[i]; j++) {
             dens[j] = 1.0 / (float)LUT_sizes[i];
             prob[j] = 0.5;
         }
-        power_usage_lut(&sub_power_usage, LUT_sizes[i], 1.0, SRAM_bits, prob,
+        power_usage_lut(&sub_power_usage, LUT_sizes[i], 1.0, SRAM_bits_chars, prob,
                         dens, power_callib_period);
 
         t_power_usage power_usage_mux;
@@ -288,9 +294,9 @@ void power_print_spice_comparison() {
     //	 * power_ctx.solution_inf.T_crit);
     //}
     //free variables
-    free(dens);
-    free(prob);
-    free(SRAM_bits);
+    delete[] dens;
+    delete[] prob;
+    delete[] SRAM_bits_chars;
 }
 
 static char binary_not(char c) {
