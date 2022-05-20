@@ -815,6 +815,9 @@ void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_size) {
 
     pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 
+    pb->pb_stats->pulled_from_atom_groups = 0;
+    pb->pb_stats->num_att_group_atoms_used = 0;
+
     pb->pb_stats->gain.clear();
     pb->pb_stats->timinggain.clear();
     pb->pb_stats->connectiongain.clear();
