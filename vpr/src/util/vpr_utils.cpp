@@ -531,14 +531,14 @@ int get_sub_tile_index(ClusterBlockId blk) {
         if (sub_tile.capacity.is_in_range(sub_tile_coordinate)) {
             auto result = std::find(sub_tile.equivalent_sites.begin(), sub_tile.equivalent_sites.end(), logical_block);
             if (result == sub_tile.equivalent_sites.end()) {
-                VPR_THROW(VPR_ERROR_PLACE, "The Block Id %d has been placed in an incompatible sub tile location.\n", blk);
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE, "The Block Id %d has been placed in an incompatible sub tile location.\n", blk);
             }
 
             return sub_tile.index;
         }
     }
 
-    VPR_THROW(VPR_ERROR_PLACE, "The Block Id %d has been placed in an impossible sub tile location.\n", blk);
+    VPR_FATAL_ERROR(VPR_ERROR_PLACE, "The Block Id %d has been placed in an impossible sub tile location.\n", blk);
 }
 
 /* Each node in the pb_graph for a top-level pb_type can be uniquely identified
@@ -1495,7 +1495,7 @@ void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int
     int ichar, match_count;
 
     if (vtr::split(src_string).size() > 1) {
-        VPR_THROW(VPR_ERROR_ARCH,
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                   "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
     }
 
@@ -1980,7 +1980,7 @@ t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, const
     }
 
     // Port has not been found, throw an error.
-    VPR_THROW(VPR_ERROR_ARCH, "Unable to find port %s (on block %s).\n", port_name, type->name);
+    VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Unable to find port %s (on block %s).\n", port_name, type->name);
 }
 
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision) {

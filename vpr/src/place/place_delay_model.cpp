@@ -138,7 +138,7 @@ float OverrideDelayModel::get_delay_override(int from_type, int from_class, int 
 
     auto iter = delay_overrides_.find(key);
     if (iter == delay_overrides_.end()) {
-        VPR_THROW(VPR_ERROR_PLACE, "Key not found.");
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Key not found.");
     }
     return iter->second;
 }
@@ -158,19 +158,19 @@ void OverrideDelayModel::set_base_delay_model(std::unique_ptr<DeltaDelayModel> b
         "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
 
 void DeltaDelayModel::read(const std::string& /*file*/) {
-    VPR_THROW(VPR_ERROR_PLACE, "DeltaDelayModel::read " DISABLE_ERROR);
+    VPR_FATAL_ERROR(VPR_ERROR_PLACE, "DeltaDelayModel::read " DISABLE_ERROR);
 }
 
 void DeltaDelayModel::write(const std::string& /*file*/) const {
-    VPR_THROW(VPR_ERROR_PLACE, "DeltaDelayModel::write " DISABLE_ERROR);
+    VPR_FATAL_ERROR(VPR_ERROR_PLACE, "DeltaDelayModel::write " DISABLE_ERROR);
 }
 
 void OverrideDelayModel::read(const std::string& /*file*/) {
-    VPR_THROW(VPR_ERROR_PLACE, "OverrideDelayModel::read " DISABLE_ERROR);
+    VPR_FATAL_ERROR(VPR_ERROR_PLACE, "OverrideDelayModel::read " DISABLE_ERROR);
 }
 
 void OverrideDelayModel::write(const std::string& /*file*/) const {
-    VPR_THROW(VPR_ERROR_PLACE, "OverrideDelayModel::write " DISABLE_ERROR);
+    VPR_FATAL_ERROR(VPR_ERROR_PLACE, "OverrideDelayModel::write " DISABLE_ERROR);
 }
 
 #else /* VTR_ENABLE_CAPNPROTO */

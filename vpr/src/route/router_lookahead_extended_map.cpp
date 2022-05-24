@@ -592,10 +592,10 @@ float ExtendedMapLookahead::get_expected_cost(
 #ifndef VTR_ENABLE_CAPNPROTO
 
 void ExtendedMapLookahead::read(const std::string& file) {
-    VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::read not implemented");
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "MapLookahead::read not implemented");
 }
 void ExtendedMapLookahead::write(const std::string& file) const {
-    VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::write not implemented");
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "MapLookahead::write not implemented");
 }
 
 #else

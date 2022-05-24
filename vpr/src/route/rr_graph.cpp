@@ -2814,7 +2814,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
         }
 
         if (physical_tile == nullptr) {
-            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name);
         }
 
         clb_to_clb_directs[i].from_clb_type = physical_tile;
@@ -2845,7 +2845,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
         }
 
         if (physical_tile == nullptr) {
-            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name);
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name);
         }
 
         clb_to_clb_directs[i].to_clb_type = physical_tile;

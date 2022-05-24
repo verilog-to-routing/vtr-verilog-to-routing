@@ -803,7 +803,7 @@ void check_net_for_stubs(ClusterNetId net) {
             msg += vtr::string_fmt("    %s\n", describe_rr_node(inode).c_str());
         }
 
-        VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
     }
 }
 

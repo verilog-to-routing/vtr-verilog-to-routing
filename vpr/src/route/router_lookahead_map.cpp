@@ -1124,11 +1124,11 @@ static void print_router_cost_map(const t_routing_cost_map& router_cost_map) {
         "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
 
 void read_router_lookahead(const std::string& /*file*/) {
-    VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::read " DISABLE_ERROR);
+    VPR_FATAL_ERROR(VPR_ERROR_PLACE, "MapLookahead::read " DISABLE_ERROR);
 }
 
 void DeltaDelayModel::write(const std::string& /*file*/) const {
-    VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::write " DISABLE_ERROR);
+    VPR_FATAL_ERROR(VPR_ERROR_PLACE, "MapLookahead::write " DISABLE_ERROR);
 }
 
 #else /* VTR_ENABLE_CAPNPROTO */

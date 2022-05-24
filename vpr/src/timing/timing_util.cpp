@@ -808,13 +808,13 @@ tatum::NodeId pin_name_to_tnode(std::string pin_name) {
     AtomPinId pin = atom_ctx.nlist.find_pin(pin_name);
 
     if (!pin) {
-        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Failed to find pin named '%s'\n", pin_name.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST, "Failed to find pin named '%s'\n", pin_name.c_str());
     }
 
     tatum::NodeId tnode = atom_ctx.lookup.atom_pin_tnode(pin);
 
     if (!tnode) {
-        VPR_THROW(VPR_ERROR_TIMING, "Failed to find tnode for pin '%s' (pin: %zu)\n", pin_name.c_str(), size_t(pin));
+        VPR_FATAL_ERROR(VPR_ERROR_TIMING, "Failed to find tnode for pin '%s' (pin: %zu)\n", pin_name.c_str(), size_t(pin));
     }
 
     return tnode;
