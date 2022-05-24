@@ -228,6 +228,14 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ///@brief Sets the flag in net_is_global_ = state
     void set_net_is_global(ClusterNetId net_id, bool state);
 
+    /**
+     * @brief Given a name of a block and logical type, go through all the
+     *        cluster blocks of that type and return the id of a block where 
+     *        the block name matches to provided name.
+     * 
+     */
+    ClusterBlockId find_block_with_matching_name(const std::string& name, t_logical_block_type_ptr blk_type);
+
   private: //Private Members
     /*
      * Netlist compression/optimization
@@ -274,14 +282,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     bool validate_port_sizes_impl(size_t num_ports) const override;
     bool validate_pin_sizes_impl(size_t num_pins) const override;
     bool validate_net_sizes_impl(size_t num_nets) const override;
-
-    /**
-     * @brief Given a name of a block and logical type, go through all the
-     *        cluster blocks of that type and return the id of a block where 
-     *        the block name matches to provided name.
-     * 
-     */
-    ClusterBlockId find_block_with_matching_name(const std::string& name, t_logical_block_type_ptr blk_type);
 
   private: //Private Data
     //Blocks
