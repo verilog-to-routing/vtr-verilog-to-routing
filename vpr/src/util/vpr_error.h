@@ -1,12 +1,37 @@
 #ifndef VPR_ERROR_H
 #define VPR_ERROR_H
 
+/**
+ * @file
+ * @brief This header defines useful methods to identify VPR execution errors. 
+ *
+ * VPR Error Types
+ * ===============
+ * 
+ * There are three different way to identify errors in VPR:
+ *
+ *      VPR_FATAL_ERROR(): Is used to signal an *unconditional* fatal error which should
+ *                         stop the program. The error report will include the line number
+ *                         and file where this error was called.
+ *
+ *      Example Usage:
+ *              // The first argument defines 
+ *              VTR_FATAL_ERROR(VPR_ERROR_OTHER, "error mesaage %d", error_message_id);
+ *
+ *
+ *
+ *
+ *
+ */
+
+
 #include <cstdarg>
 #include <string>
 #include <unordered_set>
 
 #include "vtr_error.h"
 
+/// \cond DO NOT DOCUMENT
 enum e_vpr_error {
     VPR_ERROR_UNKNOWN = 0,
 
@@ -125,3 +150,4 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
     } while (false)
 
 #endif
+/// \endcond

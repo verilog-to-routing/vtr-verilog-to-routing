@@ -10,3 +10,4 @@ VPR API
    netlist
    mapping
    rr_graph
+   errors
