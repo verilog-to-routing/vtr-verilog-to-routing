@@ -334,11 +334,11 @@ std::unordered_map<int, const t_class*> get_logical_block_classes_map(t_physical
                                                                                 t_logical_block_type_ptr logical_block,
                                                                                 int relative_cap);
 
-std::unordered_map<int, const t_class*> get_primitive_block_classes_map(t_physical_tile_type_ptr physical_tile,
-                                                                        const t_sub_tile* sub_tile,
-                                                                        t_logical_block_type_ptr logical_block,
-                                                                        int sub_tile_relative_cap,
-                                                                        const t_pb_graph_node* primitive_pb_graph_node);
+t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr physical_tile,
+                                            const t_sub_tile* sub_tile,
+                                            t_logical_block_type_ptr logical_block,
+                                            int sub_tile_relative_cap,
+                                            const t_pb_graph_node* pb_graph_node);
 /** **/
 int get_total_num_sub_tile_internal_classes(const t_sub_tile* sub_tile);
 
@@ -358,6 +358,8 @@ t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile
 const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
 e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
+
+int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
 
 bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num);
 

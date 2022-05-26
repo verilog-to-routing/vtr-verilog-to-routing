@@ -1,3 +1,4 @@
+#include <set>
 #include "vtr_assert.h"
 #include "vtr_memory.h"
 #include "vtr_util.h"
@@ -1027,59 +1028,37 @@ std::unordered_map<int, const t_class*> get_logical_block_classes_map(t_physical
     return classes_map;
 }
 
-std::unordered_map<int, const t_class*> get_primitive_block_classes_map(t_physical_tile_type_ptr physical_tile,
-                                                                        const t_sub_tile* sub_tile,
-                                                                        t_logical_block_type_ptr logical_block,
-                                                                        int sub_tile_relative_cap,
-                                                                        const t_pb_graph_node* primitive_pb_graph_node) {
-    VTR_ASSERT(primitive_pb_graph_node->is_primitive());
-    std::unordered_map<int, const t_class*> block_classes_map;
+t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr physical_tile,
+                                                     const t_sub_tile* sub_tile,
+                                                     t_logical_block_type_ptr logical_block,
+                                                     int sub_tile_relative_cap,
+                                                     const t_pb_graph_node* pb_graph_node) {
+    t_class_range class_range;
+    std::set<int> class_logical_num_set;
     const std::unordered_map<const t_pb_graph_pin*, int>& pb_pin_class_map = logical_block->pb_pin_class_map;
-    const std::vector<t_class>& primitive_class_inf = logical_block->logical_class_inf;
 
-    for(int port_type = 0; port_type < 3; port_type++) {
-        int num_ports;
-        int* ports_num_pins;
-        t_pb_graph_pin** pins;
-        if (port_type == 0) {
-            // Add internal edges for connected to the current block input pins
-            num_ports = primitive_pb_graph_node->num_input_ports;
-            ports_num_pins = primitive_pb_graph_node->num_input_pins;
-            pins = primitive_pb_graph_node->input_pins;
-        } else if(port_type == 1){
-            // Add internal edges for connected to the current block output pins
 
-            num_ports = primitive_pb_graph_node->num_output_ports;
-            ports_num_pins = primitive_pb_graph_node->num_output_pins;
-            pins = primitive_pb_graph_node->output_pins;
-        } else {
-            VTR_ASSERT(port_type == 2);
+    std::vector<const t_pb_graph_pin*> pb_pins = get_pb_graph_node_pins(pb_graph_node);
 
-            num_ports = primitive_pb_graph_node->num_clock_ports;
-            ports_num_pins = primitive_pb_graph_node->num_clock_pins;
-            pins = primitive_pb_graph_node->clock_pins;
-        }
-        std::unordered_set<int> seen_classes;
-        for(int port_idx = 0; port_idx < num_ports; port_idx++) {
-            int num_pins = ports_num_pins[port_idx];
-            for (int pin_idx = 0; pin_idx < num_pins; pin_idx++) {
-                const t_pb_graph_pin* tmp_pin = &(pins[port_idx][pin_idx]);
-                auto tmp_class_idx = pb_pin_class_map.at(tmp_pin);
-                auto tmp_class = &primitive_class_inf[tmp_class_idx];
-                if(seen_classes.count(tmp_class_idx) == 0) {
-                    int class_physical_num = get_class_physical_num_from_class_logical_num(physical_tile,
-                                                                               sub_tile,
-                                                                               logical_block,
-                                                                               sub_tile_relative_cap,
-                                                                               tmp_class_idx);
-                    seen_classes.insert(tmp_class_idx);
-                    block_classes_map.insert(std::make_pair(class_physical_num, tmp_class));
-                }
-            }
-        }
+    for(auto pin: pb_pins) {
+        class_logical_num_set.insert(pb_pin_class_map.at(pin));
     }
+    int min_logical_num = *std::min_element(class_logical_num_set.begin(), class_logical_num_set.end());
+    int max_logical_num = *std::max_element(class_logical_num_set.begin(), class_logical_num_set.end());
 
-    return block_classes_map;
+    class_range.low = get_class_physical_num_from_class_logical_num(physical_tile,
+                                                                    sub_tile,
+                                                                    logical_block,
+                                                                    sub_tile_relative_cap,
+                                                                    min_logical_num);
+
+    class_range.high = get_class_physical_num_from_class_logical_num(physical_tile,
+                                                                    sub_tile,
+                                                                    logical_block,
+                                                                    sub_tile_relative_cap,
+                                                                    max_logical_num);
+
+    return class_range;
 
 }
 
@@ -1195,6 +1174,26 @@ e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_
             VTR_ASSERT(port->type == PORTS::OUT_PORT);
             return e_pin_type::DRIVER;
         }
+    }
+
+}
+
+int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num) {
+    if(is_pin_on_tile(physical_tile, pin_physical_num)) {
+        return physical_tile->pin_class[pin_physical_num];
+    } else {
+        const t_sub_tile* sub_tile;
+        int sub_tile_rel_cap;
+        std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_physical_num);
+        auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, pin_physical_num);
+        auto pin_logical_num = get_pin_logical_num_from_pin_physical_num(physical_tile, pin_physical_num);
+        auto pb_pin = logical_block->pb_pin_num_map.at(pin_logical_num);
+        auto class_logical_num = logical_block->pb_pin_class_map.at(pb_pin);
+        return get_class_physical_num_from_class_logical_num(physical_tile,
+                                                             sub_tile,
+                                                             logical_block,
+                                                             sub_tile_rel_cap,
+                                                             class_logical_num);
     }
 
 }
