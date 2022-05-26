@@ -426,6 +426,7 @@ TEST_CASE("MacroConstraints", "[vpr]") {
     REQUIRE(mac_rect.ymax() == 7);
 }
 
+#if 0
 static constexpr const char kArchFile[] = "test_read_arch_metadata.xml";
 
 // Test that place constraints are not changed during placement
@@ -486,3 +487,4 @@ TEST_CASE("PlaceConstraintsIntegrity", "[vpr]") {
 
     vpr_free_all(arch, vpr_setup);
 }
+#endif

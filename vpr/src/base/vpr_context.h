@@ -267,7 +267,6 @@ struct ClusteringContext : public Context {
     std::map<ClusterBlockId, std::map<int, int>> pre_routing_net_pin_mapping;
 
     std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
-    t_pb_graph_node** primitives_list;
 };
 
 struct ClusteringHelperContext : public Context {
