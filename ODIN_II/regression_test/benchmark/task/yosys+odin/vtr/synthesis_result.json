@@ -35,13 +35,13 @@
         "Po": 179,
         "logic element": 24491,
         "latch": 3500,
-        "Adder": 379,
+        "Adder": 380,
         "Memory": 1192,
         "generic logic size": 4,
-        "Longest Path": 5118,
+        "Longest Path": 5301,
         "Average Path": 5,
         "Estimated LUTs": 25093,
-        "Total Node": 29563
+        "Total Node": 29564
     },
     "vtr/bgm/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vtr/bgm/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -83,7 +83,7 @@
         "latch": 552,
         "Adder": 3564,
         "generic logic size": 4,
-        "Longest Path": 420,
+        "Longest Path": 451,
         "Average Path": 4,
         "Estimated LUTs": 19466,
         "Total Node": 22230
@@ -106,7 +106,7 @@
         "Adder": 151,
         "Memory": 32,
         "generic logic size": 4,
-        "Longest Path": 428,
+        "Longest Path": 416,
         "Average Path": 4,
         "Estimated LUTs": 4510,
         "Total Node": 5259
@@ -151,7 +151,7 @@
         "Adder": 132,
         "Multiplier": 5,
         "generic logic size": 4,
-        "Longest Path": 86,
+        "Longest Path": 126,
         "Average Path": 4,
         "Estimated LUTs": 561,
         "Total Node": 882
@@ -198,7 +198,7 @@
         "Multiplier": 32,
         "Memory": 5251,
         "generic logic size": 4,
-        "Longest Path": 4979,
+        "Longest Path": 4942,
         "Average Path": 4,
         "Estimated LUTs": 193255,
         "Total Node": 222261
@@ -222,7 +222,7 @@
         "Multiplier": 64,
         "Memory": 10372,
         "generic logic size": 4,
-        "Longest Path": 5025,
+        "Longest Path": 4987,
         "Average Path": 4,
         "Estimated LUTs": 376132,
         "Total Node": 430866
@@ -246,7 +246,7 @@
         "Multiplier": 8,
         "Memory": 1409,
         "generic logic size": 4,
-        "Longest Path": 4908,
+        "Longest Path": 4878,
         "Average Path": 4,
         "Estimated LUTs": 56141,
         "Total Node": 65415
@@ -270,7 +270,7 @@
         "Multiplier": 27,
         "Memory": 348,
         "generic logic size": 4,
-        "Longest Path": 19936,
+        "Longest Path": 19937,
         "Average Path": 4,
         "Estimated LUTs": 192874,
         "Total Node": 263455
@@ -339,7 +339,7 @@
         "Adder": 344,
         "Memory": 153,
         "generic logic size": 4,
-        "Longest Path": 383,
+        "Longest Path": 387,
         "Average Path": 4,
         "Estimated LUTs": 5880,
         "Total Node": 7148
@@ -428,7 +428,7 @@
         "Multiplier": 1,
         "Memory": 64,
         "generic logic size": 4,
-        "Longest Path": 1742,
+        "Longest Path": 1732,
         "Average Path": 5,
         "Estimated LUTs": 7444,
         "Total Node": 8336
@@ -452,7 +452,7 @@
         "Multiplier": 15,
         "Memory": 21,
         "generic logic size": 4,
-        "Longest Path": 111,
+        "Longest Path": 108,
         "Average Path": 4,
         "Estimated LUTs": 2775,
         "Total Node": 4198
@@ -474,7 +474,7 @@
         "latch": 910,
         "Adder": 309,
         "generic logic size": 4,
-        "Longest Path": 2427,
+        "Longest Path": 2422,
         "Average Path": 4,
         "Estimated LUTs": 5059,
         "Total Node": 6056
@@ -533,7 +533,7 @@
         "Multiplier": 1,
         "Memory": 128,
         "generic logic size": 4,
-        "Longest Path": 764,
+        "Longest Path": 744,
         "Average Path": 3,
         "Estimated LUTs": 2920,
         "Total Node": 3072
@@ -552,13 +552,13 @@
         "Pi": 168,
         "Po": 197,
         "logic element": 8945,
-        "latch": 11854,
-        "Adder": 2723,
+        "latch": 11833,
+        "Adder": 2729,
         "generic logic size": 4,
         "Longest Path": 168,
         "Average Path": 4,
         "Estimated LUTs": 9089,
-        "Total Node": 23523
+        "Total Node": 23508
     },
     "vtr/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vtr/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -596,15 +596,15 @@
         "Latch Drivers": 1,
         "Pi": 148,
         "Po": 182,
-        "logic element": 10247,
-        "latch": 15705,
-        "Adder": 12477,
+        "logic element": 10343,
+        "latch": 15833,
+        "Adder": 12471,
         "Multiplier": 468,
         "generic logic size": 4,
         "Longest Path": 138,
         "Average Path": 4,
-        "Estimated LUTs": 10261,
-        "Total Node": 38898
+        "Estimated LUTs": 10357,
+        "Total Node": 39116
     },
     "vtr/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "vtr/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -623,7 +623,7 @@
         "latch": 99,
         "Adder": 28,
         "generic logic size": 4,
-        "Longest Path": 76,
+        "Longest Path": 77,
         "Average Path": 4,
         "Estimated LUTs": 1453,
         "Total Node": 1269

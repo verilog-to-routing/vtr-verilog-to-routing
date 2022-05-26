@@ -147,8 +147,13 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
 
         LUT_size = pb_graph_node->num_input_pins[0];
 
-        input_probabilities = (float*)vtr::calloc(LUT_size, sizeof(float));
-        input_densities = (float*)vtr::calloc(LUT_size, sizeof(float));
+        input_probabilities = new float[LUT_size];
+        input_densities = new float[LUT_size];
+
+        for (pin_idx = 0; pin_idx < LUT_size; pin_idx++) {
+            input_probabilities[pin_idx] = 0;
+            input_densities[pin_idx] = 0;
+        }
 
         for (pin_idx = 0; pin_idx < LUT_size; pin_idx++) {
             t_pb_graph_pin* pin = &pb_graph_node->input_pins[0][pin_idx];
@@ -169,8 +174,8 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
                         input_probabilities, input_densities, power_ctx.solution_inf.T_crit);
         power_add_usage(power_usage, &sub_power_usage);
         free(SRAM_values);
-        free(input_probabilities);
-        free(input_densities);
+        delete[](input_probabilities);
+        delete[](input_densities);
     } else if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_LATCH) == 0) {
         /* Flip-Flop */
 
@@ -1031,7 +1036,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
     t_pb_graph_node* node = pin->parent_node;
     bool found;
 
-    pin->pin_power = (t_pb_graph_pin_power*)vtr::malloc(sizeof(t_pb_graph_pin_power));
+    pin->pin_power = new t_pb_graph_pin_power;
     pin->pin_power->C_wire = 0.;
     pin->pin_power->buffer_size = 0.;
     pin->pin_power->scaled_by_pin = nullptr;
@@ -1079,7 +1084,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
 }
 
 void power_uninit_pb_pin(t_pb_graph_pin* pin) {
-    vtr::free(pin->pin_power);
+    delete (pin->pin_power);
     pin->pin_power = nullptr;
 }
 

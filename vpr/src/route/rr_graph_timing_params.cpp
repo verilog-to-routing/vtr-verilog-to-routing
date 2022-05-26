@@ -42,8 +42,12 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
     maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
-    cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
-    buffer_Cin = (float*)vtr::calloc(maxlen, sizeof(float));
+    cblock_counted = new bool[maxlen];
+    buffer_Cin = new float[maxlen];
+    for (int i = 0; i < maxlen; i++) {
+        cblock_counted[i] = 0;
+        buffer_Cin[i] = 0;
+    }
 
     std::vector<float> rr_node_C(rr_graph.num_nodes(), 0.); //Stores the final C
 
@@ -172,7 +176,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
      * Current structures only keep switch information from a node to the next node and
      * not the reverse.  Therefore I need to go through all the possible edges to figure
      * out what the Cout's should be */
-    Couts_to_add = (float*)vtr::calloc(rr_graph.num_nodes(), sizeof(float));
+    Couts_to_add = new float[rr_graph.num_nodes()];
+    for (size_t i = 0; i < rr_graph.num_nodes(); i++)
+        Couts_to_add[i] = 0;
     for (const RRNodeId& inode : rr_graph.nodes()) {
         for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); iedge++) {
             switch_index = rr_graph.edge_switch(inode, iedge);
@@ -195,7 +201,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
         mutable_device_ctx.rr_graph_builder.set_node_rc_index(rr_id, NodeRCIndex(find_create_rr_rc_data(rr_graph.node_R(rr_id), rr_node_C[(size_t)rr_id])));
     }
 
-    free(Couts_to_add);
-    free(cblock_counted);
-    free(buffer_Cin);
+    delete[](Couts_to_add);
+    delete[](cblock_counted);
+    delete[](buffer_Cin);
 }

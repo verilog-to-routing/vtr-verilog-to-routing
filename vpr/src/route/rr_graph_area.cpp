@@ -145,11 +145,17 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
         trans_track_to_cblock_buf = 0;
     }
 
-    num_inputs_to_cblock = (int*)vtr::calloc(rr_graph.num_nodes(), sizeof(int));
+    num_inputs_to_cblock = new int[rr_graph.num_nodes()];
+    for (size_t cb = 0; cb < rr_graph.num_nodes(); cb++)
+        num_inputs_to_cblock[cb] = 0;
 
     maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
-    cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
-    shared_buffer_trans = (float*)vtr::calloc(maxlen, sizeof(float));
+    cblock_counted = new bool[maxlen];
+    shared_buffer_trans = new float[maxlen];
+    for (int b = 0; b < maxlen; b++) {
+        cblock_counted[b] = 0;
+        shared_buffer_trans[b] = 0;
+    }
 
     unsharable_switch_trans = alloc_and_load_unsharable_switch_trans(num_switch,
                                                                      trans_sram_bit, R_minW_nmos);
@@ -271,17 +277,17 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
         } /* End switch on from_rr_type */
     }     /* End for all nodes */
 
-    free(cblock_counted);
-    free(shared_buffer_trans);
-    free(unsharable_switch_trans);
-    free(sharable_switch_trans);
+    delete[](cblock_counted);
+    delete[](shared_buffer_trans);
+    delete[](unsharable_switch_trans);
+    delete[](sharable_switch_trans);
 
     /* Now add in the input connection block transistors. */
 
     input_cblock_trans = get_cblock_trans(num_inputs_to_cblock, wire_to_ipin_switch,
                                           max_inputs_to_cblock, trans_sram_bit);
 
-    free(num_inputs_to_cblock);
+    delete[](num_inputs_to_cblock);
 
     ntrans_sharing += input_cblock_trans;
     ntrans_no_sharing += input_cblock_trans;
@@ -318,8 +324,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
      * a single mux. We should count this mux only once as we look at the outgoing
      * switches of all rr nodes. Thus we keep track of which muxes we have already
      * counted via the variable below. */
-    bool* chan_node_switch_done;
-    chan_node_switch_done = (bool*)vtr::calloc(rr_graph.num_nodes(), sizeof(bool));
+    std::vector<bool> chan_node_switch_done(rr_graph.num_nodes(), false);
 
     /* The variable below is an accumulator variable that will add up all the   *
      * transistors in the routing.  Make double so that it doesn't stop         *
@@ -349,9 +354,14 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
         trans_track_to_cblock_buf = 0;
     }
 
-    num_inputs_to_cblock = (int*)vtr::calloc(rr_graph.num_nodes(), sizeof(int));
+    num_inputs_to_cblock = new int[rr_graph.num_nodes()];
+    for (size_t c = 0; c < rr_graph.num_nodes(); c++)
+        num_inputs_to_cblock[c] = 0;
+
     maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
-    cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
+    cblock_counted = new bool[maxlen];
+    for (auto k = 0; k < maxlen; k++)
+        cblock_counted[k] = 0;
 
     ntrans = 0;
     for (const RRNodeId& from_rr_node : device_ctx.rr_graph.nodes()) {
@@ -467,9 +477,8 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
     input_cblock_trans = get_cblock_trans(num_inputs_to_cblock, wire_to_ipin_switch,
                                           max_inputs_to_cblock, trans_sram_bit);
 
-    free(cblock_counted);
-    free(num_inputs_to_cblock);
-    free(chan_node_switch_done);
+    delete[](cblock_counted);
+    delete[](num_inputs_to_cblock);
 
     ntrans += input_cblock_trans;
 
@@ -490,7 +499,7 @@ static float get_cblock_trans(int* num_inputs_to_cblock, int wire_to_ipin_switch
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    trans_per_cblock = (float*)vtr::malloc((max_inputs_to_cblock + 1) * sizeof(float));
+    trans_per_cblock = new float[(max_inputs_to_cblock + 1)];
 
     trans_per_cblock[0] = 0.; /* i.e., not an IPIN or no inputs */
 
@@ -511,7 +520,7 @@ static float get_cblock_trans(int* num_inputs_to_cblock, int wire_to_ipin_switch
         trans_count += trans_per_cblock[num_inputs];
     }
 
-    free(trans_per_cblock);
+    delete[](trans_per_cblock);
     return (trans_count);
 }
 
@@ -527,7 +536,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit, flo
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    unsharable_switch_trans = (float*)vtr::malloc(num_switch * sizeof(float));
+    unsharable_switch_trans = new float[num_switch];
 
     for (i = 0; i < num_switch; i++) {
         if (rr_graph.rr_switch_inf(RRSwitchId(i)).type() == SwitchType::SHORT) {
@@ -567,7 +576,7 @@ alloc_and_load_sharable_switch_trans(int num_switch,
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    sharable_switch_trans = (float*)vtr::malloc(num_switch * sizeof(float));
+    sharable_switch_trans = new float[num_switch];
 
     for (i = 0; i < num_switch; i++) {
         if (!rr_graph.rr_switch_inf(RRSwitchId(i)).buffered()) {
