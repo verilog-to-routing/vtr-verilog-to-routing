@@ -35,13 +35,9 @@ void do_vpr_flow(const char* input_unc_opt, const char* output_unc_opt) {
     vpr_free_all(arch, vpr_setup);
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    auto& helper_ctx = g_vpr_ctx.mutable_helper();
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     free_pack_molecules(atom_ctx.list_of_pack_molecules.release());
     atom_ctx.atom_molecules.clear();
-    free(helper_ctx.primitives_list);
-    cluster_ctx.num_used_type_instances.clear();
 
     REQUIRE(flow_succeeded == true);
 }
