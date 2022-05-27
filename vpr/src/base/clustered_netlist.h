@@ -234,7 +234,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      *        the block name matches to provided name.
      * 
      */
-    ClusterBlockId find_block_with_matching_name(const std::string& name, t_logical_block_type_ptr blk_type);
+    ClusterBlockId find_block_with_matching_name(const std::string& name, t_logical_block_type_ptr blk_type) const;
 
   private: //Private Members
     /*

@@ -359,7 +359,7 @@ bool ClusteredNetlist::validate_net_sizes_impl(size_t num_nets) const {
  *        and this should help improve run time.
  * 
  */
-ClusterBlockId ClusteredNetlist::find_block_with_matching_name(const std::string& name, t_logical_block_type_ptr blk_type){
+ClusterBlockId ClusteredNetlist::find_block_with_matching_name(const std::string& name, t_logical_block_type_ptr blk_type) const {
 
     ClusterBlockId blk_id = ClusterBlockId::INVALID();
     auto blks_of_logical_type = block_type_to_id.find(blk_type->name);
@@ -367,7 +367,7 @@ ClusterBlockId ClusteredNetlist::find_block_with_matching_name(const std::string
 
     if (blks_of_logical_type != block_type_to_id.end()){
         // get the list of blocks that are of the specified logical type
-        std::vector<ClusterBlockId>* blk_list = &blks_of_logical_type->second;
+        const std::vector<ClusterBlockId>* blk_list = &blks_of_logical_type->second;
         
         // go through the list of blocks to find if any block name matches the provided name (contains the input string in its name)
         for (auto blk = blk_list->begin(); blk != blk_list->end(); blk++){
