@@ -13,43 +13,9 @@
  *  functions that assist in parsing the traffic flows file.
  * 
  */
-
-#include "pugixml.hpp"
-#include "pugixml_util.hpp"
-#include "read_xml_util.h"
-#include "globals.h"
-
-#include "vtr_assert.h"
-#include "vtr_util.h"
-#include "ShowSetup.h"
-#include "vpr_error.h"
-
-#include "noc_data_types.h"
 #include "read_xml_noc_traffic_flows_file.h"
 
 
-static void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type);
-
-static void verify_traffic_flow_router_modules(std::string source_router_name, std::string destination_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
-
-static void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
-
-static ClusterBlockId get_router_module_cluster_id(std::string router_module_name, const ClusteringContext& cluster_ctx, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
-
-static void check_traffic_flow_router_module_type(std::string router_module_name, ClusterBlockId router_module_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type);
-
-static t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContext& device_ctx, NocContext& noc_ctx);
-
-static void check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file);
-
-/**
- * @brief Main driver function that parsed the xml '.flows' file which
- *        contains all the traffic flows in the NoC. This function
- *        takes the parsed information and stores it inside the
- *        NocTrafficFlows class.
- * 
- * @param noc_flows_file Name of the '.flows' file
- */
 void read_xml_noc_traffic_flows_file(const char* noc_flows_file){
 
     // start by checking that the provided file is a ".flows" file
@@ -106,24 +72,7 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file){
 
 }
 
-/**
- * @brief Takes a <single_flow> tag from the '.flows' file and extracts the
- *        flow information from it. This includes the two routers modules
- *        in the flow, the size of the data transferred and any latency
- *        constraints on the data transmission. The parsed information
- *        is verified and if it is legal then this traffic flow is added
- *        to the NocTrafficFlows class.
- * 
- * @param single_flow_tag A xml tag that contains the traffic flow information
- * @param loc_data Contains location data about the current line in the xml file
- * @param cluster_ctx Global variable that contains clustering information. Used
- *                    to get information about the router blocks int he design.
- * @param noc_ctx  Global variable that contains NoC information. Used to access
- *                 the NocTrafficFlows class and store current flow.
- * @param noc_router_tile_type The physical type of a Noc router tile in the
- *                             FPGA.
- */
-static void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type){
+void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type){
 
     // contans all traffic flows
     NocTrafficFlows* noc_traffic_flow_storage = &noc_ctx.noc_traffic_flows_storage;
@@ -143,8 +92,8 @@ static void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::
     verify_traffic_flow_router_modules(source_router_module_name, destination_router_module_name, single_flow_tag, loc_data);
 
     // assign the unique block ids of the two router modules after clustering
-    ClusterBlockId source_router_id = get_router_module_cluster_id(source_router_module_name, cluster_ctx, single_flow_tag, loc_data);
-    ClusterBlockId destination_router_id = get_router_module_cluster_id(destination_router_module_name, cluster_ctx, single_flow_tag, loc_data);
+    ClusterBlockId source_router_id = get_router_module_cluster_id(source_router_module_name, cluster_ctx, single_flow_tag, loc_data, noc_router_tile_type);
+    ClusterBlockId destination_router_id = get_router_module_cluster_id(destination_router_module_name, cluster_ctx, single_flow_tag, loc_data, noc_router_tile_type);
 
     // verify that the source and destination modules are actually noc routers
     check_traffic_flow_router_module_type(source_router_module_name, source_router_id, single_flow_tag, loc_data, cluster_ctx, noc_router_tile_type);
@@ -164,19 +113,7 @@ static void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::
 
 }
 
-/**
- * @brief Checks to see that the two router module names provided in the 
- *        traffic flow description are not empty and they dont have the
- *        same names. THe two routers cant be the exact same since a router
- *        cannot communicate with itself.
- * 
- * @param source_router_name A string value of the source router module name
- * @param destination_router_name A string value of the destination router
- *                                module name
- * @param single_flow_tag A xml tag that contains the traffic flow information
- * @param loc_data Contains location data about the current line in the xml file
- */
-static void verify_traffic_flow_router_modules(std::string source_router_name, std::string destination_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data){
+void verify_traffic_flow_router_modules(std::string source_router_name, std::string destination_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data){
 
     // check that the router module names were legal
     if ((source_router_name.compare("") == 0) || (destination_router_name.compare("") == 0)){
@@ -193,19 +130,7 @@ static void verify_traffic_flow_router_modules(std::string source_router_name, s
 
 }
 
-/**
- * @brief Ensures that the a given traffic flows data transmission size and
- *        latency constraints are not negative values.
- * 
- * @param traffic_flow_bandwidth The transmission size betwee the two routers
- *                               in the traffic flow.
- * @param max_traffic_flow_latency The allowable latency for the data
- *                                 transmission between the two routers in the
- *                                 traffic flow.
- * @param single_flow_tag A xml tag that contains the traffic flow information
- * @param loc_data Contains location data about the current line in the xml file
- */
-static void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data){
+void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data){
 
     // check that the bandwidth and max latency are positive values
     if ((traffic_flow_bandwidth < 0) || (max_traffic_flow_latency < 0)){
@@ -216,24 +141,42 @@ static void verify_traffic_flow_properties(double traffic_flow_bandwidth, double
     return;
 }
 
-/**
- * @brief Given a router module name in the design, retrieve the
- *        equivalent clustered router block identifier, which is
- *        a ClusterBlockId.
- * 
- * @param router_module_name The name of the router module in the design for
- *                           which the corresponding block id needs to be found.
- * @param cluster_ctx Global variable that contains clustering information.
- *                    Contains a datastructure to convert a module name to
- *                    a cluster block id.
- * @param single_flow_tag A xml tag that contains the traffic flow information
- * @param loc_data Contains location data about the current line in the xml file
- * @return ClusterBlockId The corresponding router block id of the provided
- *         router module name.
- */
-static ClusterBlockId get_router_module_cluster_id(std::string router_module_name, const ClusteringContext& cluster_ctx, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data){
+ClusterBlockId get_router_module_cluster_id(std::string router_module_name, const ClusteringContext& cluster_ctx, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, t_physical_tile_type_ptr noc_router_tile_type){
 
-    ClusterBlockId router_module_id = cluster_ctx.clb_nlist.find_block(router_module_name);
+    ClusterBlockId router_module_id = ClusterBlockId::INVALID();
+
+    // get the subtiles of the noc router physical type
+    const std::vector<t_sub_tile>* noc_router_subtiles = &noc_router_tile_type->sub_tiles; 
+
+    /*
+        iterate through all the logical block types that can be placed on the
+        NoC router tile. Check if the there is a cluster block that matches
+        the input router module name and is one of the supported logical
+        block types.
+    */
+    for (auto sub_tile = noc_router_subtiles->begin(); sub_tile != noc_router_subtiles->end(); sub_tile++){
+
+        //get the logical types the current tile supports
+        const std::vector<t_logical_block_type_ptr>* supported_noc_logical_types = &sub_tile->equivalent_sites;
+
+        // go through each logical type and check if there is a cluster block
+        // of that type that also matches the input module name
+        for (auto logical_type = supported_noc_logical_types->begin(); logical_type != supported_noc_logical_types->end(); logical_type++){
+
+            router_module_id = cluster_ctx.clb_nlist.find_block_with_matching_name(router_module_name, *logical_type);
+
+            // found a block for the current logical type, so exit
+            if ((size_t)router_module_id != (size_t)ClusterBlockId::INVALID()){
+                break;
+            }
+
+        }
+        // found a block for the current sub tile, so exit
+        if ((size_t)router_module_id != (size_t)ClusterBlockId::INVALID()){
+            break;
+        }
+    
+    }
 
     // check if a valid block id was found
     if ((size_t)router_module_id == (size_t)ClusterBlockId::INVALID()){
@@ -245,32 +188,13 @@ static ClusterBlockId get_router_module_cluster_id(std::string router_module_nam
 
 }
 
-/**
- * @brief Checks to see whether a given router block is compatible with a NoC
- *        router tile, this helps determine whether the router block is a router
- *        or not (the user provided a name for another type of block in the
- *        design).
- * 
- * @param router_module_name Name of the router module that we are trying to
- *                           check whether it is of type router.
- * @param router_module_id The ClusterBlockId of the router block we are trying
- *                         to check if its of type router. 
- * @param single_flow_tag A xml tag that contains the traffic flow information
- * @param loc_data Contains location data about the current line in the xml file
- * @param cluster_ctx Global variable that contains clustering information.
- *                    Contains a datastructure to get the logical type of a 
- *                    router cluster block.
- * @param noc_router_tile_type The physical type of a Noc router tile in the
- *                             FPGA. Used to check if the router block is
- *                             compatible with a router tile.
- */
-static void check_traffic_flow_router_module_type(std::string router_module_name, ClusterBlockId router_module_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type){
+void check_traffic_flow_router_module_type(std::string router_module_name, ClusterBlockId router_module_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type){
 
     // get the logical type of the provided router module
     t_logical_block_type_ptr router_module_logical_type = cluster_ctx.clb_nlist.block_type(router_module_id);
 
     /*
-        Check of the current router nodules logical type is compatible with the physical type if a noc router (can the module be placed on a noc router tile on the FPGA device). If not then this module is not a router so throw an error.
+        Check the current router modules logical type is compatible with the physical type if a noc router (can the module be placed on a noc router tile on the FPGA device). If not then this module is not a router so throw an error.
     */
     if (!is_tile_compatible(noc_router_tile_type, router_module_logical_type)){
         
@@ -281,17 +205,7 @@ static void check_traffic_flow_router_module_type(std::string router_module_name
 
 }
 
-/**
- * @brief Retreives the physical type of a noc router tile.
- * 
- * @param device_ctx Contains the device information. Has a datastructure that
- *                   can determine a tile type based on grid position on the 
- *                   FPGA. 
- * @param noc_ctx Contains the NoC information. Used to get the grid position
- *                of a NoC router tile.
- * @return t_physical_tile_type_ptr The physical type of a NoC router tile
- */
-static t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContext& device_ctx, NocContext& noc_ctx){
+t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContext& device_ctx, NocContext& noc_ctx){
 
     // get a reference to a single physical noc router
     auto physical_noc_router = noc_ctx.noc_model.get_noc_routers().begin();
@@ -302,23 +216,7 @@ static t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const Devic
 
 }
 
-/**
- * @brief Verify that every router module in the design has an associated
- *        traffic flow to it. If a router module was instantiated in a design
- *        then it should be part of a traffic flow as either a source or
- *        destination router. If the module is not then we need to throw an
- *        error. 
- * 
- * @param noc_ctx Contains the NoC information. Used to get the total number
- *                unique routers found in all traffic flows.
- * @param noc_router_tile_type The physical type of a Noc router tile in the
- *                             FPGA. Used to get the logical types of all
- *                             clustered router blocks in the that can be placed
- *                             on a NoC router tile.
- * @param noc_flows_file The name of the '.flows' file. Used when displaying
- *                       the error.
- */
-static void check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file){
+void check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file){
 
     // contains the number of all the noc router blocks in the design
     const auto clustered_netlist_stats = ClusteredNetlistStats();
@@ -345,7 +243,7 @@ static void check_that_all_router_blocks_have_an_associated_traffic_flow(NocCont
     */
     if (noc_ctx.noc_traffic_flows_storage.get_number_of_routers_used_in_traffic_flows() != number_of_router_blocks_in_design){
 
-        VTR_LOG_WARN("NoC traffic flows file '%s' does not contain all router modules in the design. Every router module in the design must be part of a traffic flow (communicating to another router). Otherwise the router is being unused.\n", noc_flows_file.c_str());
+        VTR_LOG_WARN("NoC traffic flows file '%s' does not contain all router modules in the design. Every router module in the design must be part of a traffic flow (communicating to another router). Otherwise the router is unused.\n", noc_flows_file.c_str());
     }
 
     return;
