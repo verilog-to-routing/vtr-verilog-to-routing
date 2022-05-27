@@ -471,7 +471,7 @@ int mark_undriven_primitive_outputs_as_constant(AtomNetlist& netlist, int verbos
                 }
             }
 
-            if (!has_connected_inputs) {
+            if (!has_connected_inputs && !upstream_ports.empty()) {
                 //The current output port has no inputs driving the primitive's internal
                 //timing edges. Therefore we treat all its pins as constant generators.
                 for (AtomPinId output_pin : netlist.port_pins(output_port)) {
@@ -564,7 +564,7 @@ int infer_and_mark_block_combinational_outputs_constant(AtomNetlist& netlist, At
             }
         }
 
-        if (all_constant_inputs) {
+        if (all_constant_inputs && !upstream_ports.empty()) {
             //The current output port is combinational and has only constant upstream inputs.
             //Therefore we treat all its pins as constant generators.
             for (AtomPinId output_pin : netlist.port_pins(output_port)) {
