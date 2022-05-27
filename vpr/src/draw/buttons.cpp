@@ -36,37 +36,21 @@ void button_for_net_alpha() {
     gtk_grid_insert_column((GtkGrid*)grid, 0);
 
     //text entry for apha value
-    GtkWidget* entry = gtk_entry_new();
-    std::string initialValue = std::to_string(get_net_alpha());
-    gtk_entry_set_text((GtkEntry*)entry, initialValue.c_str());
-    gtk_entry_set_input_purpose((GtkEntry*)entry, GTK_INPUT_PURPOSE_NUMBER);
-    gtk_widget_set_name(entry, "alphaValue");
-    gtk_entry_set_activates_default((GtkEntry*)entry, TRUE);
+    GtkWidget* alpha_widget = gtk_spin_button_new_with_range(0, 100, 1);
+    GtkWidget* alpha_label = gtk_label_new("Set Net Transparency:");
+    gtk_widget_set_name(alpha_widget, "netAlpha");
 
-    //label
-    GtkWidget* alpha_label = gtk_label_new("Set net transparency [0., 1.]");
-
-    //button
-    GtkWidget* button = gtk_button_new_with_label("set");
-
-    //attach to the grid
-    gtk_grid_attach((GtkGrid*)grid, entry, 0, 0, box_width, box_height);
-    gtk_grid_attach((GtkGrid*)grid, button, 1, 0, box_width, box_height);
     gtk_grid_attach((GtkGrid*)main_window_grid, alpha_label, label_left_start_col, button_row++, box_width, box_height);
-    gtk_grid_attach((GtkGrid*)main_window_grid, grid, box_left_start_col, button_row++, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, alpha_widget, box_left_start_col, button_row++, box_width, box_height);
 
     //show newly added contents
     gtk_widget_show_all((GtkWidget*)main_window);
 
     //connect signals
-    g_signal_connect_swapped(GTK_BUTTON(button),
-                             "clicked",
+    g_signal_connect_swapped((GtkSpinButton*)alpha_widget,
+                             "value_changed",
                              G_CALLBACK(set_net_alpha_value),
-                             entry);
-    g_signal_connect_swapped(GTK_ENTRY(entry),
-                             "activate",
-                             G_CALLBACK(set_net_alpha_value_with_enter),
-                             entry);
+							 alpha_widget);
 }
 
 void button_for_toggle_nets() {
