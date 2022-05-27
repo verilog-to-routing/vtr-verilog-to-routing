@@ -50,7 +50,7 @@ void button_for_net_alpha() {
     g_signal_connect_swapped((GtkSpinButton*)alpha_widget,
                              "value_changed",
                              G_CALLBACK(set_net_alpha_value),
-							 alpha_widget);
+                             alpha_widget);
 }
 
 void button_for_toggle_nets() {
