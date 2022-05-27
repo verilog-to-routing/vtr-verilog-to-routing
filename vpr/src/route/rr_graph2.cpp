@@ -61,7 +61,6 @@ static void add_tile_sink_src_spatial_lookup(RRGraphBuilder& rr_graph_builder,
 
 static void add_intra_src_sink_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                         ClusterBlockId cluster_blk_id,
-                                        const DeviceGrid& grid,
                                         int x,
                                         int y,
                                         int* index);
@@ -1204,7 +1203,6 @@ static void add_tile_sink_src_spatial_lookup(RRGraphBuilder& rr_graph_builder,
 
 static void add_intra_src_sink_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                         ClusterBlockId cluster_blk_id,
-                                        const DeviceGrid& grid,
                                         int x,
                                         int y,
                                         int* index) {
@@ -1334,7 +1332,6 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
                     VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
                     add_intra_src_sink_spatial_lookup(rr_graph_builder,
                                                 cluster_blk_id,
-                                                grid,
                                                 x,
                                                 y,
                                                 index);
