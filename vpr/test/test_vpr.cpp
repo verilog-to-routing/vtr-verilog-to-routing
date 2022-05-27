@@ -152,6 +152,10 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
 
         write_rr_graph(kRrGraphFile);
         vpr_free_all(arch, vpr_setup);
+
+        auto& atom_ctx = g_vpr_ctx.mutable_atom();
+        free_pack_molecules(atom_ctx.list_of_pack_molecules.release());
+        atom_ctx.atom_molecules.clear();
     }
 
     REQUIRE(src_inode != -1);
@@ -213,6 +217,10 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         CHECK_THAT(value->as_string().get(&arch.strings), Equals("test edge"));
     }
     vpr_free_all(arch, vpr_setup);
+
+    auto& atom_ctx = g_vpr_ctx.mutable_atom();
+    free_pack_molecules(atom_ctx.list_of_pack_molecules.release());
+    atom_ctx.atom_molecules.clear();
 }
 
 } // namespace
