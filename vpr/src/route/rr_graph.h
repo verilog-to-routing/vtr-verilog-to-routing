@@ -39,9 +39,12 @@ void create_rr_graph(const t_graph_type graph_type,
                      const int num_directs,
                      int* Warnings);
 
-void add_intra_lb_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
-                                 const DeviceGrid& grid,
-                                 const int delayless_switch);
+void add_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                const DeviceGrid& grid,
+                                const int delayless_switch,
+                                int index);
+
+
 
 void free_rr_graph();
 

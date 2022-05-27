@@ -16,13 +16,16 @@ typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
-void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const int max_chan_width,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y,
-                                    bool is_flat);
+                                    const t_chan_details& chan_details_y);
+
+void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                                  const DeviceGrid& grid,
+                                                  int* index);
 
 bool verify_rr_node_indices(const DeviceGrid& grid,
                             const RRGraphView& rr_graph,

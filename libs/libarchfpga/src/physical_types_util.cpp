@@ -241,9 +241,9 @@ static int get_sub_tile_inst_physical_pin_num_offset(t_physical_tile_type_ptr ph
     int offset = get_sub_tile_physical_pin_num_offset(physical_tile, curr_sub_tile);
     int sub_tile_inst_num_pins = get_total_num_sub_tile_internal_pins(curr_sub_tile) / curr_sub_tile->capacity.total();
 
-    for (int sub_tile_cap = 0; sub_tile_cap < curr_relative_cap; sub_tile_cap++) {
-        offset += sub_tile_inst_num_pins;
-    }
+    offset += (curr_relative_cap * sub_tile_inst_num_pins);
+
+
     return offset;
 }
 
@@ -384,9 +384,10 @@ static std::vector<int> get_connected_child_pins(t_physical_tile_type_ptr physic
             connected_pins_ptr = pb_graph_edge->input_pins;
             num_pins = pb_graph_edge->num_input_pins;
         }
-
+        connected_pins.reserve(num_pins);
         for(int pin_idx = 0; pin_idx < num_pins; pin_idx++) {
             auto conn_pin = connected_pins_ptr[pin_idx];
+            // if-statement is added to only get pins in the specified mode
             if(std::find(child_pb_graph_node.begin(), child_pb_graph_node.end(), conn_pin->parent_node) != child_pb_graph_node.end()) {
                 connected_pins.push_back(get_pb_pin_physical_num(physical_type,
                                                                  sub_tile,
@@ -1028,37 +1029,35 @@ std::unordered_map<int, const t_class*> get_logical_block_classes_map(t_physical
     return classes_map;
 }
 
-t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr physical_tile,
+std::unordered_map<int, const t_class*>  get_pb_graph_node_num_class_pairs(t_physical_tile_type_ptr physical_tile,
                                                      const t_sub_tile* sub_tile,
                                                      t_logical_block_type_ptr logical_block,
                                                      int sub_tile_relative_cap,
                                                      const t_pb_graph_node* pb_graph_node) {
-    t_class_range class_range;
-    std::set<int> class_logical_num_set;
+    std::unordered_set<int> seen_logical_class_num;
+    std::unordered_map<int, const t_class*> classes_map;
     const std::unordered_map<const t_pb_graph_pin*, int>& pb_pin_class_map = logical_block->pb_pin_class_map;
+    auto& logical_block_classes = logical_block->logical_class_inf;
 
 
     std::vector<const t_pb_graph_pin*> pb_pins = get_pb_graph_node_pins(pb_graph_node);
 
     for(auto pin: pb_pins) {
-        class_logical_num_set.insert(pb_pin_class_map.at(pin));
+        int class_logical_num = pb_pin_class_map.at(pin);
+
+        auto insert_res = seen_logical_class_num.insert(class_logical_num);
+        if(insert_res.second) {
+            const t_class* class_ptr = &logical_block_classes[class_logical_num];
+            int physical_class_num = get_class_physical_num_from_class_logical_num(physical_tile,
+                                                                                   sub_tile,
+                                                                                   logical_block,
+                                                                                   sub_tile_relative_cap,
+                                                                                   class_logical_num);
+            classes_map.insert(std::make_pair(physical_class_num, class_ptr));
+        }
     }
-    int min_logical_num = *std::min_element(class_logical_num_set.begin(), class_logical_num_set.end());
-    int max_logical_num = *std::max_element(class_logical_num_set.begin(), class_logical_num_set.end());
 
-    class_range.low = get_class_physical_num_from_class_logical_num(physical_tile,
-                                                                    sub_tile,
-                                                                    logical_block,
-                                                                    sub_tile_relative_cap,
-                                                                    min_logical_num);
-
-    class_range.high = get_class_physical_num_from_class_logical_num(physical_tile,
-                                                                    sub_tile,
-                                                                    logical_block,
-                                                                    sub_tile_relative_cap,
-                                                                    max_logical_num);
-
-    return class_range;
+    return classes_map;
 
 }
 
@@ -1261,6 +1260,8 @@ std::vector<int> get_connected_child_pins(t_physical_tile_type_ptr physical_type
     if(is_pin_on_tile(physical_type, pin_physical_num)) {
         std::vector<int> conn_pins(1);
         auto direct_map = (physical_type->tile_block_pin_directs_map).at(logical_block->index).at(sub_tile->index);
+        int sub_tile_inst_num_pins = sub_tile->num_phy_pins/sub_tile->capacity.total();
+        pin_physical_num -= (sub_tile_inst_num_pins*sub_tile_cap);
         auto result = direct_map.find(t_physical_pin(pin_physical_num));
         if (result == direct_map.inverse_end()) {
             archfpga_throw(__FILE__, __LINE__,
@@ -1268,7 +1269,12 @@ std::vector<int> get_connected_child_pins(t_physical_tile_type_ptr physical_type
                            "Physical Tile Type: %s, Logical Block Type: %s.\n",
                            pin_physical_num, physical_type->name, logical_block->name);
         }
-        conn_pins[0] = result->second.pin;
+        int pin_logical_num = result->second.pin;
+        conn_pins[0] = get_pb_pin_physical_num(physical_type,
+                                               sub_tile,
+                                               logical_block,
+                                               sub_tile_cap,
+                                               logical_block->pb_pin_num_map.at(pin_logical_num));
         return conn_pins;
 
     } else {

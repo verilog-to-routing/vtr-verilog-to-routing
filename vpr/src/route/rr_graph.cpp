@@ -241,6 +241,10 @@ static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
                                    const int delayless_switch,
                                    const DeviceGrid& grid);
 
+static void add_intra_lb_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                        const DeviceGrid& grid,
+                                        const int delayless_switch);
+
 static void build_internal_edges(RRGraphBuilder& rr_graph_builder,
                                  ClusterBlockId cluster_blk_id,
                                  const int i,
@@ -452,9 +456,25 @@ void create_rr_graph(const t_graph_type graph_type,
     }
 }
 
-void add_intra_lb_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
-                                 const DeviceGrid& grid,
-                                 const int delayless_switch) {
+void add_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                const DeviceGrid& grid,
+                                const int delayless_switch,
+                                int index) {
+
+    alloc_and_load_intra_cluster_rr_node_indices(rr_graph_builder,
+                                                 grid,
+                                                 &index);
+
+    add_intra_lb_edges_rr_graph(rr_graph_builder,
+                                grid,
+                                delayless_switch);
+
+}
+
+
+static void add_intra_lb_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                        const DeviceGrid& grid,
+                                        const int delayless_switch) {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -690,9 +710,9 @@ static void build_rr_graph(const t_graph_type graph_type,
     int num_rr_nodes = 0;
 
     // Add routing resources to rr_graph lookup table
-    alloc_and_load_rr_node_indices(device_ctx.rr_graph_builder,
+    alloc_and_load_tile_rr_node_indices(device_ctx.rr_graph_builder,
                                    max_chan_width, grid,
-                                   &num_rr_nodes, chan_details_x, chan_details_y, is_flat);
+                                   &num_rr_nodes, chan_details_x, chan_details_y);
 
     size_t expected_node_count = num_rr_nodes;
     if (clock_modeling == DEDICATED_NETWORK) {
@@ -1863,17 +1883,19 @@ static void build_internal_edges(RRGraphBuilder& rr_graph_builder,
                                  const int delayless_switch,
                                  const DeviceGrid& grid) {
 
-    auto physical_type = grid[i][j].type;
-
     /* Internal edges are added from the start tile */
-    if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0)
-        return;
-    VTR_ASSERT(cap < physical_type->capacity);
+    VTR_ASSERT(grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0);
+
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
-    auto sub_tile = &physical_type->sub_tiles[get_sub_tile_index(cluster_blk_id)];
-    int rel_cap = cap - sub_tile->capacity.low;
+
+    t_physical_tile_type_ptr physical_type;
+    const t_sub_tile* sub_tile;
+    int rel_cap;
+    t_logical_block_type_ptr logical_block;
+    std::tie(physical_type, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk_id);
+    VTR_ASSERT(cap < physical_type->capacity);
     VTR_ASSERT(rel_cap >= 0);
-    auto logical_block = cluster_net_list.block_type(cluster_blk_id);
+
     auto pb = cluster_net_list.block_pb(cluster_blk_id);
 
     build_block_edges(rr_graph_builder,
@@ -1974,7 +1996,6 @@ static void add_parent_children_edges(RRGraphBuilder& rr_graph_builder,
                                                        j,
                                                        connected_pin);
 
-            // #TODO: For the time being, delay-less switch is used - This must be changed to reflect the true delay between two pins
             if(pin_type == e_pin_type::RECEIVER) { /* INPUT PIN */
                 rr_edges_to_create.emplace_back(parent_pin_node_id, conn_pin_node_id, delayless_switch);
             } else { /* OUTPUT PIN */

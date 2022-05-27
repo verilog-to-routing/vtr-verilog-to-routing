@@ -285,9 +285,10 @@ bool try_route(int width_fac,
                     directs, num_directs,
                     &warning_count);
     if(router_opts.flat_routing) {
-        add_intra_lb_edges_rr_graph(device_ctx.rr_graph_builder,
-                                    device_ctx.grid,
-                                    det_routing_arch->delayless_switch);
+        add_intra_cluster_rr_graph(device_ctx.rr_graph_builder,
+                                   device_ctx.grid,
+                                   det_routing_arch->delayless_switch,
+                                   device_ctx.rr_graph.num_nodes());
     }
 
     //Initialize drawing, now that we have an RR graph

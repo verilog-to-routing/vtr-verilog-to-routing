@@ -37,17 +37,9 @@ static void load_chan_rr_indices(const int max_chan_width,
 
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
-                                  int* index,
-                                  bool is_flat);
+                                  int* index);
 
-static void add_all_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
-                                   const DeviceGrid& grid,
-                                   int x,
-                                   int y,
-                                   int* index,
-                                   const std::vector<e_side>& wanted_sides);
-
-static void add_top_level_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
+static void add_tile_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                          const DeviceGrid& grid,
                                          int x,
                                          int y,
@@ -61,23 +53,25 @@ static void assign_tile_pins_indices(RRGraphBuilder& rr_graph_builder,
                                      int* index,
                                      const std::vector<e_side>& wanted_sides);
 
-static void reserve_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
-                                       t_physical_tile_type_ptr physical_tile,
-                                       const int x,
-                                       const int y,
-                                       const std::vector<e_side>& wanted_sides);
+static void add_tile_sink_src_spatial_lookup(RRGraphBuilder& rr_graph_builder,
+                                 const DeviceGrid& grid,
+                                 int x,
+                                 int y,
+                                 int* index);
 
-static void add_cluster_sink_src(RRGraphBuilder& rr_graph_builder,
-                       const DeviceGrid& grid,
-                       int x,
-                       int y,
-                       int* index);
+static void add_intra_src_sink_spatial_lookup(RRGraphBuilder& rr_graph_builder,
+                                        ClusterBlockId cluster_blk_id,
+                                        const DeviceGrid& grid,
+                                        int x,
+                                        int y,
+                                        int* index);
 
-static void add_flat_sink_src(RRGraphBuilder& rr_graph_builder,
-                                   const DeviceGrid& grid,
-                                   int x,
-                                   int y,
-                                   int* index);
+static void add_intra_ipin_opin_spatial_lookup(RRGraphBuilder& rr_graph_builder,
+                                         ClusterBlockId cluster_blk_id,
+                                         const DeviceGrid& grid,
+                                         int x,
+                                         int y,
+                                         int* index);
 
 static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                        const std::vector<int> conn_tracks,
@@ -1015,8 +1009,7 @@ static void load_chan_rr_indices(const int max_chan_width,
  */
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
-                                  int* index,
-                                  bool is_flat) {
+                                  int* index) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
 
     for (size_t x = 0; x < grid.width(); x++) {
@@ -1026,12 +1019,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
 
                 //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
-                if(is_flat) {
-                    add_flat_sink_src(rr_graph_builder, grid, x, y, index);
-                }
-                else {
-                    add_cluster_sink_src(rr_graph_builder, grid, x, y, index);
-                }
+                add_tile_sink_src_spatial_lookup(rr_graph_builder, grid, x, y, index);
 
                 /* Limited sides for grids
                  *   The wanted side depends on the location of the grid.
@@ -1086,13 +1074,8 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                     }
                 }
 
-                if(is_flat) {
-                    add_all_tile_pins_lookup (rr_graph_builder, grid, x, y, index, wanted_sides);
-                }
-                else {
-                    add_top_level_tile_pins_lookup (rr_graph_builder, grid, x, y, index, wanted_sides);
+                add_tile_pins_spatial_lookup(rr_graph_builder, grid, x, y, index, wanted_sides);
 
-                }
             }
         }
     }
@@ -1120,50 +1103,8 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-static void add_all_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
-                                   const DeviceGrid& grid,
-                                   int x,
-                                   int y,
-                                   int* index,
-                                   const std::vector<e_side>& wanted_sides) {
 
-    auto type = grid[x][y].type;
-
-
-    reserve_logical_block_pins_lookup(rr_graph_builder, type, x, y, wanted_sides);
-
-    /* We add pins on the tile in a separate function because these pins have pre-defined sides which need to be considered */
-    assign_tile_pins_indices(rr_graph_builder,
-                             grid,
-                             x,
-                             y,
-                             index,
-                             wanted_sides);
-
-    // Add logical block pins
-    auto internal_pins_num = get_tile_internal_pins_num(type);
-    for (auto pin_num : internal_pins_num) {
-        bool assigned_to_rr_node = false;
-        auto pin_type = get_pin_type_from_pin_physical_num(type, pin_num);
-        // It is assumed that all internal pins are on the top side
-        // Also, in the case that the tile's height or width is > 1, internal pins are only accessible from the root location
-        if (pin_type == RECEIVER) {
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, IPIN, pin_num, e_side::TOP);
-            assigned_to_rr_node = true;
-        } else {
-            VTR_ASSERT(pin_type == DRIVER);
-            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, OPIN, pin_num, e_side::TOP);
-            assigned_to_rr_node = true;
-        }
-
-        if (assigned_to_rr_node)
-            ++(*index);
-    }
-
-}
-
-
-static void add_top_level_tile_pins_lookup(RRGraphBuilder& rr_graph_builder,
+static void add_tile_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                          const DeviceGrid& grid,
                                          int x,
                                          int y,
@@ -1241,45 +1182,7 @@ static void assign_tile_pins_indices(RRGraphBuilder& rr_graph_builder,
 
 }
 
-
-
-static void reserve_logical_block_pins_lookup(RRGraphBuilder& rr_graph_builder,
-                                       t_physical_tile_type_ptr physical_tile,
-                                       const int x,
-                                       const int y,
-                                       const std::vector<e_side>& wanted_sides) {
-
-    int num_internal_pins = get_total_num_tile_internal_pins(physical_tile);
-
-    /* Reserve nodes for internal pins in lookup */
-    for(auto side : wanted_sides) {
-        for (int width_offset = 0; width_offset < physical_tile->width; ++width_offset) {
-            int x_tile = x + width_offset;
-            for (int height_offset = 0; height_offset < physical_tile->height; ++height_offset) {
-                int y_tile = y + height_offset;
-                int num_pins;
-                //internal pins are only added for side = e_side and the root location
-                if(side == e_side::TOP && width_offset == 0 && height_offset == 0) {
-                    num_pins = num_internal_pins + physical_tile->num_pins;
-                } else {
-                    num_pins = physical_tile->num_pins;
-                }
-                rr_graph_builder.node_lookup().reserve_nodes(x_tile,
-                                                             y_tile,
-                                                             IPIN,
-                                                             num_pins,
-                                                             side);
-                rr_graph_builder.node_lookup().reserve_nodes(x_tile,
-                                                             y_tile,
-                                                             OPIN,
-                                                             num_pins,
-                                                             side);
-            }
-        }
-    }
-}
-
-static void add_cluster_sink_src(RRGraphBuilder& rr_graph_builder,
+static void add_tile_sink_src_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                    const DeviceGrid& grid,
                                    int x,
                                    int y,
@@ -1299,18 +1202,23 @@ static void add_cluster_sink_src(RRGraphBuilder& rr_graph_builder,
 
 }
 
-static void add_flat_sink_src(RRGraphBuilder& rr_graph_builder,
-                              const DeviceGrid& grid,
-                              int x,
-                              int y,
-                              int* index) {
+static void add_intra_src_sink_spatial_lookup(RRGraphBuilder& rr_graph_builder,
+                                        ClusterBlockId cluster_blk_id,
+                                        const DeviceGrid& grid,
+                                        int x,
+                                        int y,
+                                        int* index) {
+    VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    auto type = grid[x][y].type;
+
+    t_rr_edge_info_set rr_edges_to_create;
+
+    device_ctx.rr_graph_builder.rr_nodes().edges_read_ = false;
 
 
-    auto tile_classes_map = get_flat_tile_classes_map(type);
-    // Add internal classes
-    for (auto class_pair : tile_classes_map) {
+    auto cluster_internal_classes = get_cluster_internal_class_pairs(cluster_blk_id);
+    for (auto class_pair : cluster_internal_classes) {
         int class_num = class_pair.first;
         auto primitive_class = class_pair.second;
         auto class_type = primitive_class->type;
@@ -1322,6 +1230,46 @@ static void add_flat_sink_src(RRGraphBuilder& rr_graph_builder,
         }
         ++(*index);
     }
+
+}
+
+static void add_intra_ipin_opin_spatial_lookup(RRGraphBuilder& rr_graph_builder,
+                                         ClusterBlockId cluster_blk_id,
+                                         const DeviceGrid& grid,
+                                         int x,
+                                         int y,
+                                         int* index) {
+    VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
+    /* The side of the internal pins is considered to be only TOP, and they are only accessible in the root location of the tile */
+
+    auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
+
+    auto type = grid[x][y].type;
+    auto logical_block = cluster_net_list.block_type(cluster_blk_id);
+
+    // Reserve
+    rr_graph_builder.node_lookup().reserve_nodes(x, y, OPIN, logical_block->pb_pin_num_map.size(), e_side::TOP);
+    rr_graph_builder.node_lookup().reserve_nodes(x, y, IPIN, logical_block->pb_pin_num_map.size(), e_side::TOP);
+
+    auto internal_pins = get_cluster_internal_ipin_opin(cluster_blk_id);
+    for (auto pin_num : internal_pins) {
+        bool assigned_to_rr_node = false;
+        auto pin_type = get_pin_type_from_pin_physical_num(type, pin_num);
+        // It is assumed that all internal pins are on the top side
+        // Also, in the case that the tile's height or width is > 1, internal pins are only accessible from the root location
+        if (pin_type == RECEIVER) {
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, IPIN, pin_num, e_side::TOP);
+            assigned_to_rr_node = true;
+        } else {
+            VTR_ASSERT(pin_type == DRIVER);
+            rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x, y, OPIN, pin_num, e_side::TOP);
+            assigned_to_rr_node = true;
+        }
+
+        if (assigned_to_rr_node)
+            ++(*index);
+    }
+
 }
 
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
@@ -1334,13 +1282,12 @@ static void add_flat_sink_src(RRGraphBuilder& rr_graph_builder,
  *         This will block us when putting the RRGraphBuilder object as an input arguement 
  *         of this function
  */
-void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const int max_chan_width,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y,
-                                    bool is_flat) {
+                                    const t_chan_details& chan_details_y) {
     /* Allocates and loads all the structures needed for fast lookups of the   *
      * index of an rr_node.  rr_node_indices is a matrix containing the index  *
      * of the *first* rr_node at a given (i,j) location.                       */
@@ -1355,13 +1302,74 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     }
 
     /* Assign indices for block nodes */
-    load_block_rr_indices(rr_graph_builder, grid, index, is_flat);
+    load_block_rr_indices(rr_graph_builder, grid, index);
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
                          CHANX, chan_details_x, rr_graph_builder, index);
     load_chan_rr_indices(max_chan_width, grid.height(), grid.width(),
                          CHANY, chan_details_y, rr_graph_builder, index);
+}
+
+void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                                  const DeviceGrid& grid,
+                                                  int* index) {
+
+
+    auto& place_ctx = g_vpr_ctx.placement();
+
+
+    for (size_t x = 0; x < grid.width(); x++) {
+        for (size_t y = 0; y < grid.height(); y++) {
+            //Process each block from it's root location
+            if (grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0) {
+                auto type = grid[x][y].type;
+                auto grid_block = place_ctx.grid_blocks[x][y];
+                //iterate over different sub tiles inside a tile
+                for(int abs_cap = 0; abs_cap < type->capacity; abs_cap++) {
+                    if (grid_block.subtile_empty(abs_cap)) {
+                        continue;
+                    }
+                    auto cluster_blk_id = grid_block.blocks[abs_cap];
+                    VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
+                    add_intra_src_sink_spatial_lookup(rr_graph_builder,
+                                                cluster_blk_id,
+                                                grid,
+                                                x,
+                                                y,
+                                                index);
+
+                    add_intra_ipin_opin_spatial_lookup(rr_graph_builder,
+                                                 cluster_blk_id,
+                                                 grid,
+                                                 x,
+                                                 y,
+                                                 index);
+                }
+            }
+        }
+    }
+
+    for (size_t x = 0; x < grid.width(); x++) {
+        for (size_t y = 0; y < grid.height(); y++) {
+            int width_offset = grid[x][y].width_offset;
+            int height_offset = grid[x][y].height_offset;
+            if (width_offset != 0 || height_offset != 0) {
+                int root_x = x - width_offset;
+                int root_y = y - height_offset;
+
+                rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
+                                                            vtr::Point<int>(x, y),
+                                                            SOURCE,
+                                                            SIDES[0]);
+                rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
+                                                            vtr::Point<int>(x, y),
+                                                            SINK,
+                                                            SIDES[0]);
+            }
+        }
+    }
+
 }
 
 /**
