@@ -9,9 +9,12 @@
 #include "cluster_util.h"
 /**
  * @file
- * @brief This files defines some helper functions for the re-clustering
+ * @brief This files defines some helper functions for the re-clustering API
  *
- * API that uses to move atoms between clusters after the cluster is done.
+ * Re-clustering API is used to move atoms between clusters after the cluster is done.
+ * This can be very used in iteratively improve the packed solution after the initial clustering is done.
+ * It can also be used during placement to allow fine-grained moves that can move a BLE or a single FF/LUT.
+ * 
  * Note: Some of the helper functions defined here might be useful in different places in VPR.
  * 
  */
