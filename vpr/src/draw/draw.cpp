@@ -4406,7 +4406,7 @@ static void highlight_blocks(double x, double y) {
     application.update_message(msg);
     application.refresh_drawing();
 }
-void set_net_alpha_value(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+void set_net_alpha_value(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     std::string button_name = "netAlpha";
     auto net_alpha = find_button(button_name.c_str());
     t_draw_state* draw_state = get_draw_state_vars();
