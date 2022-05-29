@@ -48,9 +48,7 @@ bool try_pack(t_packer_opts* packer_opts,
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
     const t_model* cur_model;
     t_clustering_data clustering_data;
-    //int num_models;
     std::vector<t_pack_patterns> list_of_packing_patterns;
-    //std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules(nullptr, free_pack_molecules);
     VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
 
     /* determine number of models in the architecture */
