@@ -752,7 +752,8 @@ bool valid_expression(std::string exp) {
     }
 
     //if expression started or ended with a bool operand or vector has and even number of operators (since in a valid expression number of operators are always odd)
-    if (ops[0] == BOOL_OP || ops[ops.size() - 1] == BOOL_OP || ops.size() % 2 == 0)
+    //checks if ops is empty first so trying to access ops[0] doesn't produce a seg fault
+    if (ops.size() == 0 || ops[0] == BOOL_OP || ops[ops.size() - 1] == BOOL_OP || ops.size() % 2 == 0)
         return false;
 
     //checks pattern (should be 0 1 0 1 0 ...) since in a valid expression comperator operators and  bool operators are used in that pattern (e.g move_num == 3 || from_block == 11)
@@ -762,6 +763,7 @@ bool valid_expression(std::string exp) {
         else if (j % 2 != 0 && ops[j] == COMP_OP)
             return false;
     }
+
     return true;
 }
 
