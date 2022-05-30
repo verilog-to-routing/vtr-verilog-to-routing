@@ -289,21 +289,26 @@ static int get_class_physical_num_from_class_logical_num(t_physical_tile_type_pt
                                                          int logical_class_num) {
 
     int num_seen_class = (int)physical_tile->class_inf.size();
-    for(auto& sub_tile : physical_tile->sub_tiles) {
-        for (int sub_tile_cap = 0; sub_tile_cap < sub_tile.capacity.total(); sub_tile_cap++) {
-            for (auto eq_site : sub_tile.equivalent_sites) {
-                if(&sub_tile == curr_sub_tile) {
-                    if (eq_site == curr_logical_block) {
-                        if (curr_relative_cap == sub_tile_cap)
-                            return num_seen_class + logical_class_num;
-                    }
-                }
-                num_seen_class += (int)eq_site->logical_class_inf.size();
-            }
-        }
+
+    // Add the number of classes in the previous sub_tiles
+    for(int sub_tile_idx = 0; sub_tile_idx < curr_sub_tile->index; sub_tile_idx++) {
+        num_seen_class += get_sub_tile_num_internal_classes(&physical_tile->sub_tiles[sub_tile_idx]);
     }
 
-    return -1;
+    // Add the number of classes in the previous instances (capacity)
+    for(auto logical_block : curr_sub_tile->equivalent_sites) {
+        num_seen_class += ((int)(logical_block->logical_class_inf.size())*(curr_relative_cap-1));
+    }
+
+    // Add the number of classes in the previous logical block which can be mapped to the current sub tile
+    for(int logical_block_idx = 0; logical_block_idx < curr_logical_block->index; logical_block_idx++) {
+        num_seen_class += ((int)curr_sub_tile->equivalent_sites[logical_block_idx]->logical_class_inf.size());
+    }
+
+    // Add the offset of the class in the current logical block
+    num_seen_class += logical_class_num;
+
+    return num_seen_class;
 }
 
 static std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node* pb_graph_node) {
@@ -1044,9 +1049,9 @@ std::unordered_map<int, const t_class*>  get_pb_graph_node_num_class_pairs(t_phy
 
     for(auto pin: pb_pins) {
         int class_logical_num = pb_pin_class_map.at(pin);
-
-        auto insert_res = seen_logical_class_num.emplace(class_logical_num);
-        if(insert_res.second) {
+        bool is_added;
+        std::tie(std::ignore, is_added) = seen_logical_class_num.emplace(class_logical_num);
+        if(is_added) {
             const t_class* class_ptr = &logical_block_classes[class_logical_num];
             int physical_class_num = get_class_physical_num_from_class_logical_num(physical_tile,
                                                                                    sub_tile,
