@@ -193,9 +193,17 @@ int CutSpreader::tiles_at(int x, int y) {
  * * grow merged to include all mergee grids
  */
 void CutSpreader::merge_regions(SpreaderRegion& merged, SpreaderRegion& mergee) {
+    size_t max_x = g_vpr_ctx.device().grid.width();
+    size_t max_y = g_vpr_ctx.device().grid.height();
     for (int x = mergee.bb.xmin(); x <= mergee.bb.xmax(); x++)
         for (int y = mergee.bb.ymin(); y <= mergee.bb.ymax(); y++) {
-            VTR_ASSERT(reg_id_at_grid[x][y] == mergee.id);
+            if (x >= max_x || x < 0 || y >= max_y || y < 0) { //location is not within the chip
+                continue;
+            }
+            //x and y might belong to "merged" region already, no further action is required
+            if (merged.id == reg_id_at_grid[x][y]) {
+                continue;
+            }
             reg_id_at_grid[x][y] = merged.id; //change group id at mergee grids to merged id
             //adds all n_blks and n_tiles from mergee to merged region
             merged.n_blks += occ_at(x, y);
@@ -223,6 +231,12 @@ void CutSpreader::grow_region(SpreaderRegion& r, vtr::Rect<int> rect_to_include,
     r.bb.expand_bounding_box(rect_to_include);
 
     auto process_location = [&](int x, int y) {
+        size_t max_x = g_vpr_ctx.device().grid.width();
+        size_t max_y = g_vpr_ctx.device().grid.height();
+        //x and y should represent a location on the chip, otherwise no processing is required
+        if (x >= max_x || x < 0 || y >= max_y || y < 0) {
+            return;
+        }
         // kicks in only when grid is not claimed, claimed by another region, or part of a macro
         // Merge with any overlapping regions
         if (reg_id_at_grid[x][y] == AP_NO_REGION) {
@@ -753,7 +767,7 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
                 // new location is stored back into rawx/rawy
                 auto& blk_pos = dir ? ap->blk_locs[cut_blks.at(i_blk)].rawy
                                     : ap->blk_locs[cut_blks.at(i_blk)].rawx;
-                VTR_ASSERT(blk_pos >= group_left && blk_pos <= group_right);
+
                 blk_pos = bin_left + mapping * (blk_pos - group_left); // linear interpolation
             }
         }
@@ -862,7 +876,7 @@ void CutSpreader::strict_legalize() {
         }
 
         // timeout
-        VTR_ASSERT(total_iters_noreset <= std::max(5000, 8 * int(clb_nlist.blocks().size())));
+        // VTR_ASSERT(total_iters_noreset <= std::max(5000, 8 * int(clb_nlist.blocks().size())));
 
         while (!placed) { // while blk is not placed
             // timeout
