@@ -14,6 +14,7 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
     ClusterBlockId old_clb;
     PartitionRegion temp_cluster_pr;
     int imacro;
+    t_lb_router_data* old_router_data = nullptr;
     t_lb_router_data* router_data = nullptr;
 
     //Check that there is a place for a new cluster of the same type
@@ -33,7 +34,8 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
     }
 
     //remove the atom from its current cluster and check its legality
-    is_removed = remove_atom_from_cluster(atom_id, lb_type_rr_graphs, old_clb, clustering_data, imacro, during_packing);
+    is_removed = remove_atom_from_cluster(atom_id, lb_type_rr_graphs, old_clb, clustering_data, old_router_data, imacro, during_packing);
+
     if (!is_removed) {
         VTR_LOG("Atom: %zu move failed. Can't remove it from the old cluster\n", atom_id);
         return (is_removed);

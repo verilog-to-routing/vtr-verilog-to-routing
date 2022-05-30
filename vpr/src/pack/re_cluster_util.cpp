@@ -48,16 +48,14 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
                               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               ClusterBlockId& old_clb,
                               t_clustering_data& clustering_data,
+                              t_lb_router_data* router_data,
                               int& imacro,
                               bool during_packing) {
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    auto& atom_ctx = g_vpr_ctx.mutable_atom();
-
     //Determine the cluster ID
     old_clb = atom_to_cluster(atom_id);
 
     //re-build router_data structure for this cluster
-    t_lb_router_data* router_data = lb_load_router_data(lb_type_rr_graphs, old_clb);
+    router_data = lb_load_router_data(lb_type_rr_graphs, old_clb);
 
     //remove atom from router_data
     remove_atom_from_target(router_data, atom_id);
@@ -66,44 +64,8 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
     bool is_cluster_legal = check_cluster_legality(0, E_DETAILED_ROUTE_AT_END_ONLY, router_data);
 
     if (is_cluster_legal) {
-        t_pb* temp = const_cast<t_pb*>(atom_ctx.lookup.atom_pb(atom_id));
-        t_pb* next = temp->parent_pb;
-        //char* atom_name = vtr::strdup(temp->name);
-        bool has_more_children;
-
-        revert_place_atom_block(atom_id, router_data);
-        //delete atom pb
-        cleanup_pb(temp);
-
-        has_more_children = count_children_pbs(next);
-        //keep deleting the parent pbs if they were created only for the removed atom
-        while (!has_more_children) {
-            temp = next;
-            next = next->parent_pb;
-            cleanup_pb(temp);
-            has_more_children = count_children_pbs(next);
-        }
-
-        //if the parents' names are the same as the removed atom names,
-        //update the name to prevent double the name when creating a new cluster for
-        // the removed atom
-        /*
-         * while(next != nullptr && *(next->name) == *atom_name) {
-         * next->name = vtr::strdup(child_name);
-         * if(next->parent_pb == nullptr)
-         * next = next->parent_pb;
-         * }
-         */
-
-        cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
-        cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
-
-        if (during_packing) {
-            clustering_data.intra_lb_routing[old_clb] = router_data->saved_lb_nets;
-            router_data->saved_lb_nets = nullptr;
-        }
-
-        else
+        commit_molecule_move(atom_id, old_clb, router_data, clustering_data, during_packing);
+        if (!during_packing)
             get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
     } else {
         VTR_LOG("re-cluster: Cluster is illegal after removing an atom\n");
@@ -114,6 +76,41 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
 
     //return true if succeeded
     return (is_cluster_legal);
+}
+
+void commit_molecule_move(const AtomBlockId& atom_id,
+                          const ClusterBlockId& old_clb,
+                          t_lb_router_data* old_router_data,
+                          t_clustering_data& clustering_data,
+                          bool during_packing) {
+    auto& atom_ctx = g_vpr_ctx.mutable_atom();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    t_pb* temp = const_cast<t_pb*>(atom_ctx.lookup.atom_pb(atom_id));
+    t_pb* next = temp->parent_pb;
+    //char* atom_name = vtr::strdup(temp->name);
+    bool has_more_children;
+
+    revert_place_atom_block(atom_id, old_router_data);
+    //delete atom pb
+    cleanup_pb(temp);
+
+    has_more_children = count_children_pbs(next);
+    //keep deleting the parent pbs if they were created only for the removed atom
+    while (!has_more_children) {
+        temp = next;
+        next = next->parent_pb;
+        cleanup_pb(temp);
+        has_more_children = count_children_pbs(next);
+    }
+
+    cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
+    cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(old_router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
+
+    if (during_packing) {
+        clustering_data.intra_lb_routing[old_clb] = old_router_data->saved_lb_nets;
+        old_router_data->saved_lb_nets = nullptr;
+    }
 }
 
 t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs, const ClusterBlockId& clb_index) {

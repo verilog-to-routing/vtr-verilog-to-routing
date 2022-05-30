@@ -46,13 +46,14 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
                               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               ClusterBlockId& old_clb,
                               t_clustering_data& clustering_data,
+                              t_lb_router_data* router_data,
                               int& imacro,
                               bool during_packing);
 
 /**
  * @brief A function that starts a new cluster for one specific molecule
  * 
- * It place the molecule in a specific type and mode that should be passed by
+ * It places the molecule in a specific type and mode that should be passed by
  * the higher level routine.
  */
 bool start_new_cluster_for_atom(const AtomBlockId atom_id,
@@ -76,5 +77,14 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
 void fix_clustered_netlist(const AtomBlockId& atom_id,
                            const ClusterBlockId& old_clb,
                            const ClusterBlockId& new_clb);
+
+/**
+ * @brief A function that commits the molecule move if it is legal
+ */
+void commit_molecule_move(const AtomBlockId& atom_id,
+                          const ClusterBlockId& old_clb,
+                          t_lb_router_data* old_router_data,
+                          t_clustering_data& clustering_data,
+                          bool during_packing);
 
 #endif
