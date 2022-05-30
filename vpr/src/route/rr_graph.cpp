@@ -467,6 +467,8 @@ void add_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
     alloc_and_load_intra_cluster_rr_node_indices(rr_graph_builder,
                                                  grid,
                                                  &index);
+    int num_rr_nodes = index;
+    rr_graph_builder.resize_nodes(num_rr_nodes);
 
     alloc_and_load_intra_cluster_rr_graph(rr_graph_builder,
                                           grid,
