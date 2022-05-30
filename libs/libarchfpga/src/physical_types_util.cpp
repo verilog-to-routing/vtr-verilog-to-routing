@@ -1045,7 +1045,7 @@ std::unordered_map<int, const t_class*>  get_pb_graph_node_num_class_pairs(t_phy
     for(auto pin: pb_pins) {
         int class_logical_num = pb_pin_class_map.at(pin);
 
-        auto insert_res = seen_logical_class_num.insert(class_logical_num);
+        auto insert_res = seen_logical_class_num.emplace(class_logical_num);
         if(insert_res.second) {
             const t_class* class_ptr = &logical_block_classes[class_logical_num];
             int physical_class_num = get_class_physical_num_from_class_logical_num(physical_tile,

@@ -1281,11 +1281,11 @@ static void add_intra_ipin_opin_spatial_lookup(RRGraphBuilder& rr_graph_builder,
  *         of this function
  */
 void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                    const int max_chan_width,
-                                    const DeviceGrid& grid,
-                                    int* index,
-                                    const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y) {
+                                         const int max_chan_width,
+                                         const DeviceGrid& grid,
+                                         int* index,
+                                         const t_chan_details& chan_details_x,
+                                         const t_chan_details& chan_details_y) {
     /* Allocates and loads all the structures needed for fast lookups of the   *
      * index of an rr_node.  rr_node_indices is a matrix containing the index  *
      * of the *first* rr_node at a given (i,j) location.                       */

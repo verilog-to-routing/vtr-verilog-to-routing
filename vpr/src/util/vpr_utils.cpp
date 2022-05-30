@@ -1298,9 +1298,10 @@ std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(Cluster
                                                                                logical_block,
                                                                                rel_cap,
                                                                                pb->pb_graph_node);
-
-        internal_num_class_pairs.insert(pb_graph_node_num_class_pairs.begin(),
-                                        pb_graph_node_num_class_pairs.end());
+        for(auto& class_pair : pb_graph_node_num_class_pairs) {
+            auto insert_res = internal_num_class_pairs.insert(std::make_pair(class_pair.first, class_pair.second));
+            VTR_ASSERT(insert_res.second == true);
+        }
 
         int num_child_pb_type = pb->get_num_child_types();
         for(int child_pb_type_idx = 0; child_pb_type_idx < num_child_pb_type; child_pb_type_idx++) {
@@ -1377,7 +1378,7 @@ std::vector<int> get_pb_pins(t_physical_tile_type_ptr physical_type,
                              const t_pb* pb,
                              int rel_cap) {
     VTR_ASSERT(pb->pb_graph_node != nullptr);
-    if(pb->is_root()) {
+    if(pb->pb_graph_node->is_root()) {
         std::vector<int> pin_nums(physical_type->num_pins);
         std::iota(pin_nums.begin(), pin_nums.end(), 0);
         return pin_nums;
