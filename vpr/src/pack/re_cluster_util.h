@@ -54,7 +54,6 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
  * the higher level routine.
  */
 bool start_new_cluster_for_atom(const AtomBlockId atom_id,
-                                const enum e_pad_loc_type& pad_loc_type,
                                 const t_logical_block_type_ptr& type,
                                 const int mode,
                                 const int feasible_block_array_size,
@@ -77,11 +76,11 @@ void fix_clustered_netlist(const AtomBlockId& atom_id,
 /**
  * @brief A function that commits the molecule move if it is legal
  */
-void commit_atom_move(const AtomBlockId& atom_id,
-                          const ClusterBlockId& old_clb,
-                          t_pb* old_pb,
-                          t_lb_router_data*& old_router_data,
-                          t_clustering_data& clustering_data,
-                          bool during_packing);
+void commit_atom_move(const ClusterBlockId& old_clb,
+                      const ClusterBlockId& new_clb,
+                      t_pb* old_pb,
+                      t_lb_router_data*& old_router_data,
+                      t_clustering_data& clustering_data,
+                      bool during_packing);
 
 #endif

@@ -23,7 +23,6 @@
  *   - Second, during placement (during_packing variable should be false)
  */
 bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
-                              const enum e_pad_loc_type& pad_loc_type,
                               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               t_clustering_data& clustering_data,
                               bool during_packing);

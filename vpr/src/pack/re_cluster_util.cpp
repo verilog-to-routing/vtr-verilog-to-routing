@@ -48,7 +48,6 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
                               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               ClusterBlockId& old_clb,
                               t_lb_router_data*& router_data) {
-
     //Determine the cluster ID
     old_clb = atom_to_cluster(atom_id);
 
@@ -61,7 +60,7 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
     //check cluster legality
     bool is_cluster_legal = check_cluster_legality(0, E_DETAILED_ROUTE_AT_END_ONLY, router_data);
 
-    if(is_cluster_legal) {
+    if (is_cluster_legal) {
         revert_place_atom_block(atom_id, router_data);
     }
 
@@ -69,13 +68,14 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
     return (is_cluster_legal);
 }
 
-void commit_atom_move(const AtomBlockId& atom_id,
-                          const ClusterBlockId& old_clb,
-                          t_pb* old_pb,
-                          t_lb_router_data*& old_router_data,
-                          t_clustering_data& clustering_data,
-                          bool during_packing) {
+void commit_atom_move(const ClusterBlockId& old_clb,
+                      const ClusterBlockId& new_clb,
+                      t_pb* old_pb,
+                      t_lb_router_data*& old_router_data,
+                      t_clustering_data& clustering_data,
+                      bool during_packing) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
     t_pb* temp = old_pb;
     t_pb* next = temp->parent_pb;
@@ -108,7 +108,13 @@ void commit_atom_move(const AtomBlockId& atom_id,
     free_router_data(old_router_data);
     old_router_data = nullptr;
 
-
+    if (!during_packing) {
+        int imacro;
+        g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size() + 1);
+        get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
+        set_imacro_for_iblk(&imacro, new_clb);
+        place_one_block(new_clb, device_ctx.pad_loc_type);
+    }
 }
 
 t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs, const ClusterBlockId& clb_index) {
@@ -125,7 +131,6 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
 }
 
 bool start_new_cluster_for_atom(const AtomBlockId atom_id,
-                                const enum e_pad_loc_type& pad_loc_type,
                                 const t_logical_block_type_ptr& type,
                                 const int mode,
                                 const int feasible_block_array_size,

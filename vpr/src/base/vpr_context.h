@@ -218,6 +218,11 @@ struct DeviceContext : public Context {
      * Used to determine when reading rrgraph if file is already loaded.
      */
     std::string read_rr_graph_filename;
+
+    /*******************************************************************
+     * Place Related
+     *******************************************************************/
+    enum e_pad_loc_type pad_loc_type;
 };
 
 /**

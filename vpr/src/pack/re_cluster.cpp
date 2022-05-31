@@ -3,7 +3,6 @@
 #include "initial_placement.h"
 
 bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
-                              const enum e_pad_loc_type& pad_loc_type,
                               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               t_clustering_data& clustering_data,
                               bool during_packing) {
@@ -50,7 +49,6 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
     //Create new cluster of the same type and mode.
     ClusterBlockId new_clb(helper_ctx.total_clb_num);
     is_created = start_new_cluster_for_atom(atom_id,
-                                            pad_loc_type,
                                             block_type,
                                             block_mode,
                                             helper_ctx.feasible_block_array_size,
@@ -64,18 +62,9 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 
     //Print the move result
     if (is_created) {
+        commit_atom_move(old_clb, new_clb, atom_pb_packup, old_router_data, clustering_data, during_packing);
         VTR_LOG("Atom:%zu is moved to a new cluster\n", atom_id);
-
-        commit_atom_move(atom_id, old_clb, atom_pb_packup, old_router_data, clustering_data, during_packing);
-        if (!during_packing) {
-            int imacro;
-            g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size() + 1);
-            get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
-            set_imacro_for_iblk(&imacro, new_clb);
-            place_one_block(new_clb, pad_loc_type);
-        }
-    }
-    else {
+    } else {
         atom_ctx.lookup.set_atom_clb(atom_id, old_clb);
         atom_ctx.lookup.set_atom_pb(atom_id, atom_pb_packup);
         VTR_LOG("Atom:%zu move failed. Can't start a new cluster of the same type and mode\n", atom_id);
@@ -89,6 +78,6 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
 
     cleanup_pb(atom_pb_packup);
     delete atom_pb_packup;
-    
+
     return (is_created);
 }
