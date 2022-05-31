@@ -11,6 +11,8 @@
 #    include "vtr_time.h"
 #    include "globals.h"
 #    include "vtr_log.h"
+#    include "place_util.h"
+
 
 // sentinel for base case in CutSpreader (i.e. only 1 block left in region)
 constexpr std::pair<int, int> BASE_CASE = {-2, -2};
@@ -173,13 +175,17 @@ void CutSpreader::init() {
     }
 }
 
-int CutSpreader::occ_at(int x, int y) { return occupancy[x][y]; }
+int CutSpreader::occ_at(int x, int y) { 
+    if(!is_loc_on_chip(x,y)){
+        return 0;
+    }
+    return occupancy[x][y]; 
+}
 
 int CutSpreader::tiles_at(int x, int y) {
-    int max_x = g_vpr_ctx.device().grid.width();
-    int max_y = g_vpr_ctx.device().grid.height();
-    if (x >= max_x || y >= max_y)
+    if(!is_loc_on_chip(x,y)){
         return 0;
+    }
     return int(subtiles_at_location[x][y].size());
 }
 
@@ -193,11 +199,9 @@ int CutSpreader::tiles_at(int x, int y) {
  * * grow merged to include all mergee grids
  */
 void CutSpreader::merge_regions(SpreaderRegion& merged, SpreaderRegion& mergee) {
-    size_t max_x = g_vpr_ctx.device().grid.width();
-    size_t max_y = g_vpr_ctx.device().grid.height();
     for (int x = mergee.bb.xmin(); x <= mergee.bb.xmax(); x++)
         for (int y = mergee.bb.ymin(); y <= mergee.bb.ymax(); y++) {
-            if (x >= max_x || x < 0 || y >= max_y || y < 0) { //location is not within the chip
+            if(!is_loc_on_chip(x,y)) { //location is not within the chip
                 continue;
             }
             //x and y might belong to "merged" region already, no further action is required
@@ -231,10 +235,8 @@ void CutSpreader::grow_region(SpreaderRegion& r, vtr::Rect<int> rect_to_include,
     r.bb.expand_bounding_box(rect_to_include);
 
     auto process_location = [&](int x, int y) {
-        size_t max_x = g_vpr_ctx.device().grid.width();
-        size_t max_y = g_vpr_ctx.device().grid.height();
         //x and y should represent a location on the chip, otherwise no processing is required
-        if (x >= max_x || x < 0 || y >= max_y || y < 0) {
+        if(!is_loc_on_chip(x,y)) {
             return;
         }
         // kicks in only when grid is not claimed, claimed by another region, or part of a macro

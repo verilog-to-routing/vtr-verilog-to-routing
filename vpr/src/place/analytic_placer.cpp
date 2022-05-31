@@ -410,28 +410,19 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
  * when formulating the matrix equations), an update for members is necessary
  */
 void AnalyticPlacer::update_macros() {
-    size_t max_x = g_vpr_ctx.device().grid.width();
-    size_t max_y = g_vpr_ctx.device().grid.height();
     for (auto& macro : g_vpr_ctx.mutable_placement().pl_macros) {
         ClusterBlockId head_id = macro.members[0].blk_index;
-        bool mac_can_be_placed = true;
-        //check all members' locations are within the chip, otherwise macro can not be placed with current head position
-        for (auto member = ++macro.members.begin(); member != macro.members.end(); ++member) {
-            auto member_loc = blk_locs[head_id].loc + member->offset;
-            if (member_loc.x >= int(max_x) || member_loc.x < 0) { //member location is not on the chip
-                mac_can_be_placed = false;
-                break;
-            }
-            if (member_loc.y >= int(max_y) || member_loc.y < 0) { //member location is not on the chip
-                mac_can_be_placed = false;
-                break;
-            }
-        }
+        bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, true);
+
         //if macro can not be placed in this head pos, change the head pos
         if (!mac_can_be_placed) {
             size_t macro_size = macro.members.size();
             blk_locs[head_id].loc -= macro.members[macro_size - 1].offset;
         }
+
+        //macro should be placed successfully after changing the head position
+        VTR_ASSERT(macro_can_be_placed(macro, blk_locs[head_id].loc, true));
+
         //update other member's location based on head pos
         for (auto member = ++macro.members.begin(); member != macro.members.end(); ++member) {
             blk_locs[member->blk_index].loc = blk_locs[head_id].loc + member->offset;

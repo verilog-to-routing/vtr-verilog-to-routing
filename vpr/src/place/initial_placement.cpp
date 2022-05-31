@@ -36,14 +36,6 @@ constexpr int INVALID_X = -1;
 #define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 8
 
 /*
- * Checks that the placement location is legal for each macro member by applying
- * the member's offset to the head position and checking that the resulting
- * spot is free, on the chip, etc.
- * Returns true if the macro can be placed at the given head position, false if not.
- */
-static bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos);
-
-/*
  * Places the macro if the head position passed in is legal, and all the resulting
  * member positions are legal
  * Returns true if macro was placed, false if not.
@@ -124,11 +116,6 @@ static void print_unplaced_blocks() {
     }
 }
 
-static bool is_loc_on_chip(t_pl_loc& loc) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    return (loc.x >= 0 && loc.x < int(device_ctx.grid.width()) && loc.y >= 0 && loc.y < int(device_ctx.grid.height()));
-}
 
 static bool is_block_placed(ClusterBlockId blk_id) {
     auto& place_ctx = g_vpr_ctx.placement();
@@ -284,64 +271,6 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
     return placed;
 }
 
-static bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    //Get block type of head member
-    ClusterBlockId blk_id = pl_macro.members[0].blk_index;
-    auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-
-    // Every macro can be placed until proven otherwise
-    bool mac_can_be_placed = true;
-
-    //Check whether macro contains blocks with floorplan constraints
-    bool macro_constrained = is_macro_constrained(pl_macro);
-
-    // Check whether all the members can be placed
-    for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
-        t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
-
-        //Check that the member location is on the grid
-        if (!is_loc_on_chip(member_pos)) {
-            mac_can_be_placed = false;
-            break;
-        }
-
-        /*
-         * If the macro is constrained, check that the head member is in a legal position from
-         * a floorplanning perspective. It is enough to do this check for the head member alone,
-         * because constraints propagation was performed to calculate smallest floorplan region for the head
-         * macro, based on the constraints on all of the blocks in the macro. So, if the head macro is in a
-         * legal floorplan location, all other blocks in the macro will be as well.
-         */
-        if (macro_constrained && imember == 0) {
-            bool member_loc_good = cluster_floorplanning_legal(pl_macro.members[imember].blk_index, member_pos);
-            if (!member_loc_good) {
-                mac_can_be_placed = false;
-                break;
-            }
-        }
-
-        // Check whether the location could accept block of this type
-        // Then check whether the location could still accommodate more blocks
-        // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
-        if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
-            && is_tile_compatible(device_ctx.grid[member_pos.x][member_pos.y].type, block_type)
-            && place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile] == EMPTY_BLOCK_ID) {
-            // Can still accommodate blocks here, check the next position
-            continue;
-        } else {
-            // Cant be placed here - skip to the next try
-            mac_can_be_placed = false;
-            break;
-        }
-    }
-
-    return (mac_can_be_placed);
-}
-
 static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -352,7 +281,7 @@ static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
         return (macro_placed);
     }
 
-    bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos);
+    bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos, false);
 
     if (mac_can_be_placed) {
         // Place down the macro
