@@ -265,7 +265,13 @@ bool try_pack(t_packer_opts* packer_opts,
     /* Packing iterative improvement can be done here */
     /*       Use the re-cluster API to edit it        */
     /******************* Start *************************/
-
+    
+    enum e_pad_loc_type pad_loc_type;
+    bool is_removed = move_atom_to_new_cluster(AtomBlockId(4), pad_loc_type, helper_ctx.lb_type_rr_graphs, clustering_data, true);
+    if (is_removed) {
+        VTR_LOG("@@@@ Atom is removed\n");
+    }
+    
     /******************** End **************************/
 
     //check clustering and output it

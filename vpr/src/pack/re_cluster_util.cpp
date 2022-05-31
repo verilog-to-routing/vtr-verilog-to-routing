@@ -47,10 +47,8 @@ std::vector<AtomBlockId> cluster_to_atoms(const ClusterBlockId& cluster) {
 bool remove_atom_from_cluster(const AtomBlockId& atom_id,
                               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               ClusterBlockId& old_clb,
-                              t_clustering_data& clustering_data,
-                              t_lb_router_data* router_data,
-                              int& imacro,
-                              bool during_packing) {
+                              t_lb_router_data*& router_data) {
+
     //Determine the cluster ID
     old_clb = atom_to_cluster(atom_id);
 
@@ -63,35 +61,28 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
     //check cluster legality
     bool is_cluster_legal = check_cluster_legality(0, E_DETAILED_ROUTE_AT_END_ONLY, router_data);
 
-    if (is_cluster_legal) {
-        commit_molecule_move(atom_id, old_clb, router_data, clustering_data, during_packing);
-        if (!during_packing)
-            get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
-    } else {
-        VTR_LOG("re-cluster: Cluster is illegal after removing an atom\n");
+    if(is_cluster_legal) {
+        revert_place_atom_block(atom_id, router_data);
     }
-
-    free_router_data(router_data);
-    router_data = nullptr;
 
     //return true if succeeded
     return (is_cluster_legal);
 }
 
-void commit_molecule_move(const AtomBlockId& atom_id,
+void commit_atom_move(const AtomBlockId& atom_id,
                           const ClusterBlockId& old_clb,
-                          t_lb_router_data* old_router_data,
+                          t_pb* old_pb,
+                          t_lb_router_data*& old_router_data,
                           t_clustering_data& clustering_data,
                           bool during_packing) {
-    auto& atom_ctx = g_vpr_ctx.mutable_atom();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
-    t_pb* temp = const_cast<t_pb*>(atom_ctx.lookup.atom_pb(atom_id));
+    t_pb* temp = old_pb;
     t_pb* next = temp->parent_pb;
     //char* atom_name = vtr::strdup(temp->name);
     bool has_more_children;
 
-    revert_place_atom_block(atom_id, old_router_data);
+    //revert_place_atom_block(atom_id, old_router_data, false);
     //delete atom pb
     cleanup_pb(temp);
 
@@ -108,9 +99,16 @@ void commit_molecule_move(const AtomBlockId& atom_id,
     cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(old_router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
 
     if (during_packing) {
+        free_intra_lb_nets(clustering_data.intra_lb_routing[old_clb]);
+        //delete clustering_data.intra_lb_routing[old_clb];
         clustering_data.intra_lb_routing[old_clb] = old_router_data->saved_lb_nets;
         old_router_data->saved_lb_nets = nullptr;
     }
+
+    free_router_data(old_router_data);
+    old_router_data = nullptr;
+
+
 }
 
 t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs, const ClusterBlockId& clb_index) {
@@ -131,7 +129,6 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
                                 const t_logical_block_type_ptr& type,
                                 const int mode,
                                 const int feasible_block_array_size,
-                                int& imacro,
                                 bool enable_pin_feasibility_filter,
                                 ClusterBlockId clb_index,
                                 t_lb_router_data** router_data,
@@ -200,9 +197,6 @@ bool start_new_cluster_for_atom(const AtomBlockId atom_id,
             (*router_data)->saved_lb_nets = nullptr;
         } else {
             cluster_ctx.clb_nlist.block_pb(clb_index)->pb_route = alloc_and_load_pb_route((*router_data)->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node);
-            g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size() + 1);
-            set_imacro_for_iblk(&imacro, clb_index);
-            place_one_block(clb_index, pad_loc_type);
         }
     } else {
         free_pb(pb);

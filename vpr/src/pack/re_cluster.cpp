@@ -1,5 +1,6 @@
 #include "re_cluster.h"
 #include "re_cluster_util.h"
+#include "initial_placement.h"
 
 bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
                               const enum e_pad_loc_type& pad_loc_type,
@@ -9,11 +10,16 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& helper_ctx = g_vpr_ctx.mutable_helper();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
     bool is_removed, is_created;
     ClusterBlockId old_clb;
+
+    //Backup the original pb of the atom before the move
+    t_pb* atom_pb_packup = new t_pb;
+    atom_pb_packup->pb_deep_copy(atom_ctx.lookup.atom_pb(atom_id));
+
     PartitionRegion temp_cluster_pr;
-    int imacro;
     t_lb_router_data* old_router_data = nullptr;
     t_lb_router_data* router_data = nullptr;
 
@@ -34,7 +40,7 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
     }
 
     //remove the atom from its current cluster and check its legality
-    is_removed = remove_atom_from_cluster(atom_id, lb_type_rr_graphs, old_clb, clustering_data, old_router_data, imacro, during_packing);
+    is_removed = remove_atom_from_cluster(atom_id, lb_type_rr_graphs, old_clb, old_router_data);
 
     if (!is_removed) {
         VTR_LOG("Atom: %zu move failed. Can't remove it from the old cluster\n", atom_id);
@@ -48,7 +54,6 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
                                             block_type,
                                             block_mode,
                                             helper_ctx.feasible_block_array_size,
-                                            imacro,
                                             helper_ctx.enable_pin_feasibility_filter,
                                             new_clb,
                                             &router_data,
@@ -58,10 +63,23 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
                                             during_packing);
 
     //Print the move result
-    if (is_created)
+    if (is_created) {
         VTR_LOG("Atom:%zu is moved to a new cluster\n", atom_id);
-    else
+
+        commit_atom_move(atom_id, old_clb, atom_pb_packup, old_router_data, clustering_data, during_packing);
+        if (!during_packing) {
+            int imacro;
+            g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size() + 1);
+            get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
+            set_imacro_for_iblk(&imacro, new_clb);
+            place_one_block(new_clb, pad_loc_type);
+        }
+    }
+    else {
+        atom_ctx.lookup.set_atom_clb(atom_id, old_clb);
+        atom_ctx.lookup.set_atom_pb(atom_id, atom_pb_packup);
         VTR_LOG("Atom:%zu move failed. Can't start a new cluster of the same type and mode\n", atom_id);
+    }
 
     //If the move is done after packing not during it, some fixes need to be done on the
     //clustered netlist
@@ -69,5 +87,8 @@ bool move_atom_to_new_cluster(const AtomBlockId& atom_id,
         fix_clustered_netlist(atom_id, old_clb, new_clb);
     }
 
+    cleanup_pb(atom_pb_packup);
+    delete atom_pb_packup;
+    
     return (is_created);
 }

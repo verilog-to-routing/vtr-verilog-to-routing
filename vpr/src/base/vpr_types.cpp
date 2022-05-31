@@ -148,6 +148,24 @@ const t_pb* t_pb::find_pb_for_model(const std::string& blif_model) const {
 }
 
 /**
+ * @brief Deep copy function for t_pb class
+ * 
+ * This funcion deeply copies some data members of
+ * t_pb class to be used to retrieve pb.
+ * 
+ * This function is currently used in re-clustering API.
+ */
+void t_pb::pb_deep_copy(const t_pb* rhs) {
+    name = rhs->name;
+    pb_graph_node = rhs->pb_graph_node;
+    mode = rhs->mode;
+    parent_pb = rhs->parent_pb;
+    pb_stats = rhs->pb_stats;
+    clock_net = rhs->clock_net;
+    pin_rotations_ = rhs->pin_rotations_;
+}
+
+/**
  * @brief Returns the root pb containing this pb
  */
 const t_pb* t_pb::root_pb() const {
