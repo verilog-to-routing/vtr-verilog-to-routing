@@ -55,12 +55,18 @@ struct AtomContext : public Context {
     /********************************************************************
      * Atom Netlist
      ********************************************************************/
-
+    AtomContext()
+        : list_of_pack_molecules(nullptr, free_pack_molecules) {}
     ///@brief Atom netlist
     AtomNetlist nlist;
 
     ///@brief Mappings to/from the Atom Netlist to physically described .blif models
     AtomLookup lookup;
+
+    ///@brief The molecules associated with each atom block
+    std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;
+
+    std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules;
 };
 
 /**
@@ -259,6 +265,26 @@ struct ClusteringContext : public Context {
      */
     std::map<ClusterBlockId, std::map<int, ClusterNetId>> post_routing_clb_pin_nets;
     std::map<ClusterBlockId, std::map<int, int>> pre_routing_net_pin_mapping;
+
+    std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
+};
+
+struct ClusteringHelperContext : public Context {
+    std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
+    t_cluster_placement_stats* cluster_placement_stats;
+    int num_models;
+    int max_cluster_size;
+    t_pb_graph_node** primitives_list;
+
+    bool enable_pin_feasibility_filter;
+    int feasible_block_array_size;
+
+    int total_clb_num;
+    std::vector<t_lb_type_rr_node>* lb_type_rr_graphs;
+
+    ~ClusteringHelperContext() {
+        free(primitives_list);
+    }
 };
 
 /**
@@ -446,6 +472,9 @@ class VprContext : public Context {
     const ClusteringContext& clustering() const { return clustering_; }
     ClusteringContext& mutable_clustering() { return clustering_; }
 
+    const ClusteringHelperContext& helper() const { return helper_; }
+    ClusteringHelperContext& mutable_helper() { return helper_; }
+
     const PlacementContext& placement() const { return placement_; }
     PlacementContext& mutable_placement() { return placement_; }
 
@@ -464,6 +493,8 @@ class VprContext : public Context {
     PowerContext power_;
 
     ClusteringContext clustering_;
+    ClusteringHelperContext helper_;
+
     PlacementContext placement_;
     RoutingContext routing_;
     FloorplanningContext constraints_;

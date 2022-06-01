@@ -4406,10 +4406,16 @@ static void highlight_blocks(double x, double y) {
     application.update_message(msg);
     application.refresh_drawing();
 }
-void set_net_alpha_value(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
-    std::string fa(gtk_entry_get_text((GtkEntry*)widget));
+void set_net_alpha_value(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    std::string button_name = "netAlpha";
+    auto net_alpha = find_button(button_name.c_str());
     t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->net_alpha = std::stof(fa);
+
+    //set draw_state->net_alpha to its corresponding value in the ui
+    int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)net_alpha) / 100;
+    draw_state->net_alpha = new_value;
+
+    //redraw
     application.refresh_drawing();
 }
 

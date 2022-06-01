@@ -22,6 +22,7 @@
 #include "read_blif.h"
 #include "cluster.h"
 #include "SetupGrid.h"
+#include "re_cluster.h"
 
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
@@ -41,31 +42,32 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_model* library_models,
               float interc_delay,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+
     std::unordered_set<AtomNetId> is_clock;
-    std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;                     //The molecules associated with each atom block
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
     const t_model* cur_model;
-    int num_models;
+    t_clustering_data clustering_data;
     std::vector<t_pack_patterns> list_of_packing_patterns;
-    std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules(nullptr, free_pack_molecules);
     VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
 
     /* determine number of models in the architecture */
-    num_models = 0;
+    helper_ctx.num_models = 0;
     cur_model = user_models;
     while (cur_model) {
-        num_models++;
+        helper_ctx.num_models++;
         cur_model = cur_model->next;
     }
     cur_model = library_models;
     while (cur_model) {
-        num_models++;
+        helper_ctx.num_models++;
         cur_model = cur_model->next;
     }
 
     is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
 
     size_t num_p_inputs = 0;
     size_t num_p_outputs = 0;
@@ -95,10 +97,9 @@ bool try_pack(t_packer_opts* packer_opts,
     std::unique_ptr<std::vector<t_pack_patterns>, decltype(list_of_packing_patterns_deleter)> list_of_packing_patterns_cleanup_guard(&list_of_packing_patterns,
                                                                                                                                      list_of_packing_patterns_deleter);
 
-    list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
-                                                               atom_molecules,
-                                                               expected_lowest_cost_pb_gnode,
-                                                               list_of_packing_patterns.size()));
+    atom_mutable_ctx.list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
+                                                                                expected_lowest_cost_pb_gnode,
+                                                                                list_of_packing_patterns.size()));
 
     /* We keep attraction groups off in the first iteration,  and
      * only turn on in later iterations if some floorplan regions turn out to be overfull.
@@ -136,13 +137,14 @@ bool try_pack(t_packer_opts* packer_opts,
     bool floorplan_regions_overfull = false;
 
     while (true) {
+        free_clustering_data(*packer_opts, clustering_data);
+
         //Cluster the netlist
-        auto num_type_instances = do_clustering(
+        helper_ctx.num_used_type_instances = do_clustering(
             *packer_opts,
             *analysis_opts,
-            arch, list_of_pack_molecules.get(), num_models,
+            arch, atom_mutable_ctx.list_of_pack_molecules.get(), helper_ctx.num_models,
             is_clock,
-            atom_molecules,
             expected_lowest_cost_pb_gnode,
             allow_unrelated_clustering,
             balance_block_type_util,
@@ -150,10 +152,11 @@ bool try_pack(t_packer_opts* packer_opts,
             target_external_pin_util,
             high_fanout_thresholds,
             attraction_groups,
-            floorplan_regions_overfull);
+            floorplan_regions_overfull,
+            clustering_data);
 
         //Try to size/find a device
-        bool fits_on_device = try_size_device_grid(*arch, num_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
+        bool fits_on_device = try_size_device_grid(*arch, helper_ctx.num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
 
         /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
@@ -224,8 +227,8 @@ bool try_pack(t_packer_opts* packer_opts,
             std::string resource_reqs;
             std::string resource_avail;
             auto& grid = g_vpr_ctx.device().grid;
-            for (auto iter = num_type_instances.begin(); iter != num_type_instances.end(); ++iter) {
-                if (iter != num_type_instances.begin()) {
+            for (auto iter = helper_ctx.num_used_type_instances.begin(); iter != helper_ctx.num_used_type_instances.end(); ++iter) {
+                if (iter != helper_ctx.num_used_type_instances.begin()) {
                     resource_reqs += ", ";
                     resource_avail += ", ";
                 }
@@ -256,6 +259,18 @@ bool try_pack(t_packer_opts* packer_opts,
 
         ++pack_iteration;
     }
+
+    /* Packing iterative improvement can be done here */
+    /*       Use the re-cluster API to edit it        */
+    /******************* Start *************************/
+
+    /******************** End **************************/
+
+    //check clustering and output it
+    check_and_output_clustering(*packer_opts, is_clock, arch, helper_ctx.total_clb_num, clustering_data.intra_lb_routing);
+
+    // Free Data Structures
+    free_clustering_data(*packer_opts, clustering_data);
 
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");

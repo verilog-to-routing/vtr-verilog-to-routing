@@ -60,7 +60,6 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
 static t_pb_routes alloc_pb_route(t_pb_graph_node* pb_graph_node);
 
 static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist);
-static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
 
 /**
  * @brief Initializes the clb_nlist with info from a netlist
@@ -1219,7 +1218,7 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
     }
 }
 
-static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin) {
+void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin) {
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
     VTR_ASSERT(atom_ctx.nlist.port_block(atom_port) == atom_blk);

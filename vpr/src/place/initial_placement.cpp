@@ -520,34 +520,38 @@ void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const
 
 static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              enum e_pad_loc_type pad_loc_type) {
+    for (auto blk_id : sorted_blocks) {
+        place_one_block(blk_id, pad_loc_type);
+    }
+}
+
+void place_one_block(const ClusterBlockId& blk_id,
+                     enum e_pad_loc_type pad_loc_type) {
     auto& place_ctx = g_vpr_ctx.placement();
 
-    for (auto blk_id : sorted_blocks) {
-        //Check if block has already been placed
-        if (is_block_placed(blk_id)) {
-            continue;
-        }
+    //Check if block has already been placed
+    if (is_block_placed(blk_id)) {
+        return;
+    }
 
-        //Lookup to see if the block is part of a macro
-        t_pl_macro pl_macro;
-        int imacro;
-        get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
+    //Lookup to see if the block is part of a macro
+    t_pl_macro pl_macro;
+    int imacro;
+    get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
 
-        if (imacro != -1) { //If the block belongs to a macro, pass that macro to the placement routines
-            pl_macro = place_ctx.pl_macros[imacro];
-            place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type);
-        } else {
-            //If it does not belong to a macro, create a macro with the one block and then pass to the placement routines
-            //This is done so that the initial placement flow can be the same whether the block belongs to a macro or not
-            t_pl_macro_member macro_member;
-            t_pl_offset block_offset(0, 0, 0);
+    if (imacro != -1) { //If the block belongs to a macro, pass that macro to the placement routines
+        pl_macro = place_ctx.pl_macros[imacro];
+        place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type);
+    } else {
+        //If it does not belong to a macro, create a macro with the one block and then pass to the placement routines
+        //This is done so that the initial placement flow can be the same whether the block belongs to a macro or not
+        t_pl_macro_member macro_member;
+        t_pl_offset block_offset(0, 0, 0);
 
-            macro_member.blk_index = blk_id;
-            macro_member.offset = block_offset;
-            pl_macro.members.push_back(macro_member);
-
-            place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type);
-        }
+        macro_member.blk_index = blk_id;
+        macro_member.offset = block_offset;
+        pl_macro.members.push_back(macro_member);
+        place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type);
     }
 }
 
