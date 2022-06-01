@@ -22,6 +22,7 @@
 #include "draw_color.h"
 #include "draw.h"
 #include "draw_rr.h"
+#include "draw_xtoy.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
@@ -72,6 +73,14 @@
 #    define OLD_BLK_LOC_COLOR blk_GOLD
 #    define NEW_BLK_LOC_COLOR blk_GREEN
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
+
+
+//The arrow head position for turning/straight-thru connections in a switch box
+constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
+constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
+constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
+
+
 
 void draw_rr(ezgl::renderer* g) {
     /* Draws the routing resources that exist in the FPGA, if the user wants *
@@ -635,5 +644,35 @@ void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen
     float ypos = (class_height_shift + 1) / class_section_height;
     *ycen = yc + ypos * draw_coords->get_tile_height();
 }
+
+
+void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool configurable, ezgl::renderer* g) {
+    /* Draws a buffer (triangle) or pass transistor (circle) on the edge        *
+     * connecting from to to, depending on the status of buffered.  The drawing *
+     * is closest to the from_node, since it reflects the switch type of from.  */
+
+    if (!buffered) {
+        if (configurable) { /* Draw a circle for a pass transistor */
+            float xcen = from_x + (to_x - from_x) / 10.;
+            float ycen = from_y + (to_y - from_y) / 10.;
+            const float switch_rad = 0.15;
+            g->draw_arc({xcen, ycen}, switch_rad, 0., 360.);
+        } else {
+            //Pass, nothing to draw
+        }
+    } else { /* Buffer */
+        if (from_x == to_x || from_y == to_y) {
+            //Straight connection
+            draw_triangle_along_line(g, {from_x, from_y}, {to_x, to_y},
+                                     SB_EDGE_STRAIGHT_ARROW_POSITION);
+        } else {
+            //Turn connection
+            draw_triangle_along_line(g, {from_x, from_y}, {to_x, to_y},
+                                     SB_EDGE_TURN_ARROW_POSITION);
+        }
+    }
+}
+
+
 
 #endif

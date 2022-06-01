@@ -1,5 +1,5 @@
-#ifndef DRAW_RR_H
-#define DRAW_RR_H
+#ifndef DRAW_X_TO_Y_H
+#define DRAW_X_TO_Y_H
 
 #include <cstdio>
 #include <cfloat>
@@ -41,14 +41,14 @@
 #    include "place_macro.h"
 #    include "buttons.h"
 
-void draw_rr(ezgl::renderer* g);
-void draw_rr_edges(int from_node, ezgl::renderer* g);
-void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g);
-void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g);
-void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer* g);
-void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen);
-void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool switch_configurable, ezgl::renderer* g);
 
+void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, int to_track, short switch_type, ezgl::renderer* g);
+void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, int to_track, short switch_type, ezgl::renderer* g);
+void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node, int chany_track, enum e_edge_dir edge_dir, short switch_type, ezgl::renderer* g);
+void draw_pin_to_pin(int opin, int ipin, ezgl::renderer* g);
+void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g);
+void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g);
+void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g);
 
 #endif /* NO_GRAPHICS */
-#endif /* DRAW_RR_H */
+#endif /* DRAW_X_TO_Y_H */
