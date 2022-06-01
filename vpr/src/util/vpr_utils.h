@@ -103,9 +103,9 @@ inline AtomPinId get_atom_pin_id(T id) {
 inline ParentNetId get_cluster_net_parent_id(const AtomLookup& atom_look_up, ClusterNetId net_id, bool is_flat) {
     ParentNetId par_net_id;
     if(is_flat) {
-        auto cluster_net_id = atom_look_up.clb_net(get_atom_net_id(net_id));
-        VTR_ASSERT(cluster_net_id != ClusterNetId::INVALID());
-        par_net_id = ParentNetId(size_t(cluster_net_id));
+        auto atom_net_id = atom_look_up.atom_net(net_id);
+        VTR_ASSERT(atom_net_id != AtomNetId::INVALID());
+        par_net_id = ParentNetId(size_t(atom_net_id));
     } else {
         par_net_id = ParentNetId(size_t(net_id));
     }

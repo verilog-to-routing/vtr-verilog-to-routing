@@ -11,7 +11,7 @@
 //as valid start locations for the current connection.
 //
 //Returns either the last element of the path, or nullptr if no path is found
-static RRNodeId get_cost_from_lookahead(const RouterLookahead& router_lookahead,
+static float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                                         const RRGraphView& rr_graph_view,
                                         const RRSpatialLookup& rr_spatial_lookup,
                                         RRNodeId from_node,
@@ -1020,18 +1020,23 @@ static float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                                      float R_upstream,
                                      const t_conn_cost_params cost_params,
                                      bool is_flat) {
-    if(!is_flat) {
-        return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
-    } else {
+    if(is_flat) {
         float expected_delay_cost = std::numeric_limits<float>::infinity();
+
         auto from_node_type = rr_graph_view.node_type(from_node);
+
         auto to_node_type = rr_graph_view.node_type(to_node);
+
         int from_node_low_x = rr_graph_view.node_xlow(from_node);
         int from_node_low_y = rr_graph_view.node_ylow(from_node);
+
         int to_node_low_x = rr_graph_view.node_xlow(to_node);
         int to_node_low_y = rr_graph_view.node_ylow(to_node);
+
         int from_ptc = rr_graph_view.node_ptc_num(from_node);
+
         int to_ptc = rr_graph_view.node_ptc_num(to_node);
+
         std::vector<RRNodeId> from_nodes;
         std::vector<RRNodeId> to_nodes;
         if(is_node_on_tile(from_node_type, from_node_low_x, from_node_low_y, from_ptc)
@@ -1066,8 +1071,7 @@ static float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
         }
         VTR_ASSERT(std::isfinite(expected_delay_cost));
         return expected_delay_cost;
+    } else {
+        return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
     }
-
-
-
 }

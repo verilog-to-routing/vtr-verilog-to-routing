@@ -288,27 +288,10 @@ static int get_class_physical_num_from_class_logical_num(t_physical_tile_type_pt
                                                          int curr_relative_cap,
                                                          int logical_class_num) {
 
-    int num_seen_class = (int)physical_tile->class_inf.size();
-
-    // Add the number of classes in the previous sub_tiles
-    for(int sub_tile_idx = 0; sub_tile_idx < curr_sub_tile->index; sub_tile_idx++) {
-        num_seen_class += get_sub_tile_num_internal_classes(&physical_tile->sub_tiles[sub_tile_idx]);
-    }
-
-    // Add the number of classes in the previous instances (capacity)
-    if(curr_relative_cap != 0) {
-        for (auto logical_block : curr_sub_tile->equivalent_sites) {
-            num_seen_class += ((int)(logical_block->logical_class_inf.size()) * curr_relative_cap);
-        }
-    }
-
-    // Add the number of classes in the previous logical block which can be mapped to the current sub tile
-    for(auto logical_block : curr_sub_tile->equivalent_sites) {
-        if(logical_block == curr_logical_block)
-            break;
-
-        num_seen_class += ((int)logical_block->logical_class_inf.size());
-    }
+    int num_seen_class = get_logical_block_physical_class_num_offset(physical_tile,
+                                                                     curr_sub_tile,
+                                                                     curr_logical_block,
+                                                                     curr_relative_cap);
 
     // Add the offset of the class in the current logical block
     num_seen_class += logical_class_num;

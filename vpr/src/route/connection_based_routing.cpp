@@ -9,7 +9,7 @@ Connection_based_routing_resources::Connection_based_routing_resources(const Net
                                                                        bool is_flat)
     : net_list_(net_list)
     ,net_terminals_(net_terminals)
-    , is_flat_(is_flat)
+    ,is_flat_(is_flat)
     ,current_inet(NO_PREVIOUS)
     , // not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
     last_stable_critical_path_delay{0.0f}
