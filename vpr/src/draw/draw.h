@@ -37,9 +37,6 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g);
 void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen, const e_side& pin_side);
 void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, const e_side& pin_side);
 
-void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d start, ezgl::point2d end, float relative_position = 1., float arrow_size = DEFAULT_ARROW_SIZE);
-void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d loc, ezgl::point2d start, ezgl::point2d end, float arrow_size = DEFAULT_ARROW_SIZE);
-void draw_triangle_along_line(ezgl::renderer* g, float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size = DEFAULT_ARROW_SIZE);
 
 void draw_x(float x, float y, float size, ezgl::renderer* g);
 

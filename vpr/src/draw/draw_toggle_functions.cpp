@@ -23,6 +23,7 @@
 #include "draw.h"
 #include "draw_rr.h"
 #include "draw_xtoy.h"
+#include "draw_triangle.h"
 #include "draw_toggle_functions.h"
 
 #include "read_xml_arch_file.h"
