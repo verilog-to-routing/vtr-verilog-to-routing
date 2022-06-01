@@ -58,6 +58,9 @@ ezgl::point2d tnode_draw_coord(tatum::NodeId node);
 void annotate_draw_rr_node_costs(ClusterNetId net, int sink_rr_node);
 void clear_draw_rr_annotations();
 
+void draw_reset_blk_colors();
+void draw_reset_blk_color(ClusterBlockId blk_id);
+
 ezgl::color to_ezgl_color(vtr::Color<float> color);
 void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer* g);
 
@@ -71,23 +74,6 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
 std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
 void deselect_all();
 
-// toggle functions
-void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void set_net_alpha_value(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-void set_net_alpha_value_with_enter(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-float get_net_alpha();
-
-ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 
 /* This routine highlights the blocks affected in the latest move      *
  * It highlights the old and new locations of the moved blocks         *
