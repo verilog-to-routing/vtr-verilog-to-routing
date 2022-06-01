@@ -163,6 +163,11 @@ typedef struct {
  * save_graphics_file_base: Base of save graphis file name (i.e. before extension)
  * pres_fac: present congestion cost factor
  */
+
+/*Note: t_draw_state serves the same role as a Context, but can't be inherited from Context
+ * because it must be copyable (see run_graphics_command in draw.cpp), while a Context cannot be.
+ */
+
 struct t_draw_state {
     pic_type pic_on_screen = NO_PICTURE;
     e_draw_nets show_nets = DRAW_NO_NETS;
