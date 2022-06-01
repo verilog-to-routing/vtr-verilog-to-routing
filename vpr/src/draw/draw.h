@@ -40,6 +40,8 @@ void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d start, ezgl::poin
 void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d loc, ezgl::point2d start, ezgl::point2d end, float arrow_size = DEFAULT_ARROW_SIZE);
 void draw_triangle_along_line(ezgl::renderer* g, float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size = DEFAULT_ARROW_SIZE);
 
+void draw_x(float x, float y, float size, ezgl::renderer* g);
+
 const ezgl::color SELECTED_COLOR = ezgl::GREEN;
 const ezgl::color DRIVES_IT_COLOR = ezgl::RED;
 const ezgl::color DRIVEN_BY_IT_COLOR = ezgl::LIGHT_MEDIUM_BLUE;

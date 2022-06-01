@@ -74,7 +74,7 @@
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 
-static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
+void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
     /* This routine draws an edge from the pin_node to the chan_node (CHANX or   *
      * CHANY).  The connection is made to the nearest end of the track instead   *
      * of perpendicular to the track to symbolize a single-drive connection.     */

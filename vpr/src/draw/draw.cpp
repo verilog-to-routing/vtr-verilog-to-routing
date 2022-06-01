@@ -109,7 +109,6 @@ static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g);
 static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer* g);
 
 static void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen);
-static void draw_x(float x, float y, float size, ezgl::renderer* g);
 static void draw_pin_to_pin(int opin, int ipin, ezgl::renderer* g);
 static void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g);
 static void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g);
@@ -1914,7 +1913,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
     } /* End of for each edge loop */
 }
 
-static void draw_x(float x, float y, float size, ezgl::renderer* g) {
+void draw_x(float x, float y, float size, ezgl::renderer* g) {
     /* Draws an X centered at (x,y).  The width and height of the X are each    *
      * 2 * size.                                                                */
     g->draw_line({x - size, y + size}, {x + size, y - size});
