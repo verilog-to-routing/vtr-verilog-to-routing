@@ -41,11 +41,12 @@
 #    include "place_macro.h"
 #    include "buttons.h"
 
-
-
-void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g);
-
-
+void draw_rr(ezgl::renderer* g);
+void draw_rr_edges(int from_node, ezgl::renderer* g);
+void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g);
+void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g);
+void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer* g);
+void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen);
 
 
 #endif /* NO_GRAPHICS */

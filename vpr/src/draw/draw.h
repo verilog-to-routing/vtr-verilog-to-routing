@@ -32,6 +32,7 @@ void alloc_draw_structs(const t_arch* arch);
 void free_draw_structs();
 
 #ifndef NO_GRAPHICS
+void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g);
 
 void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen, const e_side& pin_side);
 void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, const e_side& pin_side);
@@ -53,6 +54,15 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin);
 
 //Returns the drawing coordinates of the specified tnode
 ezgl::point2d tnode_draw_coord(tatum::NodeId node);
+
+void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer* g);
+void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, int to_track, short switch_type, ezgl::renderer* g);
+void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, int to_track, short switch_type, ezgl::renderer* g);
+void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node, int chany_track, enum e_edge_dir edge_dir, short switch_type, ezgl::renderer* g);
+void draw_pin_to_pin(int opin, int ipin, ezgl::renderer* g);
+void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g);
+void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g);
+void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g);
 
 void annotate_draw_rr_node_costs(ClusterNetId net, int sink_rr_node);
 void clear_draw_rr_annotations();
