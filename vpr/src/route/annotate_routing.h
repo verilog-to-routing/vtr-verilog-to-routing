@@ -11,8 +11,10 @@
  *******************************************************************/
 
 vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& device_ctx,
-                                                          const ClusteringContext& clustering_ctx,
-                                                          const RoutingContext& routing_ctx,
-                                                          const bool& verbose);
+                                                         const ClusteringContext& clustering_ctx,
+                                                         const RoutingContext& routing_ctx,
+                                                         const AtomLookup& atom_look_up,
+                                                         const bool& verbose,
+                                                         bool is_flat);
 
 #endif

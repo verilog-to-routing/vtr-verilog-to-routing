@@ -59,10 +59,10 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   int min_chan_width_hint,
                                   t_det_routing_arch* det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
-                                  ClbNetPinsMatrix<float>& net_delay,
+                                  NetPinsMatrix<float>& net_delay,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                   std::shared_ptr<RoutingDelayCalculator> delay_calc) {
-    vtr::vector<ClusterNetId, t_trace*> best_routing; /* Saves the best routing found so far. */
+    vtr::vector<ParentNetId, t_trace*> best_routing; /* Saves the best routing found so far. */
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
     bool using_minw_hint = false;
@@ -95,7 +95,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
-    best_routing = alloc_saved_routing();
+    best_routing = alloc_saved_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist);
 
     VTR_ASSERT(net_delay.size());
 
@@ -180,7 +180,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                       arch->Chans, det_routing_arch, segment_inf,
                       arch->Directs, arch->num_directs);
         }
-        success = try_route(current,
+        success = try_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                            current,
                             router_opts,
                             analysis_opts,
                             det_routing_arch, segment_inf,
@@ -208,7 +209,10 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
             }
 
             /* Save routing in case it is best. */
-            save_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
+            save_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                         best_routing,
+                         route_ctx.clb_opins_used_locally,
+                         saved_clb_opins_used_locally);
 
             //If the user gave us a minW hint (and we routed successfully at that width)
             //make the initial guess closer to the current value instead of the standard guess.
@@ -312,11 +316,13 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                           arch->Chans, det_routing_arch, segment_inf,
                           arch->Directs, arch->num_directs);
             }
-            success = try_route(current,
+            success = try_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                                current,
                                 router_opts,
                                 analysis_opts,
                                 det_routing_arch,
-                                segment_inf, net_delay,
+                                segment_inf,
+                                net_delay,
                                 timing_info,
                                 delay_calc,
                                 arch->Chans, arch->Directs, arch->num_directs,
@@ -324,7 +330,9 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
 
             if (success && Fc_clipped == false) {
                 final = current;
-                save_routing(best_routing, route_ctx.clb_opins_used_locally,
+                save_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                             best_routing,
+                             route_ctx.clb_opins_used_locally,
                              saved_clb_opins_used_locally);
 
                 if (placer_opts.place_freq == PLACE_ALWAYS) {
@@ -366,18 +374,26 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
     /* Allocate and load additional rr_graph information needed only by the router. */
     alloc_and_load_rr_node_route_structs();
 
-    init_route_structs(router_opts.bb_factor);
+    init_route_structs((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                       router_opts.bb_factor,
+                       router_opts.flat_routing);
 
-    restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
+    restore_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                    best_routing,
+                    route_ctx.clb_opins_used_locally,
+                    saved_clb_opins_used_locally);
 
     if (Fc_clipped) {
         VTR_LOG_WARN("Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");
     }
     VTR_LOG("Best routing used a channel width factor of %d.\n", final);
 
-    print_route(filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str());
+    print_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                filename_opts.PlaceFile.c_str(),
+                filename_opts.RouteFile.c_str(),
+                false);
 
-    free_saved_routing(best_routing);
+    free_saved_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, best_routing);
     fflush(stdout);
 
     return (final);

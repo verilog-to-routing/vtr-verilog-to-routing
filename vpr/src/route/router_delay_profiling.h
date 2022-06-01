@@ -10,12 +10,16 @@
 
 class RouterDelayProfiler {
   public:
-    RouterDelayProfiler(const RouterLookahead* lookahead);
+    RouterDelayProfiler(const Netlist<>& net_list,
+                        const RouterLookahead* lookahead,
+                        bool is_flat);
     bool calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay);
 
   private:
+    const Netlist<>& net_list_;
     RouterStats router_stats_;
     ConnectionRouter<BinaryHeap> router_;
+    bool is_flat_;
 };
 
 std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts);
@@ -27,6 +31,6 @@ void alloc_routing_structs(t_chan_width chan_width,
                            const t_direct_inf* directs,
                            const int num_directs);
 
-void free_routing_structs();
+void free_routing_structs(const Netlist<>& net_list);
 
 #endif /* ROUTER_DELAY_PROFILING_H_ */

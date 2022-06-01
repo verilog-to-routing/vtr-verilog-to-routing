@@ -515,6 +515,24 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
     return device_ctx.grid[loc.x][loc.y].type;
 }
 
+t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
+    auto& atom_look_up = g_vpr_ctx.atom().lookup;
+
+    auto cluster_blk = atom_look_up.atom_clb(atom_blk);
+
+    return physical_tile_type(cluster_blk);
+}
+
+t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat) {
+    if(is_flat) {
+        return physical_tile_type(get_atom_block_id(blk_id));
+    } else {
+        return physical_tile_type(get_cluster_block_id(blk_id));
+    }
+}
+
+
+
 int get_sub_tile_index(ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
@@ -590,6 +608,37 @@ t_class_range get_class_range_for_block(const ClusterBlockId blk_id) {
     return abs_class_range;
 }
 
+t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
+    auto& atom_look_up = g_vpr_ctx.atom().lookup;
+
+    auto cluster_blk = atom_look_up.atom_clb(atom_blk);
+
+    auto atom_pb = atom_look_up.atom_pb(atom_blk);
+    if(atom_pb->is_root()) {
+        return get_class_range_for_block(cluster_blk);
+    } else {
+        t_physical_tile_type_ptr physical_tile;
+        const t_sub_tile* sub_tile;
+        int sub_tile_cap;
+        t_logical_block_type_ptr logical_block;
+        std::tie(physical_tile, sub_tile, sub_tile_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk);
+        const t_pb_graph_node* pb_graph_node = atom_look_up.atom_pb_graph_node(atom_blk);
+        return get_pb_graph_node_class_physical_range(physical_tile,
+                                             sub_tile,
+                                             logical_block,
+                                             sub_tile_cap,
+                                             pb_graph_node);
+    }
+}
+
+t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat) {
+    if(is_flat) {
+        return get_class_range_for_block(get_atom_block_id(blk_id));
+    } else {
+        return get_class_range_for_block(get_cluster_block_id(blk_id));
+    }
+}
+
 void get_pin_range_for_block(const ClusterBlockId blk_id,
                              int* pin_low,
                              int* pin_high) {
@@ -616,6 +665,48 @@ t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vec
         }
     }
     return nullptr; //Not found
+}
+
+std::tuple<int, int> get_block_loc(const ParentBlockId& block_id, bool is_flat) {
+    int i;
+    int j;
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    if(is_flat) {
+        AtomBlockId atom_block_id = get_atom_block_id(block_id);
+        auto& atom_look_up = g_vpr_ctx.atom().lookup;
+        ClusterBlockId cluster_block_id = atom_look_up.atom_clb(atom_block_id);
+        i = place_ctx.block_locs[cluster_block_id].loc.x;
+        j = place_ctx.block_locs[cluster_block_id].loc.y;
+    } else {
+        ClusterBlockId cluster_block_id = get_cluster_block_id(block_id);
+        i = place_ctx.block_locs[cluster_block_id].loc.x;
+        j = place_ctx.block_locs[cluster_block_id].loc.y;
+    }
+
+    return std::make_tuple(i, j);
+}
+
+int get_block_num_class(const ParentBlockId& block_id, bool is_flat) {
+    auto type = physical_tile_type(block_id, is_flat);
+    get_tile_class_max_ptc(type, is_flat);
+}
+
+int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pin_id, bool is_flat) {
+    int class_num;
+
+    if(is_flat) {
+        AtomPinId atom_pin_id = get_atom_pin_id(pin_id);
+        class_num = get_atom_pin_class_num(atom_pin_id);
+    } else {
+        ClusterBlockId cluster_block_id = get_cluster_block_id(block_id);
+        ClusterPinId cluster_pin_id = get_cluster_pin_id(pin_id);
+        auto type = physical_tile_type(cluster_block_id);
+        int phys_pin = tile_pin_index(cluster_pin_id);
+        class_num = get_class_num_from_pin_physical_num(type, phys_pin);
+    }
+
+    return class_num;
 }
 
 t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
@@ -2125,6 +2216,24 @@ int tile_pin_index(const ClusterPinId pin) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     return place_ctx.physical_pins[pin];
+}
+
+int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
+    auto atom_look_up = g_vpr_ctx.atom().lookup;
+    auto& atom_net_list = g_vpr_ctx.atom().nlist;
+
+    auto atom_blk_id = atom_net_list.pin_block(atom_pin_id);
+    auto cluster_block_id = atom_look_up.atom_clb(atom_blk_id);
+
+    t_physical_tile_type_ptr physical_type;
+    const t_sub_tile* sub_tile;
+    int sub_tile_rel_cap;
+    t_logical_block_type_ptr logical_block;
+    std::tie(physical_type, sub_tile, sub_tile_rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
+    auto pb_graph_pin = atom_look_up.atom_pin_pb_graph_pin(atom_pin_id);
+    int pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
+    return get_class_num_from_pin_physical_num(physical_type, pin_physical_num);
+
 }
 
 t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, const char* port_name) {

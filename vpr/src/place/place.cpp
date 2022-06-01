@@ -483,6 +483,7 @@ void try_place(const t_placer_opts& placer_opts,
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_delay_model(chan_width_dist,
+                                                          (const Netlist<>&) cluster_ctx.clb_nlist,
                                                           placer_opts, router_opts, det_routing_arch, segment_inf,
                                                           directs, num_directs);
 
@@ -2877,8 +2878,9 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
+    // Since we are in placement stage, we use clustered netlist for timing analysis
     VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup,
-                                    *timing_ctx.graph, delay_calc);
+                                    *timing_ctx.graph, delay_calc, false);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph,

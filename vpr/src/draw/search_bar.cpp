@@ -262,7 +262,7 @@ void highlight_nets(ClusterNetId net_id) {
 
     if (int(route_ctx.trace.size()) == 0) return;
 
-    for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
+    for (tptr = route_ctx.trace[ParentNetId(size_t(net_id))].head; tptr != nullptr; tptr = tptr->next) {
         draw_state->net_color[net_id] = ezgl::MAGENTA;
     }
 }

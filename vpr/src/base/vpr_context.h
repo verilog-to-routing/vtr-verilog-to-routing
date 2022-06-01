@@ -330,13 +330,18 @@ struct PlacementContext : public Context {
  */
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-    vtr::vector<ClusterNetId, t_traceback> trace;
-    vtr::vector<ClusterNetId, std::unordered_set<int>> trace_nodes;
+    vtr::vector<ParentNetId, t_traceback> trace;
 
-    vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
-    vtr::vector<ClusterNetId, uint8_t> is_clock_net;              /* [0..num_nets-1] */
+    vtr::vector<ParentNetId, std::unordered_set<int>> trace_nodes;
 
-    vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
+
+    vtr::vector<ParentNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
+
+    vtr::vector<ClusterNetId, std::vector<int>> cluster_net_rr_terminals; /* [0..num_clustered_nets-1][0..num_pins-1] */
+
+    vtr::vector<ParentNetId, uint8_t> is_clock_net;              /* [0..num_nets-1] */
+
+    vtr::vector<ParentBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
     std::vector<t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
@@ -355,7 +360,7 @@ struct RoutingContext : public Context {
     t_net_routing_status net_status;
 
     ///@brief Limits area within which each net must be routed.
-    vtr::vector<ClusterNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
+    vtr::vector<ParentNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
 
     t_clb_opins_used clb_opins_used_locally; //[0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1]
 

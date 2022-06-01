@@ -808,7 +808,7 @@ static void power_usage_routing(t_power_usage* power_usage,
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         t_trace* trace;
 
-        for (trace = route_ctx.trace[net_id].head; trace != nullptr; trace = trace->next) {
+        for (trace = route_ctx.trace[ParentNetId(size_t(net_id))].head; trace != nullptr; trace = trace->next) {
             rr_node_power[trace->index].visited = false;
             rr_node_power[trace->index].net_num = net_id;
         }
@@ -818,7 +818,7 @@ static void power_usage_routing(t_power_usage* power_usage,
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         t_trace* trace;
 
-        for (trace = route_ctx.trace[net_id].head; trace != nullptr; trace = trace->next) {
+        for (trace = route_ctx.trace[ParentNetId(size_t(net_id))].head; trace != nullptr; trace = trace->next) {
             t_rr_node_power* node_power = &rr_node_power[trace->index];
 
             if (node_power->visited) {

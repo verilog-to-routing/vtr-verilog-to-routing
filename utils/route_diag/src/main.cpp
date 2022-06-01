@@ -59,9 +59,11 @@ constexpr int SUCCESS_EXIT_CODE = 0; //Everything OK
 constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
 constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
 
-static void do_one_route(int source_node, int sink_node,
-        const t_router_opts& router_opts,
-        const std::vector<t_segment_inf>& segment_inf) {
+static void do_one_route(const Netlist<>& net_list,
+                         int source_node,
+                         int sink_node,
+                         const t_router_opts& router_opts,
+                         const std::vector<t_segment_inf>& segment_inf) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -87,7 +89,7 @@ static void do_one_route(int source_node, int sink_node,
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
 
-    route_budgets budgeting_inf;
+    route_budgets budgeting_inf(net_list, router_opts.flat_routing);
 
 
     RouterStats router_stats;
@@ -105,8 +107,9 @@ static void do_one_route(int source_node, int sink_node,
             &device_ctx.rr_graph,
             device_ctx.rr_rc_data,
             device_ctx.rr_graph.rr_switch(),
-            g_vpr_ctx.mutable_routing().rr_node_route_inf);
-    enable_router_debug(router_opts, ClusterNetId(), sink_node, 1, &router);
+            g_vpr_ctx.mutable_routing().rr_node_route_inf,
+            router_opts.flat_routing);
+    enable_router_debug(router_opts, ParentNetId(), sink_node, 1, &router);
     bool found_path;
     t_heap cheapest;
     std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats);
@@ -135,9 +138,10 @@ static void do_one_route(int source_node, int sink_node,
     router.reset_path_costs();
 }
 
-static void profile_source(int source_rr_node,
-        const t_router_opts& router_opts,
-        const std::vector<t_segment_inf>& segment_inf) {
+static void profile_source(const Netlist<>& net_list,
+                           int source_rr_node,
+                           const t_router_opts& router_opts,
+                           const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Profiling source");
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
@@ -148,7 +152,7 @@ static void profile_source(int source_rr_node,
             router_opts.read_router_lookahead,
             segment_inf
             );
-    RouterDelayProfiler profiler(router_lookahead.get());
+    RouterDelayProfiler profiler(net_list, router_lookahead.get(), router_opts.flat_routing);
 
     int start_x = 0;
     int end_x = grid.width() - 1;
@@ -296,6 +300,9 @@ int main(int argc, const char **argv) {
 
         vpr_setup_clock_networks(vpr_setup, Arch);
 
+        const Netlist<>& net_list = vpr_setup.RouterOpts.flat_routing ? (const Netlist<>&)g_vpr_ctx.atom().nlist :
+                                                                      (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+
         t_chan_width chan_width = setup_chan_width(
                 vpr_setup.RouterOpts,
                 Arch.Chans);
@@ -309,22 +316,22 @@ int main(int argc, const char **argv) {
                 );
 
         if(route_options.profile_source) {
-            profile_source(
-                route_options.source_rr_node,
-                vpr_setup.RouterOpts,
-                vpr_setup.Segments
+            profile_source(net_list,
+                           route_options.source_rr_node,
+                           vpr_setup.RouterOpts,
+                           vpr_setup.Segments
                 );
         } else {
-            do_one_route(
-                    route_options.source_rr_node, 
-                    route_options.sink_rr_node,
-                    vpr_setup.RouterOpts,
-                    vpr_setup.Segments);
+            do_one_route(net_list,
+                         route_options.source_rr_node,
+                         route_options.sink_rr_node,
+                         vpr_setup.RouterOpts,
+                         vpr_setup.Segments);
         }
-        free_routing_structs();
+        free_routing_structs(net_list);
 
         /* free data structures */
-        vpr_free_all(Arch, vpr_setup);
+        vpr_free_all(net_list, Arch, vpr_setup);
 
     } catch (const tatum::Error& tatum_error) {
         vtr::printf_error(__FILE__, __LINE__, "STA Engine: %s\n", tatum_error.what());

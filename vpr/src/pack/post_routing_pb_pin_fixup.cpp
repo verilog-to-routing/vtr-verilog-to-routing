@@ -1028,10 +1028,12 @@ static void update_cluster_routing_traces_with_post_routing_results(AtomContext&
  *******************************************************************/
 void sync_netlists_to_routing(const DeviceContext& device_ctx,
                               AtomContext& atom_ctx,
+                              const AtomLookup& atom_look_up,
                               ClusteringContext& clustering_ctx,
                               const PlacementContext& placement_ctx,
                               const RoutingContext& routing_ctx,
-                              const bool& verbose) {
+                              const bool& verbose,
+                              bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Synchronize the packed netlist to routing optimization");
 
     /* Reset the database for post-routing clb net mapping */
@@ -1042,7 +1044,9 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
     vtr::vector<RRNodeId, ClusterNetId> rr_node_nets = annotate_rr_node_nets(device_ctx,
                                                                              clustering_ctx,
                                                                              routing_ctx,
-                                                                             verbose);
+                                                                             atom_look_up,
+                                                                             verbose,
+                                                                             is_flat);
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
 
@@ -1059,7 +1063,8 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
         update_cluster_pin_with_post_routing_results(device_ctx,
                                                      clustering_ctx,
                                                      rr_node_nets,
-                                                     grid_coord, cluster_blk_id,
+                                                     grid_coord,
+                                                     cluster_blk_id,
                                                      placement_ctx.block_locs[cluster_blk_id].loc.sub_tile,
                                                      num_mismatches,
                                                      verbose);

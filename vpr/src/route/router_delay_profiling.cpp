@@ -11,16 +11,18 @@
 
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
-RouterDelayProfiler::RouterDelayProfiler(
-    const RouterLookahead* lookahead)
-    : router_(
+RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
+                                         const RouterLookahead* lookahead,
+                                         bool is_flat)
+    : net_list_(net_list), router_(
           g_vpr_ctx.device().grid,
           *lookahead,
           g_vpr_ctx.device().rr_graph.rr_nodes(),
           &g_vpr_ctx.device().rr_graph,
           g_vpr_ctx.device().rr_rc_data,
           g_vpr_ctx.device().rr_graph.rr_switch(),
-          g_vpr_ctx.mutable_routing().rr_node_route_inf) {}
+          g_vpr_ctx.mutable_routing().rr_node_route_inf,
+          is_flat), is_flat_(is_flat) {}
 
 bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
@@ -42,7 +44,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     //rr_node_arch_name(sink_node).c_str()));
 
     t_rt_node* rt_root = setup_routing_resources_no_net(source_node);
-    enable_router_debug(router_opts, ClusterNetId(), sink_node, 0, &router_);
+    enable_router_debug(router_opts, ParentNetId(), sink_node, 0, &router_);
 
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(1);
@@ -59,7 +61,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     cost_params.astar_fac = router_opts.router_profiler_astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
 
-    route_budgets budgeting_inf;
+    route_budgets budgeting_inf(net_list_, is_flat_);
 
     router_.clear_modified_rr_node_info();
     RouterStats router_stats;
@@ -118,6 +120,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
     auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
                                                   /*segment_inf=*/{});
+    // This router is used during placement - Thus, we is_flat is set to false.
     ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,
         *router_lookahead,
@@ -125,7 +128,8 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
         &g_vpr_ctx.device().rr_graph,
         device_ctx.rr_rc_data,
         device_ctx.rr_graph.rr_switch(),
-        routing_ctx.rr_node_route_inf);
+        routing_ctx.rr_node_route_inf,
+        false);
     RouterStats router_stats;
 
     std::vector<t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(rt_root,
@@ -233,9 +237,9 @@ void alloc_routing_structs(t_chan_width chan_width,
     alloc_route_tree_timing_structs();
 }
 
-void free_routing_structs() {
+void free_routing_structs(const Netlist<>& net_list) {
     free_route_structs();
-    free_trace_structs();
+    free_trace_structs(net_list);
 
     free_route_tree_timing_structs();
 }

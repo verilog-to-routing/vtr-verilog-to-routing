@@ -29,6 +29,7 @@ class PlaceDelayModel;
 
 ///@brief Initialize the placer delay model.
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(t_chan_width_dist chan_width_dist,
+                                                               const Netlist<>& net_list,
                                                                const t_placer_opts& place_opts,
                                                                const t_router_opts& router_opts,
                                                                t_det_routing_arch* det_routing_arch,

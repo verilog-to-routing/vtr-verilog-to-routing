@@ -43,8 +43,10 @@ float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, ta
 std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins = 10);
 
 //Returns a criticality histogram
-std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo& setup_timing,
+std::vector<HistogramBucket> create_criticality_histogram(const Netlist<>& net_list,
+                                                          const SetupTimingInfo& setup_timing,
                                                           const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                                          bool is_flat,
                                                           size_t num_bins = 10);
 
 //Print a useful summary of timing information
@@ -181,7 +183,10 @@ class ClusteredPinTimingInvalidator {
  */
 
 //Return the criticality of a net's pin in the CLB netlist
-float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin);
+float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
+                                        const ClusteredPinAtomPinsLookup& pin_lookup,
+                                        const ParentPinId& clb_pin,
+                                        bool is_flat);
 
 //Return the setup slack of a net's pin in the CLB netlist
 float calculate_clb_net_pin_setup_slack(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin);

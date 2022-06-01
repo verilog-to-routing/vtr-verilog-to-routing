@@ -237,7 +237,12 @@ std::string rr_highlight_message;
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics, std::string graphics_commands) {
+void init_graphics_state(bool show_graphics_val,
+                         int gr_automode_val,
+                         enum e_route_type route_type,
+                         bool save_graphics,
+                         std::string graphics_commands,
+                         bool is_flat) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -251,6 +256,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
     draw_state->graphics_commands = graphics_commands;
+    draw_state->is_flat = is_flat;
 
 #else
     //Suppress unused parameter warnings
@@ -1404,7 +1410,7 @@ static void draw_routing_bb(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     auto net_id = ClusterNetId(draw_state->show_routing_bb);
-    const t_bb* bb = &route_ctx.route_bb[net_id];
+    const t_bb* bb = &route_ctx.route_bb[ParentNetId(size_t(net_id))];
 
     //The router considers an RR node to be 'within' the the bounding box if it
     //is *loosely* greater (i.e. greater than or equal) the left/bottom edges, and
@@ -2446,10 +2452,10 @@ static void draw_routed_net(ClusterNetId net_id, ezgl::renderer* g) {
     if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Don't draw. */
         return;
 
-    if (route_ctx.trace[net_id].head == nullptr) /* No routing->  Skip.  (Allows me to draw */
+    if (route_ctx.trace[ParentNetId(size_t(net_id))].head == nullptr) /* No routing->  Skip.  (Allows me to draw */
         return;                                  /* partially complete routes).            */
 
-    t_trace* tptr = route_ctx.trace[net_id].head; /* SOURCE to start */
+    t_trace* tptr = route_ctx.trace[ParentNetId(size_t(net_id))].head; /* SOURCE to start */
     int inode = tptr->index;
 
     std::vector<int> rr_nodes_to_draw;
@@ -2674,7 +2680,7 @@ void highlight_nets(char* message, int hit_node) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        for (tptr = route_ctx.trace[net_id].head; tptr != nullptr;
+        for (tptr = route_ctx.trace[ParentNetId(size_t(net_id))].head; tptr != nullptr;
              tptr = tptr->next) {
             if (draw_state->draw_rr_node[tptr->index].color == ezgl::MAGENTA) {
                 draw_state->net_color[net_id] = draw_state->draw_rr_node[tptr->index].color;
@@ -3731,14 +3737,14 @@ static std::vector<int> trace_routed_connection_rr_nodes(
     bool allocated_route_tree_structs = alloc_route_tree_timing_structs(true); //Needed for traceback_to_route_tree
 
     //Conver the traceback into an easily search-able
-    t_rt_node* rt_root = traceback_to_route_tree(net_id);
+    t_rt_node* rt_root = traceback_to_route_tree(ParentNetId(size_t(net_id)));
 
     VTR_ASSERT(
         rt_root
         && rt_root->inode
-               == route_ctx.net_rr_terminals[net_id][driver_pin]);
+               == route_ctx.net_rr_terminals[ParentNetId(size_t(net_id))][driver_pin]);
 
-    int sink_rr_node = route_ctx.net_rr_terminals[net_id][sink_pin];
+    int sink_rr_node = route_ctx.net_rr_terminals[ParentNetId(size_t(net_id))][sink_pin];
 
     std::vector<int> rr_nodes_on_path;
 
@@ -3951,6 +3957,7 @@ static void draw_reset_blk_colors() {
 
 static void draw_routing_util(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
+    bool is_flat = draw_state->is_flat;
     if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
         return;
     }
@@ -3958,8 +3965,8 @@ static void draw_routing_util(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_usage = calculate_routing_usage(CHANX);
-    auto chany_usage = calculate_routing_usage(CHANY);
+    auto chanx_usage = calculate_routing_usage(CHANX, is_flat);
+    auto chany_usage = calculate_routing_usage(CHANY, is_flat);
 
     auto chanx_avail = calculate_routing_avail(CHANX);
     auto chany_avail = calculate_routing_avail(CHANY);

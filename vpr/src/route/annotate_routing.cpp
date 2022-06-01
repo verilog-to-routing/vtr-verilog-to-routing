@@ -21,7 +21,9 @@
 vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& device_ctx,
                                                           const ClusteringContext& clustering_ctx,
                                                           const RoutingContext& routing_ctx,
-                                                          const bool& verbose) {
+                                                          const AtomLookup& atom_look_up,
+                                                          const bool& verbose,
+                                                          bool is_flat) {
     size_t counter = 0;
     vtr::ScopedStartFinishTimer timer("Annotating rr_node with routed nets");
 
@@ -31,6 +33,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
     rr_node_nets.resize(rr_graph.num_nodes(), ClusterNetId::INVALID());
 
     for (auto net_id : clustering_ctx.clb_nlist.nets()) {
+        auto parent_net_id = get_cluster_net_parent_id(atom_look_up, net_id, is_flat);
         if (clustering_ctx.clb_nlist.net_is_ignored(net_id)) {
             continue;
         }
@@ -39,7 +42,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
         if (clustering_ctx.clb_nlist.net_sinks(net_id).empty()) {
             continue;
         }
-        t_trace* tptr = routing_ctx.trace[net_id].head;
+        t_trace* tptr = routing_ctx.trace[parent_net_id].head;
         while (tptr != nullptr) {
             const RRNodeId& rr_node = RRNodeId(tptr->index);
             /* Ignore source and sink nodes, they are the common node multiple starting and ending points */

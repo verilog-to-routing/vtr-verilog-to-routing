@@ -59,12 +59,12 @@ void log_overused_nodes_status(int max_logged_overused_rr_nodes) {
  * This report will be generated only if the last routing attempt fails, which
  * causes the whole VPR flow to fail.
  */
-void report_overused_nodes(const RRGraphView& rr_graph) {
+void report_overused_nodes(const RRGraphView& rr_graph, bool is_flat) {
     const auto& route_ctx = g_vpr_ctx.routing();
 
     /* Generate overuse info lookup table */
     std::map<RRNodeId, std::set<ClusterNetId>> nodes_to_nets_lookup;
-    generate_overused_nodes_to_congested_net_lookup(nodes_to_nets_lookup);
+    generate_overused_nodes_to_congested_net_lookup(nodes_to_nets_lookup, is_flat);
 
     /* Open the report file and print header info */
     std::ofstream os("report_overused_nodes.rpt");
@@ -127,7 +127,8 @@ void report_overused_nodes(const RRGraphView& rr_graph) {
  *
  * This routine goes through the trace back linked list of each net.
  */
-void generate_overused_nodes_to_congested_net_lookup(std::map<RRNodeId, std::set<ClusterNetId>>& nodes_to_nets_lookup) {
+void generate_overused_nodes_to_congested_net_lookup(std::map<RRNodeId, std::set<ClusterNetId>>& nodes_to_nets_lookup,
+                                                     bool is_flat) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& route_ctx = g_vpr_ctx.routing();
@@ -136,7 +137,8 @@ void generate_overused_nodes_to_congested_net_lookup(std::map<RRNodeId, std::set
     //Create overused nodes to congested nets look up by
     //traversing through the net trace backs linked lists
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-        for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
+        auto par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        for (t_trace* tptr = route_ctx.trace[par_net_id].head; tptr != nullptr; tptr = tptr->next) {
             int inode = tptr->index;
 
             int overuse = route_ctx.rr_node_route_inf[inode].occ() - rr_graph.node_capacity(RRNodeId(inode));

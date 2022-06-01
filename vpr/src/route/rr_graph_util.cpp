@@ -83,6 +83,110 @@ int seg_index_of_sblock(int from_node, int to_node) {
     }
 }
 
+bool is_intra_blk_node(RRNodeId node_id) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_graph = device_ctx.rr_graph;
+
+    t_physical_tile_type_ptr tile_type = device_ctx.grid[rr_graph.node_xlow(node_id)][rr_graph.node_ylow(node_id)].type;
+
+    e_rr_type node_type = rr_graph.node_type(node_id);
+    VTR_ASSERT(node_type != CHANX && node_type != CHANY);
+
+    int pin_physical_num = rr_graph.node_ptc_num(node_id);
+
+    if(node_type == IPIN || node_type == OPIN) {
+        if(is_class_on_tile(tile_type, pin_physical_num)) {
+            return false;
+        } else {
+            return true;
+        }
+
+    } else {
+        VTR_ASSERT(node_type == SINK || node_type == SOURCE);
+        if(is_pin_on_tile(tile_type, pin_physical_num)) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+}
+
+int get_net_list_pin_rr_node_num(const AtomLookup& atom_lookup,
+                                 const ClusteredPinAtomPinsLookup& cluster_pin_lookup,
+                                 const Netlist<>& net_list,
+                                 const ClusteredNetlist& cluster_net_list,
+                                 const vtr::vector<ClusterNetId, std::vector<int>>& cluster_net_terminals,
+                                 const ParentNetId net_id,
+                                 int pin_index,
+                                 bool is_flat) {
+    VTR_ASSERT(!net_list.net_is_ignored(net_id));
+    int rr_num;
+    int cluster_pin_index;
+    // For the absorbed nets, we assume that the lookahead return 0.
+    ClusterNetId cluster_net_id;
+    if(is_flat) {
+        cluster_net_id = atom_lookup.clb_net(get_atom_net_id(net_id));
+        VTR_ASSERT(!(cluster_net_id == ClusterNetId::INVALID()));
+        auto atom_pin_id = net_list.net_pin(net_id, pin_index);
+        auto cluster_pin_id = cluster_pin_lookup.connected_clb_pin(get_atom_pin_id(atom_pin_id));
+        cluster_pin_index = cluster_net_list.pin_net_index(cluster_pin_id);
+    } else {
+        cluster_net_id = get_cluster_net_id(net_id);
+        cluster_pin_index = pin_index;
+    }
+
+    rr_num = cluster_net_terminals[cluster_net_id][cluster_pin_index];
+
+    return rr_num;
+}
+
+std::vector<RRNodeId> get_nodes_on_tile(const RRSpatialLookup& rr_spatial_lookup,
+                                        t_rr_type node_type,
+                                        int root_x,
+                                        int root_y) {
+    VTR_ASSERT(node_type == IPIN || node_type == SINK || node_type == OPIN || node_type == SOURCE);
+    std::vector<RRNodeId> nodes_on_tile;
+    auto& device_ctx = g_vpr_ctx.device();
+    t_physical_tile_type_ptr tile_type = device_ctx.grid[root_x][root_y].type;
+    // TODO: A helper function should be written to return the range of indices related to the pins on the tile
+    int num_pin;
+    if (node_type == IPIN || node_type == OPIN) {
+        num_pin = tile_type->num_pins;
+    } else {
+        VTR_ASSERT(node_type == SINK || node_type == SOURCE);
+        num_pin = tile_type->class_inf.size();
+    }
+    nodes_on_tile.reserve(num_pin);
+    for(int pin_num = 0; pin_num < num_pin; pin_num++) {
+        for(auto side: SIDES) {
+            auto tmp_node = rr_spatial_lookup.find_node(root_x, root_y, node_type, pin_num, side);
+            if(tmp_node != RRNodeId::INVALID()) {
+                nodes_on_tile.push_back(tmp_node);
+                break;
+            }
+        }
+    }
+
+    return nodes_on_tile;
+}
+bool is_node_on_tile(t_rr_type node_type,
+                     int root_x,
+                     int root_y,
+                     int node_ptc) {
+    VTR_ASSERT(node_type == IPIN || node_type == SINK || node_type == OPIN || node_type == SOURCE);
+    auto& device_ctx = g_vpr_ctx.device();
+    t_physical_tile_type_ptr tile_type = device_ctx.grid[root_x][root_y].type;
+    // TODO: to get the range of ptc numbers related to pins on the cluster, in contrast to the pins inside the cluster, a helper function
+    // needs to be written.
+    if(node_type == IPIN || node_type == OPIN) {
+        return (node_ptc < tile_type->num_pins);
+    } else {
+        VTR_ASSERT(node_type == SINK || node_type == SOURCE);
+        return (node_ptc < (int)tile_type->class_inf.size());
+    }
+
+}
+
 vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list() {
     auto& rr_graph = g_vpr_ctx.device().rr_graph;
 

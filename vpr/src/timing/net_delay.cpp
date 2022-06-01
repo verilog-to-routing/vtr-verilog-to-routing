@@ -34,32 +34,38 @@ static std::unordered_map<int, float> ipin_to_Tdel_map;
 
 /*********************** Subroutines local to this module ********************/
 
-static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id);
 
-static void load_one_net_delay_recurr(t_rt_node* node, ClusterNetId net_id);
+static void load_one_net_delay(const Netlist<>& net_list,
+                               NetPinsMatrix<float>& net_delay,
+                               ParentNetId net_id);
 
-static void load_one_constant_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id, float delay_value);
+static void load_one_net_delay_recurr(t_rt_node* node, ParentNetId net_id);
+
+static void load_one_constant_net_delay(const Netlist<>& net_list,
+                                        NetPinsMatrix<float>& net_delay,
+                                        ParentNetId net_id,
+                                        float delay_value);
 
 /*************************** Subroutine definitions **************************/
-
-void load_net_delay_from_routing(ClbNetPinsMatrix<float>& net_delay) {
+void load_net_delay_from_routing(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
     /* This routine loads net_delay[0..nets.size()-1][1..num_pins-1].  Each entry   *
      * is the Elmore delay from the net source to the appropriate sink. Both       *
      * the rr_graph and the routing traceback must be completely constructed        *
      * before this routine is called, and the net_delay array must have been        *
      * allocated.                                                                   */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-            load_one_constant_net_delay(net_delay, net_id, 0.);
+    for (auto net_id : net_list.nets()) {
+        if (net_list.net_is_ignored(net_id)) {
+            load_one_constant_net_delay(net_list, net_delay, net_id, 0.);
         } else {
-            load_one_net_delay(net_delay, net_id);
+            load_one_net_delay(net_list, net_delay, net_id);
         }
     }
 }
 
-static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id) {
+static void load_one_net_delay(const Netlist<>& net_list,
+                               NetPinsMatrix<float>& net_delay,
+                               ParentNetId net_id) {
     /* This routine loads delay values for one net in                            *
      * net_delay[net_id][1..num_pins-1]. First, from the traceback, it           *
      * constructs the route tree and computes its values for R, C, and Tdel.     *
@@ -76,15 +82,13 @@ static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId 
                         "in load_one_net_delay: Traceback for net %lu does not exist.\n", size_t(net_id));
     }
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
     t_rt_node* rt_root = traceback_to_route_tree(net_id); // obtain the root of the tree constructed from the traceback
     load_new_subtree_R_upstream(rt_root);                 // load in the resistance values for the route tree
     load_new_subtree_C_downstream(rt_root);               // load in the capacitance values for the route tree
     load_route_tree_Tdel(rt_root, 0.);                    // load the time delay values for the route tree
     load_one_net_delay_recurr(rt_root, net_id);           // recursively traverse the tree and load entries into the ipin_to_Tdel map
 
-    for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+    for (unsigned int ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
         auto itr = ipin_to_Tdel_map.find(ipin);
         VTR_ASSERT(itr != ipin_to_Tdel_map.end());
 
@@ -94,7 +98,7 @@ static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId 
     ipin_to_Tdel_map.clear(); // clear the map
 }
 
-static void load_one_net_delay_recurr(t_rt_node* node, ClusterNetId net_id) {
+static void load_one_net_delay_recurr(t_rt_node* node, ParentNetId net_id) {
     /* This routine recursively traverses the route tree, and copies the Tdel of the sink_type nodes *
      * into the map.                                                                                 */
     if (node->net_pin_index != OPEN) {                      // value of OPEN indicates a non-SINK
@@ -106,10 +110,12 @@ static void load_one_net_delay_recurr(t_rt_node* node, ClusterNetId net_id) {
     }
 }
 
-static void load_one_constant_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id, float delay_value) {
+static void load_one_constant_net_delay(const Netlist<>& net_list,
+                                        NetPinsMatrix<float>& net_delay,
+                                        ParentNetId net_id,
+                                        float delay_value) {
     /* Sets each entry of the net_delay array for net inet to delay_value.     */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
+    for (unsigned int ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++)
         net_delay[net_id][ipin] = delay_value;
 }

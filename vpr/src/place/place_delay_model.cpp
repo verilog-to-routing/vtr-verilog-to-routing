@@ -306,13 +306,14 @@ void OverrideDelayModel::write(const std::string& file) const {
 
 ///@brief Initialize the placer delay model.
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(t_chan_width_dist chan_width_dist,
+                                                               const Netlist<>& net_list,
                                                                const t_placer_opts& placer_opts,
                                                                const t_router_opts& router_opts,
                                                                t_det_routing_arch* det_routing_arch,
                                                                std::vector<t_segment_inf>& segment_inf,
                                                                const t_direct_inf* directs,
                                                                const int num_directs) {
-    return compute_place_delay_model(placer_opts, router_opts, det_routing_arch, segment_inf,
+    return compute_place_delay_model(placer_opts, router_opts, net_list, det_routing_arch, segment_inf,
                                      chan_width_dist, directs, num_directs);
 }
 

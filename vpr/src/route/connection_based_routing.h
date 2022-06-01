@@ -27,7 +27,8 @@ class Connection_based_routing_resources {
     std::vector<t_rt_node*> reached_rt_sinks;
 
   public:
-    Connection_based_routing_resources();
+    Connection_based_routing_resources(const Netlist<>& net_list,
+                                       const vtr::vector<ParentNetId, std::vector<int>>& net_terminals, bool is_flat);
     // adding to the resources when they are reached during pruning
     // mark rr sink node as something that still needs to be reached
     void toreach_rr_sink(int rr_sink_node) { remaining_targets.push_back(rr_sink_node); }
@@ -45,6 +46,9 @@ class Connection_based_routing_resources {
 
     // Targeted reroute resources --------------
   private:
+    const Netlist<>& net_list_;
+    const vtr::vector<ParentNetId, std::vector<int>>& net_terminals_;
+    bool is_flat_;
     // whether or not a connection should be forcibly rerouted the next iteration
     // takes [inet][sink_rr_node_index] and returns whether that connection should be rerouted or not
     /* reroute connection if all of the following are true:
@@ -52,14 +56,14 @@ class Connection_based_routing_resources {
      * 2. the connection is critical enough
      * 3. the connection is suboptimal, in comparison to lower_bound_connection_delay
      */
-    vtr::vector<ClusterNetId, std::unordered_map<int, bool>> forcible_reroute_connection_flag;
+    vtr::vector<ParentNetId, std::unordered_map<int, bool>> forcible_reroute_connection_flag;
 
     // the optimal delay for a connection [inet][ipin] ([0...num_net][1...num_pin])
     // determined after the first routing iteration when only optimizing for timing delay
-    vtr::vector<ClusterNetId, std::vector<float>> lower_bound_connection_delay;
+    vtr::vector<ParentNetId, std::vector<float>> lower_bound_connection_delay;
 
     // the current net that's being routed
-    ClusterNetId current_inet;
+    ParentNetId current_inet;
 
     // the most recent stable critical path delay
     // compared against the current iteration's critical path delay
@@ -76,13 +80,13 @@ class Connection_based_routing_resources {
 
   public:
     // after timing analysis of 1st iteration, can set a lower bound on connection delay
-    void set_lower_bound_connection_delays(ClbNetPinsMatrix<float>& net_delay);
+    void set_lower_bound_connection_delays(NetPinsMatrix<float>& net_delay);
 
     //Updates the connection delay lower bound (if less than current best found)
-    void update_lower_bound_connection_delay(ClusterNetId net, int ipin, float delay);
+    void update_lower_bound_connection_delay(ParentNetId net, int ipin, float delay);
 
     // initialize routing resources at the start of routing to a new net
-    void prepare_routing_for_net(ClusterNetId inet) {
+    void prepare_routing_for_net(ParentNetId inet) {
         current_inet = inet;
         // fresh net with fresh targets
         remaining_targets.clear();
@@ -90,7 +94,7 @@ class Connection_based_routing_resources {
     }
 
     // get a handle on the resources
-    ClusterNetId get_current_inet() const { return current_inet; }
+    ParentNetId get_current_inet() const { return current_inet; }
     float get_stable_critical_path_delay() const { return last_stable_critical_path_delay; }
 
     bool critical_path_delay_grew_significantly(float new_critical_path_delay) const {
@@ -117,7 +121,7 @@ class Connection_based_routing_resources {
     bool forcibly_reroute_connections(float max_criticality,
                                       std::shared_ptr<const SetupTimingInfo> timing_info,
                                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                      ClbNetPinsMatrix<float>& net_delay);
+                                      NetPinsMatrix<float>& net_delay);
 };
 
 using CBRR = Connection_based_routing_resources; // shorthand

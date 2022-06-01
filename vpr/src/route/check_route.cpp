@@ -19,22 +19,32 @@
 
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(int inode, enum e_route_type route_type);
-static void check_source(RRNodeId inode, ClusterNetId net_id);
-static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* pin_done);
+static void check_source(const Netlist<>& net_list,
+                         RRNodeId inode,
+                         ParentNetId net_id,
+                         bool is_flat);
+static void check_sink(const Netlist<>& net_list,
+                       int inode,
+                       int net_pin_index,
+                       ParentNetId net_id,
+                       bool* pin_done);
 static void check_switch(t_trace* tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
-static void reset_flags(ClusterNetId inet, bool* connected_to_route);
+static void reset_flags(ParentNetId inet, bool* connected_to_route);
 static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
                                          enum e_route_type route_type);
 
-static void check_all_non_configurable_edges();
-static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets);
-static void check_net_for_stubs(ClusterNetId net);
+static void check_all_non_configurable_edges(bool is_flat);
+static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets, bool is_flat);
+static void check_net_for_stubs(const Netlist<>& net_list, ParentNetId net);
 
 /************************ Subroutine definitions ****************************/
 
-void check_route(enum e_route_type route_type, e_check_route_option check_route_option) {
+void check_route(const Netlist<>& net_list,
+                 enum e_route_type route_type,
+                 e_check_route_option check_route_option,
+                 bool is_flat) {
     /* This routine checks that a routing:  (1) Describes a properly         *
      * connected path for each net, (2) this path connects all the           *
      * pins spanned by that net, and (3) that no routing resources are       *
@@ -53,7 +63,6 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
     const int num_switches = rr_graph.num_rr_switches();
@@ -65,7 +74,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
      * resources.  This was already checked in order to determine that this  *
      * is a successful routing, but I want to double check it here.          */
 
-    recompute_occupancy_from_scratch();
+    recompute_occupancy_from_scratch(g_vpr_ctx.atom().lookup, is_flat);
     valid = feasible_routing();
     if (valid == false) {
         VPR_ERROR(VPR_ERROR_ROUTE,
@@ -78,17 +87,17 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
     std::fill_n(connected_to_route.get(), rr_graph.num_nodes(), false);
 
     max_pins = 0;
-    for (auto net_id : cluster_ctx.clb_nlist.nets())
-        max_pins = std::max(max_pins, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
+    for (auto net_id : net_list.nets())
+        max_pins = std::max(max_pins, (int)net_list.net_pins(net_id).size());
 
     auto pin_done = std::make_unique<bool[]>(max_pins);
 
     /* Now check that all nets are indeed connected. */
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id) || cluster_ctx.clb_nlist.net_sinks(net_id).size() == 0) /* Skip ignored nets. */
+    for (auto net_id : net_list.nets()) {
+        if (net_list.net_is_ignored(net_id) || net_list.net_sinks(net_id).size() == 0) /* Skip ignored nets. */
             continue;
 
-        std::fill_n(pin_done.get(), cluster_ctx.clb_nlist.net_pins(net_id).size(), false);
+        std::fill_n(pin_done.get(), net_list.net_pins(net_id).size(), false);
 
         /* Check the SOURCE of the net. */
         tptr = route_ctx.trace[net_id].head;
@@ -102,7 +111,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
         check_switch(tptr, num_switches);
         connected_to_route[inode] = true; /* Mark as in path. */
 
-        check_source(RRNodeId(inode), net_id);
+        check_source(net_list, RRNodeId(inode), net_id, is_flat);
         pin_done[0] = true;
 
         prev_node = inode;
@@ -137,7 +146,11 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
                 connected_to_route[inode] = true; /* Mark as in path. */
 
                 if (rr_graph.node_type(RRNodeId(inode)) == SINK) {
-                    check_sink(inode, net_pin_index, net_id, pin_done.get());
+                    check_sink(net_list,
+                               inode,
+                               net_pin_index,
+                               net_id,
+                               pin_done.get());
                     num_sinks += 1;
                 }
 
@@ -147,28 +160,28 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
             tptr = tptr->next;
         } /* End while */
 
-        if (num_sinks != cluster_ctx.clb_nlist.net_sinks(net_id).size()) {
+        if (num_sinks != net_list.net_sinks(net_id).size()) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_route: net %zu (%s) has %zu SINKs (expected %zu).\n",
-                            size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(),
-                            num_sinks, cluster_ctx.clb_nlist.net_sinks(net_id).size());
+                            size_t(net_id), net_list.net_name(net_id).c_str(),
+                            num_sinks, net_list.net_sinks(net_id).size());
         }
 
-        for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+        for (ipin = 0; ipin < net_list.net_pins(net_id).size(); ipin++) {
             if (pin_done[ipin] == false) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_route: net %zu does not connect to pin %d.\n", size_t(net_id), ipin);
             }
         }
 
-        check_net_for_stubs(net_id);
+        check_net_for_stubs(net_list, net_id);
 
         reset_flags(net_id, connected_to_route.get());
 
     } /* End for each net */
 
     if (check_route_option == e_check_route_option::FULL) {
-        check_all_non_configurable_edges();
+        check_all_non_configurable_edges(is_flat);
     } else {
         VTR_ASSERT(check_route_option == e_check_route_option::QUICK);
     }
@@ -179,10 +192,13 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
 
 /* Checks that this SINK node is one of the terminals of inet, and marks   *
  * the appropriate pin as being reached.                                   */
-static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* pin_done) {
+static void check_sink(const Netlist<>& net_list,
+                       int inode,
+                       int net_pin_index,
+                       ParentNetId net_id,
+                       bool* pin_done) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == SINK);
 
@@ -191,7 +207,7 @@ static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* 
                         "in check_sink: node %d does not connect to any terminal of net %s #%lu.\n"
                         "This error is usually caused by incorrectly specified logical equivalence in your architecture file.\n"
                         "You should try to respecify what pins are equivalent or turn logical equivalence off.\n",
-                        inode, cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id));
+                        inode, net_list.net_name(net_id).c_str(), size_t(net_id));
     }
 
     VTR_ASSERT(!pin_done[net_pin_index]); /* Should not have found a routed cnnection to it before */
@@ -199,11 +215,13 @@ static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* 
 }
 
 /* Checks that the node passed in is a valid source for this net. */
-static void check_source(RRNodeId inode, ClusterNetId net_id) {
+static void check_source(const Netlist<>& net_list,
+                         RRNodeId inode,
+                         ParentNetId net_id,
+                         bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+
 
     t_rr_type rr_type = rr_graph.node_type(inode);
     if (rr_type != SOURCE) {
@@ -216,18 +234,17 @@ static void check_source(RRNodeId inode, ClusterNetId net_id) {
     /* for sinks and sources, ptc_num is class */
     int ptc_num = rr_graph.node_class_num(inode);
     /* First node_block for net is the source */
-    ClusterBlockId blk_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    auto type = device_ctx.grid[i][j].type;
+    ParentBlockId blk_id = net_list.net_driver_block(net_id);
 
-    if (place_ctx.block_locs[blk_id].loc.x != i || place_ctx.block_locs[blk_id].loc.y != j) {
+    int loc_x, loc_y;
+    std::tie(loc_x, loc_y) = get_block_loc(blk_id, is_flat);
+    if (loc_x != i || loc_y != j) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
     }
 
     //Get the driver pin's index in the block
-    auto physical_pin = net_pin_to_tile_pin_index(net_id, 0);
-
-    int iclass = type->pin_class[physical_pin];
+    int iclass = get_block_pin_class_num(blk_id, net_list.net_pin(net_id, 0), is_flat);
 
     if (ptc_num != iclass) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -269,7 +286,7 @@ static void check_switch(t_trace* tptr, int num_switch) {
     }
 }
 
-static void reset_flags(ClusterNetId inet, bool* connected_to_route) {
+static void reset_flags(ParentNetId inet, bool* connected_to_route) {
     /* This routine resets the flags of all the channel segments contained *
      * in the traceback of net inet to 0.  This allows us to check the     *
      * next net for connectivity (and the default state of the flags       *
@@ -484,7 +501,7 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
     }
 }
 
-void recompute_occupancy_from_scratch() {
+void recompute_occupancy_from_scratch(const AtomLookup& atom_look_up, bool is_flat) {
     /*
      * This routine updates the occ field in the route_ctx.rr_node_route_inf structure
      * according to the resource usage of the current routing.  It does a
@@ -506,10 +523,11 @@ void recompute_occupancy_from_scratch() {
     /* Now go through each net and count the tracks and pins used everywhere */
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        auto par_net_id = get_cluster_net_parent_id(atom_look_up, net_id, is_flat);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Skip ignored nets. */
             continue;
 
-        tptr = route_ctx.trace[net_id].head;
+        tptr = route_ctx.trace[par_net_id].head;
         if (tptr == nullptr)
             continue;
 
@@ -601,13 +619,13 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
 
 //Checks that all non-configurable edges are in a legal configuration
 //This check is slow, so it has been moved out of check_route()
-static void check_all_non_configurable_edges() {
+static void check_all_non_configurable_edges(bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Checking to ensure non-configurable edges are legal");
     auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        check_non_configurable_edges(net_id, non_configurable_rr_sets);
+        check_non_configurable_edges(net_id, non_configurable_rr_sets, is_flat);
     }
 }
 
@@ -615,11 +633,11 @@ static void check_all_non_configurable_edges() {
 //
 //For routing to be legal if *any* non-configurable edge is used, so must *all*
 //other non-configurable edges in the same set
-static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets) {
+static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets, bool is_flat) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    t_trace* head = route_ctx.trace[net].head;
+    auto par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net, is_flat);
+    t_trace* head = route_ctx.trace[par_net_id].head;
 
     //Collect all the edges used by this net's routing
     std::set<t_node_edge> routing_edges;
@@ -767,9 +785,11 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
 // are children of a configurable node have at least one sink.
 class StubFinder {
   public:
+    StubFinder(const Netlist<>& net_list) : net_list_(net_list) {}
+
     // Checks specified net for stubs, return true if at least one stub is
     // found.
-    bool CheckNet(ClusterNetId net);
+    bool CheckNet(ParentNetId net);
 
     // Returns set of stub nodes.
     const std::set<int>& stub_nodes() {
@@ -783,6 +803,7 @@ class StubFinder {
     // Note this is an ordered set so that node output is sorted by node
     // id.
     std::set<int> stub_nodes_;
+    const Netlist<>& net_list_;
 };
 
 //Cheks for stubs in a net's routing.
@@ -791,14 +812,13 @@ class StubFinder {
 //The only exception are stubs required by non-configurable switches (e.g. shorts).
 //
 //We treat any configurable stubs as an error.
-void check_net_for_stubs(ClusterNetId net) {
-    StubFinder stub_finder;
+void check_net_for_stubs(const Netlist<>& net_list, ParentNetId net) {
+    StubFinder stub_finder(net_list);
 
     bool any_stubs = stub_finder.CheckNet(net);
     if (any_stubs) {
-        auto& cluster_ctx = g_vpr_ctx.clustering();
         std::string msg = vtr::string_fmt("Route tree for net '%s' (#%zu) contains stub branches rooted at:\n",
-                                          cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
+                                          net_list.net_name(net).c_str(), size_t(net));
         for (int inode : stub_finder.stub_nodes()) {
             msg += vtr::string_fmt("    %s\n", describe_rr_node(inode).c_str());
         }
@@ -807,7 +827,7 @@ void check_net_for_stubs(ClusterNetId net) {
     }
 }
 
-bool StubFinder::CheckNet(ClusterNetId net) {
+bool StubFinder::CheckNet(ParentNetId net) {
     stub_nodes_.clear();
 
     t_rt_node* rt_root = traceback_to_route_tree(net);

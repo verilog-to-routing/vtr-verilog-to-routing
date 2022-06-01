@@ -87,29 +87,35 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                              ClbNetPinsMatrix<float>& net_delay);
+                              NetPinsMatrix<float>& net_delay);
 
 ///@brief Perform routing to find the minimum channel width
 RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                            ClbNetPinsMatrix<float>& net_delay);
+                            NetPinsMatrix<float>& net_delay);
 
 ///@brief Loads a previous routing
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& arch,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             ClbNetPinsMatrix<float>& net_delay);
+                             NetPinsMatrix<float>& net_delay);
 
 /* Analysis */
 
 ///@brief Perform or skips the analysis stage
-bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status);
+bool vpr_analysis_flow(const Netlist<>& net_list,
+                       t_vpr_setup& vpr_setup,
+                       const t_arch& Arch,
+                       const RouteStatus& route_status);
 
 ///@brief Perform post-implementation analysis
-void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status);
+void vpr_analysis(const Netlist<>& net_list,
+                  t_vpr_setup& vpr_setup,
+                  const t_arch& Arch,
+                  const RouteStatus& route_status);
 
 /* Device creating */
 
@@ -127,7 +133,9 @@ void vpr_close_graphics(const t_vpr_setup& vpr_setup);
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch);
 void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
-void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);
+void vpr_free_all(const Netlist<>& net_list,
+                  t_arch& Arch,
+                  t_vpr_setup& vpr_setup);
 
 /* Display general info to user */
 void vpr_print_title();

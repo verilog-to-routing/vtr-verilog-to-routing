@@ -275,7 +275,11 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         }
 
         write_rr_graph(kRrGraphFile);
-        vpr_free_all(arch, vpr_setup);
+        if(vpr_setup.RouterOpts.flat_routing) {
+            vpr_free_all((const Netlist<>&) g_vpr_ctx.atom().nlist, arch, vpr_setup);
+        } else {
+            vpr_free_all((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
+        }
     }
 
     t_vpr_setup vpr_setup;
@@ -306,12 +310,26 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     /* Sync netlist to the actual routing (necessary if there are block
        ports with equivalent pins) */
     if (flow_succeeded) {
-        sync_netlists_to_routing(g_vpr_ctx.device(),
-                                 g_vpr_ctx.mutable_atom(),
-                                 g_vpr_ctx.mutable_clustering(),
-                                 g_vpr_ctx.placement(),
-                                 g_vpr_ctx.routing(),
-                                 vpr_setup.PackerOpts.pack_verbosity > 2);
+        if(vpr_setup.RouterOpts.flat_routing) {
+            sync_netlists_to_routing(g_vpr_ctx.device(),
+                                     g_vpr_ctx.mutable_atom(),
+                                     g_vpr_ctx.atom().lookup,
+                                     g_vpr_ctx.mutable_clustering(),
+                                     g_vpr_ctx.placement(),
+                                     g_vpr_ctx.routing(),
+                                     vpr_setup.PackerOpts.pack_verbosity > 2,
+                                     vpr_setup.RouterOpts.flat_routing);
+        } else {
+            sync_netlists_to_routing(g_vpr_ctx.device(),
+                                     g_vpr_ctx.mutable_atom(),
+                                     g_vpr_ctx.mutable_clustering(),
+                                     g_vpr_ctx.atom().lookup,
+                                     g_vpr_ctx.placement(),
+                                     g_vpr_ctx.routing(),
+                                     (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
+                                     vpr_setup.PackerOpts.pack_verbosity > 2,
+                                     vpr_setup.RouterOpts.flat_routing,);
+        }
     }
 
     std::stringstream fasm_string;
@@ -610,7 +628,11 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     CHECK(found_mux3);
     CHECK(found_mux4);
 
-    vpr_free_all(arch, vpr_setup);
+    if(vpr_setup.RouterOpts.flat_routing) {
+        vpr_free_all((const Netlist<>&) g_vpr_ctx.atom().nlist, arch, vpr_setup);
+    } else {
+        vpr_free_all((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
+    }
 }
 
 } // namespace

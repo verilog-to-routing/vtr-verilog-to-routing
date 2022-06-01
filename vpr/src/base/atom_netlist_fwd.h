@@ -20,10 +20,10 @@ class AtomLookup;
  */
 
 //Type tags for Ids
-struct atom_block_id_tag;
-struct atom_net_id_tag;
-struct atom_port_id_tag;
-struct atom_pin_id_tag;
+struct atom_block_id_tag : general_blk_id_tag {};
+struct atom_net_id_tag : general_net_id_tag {};
+struct atom_port_id_tag : general_port_id_tag {};
+struct atom_pin_id_tag : general_pin_id_tag {};
 
 //A unique identifier for a block/primitive in the atom netlist
 typedef vtr::StrongId<atom_block_id_tag> AtomBlockId;

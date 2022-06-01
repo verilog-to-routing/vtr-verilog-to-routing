@@ -2,16 +2,17 @@
 
 #include "globals.h"
 
-SpatialRouteTreeLookup build_route_tree_spatial_lookup(ClusterNetId net, t_rt_node* rt_root) {
+SpatialRouteTreeLookup build_route_tree_spatial_lookup(const Netlist<>& net_list,
+                                                       const vtr::vector<ParentNetId, t_bb>& net_bound_box,
+                                                       ParentNetId net,
+                                                       t_rt_node* rt_root) {
     constexpr float BIN_AREA_PER_SINK_FACTOR = 4;
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
 
-    int fanout = cluster_ctx.clb_nlist.net_sinks(net).size();
+    int fanout = net_list.net_sinks(net).size();
 
-    t_bb bb = route_ctx.route_bb[net];
+    t_bb bb = net_bound_box[net];
     float bb_area = (bb.xmax - bb.xmin) * (bb.ymax - bb.ymin);
     float bb_area_per_sink = bb_area / fanout;
     float bin_area = BIN_AREA_PER_SINK_FACTOR * bb_area_per_sink;

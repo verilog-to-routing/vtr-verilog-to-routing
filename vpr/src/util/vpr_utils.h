@@ -29,6 +29,10 @@ bool is_empty_type(t_logical_block_type_ptr type);
 //Returns the corresponding physical type given the logical type as parameter
 t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
 
+t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk);
+
+t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat);
+
 //Returns the sub tile corresponding to the logical block location within a physical type
 int get_sub_tile_index(ClusterBlockId blk);
 
@@ -38,11 +42,75 @@ int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node);
 //as the block id is used to retrieve the information of the used physical tile.
 t_class_range get_class_range_for_block(const ClusterBlockId blk_id);
 
+t_class_range get_class_range_for_block(const AtomBlockId atom_blk);
+
+t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat);
+
 //Returns the physical pin range relative to a block id. This must be called after placement
 //as the block id is used to retrieve the information of the used physical tile.
 void get_pin_range_for_block(const ClusterBlockId blk_id,
                              int* pin_low,
                              int* pin_high);
+
+std::tuple<int, int> get_block_loc(const ParentBlockId& block_id, bool is_flat);
+
+int get_block_num_class(const ParentBlockId& block_id, bool is_flat);
+
+int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pin_id, bool is_flat);
+
+template<typename T>
+inline ClusterNetId get_cluster_net_id(T id) {
+    std::size_t id_num = std::size_t(id);
+    ClusterNetId cluster_net_id = ClusterNetId(id_num);
+    return cluster_net_id;
+}
+
+template<typename T>
+inline AtomNetId get_atom_net_id(T id) {
+    std::size_t id_num = std::size_t(id);
+    AtomNetId atom_net_id = AtomNetId(id_num);
+    return atom_net_id;
+}
+
+template<typename T>
+inline ClusterBlockId get_cluster_block_id(T id) {
+    std::size_t id_num = std::size_t(id);
+    ClusterBlockId cluster_block_id = ClusterBlockId(id_num);
+    return cluster_block_id;
+}
+
+template<typename T>
+inline AtomBlockId get_atom_block_id(T id){
+    std::size_t id_num = std::size_t(id);
+    AtomBlockId atom_block_id = AtomBlockId(id_num);
+    return atom_block_id;
+}
+
+template<typename T>
+inline ClusterPinId get_cluster_pin_id(T id) {
+    std::size_t id_num = std::size_t(id);
+    ClusterPinId cluster_pin_id = ClusterPinId(id_num);
+    return cluster_pin_id;
+}
+
+template<typename T>
+inline AtomPinId get_atom_pin_id(T id) {
+    std::size_t id_num = std::size_t(id);
+    AtomPinId atom_pin_id = AtomPinId(id_num);
+    return atom_pin_id;
+}
+
+inline ParentNetId get_cluster_net_parent_id(const AtomLookup& atom_look_up, ClusterNetId net_id, bool is_flat) {
+    ParentNetId par_net_id;
+    if(is_flat) {
+        auto cluster_net_id = atom_look_up.clb_net(get_atom_net_id(net_id));
+        VTR_ASSERT(cluster_net_id != ClusterNetId::INVALID());
+        par_net_id = ParentNetId(size_t(cluster_net_id));
+    } else {
+        par_net_id = ParentNetId(size_t(net_id));
+    }
+    return par_net_id;
+}
 
 void sync_grid_to_blocks();
 
@@ -175,6 +243,8 @@ int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);
 
 //Returns the physical pin of the tile, related to the given ClusterPinId
 int tile_pin_index(const ClusterPinId pin);
+
+int get_atom_pin_class_num(const AtomPinId atom_pin_id);
 
 int max_pins_per_grid_tile();
 

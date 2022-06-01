@@ -4,13 +4,21 @@
 #include <algorithm>
 #include "vpr_types.h"
 
-void routing_stats(bool full_stats, enum e_route_type route_type, std::vector<t_segment_inf>& segment_inf, float R_minW_nmos, float R_minW_pmos, float grid_logic_tile_area, enum e_directionality directionality, int wire_to_ipin_switch);
+void routing_stats(bool full_stats,
+                   enum e_route_type route_type,
+                   std::vector<t_segment_inf>& segment_inf,
+                   float R_minW_nmos,
+                   float R_minW_pmos,
+                   float grid_logic_tile_area,
+                   enum e_directionality directionality,
+                   int wire_to_ipin_switch,
+                   bool is_flat);
 
-void print_wirelen_prob_dist();
+void print_wirelen_prob_dist(bool is_flat);
 
 void print_lambda();
 
-void get_num_bends_and_length(ClusterNetId inet, int* bends, int* length, int* segments);
+void get_num_bends_and_length(ParentNetId inet, int* bends, int* length, int* segments);
 
 int count_netlist_clocks();
 

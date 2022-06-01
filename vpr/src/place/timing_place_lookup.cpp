@@ -157,6 +157,7 @@ static float find_neightboring_average(vtr::Matrix<float>& matrix, int x, int y,
 
 std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
                                                            const t_router_opts& router_opts,
+                                                           const Netlist<>& net_list,
                                                            t_det_routing_arch* det_routing_arch,
                                                            std::vector<t_segment_inf>& segment_inf,
                                                            t_chan_width_dist chan_width_dist,
@@ -176,7 +177,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
         router_opts.write_router_lookahead,
         router_opts.read_router_lookahead,
         segment_inf);
-    RouterDelayProfiler route_profiler(router_lookahead);
+    RouterDelayProfiler route_profiler(net_list, router_lookahead, router_opts.flat_routing);
 
     int longest_length = get_longest_segment_length(segment_inf);
 
@@ -201,7 +202,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
     }
 
     /*free all data structures that are no longer needed */
-    free_routing_structs();
+    free_routing_structs((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist);
 
     return place_delay_model;
 }

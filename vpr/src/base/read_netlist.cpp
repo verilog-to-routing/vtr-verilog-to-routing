@@ -228,6 +228,34 @@ ClusteredNetlist read_netlist(const char* net_file,
         atom_ctx.lookup.set_atom_clb_net(net_id, clb_net_id);
     }
 
+    // Mark ignored and global atom nets
+    for (auto blk_id : clb_nlist.blocks()) {
+        auto block_type = clb_nlist.block_type(blk_id);
+        auto tile_type = pick_physical_type(block_type);
+        for (int j = 0; j < block_type->pb_type->num_pins; j++) {
+            int physical_pin = get_physical_pin(tile_type, block_type, j);
+
+            //Iterate through each pin of the block, and see if there is a net allocated/used for it
+            auto clb_net_id = clb_nlist.block_net(blk_id, j);
+
+            if (clb_net_id != ClusterNetId::INVALID()) {
+                //Verify old and new CLB netlists have the same # of pins per net
+                if (RECEIVER == get_pin_type_from_pin_physical_num(tile_type, physical_pin)) {
+                    AtomNetId atom_net_id = atom_ctx.lookup.atom_net(clb_net_id);
+                    VTR_ASSERT(atom_net_id != AtomNetId::INVALID());
+                    if (tile_type->is_pin_global[physical_pin]) {
+                        clb_nlist.set_net_is_global(clb_net_id, true);
+                        atom_ctx.nlist.set_net_is_global(atom_net_id, true);
+                    }
+                    if (tile_type->is_ignored_pin[physical_pin]) {
+                        clb_nlist.set_net_is_ignored(clb_net_id, true);
+                        atom_ctx.nlist.set_net_is_ignored(atom_net_id, true);
+                    }
+                }
+            }
+        }
+    }
+
     /* load mapping between atom pins and pb_graph_pins */
     load_atom_pin_mapping(clb_nlist);
 

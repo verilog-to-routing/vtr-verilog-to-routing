@@ -100,7 +100,9 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
 
     /*Allocate necessary routing structures*/
     alloc_and_load_rr_node_route_structs();
-    init_route_structs(router_opts.bb_factor);
+    init_route_structs((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                       router_opts.bb_factor,
+                       router_opts.flat_routing);
 
     /*Check dimensions*/
     std::getline(fp, header_str);
@@ -121,19 +123,22 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     /*Correctly set up the clb opins*/
     BinaryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
-    reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
-                               router_opts.acc_fac, false);
-    recompute_occupancy_from_scratch();
+    if(!router_opts.flat_routing) {
+        reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
+                                   router_opts.acc_fac, false, router_opts.flat_routing);
+    }
+    recompute_occupancy_from_scratch(g_vpr_ctx.atom().lookup, router_opts.flat_routing);
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
     OveruseInfo overuse_info(device_ctx.rr_graph.num_nodes());
     pathfinder_update_acc_cost_and_overuse_info(router_opts.acc_fac, overuse_info);
-
-    reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
-                               router_opts.acc_fac, true);
+    if(!router_opts.flat_routing) {
+        reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
+                                   router_opts.acc_fac, true, router_opts.flat_routing);
+    }
 
     /* Finished loading in the routing, now check it*/
-    recompute_occupancy_from_scratch();
+    recompute_occupancy_from_scratch(g_vpr_ctx.atom().lookup, router_opts.flat_routing);
     bool is_feasible = feasible_routing();
 
     VTR_LOG("Finished loading route file\n");
@@ -213,7 +218,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_trace* tptr = route_ctx.trace[inet].head;
+    t_trace* tptr = route_ctx.trace[(const ParentNetId&)inet].head;
 
     /*remember the position of the last line in order to go back*/
     std::streampos oldpos = fp.tellg();
@@ -366,12 +371,12 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 
             /* Allocate and load correct values to trace.head*/
             if (node_count == 0) {
-                route_ctx.trace[inet].head = alloc_trace_data();
-                route_ctx.trace[inet].head->index = inode;
-                route_ctx.trace[inet].head->net_pin_index = net_pin_index;
-                route_ctx.trace[inet].head->iswitch = switch_id;
-                route_ctx.trace[inet].head->next = nullptr;
-                tptr = route_ctx.trace[inet].head;
+                route_ctx.trace[(const ParentNetId&)inet].head = alloc_trace_data();
+                route_ctx.trace[(const ParentNetId&)inet].head->index = inode;
+                route_ctx.trace[(const ParentNetId&)inet].head->net_pin_index = net_pin_index;
+                route_ctx.trace[(const ParentNetId&)inet].head->iswitch = switch_id;
+                route_ctx.trace[(const ParentNetId&)inet].head->next = nullptr;
+                tptr = route_ctx.trace[(const ParentNetId&)inet].head;
                 node_count++;
             } else {
                 tptr->next = alloc_trace_data();

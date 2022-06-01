@@ -2,11 +2,16 @@
 #include "atom_netlist.h"
 #include "atom_lookup.h"
 
-VprTimingGraphResolver::VprTimingGraphResolver(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const tatum::TimingGraph& timing_graph, const AnalysisDelayCalculator& delay_calc)
+VprTimingGraphResolver::VprTimingGraphResolver(const AtomNetlist& netlist,
+                                               const AtomLookup& netlist_lookup,
+                                               const tatum::TimingGraph& timing_graph,
+                                               const AnalysisDelayCalculator& delay_calc,
+                                               bool is_flat)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
     , timing_graph_(timing_graph)
-    , delay_calc_(delay_calc) {}
+    , delay_calc_(delay_calc)
+    , is_flat_(is_flat) {}
 
 std::string VprTimingGraphResolver::node_name(tatum::NodeId node) const {
     AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
@@ -195,7 +200,8 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
             && !route_ctx.trace.empty()) {
             //check if detailed timing report has been selected and that the vector of tracebacks
             //is not empty.
-            if (route_ctx.trace[src_net].head != nullptr) {
+            auto par_net_id = get_cluster_net_parent_id(netlist_lookup_, src_net, is_flat_);
+            if (route_ctx.trace[par_net_id].head != nullptr) {
                 //the traceback is not a nullptr, so we find the path of the net from source to sink.
                 //Note that the previously declared interblock_component will not be added to the
                 //vector of net components.
@@ -238,11 +244,13 @@ void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<ta
      * which walks the route tree from the sink to the source. Along the way, we process each node 
      * and construct net_components that are added to the vector of components. */
 
-    t_rt_node* rt_root = traceback_to_route_tree(net_id);              //obtain the route tree from the traceback
+    auto par_net_id = get_cluster_net_parent_id(netlist_lookup_, net_id, is_flat_);
+    t_rt_node* rt_root = traceback_to_route_tree(par_net_id);              //obtain the route tree from the traceback
     load_new_subtree_R_upstream(rt_root);                              //load in the resistance values for the route
     load_new_subtree_C_downstream(rt_root);                            //load in the capacitance values for the route tree
     load_route_tree_Tdel(rt_root, 0.);                                 //load the time delay values for the route tree
-    t_rt_node* rt_sink = find_sink_rt_node(rt_root, net_id, sink_pin); //find the sink matching sink_pin
+    // TODO: This implementation is wrong - the input of the function should be the pin number of type ParentPinId
+    t_rt_node* rt_sink = find_sink_rt_node((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist, rt_root, par_net_id, (ParentPinId&)sink_pin); //find the sink matching sink_pin
     get_detailed_interconnect_components_helper(components, rt_sink);  //from sink, walk up to source and add net components
     free_route_tree(rt_root);
 }

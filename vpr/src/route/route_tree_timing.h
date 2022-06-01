@@ -13,7 +13,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok = false);
 
 void free_route_tree_timing_structs();
 
-t_rt_node* init_route_tree_to_source(ClusterNetId inet);
+t_rt_node* init_route_tree_to_source(const ParentNetId& inet);
 
 void free_route_tree(t_rt_node* rt_node);
 void print_route_tree(const t_rt_node* rt_node);
@@ -22,10 +22,13 @@ void print_route_tree(const t_rt_node* rt_node, int depth);
 t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup);
 
 void update_net_delays_from_route_tree(float* net_delay,
+                                       const Netlist<>& net_list,
                                        const t_rt_node* const* rt_node_of_sink,
-                                       ClusterNetId inet,
+                                       ParentNetId inet,
                                        TimingInfo* timing_info,
-                                       ClusteredPinTimingInvalidator* pin_timing_invalidator);
+                                       ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                       const ClusteredPinAtomPinsLookup& pin_look_up,
+                                       bool is_flat);
 
 void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
 void load_route_tree_rr_route_inf(t_rt_node* root);
@@ -37,7 +40,7 @@ void add_route_tree_to_rr_node_lookup(t_rt_node* node);
 bool verify_route_tree(t_rt_node* root);
 bool verify_traceback_route_tree_equivalent(const t_trace* trace_head, const t_rt_node* rt_root);
 
-t_rt_node* find_sink_rt_node(t_rt_node* rt_root, ClusterNetId net_id, ClusterPinId sink_pin);
+t_rt_node* find_sink_rt_node(const Netlist<>& net_list, t_rt_node* rt_root, ParentNetId net_id, ParentPinId sink_pin);
 t_rt_node* find_sink_rt_node_recurr(t_rt_node* node, int sink_inode);
 
 /********** Incremental reroute ***********/
@@ -49,11 +52,15 @@ void print_route_tree_node(const t_rt_node* rt_root);
 void print_route_tree_inf(const t_rt_node* rt_root);
 void print_route_tree_congestion(const t_rt_node* rt_root);
 
-t_rt_node* traceback_to_route_tree(ClusterNetId inet);
-t_rt_node* traceback_to_route_tree(ClusterNetId inet, std::vector<int>* non_config_node_set_usage);
+t_rt_node* traceback_to_route_tree(ParentNetId inet);
+
+t_rt_node* traceback_to_route_tree(ParentNetId inet, std::vector<int>* non_config_node_set_usage);
 t_rt_node* traceback_to_route_tree(t_trace* head);
 t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_node_set_usage);
-t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int num_remaining_sinks);
+
+t_trace* traceback_from_route_tree(ParentNetId inet,
+                                   const t_rt_node* root,
+                                   int num_routed_sinks);
 
 // Prune route tree
 //
@@ -66,7 +73,9 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf);
 //  Note that non-configurable nodes will be pruned if
 //  non_config_node_set_usage is provided.  prune_route_tree will update
 //  non_config_node_set_usage after pruning.
-t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vector<int>* non_config_node_set_usage);
+t_rt_node* prune_route_tree(t_rt_node* rt_root,
+                            CBRR& connections_inf,
+                            std::vector<int>* non_config_node_set_usage);
 
 void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub);
 
