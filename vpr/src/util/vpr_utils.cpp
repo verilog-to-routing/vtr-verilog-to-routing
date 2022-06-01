@@ -1320,7 +1320,15 @@ std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(Cluster
 std::vector<int> get_cluster_internal_ipin_opin(ClusterBlockId cluster_blk_id) {
     std::vector<int> internal_pins;
 
-
+    auto add_child_to_list = [] (std::list<const t_pb*>& pb_list, const t_pb* parent_pb) {
+        for(int child_pb_type_idx = 0; child_pb_type_idx < parent_pb->get_num_child_types(); child_pb_type_idx++) {
+            int num_children = parent_pb->get_num_children_of_type(child_pb_type_idx);
+            for (int child_idx = 0; child_idx < num_children; child_idx++) {
+                const t_pb* child_pb = &parent_pb->child_pbs[child_pb_type_idx][child_idx];
+                pb_list.push_back(child_pb);
+            }
+        }
+    };
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
 
@@ -1337,14 +1345,10 @@ std::vector<int> get_cluster_internal_ipin_opin(ClusterBlockId cluster_blk_id) {
 
     std::list<const t_pb*> internal_pbs;
     const t_pb* pb = cluster_net_list.block_pb(cluster_blk_id);
+    // Pins on the tile are already added. Thus, we should ** not ** at the top-level block's pins.
+    add_child_to_list(internal_pbs, pb);
 
-    for(int child_pb_type_idx = 0; child_pb_type_idx < pb->get_num_child_types(); child_pb_type_idx++) {
-        int num_children = pb->get_num_children_of_type(child_pb_type_idx);
-        for (int child_idx = 0; child_idx < num_children; child_idx++) {
-            const t_pb* child_pb = &pb->child_pbs[child_pb_type_idx][child_idx];
-            internal_pbs.push_back(child_pb);
-        }
-    }
+
 
     while(!internal_pbs.empty()) {
         pb = internal_pbs.front();
@@ -1358,15 +1362,7 @@ std::vector<int> get_cluster_internal_ipin_opin(ClusterBlockId cluster_blk_id) {
 
         internal_pins.insert(internal_pins.end(), pb_pins.begin(), pb_pins.end());
 
-        int num_child_pb_type = pb->get_num_child_types();
-        for(int child_pb_type_idx = 0; child_pb_type_idx < num_child_pb_type; child_pb_type_idx++) {
-            int num_children = pb->get_num_children_of_type(child_pb_type_idx);
-            for (int child_idx = 0; child_idx < num_children; child_idx++) {
-                const t_pb* child_pb = &pb->child_pbs[child_pb_type_idx][child_idx];
-                internal_pbs.push_back(child_pb);
-            }
-        }
-
+        add_child_to_list(internal_pbs, pb);
     }
 
     return internal_pins;
@@ -1377,10 +1373,20 @@ std::vector<int> get_pb_pins(t_physical_tile_type_ptr physical_type,
                              t_logical_block_type_ptr logical_block,
                              const t_pb* pb,
                              int rel_cap) {
+    /* If pb is the root block, pins on the tile is returned */
     VTR_ASSERT(pb->pb_graph_node != nullptr);
     if(pb->pb_graph_node->is_root()) {
-        std::vector<int> pin_nums(physical_type->num_pins);
-        std::iota(pin_nums.begin(), pin_nums.end(), 0);
+        int pin_num_offset = 0;
+        int curr_sub_tile_idx = sub_tile->index;
+        VTR_ASSERT(curr_sub_tile_idx >= 0);
+        for(int sub_tile_idx = 0; sub_tile_idx < curr_sub_tile_idx; sub_tile_idx++) {
+            pin_num_offset += physical_type->sub_tiles[sub_tile_idx].num_phy_pins;
+        }
+        int inst_num_pin = sub_tile->num_phy_pins / sub_tile->capacity.total();
+        pin_num_offset += (inst_num_pin * rel_cap);
+
+        std::vector<int> pin_nums(inst_num_pin);
+        std::iota(pin_nums.begin(), pin_nums.end(), pin_num_offset);
         return pin_nums;
 
     } else {

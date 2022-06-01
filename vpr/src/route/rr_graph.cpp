@@ -192,11 +192,12 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const int num_directs,
                                                                   const t_clb_to_clb_directs* clb_to_clb_directs,
                                                                   bool is_global_graph,
-                                                                  const enum e_clock_modeling clock_modeling);
+                                                                  const enum e_clock_modeling clock_modeling,
+                                                                  bool is_flat);
 
-static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
-                                      const DeviceGrid& grid,
-                                      const int delayless_switch);
+//static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
+//                                      const DeviceGrid& grid,
+//                                      const int delayless_switch);
 
 static float pattern_fmod(float a, float b);
 static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
@@ -390,7 +391,8 @@ void create_rr_graph(const t_graph_type graph_type,
                      const t_router_opts& router_opts,
                      const t_direct_inf* directs,
                      const int num_directs,
-                     int* Warnings) {
+                     int* Warnings,
+                     bool is_flat) {
     const auto& device_ctx = g_vpr_ctx.device();
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     if (!det_routing_arch->read_rr_graph_filename.empty()) {
@@ -412,7 +414,7 @@ void create_rr_graph(const t_graph_type graph_type,
             }
         }
     } else {
-        if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty()) {
+        if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty() && is_flat == false) {
             //No change in channel width, so skip re-building RR graph
             VTR_LOG("RR graph channel widths unchanged, skipping RR graph rebuild\n");
             return;
@@ -438,7 +440,7 @@ void create_rr_graph(const t_graph_type graph_type,
                        router_opts.clock_modeling,
                        directs, num_directs,
                        &det_routing_arch->wire_to_rr_ipin_switch,
-                       router_opts.flat_routing,
+                       is_flat,
                        Warnings);
         if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
             mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
@@ -459,26 +461,43 @@ void create_rr_graph(const t_graph_type graph_type,
     }
 }
 
-void add_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
-                                const DeviceGrid& grid,
-                                const int delayless_switch,
-                                int index) {
-
-    alloc_and_load_intra_cluster_rr_node_indices(rr_graph_builder,
-                                                 grid,
-                                                 &index);
-    int num_rr_nodes = index;
-    rr_graph_builder.resize_nodes(num_rr_nodes);
-
-    alloc_and_load_intra_cluster_rr_graph(rr_graph_builder,
-                                          grid,
-                                          delayless_switch);
-
-    add_intra_lb_edges_rr_graph(rr_graph_builder,
-                                grid,
-                                delayless_switch);
-
-}
+//void add_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
+//                                const t_graph_type graph_type,
+//                                const std::vector<t_physical_tile_type>& block_types,
+//                                const DeviceGrid& grid,
+//                                const int num_arch_switches,
+//                                const int wire_to_arch_ipin_switch,
+//                                const int delayless_switch,
+//                                const float R_minW_nmos,
+//                                const float R_minW_pmos,
+//                                int* wire_to_rr_ipin_switch,
+//                                int index) {
+//
+//    rr_graph_builder.reset_partitioned_flat();
+//
+//    alloc_and_load_intra_cluster_rr_node_indices(rr_graph_builder,
+//                                                 grid,
+//                                                 &index);
+//    int num_rr_nodes = index;
+//    rr_graph_builder.resize_nodes(num_rr_nodes);
+//
+//    alloc_and_load_intra_cluster_rr_graph(rr_graph_builder,
+//                                          grid,
+//                                          delayless_switch);
+//
+//    add_intra_lb_edges_rr_graph(rr_graph_builder,
+//                                grid,
+//                                delayless_switch);
+//
+//    alloc_and_load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
+//
+//    g_vpr_ctx.mutable_device().rr_graph_builder.partition_edges();
+//
+//    check_rr_graph(graph_type, grid, block_types, true);
+//
+//    print_rr_graph_stats();
+//
+//}
 
 
 static void add_intra_lb_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -510,9 +529,6 @@ static void add_intra_lb_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
         alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
         rr_edges_to_create.clear();
     }
-
-    device_ctx.rr_graph_builder.partition_edges();
-
 }
 
 void print_rr_graph_stats() {
@@ -720,8 +736,12 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     // Add routing resources to rr_graph lookup table
     alloc_and_load_tile_rr_node_indices(device_ctx.rr_graph_builder,
-                                   max_chan_width, grid,
-                                   &num_rr_nodes, chan_details_x, chan_details_y);
+                                        max_chan_width,
+                                        grid,
+                                        &num_rr_nodes,
+                                        chan_details_x,
+                                        chan_details_y,
+                                        is_flat);
 
     size_t expected_node_count = num_rr_nodes;
     if (clock_modeling == DEDICATED_NETWORK) {
@@ -855,7 +875,8 @@ static void build_rr_graph(const t_graph_type graph_type,
         &Fc_clipped,
         directs, num_directs, clb_to_clb_directs,
         is_global_graph,
-        clock_modeling);
+        clock_modeling,
+        is_flat);
 
     // Verify no incremental node allocation.
     if (rr_graph.num_nodes() > expected_node_count) {
@@ -1350,7 +1371,8 @@ static std::function<void(t_chan_width*)>   alloc_and_load_rr_graph(RRGraphBuild
                                                                   const int num_directs,
                                                                   const t_clb_to_clb_directs* clb_to_clb_directs,
                                                                   bool is_global_graph,
-                                                                  const enum e_clock_modeling clock_modeling) {
+                                                                  const enum e_clock_modeling clock_modeling,
+                                                                  bool is_flat) {
     //We take special care when creating RR graph edges (there are typically many more
     //edges than nodes in an RR graph).
     //
@@ -1372,8 +1394,22 @@ static std::function<void(t_chan_width*)>   alloc_and_load_rr_graph(RRGraphBuild
     /* Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs*/
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
-            build_rr_sinks_sources(rr_graph_builder, i, j, rr_edges_to_create,
-                                   delayless_switch, grid);
+            build_rr_sinks_sources(rr_graph_builder,
+                                   i,
+                                   j,
+                                   rr_edges_to_create,
+                                   delayless_switch,
+                                   grid);
+
+            if(is_flat) {
+                build_rr_sinks_sources_flat(rr_graph_builder,
+                                            i,
+                                            j,
+                                            rr_edges_to_create,
+                                            delayless_switch,
+                                            grid);
+            }
+
 
             //Create the actual SOURCE->OPIN, IPIN->SINK edges
             uniquify_edges(rr_edges_to_create);
@@ -1409,6 +1445,12 @@ static std::function<void(t_chan_width*)>   alloc_and_load_rr_graph(RRGraphBuild
                 rr_edges_to_create.clear();
             }
         }
+    }
+
+    if(is_flat) {
+        add_intra_lb_edges_rr_graph(rr_graph_builder,
+                                    grid,
+                                    delayless_switch);
     }
 
     /* Build channels */
@@ -1466,26 +1508,26 @@ static std::function<void(t_chan_width*)>   alloc_and_load_rr_graph(RRGraphBuild
     return update_chan_width;
 }
 
-static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
-                                                  const DeviceGrid& grid,
-                                                  const int delayless_switch) {
-
-    t_rr_edge_info_set rr_edges_to_create;
-
-    for (size_t i = 0; i < grid.width(); ++i) {
-        for (size_t j = 0; j < grid.height(); ++j) {
-            build_rr_sinks_sources_flat(rr_graph_builder, i, j, rr_edges_to_create,
-                                        delayless_switch, grid);
-
-            //Create the actual SOURCE->OPIN, IPIN->SINK edges
-            uniquify_edges(rr_edges_to_create);
-            alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-            rr_edges_to_create.clear();
-        }
-    }
-
-
-}
+//static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
+//                                                  const DeviceGrid& grid,
+//                                                  const int delayless_switch) {
+//
+//    t_rr_edge_info_set rr_edges_to_create;
+//
+//    for (size_t i = 0; i < grid.width(); ++i) {
+//        for (size_t j = 0; j < grid.height(); ++j) {
+//            build_rr_sinks_sources_flat(rr_graph_builder, i, j, rr_edges_to_create,
+//                                        delayless_switch, grid);
+//
+//            //Create the actual SOURCE->OPIN, IPIN->SINK edges
+//            uniquify_edges(rr_edges_to_create);
+//            alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+//            rr_edges_to_create.clear();
+//        }
+//    }
+//
+//
+//}
 
 static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const RRGraphView& rr_graph,
@@ -1644,8 +1686,8 @@ static void add_rr_ipin_and_opin(RRGraphBuilder& rr_graph_builder,
     t_rr_type node_type = (pin_type == DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
 
     pin_node_id = rr_graph_builder.node_lookup().find_node(i + width_offset, j + height_offset, node_type, pin_ptc, side);
-    if(pin_node_id == RRNodeId::INVALID())
-        return;
+    VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
+
     if(node_type == IPIN) {
         rr_graph_builder.set_node_cost_index(pin_node_id, RRIndexedDataId(IPIN_COST_INDEX));
     } else{
@@ -1874,8 +1916,8 @@ static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
                                  pin,
                                  i,
                                  j,
-                                 1 /* Internal pin is added */,
-                                 1 /* Internal pin is added */,
+                                 0 /* Internal pin is added */,
+                                 0 /* Internal pin is added */,
                                  e_side::TOP /* TOP side is considered for internal pins */);
         }
     }
@@ -1991,6 +2033,7 @@ static void add_parent_children_edges(RRGraphBuilder& rr_graph_builder,
                                                      i,
                                                      j,
                                                      pin);
+        VTR_ASSERT(parent_pin_node_id != RRNodeId::INVALID());
         auto pin_type = get_pin_type_from_pin_physical_num(physical_type, pin);
 
         auto connected_pins = get_connected_child_pins(physical_type,
@@ -2004,6 +2047,7 @@ static void add_parent_children_edges(RRGraphBuilder& rr_graph_builder,
                                                        i,
                                                        j,
                                                        connected_pin);
+            VTR_ASSERT(conn_pin_node_id != RRNodeId::INVALID());
 
             if(pin_type == e_pin_type::RECEIVER) { /* INPUT PIN */
                 rr_edges_to_create.emplace_back(parent_pin_node_id, conn_pin_node_id, delayless_switch);

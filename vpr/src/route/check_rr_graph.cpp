@@ -141,7 +141,11 @@ void check_rr_graph(const t_graph_type graph_type,
             bool is_chan_to_chan = (rr_type == CHANX || rr_type == CHANY) && (to_rr_type == CHANY || to_rr_type == CHANX);
             bool is_chan_to_ipin = (rr_type == CHANX || rr_type == CHANY) && to_rr_type == IPIN;
             bool is_opin_to_chan = rr_type == OPIN && (to_rr_type == CHANX || to_rr_type == CHANY);
-            if (!(is_chan_to_chan || is_chan_to_ipin || is_opin_to_chan)) {
+            bool is_internal_edge = false;
+            if(is_flat) {
+                is_internal_edge = (rr_type == IPIN && to_rr_type == IPIN) || (rr_type == OPIN && to_rr_type == OPIN);
+            }
+            if (!(is_chan_to_chan || is_chan_to_ipin || is_opin_to_chan || is_internal_edge)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_graph: node %d (%s) connects to node %d (%s) %zu times - multi-connections only expected for CHAN<->CHAN, CHAN->IPIN, OPIN->CHAN.\n",
                           inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], num_edges_to_node);

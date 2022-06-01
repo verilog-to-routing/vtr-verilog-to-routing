@@ -309,6 +309,10 @@ class RRGraphBuilder {
         node_storage_.init_fan_in();
     }
 
+    inline void reset_partitioned_flat() {
+        node_storage_.partitioned_ = false;
+    }
+
     /* -- Internal data storage -- */
   private:
     /* TODO: When the refactoring effort finishes, 

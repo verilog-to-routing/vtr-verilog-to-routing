@@ -1268,7 +1268,7 @@ std::vector<int> get_connected_child_pins(t_physical_tile_type_ptr physical_type
                                                                           pin_physical_num);
 
     if(is_pin_on_tile(physical_type, pin_physical_num)) {
-        std::vector<int> conn_pins(1);
+
         auto direct_map = (physical_type->tile_block_pin_directs_map).at(logical_block->index).at(sub_tile->index);
         int sub_tile_inst_num_pins = sub_tile->num_phy_pins/sub_tile->capacity.total();
         pin_physical_num -= (sub_tile_inst_num_pins*sub_tile_cap);
@@ -1280,12 +1280,13 @@ std::vector<int> get_connected_child_pins(t_physical_tile_type_ptr physical_type
                            pin_physical_num, physical_type->name, logical_block->name);
         }
         int pin_logical_num = result->second.pin;
-        conn_pins[0] = get_pb_pin_physical_num(physical_type,
-                                               sub_tile,
-                                               logical_block,
-                                               sub_tile_cap,
-                                               logical_block->pb_pin_num_map.at(pin_logical_num));
-        return conn_pins;
+        auto pb_pin = logical_block->pb_pin_num_map.at(pin_logical_num);
+        return get_connected_child_pins(physical_type,
+                                        sub_tile,
+                                        logical_block,
+                                        sub_tile_cap,
+                                        mode_num,
+                                        pb_pin);
 
     } else {
         auto pb_pin = get_pb_pin_from_pin_physical_num(physical_type, pin_physical_num);

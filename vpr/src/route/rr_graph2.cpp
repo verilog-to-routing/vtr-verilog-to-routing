@@ -37,7 +37,8 @@ static void load_chan_rr_indices(const int max_chan_width,
 
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
-                                  int* index);
+                                  int* index,
+                                  bool is_flat);
 
 static void add_tile_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                          const DeviceGrid& grid,
@@ -1008,7 +1009,8 @@ static void load_chan_rr_indices(const int max_chan_width,
  */
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
-                                  int* index) {
+                                  int* index,
+                                  bool is_flat) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
 
     for (size_t x = 0; x < grid.width(); x++) {
@@ -1074,6 +1076,9 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                 }
 
                 add_tile_pins_spatial_lookup(rr_graph_builder, grid, x, y, index, wanted_sides);
+                if(is_flat) {
+                    alloc_and_load_intra_cluster_rr_node_indices(rr_graph_builder, grid, x, y, index);
+                }
 
             }
         }
@@ -1285,7 +1290,8 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                          const DeviceGrid& grid,
                                          int* index,
                                          const t_chan_details& chan_details_x,
-                                         const t_chan_details& chan_details_y) {
+                                         const t_chan_details& chan_details_y,
+                                         bool is_flat) {
     /* Allocates and loads all the structures needed for fast lookups of the   *
      * index of an rr_node.  rr_node_indices is a matrix containing the index  *
      * of the *first* rr_node at a given (i,j) location.                       */
@@ -1300,7 +1306,7 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     }
 
     /* Assign indices for block nodes */
-    load_block_rr_indices(rr_graph_builder, grid, index);
+    load_block_rr_indices(rr_graph_builder, grid, index, is_flat);
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
@@ -1311,60 +1317,35 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
 void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
+                                                  int x,
+                                                  int y,
                                                   int* index) {
-
-
+    VTR_ASSERT(grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0);
     auto& place_ctx = g_vpr_ctx.placement();
 
 
-    for (size_t x = 0; x < grid.width(); x++) {
-        for (size_t y = 0; y < grid.height(); y++) {
-            //Process each block from it's root location
-            if (grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0) {
-                auto type = grid[x][y].type;
-                auto grid_block = place_ctx.grid_blocks[x][y];
-                //iterate over different sub tiles inside a tile
-                for(int abs_cap = 0; abs_cap < type->capacity; abs_cap++) {
-                    if (grid_block.subtile_empty(abs_cap)) {
-                        continue;
-                    }
-                    auto cluster_blk_id = grid_block.blocks[abs_cap];
-                    VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
-                    add_intra_src_sink_spatial_lookup(rr_graph_builder,
-                                                cluster_blk_id,
-                                                x,
-                                                y,
-                                                index);
 
-                    add_intra_ipin_opin_spatial_lookup(rr_graph_builder,
-                                                 cluster_blk_id,
-                                                 grid,
-                                                 x,
-                                                 y,
-                                                 index);
-                }
-            }
+    auto type = grid[x][y].type;
+    auto grid_block = place_ctx.grid_blocks[x][y];
+    //iterate over different sub tiles inside a tile
+    for(int abs_cap = 0; abs_cap < type->capacity; abs_cap++) {
+        if (grid_block.subtile_empty(abs_cap)) {
+            continue;
         }
-    }
+        auto cluster_blk_id = grid_block.blocks[abs_cap];
+        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
+        add_intra_src_sink_spatial_lookup(rr_graph_builder,
+                                    cluster_blk_id,
+                                    x,
+                                    y,
+                                    index);
 
-    for (size_t x = 0; x < grid.width(); x++) {
-        for (size_t y = 0; y < grid.height(); y++) {
-            int width_offset = grid[x][y].width_offset;
-            int height_offset = grid[x][y].height_offset;
-            if (width_offset != 0 || height_offset != 0) {
-                int root_x = x - width_offset;
-                int root_y = y - height_offset;
-
-                rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
-                                                            vtr::Point<int>(x, y),
-                                                            SOURCE,
-                                                            SIDES[0]);
-                rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
-                                                            vtr::Point<int>(x, y),
-                                                            SINK,
-                                                            SIDES[0]);
-            }
-        }
+        add_intra_ipin_opin_spatial_lookup(rr_graph_builder,
+                                     cluster_blk_id,
+                                     grid,
+                                     x,
+                                     y,
+                                     index);
     }
 
 }
