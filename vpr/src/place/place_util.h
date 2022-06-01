@@ -12,7 +12,6 @@
 #include "vtr_vector_map.h"
 #include "globals.h"
 
-
 /**
  * @brief Data structure that stores different cost values in the placer.
  *
@@ -224,7 +223,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
 ///@brief Performs error checking to see if location is legal for block type, and sets the location and grid usage of the block if it is legal.
 void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location);
 
-/// @brief check if a specified location is within the device grid 
+/// @brief check if a specified location is within the device grid
 inline bool is_loc_on_chip(int x, int y) {
     auto& device_ctx = g_vpr_ctx.device();
     //return false if the location is not within the chip

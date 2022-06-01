@@ -116,7 +116,6 @@ static void print_unplaced_blocks() {
     }
 }
 
-
 static bool is_block_placed(ClusterBlockId blk_id) {
     auto& place_ctx = g_vpr_ctx.placement();
 

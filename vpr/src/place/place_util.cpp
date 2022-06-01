@@ -481,18 +481,18 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool enable_ana
         t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
 
         //Check that the member location is on the grid
-        if (!is_loc_on_chip(member_pos.x,member_pos.y)) {
+        if (!is_loc_on_chip(member_pos.x, member_pos.y)) {
             mac_can_be_placed = false;
             break;
         }
-        
+
         /*
          * analytical placement approach do not need to make sure whether location could accommodate more blocks
          * since overused locations will be spreaded by legalizer afterward.
          * floorplan constraint is not supported by analytical placement yet, 
          * hence, if macro_can_be_placed is called from analytical placer, no further actions are required. 
          */
-        if(enable_analytic_placer){
+        if (enable_analytic_placer) {
             continue;
         }
 
@@ -531,4 +531,3 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool enable_ana
 
     return (mac_can_be_placed);
 }
-

@@ -13,7 +13,6 @@
 #    include "vtr_log.h"
 #    include "place_util.h"
 
-
 // sentinel for base case in CutSpreader (i.e. only 1 block left in region)
 constexpr std::pair<int, int> BASE_CASE = {-2, -2};
 
@@ -175,15 +174,15 @@ void CutSpreader::init() {
     }
 }
 
-int CutSpreader::occ_at(int x, int y) { 
-    if(!is_loc_on_chip(x,y)){
+int CutSpreader::occ_at(int x, int y) {
+    if (!is_loc_on_chip(x, y)) {
         return 0;
     }
-    return occupancy[x][y]; 
+    return occupancy[x][y];
 }
 
 int CutSpreader::tiles_at(int x, int y) {
-    if(!is_loc_on_chip(x,y)){
+    if (!is_loc_on_chip(x, y)) {
         return 0;
     }
     return int(subtiles_at_location[x][y].size());
@@ -201,7 +200,7 @@ int CutSpreader::tiles_at(int x, int y) {
 void CutSpreader::merge_regions(SpreaderRegion& merged, SpreaderRegion& mergee) {
     for (int x = mergee.bb.xmin(); x <= mergee.bb.xmax(); x++)
         for (int y = mergee.bb.ymin(); y <= mergee.bb.ymax(); y++) {
-            if(!is_loc_on_chip(x,y)) { //location is not within the chip
+            if (!is_loc_on_chip(x, y)) { //location is not within the chip
                 continue;
             }
             //x and y might belong to "merged" region already, no further action is required
@@ -236,7 +235,7 @@ void CutSpreader::grow_region(SpreaderRegion& r, vtr::Rect<int> rect_to_include,
 
     auto process_location = [&](int x, int y) {
         //x and y should represent a location on the chip, otherwise no processing is required
-        if(!is_loc_on_chip(x,y)) {
+        if (!is_loc_on_chip(x, y)) {
             return;
         }
         // kicks in only when grid is not claimed, claimed by another region, or part of a macro
