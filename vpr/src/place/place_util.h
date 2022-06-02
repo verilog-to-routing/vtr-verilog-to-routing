@@ -230,7 +230,21 @@ inline bool is_loc_on_chip(int x, int y) {
     return (x >= 0 && x < int(device_ctx.grid.width()) && y >= 0 && y < int(device_ctx.grid.height()));
 }
 
-/// @brief  Checks that each macro member location is legal based on the head position and its offset
-bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool enable_analytic_placer);
+/**
+ * @brief  Checks that each macro member location is legal based on the head position and its offset
+ *   
+ * If the function is called from initial_placement, it should ensure that the macro placement is legal.
+ * Each macro member should be placed in a location with the right type that can accommodate more blocks.
+ * If the function is called from analytical_placement, it should only ensure that all macro members are
+ * placed within the chip. The overused blocks will be spread by the strict_legalizer function.
+ *  
+ * @param pl_macro
+ *        macro's member can be accessible from pl_macro parameter. 
+ * @param head_pos
+ *        head_pos is the macro's head location.
+ * @param analytic_placer
+ *        determines whether the routine should check for the location's capacity.  
+ */
+bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool analytic_placer);
 
 #endif
