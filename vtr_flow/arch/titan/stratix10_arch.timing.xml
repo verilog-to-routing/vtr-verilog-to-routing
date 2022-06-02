@@ -104,7 +104,7 @@
         <port name="pll_cascade_in" clock="refclk"/> 
         <port name="scan_mode_n" clock="refclk"/> 
         <port name="scan_shift_n" clock="refclk"/>
-        <port name="uc_cal_writedata" clock="refclk"/>  -->
+        <port name="uc_cal_writedata" clock="refclk"/>
         <port name="up_dn" clock="refclk"/> 
         <port name="user_mode" clock="refclk"/> 
         <port name="zdb_in" clock="refclk"/> 
@@ -463,9 +463,9 @@
         <port name="dfxmisrena" clock="clk"/>
       </input_ports> 
       <output_ports> 
-        <output name="chainout"/>
-        <output name="resulta"/>
-        <output name="dftout" clock="clk"/>
+        <port name="chainout"/>
+        <port name="resulta"/>
+        <port name="dftout" clock="clk"/>
       </output_ports> 
     </model>
 
@@ -487,9 +487,9 @@
         <port name="dfxmisrena" clock="clk"/>
       </input_ports> 
       <output_ports> 
-        <output name="chainout" clock="clk"/>
-        <output name="resulta" clock="clk"/>
-        <output name="dftout" clock="clk"/>
+        <port name="chainout" clock="clk"/>
+        <port name="resulta" clock="clk"/>
+        <port name="dftout" clock="clk"/>
       </output_ports> 
     </model>
 
@@ -511,9 +511,9 @@
         <port name="dfxmisrena" combinational_sink_ports="resulta chainout dftout"/>
       </input_ports> 
       <output_ports> 
-        <output name="chainout"/>
-        <output name="resulta"/>
-        <output name="dftout"/>
+        <port name="chainout"/>
+        <port name="resulta"/>
+        <port name="dftout"/>
       </output_ports> 
     </model>
 
@@ -535,9 +535,9 @@
         <port name="dfxmisrena" clock="clk"/>
       </input_ports> 
       <output_ports> 
-        <output name="chainout" clock="clk"/>
-        <output name="resulta" clock="clk"/>
-        <output name="dftout" clock="clk"/>
+        <port name="chainout" clock="clk"/>
+        <port name="resulta" clock="clk"/>
+        <port name="dftout" clock="clk"/>
       </output_ports> 
     </model>
 
@@ -1498,7 +1498,7 @@
              -->
           <loc side="left">  LAB.data_in[0:39]  LAB.control_in[0:3] LAB.data_out[0:19]  LAB.clk</loc>
           <loc side="right"> LAB.data_in[40:79] LAB.control_in[4:6] LAB.data_out[20:39]</loc>
-          <loc side="top">   LAB.data_in        LAB.control_in      LAB.data_out        LAB.clk    LAB.cin LAB.sharein</loc>
+          <loc side="top">   LAB.data_in        LAB.control_in      LAB.data_out        LAB.clk</loc>
           <loc side="bottom">LAB.cout</loc>
         </pinlocations>
       </sub_tile>
@@ -1549,11 +1549,11 @@
       <!-- Stratix 10 devices support up to 24 PLLs and OCTs located 
             in the same columns as IOs occuring after every 6 consecutive IO blocks-->
       <!-- It's been assumed that PLL and OCT each take half their actual length. A more accurate alternative that can be implemented in the future is to define them as subtime belonging to the same tile -->
-      <row type="PLL" x="W/5" y="1" repeaty="36" priority="1997"/>
-      <row type="PLL" x="4*W/5" y="1" repeaty="36" priority="1997"/>
+      <row type="PLL" startx="W/5" starty="1" repeaty="36" priority="1997"/>
+      <row type="PLL" startx="4*W/5" starty="1" repeaty="36" priority="1997"/>
 
-      <row type="OCT" x="W/5" y="13" repeaty="36" priority="1996"/>
-      <row type="OCT" x="4*W/5" y="13" repeaty="36" priority="1996"/> 
+      <row type="OCT" startx="W/5" starty="13" repeaty="36" priority="1996"/>
+      <row type="OCT" startx="4*W/5" starty="13" repeaty="36" priority="1996"/> 
 
       <!--Fill with 'LAB'-->
       <fill type="LAB" priority="10"/>
@@ -1570,7 +1570,7 @@
 
   <complexblocklist>
 
-    <pb_type name="PLL" num_pb="1">
+    <pb_type name="PLL">
       <input name="core_in" num_pins="10"/>
       <output name="core_out" num_pins="36"/>
       <clock name="clk" num_pins="2"/>
@@ -1644,24 +1644,25 @@
         <output name="iopll_out_sig1" num_pins="1"/>
         <output name="iopll_out_sig2" num_pins="1"/>
       </pb_type>
+      <interconnect>
+        <complete input="PLL.core_in" name="core_to_pll" output="iopll.clkena iopll.cnt_sel iopll.core_refclk iopll.dps_rst_n iopll.extswitch iopll.fbclk_in iopll.fblvds_in
+            iopll.mdio_dis iopll.rst_n iopll.num_phase_shifts iopll.pfden iopll.pll_cascade_in iopll.scan_mode_n iopll.scan_shift_n iopll.up_dn iopll.user_mode iopll.zdb_in"/>
 
-      <complete input="PLL.core_in" name="core_to_pll" output="iopll.clkena iopll.cnt_sel iopll.core_refclk iopll.dps_rst_n iopll.extswitch iopll.fbclk_in iopll.fblvds_in
-          iopll.mdio_dis iopll.rst_n iopll.num_phase_shifts iopll.pfden iopll.pll_cascade_in iopll.scan_mode_n iopll.scan_shift_n iopll.up_dn iopll.user_mode iopll.zdb_in"/>
+        <complete input="PLL.clk" name="pll_clock" output="iopll.refclk"/>
 
-      <complete input="PLL.clk" name="pll_clock" output="iopll.refclk"/>
-
-      <complete input="iopll.block_select iopll.clk0_bad iopll.clk1_bad iopll.clksel iopll.cal_ok iopll.core_avl_busy iopll.core_cal_done iopll.extclk_output
-          iopll.extclk_dft iopll.fblvds_out iopll.lf_reset iopll.loaden iopll.lock iopll.lock2io12lane0 iopll.lock2io12lane1 iopll.lock2io12lane2 iopll.lock2io12lane2 iopll.lock2io12lane3
-          iopll.lock2iohmc iopll.phase_done iopll.pll_cascade_out iopll.pll_pd iopll.outclk iopll.dll_output iopll.fbclk_out iopll.uc_cal_readdata iopll.vcop_en iopll.vcoph iopll.iopll_out_sig1 iopll.iopll_out_sig2" name="pll_to_core" output="PLL.core_out"/>
+        <complete input="iopll.block_select iopll.clk0_bad iopll.clk1_bad iopll.clksel iopll.cal_ok iopll.core_avl_busy iopll.core_cal_done iopll.extclk_output
+            iopll.extclk_dft iopll.fblvds_out iopll.lf_reset iopll.loaden iopll.lock iopll.lock2io12lane0 iopll.lock2io12lane1 iopll.lock2io12lane2 iopll.lock2io12lane2 iopll.lock2io12lane3
+            iopll.lock2iohmc iopll.phase_done iopll.pll_cascade_out iopll.pll_pd iopll.outclk iopll.dll_output iopll.fbclk_out iopll.uc_cal_readdata iopll.vcop_en iopll.vcoph iopll.iopll_out_sig1 iopll.iopll_out_sig2" name="pll_to_core" output="PLL.core_out"/>
+      </interconnect>
     </pb_type>
 
     <pb_type name="LAB">
       <input name="data_in" num_pins="80" equivalent="full"/>
-      <input name="control_in" num_pins="5" equivalent="none"/>
+      <input name="control_in" num_pins="5" equivalent="full"/>
       <input name="cin" num_pins="1" equivalent="none"/>
       <output name="data_out" num_pins="40" equivalent="full"/>
       <output name="cout" num_pins="1" equivalent="none"/>
-      <clock name="clk" num_pins="1"/>
+      <clock name="clk" num_pins="2"/>
       <mode name="LAB">
         <pb_type name="alm" num_pb="10">
           <input name="data_in" num_pins="8"/>
@@ -1678,85 +1679,136 @@
               <output name="sumout" num_pins="2"/>
               <output name="cout" num_pins="1"/>
               <mode name="comb_block">
-                <pb_type name="lut" num_pb="2">
-                  <input name="lin" num_pins="8"/>
-                  <input name="cin" num_pins="1"/>
-                  <output name="combout" num_pins="1"/>
-                  <output name="sumout" num_pins="1"/>
-                  <output name="cout" num_pins="1"/>
-                  <mode name="fourteennm_lcell">
-                    <pb_type blif_model=".subckt fourteennm_lcell_comb" name="lcell_comb" num_pb="1">
-                      <input name="dataa" num_pins="1"/>
-                      <input name="datab" num_pins="1"/>
-                      <input name="datac" num_pins="1"/>
-                      <input name="datad" num_pins="1"/>
-                      <input name="datae" num_pins="1"/>
-                      <input name="dataf" num_pins="1"/>
-                      <input name="datag" num_pins="1"/>
-                      <input name="datah" num_pins="1"/>
-                      <input name="cin" num_pins="1"/>
-                      <output name="combout" num_pins="1"/>
-                      <output name="sumout" num_pins="1"/>
-                      <output name="cout" num_pins="1"/>
-                    </pb_type>
-                    <interconnect>
-                      <!-- LUT inputs -->
-                      <direct input="lut.lin[0]" name="in_comp1" output="lcell_comb.dataa"/>
-                      <direct input="lut.lin[1]" name="in_comp2" output="lcell_comb.datab"/>
-                      <direct input="lut.lin[2]" name="in_comp3" output="lcell_comb.datac"/>
-                      <direct input="lut.lin[3]" name="in_comp4" output="lcell_comb.datad"/>
-                      <direct input="lut.lin[4]" name="in_comp5" output="lcell_comb.datae"/>
-                      <direct input="lut.lin[5]" name="in_comp6" output="lcell_comb.dataf"/>
-                      <direct input="lut.lin[6]" name="in_comp7" output="lcell_comb.datag"/>
-                      <direct input="lut.lin[7]" name="in_comp8" output="lcell_comb.datah"/>
-                      <!-- LUT outputs -->
-                      <direct input="lcell_comb.combout" name="out_comp1" output="lut.combout"/>
-                      <direct input="lcell_comb.sumout" name="out_comp2" output="lut.sumout"/>
-                      <!-- LUT carry chain -->
-                      <direct input="lut.cin" name="lut_cin" output="lcell_comb.cin">
-                        <pack_pattern name="LAB_carry_chain" in_port="lut.cin" out_port="lcell_comb.cin"/>
-                      </direct>
-                      <direct input="lcell_comb.cout" name="out_comp3" output="lut.cout">
-                        <pack_pattern name="LAB_carry_chain" in_port="lcell_comb.cout" out_port="lut.cout"/>
-                      </direct>
-                    </interconnect>
-                  </mode>
-                  <mode name="names_lut">
-                    <pb_type blif_model=".names" class="lut" name="lut6" num_pb="1">
-                      <input name="in" num_pins="6" port_class="lut_in"/>
-                      <output name="out" num_pins="1" port_class="lut_out"/>
-                    </pb_type>
+                  <pb_type name="lut" num_pb="2">
+                    <input name="lin" num_pins="8"/>
+                    <input name="cin" num_pins="1"/>
+                    <output name="combout" num_pins="1"/>
+                    <output name="sumout" num_pins="1"/>
+                    <output name="cout" num_pins="1"/>
+                    <mode name="fourteennm_lcell">
+                      <pb_type blif_model=".subckt fourteennm_lcell_comb" name="lcell_comb" num_pb="1">
+                        <input name="dataa" num_pins="1"/>
+                        <input name="datab" num_pins="1"/>
+                        <input name="datac" num_pins="1"/>
+                        <input name="datad" num_pins="1"/>
+                        <input name="datae" num_pins="1"/>
+                        <input name="dataf" num_pins="1"/>
+                        <input name="datag" num_pins="1"/>
+                        <input name="datah" num_pins="1"/>
+                        <input name="cin" num_pins="1"/>
+                        <output name="combout" num_pins="1"/>
+                        <output name="sumout" num_pins="1"/>
+                        <output name="cout" num_pins="1"/>
+
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.dataa" out_port="lcell_comb.combout"/>
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datab" out_port="lcell_comb.combout"/>
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datac" out_port="lcell_comb.combout"/>
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datad" out_port="lcell_comb.combout"/>
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datae" out_port="lcell_comb.combout"/>
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.dataf" out_port="lcell_comb.combout"/>
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datag" out_port="lcell_comb.combout"/>
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datah" out_port="lcell_comb.combout"/>
+
+                        <!-- Arithmetic output delays -->
+                        <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.dataa" out_port="lcell_comb.sumout"/>
+                        <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.datab" out_port="lcell_comb.sumout"/>
+                        <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.datac" out_port="lcell_comb.sumout"/>
+                        <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.datad" out_port="lcell_comb.sumout"/>
+                        <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.dataf" out_port="lcell_comb.sumout"/>
+                        <!-- Carry input to carry output delay -->
+                        <delay_constant max="11e-12" min="8e-12" in_port="lcell_comb.cin" out_port="lcell_comb.cout"/>
+                        <!-- Carry input to sumout delay 
+
+                        Observed max values in QII:
+                         287e-12, 256e-12, 272e-12
+                        Observed min values in QII:
+                         200e-12, 228e-12
+                        -->
+                        <delay_constant max="287e-12" min="228e-12" in_port="lcell_comb.cin" out_port="lcell_comb.sumout"/>
+                        <!-- Combinational LUT input to carry out delays 
+                        -->
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.dataa" out_port="lcell_comb.cout"/>
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datab" out_port="lcell_comb.cout"/>
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datac" out_port="lcell_comb.cout"/>
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datad" out_port="lcell_comb.cout"/>
+                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.dataf" out_port="lcell_comb.cout"/>
+
+            
+                      </pb_type>
+                      <interconnect>
+                        <!-- LUT inputs -->
+                        <direct input="lut.lin[0]" name="in_comp1" output="lcell_comb.dataa"/>
+                        <direct input="lut.lin[1]" name="in_comp2" output="lcell_comb.datab"/>
+                        <direct input="lut.lin[2]" name="in_comp3" output="lcell_comb.datac"/>
+                        <direct input="lut.lin[3]" name="in_comp4" output="lcell_comb.datad"/>
+                        <direct input="lut.lin[4]" name="in_comp5" output="lcell_comb.datae"/>
+                        <direct input="lut.lin[5]" name="in_comp6" output="lcell_comb.dataf"/>
+                        <direct input="lut.lin[6]" name="in_comp7" output="lcell_comb.datag"/>
+                        <direct input="lut.lin[7]" name="in_comp8" output="lcell_comb.datah"/>
+                        <!-- LUT outputs -->
+                        <direct input="lcell_comb.combout" name="out_comp1" output="lut.combout"/>
+                        <direct input="lcell_comb.sumout" name="out_comp2" output="lut.sumout"/>
+                        <!-- LUT carry chain -->
+                        <direct input="lut.cin" name="lut_cin" output="lcell_comb.cin">
+                          <pack_pattern name="LAB_carry_chain" in_port="lut.cin" out_port="lcell_comb.cin"/>
+                        </direct>
+                        <direct input="lcell_comb.cout" name="out_comp3" output="lut.cout">
+                          <pack_pattern name="LAB_carry_chain" in_port="lcell_comb.cout" out_port="lut.cout"/>
+                        </direct>
+                      </interconnect>
+                    </mode>
+                    <mode name="names_lut">
+                      <pb_type blif_model=".names" class="lut" name="lut6" num_pb="1">
+                        <input name="in" num_pins="6" port_class="lut_in"/>
+                        <output name="out" num_pins="1" port_class="lut_out"/>
+
+                        <delay_matrix type="max" in_port="lut6.in" out_port="lut6.out">
+                        261e-12
+                        261e-12
+                        261e-12
+                        261e-12
+                        261e-12
+                        261e-12
+                      </delay_matrix>
+                      <delay_matrix type="min" in_port="lut6.in" out_port="lut6.out">
+                        193e-12
+                        193e-12
+                        193e-12
+                        193e-12
+                        193e-12
+                        193e-12
+                      </delay_matrix>
+                      </pb_type>
 
 
-                    <interconnect>
-                      <complete input="lut.lin" name="l_complete1" output="lut6.in[5:0]"/>
-                      <complete input="lut6.out" name="l_complete2" output="lut.sumout lut.combout"/>
-                    </interconnect>
-                  </mode>
-                </pb_type>
-
-                <interconnect>
-                  <!-- Inputs to the LUTs -->
-                  <complete input="comb_block.lin" name="in_lut0" output="lut[0].lin"/>
-                  <complete input="comb_block.lin" name="in_lut1" output="lut[1].lin"/>
-                  <!-- Combinational Block Carry Chain -->
-                  <direct input="comb_block.cin" name="comb_block_cin" output="lut[0].cin">
-                    <pack_pattern name="LAB_carry_chain" in_port="comb_block.cin" out_port="lut[0].cin"/>
-                  </direct>
-                  <direct input="lut[0].cout" name="lut_to_lut_carry" output="lut[1].cin">
-                    <pack_pattern name="LAB_carry_chain" in_port="lut[0].cout" out_port="lut[1].cin"/>
-                  </direct>
-                  <direct input="lut[1].cout" name="alm_cout" output="comb_block.cout">
-                    <pack_pattern name="LAB_carry_chain" in_port="lut[1].cout" out_port="comb_block.cout"/>
-                  </direct>
-                  <!-- Outputs to the Combinational Block -->
-                  <direct input="lut[0].combout" name="lut0_comb" output=" comb_block.combout[0]"/>
-                  <direct input="lut[1].combout" name="lut1_comb" output=" comb_block.combout[1]"/>
-                  <direct input="lut[0].sumout" name="lut0_sum" output=" comb_block.sumout[0]"/>
-                  <direct input="lut[1].sumout" name="lut1_sum" output=" comb_block.sumout[1]"/>
-
-                </interconnect>              
+                      <interconnect>
+                        <complete input="lut.lin" name="l_complete1" output="lut6.in[5:0]"/>
+                        <complete input="lut6.out" name="l_complete2" output="lut.sumout lut.combout"/>
+                      </interconnect>
+                    </mode>
+                  </pb_type>
+                  <interconnect>
+                <!-- Inputs to the LUTs -->
+                <complete input="comb_block.lin" name="in_lut0" output="lut[0].lin"/>
+                <complete input="comb_block.lin" name="in_lut1" output="lut[1].lin"/>
+                <!-- Combinational Block Carry Chain -->
+                <direct input="comb_block.cin" name="comb_block_cin" output="lut[0].cin">
+                  <pack_pattern name="LAB_carry_chain" in_port="comb_block.cin" out_port="lut[0].cin"/>
+                </direct>
+                <direct input="lut[0].cout" name="lut_to_lut_carry" output="lut[1].cin">
+                  <pack_pattern name="LAB_carry_chain" in_port="lut[0].cout" out_port="lut[1].cin"/>
+                </direct>
+                <direct input="lut[1].cout" name="alm_cout" output="comb_block.cout">
+                  <pack_pattern name="LAB_carry_chain" in_port="lut[1].cout" out_port="comb_block.cout"/>
+                </direct>
+                <!-- Outputs to the Combinational Block -->
+                <direct input="lut[0].combout" name="lut0_comb" output=" comb_block.combout[0]"/>
+                <direct input="lut[1].combout" name="lut1_comb" output=" comb_block.combout[1]"/>
+                <direct input="lut[0].sumout" name="lut0_sum" output=" comb_block.sumout[0]"/>
+                <direct input="lut[1].sumout" name="lut1_sum" output=" comb_block.sumout[1]"/>
+                  </interconnect>
               </mode>
+              
             </pb_type>
             <pb_type name="dff" num_pb="4">
               <input name="clrn" num_pins="1"/>
@@ -1773,6 +1825,15 @@
                   <input name="d" num_pins="1"/>
                   <output name="q" num_pins="1"/>
                   <clock name="clk" num_pins="1"/>
+                  <T_setup value="66e-12" port="fourteennm_ff.d" clock="clk"/>
+                  <T_setup value="66e-12" port="fourteennm_ff.clrn" clock="clk"/>
+                  <T_setup value="66e-12" port="fourteennm_ff.sclr" clock="clk"/>
+                  <T_setup value="66e-12" port="fourteennm_ff.ena" clock="clk"/>
+                  <T_hold value="37e-12" port="fourteennm_ff.d" clock="clk"/>
+                  <T_hold value="37e-12" port="fourteennm_ff.clrn" clock="clk"/>
+                  <T_hold value="37e-12" port="fourteennm_ff.sclr" clock="clk"/>
+                  <T_hold value="37e-12" port="fourteennm_ff.ena" clock="clk"/>
+                  <T_clock_to_Q max="42e-12" min="37e-12" port="fourteennm_ff.q" clock="clk"/>
                 </pb_type>
                 <interconnect>
                   <direct input="dff.clrn" name="fourteennm_ff_clrn" output="fourteennm_ff.clrn"/>
@@ -1783,11 +1844,14 @@
                   <direct input="dff.clk" name="fourteennm_ff_clk" output="fourteennm_ff.clk"/>
                 </interconnect>
               </mode>
-               <mode name="latch">
+              <mode name="latch">
                 <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
                   <input name="D" num_pins="1" port_class="D"/>
                   <output name="Q" num_pins="1" port_class="Q"/>
                   <clock name="clk" num_pins="1" port_class="clock"/>
+                  <T_setup value="66e-12" port="ff.D" clock="clk"/>
+                  <T_hold value="37e-12" port="ff.D" clock="clk"/>
+                  <T_clock_to_Q max="42e-12" min="37e-12" port="ff.Q" clock="clk"/>
                 </pb_type>
                 <interconnect>
                   <direct input="dff.d" name="ff_d" output="ff.D"/>
@@ -1827,17 +1891,6 @@
                 <pack_pattern name="LAB_carry_chain" in_port="comb_block.cout" out_port="alm.cout"/>
               </direct>
 
-              <!-- FF Control Signals -->
-
-              <!--
-                Here is how the alm control signals correspond to the lab wide control signals listed in Stratix 10 LAB user guide:
-
-                synclr0 -> alm.control[0]
-                labclkena0 -> alm.control[1]
-                labclkena1 -> alm.control[2]
-                synclr1 -> alm.control[3]
-                labclr1 -> alm.control[4]
-              -->
               <direct input="alm.control[4]" name="control_1_dff0" output="dff[0].clrn"/>
               <direct input="alm.control[2]" name="control_2_dff0" output="dff[0].ena"/>
               <direct input="alm.control[3]" name="control_3_dff0" output="dff[0].sclr"/>
@@ -1856,29 +1909,39 @@
         <interconnect>
           <!--LAB-ALM Interconnect-->
           <!-- LAB Input: Global Routing to ALM inputs -->
-          <complete input="LAB.data_in" name="LAB_datain" output="alm[9:0].data_in"/>
-
-          <!-- ALM feedback: The ALM outputs feedback to the ALM inputs  -->
-          <complete input="alm[9:0].data_out[0] alm[9:0].data_out[3]" name="LAB_alm_feedback" output="alm[9:0].data_in"/>
-
+          <complete input="LAB.data_in" name="LAB_datain" output="alm[9:0].data_in">
+            <!-- The delay modeled here is the delay from global routing to the ALM inputs.
+                   In QII the maximum delay varies from 121 ps to 258 ps.  Taking the average of the
+                   values observed in QII we arrive at: 171 ps. The minimum delay ranges from 111 ps to 79 ps.
+                   The average observed is: 104 ps-->
+            <delay_constant max="171e-12" min="104e-12" in_port="LAB.data_in" out_port="alm[9:0].data_in"/>
+          </complete>
+          <!-- ALM feedback: two of four ALM outputs (one from each 1/2 ALM) feedback to the ALM inputs  -->
+          <complete input="alm[9:0].data_out[0] alm[9:0].data_out[3]" name="LAB_alm_feedback" output="alm[9:0].data_in">
+            <delay_constant max="75e-12" min="40e-12" in_port="alm[9:0].data_out[0] alm[9:0].data_out[3]" out_port="alm[9:0].data_in"/>
+          </complete>
           <!-- ALM Outputs: directly drive global routing -->
           <complete input="alm[9:0].data_out[1] alm[9:0].data_out[2]" name="LAB_dataout" output="LAB.data_out"/>
-
           <!-- ALM Control Inputs -->
-           <complete input="LAB.control_in" name="LAB_control" output="alm[9:0].control"/>
+          <complete input="LAB.control_in" name="LAB_control" output="alm[9:0].control">
+            <!-- The delay modeled here on the ALM control inputs consists of two components:
+                    1) The LAB_SEC_MUX or LAB_CONTROL_MUX delay: 52 ps
+                    2) The delay from the LAB_CONTROL_MUX to the ALM DFF: 385 ps 
+                 Therefore the total delay modeled here is: (1) + (2) = 437 ps 
 
+                 A similar calculation for the minimum delay results in:
+                    1) The LAB_SEC_MUX or LAB_CONTROL_MUX delay: 48 ps
+                    2) The delay from the LAB_CONTROL_MUX to the ALM DFF: 289 ps 
+                 Therefore the total delay modeled here is: (1) + (2) = 333 ps 
+                    -->
+            <delay_constant max="437e-12" min="333e-12" in_port="LAB.control_in" out_port="alm[9:0].control"/>
+          </complete>
           <!-- LAB Clocks -->
-          <direct input="LAB.clk" name="LAB_clock" output="alm[0].clock"/>
-          <direct input="LAB.clk" name="LAB_clock" output="alm[1].clock"/>
-          <direct input="LAB.clk" name="LAB_clock" output="alm[2].clock"/>
-          <direct input="LAB.clk" name="LAB_clock" output="alm[3].clock"/>
-          <direct input="LAB.clk" name="LAB_clock" output="alm[4].clock"/>
-          <direct input="LAB.clk" name="LAB_clock" output="alm[5].clock"/>
-          <direct input="LAB.clk" name="LAB_clock" output="alm[6].clock"/>
-          <direct input="LAB.clk" name="LAB_clock" output="alm[7].clock"/>
-          <direct input="LAB.clk" name="LAB_clock" output="alm[8].clock"/>
-          <direct input="LAB.clk" name="LAB_clock" output="alm[9].clock"/>
-
+          <complete input="LAB.clk" name="LAB_clock" output="alm[9:0].clock"/>
+          <!-- LAB Carry Chain mid-point entry/exit points, this allows the chain to jump early to
+               the next LAB, if the full chain would overuse the number of LAB inputs -->
+          <!--<complete input="alm[4].cout" name="alm4_midpoint_exit_carry" output="LAB.data_out"/>-->
+          <!--<complete input="LAB.data_in" name="alm5_midpoint_entry_carry" output="alm[5].cin"/>-->
           <!--LAB carry chain-->
           <direct input="LAB.cin" name="LAB_cin" output="alm[0].cin">
             <pack_pattern name="LAB_carry_chain" in_port="LAB.cin" out_port="alm[0].cin"/>
@@ -1896,6 +1959,19 @@
             <pack_pattern name="LAB_carry_chain" in_port="alm[3].cout" out_port="alm[4].cin"/>
           </direct>
           <direct input="alm[4].cout" name="alm4_alm5_carry" output="alm[5].cin">
+            <!--
+                 - There is extra delay crossing from the 5th to 6th ALM in
+                 - a LAB due to the extra distance (crossing control circuitry) and 
+                 - the optional entry/exit mux at the mid-point of the carry chain.
+                 - 
+                 - From experiments with Quartus II the maximum delay is roughly 65ps, 
+                 - since we already account for 11ps on the LUT we will account 
+                 - for the remainder (55ps) here.
+
+                 - Similarly, the value observed in QII for minimum delay is 53ps,
+                 - Subtracting the 8ps on the LUT, we account for 45ps here.
+                 -->
+            <delay_constant max="55e-12" min="45e-12" in_port="alm[4].cout" out_port="alm[5].cin"/>
             <pack_pattern name="LAB_carry_chain" in_port="alm[4].cout" out_port="alm[5].cin"/>
           </direct>
           <direct input="alm[5].cout" name="alm5_alm6_carry" output="alm[6].cin">
@@ -1911,8 +1987,17 @@
             <pack_pattern name="LAB_carry_chain" in_port="alm[8].cout" out_port="alm[9].cin"/>
           </direct>
           <direct input="alm[9].cout" name="LAB_cout" output="LAB.cout">
+            <!--
+                 - There is extra delay to enter and exit the LAB carry chain.  In Quartus II
+                 - this delay is accounted for only on the output side.
+                 - 
+                 - From Quaruts II the maximum delay was found to be roughly 124ps and the
+                 - minimum delay is roughly 107 ps
+                 -->
+            <delay_constant max="124e-12" min="107e-12" in_port="alm[9].cout" out_port="LAB.cout"/>
             <pack_pattern name="LAB_carry_chain" in_port="alm[9].cout" out_port="LAB.cout"/>
           </direct>
+
 
         </interconnect>
       </mode>
@@ -2063,7 +2148,7 @@
       </mode>
     </pb_type>
 
-    <pb_type name="OCT" num_pb="1">
+    <pb_type name="OCT" >
       <input name="core_in" num_pins="10"/>
       <output name="core_out" num_pins="36"/>
       <clock name="clk" num_pins="1"/>
@@ -2125,7 +2210,7 @@
       </interconnect>
     </pb_type>
 
-    <pb_type name="iolane" num_pb="1">
+    <pb_type name="iolane">
       <input name="core_in" num_pins="55"/>
       <output name="core_out" num_pins="24"/>
 
