@@ -19,6 +19,10 @@ void highlight_nets(std::string net_name);
 void highlight_blocks(std::string block_name);
 
 void load_block_names(ezgl::application* app);
+void load_net_names(ezgl::application* app);
+
+void highlight_atom_block(AtomBlockId block_id);
+void highlight_atom_net(AtomNetId net_id);
 
 //Function to manage entry completions when search type is changed
 void search_type_changed(GtkComboBox* /*self*/, ezgl::application* app);

@@ -49,6 +49,7 @@ extern std::string rr_highlight_message;
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     // get ID from search bar
     GtkEntry* text_entry = (GtkEntry*)app->get_object("TextInput");
@@ -103,7 +104,23 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         std::string block_name = "";
         ss >> block_name;
 
-        highlight_blocks((std::string)block_name);
+        AtomBlockId a_block_id = AtomBlockId::INVALID();
+        a_block_id = atom_ctx.nlist.find_block(block_name);
+
+        if (a_block_id != AtomBlockId::INVALID()){
+            //Write a function here to highlight a specific internal
+            highlight_atom_block(a_block_id);
+            return;
+        }
+        //Continues if atom block not found
+        ClusterBlockId block_id = ClusterBlockId::INVALID();
+        block_id = cluster_ctx.clb_nlist.find_block(block_name);
+
+        if (block_id == ClusterBlockId::INVALID()) {
+            warning_dialog_box("Invalid Block Name");
+            return; //name not exist
+        }
+        highlight_blocks(block_id); //found block
     }
 
     else if (search_type == "Net ID") {
@@ -123,8 +140,14 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Net Name") {
         std::string net_name = "";
         ss >> net_name;
+        AtomNetId net_id = AtomNetId::INVALID();
+        net_id = atom_ctx.nlist.find_net(net_name);
 
-        highlight_nets((std::string)net_name);
+        if (net_id == AtomNetId::INVALID()) {
+            warning_dialog_box("Invalid Net Name");
+            return; //name not exist
+        }
+        highlight_atom_net(net_id); //found net
     }
 
     else
@@ -268,21 +291,30 @@ void highlight_nets(ClusterNetId net_id) {
 }
 
 void highlight_nets(std::string net_name) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
-    ClusterNetId net_id = ClusterNetId::INVALID();
-    net_id = cluster_ctx.clb_nlist.find_net(net_name);
+    AtomNetId net_id = AtomNetId::INVALID();
+    net_id = atom_ctx.nlist.find_net(net_name);
 
-    if (net_id == ClusterNetId::INVALID()) {
+    if (net_id == AtomNetId::INVALID()) {
         warning_dialog_box("Invalid Net Name");
         return; //name not exist
     }
-
-    highlight_nets(net_id); //found net
+    highlight_atom_net(net_id); //found net
 }
 
 void highlight_blocks(std::string block_name) {
+    auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    AtomBlockId a_block_id = AtomBlockId::INVALID();
+    a_block_id = atom_ctx.nlist.find_block(block_name);
+
+    if (a_block_id != AtomBlockId::INVALID()){
+        //Write a function here to highlight a specific internal
+        return;
+    }
+    //Continues if atom block not found
 
     ClusterBlockId block_id = ClusterBlockId::INVALID();
     block_id = cluster_ctx.clb_nlist.find_block(block_name);
@@ -360,12 +392,17 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
 void load_block_names(ezgl::application* app) {
     auto blockStorage = GTK_LIST_STORE(app->get_object("BlockNames"));
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
     GtkTreeIter iter;
-    int i = 0;
     for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter,
                            0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
+    }
+    for (AtomBlockId id : atom_ctx.nlist.blocks()){
+        gtk_list_store_append(blockStorage, &iter);
+        gtk_list_store_set(blockStorage, &iter,
+                           0, (atom_ctx.nlist.block_name(id)).c_str(), -1);   
     }
 }
 
@@ -376,13 +413,13 @@ void load_block_names(ezgl::application* app) {
  */
 void load_net_names(ezgl::application* app){
     auto netStorage = GTK_LIST_STORE(app->get_object("NetNames"));
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
     GtkTreeIter iter;
     //Loading net names
-    for (ClusterNetId id : cluster_ctx.clb_nlist.nets()) {
+    for (AtomNetId id : atom_ctx.nlist.nets()) {
         gtk_list_store_append(netStorage, &iter);
         gtk_list_store_set(netStorage, &iter,
-                           0, (cluster_ctx.clb_nlist.net_name(id)).c_str(), -1);
+                           0, (atom_ctx.nlist.net_name(id)).c_str(), -1);
     }
 }
 
