@@ -49,7 +49,10 @@ void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g);
 void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer* g);
 void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen);
 void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool switch_configurable, ezgl::renderer* g);
-
+void draw_expand_non_configurable_rr_nodes_recurr(int from_node,
+                                                         std::set<int>& expanded_nodes);
+int draw_check_rr_node_hit(float click_x, float click_y);
+bool highlight_rr_nodes(float x, float y);
 
 #endif /* NO_GRAPHICS */
 #endif /* DRAW_RR_H */

@@ -25,6 +25,8 @@
 #include "draw_xtoy.h"
 #include "draw_toggle_functions.h"
 #include "draw_triangle.h"
+#include "draw_searchbar.h"
+#include "draw_mux.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
@@ -673,6 +675,118 @@ void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buf
                                      SB_EDGE_TURN_ARROW_POSITION);
         }
     }
+}
+
+void draw_expand_non_configurable_rr_nodes_recurr(int from_node,
+                                                  std::set<int>& expanded_nodes) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    expanded_nodes.insert(from_node);
+
+    for (t_edge_size iedge = 0;
+         iedge < rr_graph.num_edges(RRNodeId(from_node)); ++iedge) {
+        bool edge_configurable = rr_graph.edge_is_configurable(RRNodeId(from_node), iedge);
+        int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iedge));
+
+        if (!edge_configurable && !expanded_nodes.count(to_node)) {
+            draw_expand_non_configurable_rr_nodes_recurr(to_node,
+                                                         expanded_nodes);
+        }
+    }
+}
+
+
+/* This is a helper function for highlight_rr_nodes(). It determines whether
+ * a routing resource has been clicked on by computing a bounding box for that
+ *  and checking if the mouse click hit inside its bounding box.
+ *
+ *  It returns the hit RR node's ID (or OPEN if no hit)
+ */
+int draw_check_rr_node_hit(float click_x, float click_y) {
+    int hit_node = OPEN;
+    ezgl::rectangle bound_box;
+
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)rr_id;
+        switch (rr_graph.node_type(rr_id)) {
+            case IPIN:
+            case OPIN: {
+                int i = rr_graph.node_xlow(rr_id);
+                int j = rr_graph.node_ylow(rr_id);
+                t_physical_tile_type_ptr type = device_ctx.grid[i][j].type;
+                int width_offset = device_ctx.grid[i][j].width_offset;
+                int height_offset = device_ctx.grid[i][j].height_offset;
+                int ipin = rr_graph.node_pin_num(rr_id);
+                float xcen, ycen;
+                for (const e_side& iside : SIDES) {
+                    // If pin exists on this side of the block, then get pin coordinates
+                    if (type->pinloc[width_offset][height_offset][size_t(iside)][ipin]) {
+                        draw_get_rr_pin_coords(inode, &xcen, &ycen, iside);
+
+                        // Now check if we clicked on this pin
+                        if (click_x >= xcen - draw_coords->pin_size && click_x <= xcen + draw_coords->pin_size && click_y >= ycen - draw_coords->pin_size && click_y <= ycen + draw_coords->pin_size) {
+                            hit_node = inode;
+                            return hit_node;
+                        }
+                    }
+                }
+                break;
+            }
+            case SOURCE:
+            case SINK: {
+                float xcen, ycen;
+                draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[inode], &xcen, &ycen);
+
+                // Now check if we clicked on this pin
+                if (click_x >= xcen - draw_coords->pin_size && click_x <= xcen + draw_coords->pin_size && click_y >= ycen - draw_coords->pin_size && click_y <= ycen + draw_coords->pin_size) {
+                    hit_node = inode;
+                    return hit_node;
+                }
+                break;
+            }
+            case CHANX:
+            case CHANY: {
+                bound_box = draw_get_rr_chan_bbox(inode);
+
+                // Check if we clicked on this wire, with 30%
+                // tolerance outside its boundary
+                const float tolerance = 0.3;
+                if (click_x >= bound_box.left() - tolerance && click_x <= bound_box.right() + tolerance && click_y >= bound_box.bottom() - tolerance && click_y <= bound_box.top() + tolerance) {
+                    hit_node = inode;
+                    return hit_node;
+                }
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    return hit_node;
+}
+
+
+/* This routine is called when the routing resource graph is shown, and someone
+ * clicks outside a block. That click might represent a click on a wire -- we call
+ * this routine to determine which wire (if any) was clicked on.  If a wire was
+ * clicked upon, we highlight it in Magenta, and its fanout in red.
+ */
+bool highlight_rr_nodes(float x, float y) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    if (draw_state->draw_rr_toggle == DRAW_NO_RR && !draw_state->show_nets) {
+        application.update_message(draw_state->default_message);
+        application.refresh_drawing();
+        return false; //No rr shown
+    }
+
+    // Check which rr_node (if any) was clicked on.
+    int hit_node = draw_check_rr_node_hit(x, y);
+
+    return highlight_rr_nodes(hit_node);
 }
 
 

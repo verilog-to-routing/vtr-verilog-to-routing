@@ -59,18 +59,8 @@ void draw_reset_blk_colors();
 void draw_reset_blk_color(ClusterBlockId blk_id);
 
 ezgl::color to_ezgl_color(vtr::Color<float> color);
-void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer* g);
 
 void draw_screen();
-
-// search bar related functions
-ezgl::rectangle draw_get_rr_chan_bbox(int inode);
-void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId blk_id);
-void highlight_nets(char* message, int hit_node);
-void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
-std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
-void deselect_all();
-
 
 /* This routine highlights the blocks affected in the latest move      *
  * It highlights the old and new locations of the moved blocks         *

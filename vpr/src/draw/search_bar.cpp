@@ -15,6 +15,7 @@
 #    include "globals.h"
 #    include "draw_color.h"
 #    include "draw.h"
+#	 include "draw_searchbar.h"
 #    include "read_xml_arch_file.h"
 #    include "draw_global.h"
 #    include "intra_logic_block.h"

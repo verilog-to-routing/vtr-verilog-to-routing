@@ -25,6 +25,8 @@
 #include "draw_xtoy.h"
 #include "draw_toggle_functions.h"
 #include "draw_triangle.h"
+#include "draw_searchbar.h"
+#include "draw_mux.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
