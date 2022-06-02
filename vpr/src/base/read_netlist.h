@@ -17,4 +17,9 @@ ClusteredNetlist read_netlist(const char* net_file,
                               bool verify_file_digests,
                               int verbosity);
 
+void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist,
+                          const AtomBlockId atom_blk,
+                          const AtomPortId atom_port,
+                          const t_pb_graph_pin* gpin);
+
 #endif

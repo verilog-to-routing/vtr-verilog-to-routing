@@ -1244,7 +1244,6 @@ static void highlight_blocks(double x, double y) {
     application.update_message(msg);
     application.refresh_drawing();
 }
-
 static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
     GObject* proceed_button = app->get_object("ProceedButton");

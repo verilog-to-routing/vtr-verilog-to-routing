@@ -763,6 +763,7 @@ bool valid_expression(std::string exp) {
         else if (j % 2 != 0 && ops[j] == COMP_OP)
             return false;
     }
+
     return true;
 }
 
