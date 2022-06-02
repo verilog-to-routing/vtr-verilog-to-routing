@@ -148,7 +148,7 @@ class usefull_data {
         std::string cell_name;
         std::string inst_name;
         std::string inst_ref;
-        std::string property_lut;
+        std::string property_lut= "0";
         std::string property_width = "1";
         while (current != NULL) {
             if (current->type == 0 || current->type == 5) {
@@ -203,6 +203,11 @@ class usefull_data {
                                         inst_name = current->value;
                                     }
                                     //printf ("\n  The instance is created with the name of %s", inst_name.c_str());
+                                    if (inst_name == "VCC")
+                                    {property_lut= "3";}
+                                    if (inst_name == "GND")
+                                     {property_lut= "0";}
+
                                     int instance_iteration = list_depth - 1;
                                     //   Entering the cell it will iterate untill the cell ends
                                     while (list_depth > instance_iteration) {
@@ -242,6 +247,9 @@ class usefull_data {
                                             }
                                         }
                                     }
+                                    printf("\nThe lut property is %s",property_lut.c_str());
+                                    printf("\nThe width property is %s",property_width.c_str());
+
                                     instance_vec.push_back(std::make_tuple(inst_name, inst_ref, property_lut, property_width));
                                 }
                             }

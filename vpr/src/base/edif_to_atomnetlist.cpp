@@ -21,6 +21,21 @@
 #include <vector>
 #include <iostream>
 #include "sort_edif.cpp"
+
+vtr::LogicValue to_vtr_logic_value_(int val) {
+    vtr::LogicValue new_val = vtr::LogicValue::UNKOWN;
+    switch (val) {
+        case 1:
+            new_val = vtr::LogicValue::TRUE;
+            break;
+        case 0:
+            new_val = vtr::LogicValue::FALSE;
+            break;
+        default:
+            VTR_ASSERT_OPT_MSG(false, "Unkown logic value");
+    }
+    return new_val;
+}
 struct EDIFReader {
   public:
     EDIFReader(e_circuit_format edif_format,
@@ -157,10 +172,61 @@ struct EDIFReader {
             std::string model_name = std::get<1>(edif_.instance_vec[k]);
 
             std::string inst_name = (std::get<0>(edif_.instance_vec[k])).c_str();
+            AtomNetlist::TruthTable truth_table;
+            // 2 property lut
+            // 3 property width
+            std::vector<int> sc;
+            std::vector<std::vector<int>> rows;
+            std::string property_lut = std::get<2>(edif_.instance_vec[k]);
+            printf(" property_lut is is given as::%s\n", property_lut.c_str());
+            std::string property_width = std::get<3>(edif_.instance_vec[k]);
+
+           int index= std::stoi(property_lut);
+           int property_wid= std::stoi(property_width);
+            while(index!=0){
+                            sc.push_back(index%2);
+                            index /= 2;
+                        }
+
+
+
+                        for(int xc=0; xc<=pow(2,property_wid); xc++){
+                            std::vector<int> row_(property_wid, 0);
+                            int x = xc;
+                            printf("X is %i \n", x);
+                           // int ix = log2(sc.size()) - 1;
+                            int ix = property_wid;
+                            while(x>0){
+                                int topush = x%2;
+                                printf (" \nto push value is %d", topush);
+                                x = x/2;
+                                row_.at(ix) = topush;
+                                ix--;
+                                printf (" \n ix value is %d", ix);
+                            }
+                           // row_.push_back(sc.at(xc));
+
+                            rows.push_back(row_);
+
+                            for(int vi=0; vi<row_.size(); vi++){
+                                printf("%ith e of row is %i\n",vi,row_.at(vi));
+                            }
+                        }
+
+                        for(int rs=0; rs<rows.size(); rs++){
+                            truth_table.emplace_back();
+                            printf("value of rs %i\n", rs);
+                            std::vector<int> row_;
+                            row_ = rows.at(rs);
+                            for(int irs=0; irs<row_.size(); irs++){
+                                truth_table[truth_table.size() - 1].push_back(to_vtr_logic_value_(row_.at(irs)));
+                                printf("value at %i of row is %i\n", irs, row_.at(irs));
+                            }
+                        }
 
             edif_.map_cell_ports(node_);
             ports_vec = edif_.find_cell_ports(model_name);
-            AtomBlockId blk_ins = main_netlist_.create_block(inst_name, blk_model);
+            AtomBlockId blk_ins = main_netlist_.create_block(inst_name, blk_model,truth_table);
             for (size_t i = 0; i < ports_vec.size(); i++) {
                 std::string port_name = std::get<0>(ports_vec[i]);
                 std::string dir = std::get<1>(ports_vec[i]);
@@ -205,14 +271,8 @@ struct EDIFReader {
                 }
             }
 
-            // 2 property lut
-            // 3 property width
 
-            std::string property_lut = std::get<2>(edif_.instance_vec[k]);
-
-            std::string property_width = std::get<3>(edif_.instance_vec[k]);
-
-            vtr::LogicValue input_bool;
+         /*   vtr::LogicValue input_bool;
             input_bool = vtr::LogicValue::TRUE;
             std::vector<std::vector<vtr::LogicValue>> so_cover;
             std::vector<vtr::LogicValue> truth_table_single;
@@ -225,7 +285,7 @@ struct EDIFReader {
                 for (auto val : row) {
                     truth_table[truth_table.size() - 1].push_back(input_bool);
                 }
-            }
+            }*/
             //AtomBlockId blk_id = main_netlist_.create_block(model_name, blk_model, truth_table);
         }
     }
@@ -300,6 +360,7 @@ struct EDIFReader {
     }
 
 };
+
 AtomNetlist read_edif(e_circuit_format circuit_format,
                       const char* edif_file,
                       const t_model* user_models,
@@ -309,7 +370,7 @@ AtomNetlist read_edif(e_circuit_format circuit_format,
     //blk_model = new t_model;
     // main_netlist_ = AtomNetlist(top_cell_, netlist_id);
     printf("reading inputs");
-    FILE* fp = fopen("/home/users/raza.jafari/netlists/edif/and2_or2_output_edif.edn", "r");
+    FILE* fp = fopen("/home/users/umar.iqbal/edif/and2_or2_output_edif.edn", "r");
     struct SNode* node = snode_parse(fp);
     printf("reading inputs==========");
 
