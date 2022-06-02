@@ -1521,6 +1521,25 @@
         </pinlocations>
       </sub_tile>
     </tile>
+
+    <tile height="1" name="OCT">
+      <sub_tile name="OCT">
+        <equivalent_sites>
+          <site pb_type="OCT" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="core_in" num_pins="10"/>
+        <output name="core_out" num_pins="36"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.055" out_type="frac" out_val="0.075"/>
+        <pinlocations pattern="custom">
+          <loc side="left">OCT.core_in OCT.core_out OCT.clk </loc>
+          <loc side="right">OCT.core_in OCT.core_out OCT.clk </loc>
+          <loc side="top">OCT.core_in OCT.core_out OCT.clk </loc>
+          <loc side="bottom">OCT.core_in OCT.core_out OCT.clk </loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+
   </tiles>
 
   <layout>
