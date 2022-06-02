@@ -29,19 +29,8 @@
 #include "draw_mux.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
-#include "intra_logic_block.h"
-#include "atom_netlist.h"
-#include "tatum/report/TimingPathCollector.hpp"
+#include "draw_basic.h"
 #include "hsl.h"
-#include "route_export.h"
-#include "search_bar.h"
-#include "save_graphics.h"
-#include "timing_info.h"
-#include "physical_types.h"
-#include "route_common.h"
-#include "breakpoint.h"
-#include "manual_moves.h"
-
 #include "move_utils.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING

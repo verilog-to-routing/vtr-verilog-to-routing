@@ -23,24 +23,13 @@
 #include "draw.h"
 #include "draw_rr.h"
 #include "draw_xtoy.h"
+#include "draw_basic.h"
 #include "draw_toggle_functions.h"
 #include "draw_triangle.h"
 #include "draw_searchbar.h"
 #include "draw_mux.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
-#include "intra_logic_block.h"
-#include "atom_netlist.h"
-#include "tatum/report/TimingPathCollector.hpp"
-#include "hsl.h"
-#include "route_export.h"
-#include "search_bar.h"
-#include "save_graphics.h"
-#include "timing_info.h"
-#include "physical_types.h"
-#include "route_common.h"
-#include "breakpoint.h"
-#include "manual_moves.h"
 
 #include "move_utils.h"
 
@@ -789,6 +778,82 @@ bool highlight_rr_nodes(float x, float y) {
     return highlight_rr_nodes(hit_node);
 }
 
+
+void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs, bool lowest_cost_first) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    /* Draws routing costs */
+
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    g->set_line_width(0);
+
+    bool with_edges = (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES
+                       || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES
+                       || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES);
+
+    VTR_ASSERT(rr_costs.size() == rr_graph.num_nodes());
+
+    float min_cost = std::numeric_limits<float>::infinity();
+    float max_cost = -min_cost;
+    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+        if (std::isnan(rr_costs[(size_t)rr_id])) continue;
+
+        min_cost = std::min(min_cost, rr_costs[(size_t)rr_id]);
+        max_cost = std::max(max_cost, rr_costs[(size_t)rr_id]);
+    }
+    if (min_cost == std::numeric_limits<float>::infinity()) min_cost = 0;
+    if (max_cost == -std::numeric_limits<float>::infinity()) max_cost = 0;
+    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_cost, max_cost);
+
+    //Draw the nodes in ascending order of value, this ensures high valued nodes
+    //are not overdrawn by lower value ones (e.g-> when zoomed-out far)
+    std::vector<int> nodes(rr_graph.num_nodes());
+    std::iota(nodes.begin(), nodes.end(), 0);
+    auto cmp_ascending_cost = [&](int lhs_node, int rhs_node) {
+        if (lowest_cost_first) {
+            return rr_costs[lhs_node] > rr_costs[rhs_node];
+        }
+        return rr_costs[lhs_node] < rr_costs[rhs_node];
+    };
+    std::sort(nodes.begin(), nodes.end(), cmp_ascending_cost);
+
+    for (int inode : nodes) {
+        float cost = rr_costs[inode];
+        RRNodeId rr_node = RRNodeId(inode);
+        if (std::isnan(cost)) continue;
+
+        ezgl::color color = to_ezgl_color(cmap->color(cost));
+
+        switch (rr_graph.node_type(rr_node)) {
+            case CHANX: //fallthrough
+            case CHANY:
+                draw_rr_chan(inode, color, g);
+                if (with_edges) draw_rr_edges(inode, g);
+                break;
+
+            case IPIN: //fallthrough
+                draw_rr_pin(inode, color, g);
+                if (with_edges) draw_rr_edges(inode, g);
+                break;
+            case OPIN:
+                draw_rr_pin(inode, color, g);
+                if (with_edges) draw_rr_edges(inode, g);
+                break;
+            case SOURCE:
+            case SINK:
+                color.alpha *= 0.8;
+                draw_rr_src_sink(inode, color, g);
+                if (with_edges) draw_rr_edges(inode, g);
+                break;
+            default:
+                break;
+        }
+    }
+
+    draw_state->color_map = std::move(cmap);
+}
 
 
 #endif
