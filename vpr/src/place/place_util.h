@@ -247,9 +247,9 @@ inline bool is_loc_on_chip(int x, int y) {
  * @param head_pos
  *        head_pos is the macro's head location.
  * @param check_all_legality
- *        determines whether the routine should check whether all legality constraint 
- *        should be checked. Analytic placer does not require to check block's capacity 
- *        or floorplanning constraints. However, initial placement or SA-based approach
+ *        determines whether the routine should check all legality constraint 
+ *        Analytic placer does not require to check block's capacity or
+ *        floorplanning constraints. However, initial placement or SA-based approach
  *        require to check for all legality constraints.
  */
 bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality);
