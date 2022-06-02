@@ -55,24 +55,10 @@
 #        include <X11/keysym.h>
 #    endif
 
-#    include "rr_graph.h"
-#    include "route_util.h"
-#    include "place_macro.h"
-#    include "buttons.h"
-
-/****************************** Define Macros *******************************/
-
-#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#    define OLD_BLK_LOC_COLOR blk_GOLD
-#    define NEW_BLK_LOC_COLOR blk_GREEN
-//#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
-
-
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
-
 
 void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     /* this is the callback function for runtime created toggle_nets button
@@ -423,7 +409,6 @@ float get_net_alpha() {
     t_draw_state* draw_state = get_draw_state_vars();
     return draw_state->net_alpha;
 }
-
 
 ezgl::color get_block_type_color(t_physical_tile_type_ptr type) {
     //Wrap around if there are too many blocks

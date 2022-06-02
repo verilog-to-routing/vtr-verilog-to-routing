@@ -55,19 +55,7 @@
 #        include <X11/keysym.h>
 #    endif
 
-#    include "rr_graph.h"
-#    include "route_util.h"
-#    include "place_macro.h"
-#    include "buttons.h"
-
-/****************************** Define Macros *******************************/
-
-#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#    define OLD_BLK_LOC_COLOR blk_GOLD
-#    define NEW_BLK_LOC_COLOR blk_GREEN
-
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
-
 
 void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer* g) {
     g->set_color(ezgl::YELLOW);

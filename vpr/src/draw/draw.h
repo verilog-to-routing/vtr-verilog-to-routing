@@ -15,7 +15,7 @@
 #    include "search_bar.h"
 #    include "draw_debug.h"
 #    include "manual_moves.h"
-#	 include "vtr_ndoffsetmatrix.h"
+#    include "vtr_ndoffsetmatrix.h"
 
 extern ezgl::application::settings settings;
 extern ezgl::application application;
@@ -63,8 +63,8 @@ std::vector<int> trace_routed_connection_rr_nodes(
     const int driver_pin,
     const int sink_pin);
 bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node,
-                                                    int sink_rr_node,
-                                                    std::vector<int>& rr_nodes_on_path);
+                                             int sink_rr_node,
+                                             std::vector<int>& rr_nodes_on_path);
 void draw_screen();
 
 /* This routine highlights the blocks affected in the latest move      *

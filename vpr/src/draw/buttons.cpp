@@ -12,7 +12,7 @@
 
 #    include "draw_global.h"
 #    include "draw.h"
-#include "draw_toggle_functions.h"
+#    include "draw_toggle_functions.h"
 #    include "buttons.h"
 #    include "intra_logic_block.h"
 #    include "clustered_netlist.h"

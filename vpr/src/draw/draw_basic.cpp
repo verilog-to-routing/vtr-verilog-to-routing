@@ -506,7 +506,6 @@ void draw_x(float x, float y, float size, ezgl::renderer* g) {
     g->draw_line({x - size, y - size}, {x + size, y + size});
 }
 
-
 /* Returns the coordinates at which the center of this pin should be drawn. *
  * inode gives the node number, and iside gives the side of the clb or pad  *
  * the physical pin is on.                                                  */
@@ -1060,7 +1059,6 @@ void draw_routing_util(ezgl::renderer* g) {
     draw_state->color_map = std::move(cmap);
 }
 
-
 void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g) {
     g->draw_line(start, end);
     draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
@@ -1132,10 +1130,10 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
 }
 
 void draw_routed_timing_edge(tatum::NodeId start_tnode,
-                                    tatum::NodeId end_tnode,
-                                    float incr_delay,
-                                    ezgl::color color,
-                                    ezgl::renderer* g) {
+                             tatum::NodeId end_tnode,
+                             float incr_delay,
+                             ezgl::color color,
+                             ezgl::renderer* g) {
     draw_routed_timing_edge_connection(start_tnode, end_tnode, color, g);
 
     g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
@@ -1152,9 +1150,9 @@ void draw_routed_timing_edge(tatum::NodeId start_tnode,
 
 //Collect all the drawing locations associated with the timing edge between start and end
 void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
-                                               tatum::NodeId sink_tnode,
-                                               ezgl::color color,
-                                               ezgl::renderer* g) {
+                                        tatum::NodeId sink_tnode,
+                                        ezgl::color color,
+                                        ezgl::renderer* g) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& timing_ctx = g_vpr_ctx.timing();
@@ -1225,6 +1223,5 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
 
     points.push_back(atom_pin_draw_coord(atom_sink_pin));
 }
-
 
 #endif

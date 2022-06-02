@@ -54,19 +54,14 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw,
 void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g);
 
 void draw_routed_timing_edge(tatum::NodeId start_tnode,
-                                    tatum::NodeId end_tnode,
-                                    float incr_delay,
-                                    ezgl::color color,
-                                    ezgl::renderer* g);
+                             tatum::NodeId end_tnode,
+                             float incr_delay,
+                             ezgl::color color,
+                             ezgl::renderer* g);
 void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
-                                               tatum::NodeId sink_tnode,
-                                               ezgl::color color,
-                                               ezgl::renderer* g);
-
-
-
-
-
+                                        tatum::NodeId sink_tnode,
+                                        ezgl::color color,
+                                        ezgl::renderer* g);
 
 #endif /* NO_GRAPHICS */
 #endif /* DRAW_BASIC_H */

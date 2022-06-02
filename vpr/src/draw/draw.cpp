@@ -83,7 +83,7 @@
 #    include "route_util.h"
 #    include "place_macro.h"
 #    include "buttons.h"
-#include "draw_rr.h"
+#    include "draw_rr.h"
 /****************************** Define Macros *******************************/
 
 #    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
@@ -270,8 +270,6 @@ static void draw_main_canvas(ezgl::renderer* g) {
         application.quit(); //Ensure we leave the event loop
     }
 }
-
-
 
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
@@ -1018,7 +1016,6 @@ static void draw_color_map_legend(const vtr::ColorMap& cmap,
     g->set_coordinate_system(ezgl::WORLD);
 }
 
-
 static void draw_block_pin_util() {
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL)
@@ -1247,7 +1244,6 @@ static void highlight_blocks(double x, double y) {
     application.update_message(msg);
     application.refresh_drawing();
 }
-
 
 static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button

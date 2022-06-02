@@ -55,25 +55,13 @@
 #        include <X11/keysym.h>
 #    endif
 
-#    include "rr_graph.h"
-#    include "route_util.h"
-#    include "place_macro.h"
-#    include "buttons.h"
-
 /****************************** Define Macros *******************************/
-
 #    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#    define OLD_BLK_LOC_COLOR blk_GOLD
-#    define NEW_BLK_LOC_COLOR blk_GREEN
-//#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
-
 
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
-
-
 
 void draw_rr(ezgl::renderer* g) {
     /* Draws the routing resources that exist in the FPGA, if the user wants *
@@ -298,7 +286,6 @@ void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) {
     }
     g->set_color(color); //Ensure color is still set correctly if we drew any arrows/text
 }
-
 
 void draw_rr_edges(int inode, ezgl::renderer* g) {
     /* Draws all the edges that the user wants shown between inode and what it *
@@ -543,67 +530,63 @@ void draw_rr_edges(int inode, ezgl::renderer* g) {
     } /* End of for each edge loop */
 }
 
-
 /* Draws an IPIN or OPIN rr_node.  Note that the pin can appear on more    *
  * than one side of a clb.  Also note that this routine can change the     *
  * current color to BLACK.                                                 */
 void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g) {
+    t_draw_coords* draw_coords = get_draw_coords_vars();
 
-t_draw_coords* draw_coords = get_draw_coords_vars();
+    float xcen, ycen;
+    char str[vtr::bufsize];
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
-float xcen, ycen;
-char str[vtr::bufsize];
-auto& device_ctx = g_vpr_ctx.device();
-const auto& rr_graph = device_ctx.rr_graph;
+    int ipin = rr_graph.node_pin_num(RRNodeId(inode));
 
-int ipin = rr_graph.node_pin_num(RRNodeId(inode));
-
-g->set_color(color);
-
-/* TODO: This is where we can hide fringe physical pins and also identify globals (hide, color, show) */
-/* As nodes may appear on more than one side, walk through the possible nodes
- * - draw the pin on each side that it appears
- */
-for (const e_side& pin_side : SIDES) {
-    if (!rr_graph.is_node_on_specific_side(RRNodeId(inode), pin_side)) {
-        continue;
-    }
-    draw_get_rr_pin_coords(inode, &xcen, &ycen, pin_side);
-    g->fill_rectangle(
-        {xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
-        {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
-    sprintf(str, "%d", ipin);
-    g->set_color(ezgl::BLACK);
-    g->draw_text({xcen, ycen}, str, 2 * draw_coords->pin_size,
-                 2 * draw_coords->pin_size);
     g->set_color(color);
-}
+
+    /* TODO: This is where we can hide fringe physical pins and also identify globals (hide, color, show) */
+    /* As nodes may appear on more than one side, walk through the possible nodes
+     * - draw the pin on each side that it appears
+     */
+    for (const e_side& pin_side : SIDES) {
+        if (!rr_graph.is_node_on_specific_side(RRNodeId(inode), pin_side)) {
+            continue;
+        }
+        draw_get_rr_pin_coords(inode, &xcen, &ycen, pin_side);
+        g->fill_rectangle(
+            {xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
+            {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
+        sprintf(str, "%d", ipin);
+        g->set_color(ezgl::BLACK);
+        g->draw_text({xcen, ycen}, str, 2 * draw_coords->pin_size,
+                     2 * draw_coords->pin_size);
+        g->set_color(color);
+    }
 }
 
 void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer* g) {
+    t_draw_coords* draw_coords = get_draw_coords_vars();
 
-t_draw_coords* draw_coords = get_draw_coords_vars();
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
-auto& device_ctx = g_vpr_ctx.device();
-const auto& rr_graph = device_ctx.rr_graph;
+    float xcen, ycen;
+    draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[inode], &xcen, &ycen);
 
-float xcen, ycen;
-draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[inode], &xcen, &ycen);
+    g->set_color(color);
 
-g->set_color(color);
+    g->fill_rectangle(
+        {xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
+        {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
 
-g->fill_rectangle(
-    {xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
-    {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
-
-std::string str = vtr::string_fmt("%d",
-                                  rr_graph.node_class_num(RRNodeId(inode)));
-g->set_color(ezgl::BLACK);
-g->draw_text({xcen, ycen}, str.c_str(), 2 * draw_coords->pin_size,
-             2 * draw_coords->pin_size);
-g->set_color(color);
+    std::string str = vtr::string_fmt("%d",
+                                      rr_graph.node_class_num(RRNodeId(inode)));
+    g->set_color(ezgl::BLACK);
+    g->draw_text({xcen, ycen}, str.c_str(), 2 * draw_coords->pin_size,
+                 2 * draw_coords->pin_size);
+    g->set_color(color);
 }
-
 
 void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -637,7 +620,6 @@ void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen
     float ypos = (class_height_shift + 1) / class_section_height;
     *ycen = yc + ypos * draw_coords->get_tile_height();
 }
-
 
 void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool configurable, ezgl::renderer* g) {
     /* Draws a buffer (triangle) or pass transistor (circle) on the edge        *
@@ -683,7 +665,6 @@ void draw_expand_non_configurable_rr_nodes_recurr(int from_node,
         }
     }
 }
-
 
 /* This is a helper function for highlight_rr_nodes(). It determines whether
  * a routing resource has been clicked on by computing a bounding box for that
@@ -757,7 +738,6 @@ int draw_check_rr_node_hit(float click_x, float click_y) {
     return hit_node;
 }
 
-
 /* This routine is called when the routing resource graph is shown, and someone
  * clicks outside a block. That click might represent a click on a wire -- we call
  * this routine to determine which wire (if any) was clicked on.  If a wire was
@@ -777,7 +757,6 @@ bool highlight_rr_nodes(float x, float y) {
 
     return highlight_rr_nodes(hit_node);
 }
-
 
 void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs, bool lowest_cost_first) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -854,6 +833,5 @@ void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs, bool l
 
     draw_state->color_map = std::move(cmap);
 }
-
 
 #endif

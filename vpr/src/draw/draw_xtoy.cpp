@@ -54,18 +54,6 @@
 #        include <X11/keysym.h>
 #    endif
 
-#    include "rr_graph.h"
-#    include "route_util.h"
-#    include "place_macro.h"
-#    include "buttons.h"
-
-/****************************** Define Macros *******************************/
-
-#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#    define OLD_BLK_LOC_COLOR blk_GOLD
-#    define NEW_BLK_LOC_COLOR blk_GREEN
-//#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
-
 void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, int to_track, short switch_type, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -155,7 +143,6 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, int to_track
                        rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
     }
 }
-
 
 void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, int to_track, short switch_type, ezgl::renderer* g) {
     /* Draws a connection between two x-channel segments.  Passing in the track *
@@ -249,7 +236,6 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, int to_track
     }
 }
 
-
 void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node, int chany_track, enum e_edge_dir edge_dir, short switch_type, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -326,7 +312,6 @@ void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node, i
     }
 }
 
-
 void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
     /* This routine draws an edge from the opin rr node to the ipin rr node */
     auto& device_ctx = g_vpr_ctx.device();
@@ -390,7 +375,6 @@ void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g) {
     }
 }
 
-
 void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -414,7 +398,6 @@ void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g) {
         draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
     }
 }
-
 
 void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
     /* This routine draws an edge from the pin_node to the chan_node (CHANX or   *
@@ -584,7 +567,5 @@ void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g) {
         draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
     }
 }
-
-
 
 #endif

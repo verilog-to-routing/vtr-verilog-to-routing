@@ -55,19 +55,9 @@
 #        include <X11/keysym.h>
 #    endif
 
-#    include "rr_graph.h"
-#    include "route_util.h"
-#    include "place_macro.h"
-#    include "buttons.h"
-
 /****************************** Define Macros *******************************/
 
 #    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#    define OLD_BLK_LOC_COLOR blk_GOLD
-#    define NEW_BLK_LOC_COLOR blk_GREEN
-
-//#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
-
 
 /* This function computes and returns the boundary coordinates of a channel
  * wire segment. This can be used for drawing a wire or determining if a
@@ -112,7 +102,6 @@ ezgl::rectangle draw_get_rr_chan_bbox(int inode) {
 
     return bound_box;
 }
-
 
 void draw_highlight_blocks_color(t_logical_block_type_ptr type,
                                  ClusterBlockId blk_id) {
@@ -205,7 +194,6 @@ void highlight_nets(char* message, int hit_node) {
     application.update_message(message);
 }
 
-
 /* If an rr_node has been clicked on, it will be either highlighted in MAGENTA,
  * or de-highlighted in WHITE. If highlighted, and toggle_rr is selected, highlight
  * fan_in into the node in blue and fan_out from the node in red. If de-highlighted,
@@ -258,13 +246,11 @@ void draw_highlight_fan_in_fan_out(const std::set<int>& nodes) {
     }
 }
 
-
 std::set<int> draw_expand_non_configurable_rr_nodes(int from_node) {
     std::set<int> expanded_nodes;
     draw_expand_non_configurable_rr_nodes_recurr(from_node, expanded_nodes);
     return expanded_nodes;
 }
-
 
 void deselect_all() {
     // Sets the color of all clbs, nets and rr_nodes to the default.
@@ -290,6 +276,5 @@ void deselect_all() {
     }
     get_selected_sub_block_info().clear();
 }
-
 
 #endif
