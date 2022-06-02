@@ -464,7 +464,7 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     place_ctx.grid_blocks[location.x][location.y].usage++;
 }
 
-bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool analytic_placer) {
+bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -492,7 +492,7 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool analytic_p
          * floorplan constraint is not supported by analytical placement yet, 
          * hence, if macro_can_be_placed is called from analytical placer, no further actions are required. 
          */
-        if (analytic_placer) {
+        if (check_all_legality) {
             continue;
         }
 
