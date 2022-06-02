@@ -17,7 +17,8 @@
  */
 
 /**
- * @brief A function that returns the cluster ID of an atom ID
+ * @brief A function that returns the block ID in the clustered netlist
+ *        from its ID in the atom netlist.
  */
 ClusterBlockId atom_to_cluster(const AtomBlockId& atom);
 
@@ -35,17 +36,17 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
                                       const ClusterBlockId& clb_index);
 
 /**
- * @brief A function that removes an atom from a cluster and check legality of
+ * @brief A function that removes a molecule from a cluster and check legality of
  * the old cluster. 
  *
  * It returns true if the removal is done and the old cluster is legal.
  * It aborts the removal and returns false if the removal will make the old cluster 
  * illegal
  */
-bool remove_atom_from_cluster(const AtomBlockId& atom_id,
-                              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                              ClusterBlockId& old_clb,
-                              t_lb_router_data*& router_data);
+bool remove_mol_from_cluster(const t_pack_molecule* molecule,
+                             int molecule_size,
+                             ClusterBlockId& old_clb,
+                             t_lb_router_data*& router_data);
 
 /**
  * @brief A function that starts a new cluster for one specific molecule
@@ -53,23 +54,23 @@ bool remove_atom_from_cluster(const AtomBlockId& atom_id,
  * It places the molecule in a specific type and mode that should be passed by
  * the higher level routine.
  */
-bool start_new_cluster_for_atom(const AtomBlockId atom_id,
-                                const t_logical_block_type_ptr& type,
-                                const int mode,
-                                const int feasible_block_array_size,
-                                bool enable_pin_feasibility_filter,
-                                ClusterBlockId clb_index,
-                                t_lb_router_data** router_data,
-                                std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                                PartitionRegion& temp_cluster_pr,
-                                t_clustering_data& clustering_data,
-                                bool during_packing);
+bool start_new_cluster_for_mol(t_pack_molecule* molecule,
+                               const t_logical_block_type_ptr& type,
+                               const int mode,
+                               const int feasible_block_array_size,
+                               bool enable_pin_feasibility_filter,
+                               ClusterBlockId clb_index,
+                               t_lb_router_data** router_data,
+                               PartitionRegion& temp_cluster_pr,
+                               t_clustering_data& clustering_data,
+                               bool during_packing);
 
 /**
  * @brief A function that fix the clustered netlist if the move is performed
  * after the packing is done and clustered netlist is built
  */
-void fix_clustered_netlist(const AtomBlockId& atom_id,
+void fix_clustered_netlist(t_pack_molecule* molecule,
+                           int molecule_size,
                            const ClusterBlockId& old_clb,
                            const ClusterBlockId& new_clb);
 
@@ -78,7 +79,7 @@ void fix_clustered_netlist(const AtomBlockId& atom_id,
  */
 void commit_atom_move(const ClusterBlockId& old_clb,
                       const ClusterBlockId& new_clb,
-                      t_pb* old_pb,
+                      std::vector<t_pb*>& old_mol_pbs,
                       t_lb_router_data*& old_router_data,
                       t_clustering_data& clustering_data,
                       bool during_packing);
