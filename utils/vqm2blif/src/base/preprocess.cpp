@@ -33,7 +33,7 @@ int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* new_input_pin,
                                             t_port_vec* pin_node_sources,
                                             t_port_vec* pin_node_sinks           );
 
-void expand_ram_clocks(t_module* module);
+void expand_ram_clocks(t_module* module, string device);
 
 //Functions to remove global constants
 void remove_constant_nets(t_module *module);
@@ -146,7 +146,7 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* ar
 
         if(elaborate_ram_clocks) {
             cout << "\t>> Preprocessing Netlist to elaborate ram clocks" << endl;
-            expand_ram_clocks(module);
+            expand_ram_clocks(module, device);
         }
     }
     cout << endl;
@@ -1131,17 +1131,17 @@ int get_next_port_idx(const t_node* node, std::set<int>& existing_idxs) {
     return idx;
 }
 
-void expand_ram_clocks(t_module* module) {
+void expand_ram_clocks(t_module* module, string device) {
     int num_ram_blocks_processed = 0;
     int num_clocks_added = 0;
     for (int i = 0; i < module->number_of_nodes; ++i) {
         t_node* node = module->array_of_nodes[i];
 
-        if (strcmp(node->type, "stratixiv_ram_block") == 0) {
+        if (strcmp(node->type, "stratixiv_ram_block") == 0 || strcmp(node->type, "fourteennm_ram_block") == 0) {
             ++num_ram_blocks_processed;
-            RamInfo ram_info = get_ram_info(node);
+            RamInfo ram_info = get_ram_info(node, device);
 
-            //Stratix IV ram blocks use clk0 and clk1 to specify the clocks, and use params
+            //Stratix IV and 10 ram blocks use clk0 and clk1 to specify the clocks, and use params
             //to define which clock controls what port
             //
             //To simply things in down stream tools (since BLIF doesn't support params) we replace the 
@@ -1189,7 +1189,113 @@ void expand_ram_clocks(t_module* module) {
             VTR_ASSERT(existing_clk_idxs.empty());
             VTR_ASSERT(find_vqm_port_index(node, "clk0") < 0);
             VTR_ASSERT(find_vqm_port_index(node, "clk1") < 0);
+
+            if (strcmp(node->type, "fourteennm_ram_block") == 0) {
+
+                //Stratix 10 ram blocks use ena0 and ena1 to specify the clock enables, and use params
+                //to define which clock enable controls what register
+                //
+                //To simply things in down stream tools (since BLIF doesn't support params) we replace the 
+                //VQM clocks enables with the following ports:
+                //   
+                //   * ena_portain    //Clock capturing input data to port a
+                //   * ena_portaout   //Clock launching output data from port a
+                //   * ena_portbin    //Clock capturing input data for port b
+                //   * ena_portbout   //Clock launching output data for port b
+                //
+                //We set these to the appropriate net based on the data set in VQM params
+
+                //Find and record the existing clk enable ports
+                // We do this so we can overwrite them
+                std::set<int> existing_clkena_idxs;
+
+                int ena0_idx = find_vqm_port_index(node, "ena0");
+                if (ena0_idx >= 0) existing_clkena_idxs.insert(ena0_idx);
+
+                int ena1_idx = find_vqm_port_index(node, "ena1");
+                if (ena1_idx >= 0) existing_clkena_idxs.insert(ena1_idx);
+
+                //Specify the port A input clock enable
+                if (ram_info.port_a_input_ena) {
+                    add_port(get_next_port_idx(node, existing_clkena_idxs), node, ram_info.port_a_input_ena, "ena_portain");
+                }
+                //Specify the port A output clock enable
+                if (ram_info.port_a_output_ena) {
+                    add_port(get_next_port_idx(node, existing_clkena_idxs), node, ram_info.port_a_output_ena, "ena_portaout");
+                }
+                //Specify the port B input clock enable
+                if(ram_info.port_b_input_ena) {
+                    add_port(get_next_port_idx(node, existing_clkena_idxs), node, ram_info.port_b_input_ena, "ena_portbin");
+                }
+                //Specify the port B output clock enable
+                if(ram_info.port_b_output_ena) {
+                    add_port(get_next_port_idx(node, existing_clkena_idxs), node, ram_info.port_b_output_ena, "ena_portbout");
+                }
+
+                //if there is a possibility that user instantiates 
+                //the primitive directly, hooking up the enable
+                // ports while setting the related parameters such that the enables are 
+                //not driving any of the clkena ports of the registers
+                //then this assertion will not hold and should be removed
+                VTR_ASSERT(existing_clkena_idxs.empty());
+                VTR_ASSERT(find_vqm_port_index(node, "ena0") < 0);
+                VTR_ASSERT(find_vqm_port_index(node, "ena1") < 0);
+
+
+                //Stratix 10 ram blocks use aclr and sclr to specify the clear signals, and use params
+                //to determine what type of clear each register uses
+                //
+                //The clear signals are used for the output registers only
+                //
+                //To simplify things in down stream tools (since BLIF doesn't support params) we replace the 
+                //VQM clears with the following ports:
+                //   
+                //   * ena_portain    //Clock capturing input data to port a
+                //   * ena_portaout   //Clock launching output data from port a
+                //   * ena_portbin    //Clock capturing input data for port b
+                //   * ena_portbout   //Clock launching output data for port b
+                //
+                //We set these to the appropriate net based on the data set in VQM params
+
+                //Find and record the existing clk enable ports
+                // We do this so we can overwrite them
+                std::set<int> existing_clr_idxs;
+
+                int aclr_idx = find_vqm_port_index(node, "aclr");
+                if (aclr_idx >= 0) existing_clr_idxs.insert(aclr_idx);
+
+                int sclr_idx = find_vqm_port_index(node, "sclr");
+                if (sclr_idx >= 0) existing_clr_idxs.insert(sclr_idx);
+
+                //Specify the port A input clock enable
+                if (ram_info.port_a_dataout_aclr) {
+                    add_port(get_next_port_idx(node, existing_clr_idxs), node, ram_info.port_a_dataout_aclr, "porta_dataout_aclr");
+                }
+                //Specify the port A output clock enable
+                if (ram_info.port_a_dataout_sclr) {
+                    add_port(get_next_port_idx(node, existing_clr_idxs), node, ram_info.port_a_dataout_sclr, "porta_dataout_sclr");
+                }
+                //Specify the port B input clock enable
+                if(ram_info.port_b_dataout_aclr) {
+                    add_port(get_next_port_idx(node, existing_clr_idxs), node, ram_info.port_b_dataout_aclr, "portb_dataout_aclr");
+                }
+                //Specify the port B output clock enable
+                if(ram_info.port_b_dataout_sclr) {
+                    add_port(get_next_port_idx(node, existing_clr_idxs), node, ram_info.port_b_dataout_sclr, "portb_dataout_sclr");
+                }
+
+                //if there is a possibility that user instantiates 
+                //the primitive directly, hooking up the clear
+                // ports while setting the related parameters such that the clears are 
+                //not driving any of the clear ports of the registers
+                //then this assertion will not hold and should be removed
+                VTR_ASSERT(existing_clr_idxs.empty());
+                VTR_ASSERT(find_vqm_port_index(node, "sclr") < 0);
+                VTR_ASSERT(find_vqm_port_index(node, "aclr") < 0);
+            }
         }
+
+
     }
 
     cout << "\t>> Elaborated " << num_clocks_added << " clocks accross " << num_ram_blocks_processed << " ram blocks" << endl;

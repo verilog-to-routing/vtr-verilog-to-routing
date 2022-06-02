@@ -104,7 +104,8 @@ struct RamInfo {
     t_node_port_association* port_a_input_ena = nullptr;
     t_node_port_association* port_a_output_clock = nullptr;
     t_node_port_association* port_a_output_ena = nullptr;
-    t_node_port_association* port_a_dataout_clear = nullptr;
+    t_node_port_association* port_a_dataout_aclr = nullptr;
+    t_node_port_association* port_a_dataout_sclr = nullptr;
 
     int port_b_addr_width = 0;
     int port_b_data_width = 0;
@@ -112,7 +113,8 @@ struct RamInfo {
     t_node_port_association* port_b_input_ena = nullptr;
     t_node_port_association* port_b_output_clock = nullptr;
     t_node_port_association* port_b_output_ena = nullptr;
-    t_node_port_association* port_b_dataout_clear = nullptr;
+    t_node_port_association* port_b_dataout_aclr = nullptr;
+    t_node_port_association* port_b_dataout_sclr = nullptr;
 };
 // stores relevant information for a given FPGA device
 // currently, just storing the strings used to idenitify luts and dff primitives and their ports within the vqm netlist
@@ -149,8 +151,9 @@ void construct_filename (char* filename, const char* path, const char* ext);	//c
 
 string generate_opname (t_node* vqm_node, t_model* arch_models, string device);	//generates a mode-hashed name for a subcircuit instance
 
+void generate_opname_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash, string device); //mode-hash for RAM blocks
+
 string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models); //mode-hash for Stratix IV
-void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV RAM blocks
 void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV DSP Multiplers
 void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV DSP Output (MAC)
 
@@ -164,7 +167,7 @@ string get_wire_name(t_pin_def* net, int index);	//returns a string with the app
 
 string append_index_to_str (string busname, int index);	//appends an integer index to the end of a string
 
-RamInfo get_ram_info(const t_node* vqm_node);
+RamInfo get_ram_info(const t_node* vqm_node, string device);
 
 //Other
 

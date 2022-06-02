@@ -296,7 +296,7 @@ string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models){
      * RAM Blocks
      */
     if(strcmp(vqm_node->type, "stratixiv_ram_block") == 0) {
-        generate_opname_ram(vqm_node, arch_models, mode_hash);
+        generate_opname_ram(vqm_node, arch_models, mode_hash, "stratixiv");
     }
 
     return mode_hash;
@@ -715,7 +715,7 @@ string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
      * RAM Blocks
      */
     if(strcmp(vqm_node->type, "fourteennm_ram_block") == 0) {
-        generate_opname_ram(vqm_node, arch_models, mode_hash);
+        generate_opname_ram(vqm_node, arch_models, mode_hash, "stratix10");
     }
 
     return mode_hash;
@@ -932,7 +932,7 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
     if(device=="stratixiv")
         VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
     if(device=="stratix10")
-        VTR_ASSERT(strcmp(vqm_node->type, "stratix10_ram_block") == 0);
+        VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_ram_block") == 0);
 
     t_node_parameter* operation_mode = NULL;
     
@@ -1009,32 +1009,32 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
             continue;
         }
         if (strcmp (temp_param->name, "clk0_input_clock_enable") == 0){
-            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
             clk0_input_clock_enable = temp_param;
             continue;
         }
         if (strcmp (temp_param->name, "clk0_output_clock_enable") == 0){
-            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
             clk0_output_clock_enable = temp_param;
             continue;
         }
         if (strcmp (temp_param->name, "clk1_input_clock_enable") == 0){
-            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
             clk1_input_clock_enable = temp_param;
             continue;
         }
         if (strcmp (temp_param->name, "clk1_output_clock_enable") == 0){
-            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
             clk1_output_clock_enable = temp_param;
             continue;
         }
         if (strcmp (temp_param->name, "port_a_dataout_clear") == 0){
-            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
             port_a_dataout_clear = temp_param;
             continue;
         }
         if (strcmp (temp_param->name, "port_b_dataout_clear") == 0){
-            VTR_ASSERT( temp_param->type   NODE_PARAMETER_STRING );
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
             port_b_dataout_clear = temp_param;
             continue;
         }
@@ -1127,54 +1127,55 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
         VTR_ASSERT(!clk_portaout);
         VTR_ASSERT(!clk_portbin);
         VTR_ASSERT(!clk_portbout);
-
+        if (device == "stratix10"){
         // set the clock enable_in and enable_out ports for clock0 and clock1 
-        if (clk0_input_clock_enable) {
-            if (clk0_input_clock_enable->value.string_value == std::string("ena0")){
-                VTR_ASSERT(ena0_port);
-                clk0_enable_in_port = ena0_port;
-            } else if (clk0_input_clock_enable->value.string_value == std::string("ena1")) {
-                VTR_ASSERT(ena1_port);
-                clk0_enable_in_port = ena1_port;
-            } else {
-                VTR_ASSERT(clk0_input_clock_enable->value.string_value == std::string("none"));
-                clk0_enable_in_port = nullptr;
+            if (clk0_input_clock_enable) {
+                if (clk0_input_clock_enable->value.string_value == std::string("ena0")){
+                    VTR_ASSERT(ena0_port);
+                    clk0_enable_in_port = ena0_port;
+                } else if (clk0_input_clock_enable->value.string_value == std::string("ena1")) {
+                    VTR_ASSERT(ena1_port);
+                    clk0_enable_in_port = ena1_port;
+                } else {
+                    VTR_ASSERT(clk0_input_clock_enable->value.string_value == std::string("none"));
+                    clk0_enable_in_port = nullptr;
+                }
             }
-        }
-        if (clk0_output_clock_enable) {
-            if (clk0_output_clock_enable->value.string_value == std::string("ena0")){
-                VTR_ASSERT(ena0_port);
-                clk0_enable_out_port = ena0_port;
-            } else if (clk0_output_clock_enable->value.string_value == std::string("ena1")) {
-                VTR_ASSERT(ena1_port);
-                clk0_enable_out_port = ena1_port;
-            } else {
-                VTR_ASSERT(clk0_output_clock_enable->value.string_value == std::string("none"));
-                clk0_enable_out_port = nullptr;
+            if (clk0_output_clock_enable) {
+                if (clk0_output_clock_enable->value.string_value == std::string("ena0")){
+                    VTR_ASSERT(ena0_port);
+                    clk0_enable_out_port = ena0_port;
+                } else if (clk0_output_clock_enable->value.string_value == std::string("ena1")) {
+                    VTR_ASSERT(ena1_port);
+                    clk0_enable_out_port = ena1_port;
+                } else {
+                    VTR_ASSERT(clk0_output_clock_enable->value.string_value == std::string("none"));
+                    clk0_enable_out_port = nullptr;
+                }
             }
-        }
-        if (clk1_input_clock_enable) {
-            if (clk1_input_clock_enable->value.string_value == std::string("ena0")){
-                VTR_ASSERT(ena0_port);
-                clk1_enable_in_port = ena0_port;
-            } else if (clk1_input_clock_enable->value.string_value == std::string("ena1")) {
-                VTR_ASSERT(ena1_port);
-                clk1_enable_in_port = ena1_port;
-            } else {
-                VTR_ASSERT(clk1_input_clock_enable->value.string_value == std::string("none"));
-                clk1_enable_in_port = nullptr;
+            if (clk1_input_clock_enable) {
+                if (clk1_input_clock_enable->value.string_value == std::string("ena0")){
+                    VTR_ASSERT(ena0_port);
+                    clk1_enable_in_port = ena0_port;
+                } else if (clk1_input_clock_enable->value.string_value == std::string("ena1")) {
+                    VTR_ASSERT(ena1_port);
+                    clk1_enable_in_port = ena1_port;
+                } else {
+                    VTR_ASSERT(clk1_input_clock_enable->value.string_value == std::string("none"));
+                    clk1_enable_in_port = nullptr;
+                }
             }
-        }
-        if (clk1_output_clock_enable) {
-            if (clk1_output_clock_enable->value.string_value == std::string("ena0")){
-                VTR_ASSERT(ena0_port);
-                clk1_enable_out_port = ena0_port;
-            } else if (clk1_output_clock_enable->value.string_value == std::string("ena1")) {
-                VTR_ASSERT(ena1_port);
-                clk1_enable_out_port = ena1_port;
-            } else {
-                VTR_ASSERT(clk1_output_clock_enable->value.string_value == std::string("none"));
-                clk1_enable_out_port = nullptr;
+            if (clk1_output_clock_enable) {
+                if (clk1_output_clock_enable->value.string_value == std::string("ena0")){
+                    VTR_ASSERT(ena0_port);
+                    clk1_enable_out_port = ena0_port;
+                } else if (clk1_output_clock_enable->value.string_value == std::string("ena1")) {
+                    VTR_ASSERT(ena1_port);
+                    clk1_enable_out_port = ena1_port;
+                } else {
+                    VTR_ASSERT(clk1_output_clock_enable->value.string_value == std::string("none"));
+                    clk1_enable_out_port = nullptr;
+                }
             }
         }
 
@@ -1249,25 +1250,32 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
         if (port_a_dataout_clear) {
             if (port_a_dataout_clear->value.string_value == std::string("aclr")){
                 VTR_ASSERT(aclr_port);
-                ram_info.port_a_dataout_clear = aclr_port;
+                ram_info.port_a_dataout_aclr = aclr_port;
+                ram_info.port_a_dataout_sclr = nullptr;
+
             } else if (port_a_dataout_clear->value.string_value == std::string("sclr")) {
                 VTR_ASSERT(sclr_port);
-                ram_info.port_a_dataout_clear = sclr_port;
+                ram_info.port_a_dataout_aclr = nullptr;
+                ram_info.port_a_dataout_sclr = sclr_port;
             } else {
                 VTR_ASSERT(port_a_dataout_clear->value.string_value == std::string("none"));
-                ram_info.port_a_dataout_clear = nullptr;
+                ram_info.port_a_dataout_aclr = nullptr;
+                ram_info.port_a_dataout_sclr = nullptr;
             }
         }
         if (port_b_dataout_clear) {
             if (port_b_dataout_clear->value.string_value == std::string("aclr")){
                 VTR_ASSERT(aclr_port);
-                ram_info.port_b_dataout_clear = aclr_port;
+                ram_info.port_b_dataout_aclr = aclr_port;
+                ram_info.port_b_dataout_sclr = nullptr;
             } else if (port_b_dataout_clear->value.string_value == std::string("sclr")) {
                 VTR_ASSERT(sclr_port);
-                ram_info.port_b_dataout_clear = sclr_port;
+                ram_info.port_b_dataout_aclr = nullptr;
+                ram_info.port_b_dataout_sclr = sclr_port;
             } else {
                 VTR_ASSERT(port_b_dataout_clear->value.string_value == std::string("none"));
-                ram_info.port_b_dataout_clear = nullptr;
+                ram_info.port_b_dataout_aclr = nullptr;
+                ram_info.port_b_dataout_sclr = nullptr;
             }
         }
         
