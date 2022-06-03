@@ -13,7 +13,7 @@
 class usefull_data {
   public:
     std::vector<std::tuple<std::string, std::string, std::string>> ports_vec;
-    std::vector<std::tuple<std::string, std::string, std::string, std::string>> instance_vec;
+    std::vector<std::tuple<std::string, std::string, std::string, std::string, bool>> instance_vec;
     std::vector<std::tuple<std::string, std::string, std::string>> con_vec;
 
     std::map<std::string, std::vector<std::tuple<std::string, std::string, std::string>>> ports;
@@ -148,7 +148,10 @@ class usefull_data {
         std::string cell_name;
         std::string inst_name;
         std::string inst_ref;
-        std::string property_lut= "0";
+        std::string int_hex;
+        bool is_hex = false;
+
+        std::string property_lut = "0";
         std::string property_width = "1";
         while (current != NULL) {
             if (current->type == 0 || current->type == 5) {
@@ -203,10 +206,8 @@ class usefull_data {
                                         inst_name = current->value;
                                     }
                                     //printf ("\n  The instance is created with the name of %s", inst_name.c_str());
-                                    if (inst_name == "VCC")
-                                    {property_lut= "3";}
-                                    if (inst_name == "GND")
-                                     {property_lut= "0";}
+                                    if (inst_name == "VCC") { property_lut = "3"; }
+                                    if (inst_name == "GND") { property_lut = "0"; }
 
                                     int instance_iteration = list_depth - 1;
                                     //   Entering the cell it will iterate untill the cell ends
@@ -232,6 +233,16 @@ class usefull_data {
                                                 if (input_string == cmp_string) {
                                                     current = current->next;
                                                     current = current->next;
+                                                    int_hex = current->value;
+                                                    printf (" \nthe value is %s" ,int_hex.c_str());
+                                                    if (int_hex == "string")
+                                                    {
+                                                    	is_hex= true;
+                                                    }
+                                                    else
+                                                    {
+                                                    	is_hex=false;
+                                                    }
                                                     current = current->next;
                                                     property_lut = current->value;
                                                     //printf("\nThe lut property is %s",property_lut.c_str());
@@ -247,10 +258,10 @@ class usefull_data {
                                             }
                                         }
                                     }
-                                    printf("\nThe lut property is %s",property_lut.c_str());
-                                    printf("\nThe width property is %s",property_width.c_str());
+                                    printf("\nThe lut property is %s", property_lut.c_str());
+                                    printf("\nThe width property is %s", property_width.c_str());
 
-                                    instance_vec.push_back(std::make_tuple(inst_name, inst_ref, property_lut, property_width));
+                                    instance_vec.push_back(std::make_tuple(inst_name, inst_ref, property_lut, property_width, is_hex));
                                 }
                             }
                         }
@@ -377,8 +388,8 @@ class usefull_data {
                                                         }
                                                     }
                                                 }
-                                                port_ref = port_ref + instance_ref ;
-                                                port_ref= port_ref + member_num;
+                                                port_ref = port_ref + instance_ref;
+                                                port_ref = port_ref + member_num;
                                                 //printf ("\n\n\n\n%s",port_ref.c_str() );
 
                                                 con_vec.push_back(std::make_tuple(port_ref, member_num, instance_ref));
@@ -388,7 +399,7 @@ class usefull_data {
                                     }
                                     // printf ("\n The net name is %s", net_name.c_str());
                                     nets.insert({net_name, con_vec});
-                                    printf("The size of nets map is %d", nets.size());
+
                                     con_vec.clear();
                                 }
                             }
