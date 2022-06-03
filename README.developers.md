@@ -561,11 +561,11 @@ choose "Test" and select your workflow. If running the tests is done, scroll dow
 This would download the results for all CI tests.
 
 1. Go to "Action" tab
-![Action Button](./doc/src/dev/eval_qor/action_button.png)
+![Action Button](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/action_button.png)
 2. Select "Test" and choose your workflow
-![Test Button](./doc/src/dev/eval_qor/test.png)
+![Test Button](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/test.png)
 3. Scroll down and download "artifact"
-![Artifact](./doc/src/dev/eval_qor/artifact.png)
+![Artifact](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/artifact.png)
 
 Assume that we want to get the QoR results for "vtr_reg_nightly_test3". In the artifact, there is a file named 
 "qor_results_vtr_reg_nightly_test3.tar.gz." Unzip this file, and a new directory named "vtr_flow" is created. Go to 
@@ -574,18 +574,18 @@ containing in this test suit(vtr_reg_nightly_test3.) For instance, results relat
 "vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3/vtr_reg_qor." In this directory, results for each run are stored separately.
 For example, if you want to get the results for the first run, there is a file in *run001* directory named *parse_results.txt*.
 Using these parsed results, you can do a detailed QoR comparison using the instructions given [here](./README.developers.md#Comparing QoR Measurements).
-![Parse File Dir](./doc/src/dev/eval_qor/parse_result_dir.png)
+![Parse File Dir](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/parse_result_dir.png)
 
 #### Re-run CI Tests
 In the case that you want to re-run the CI tests, due to certain issues such as infrastructure failure, 
 go to the "Action" tab and find your workflow under Test Workflow.
 Select the test which you want to re-run. There is a re-run button on the top-right corner of the newly appeared window.
-![Rerun CI Test](./doc/src/dev/eval_qor/re_run_tests.png)
+![Rerun CI Test](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/re_run_tests.png)
 
 ** **Attention** ** If the previous run is not finished, you will not be able to re-run the CI tests. To circumvent this limitation,
 there are two options:
 1. Cancel the workflow. After a few minutes, you would be able to re-run the workflow
-   ![Rerun CI Test](./doc/src/dev/eval_qor/cancel_workflow.png)
+   ![Rerun CI Test](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/cancel_workflow.png)
 2. Wait until the workflow finishes, then re-run the failed jobs
 
 
