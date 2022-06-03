@@ -59,6 +59,12 @@
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
 
+#include "clustered_netlist_utils.h"
+
+#include "re_cluster.h"
+#include "re_cluster_util.h"
+#include "cluster_placement.h"
+
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
@@ -468,9 +474,6 @@ void try_place(const t_placer_opts& placer_opts,
     t_pl_blocks_to_be_moved blocks_affected(
         cluster_ctx.clb_nlist.blocks().size());
 
-    /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
-    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
-
     /* init file scope variables */
     num_swap_rejected = 0;
     num_swap_accepted = 0;
@@ -531,6 +534,9 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     init_draw_coords((float)width_fac);
+
+    /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
+    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
     //Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist,
                                                   atom_ctx.nlist, pb_gpin_lookup);
