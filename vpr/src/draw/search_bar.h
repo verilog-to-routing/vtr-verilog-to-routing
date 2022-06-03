@@ -18,6 +18,11 @@ void highlight_nets(ClusterNetId net_id);
 void highlight_nets(std::string net_name);
 void highlight_blocks(std::string block_name);
 
+void load_block_names(ezgl::application* app);
+
+//Function to manage entry completions when search type is changed
+void search_type_changed(GtkComboBox* /*self*/, ezgl::application* app);
+
 /*function below pops up a dialog box with no button, showing the input warning message*/
 void warning_dialog_box(const char* message);
 

@@ -218,47 +218,6 @@ void reset_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_
 }
 
 /**
- * Free linked lists found in cluster_placement_stats_list
- */
-void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats_list) {
-    t_cluster_placement_primitive *cur, *next;
-    auto& device_ctx = g_vpr_ctx.device();
-
-    for (const auto& type : device_ctx.logical_block_types) {
-        int index = type.index;
-        cur = cluster_placement_stats_list[index].tried;
-        while (cur != nullptr) {
-            next = cur->next_primitive;
-            free(cur);
-            cur = next;
-        }
-        cur = cluster_placement_stats_list[index].in_flight;
-        while (cur != nullptr) {
-            next = cur->next_primitive;
-            free(cur);
-            cur = next;
-        }
-        cur = cluster_placement_stats_list[index].invalid;
-        while (cur != nullptr) {
-            next = cur->next_primitive;
-            free(cur);
-            cur = next;
-        }
-        for (int j = 0; j < cluster_placement_stats_list[index].num_pb_types; j++) {
-            cur = cluster_placement_stats_list[index].valid_primitives[j]->next_primitive;
-            while (cur != nullptr) {
-                next = cur->next_primitive;
-                free(cur);
-                cur = next;
-            }
-            free(cluster_placement_stats_list[index].valid_primitives[j]);
-        }
-        free(cluster_placement_stats_list[index].valid_primitives);
-    }
-    free(cluster_placement_stats_list);
-}
-
-/**
  * Put primitive back on queue of valid primitives
  *  Note that valid status is not changed because if the primitive is not valid, it will get properly collected later
  */

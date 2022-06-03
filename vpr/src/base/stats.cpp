@@ -335,14 +335,13 @@ void print_wirelen_prob_dist() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    float* prob_dist;
     float norm_fac, two_point_length;
     int bends, length, segments, index;
     float av_length;
-    int prob_dist_size, i, incr;
+    int prob_dist_size, incr;
 
     prob_dist_size = device_ctx.grid.width() + device_ctx.grid.height() + 10;
-    prob_dist = (float*)vtr::calloc(prob_dist_size, sizeof(float));
+    std::vector<float> prob_dist(prob_dist_size, 0.0);
     norm_fac = 0.;
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -362,11 +361,12 @@ void print_wirelen_prob_dist() {
                 VTR_LOG_WARN("Index (%d) to prob_dist exceeds its allocated size (%d).\n",
                              index, prob_dist_size);
                 VTR_LOG("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
+
+                /*  Resized to prob_dist + incr. Elements after old prob_dist_size set
+                 *   to 0.0.  */
                 incr = index - prob_dist_size + 2;
                 prob_dist_size += incr;
-                prob_dist = (float*)vtr::realloc(prob_dist, prob_dist_size * sizeof(float));
-                for (i = prob_dist_size - incr; i < prob_dist_size; i++)
-                    prob_dist[i] = 0.0;
+                prob_dist.resize(prob_dist_size);
             }
             prob_dist[index] += (num_sinks) * (1 - two_point_length + index);
 
@@ -377,10 +377,8 @@ void print_wirelen_prob_dist() {
                 VTR_LOG("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
                 incr = index - prob_dist_size + 2;
                 prob_dist_size += incr;
-                prob_dist = (float*)vtr::realloc(prob_dist,
-                                                 prob_dist_size * sizeof(float));
-                for (i = prob_dist_size - incr; i < prob_dist_size; i++)
-                    prob_dist[i] = 0.0;
+
+                prob_dist.resize(prob_dist_size);
             }
             prob_dist[index] += (num_sinks) * (1 - index + two_point_length);
 
@@ -407,8 +405,6 @@ void print_wirelen_prob_dist() {
     VTR_LOG("Number of 2-pin nets: ;%g;\n", norm_fac);
     VTR_LOG("Expected value of 2-pin net length (R): ;%g;\n", av_length);
     VTR_LOG("Total wirelength: ;%g;\n", norm_fac * av_length);
-
-    free(prob_dist);
 }
 
 /**

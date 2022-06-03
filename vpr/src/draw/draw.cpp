@@ -358,9 +358,11 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");   // index 2
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name"); // index 3
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "RR Node ID");           // index 4
+                                   "RR Node ID"); // index 4
+    //Important to have default option set, or else user can search w. no selected type which can cause crash
     gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
-
+    g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
+    load_block_names(app);
     button_for_toggle_nets();
     button_for_net_max_fanout();
     button_for_net_alpha();
@@ -442,6 +444,10 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
                                    "RR Node ID");
+    //Important to have default option set, or else user can search w. no selected type which can cause crash
+    gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
+    g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
+    load_block_names(app);
 
     button_for_toggle_nets();
     button_for_net_max_fanout();
@@ -913,10 +919,8 @@ void alloc_draw_structs(const t_arch* arch) {
 
     /* Allocate the structures needed to draw the placement and routing->  Set *
      * up the default colors for blocks and nets.                             */
-    draw_coords->tile_x = (float*)vtr::malloc(
-        device_ctx.grid.width() * sizeof(float));
-    draw_coords->tile_y = (float*)vtr::malloc(
-        device_ctx.grid.height() * sizeof(float));
+    draw_coords->tile_x = new float[device_ctx.grid.width()];
+    draw_coords->tile_y = new float[device_ctx.grid.height()];
 
     /* For sub-block drawings inside clbs */
     draw_internal_alloc_blk();
@@ -950,9 +954,9 @@ void free_draw_structs() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     if (draw_coords != nullptr) {
-        free(draw_coords->tile_x);
+        delete[](draw_coords->tile_x);
         draw_coords->tile_x = nullptr;
-        free(draw_coords->tile_y);
+        delete[](draw_coords->tile_y);
         draw_coords->tile_y = nullptr;
     }
 
@@ -4402,10 +4406,16 @@ static void highlight_blocks(double x, double y) {
     application.update_message(msg);
     application.refresh_drawing();
 }
-void set_net_alpha_value(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
-    std::string fa(gtk_entry_get_text((GtkEntry*)widget));
+void set_net_alpha_value(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    std::string button_name = "netAlpha";
+    auto net_alpha = find_button(button_name.c_str());
     t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->net_alpha = std::stof(fa);
+
+    //set draw_state->net_alpha to its corresponding value in the ui
+    int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)net_alpha) / 100;
+    draw_state->net_alpha = new_value;
+
+    //redraw
     application.refresh_drawing();
 }
 

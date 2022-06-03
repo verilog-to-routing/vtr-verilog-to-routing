@@ -58,7 +58,8 @@ void power_print_spice_comparison() {
     unsigned int i, j;
     float* dens = nullptr;
     float* prob = nullptr;
-    char* SRAM_bits = nullptr;
+    char* SRAM_bits_chars;
+    std::string SRAM_bits;
     int sram_idx;
     auto& power_ctx = g_vpr_ctx.mutable_power();
     //
@@ -150,8 +151,8 @@ void power_print_spice_comparison() {
     fprintf(power_ctx.output->out, "Energy of LUT (High Activity)\n");
     for (i = 0; i < (sizeof(LUT_sizes) / sizeof(int)); i++) {
         for (j = 1; j <= LUT_sizes[i]; j++) {
-            SRAM_bits = (char*)vtr::realloc(SRAM_bits,
-                                            ((1 << j) + 1) * sizeof(char));
+            SRAM_bits.resize((1 << j) + 1);
+
             if (j == 1) {
                 SRAM_bits[0] = '1';
                 SRAM_bits[1] = '0';
@@ -162,14 +163,19 @@ void power_print_spice_comparison() {
             }
             SRAM_bits[1 << j] = '\0';
         }
+        SRAM_bits_chars = new char[SRAM_bits.size()];
+        strcpy(SRAM_bits_chars, SRAM_bits.c_str());
 
-        dens = (float*)vtr::realloc(dens, LUT_sizes[i] * sizeof(float));
-        prob = (float*)vtr::realloc(prob, LUT_sizes[i] * sizeof(float));
+        delete[] dens;
+        delete[] prob;
+        dens = new float[LUT_sizes[i]];
+        prob = new float[LUT_sizes[i]];
+
         for (j = 0; j < LUT_sizes[i]; j++) {
             dens[j] = 1.0 / (float)LUT_sizes[i];
             prob[j] = 0.5;
         }
-        power_usage_lut(&sub_power_usage, LUT_sizes[i], 1.0, SRAM_bits, prob,
+        power_usage_lut(&sub_power_usage, LUT_sizes[i], 1.0, SRAM_bits_chars, prob,
                         dens, power_callib_period);
 
         t_power_usage power_usage_mux;
@@ -288,9 +294,9 @@ void power_print_spice_comparison() {
     //	 * power_ctx.solution_inf.T_crit);
     //}
     //free variables
-    free(dens);
-    free(prob);
-    free(SRAM_bits);
+    delete[] dens;
+    delete[] prob;
+    delete[] SRAM_bits_chars;
 }
 
 static char binary_not(char c) {
@@ -329,8 +335,8 @@ float power_usage_mux_for_callibration(int num_inputs, float transistor_size) {
     float* dens;
     float* prob;
 
-    dens = (float*)vtr::malloc(num_inputs * sizeof(float));
-    prob = (float*)vtr::malloc(num_inputs * sizeof(float));
+    dens = new float[num_inputs];
+    prob = new float[num_inputs];
     for (int i = 0; i < num_inputs; i++) {
         dens[i] = 2;
         prob[i] = 0.5;
@@ -340,8 +346,8 @@ float power_usage_mux_for_callibration(int num_inputs, float transistor_size) {
                                power_get_mux_arch(num_inputs, transistor_size), prob, dens, 0,
                                false, power_callib_period);
 
-    free(dens);
-    free(prob);
+    delete[] dens;
+    delete[] prob;
 
     return power_sum_usage(&power_usage);
 }
@@ -356,7 +362,7 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
     /* Initialize an SRAM pattern that guarantees the outputs toggle with
      * every input toggle.
      */
-    SRAM_bits = (char*)vtr::malloc(((1 << lut_size) + 1) * sizeof(char));
+    SRAM_bits = new char[((1 << lut_size) + 1)];
     for (int i = 1; i <= lut_size; i++) {
         if (i == 1) {
             SRAM_bits[0] = '1';
@@ -369,8 +375,8 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
         SRAM_bits[1 << i] = '\0';
     }
 
-    dens = (float*)vtr::malloc(lut_size * sizeof(float));
-    prob = (float*)vtr::malloc(lut_size * sizeof(float));
+    dens = new float[lut_size];
+    prob = new float[lut_size];
     for (int i = 0; i < lut_size; i++) {
         dens[i] = 1;
         prob[i] = 0.5;
@@ -378,9 +384,9 @@ float power_usage_lut_for_callibration(int num_inputs, float transistor_size) {
     power_usage_lut(&power_usage, lut_size, transistor_size, SRAM_bits, prob,
                     dens, power_callib_period);
 
-    free(SRAM_bits);
-    free(dens);
-    free(prob);
+    delete[] SRAM_bits;
+    delete[] dens;
+    delete[] prob;
 
     return power_sum_usage(&power_usage);
 }

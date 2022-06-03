@@ -21,7 +21,7 @@
         "Multiplier": 5,
         "Memory": 6,
         "generic logic size": 4,
-        "Longest Path": 580,
+        "Longest Path": 561,
         "Average Path": 2,
         "Estimated LUTs": 14115,
         "Total Node": 13526
@@ -39,15 +39,15 @@
         "Latch Drivers": 1,
         "Pi": 259,
         "Po": 122,
-        "logic element": 90725,
-        "latch": 52282,
-        "Adder": 56904,
+        "logic element": 90787,
+        "latch": 52344,
+        "Adder": 56909,
         "Multiplier": 125,
         "generic logic size": 4,
         "Longest Path": 464,
         "Average Path": 4,
-        "Estimated LUTs": 91237,
-        "Total Node": 200037
+        "Estimated LUTs": 91299,
+        "Total Node": 200166
     },
     "koios/conv_layer_hls/k6FracN10LB_mem20K_complexDSP_customSB_22nm": {
         "test_name": "koios/conv_layer_hls/k6FracN10LB_mem20K_complexDSP_customSB_22nm",
@@ -4702,7 +4702,7 @@
         "Multiplier": 3,
         "Memory": 21,
         "generic logic size": 4,
-        "Longest Path": 745,
+        "Longest Path": 732,
         "Average Path": 4,
         "Estimated LUTs": 1611951,
         "Total Node": 1615624
@@ -4726,7 +4726,7 @@
         "Multiplier": 7,
         "Memory": 14,
         "generic logic size": 4,
-        "Longest Path": 111,
+        "Longest Path": 124,
         "Average Path": 2,
         "Estimated LUTs": 3548,
         "Total Node": 4927
@@ -4744,16 +4744,16 @@
         "Latch Drivers": 1,
         "Pi": 13,
         "Po": 13,
-        "logic element": 52827,
-        "latch": 73223,
-        "Adder": 28395,
+        "logic element": 54123,
+        "latch": 74519,
+        "Adder": 28827,
         "Multiplier": 224,
         "Memory": 96,
         "generic logic size": 4,
-        "Longest Path": 235,
+        "Longest Path": 234,
         "Average Path": 4,
-        "Estimated LUTs": 53037,
-        "Total Node": 154766
+        "Estimated LUTs": 54333,
+        "Total Node": 157790
     },
     "koios/eltwise_layer/k6FracN10LB_mem20K_complexDSP_customSB_22nm": {
         "test_name": "koios/eltwise_layer/k6FracN10LB_mem20K_complexDSP_customSB_22nm",
@@ -4792,15 +4792,15 @@
         "Latch Drivers": 1,
         "Pi": 690,
         "Po": 1109,
-        "logic element": 636350,
-        "latch": 149240,
+        "logic element": 636414,
+        "latch": 149241,
         "Adder": 76514,
         "Multiplier": 400,
         "generic logic size": 4,
-        "Longest Path": 757,
+        "Longest Path": 752,
         "Average Path": 3,
-        "Estimated LUTs": 658068,
-        "Total Node": 862505
+        "Estimated LUTs": 658138,
+        "Total Node": 862570
     },
     "koios/reduction_layer/k6FracN10LB_mem20K_complexDSP_customSB_22nm": {
         "test_name": "koios/reduction_layer/k6FracN10LB_mem20K_complexDSP_customSB_22nm",
@@ -4820,7 +4820,7 @@
         "Adder": 53,
         "Memory": 1,
         "generic logic size": 4,
-        "Longest Path": 151,
+        "Longest Path": 158,
         "Average Path": 5,
         "Estimated LUTs": 358,
         "Total Node": 439
@@ -4866,7 +4866,7 @@
         "latch": 37,
         "Adder": 24,
         "generic logic size": 4,
-        "Longest Path": 111,
+        "Longest Path": 97,
         "Average Path": 2,
         "Estimated LUTs": 246,
         "Total Node": 296
@@ -5698,7 +5698,7 @@
         "Multiplier": 32,
         "Memory": 229,
         "generic logic size": 4,
-        "Longest Path": 1058,
+        "Longest Path": 1026,
         "Average Path": 2,
         "Estimated LUTs": 327095,
         "Total Node": 331040

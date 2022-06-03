@@ -611,6 +611,7 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
     copy->num_clock_pins = pb_type->num_clock_pins;
     copy->num_input_pins = pb_type->num_input_pins;
     copy->num_output_pins = pb_type->num_output_pins;
+    copy->num_pins = pb_type->num_pins;
     copy->num_pb = 1;
 
     /* Power */
@@ -630,6 +631,8 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
         copy->ports[i].name = vtr::strdup(pb_type->ports[i].name);
         copy->ports[i].port_class = vtr::strdup(pb_type->ports[i].port_class);
         copy->ports[i].port_index_by_type = pb_type->ports[i].port_index_by_type;
+        copy->ports[i].index = pb_type->ports[i].index;
+        copy->ports[i].absolute_first_pin_index = pb_type->ports[i].absolute_first_pin_index;
 
         copy->ports[i].port_power = (t_port_power*)vtr::calloc(1,
                                                                sizeof(t_port_power));
