@@ -1,4 +1,4 @@
-
+/*draw_mux.cpp contains all functions that draw muxes.*/
 #include <cstdio>
 #include <cfloat>
 #include <cstring>

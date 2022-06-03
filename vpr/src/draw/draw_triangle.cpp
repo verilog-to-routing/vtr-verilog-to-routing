@@ -1,4 +1,4 @@
-
+/* draw_triangle.cpp contains functions that draw triangles.*/
 #include <cstdio>
 #include <cfloat>
 #include <cstring>

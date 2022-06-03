@@ -1,4 +1,4 @@
-
+/*draw_basic.cpp contains all functions that draw things on the screen.*/
 #include <cstdio>
 #include <cfloat>
 #include <cstring>

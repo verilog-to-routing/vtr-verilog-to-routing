@@ -1,4 +1,4 @@
-
+/*draw_searchbar.cpp contains all functions related to searchbar actions.*/
 #include <cstdio>
 #include <cfloat>
 #include <cstring>

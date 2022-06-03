@@ -1,4 +1,4 @@
-
+/*draw_toggle_functions.cpp contains functions that toggle things (mostly callback functions)*/
 #include <cstdio>
 #include <cfloat>
 #include <cstring>

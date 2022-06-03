@@ -1,4 +1,4 @@
-
+/*draw_rr.cpp contains all functions that relate to drawing routing resources.*/
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
