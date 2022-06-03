@@ -45,11 +45,11 @@ struct EDIFReader {
                const t_model* library_models,
                usefull_data& edif,
                struct SNode* node)
-        : main_netlist_(main_netlist)
+        : edif_format_(edif_format)
+        , main_netlist_(main_netlist)
         , netlist_id_(netlist_id)
         , user_arch_models_(user_models)
         , library_arch_models_(library_models)
-        , edif_format_(edif_format)
         , edif_(edif)
         , node_(node) {
         printf("\n\n in constructor\n");
@@ -111,9 +111,9 @@ struct EDIFReader {
             std::string size = std::get<2>(ports_vec[i]);
             auto size_port = stoi(size);
 
-            printf(" direction is given as::%s\n", dir.c_str());
-            printf(" size in string is is given as::%s\n", size.c_str());
-            printf(" Size given as::%d\n", size_port);
+            // printf(" direction is given as::%s\n", dir.c_str());
+            // printf(" size in string is is given as::%s\n", size.c_str());
+            // printf(" Size given as::%d\n", size_port);
             std::string cmp_string_out = "OUTPUT";
             std::string cmp_string_in = "INPUT";
             AtomNetId netID;
@@ -130,14 +130,14 @@ struct EDIFReader {
                     netID = main_netlist_.find_net(find_corresponding_net(temp_name));
                     pinID = main_netlist_.create_pin(port_id, 0, netID, PinType::DRIVER);
 
-                    const std::string& in_blk = main_netlist_.block_name(blk_id);
-                    const std::string& input_port = main_netlist_.port_name(port_id);
-                    const std::string& netlistname = main_netlist_.netlist_name();
-
-                    printf(" block created is given as::%s\n", in_blk.c_str());
-                    printf(" port created is given as::%s\n", input_port.c_str());
-
-                    printf("NETLIST name is given as::%s\n", netlistname.c_str());
+                    /*const std::string& in_blk = main_netlist_.block_name(blk_id);
+                     * const std::string& input_port = main_netlist_.port_name(port_id);
+                     * const std::string& netlistname = main_netlist_.netlist_name();
+                     *
+                     * printf(" block created is given as::%s\n", in_blk.c_str());
+                     * printf(" port created is given as::%s\n", input_port.c_str());
+                     *
+                     * printf("NETLIST name is given as::%s\n", netlistname.c_str());*/
                 }
             }
             if (dir == cmp_string_out) {
@@ -148,13 +148,13 @@ struct EDIFReader {
                     port_id = main_netlist_.create_port(blk_id, output_model->inputs);
                     netID = main_netlist_.find_net(find_corresponding_net(temp_name));
                     pinID = main_netlist_.create_pin(port_id, 0, netID, PinType::SINK);
-                    const std::string& out_blk = main_netlist_.block_name(blk_id);
-                    const std::string& output_port = main_netlist_.port_name(port_id);
-                    const std::string& netlistname = main_netlist_.netlist_name();
-
-                    printf(" block created is given as::%s\n", out_blk.c_str());
-                    printf(" port created is given as::%s\n", output_port.c_str());
-                    printf("NETLIST name is given as::%s\n", netlistname.c_str());
+                    /*    const std::string& out_blk = main_netlist_.block_name(blk_id);
+                     * const std::string& output_port = main_netlist_.port_name(port_id);
+                     * const std::string& netlistname = main_netlist_.netlist_name();
+                     *
+                     * printf(" block created is given as::%s\n", out_blk.c_str());
+                     * printf(" port created is given as::%s\n", output_port.c_str());
+                     * printf("NETLIST name is given as::%s\n", netlistname.c_str());*/
                 }
             }
         }
@@ -176,17 +176,17 @@ struct EDIFReader {
 
             std::vector<std::vector<int>> rows;
             std::string property_lut = std::get<2>(edif_.instance_vec[k]);
-            printf(" property_lut is is given as::%s\n", property_lut.c_str());
+            //printf(" property_lut is is given as::%s\n", property_lut.c_str());
             std::string property_width = std::get<3>(edif_.instance_vec[k]);
             bool is_hex = std::get<4>(edif_.instance_vec[k]);
-            char delim[]= "h";
-            char *tok_char = const_cast <char *>(property_lut.c_str());
-            char *token =strtok(tok_char, delim);
-            if(is_hex){
-            	while (token){
-            	token =strtok(NULL, delim);
-            	}
-            	 printf("\nThe token is %s ", token );
+            char delim[] = "h";
+            char* tok_char = const_cast<char*>(property_lut.c_str());
+            char* token = strtok(tok_char, delim);
+            if (is_hex) {
+                while (token) {
+                    token = strtok(NULL, delim);
+                }
+                printf("\nThe token is %s ", token);
             }
 
             int index = std::stoi(property_lut);
@@ -208,13 +208,12 @@ struct EDIFReader {
                 property_lut_binary.at(pp_required) = (index % 2);
                 index /= 2;
                 pp_required--;
-
             }
-            for (int vi = 0; vi < property_lut_binary.size(); vi++) {
-              printf("\n%ith value of lut output is  %i\n", vi, property_lut_binary.at(vi));
-               }
+            for (size_t vi = 0; vi < property_lut_binary.size(); vi++) {
+                // printf("\n%ith value of lut output is  %i\n", vi, property_lut_binary.at(vi));
+            }
 
-            printf("\nThe max_tt is %d", max_tt);
+            //printf("\nThe max_tt is %d", max_tt);
             // creating the truth table based on the number of inputs
             int tt_output = max_tt - 1;
             for (int tt = 0; tt < max_tt; tt++) {
@@ -231,20 +230,19 @@ struct EDIFReader {
                     //printf("\nplacing at position %d and loop iteration is %d the value is %d \n and the output is ", tt_size, tt, tt_input, );
                 }
                 rows.push_back(row_);
-                for (int vi = 0; vi < row_.size(); vi++) {
-                    printf("\n%ith e of row is %i\n", vi, row_.at(vi));
-                }
+                //for (size_t vi = 0; vi < row_.size(); vi++) {
+                //      printf("\n%ith e of row is %i\n", vi, row_.at(vi));
+                //}
             }
 
-
-            for (int rs = 0; rs < rows.size(); rs++) {
+            for (size_t rs = 0; rs < rows.size(); rs++) {
                 truth_table.emplace_back();
-                printf("value of rs %i\n", rs);
+                //printf("value of rs %i\n", rs);
                 std::vector<int> row_;
                 row_ = rows.at(rs);
-                for (int irs = 0; irs < row_.size(); irs++) {
+                for (size_t irs = 0; irs < row_.size(); irs++) {
                     truth_table[truth_table.size() - 1].push_back(to_vtr_logic_value_(row_.at(irs)));
-                    printf("value at %i of row is %i\n", irs, row_.at(irs));
+                    //  printf("value at %i of row is %i\n", irs, row_.at(irs));
                 }
             }
 
@@ -259,8 +257,8 @@ struct EDIFReader {
 
                 port_name = port_name + inst_name;
 
-                printf(" direction is given as::%s\n", dir.c_str());
-                printf(" Size is given as::%s\n", size.c_str());
+                //printf(" direction is given as::%s\n", dir.c_str());
+                //printf(" Size is given as::%s\n", size.c_str());
                 std::string cmp_string_out = "OUTPUT";
                 std::string cmp_string_in = "INPUT";
 
@@ -273,12 +271,12 @@ struct EDIFReader {
                         netID = main_netlist_.find_net(find_corresponding_net(temp_name));
                         pinID = main_netlist_.create_pin(port_id, num_ports, netID, PinType::SINK);
 
-                        const std::string& input_port = main_netlist_.port_name(port_id);
-                        const std::string& netlistname = main_netlist_.netlist_name();
+                        //const std::string& input_port = main_netlist_.port_name(port_id);
+                        //const std::string& netlistname = main_netlist_.netlist_name();
 
-                        printf(" port created is given as::%s\n", input_port.c_str());
+                        //      printf(" port created is given as::%s\n", input_port.c_str());
 
-                        printf("NETLIST name is given as::%s\n", netlistname.c_str());
+                        //    printf("NETLIST name is given as::%s\n", netlistname.c_str());
                     }
                 }
                 if (dir == cmp_string_out) {
@@ -320,7 +318,7 @@ struct EDIFReader {
         for (auto it = edif_.nets.begin(); it != edif_.nets.end(); it++) {
             net_name = it->first;
             printf("\n a net is created with a name of %s\n ", net_name.c_str());
-            AtomNetId net_id = main_netlist_.create_net(net_name);
+            main_netlist_.create_net(net_name);
         }
     }
 
@@ -383,7 +381,7 @@ AtomNetlist read_edif(e_circuit_format circuit_format,
                       const t_model* user_models,
                       const t_model* library_models) {
     AtomNetlist netlist;
-    t_model* blk_model;
+    // t_model* blk_model;
     //blk_model = new t_model;
     // main_netlist_ = AtomNetlist(top_cell_, netlist_id);
     printf("reading inputs");

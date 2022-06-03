@@ -234,14 +234,11 @@ class usefull_data {
                                                     current = current->next;
                                                     current = current->next;
                                                     int_hex = current->value;
-                                                    printf (" \nthe value is %s" ,int_hex.c_str());
-                                                    if (int_hex == "string")
-                                                    {
-                                                    	is_hex= true;
-                                                    }
-                                                    else
-                                                    {
-                                                    	is_hex=false;
+                                                    printf(" \nthe value is %s", int_hex.c_str());
+                                                    if (int_hex == "string") {
+                                                        is_hex = true;
+                                                    } else {
+                                                        is_hex = false;
                                                     }
                                                     current = current->next;
                                                     property_lut = current->value;
