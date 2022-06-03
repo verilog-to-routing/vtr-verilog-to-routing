@@ -32,6 +32,7 @@
 #include "draw_basic.h"
 #include "hsl.h"
 #include "move_utils.h"
+#include "intra_logic_block.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
