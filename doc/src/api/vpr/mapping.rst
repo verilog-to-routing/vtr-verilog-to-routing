@@ -1,9 +1,9 @@
 ===============
 Netlist mapping
 ===============
-As shown in the previous section, there are multiple levels of abstraction (multiple netlists) in VPR which are ClusteredNetlist and AtomNetlist. To fully use these netlist, we provide some functions to map between them. 
+As shown in the previous section, there are multiple levels of abstraction (multiple netlists) in VPR which are the ClusteredNetlist and the AtomNetlist. To fully use these netlists, we provide some functions to map between them. 
 
-In this section, we will state how to map between atom netlist and clustered netlist.
+In this section, we will state how to map between the atom and clustered netlists.
 
 Block Id
 --------
