@@ -59,7 +59,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
 
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         size_t inode = (size_t)rr_id;
-        if (rr_graph.node_type(rr_id) == CHANX || rr_graph.node_type(rr_id) == CHANY) {
+        if (rr_graph.node_is_wire(rr_id)) {
             cost_index = rr_graph.node_cost_index(rr_id);
             size_t seg_type = device_ctx.rr_indexed_data[cost_index].seg_index;
 

@@ -244,7 +244,7 @@ static std::vector<size_t> count_rr_segment_types() {
     const auto& rr_graph = device_ctx.rr_graph;
 
     for (const RRNodeId& id : rr_graph.nodes()) {
-        if (rr_graph.node_type(id) != CHANX && rr_graph.node_type(id) != CHANY) continue;
+        if (!rr_graph.node_is_wire(id)) continue;
 
         auto cost_index = rr_graph.node_cost_index(id);
 
@@ -346,7 +346,7 @@ static void load_rr_indexed_data_T_values() {
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         t_rr_type rr_type = rr_graph.node_type(rr_id);
 
-        if (rr_type != CHANX && rr_type != CHANY) {
+        if (!rr_graph.type_is_wire(rr_type)) {
             continue;
         }
 
@@ -461,7 +461,7 @@ static void calculate_average_switch(int inode, double& avg_switch_R, double& av
     buffered = UNDEFINED;
     for (const auto& edge : fan_in_list[node]) {
         /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
-        if (rr_graph.node_type(node) == CHANX || rr_graph.node_type(node) == CHANY) {
+        if (rr_graph.node_is_wire(node)) {
             int switch_index = rr_graph.rr_nodes().edge_switch(edge);
 
             if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::SHORT) continue;

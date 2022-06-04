@@ -237,7 +237,7 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
 
     t_rr_type rr_type = rr_graph.node_type(current_node);
 
-    if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
+    if (rr_graph.type_is_wire(rr_type) || rr_type == SOURCE || rr_type == OPIN) {
         float delay_cost, cong_cost;
 
         // Get the total cost using the combined delay and congestion costs
@@ -331,8 +331,8 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                             describe_rr_node(size_t(from_node)).c_str())
                                 .c_str());
 
-    } else if (from_type == CHANX || from_type == CHANY) {
-        VTR_ASSERT_SAFE(from_type == CHANX || from_type == CHANY);
+    } else if (rr_graph.type_is_wire(from_type)) {
+        VTR_ASSERT_SAFE(rr_graph.type_is_wire(from_type));
         //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
 
         auto from_cost_index = rr_graph.node_cost_index(from_node);
@@ -390,7 +390,8 @@ void MapLookahead::write(const std::string& file) const {
 /******** Function Definitions ********/
 
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y) {
-    VTR_ASSERT_SAFE(rr_type == CHANX || rr_type == CHANY);
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    VTR_ASSERT_SAFE(rr_graph.type_is_wire(rr_type));
 
     int chan_index = 0;
     if (rr_type == CHANY) {
@@ -547,7 +548,7 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
 
     RRNodeId result = RRNodeId::INVALID();
 
-    if (rr_type != CHANX && rr_type != CHANY) {
+    if (!rr_graph.type_is_wire(rr_type)) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Must start lookahead routing from CHANX or CHANY node\n");
     }
 

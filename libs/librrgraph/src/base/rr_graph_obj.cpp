@@ -37,6 +37,16 @@ t_rr_type RRGraph::node_type(const RRNodeId& node) const {
     return node_types_[node];
 }
 
+/* Check if RRGraph node is a wire (CHANX or CHANY)*/
+bool RRGraph::node_is_wire(const RRNodeId& node) const {
+    return node_type(node) == CHANX || node_type(node) == CHANY;
+}
+
+/* Check if RRGraph node type is a wire (CHANX or CHANY)*/
+bool RRGraph::type_is_wire(const t_rr_type curr_type) const {
+    return curr_type == CHANX || curr_type == CHANY;
+}
+
 size_t RRGraph::node_index(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return size_t(node);
@@ -81,7 +91,7 @@ vtr::Rect<short> RRGraph::node_bounding_box(const RRNodeId& node) const {
  ***********************************************************************/
 vtr::Point<short> RRGraph::node_start_coordinate(const RRNodeId& node) const {
     /* Make sure we have CHANX or CHANY */
-    VTR_ASSERT((CHANX == node_type(node)) || (CHANY == node_type(node)));
+    VTR_ASSERT(node_is_wire(node));
 
     vtr::Point<short> start_coordinate(node_xlow(node), node_ylow(node));
 
@@ -105,7 +115,7 @@ vtr::Point<short> RRGraph::node_start_coordinate(const RRNodeId& node) const {
  ***********************************************************************/
 vtr::Point<short> RRGraph::node_end_coordinate(const RRNodeId& node) const {
     /* Make sure we have CHANX or CHANY */
-    VTR_ASSERT((CHANX == node_type(node)) || (CHANY == node_type(node)));
+    VTR_ASSERT(node_is_wire(node));
 
     vtr::Point<short> end_coordinate(node_xhigh(node), node_yhigh(node));
 
@@ -141,7 +151,7 @@ short RRGraph::node_pin_num(const RRNodeId& node) const {
 }
 
 short RRGraph::node_track_num(const RRNodeId& node) const {
-    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY,
+    VTR_ASSERT_MSG(node_is_wire(node),
                    "Track number valid only for CHANX/CHANY RR nodes");
     return node_ptc_num(node);
 }
@@ -158,7 +168,7 @@ RRIndexedDataId RRGraph::node_cost_index(const RRNodeId& node) const {
 
 Direction RRGraph::node_direction(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direction valid only for CHANX/CHANY RR nodes");
+    VTR_ASSERT_MSG(node_is_wire(node), "Direction valid only for CHANX/CHANY RR nodes");
     return node_directions_[node];
 }
 
@@ -419,7 +429,7 @@ RRNodeId RRGraph::find_node(const short& x, const short& y, const t_rr_type& typ
 /* Find the channel width (number of tracks) of a channel [x][y] */
 short RRGraph::chan_num_tracks(const short& x, const short& y, const t_rr_type& type) const {
     /* Must be CHANX or CHANY */
-    VTR_ASSERT_MSG(CHANX == type || CHANY == type,
+    VTR_ASSERT_MSG(type_is_wire(type),
                    "Required node_type to be CHANX or CHANY!");
     initialize_fast_node_lookup();
 
@@ -465,8 +475,7 @@ void RRGraph::print_node(const RRNodeId& node) const {
 bool RRGraph::validate_node_segment(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     /* Only CHANX and CHANY requires a valid segment id */
-    if ((CHANX == node_type(node))
-        || (CHANY == node_type(node))) {
+    if (node_is_wire(node)) {
         return valid_segment_id(node_segments_[node]);
     } else {
         return true;
@@ -978,7 +987,7 @@ void RRGraph::set_node_pin_num(const RRNodeId& node, const short& pin_id) {
 
 void RRGraph::set_node_track_num(const RRNodeId& node, const short& track_id) {
     VTR_ASSERT(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Track number valid only for CHANX/CHANY RR nodes");
+    VTR_ASSERT_MSG(node_is_wire(node), "Track number valid only for CHANX/CHANY RR nodes");
 
     set_node_ptc_num(node, track_id);
 }
@@ -997,7 +1006,7 @@ void RRGraph::set_node_cost_index(const RRNodeId& node, const RRIndexedDataId& c
 
 void RRGraph::set_node_direction(const RRNodeId& node, const Direction& direction) {
     VTR_ASSERT(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direct can only be specified on CHANX/CNAY rr nodes");
+    VTR_ASSERT_MSG(node_is_wire(node), "Direct can only be specified on CHANX/CNAY rr nodes");
 
     node_directions_[node] = direction;
 }
@@ -1028,8 +1037,7 @@ void RRGraph::set_node_segment(const RRNodeId& node, const RRSegmentId& segment_
     VTR_ASSERT(valid_node_id(node));
 
     /* Only CHANX and CHANY requires a valid segment id */
-    if ((CHANX == node_type(node))
-        || (CHANY == node_type(node))) {
+    if (node_is_wire(node)) {
         VTR_ASSERT(valid_segment_id(segment_id));
     }
 

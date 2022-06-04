@@ -164,6 +164,11 @@ class t_rr_graph_storage {
     t_rr_type node_type(RRNodeId id) const {
         return node_storage_[id].type_;
     }
+
+    bool node_is_wire(RRNodeId id) const {
+        return node_type(id) == CHANX || node_type(id) == CHANY;
+    }
+
     const char* node_type_string(RRNodeId id) const;
 
     int16_t node_rc_index(RRNodeId id) const {
@@ -733,6 +738,11 @@ class t_rr_graph_view {
     t_rr_type node_type(RRNodeId id) const {
         return node_storage_[id].type_;
     }
+
+    bool node_is_wire(RRNodeId id) const {
+        return node_type(id) == CHANX || node_type(id) == CHANY;
+    }
+
     const char* node_type_string(RRNodeId id) const;
 
     int16_t node_rc_index(RRNodeId id) const {

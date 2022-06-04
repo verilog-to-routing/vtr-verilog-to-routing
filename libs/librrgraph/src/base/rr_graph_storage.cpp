@@ -602,7 +602,7 @@ void t_rr_graph_storage::set_node_pin_num(RRNodeId id, short new_pin_num) {
 }
 
 void t_rr_graph_storage::set_node_track_num(RRNodeId id, short new_track_num) {
-    if (node_type(id) != CHANX && node_type(id) != CHANY) {
+    if (!(node_is_wire(id))) {
         VTR_LOG_ERROR("Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.track_num = new_track_num;
@@ -635,7 +635,7 @@ static short get_node_track_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
     auto node_type = node_storage[id].type_;
-    if (node_type != CHANX && node_type != CHANY) {
+    if (  node_type != CHANX && node_type != CHANY) {
         VTR_LOG_ERROR("Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.track_num;

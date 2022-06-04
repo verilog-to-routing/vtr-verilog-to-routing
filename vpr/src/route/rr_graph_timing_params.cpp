@@ -58,12 +58,12 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
         from_rr_type = rr_graph.node_type(rr_id);
 
-        if (from_rr_type == CHANX || from_rr_type == CHANY) {
+        if (rr_graph.type_is_wire(from_rr_type)) {
             for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_id); iedge++) {
                 to_node = size_t(rr_graph.edge_sink_node(rr_id, iedge));
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
-                if (to_rr_type == CHANX || to_rr_type == CHANY) {
+                if (rr_graph.type_is_wire(to_rr_type)) {
                     switch_index = rr_graph.edge_switch(rr_id, iedge);
                     Cin = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cin;
                     Cout = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout;
@@ -159,7 +159,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                 to_node = size_t(rr_graph.edge_sink_node(rr_id, iedge));
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
-                if (to_rr_type != CHANX && to_rr_type != CHANY)
+                if (!rr_graph.type_is_wire(to_rr_type))
                     continue;
 
                 if (rr_graph.node_direction(RRNodeId(to_node)) == Direction::BIDIR) {
@@ -184,7 +184,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
             switch_index = rr_graph.edge_switch(inode, iedge);
             to_node = size_t(rr_graph.edge_sink_node(inode, iedge));
             to_rr_type = rr_graph.node_type(RRNodeId(to_node));
-            if (to_rr_type == CHANX || to_rr_type == CHANY) {
+            if (rr_graph.type_is_wire(to_rr_type)) {
                 if (rr_graph.node_direction(RRNodeId(to_node)) != Direction::BIDIR) {
                     /* Cout was not added in these cases */
                     Couts_to_add[to_node] = std::max(Couts_to_add[to_node], rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout);

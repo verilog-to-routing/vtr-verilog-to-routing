@@ -827,7 +827,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         RRNodeId node_id = node.id();
 
         if (direction == uxsd::enum_node_direction::UXSD_INVALID) {
-            if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
+            if (rr_graph.node_is_wire(node.id())) {
                 report_error(
                     "inode %d is type %d, which requires a direction, but no direction was supplied.",
                     inode, rr_graph.node_type(node.id()));
@@ -838,7 +838,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline uxsd::enum_node_direction get_node_direction(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
-        if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
+        if (rr_graph.node_is_wire(node.id())) {
             return to_uxsd_node_direction(rr_graph.node_direction(node.id()));
         } else {
             return uxsd::enum_node_direction::UXSD_INVALID;
@@ -983,7 +983,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
                 /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
                  * use the pair data structure to keep the maximum*/
-                if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
+                if (rr_graph.node_is_wire(node.id())) {
                     if (rr_graph.node_type(RRNodeId(sink_node)) == IPIN) {
                         count_for_wire_to_ipin_switches[switch_id]++;
                         if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {

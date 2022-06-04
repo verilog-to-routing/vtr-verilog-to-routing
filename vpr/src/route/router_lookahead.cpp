@@ -57,7 +57,7 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId n
 
     t_rr_type rr_type = rr_graph.node_type(node);
 
-    if (rr_type == CHANX || rr_type == CHANY) {
+    if (rr_graph.type_is_wire(rr_type)) {
         int num_segs_ortho_dir = 0;
         int num_segs_same_dir = get_expected_segs_to_target(node, target_node, &num_segs_ortho_dir);
 

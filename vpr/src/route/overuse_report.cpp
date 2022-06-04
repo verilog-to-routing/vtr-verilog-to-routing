@@ -272,7 +272,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     VTR_LOG(" %8s", rr_graph.node_type_string(node_id));
 
     //Direction
-    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
+    if (rr_graph.type_is_wire(node_type)) {
         VTR_LOG(" %12s", rr_graph.node_direction_string(node_id).c_str());
     } else {
         VTR_LOG(" %12s", "N/A");

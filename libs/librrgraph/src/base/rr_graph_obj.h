@@ -261,6 +261,12 @@ class RRGraph {
      */
     t_rr_type node_type(const RRNodeId& node) const;
 
+    /* Check if RRGraph node is a wire (CHANX or CHANY)*/
+    bool node_is_wire(const RRNodeId& node) const;
+
+    /* Check if RRGraph node type is a wire (CHANX or CHANY)*/
+    bool type_is_wire(const t_rr_type curr_type) const;
+
     /* Get coordinate of a node. (xlow, xhigh, ylow, yhigh):
      *   For OPIN/IPIN/SOURCE/SINK, xlow = xhigh and ylow = yhigh
      *   This is still the case when a logic block has a height > 1
