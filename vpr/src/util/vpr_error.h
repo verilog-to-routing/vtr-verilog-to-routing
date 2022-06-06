@@ -3,25 +3,36 @@
 
 /**
  * @file
- * @brief This header defines useful methods to identify VPR execution errors. 
+ * @brief This header defines useful methods to identify VPR execution errors. The VTRUTIL API provides additional logging and error identification options and these can be found in [VTR Logging-Errors-Assertions](../vtrutil/logging.html). 
  *
- * VPR Error Types
- * ===============
+ * # VPR Error Macros #
+ * 
  * 
  * There are three different way to identify errors in VPR:
+ *      -# VPR_FATAL_ERROR: This is used to signal an unconditional fatal error which should stop the program. The error will automatically specify the file and line number of the call site. 
+ *         
+ *         For Example:
+ *              
+ *                    // The first argument is an enum which describes the error type
+ *                    // The second argument is the error message and allows format specifiers
+ *                    VPR_FATAL_ERROR(enum e_vpr_error, "This is an error message %s", some_string);
  *
- *      VPR_FATAL_ERROR(): Is used to signal an *unconditional* fatal error which should
- *                         stop the program. The error report will include the line number
- *                         and file where this error was called.
- *
- *      Example Usage:
- *              // The first argument defines 
- *              VTR_FATAL_ERROR(VPR_ERROR_OTHER, "error mesaage %d", error_message_id);
- *
- *
- *
- *
- *
+ *      -# VPR_ERROR: This is used to signal an error (potentially non-fatal) which by default stops the program, but may be suppressed (i.e. converted to a warning). The macro will automatically check whether the function where it was called is in a list of functions names provided with the '\--disable_errors' option and if it is then the error is converted to a 'VTR_LOG_WARN'. The error will automatically specify the file and line number of the call site.
+ * 
+ *          For Example:
+ *              
+ *                    // The first argument is an enum which describes the error type
+ *                    // The second argument is the error message and allows format specifiers
+ *                    VPR_ERROR(enum e_vpr_error, "This is an error message %s", some_string);
+ * 
+ *      -# vpr_throw: This is used to signal an unconditional fatal error which should stop the program but also allows for the specification of the filename and line number within the file causing the error. The recommened use is for cases where a file is being parsed and there was an error within the file. In this case, the filename and line number can be specified.
+ * 
+ *          For Example:
+ *              
+ *                    // The first argument is an enum which describes the error type
+ *                    // The last argument is the error message and allows format specifiers 
+ *                    vpr_throw(enum e_vpr_error, name_of_file_causing_error, line_number_causing_error, "This is an error message %s", some_string);
+ * 
  */
 
 
@@ -31,24 +42,24 @@
 
 #include "vtr_error.h"
 
-/// \cond DO NOT DOCUMENT
+/// This describes the error types seen in VPR
 enum e_vpr_error {
-    VPR_ERROR_UNKNOWN = 0,
+    VPR_ERROR_UNKNOWN = 0,  /// Unknown Error
 
     // Flow errors
-    VPR_ERROR_ARCH,
-    VPR_ERROR_PACK,
-    VPR_ERROR_PLACE,
-    VPR_ERROR_ROUTE,
+    VPR_ERROR_ARCH,         /// Error while parsing the architecture description file
+    VPR_ERROR_PACK,         /// Error while packing the netlist
+    VPR_ERROR_PLACE,        /// Error while placing the netlist
+    VPR_ERROR_ROUTE,        /// Error while routing the netlist
     VPR_ERROR_TIMING,
     VPR_ERROR_POWER,
     VPR_ERROR_SDC,
 
     // File parsing errors
-    VPR_ERROR_NET_F,        // Error while parsing the packed netlist file
-    VPR_ERROR_PLACE_F,      // Error while parsning the placement file
-    VPR_ERROR_BLIF_F,       // Error while parsing the blif file
-    VPR_ERROR_IC_NETLIST_F, // Error while parsing the interchange netlist file
+    VPR_ERROR_NET_F,        /// Error while parsing the packed netlist file
+    VPR_ERROR_PLACE_F,      /// Error while parsing the placement file
+    VPR_ERROR_BLIF_F,       /// Error while parsing the blif file
+    VPR_ERROR_IC_NETLIST_F, /// Error while parsing the interchange netlist file
 
     VPR_ERROR_IMPL_NETLIST_WRITER,
     VPR_ERROR_NETLIST,
@@ -56,9 +67,9 @@ enum e_vpr_error {
     VPR_ERROR_CLB_NETLIST,
     VPR_ERROR_ANALYSIS,
     VPR_ERROR_INTERRUPTED,
-    VPR_ERROR_DRAW,
-    VPR_ERROR_OTHER
+    VPR_ERROR_DRAW,         /// Error while drawing the FPGA device
 };
+/// \cond DO NOT DOCUMENT
 typedef enum e_vpr_error t_vpr_error_type;
 
 /* This structure is thrown back to highest level of VPR flow if an *

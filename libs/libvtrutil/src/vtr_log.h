@@ -6,7 +6,7 @@
 
 /**
  * @file
- * @brief This header defines useful logging macros for VTR projects.
+ * @brief This header defines useful logging macros for VTR projects. The VPR API also provides options to identify VPR execution errors and these can be found in [VPR Errors](../vpr/errors.html).
  *
  * Message Type
  * ============
