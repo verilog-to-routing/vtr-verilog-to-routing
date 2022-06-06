@@ -16,7 +16,7 @@
 #    include "draw_color.h"
 #    include "draw.h"
 #    include "draw_basic.h"
-#	 include "draw_rr.h"
+#    include "draw_rr.h"
 #    include "draw_searchbar.h"
 #    include "read_xml_arch_file.h"
 #    include "draw_global.h"

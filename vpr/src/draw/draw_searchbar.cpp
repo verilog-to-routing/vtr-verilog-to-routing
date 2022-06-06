@@ -59,7 +59,6 @@
 
 #    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
 
-
 /* This function computes and returns the boundary coordinates of a channel
  * wire segment. This can be used for drawing a wire or determining if a
  * wire has been clicked on by the user.

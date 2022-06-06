@@ -41,7 +41,6 @@
 #    include "place_macro.h"
 #    include "buttons.h"
 
-
 /*
  * Draws a small triangle, at a position along a line from 'start' to 'end'.
  * 'relative_position' [0., 1] defines the triangles position relative to 'start'.
@@ -50,7 +49,6 @@
  * Fractional values draw the triangle along the line
  */
 void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d start, ezgl::point2d end, float relative_position = 1., float arrow_size = DEFAULT_ARROW_SIZE);
-
 
 /* Draws a triangle with it's center at loc, and of length & width arrow_size,
  * rotated such that it points in the direction of the directed line segment start -> end.

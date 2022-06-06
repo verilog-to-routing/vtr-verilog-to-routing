@@ -37,7 +37,7 @@ void button_for_net_alpha() {
     gtk_grid_insert_column((GtkGrid*)grid, 0);
 
     //text entry for apha value
-    GtkWidget* alpha_widget = gtk_spin_button_new_with_range(0, 100, 1);
+    GtkWidget* alpha_widget = gtk_spin_button_new_with_range(1, 255, 1);
     GtkWidget* alpha_label = gtk_label_new("Set Net Transparency:");
     gtk_widget_set_name(alpha_widget, "netAlpha");
 

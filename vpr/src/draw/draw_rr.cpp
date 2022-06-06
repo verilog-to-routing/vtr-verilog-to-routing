@@ -63,7 +63,6 @@ constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 
-
 /* Draws the routing resources that exist in the FPGA, if the user wants
  * them drawn.
  */

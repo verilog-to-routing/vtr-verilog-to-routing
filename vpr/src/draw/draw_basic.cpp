@@ -348,7 +348,6 @@ void draw_congestion(ezgl::renderer* g) {
 
 /* Draws routing resource nodes colored according to their congestion costs */
 void draw_routing_costs(ezgl::renderer* g) {
-
     t_draw_state* draw_state = get_draw_state_vars();
 
     /* show_routing_costs controls whether the total/sum of the costs or individual
@@ -504,7 +503,7 @@ void draw_routing_bb(ezgl::renderer* g) {
 
 /* Draws an X centered at (x,y). The width and height of the X are each 2 * size. */
 void draw_x(float x, float y, float size, ezgl::renderer* g) {
-	g->draw_line({x - size, y + size}, {x + size, y - size});
+    g->draw_line({x - size, y + size}, {x + size, y - size});
     g->draw_line({x - size, y - size}, {x + size, y + size});
 }
 
@@ -1174,7 +1173,7 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
 }
 
 void draw_color_map_legend(const vtr::ColorMap& cmap,
-                                  ezgl::renderer* g) {
+                           ezgl::renderer* g) {
     constexpr float LEGEND_WIDTH_FAC = 0.075;
     constexpr float LEGEND_VERT_OFFSET_FAC = 0.05;
     constexpr float TEXT_OFFSET = 10;
@@ -1291,7 +1290,6 @@ void draw_block_pin_util() {
     }
 }
 
-
 void draw_reset_blk_colors() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto blks = cluster_ctx.clb_nlist.blocks();
@@ -1304,6 +1302,5 @@ void draw_reset_blk_color(ClusterBlockId blk_id) {
     t_draw_state* draw_state = get_draw_state_vars();
     draw_state->reset_block_color(blk_id);
 }
-
 
 #endif

@@ -57,7 +57,6 @@
 
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
-
 //Draws a mux, height/width define the bounding box, scale [0.,1.] controls the slope of the muxes sides
 ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height, float width, float scale, ezgl::renderer* g) {
     std::vector<ezgl::point2d> mux_polygon;
@@ -117,17 +116,16 @@ ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height,
     return ezgl::rectangle(min, max);
 }
 
-
 /* Draws a mux with width = height * 0.4 and scale (slope of the muxes sides) = 0.6.
-* Takes in point of origin, orientation, height and renderer.
-*/
+ * Takes in point of origin, orientation, height and renderer.
+ */
 ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height, ezgl::renderer* g) {
     return draw_mux(origin, orientation, height, 0.4 * height, 0.6, g);
 }
 
 /* Draws a mux with width = height * 0.4 and scale (slope of the muxes sides) = 0.6, labelled with its size.
-* Takes in point of origin, orientation, height, mux size and renderer.
-*/
+ * Takes in point of origin, orientation, height, mux size and renderer.
+ */
 void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer* g) {
     g->set_color(ezgl::YELLOW);
     auto bounds = draw_mux(origin, orientation, height, g);
@@ -136,6 +134,5 @@ void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, 
     g->draw_text(bounds.center(), std::to_string(size), bounds.width(),
                  bounds.height());
 }
-
 
 #endif

@@ -63,7 +63,6 @@ constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 
-
 void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     /* this is the callback function for runtime created toggle_nets button
      * which is written in button.cpp                                         */
@@ -402,7 +401,7 @@ void set_net_alpha_value(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /
     t_draw_state* draw_state = get_draw_state_vars();
 
     //set draw_state->net_alpha to its corresponding value in the ui
-    int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)net_alpha) / 100;
+    int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)net_alpha);
     draw_state->net_alpha = new_value;
 
     //redraw
