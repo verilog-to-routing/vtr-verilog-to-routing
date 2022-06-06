@@ -7,7 +7,7 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                              t_clustering_data& clustering_data,
                              bool during_packing) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
@@ -61,10 +61,10 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                                            helper_ctx.feasible_block_array_size,
                                            helper_ctx.enable_pin_feasibility_filter,
                                            new_clb,
-                                           &router_data,
-                                           temp_cluster_pr,
+                                           during_packing,
                                            clustering_data,
-                                           during_packing);
+                                           &router_data,
+                                           temp_cluster_pr);
 
     //Commit or revert the move
     if (is_created) {
@@ -97,9 +97,9 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
 }
 
 bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
-                                   const ClusterBlockId& new_clb,
-                                   bool during_packing,
-                                   t_clustering_data& clustering_data) {
+                                  const ClusterBlockId& new_clb,
+                                  bool during_packing,
+                                  t_clustering_data& clustering_data) {
     //define required contexts
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
@@ -112,16 +112,16 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
 
     //Check that the old and new clusters are the same type
     ClusterBlockId old_clb = atom_to_cluster(root_atom_id);
-    if(cluster_ctx.clb_nlist.block_type(old_clb) != cluster_ctx.clb_nlist.block_type(new_clb)) {
+    if (cluster_ctx.clb_nlist.block_type(old_clb) != cluster_ctx.clb_nlist.block_type(new_clb)) {
         VTR_LOG("Atom:%zu move aborted. New and old cluster blocks are not of the same type",
-            root_atom_id);
+                root_atom_id);
         return false;
     }
 
     //Check that the old and new clusters are the mode
-    if(cluster_ctx.clb_nlist.block_pb(old_clb)->mode != cluster_ctx.clb_nlist.block_pb(new_clb)->mode) {
+    if (cluster_ctx.clb_nlist.block_pb(old_clb)->mode != cluster_ctx.clb_nlist.block_pb(new_clb)->mode) {
         VTR_LOG("Atom:%zu move aborted. New and old cluster blocks are not of the same mode",
-            root_atom_id);
+                root_atom_id);
         return false;
     }
 
@@ -142,11 +142,10 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
         return false;
     }
 
-
     //Add the atom to the new cluster
     is_added = pack_mol_in_existing_cluster(molecule, new_clb, during_packing, clustering_data);
 
-    //Commit or revert the move 
+    //Commit or revert the move
     if (is_added) {
         commit_mol_move(old_clb, new_clb, mol_pb_backup, old_router_data, clustering_data, during_packing);
         VTR_LOG("Atom:%zu is moved to a new cluster\n", molecule->atom_block_ids[molecule->root]);

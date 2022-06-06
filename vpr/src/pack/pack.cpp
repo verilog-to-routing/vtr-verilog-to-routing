@@ -42,15 +42,13 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_model* library_models,
               float interc_delay,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
-    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
 
     std::unordered_set<AtomNetId> is_clock;
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
     const t_model* cur_model;
     t_clustering_data clustering_data;
-    //int num_models;
     std::vector<t_pack_patterns> list_of_packing_patterns;
-    //std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules(nullptr, free_pack_molecules);
     VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
 
     /* determine number of models in the architecture */
@@ -265,15 +263,20 @@ bool try_pack(t_packer_opts* packer_opts,
     /* Packing iterative improvement can be done here */
     /*       Use the re-cluster API to edit it        */
     /******************* Start *************************/
-    
+
     bool is_moved = move_mol_to_new_cluster(atom_ctx.atom_molecules.find(AtomBlockId(5))->second, clustering_data, true);
     if (is_moved)
         VTR_LOG("Molecule moved ok!\n");
 
-    is_moved = move_mol_to_existing_cluster(atom_ctx.atom_molecules.find(AtomBlockId(4))->second, ClusterBlockId(4), true, clustering_data);
-    if(is_moved)
+    is_moved = move_mol_to_new_cluster(atom_ctx.atom_molecules.find(AtomBlockId(4))->second, clustering_data, true);
+    if (is_moved)
         VTR_LOG("Molecule moved ok!\n");
-    
+
+    /*
+     * is_moved = move_mol_to_existing_cluster(atom_ctx.atom_molecules.find(AtomBlockId(4))->second, ClusterBlockId(4), true, clustering_data);
+     * if(is_moved)
+     * VTR_LOG("Molecule moved ok!\n");
+     */
     /******************** End **************************/
 
     //check clustering and output it

@@ -35,6 +35,7 @@ static void fix_cluster_net_after_moving(const t_pack_molecule* molecule,
                                          const ClusterBlockId& old_clb,
                                          const ClusterBlockId& new_clb);
 
+/*****************  API functions ***********************/
 ClusterBlockId atom_to_cluster(const AtomBlockId& atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
     return (atom_ctx.lookup.atom_clb(atom));
@@ -49,7 +50,7 @@ bool remove_mol_from_cluster(const t_pack_molecule* molecule,
                              int molecule_size,
                              ClusterBlockId& old_clb,
                              t_lb_router_data*& router_data) {
-    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     //Determine the cluster ID
     old_clb = atom_to_cluster(molecule->atom_block_ids[molecule->root]);
 
@@ -79,11 +80,11 @@ bool remove_mol_from_cluster(const t_pack_molecule* molecule,
 }
 
 void commit_mol_move(const ClusterBlockId& old_clb,
-                      const ClusterBlockId& new_clb,
-                      std::vector<t_pb*>& mol_pbs,
-                      t_lb_router_data*& old_router_data,
-                      t_clustering_data& clustering_data,
-                      bool during_packing) {
+                     const ClusterBlockId& new_clb,
+                     std::vector<t_pb*>& mol_pbs,
+                     t_lb_router_data*& old_router_data,
+                     t_clustering_data& clustering_data,
+                     bool during_packing) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -147,13 +148,13 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                const int feasible_block_array_size,
                                bool enable_pin_feasibility_filter,
                                ClusterBlockId clb_index,
-                               t_lb_router_data** router_data,
-                               PartitionRegion& temp_cluster_pr,
+                               bool during_packing,
                                t_clustering_data& clustering_data,
-                               bool during_packing) {
+                               t_lb_router_data** router_data,
+                               PartitionRegion& temp_cluster_pr) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     int verbosity = 0;
@@ -228,7 +229,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   const ClusterBlockId new_clb,
                                   bool during_packing,
                                   t_clustering_data& clustering_data) {
-    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     PartitionRegion temp_cluster_pr;
@@ -373,13 +374,13 @@ static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
     int num_output_ports = pb->pb_graph_node->num_output_ports;
     int num_clock_ports = pb->pb_graph_node->num_clock_ports;
 
-    int j, k, ipin, rr_node_index;
+    int iport, ipb_pin, ipin, rr_node_index;
 
     ipin = 0;
-    for (j = 0; j < num_input_ports; j++) {
-        ClusterPortId input_port_id = cluster_ctx.clb_nlist.find_port(clb_index, block_type->pb_type->ports[j].name);
-        for (k = 0; k < pb->pb_graph_node->num_input_pins[j]; k++) {
-            pb_graph_pin = &pb->pb_graph_node->input_pins[j][k];
+    for (iport = 0; iport < num_input_ports; iport++) {
+        ClusterPortId input_port_id = cluster_ctx.clb_nlist.find_port(clb_index, block_type->pb_type->ports[iport].name);
+        for (ipb_pin = 0; ipb_pin < pb->pb_graph_node->num_input_pins[iport]; ipb_pin++) {
+            pb_graph_pin = &pb->pb_graph_node->input_pins[iport][ipb_pin];
             rr_node_index = pb_graph_pin->pin_count_in_cluster;
 
             VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
@@ -388,9 +389,9 @@ static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
                 if (atom_net_id) {
                     clb_net_id = cluster_ctx.clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
                     atom_ctx.lookup.set_atom_clb_net(atom_net_id, clb_net_id);
-                    ClusterPinId cur_pin_id = cluster_ctx.clb_nlist.find_pin(input_port_id, (BitIndex)k);
+                    ClusterPinId cur_pin_id = cluster_ctx.clb_nlist.find_pin(input_port_id, (BitIndex)ipb_pin);
                     if (!cur_pin_id)
-                        cluster_ctx.clb_nlist.create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, ipin);
+                        cluster_ctx.clb_nlist.create_pin(input_port_id, (BitIndex)ipb_pin, clb_net_id, PinType::SINK, ipin);
                     else
                         cluster_ctx.clb_nlist.set_pin_net(cur_pin_id, PinType::SINK, clb_net_id);
                 }
@@ -400,10 +401,10 @@ static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
         }
     }
 
-    for (j = 0; j < num_output_ports; j++) {
-        ClusterPortId output_port_id = cluster_ctx.clb_nlist.find_port(clb_index, block_type->pb_type->ports[num_input_ports + j].name);
-        for (k = 0; k < pb->pb_graph_node->num_output_pins[j]; k++) {
-            pb_graph_pin = &pb->pb_graph_node->output_pins[j][k];
+    for (iport = 0; iport < num_output_ports; iport++) {
+        ClusterPortId output_port_id = cluster_ctx.clb_nlist.find_port(clb_index, block_type->pb_type->ports[num_input_ports + iport].name);
+        for (ipb_pin = 0; ipb_pin < pb->pb_graph_node->num_output_pins[iport]; ipb_pin++) {
+            pb_graph_pin = &pb->pb_graph_node->output_pins[iport][ipb_pin];
             rr_node_index = pb_graph_pin->pin_count_in_cluster;
 
             VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
@@ -412,11 +413,11 @@ static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
                 if (atom_net_id) {
                     clb_net_id = cluster_ctx.clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
                     atom_ctx.lookup.set_atom_clb_net(atom_net_id, clb_net_id);
-                    ClusterPinId cur_pin_id = cluster_ctx.clb_nlist.find_pin(output_port_id, (BitIndex)k);
+                    ClusterPinId cur_pin_id = cluster_ctx.clb_nlist.find_pin(output_port_id, (BitIndex)ipb_pin);
                     AtomPinId atom_net_driver = atom_ctx.nlist.net_driver(atom_net_id);
                     bool driver_is_constant = atom_ctx.nlist.pin_is_constant(atom_net_driver);
                     if (!cur_pin_id)
-                        cluster_ctx.clb_nlist.create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, ipin, driver_is_constant);
+                        cluster_ctx.clb_nlist.create_pin(output_port_id, (BitIndex)ipb_pin, clb_net_id, PinType::DRIVER, ipin, driver_is_constant);
                     else {
                         cluster_ctx.clb_nlist.set_pin_net(cur_pin_id, PinType::DRIVER, clb_net_id);
                         cluster_ctx.clb_nlist.set_pin_is_constant(cur_pin_id, driver_is_constant);
@@ -429,10 +430,10 @@ static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
         }
     }
 
-    for (j = 0; j < num_clock_ports; j++) {
-        ClusterPortId clock_port_id = cluster_ctx.clb_nlist.find_port(clb_index, block_type->pb_type->ports[num_input_ports + num_output_ports + j].name);
-        for (k = 0; k < pb->pb_graph_node->num_clock_pins[j]; k++) {
-            pb_graph_pin = &pb->pb_graph_node->clock_pins[j][k];
+    for (iport = 0; iport < num_clock_ports; iport++) {
+        ClusterPortId clock_port_id = cluster_ctx.clb_nlist.find_port(clb_index, block_type->pb_type->ports[num_input_ports + num_output_ports + iport].name);
+        for (ipb_pin = 0; ipb_pin < pb->pb_graph_node->num_clock_pins[iport]; ipb_pin++) {
+            pb_graph_pin = &pb->pb_graph_node->clock_pins[iport][ipb_pin];
             rr_node_index = pb_graph_pin->pin_count_in_cluster;
 
             VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
@@ -441,9 +442,9 @@ static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index) {
                 if (atom_net_id) {
                     clb_net_id = cluster_ctx.clb_nlist.create_net(atom_ctx.nlist.net_name(atom_net_id));
                     atom_ctx.lookup.set_atom_clb_net(atom_net_id, clb_net_id);
-                    ClusterPinId cur_pin_id = cluster_ctx.clb_nlist.find_pin(clock_port_id, (BitIndex)k);
+                    ClusterPinId cur_pin_id = cluster_ctx.clb_nlist.find_pin(clock_port_id, (BitIndex)ipb_pin);
                     if (!cur_pin_id)
-                        cluster_ctx.clb_nlist.create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, ipin);
+                        cluster_ctx.clb_nlist.create_pin(clock_port_id, (BitIndex)ipb_pin, clb_net_id, PinType::SINK, ipin);
                     else
                         cluster_ctx.clb_nlist.set_pin_net(cur_pin_id, PinType::SINK, clb_net_id);
                 }
@@ -550,12 +551,11 @@ static void fix_atom_pin_mapping(const AtomBlockId blk) {
 static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type, t_pb_routes& pb_route) {
     int num_pins = type->pb_graph_head->total_pb_pins;
 
-    for (int i = 0; i < num_pins; i++) {
-        if (!pb_route.count(i)) continue;
+    for (int ipb_pin = 0; ipb_pin < num_pins; ipb_pin++) {
+        if (!pb_route.count(ipb_pin)) continue;
 
-        //if (pb_route[i].driver_pb_pin_id != OPEN && !pb_route[i].atom_net_id) {
-        if (pb_route[i].driver_pb_pin_id != OPEN) {
-            load_atom_index_for_pb_pin(pb_route, i);
+        if (pb_route[ipb_pin].driver_pb_pin_id != OPEN) {
+            load_atom_index_for_pb_pin(pb_route, ipb_pin);
         }
     }
 }

@@ -26,7 +26,6 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                              t_clustering_data& clustering_data,
                              bool during_packing);
 
-
 /**
  * @brief This function moves a molecule out of its cluster to another cluster that already exists.
  * 
@@ -36,7 +35,7 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
  *   - Second, during placement (during_packing variable should be false)
  */
 bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
-                                   const ClusterBlockId& new_clb,
-                                   bool during_packing,
-                                   t_clustering_data& clustering_data);
+                                  const ClusterBlockId& new_clb,
+                                  bool during_packing,
+                                  t_clustering_data& clustering_data);
 #endif
