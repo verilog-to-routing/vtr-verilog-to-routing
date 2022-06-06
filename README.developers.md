@@ -569,10 +569,10 @@ This would download the results for all CI tests.
 
 Assume that we want to get the QoR results for "vtr_reg_nightly_test3". In the artifact, there is a file named 
 "qor_results_vtr_reg_nightly_test3.tar.gz." Unzip this file, and a new directory named "vtr_flow" is created. Go to 
-"vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3." In this directory, you can find a directory for each test circuit
-containing in this test suit(vtr_reg_nightly_test3.) For instance, results related to *vtr_reg_qor* are located in
-"vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3/vtr_reg_qor." In this directory, results for each run are stored separately.
-For example, if you want to get the results for the first run, there is a file in *run001* directory named *parse_results.txt*.
+"vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3." In this directory, you can find a directory for each benchmark
+contained in this test suit (vtr_reg_nightly_test3.) In the directory related to each benchmark, there is another directory
+named *run001*. Two files are here: *qor_results.txt*, and *parse_results.txt*. QoR results for all circuits tested in this
+benchmark are stored in these files.
 Using these parsed results, you can do a detailed QoR comparison using the instructions given [here](./README.developers.md#Comparing QoR Measurements).
 ![Parse File Dir](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/parse_result_dir.png)
 
