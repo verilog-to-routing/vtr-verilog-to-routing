@@ -7,7 +7,7 @@
  * The initial_setup_X() functions link the menu button signals to the corresponding drawing functions. 
  * As a note, looks into draw_global.c for understanding the data structures associated with drawing->
  *
- * 
+ * Contains all functions that didn't fit in any other draw_*.cpp file.
  * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang
  * Last updated: June 2019
  */
@@ -36,7 +36,7 @@
 #include "draw.h"
 #include "draw_basic.h"
 #include "draw_rr.h"
-#include "draw_xtoy.h"
+#include "draw_rr_edges.h"
 #include "draw_toggle_functions.h"
 #include "draw_triangle.h"
 #include "draw_mux.h"
@@ -98,10 +98,6 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
 void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, double y);
 
 static void highlight_blocks(double x, double y);
-
-static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer* g);
-
-static void draw_block_pin_util();
 
 static float get_router_expansion_cost(const t_rr_node_route_inf node_inf,
                                        e_draw_router_expansion_cost draw_router_expansion_cost);
@@ -839,18 +835,6 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
     event = event; // just for hiding warning message
 }
 
-void draw_reset_blk_color(ClusterBlockId blk_id) {
-    t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->reset_block_color(blk_id);
-}
-
-ezgl::point2d tnode_draw_coord(tatum::NodeId node) {
-    auto& atom_ctx = g_vpr_ctx.atom();
-
-    AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(node);
-    return atom_pin_draw_coord(pin);
-}
-
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -959,132 +943,6 @@ t_edge_size find_edge(int prev_inode, int inode) {
 
 ezgl::color to_ezgl_color(vtr::Color<float> color) {
     return ezgl::color(color.r * 255, color.g * 255, color.b * 255);
-}
-
-static void draw_color_map_legend(const vtr::ColorMap& cmap,
-                                  ezgl::renderer* g) {
-    constexpr float LEGEND_WIDTH_FAC = 0.075;
-    constexpr float LEGEND_VERT_OFFSET_FAC = 0.05;
-    constexpr float TEXT_OFFSET = 10;
-    constexpr size_t NUM_COLOR_POINTS = 1000;
-
-    g->set_coordinate_system(ezgl::SCREEN);
-
-    float screen_width = application.get_canvas(
-                                        application.get_main_canvas_id())
-                             ->width();
-    float screen_height = application.get_canvas(
-                                         application.get_main_canvas_id())
-                              ->height();
-    float vert_offset = screen_height * LEGEND_VERT_OFFSET_FAC;
-    float legend_width = std::min<int>(LEGEND_WIDTH_FAC * screen_width, 100);
-
-    // In SCREEN coordinate: bottom_left is (0,0), right_top is (screen_width, screen_height)
-    ezgl::rectangle legend({0, vert_offset},
-                           {legend_width, screen_height - vert_offset});
-
-    float range = cmap.max() - cmap.min();
-    float height_incr = legend.height() / float(NUM_COLOR_POINTS);
-    for (size_t i = 0; i < NUM_COLOR_POINTS; ++i) {
-        float val = cmap.min() + (float(i) / NUM_COLOR_POINTS) * range;
-        ezgl::color color = to_ezgl_color(cmap.color(val));
-
-        g->set_color(color);
-        g->fill_rectangle({legend.left(), legend.top() - i * height_incr}, {legend.right(), legend.top() - (i + 1) * height_incr});
-    }
-
-    //Min mark
-    g->set_color(blk_SKYBLUE); // set to skyblue so its easier to see
-    std::string str = vtr::string_fmt("%.3g", cmap.min());
-    g->draw_text({legend.center_x(), legend.top() - TEXT_OFFSET},
-                 str.c_str());
-
-    //Mid marker
-    g->set_color(ezgl::BLACK);
-    str = vtr::string_fmt("%.3g", cmap.min() + (cmap.range() / 2.));
-    g->draw_text({legend.center_x(), legend.center_y()}, str.c_str());
-
-    //Max marker
-    g->set_color(ezgl::BLACK);
-    str = vtr::string_fmt("%.3g", cmap.max());
-    g->draw_text({legend.center_x(), legend.bottom() + TEXT_OFFSET},
-                 str.c_str());
-
-    g->set_color(ezgl::BLACK);
-    g->draw_rectangle(legend);
-
-    g->set_coordinate_system(ezgl::WORLD);
-}
-
-static void draw_block_pin_util() {
-    t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL)
-        return;
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    std::map<t_physical_tile_type_ptr, size_t> total_input_pins;
-    std::map<t_physical_tile_type_ptr, size_t> total_output_pins;
-    for (const auto& type : device_ctx.physical_tile_types) {
-        if (is_empty_type(&type)) {
-            continue;
-        }
-
-        total_input_pins[&type] = type.num_input_pins + type.num_clock_pins;
-        total_output_pins[&type] = type.num_output_pins;
-    }
-
-    auto blks = cluster_ctx.clb_nlist.blocks();
-    vtr::vector<ClusterBlockId, float> pin_util(blks.size());
-    for (auto blk : blks) {
-        auto type = physical_tile_type(blk);
-
-        if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_TOTAL) {
-            pin_util[blk] = cluster_ctx.clb_nlist.block_pins(blk).size()
-                            / float(total_input_pins[type] + total_output_pins[type]);
-        } else if (draw_state->show_blk_pin_util
-                   == DRAW_BLOCK_PIN_UTIL_INPUTS) {
-            pin_util[blk] = (cluster_ctx.clb_nlist.block_input_pins(blk).size()
-                             + cluster_ctx.clb_nlist.block_clock_pins(blk).size())
-                            / float(total_input_pins[type]);
-        } else if (draw_state->show_blk_pin_util
-                   == DRAW_BLOCK_PIN_UTIL_OUTPUTS) {
-            pin_util[blk] = (cluster_ctx.clb_nlist.block_output_pins(blk).size())
-                            / float(total_output_pins[type]);
-        } else {
-            VTR_ASSERT(false);
-        }
-    }
-
-    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(
-        0., 1.);
-
-    for (auto blk : blks) {
-        ezgl::color color = to_ezgl_color(cmap->color(pin_util[blk]));
-        draw_state->set_block_color(blk, color);
-    }
-
-    draw_state->color_map = std::move(cmap);
-
-    if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_TOTAL) {
-        application.update_message("Block Total Pin Utilization");
-    } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_INPUTS) {
-        application.update_message("Block Input Pin Utilization");
-
-    } else if (draw_state->show_blk_pin_util == DRAW_BLOCK_PIN_UTIL_OUTPUTS) {
-        application.update_message("Block Output Pin Utilization");
-    } else {
-        VTR_ASSERT(false);
-    }
-}
-
-void draw_reset_blk_colors() {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto blks = cluster_ctx.clb_nlist.blocks();
-    for (auto blk : blks) {
-        draw_reset_blk_color(blk);
-    }
 }
 
 static float get_router_expansion_cost(const t_rr_node_route_inf node_inf,
@@ -1428,6 +1286,13 @@ static void run_graphics_commands(std::string commands) {
     ++draw_state->sequence_number;
 }
 
+ezgl::point2d tnode_draw_coord(tatum::NodeId node) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(node);
+    return atom_pin_draw_coord(pin);
+}
+
 /* This routine highlights the blocks affected in the latest move      *
  * It highlights the old and new locations of the moved blocks         *
  * It also highlights the moved block input and output terminals       *
@@ -1494,6 +1359,25 @@ bool highlight_loc_with_specific_color(int x, int y, ezgl::color& loc_color) {
     }
 
     return false;
+}
+
+ezgl::color get_block_type_color(t_physical_tile_type_ptr type) {
+    //Wrap around if there are too many blocks
+    // This ensures we support an arbitrary number of types,
+    // although the colours may repeat
+    ezgl::color color = block_colors[type->index % block_colors.size()];
+
+    return color;
+}
+
+//Lightens a color's luminance [0, 1] by an aboslute 'amount'
+ezgl::color lighten_color(ezgl::color color, float amount) {
+    constexpr double MAX_LUMINANCE = 0.95; //Clip luminance so it doesn't go full white
+    auto hsl = color2hsl(color);
+
+    hsl.l = std::max(0., std::min(MAX_LUMINANCE, hsl.l + amount));
+
+    return hsl2color(hsl);
 }
 
 #endif /* NO_GRAPHICS */

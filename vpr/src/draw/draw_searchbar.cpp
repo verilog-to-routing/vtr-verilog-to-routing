@@ -22,7 +22,7 @@
 #include "draw_color.h"
 #include "draw.h"
 #include "draw_rr.h"
-#include "draw_xtoy.h"
+#include "draw_rr_edges.h"
 #include "draw_basic.h"
 #include "draw_toggle_functions.h"
 #include "draw_triangle.h"
@@ -58,6 +58,7 @@
 /****************************** Define Macros *******************************/
 
 #    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
+
 
 /* This function computes and returns the boundary coordinates of a channel
  * wire segment. This can be used for drawing a wire or determining if a

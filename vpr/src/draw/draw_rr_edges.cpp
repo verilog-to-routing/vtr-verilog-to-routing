@@ -1,4 +1,4 @@
-/*draw_xtoy.cpp contains all functions that draw lines from one point to another.*/
+/*draw_rr_edges.cpp contains all functions that draw lines between RR nodes.*/
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
@@ -22,7 +22,7 @@
 #include "draw_color.h"
 #include "draw.h"
 #include "draw_rr.h"
-#include "draw_xtoy.h"
+#include "draw_rr_edges.h"
 #include "draw_toggle_functions.h"
 #include "draw_triangle.h"
 #include "draw_searchbar.h"

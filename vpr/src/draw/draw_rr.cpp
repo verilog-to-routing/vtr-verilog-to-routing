@@ -22,7 +22,7 @@
 #include "draw_color.h"
 #include "draw.h"
 #include "draw_rr.h"
-#include "draw_xtoy.h"
+#include "draw_rr_edges.h"
 #include "draw_basic.h"
 #include "draw_toggle_functions.h"
 #include "draw_triangle.h"
@@ -63,9 +63,11 @@ constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 
+
+/* Draws the routing resources that exist in the FPGA, if the user wants
+ * them drawn.
+ */
 void draw_rr(ezgl::renderer* g) {
-    /* Draws the routing resources that exist in the FPGA, if the user wants *
-     * them drawn.                                                           */
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -287,9 +289,9 @@ void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g) {
     g->set_color(color); //Ensure color is still set correctly if we drew any arrows/text
 }
 
+/* Draws all the edges that the user wants shown between inode and what it
+ * connects to.  inode is assumed to be a CHANX, CHANY, or IPIN.           */
 void draw_rr_edges(int inode, ezgl::renderer* g) {
-    /* Draws all the edges that the user wants shown between inode and what it *
-     * connects to.  inode is assumed to be a CHANX, CHANY, or IPIN.           */
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -832,6 +834,73 @@ void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs, bool l
     }
 
     draw_state->color_map = std::move(cmap);
+}
+
+/* Returns the coordinates at which the center of this pin should be drawn. *
+ * inode gives the node number, and iside gives the side of the clb or pad  *
+ * the physical pin is on.                                                  */
+void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen, const e_side& pin_side) {
+    auto& device_ctx = g_vpr_ctx.device();
+    draw_get_rr_pin_coords(device_ctx.rr_graph.rr_nodes()[inode], xcen, ycen, pin_side);
+}
+
+void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, const e_side& pin_side) {
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    int i, j, k, ipin, pins_per_sub_tile;
+    float offset, xc, yc, step;
+    t_physical_tile_type_ptr type;
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    auto rr_node = node.id();
+
+    i = rr_graph.node_xlow(rr_node);
+    j = rr_graph.node_ylow(rr_node);
+
+    xc = draw_coords->tile_x[i];
+    yc = draw_coords->tile_y[j];
+
+    ipin = rr_graph.node_pin_num(rr_node);
+    type = device_ctx.grid[i][j].type;
+    pins_per_sub_tile = type->num_pins / type->capacity;
+    k = ipin / pins_per_sub_tile;
+
+    /* Since pins numbers go across all sub_tiles in a block in order
+     * we can treat as a block box for this step */
+
+    /* For each sub_tile we need and extra padding space */
+    step = (float)(draw_coords->get_tile_width())
+           / (float)(type->num_pins + type->capacity);
+    offset = (ipin + k + 1) * step;
+
+    switch (pin_side) {
+        case LEFT:
+            yc += offset;
+            break;
+
+        case RIGHT:
+            xc += draw_coords->get_tile_width();
+            yc += offset;
+            break;
+
+        case BOTTOM:
+            xc += offset;
+            break;
+
+        case TOP:
+            xc += offset;
+            yc += draw_coords->get_tile_width();
+            break;
+
+        default:
+            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                      "in draw_get_rr_pin_coords: Unexpected side %s.\n",
+                      SIDE_STRING[pin_side]);
+            break;
+    }
+
+    *xcen = xc;
+    *ycen = yc;
 }
 
 #endif

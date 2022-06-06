@@ -1,4 +1,6 @@
-/*draw_toggle_functions.cpp contains functions that toggle things (mostly callback functions)*/
+/*draw_toggle_functions.cpp contains callback functions that change draw_state variables
+ * connected to buttons and sliders on the GUI.
+ */
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
@@ -22,7 +24,7 @@
 #include "draw_color.h"
 #include "draw.h"
 #include "draw_rr.h"
-#include "draw_xtoy.h"
+#include "draw_rr_edges.h"
 #include "draw_toggle_functions.h"
 #include "draw_triangle.h"
 #include "draw_searchbar.h"
@@ -60,6 +62,7 @@
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
+
 
 void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     /* this is the callback function for runtime created toggle_nets button
@@ -406,27 +409,4 @@ void set_net_alpha_value(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /
     application.refresh_drawing();
 }
 
-float get_net_alpha() {
-    t_draw_state* draw_state = get_draw_state_vars();
-    return draw_state->net_alpha;
-}
-
-ezgl::color get_block_type_color(t_physical_tile_type_ptr type) {
-    //Wrap around if there are too many blocks
-    // This ensures we support an arbitrary number of types,
-    // although the colours may repeat
-    ezgl::color color = block_colors[type->index % block_colors.size()];
-
-    return color;
-}
-
-//Lightens a color's luminance [0, 1] by an aboslute 'amount'
-ezgl::color lighten_color(ezgl::color color, float amount) {
-    constexpr double MAX_LUMINANCE = 0.95; //Clip luminance so it doesn't go full white
-    auto hsl = color2hsl(color);
-
-    hsl.l = std::max(0., std::min(MAX_LUMINANCE, hsl.l + amount));
-
-    return hsl2color(hsl);
-}
 #endif

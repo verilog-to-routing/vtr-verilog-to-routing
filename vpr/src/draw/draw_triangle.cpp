@@ -1,4 +1,5 @@
-/* draw_triangle.cpp contains functions that draw triangles.*/
+/* draw_triangle.cpp contains functions that draw triangles. Used for drawing arrows for showing switching in the routing,
+ * direction of signals, flylines */
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
@@ -22,7 +23,7 @@
 #include "draw_color.h"
 #include "draw.h"
 #include "draw_rr.h"
-#include "draw_xtoy.h"
+#include "draw_rr_edges.h"
 #include "draw_toggle_functions.h"
 #include "draw_triangle.h"
 #include "draw_searchbar.h"
@@ -54,6 +55,7 @@
 #    if defined(X11) && !defined(__MINGW32__)
 #        include <X11/keysym.h>
 #    endif
+
 /**
  * Draws a small triangle, at a position along a line from 'start' to 'end'.
  *
