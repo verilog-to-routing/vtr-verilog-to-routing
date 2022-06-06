@@ -77,11 +77,19 @@ void fix_clustered_netlist(t_pack_molecule* molecule,
 /**
  * @brief A function that commits the molecule move if it is legal
  */
-void commit_atom_move(const ClusterBlockId& old_clb,
+void commit_mol_move(const ClusterBlockId& old_clb,
                       const ClusterBlockId& new_clb,
                       std::vector<t_pb*>& old_mol_pbs,
                       t_lb_router_data*& old_router_data,
                       t_clustering_data& clustering_data,
                       bool during_packing);
+
+/**
+ * @brief A function that packs a molecule into an existing cluster
+ */
+bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
+                                  const ClusterBlockId clb_index,
+                                  bool during_packing,
+                                  t_clustering_data& clustering_data);
 
 #endif

@@ -78,7 +78,7 @@ bool remove_mol_from_cluster(const t_pack_molecule* molecule,
     return (is_cluster_legal);
 }
 
-void commit_atom_move(const ClusterBlockId& old_clb,
+void commit_mol_move(const ClusterBlockId& old_clb,
                       const ClusterBlockId& new_clb,
                       std::vector<t_pb*>& mol_pbs,
                       t_lb_router_data*& old_router_data,
@@ -220,6 +220,55 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
     //Free failed clustering
     free_router_data(*router_data);
     *router_data = nullptr;
+
+    return (pack_result == BLK_PASSED);
+}
+
+bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
+                                  const ClusterBlockId new_clb,
+                                  bool during_packing,
+                                  t_clustering_data& clustering_data) {
+    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    PartitionRegion temp_cluster_pr;
+    e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
+    t_ext_pin_util target_ext_pin_util = helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(new_clb)->name);
+    t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(new_clb);
+
+    //re-build router_data structure for this cluster
+    t_lb_router_data* router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb);
+
+    pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[block_type->index]),
+                                    molecule,
+                                    helper_ctx.primitives_list,
+                                    cluster_ctx.clb_nlist.block_pb(new_clb),
+                                    helper_ctx.num_models,
+                                    helper_ctx.max_cluster_size,
+                                    new_clb,
+                                    E_DETAILED_ROUTE_FOR_EACH_ATOM,
+                                    router_data,
+                                    0,
+                                    helper_ctx.enable_pin_feasibility_filter,
+                                    helper_ctx.feasible_block_array_size,
+                                    target_ext_pin_util,
+                                    temp_cluster_pr);
+
+    // If clustering succeeds, add it to the clb netlist
+    if (pack_result == BLK_PASSED) {
+        if (during_packing) {
+            free_intra_lb_nets(clustering_data.intra_lb_routing[new_clb]);
+            clustering_data.intra_lb_routing[new_clb] = router_data->saved_lb_nets;
+            router_data->saved_lb_nets = nullptr;
+        } else {
+            cluster_ctx.clb_nlist.block_pb(new_clb)->pb_route.clear();
+            cluster_ctx.clb_nlist.block_pb(new_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(new_clb)->pb_graph_node);
+        }
+    }
+
+    //Free failed clustering
+    free_router_data(router_data);
+    router_data = nullptr;
 
     return (pack_result == BLK_PASSED);
 }

@@ -26,18 +26,17 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                              t_clustering_data& clustering_data,
                              bool during_packing);
 
-#if 0
+
 /**
- * @brief This function moves an atom out of its cluster to another cluster that already exists.
+ * @brief This function moves a molecule out of its cluster to another cluster that already exists.
  * 
  * This function can be called from 2 spots in the vpr flow. 
  *   - First, during packing to optimize the initial clustered netlist 
  *             (during_packing variable should be true.)
  *   - Second, during placement (during_packing variable should be false)
  */
-bool move_atom_to_existing_cluster(const AtomBlockId& atom_id,
+bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
                                    const ClusterBlockId& new_clb,
                                    bool during_packing,
                                    t_clustering_data& clustering_data);
-#endif
 #endif

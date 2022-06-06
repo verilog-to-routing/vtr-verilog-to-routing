@@ -115,10 +115,10 @@ bool try_pack(t_packer_opts* packer_opts,
         VTR_LOG("Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
     }
 
-    t_ext_pin_util_targets target_external_pin_util = parse_target_external_pin_util(packer_opts->target_external_pin_util);
+    helper_ctx.target_external_pin_util = parse_target_external_pin_util(packer_opts->target_external_pin_util);
     t_pack_high_fanout_thresholds high_fanout_thresholds = parse_high_fanout_thresholds(packer_opts->high_fanout_threshold);
 
-    VTR_LOG("Packing with pin utilization targets: %s\n", target_external_pin_util_to_string(target_external_pin_util).c_str());
+    VTR_LOG("Packing with pin utilization targets: %s\n", target_external_pin_util_to_string(helper_ctx.target_external_pin_util).c_str());
     VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds_to_string(high_fanout_thresholds).c_str());
 
     bool allow_unrelated_clustering = false;
@@ -151,7 +151,7 @@ bool try_pack(t_packer_opts* packer_opts,
             allow_unrelated_clustering,
             balance_block_type_util,
             lb_type_rr_graphs,
-            target_external_pin_util,
+            helper_ctx.target_external_pin_util,
             high_fanout_thresholds,
             attraction_groups,
             floorplan_regions_overfull,
@@ -213,7 +213,7 @@ bool try_pack(t_packer_opts* packer_opts,
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 attraction_groups.set_att_group_pulls(4);
                 t_ext_pin_util pin_util(1.0, 1.0);
-                target_external_pin_util.set_block_pin_util("clb", pin_util);
+                helper_ctx.target_external_pin_util.set_block_pin_util("clb", pin_util);
             }
 
         } else {
@@ -266,11 +266,13 @@ bool try_pack(t_packer_opts* packer_opts,
     /*       Use the re-cluster API to edit it        */
     /******************* Start *************************/
     
-    enum e_pad_loc_type pad_loc_type;
-    bool is_removed = move_atom_to_new_cluster(AtomBlockId(4), pad_loc_type, helper_ctx.lb_type_rr_graphs, clustering_data, true);
-    if (is_removed) {
-        VTR_LOG("@@@@ Atom is removed\n");
-    }
+    bool is_moved = move_mol_to_new_cluster(atom_ctx.atom_molecules.find(AtomBlockId(5))->second, clustering_data, true);
+    if (is_moved)
+        VTR_LOG("Molecule moved ok!\n");
+
+    is_moved = move_mol_to_existing_cluster(atom_ctx.atom_molecules.find(AtomBlockId(4))->second, ClusterBlockId(4), true, clustering_data);
+    if(is_moved)
+        VTR_LOG("Molecule moved ok!\n");
     
     /******************** End **************************/
 

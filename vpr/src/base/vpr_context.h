@@ -286,7 +286,8 @@ struct ClusteringHelperContext : public Context {
 
     int total_clb_num;
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs;
-
+    t_ext_pin_util_targets target_external_pin_util;
+    
     ~ClusteringHelperContext() {
         free(primitives_list);
     }
