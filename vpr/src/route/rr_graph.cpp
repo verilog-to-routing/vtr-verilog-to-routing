@@ -280,7 +280,7 @@ static void add_parent_children_edges(RRGraphBuilder& rr_graph_builder,
                                       int j,
                                       const int delayless_switch);
 
-static RRNodeId get_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
+static RRNodeId get_input_output_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
                                    t_physical_tile_type_ptr physical_tile,
                                    const int i,
                                    const int j,
@@ -2028,11 +2028,11 @@ static void add_parent_children_edges(RRGraphBuilder& rr_graph_builder,
                                  pb,
                                  rel_cap);
     for(auto pin : pin_nums) {
-        auto parent_pin_node_id = get_pin_rr_node_id(rr_graph_builder,
-                                                     physical_type,
-                                                     i,
-                                                     j,
-                                                     pin);
+        auto parent_pin_node_id = get_input_output_pin_rr_node_id(rr_graph_builder,
+                                                                  physical_type,
+                                                                  i,
+                                                                  j,
+                                                                  pin);
         VTR_ASSERT(parent_pin_node_id != RRNodeId::INVALID());
         auto pin_type = get_pin_type_from_pin_physical_num(physical_type, pin);
 
@@ -2042,7 +2042,7 @@ static void add_parent_children_edges(RRGraphBuilder& rr_graph_builder,
                                                        pin);
 
         for(auto connected_pin : connected_pins) {
-            auto conn_pin_node_id = get_pin_rr_node_id(rr_graph_builder,
+            auto conn_pin_node_id = get_input_output_pin_rr_node_id(rr_graph_builder,
                                                        physical_type,
                                                        i,
                                                        j,
@@ -2061,7 +2061,7 @@ static void add_parent_children_edges(RRGraphBuilder& rr_graph_builder,
 
 }
 
-static RRNodeId get_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
+static RRNodeId get_input_output_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
                                    t_physical_tile_type_ptr physical_tile,
                                    const int i,
                                    const int j,
@@ -2076,7 +2076,7 @@ static RRNodeId get_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
             for (int height = 0; height < physical_tile->height; ++height) {
                 for (e_side side : SIDES) {
                     if (physical_tile->pinloc[width][height][side][pin_physical_num]) {
-                        node_id = rr_graph_builder.node_lookup().find_node(i, j, node_type, pin_physical_num, side);
+                        node_id = rr_graph_builder.node_lookup().find_node(i+width, j+height, node_type, pin_physical_num, side);
                         if(node_id != RRNodeId::INVALID())
                             return node_id;
                     }
@@ -2114,11 +2114,11 @@ static std::tuple<t_rr_type, int, RRNodeId> get_pin_spec_from_class (RRGraphBuil
 
 
     // get node id
-    node_id = get_pin_rr_node_id(rr_graph_builder,
-                                 physical_tile,
-                                 i,
-                                 j,
-                                 pin_ptc);
+    node_id = get_input_output_pin_rr_node_id(rr_graph_builder,
+                                              physical_tile,
+                                              i,
+                                              j,
+                                              pin_ptc);
 
     VTR_ASSERT(node_id != RRNodeId::INVALID());
 
