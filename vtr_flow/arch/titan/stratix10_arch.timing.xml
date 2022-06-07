@@ -1733,7 +1733,6 @@
                         <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.datab" out_port="lcell_comb.sumout"/>
                         <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.datac" out_port="lcell_comb.sumout"/>
                         <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.datad" out_port="lcell_comb.sumout"/>
-                        <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.dataf" out_port="lcell_comb.sumout"/>
                         <!-- Carry input to carry output delay -->
                         <delay_constant max="11e-12" min="8e-12" in_port="lcell_comb.cin" out_port="lcell_comb.cout"/>
                         <!-- Carry input to sumout delay 
@@ -1750,7 +1749,6 @@
                         <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datab" out_port="lcell_comb.cout"/>
                         <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datac" out_port="lcell_comb.cout"/>
                         <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datad" out_port="lcell_comb.cout"/>
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.dataf" out_port="lcell_comb.cout"/>
 
             
                       </pb_type>
