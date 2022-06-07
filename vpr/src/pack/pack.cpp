@@ -264,19 +264,6 @@ bool try_pack(t_packer_opts* packer_opts,
     /*       Use the re-cluster API to edit it        */
     /******************* Start *************************/
 
-    bool is_moved = move_mol_to_new_cluster(atom_ctx.atom_molecules.find(AtomBlockId(5))->second, clustering_data, true);
-    if (is_moved)
-        VTR_LOG("Molecule moved ok!\n");
-
-    is_moved = move_mol_to_new_cluster(atom_ctx.atom_molecules.find(AtomBlockId(4))->second, clustering_data, true);
-    if (is_moved)
-        VTR_LOG("Molecule moved ok!\n");
-
-    /*
-     * is_moved = move_mol_to_existing_cluster(atom_ctx.atom_molecules.find(AtomBlockId(4))->second, ClusterBlockId(4), true, clustering_data);
-     * if(is_moved)
-     * VTR_LOG("Molecule moved ok!\n");
-     */
     /******************** End **************************/
 
     //check clustering and output it
