@@ -53,9 +53,10 @@ bool remove_mol_from_cluster(const t_pack_molecule* molecule,
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     //Determine the cluster ID
     old_clb = atom_to_cluster(molecule->atom_block_ids[molecule->root]);
+    std::vector<AtomBlockId> old_clb_atoms = cluster_to_atoms(old_clb);
 
     //re-build router_data structure for this cluster
-    router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, old_clb);
+    router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, old_clb, old_clb_atoms);
 
     //remove atom from router_data
     for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
@@ -129,14 +130,14 @@ void commit_mol_move(const ClusterBlockId& old_clb,
     }
 }
 
-t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs, const ClusterBlockId& clb_index) {
+t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs, const ClusterBlockId& clb_index, const std::vector<AtomBlockId>& clb_atoms) {
     //build data structures used by intra-logic block router
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto block_type = cluster_ctx.clb_nlist.block_type(clb_index);
     t_lb_router_data* router_data = alloc_and_load_router_data(&lb_type_rr_graphs[block_type->index], block_type);
 
     //iterate over atoms of the current cluster and add them to router data
-    for (auto atom_id : cluster_to_atoms(clb_index)) {
+    for (auto atom_id : clb_atoms) {
         add_atom_as_target(router_data, atom_id);
     }
     return (router_data);
@@ -227,6 +228,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
 
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   const ClusterBlockId new_clb,
+                                  const std::vector<AtomBlockId>& new_clb_atoms,
                                   bool during_packing,
                                   t_clustering_data& clustering_data) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
@@ -238,7 +240,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
     t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(new_clb);
 
     //re-build router_data structure for this cluster
-    t_lb_router_data* router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb);
+    t_lb_router_data* router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb, new_clb_atoms);
 
     pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[block_type->index]),
                                     molecule,

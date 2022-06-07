@@ -109,6 +109,7 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
     AtomBlockId root_atom_id = molecule->atom_block_ids[molecule->root];
     int molecule_size = get_array_size_of_molecule(molecule);
     t_lb_router_data* old_router_data = nullptr;
+    std::vector<AtomBlockId> new_clb_atoms = cluster_to_atoms(new_clb);
 
     //Check that the old and new clusters are the same type
     ClusterBlockId old_clb = atom_to_cluster(root_atom_id);
@@ -143,7 +144,7 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
     }
 
     //Add the atom to the new cluster
-    is_added = pack_mol_in_existing_cluster(molecule, new_clb, during_packing, clustering_data);
+    is_added = pack_mol_in_existing_cluster(molecule, new_clb, new_clb_atoms, during_packing, clustering_data);
 
     //Commit or revert the move
     if (is_added) {

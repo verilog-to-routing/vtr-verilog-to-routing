@@ -33,7 +33,8 @@ std::vector<AtomBlockId> cluster_to_atoms(const ClusterBlockId& cluster);
  * @brief A function that loads the intra-cluster router data of one cluster
  */
 t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                                      const ClusterBlockId& clb_index);
+                                      const ClusterBlockId& clb_index,
+                                      const std::vector<AtomBlockId>& clb_atoms);
 
 /**
  * @brief A function that removes a molecule from a cluster and check legality of
@@ -93,6 +94,7 @@ void commit_mol_move(const ClusterBlockId& old_clb,
  */
 bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   const ClusterBlockId clb_index,
+                                  const std::vector<AtomBlockId>& clb_atoms,
                                   bool during_packing,
                                   t_clustering_data& clustering_data);
 
