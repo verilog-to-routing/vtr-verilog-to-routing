@@ -68,7 +68,7 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
 
     //Commit or revert the move
     if (is_created) {
-        commit_mol_move(old_clb, new_clb, mol_pb_backup, old_router_data, clustering_data, during_packing);
+        commit_mol_move(old_clb, new_clb, mol_pb_backup, old_router_data, clustering_data, during_packing, true);
         VTR_LOG("Atom:%zu is moved to a new cluster\n", molecule->atom_block_ids[molecule->root]);
     } else {
         int atom_idx = 0;
@@ -148,7 +148,7 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
 
     //Commit or revert the move
     if (is_added) {
-        commit_mol_move(old_clb, new_clb, mol_pb_backup, old_router_data, clustering_data, during_packing);
+        commit_mol_move(old_clb, new_clb, mol_pb_backup, old_router_data, clustering_data, during_packing, false);
         VTR_LOG("Atom:%zu is moved to a new cluster\n", molecule->atom_block_ids[molecule->root]);
     } else {
         int atom_idx = 0;

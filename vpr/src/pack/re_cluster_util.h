@@ -87,7 +87,8 @@ void commit_mol_move(const ClusterBlockId& old_clb,
                      std::vector<t_pb*>& old_mol_pbs,
                      t_lb_router_data*& old_router_data,
                      t_clustering_data& clustering_data,
-                     bool during_packing);
+                     bool during_packing,
+                     bool new_clb_created);
 
 /**
  * @brief A function that packs a molecule into an existing cluster

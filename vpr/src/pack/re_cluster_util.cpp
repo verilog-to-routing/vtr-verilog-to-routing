@@ -85,7 +85,8 @@ void commit_mol_move(const ClusterBlockId& old_clb,
                      std::vector<t_pb*>& mol_pbs,
                      t_lb_router_data*& old_router_data,
                      t_clustering_data& clustering_data,
-                     bool during_packing) {
+                     bool during_packing,
+                     bool new_clb_created) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -121,7 +122,7 @@ void commit_mol_move(const ClusterBlockId& old_clb,
     free_router_data(old_router_data);
     old_router_data = nullptr;
 
-    if (!during_packing) {
+    if (!during_packing && new_clb_created) {
         int imacro;
         g_vpr_ctx.mutable_placement().block_locs.resize(g_vpr_ctx.placement().block_locs.size() + 1);
         get_imacro_from_iblk(&imacro, old_clb, g_vpr_ctx.placement().pl_macros);
