@@ -7,13 +7,13 @@
 circuits_dir=benchmarks/verilog
 
 # Path to directory of architectures to use
-archs_dir=arch/Xilinx
+archs_dir=arch/xilinx
 
 # Add circuits to list to sweep
 circuit_list_add=stereovision3.v
 
 # Add architectures to list to sweep
-arch_list_add=simple-seven-series.xml
+arch_list_add=simple-7series.xml
 
 ############################ The following configurations are not changed and have been checked #####################
 
