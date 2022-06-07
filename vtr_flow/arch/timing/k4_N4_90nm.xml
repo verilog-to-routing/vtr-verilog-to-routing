@@ -130,9 +130,9 @@
         <input name="in" num_pins="4"/>
         <output name="out" num_pins="1"/>
         <clock name="clk" num_pins="1"/>
-        <!-- 6-LUT mode definition begin -->
+        <!-- 4-LUT mode definition begin -->
         <mode name="n1_lut4">
-          <!-- Define 6-LUT mode -->
+          <!-- Define 4-LUT mode -->
           <pb_type name="ble4" num_pb="1">
             <input name="in" num_pins="4"/>
             <output name="out" num_pins="1"/>

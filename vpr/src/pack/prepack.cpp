@@ -931,7 +931,6 @@ static t_pack_molecule* try_create_molecule(t_pack_patterns* list_of_pack_patter
                                             AtomBlockId blk_id) {
     t_pack_molecule* molecule;
 
-    //auto& atom_ctx = g_vpr_ctx.atom();
     auto& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
 
     auto pack_pattern = &list_of_pack_patterns[pack_pattern_index];

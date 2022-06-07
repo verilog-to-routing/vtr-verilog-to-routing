@@ -1064,14 +1064,6 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, move_type_stat, place_algorithm, timing_bb_factor, manual_move_enabled);
 
-        /*
-         * ClusterBlockId cluster = blocks_affected.moved_blocks[0].block_num;
-         * std::vector<AtomBlockId> atoms = cluster_to_atoms(cluster);
-         * ClusterBlockId cluster2 = atom_to_cluster(atoms[0]);
-         * VTR_LOG("### %d, %d \n", cluster, cluster2);
-         * //check_cluster_atoms(blocks_affected.moved_blocks[0].block_num);
-         */
-
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
             stats->single_swap_update(*costs);
@@ -1229,14 +1221,6 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, move_type_stat, placer_opts.place_algorithm,
                                              REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled);
-
-        /******************** Elgammal ************************/
-        /*
-         * auto& atom_ctx = g_vpr_ctx.atom();
-         * std::vector<AtomBlockId> atom_id = cluster_to_atoms(blocks_affected.moved_blocks[0].block_num);
-         * VTR_LOG(" # %zu,%zu, %zu\n", blocks_affected.moved_blocks[0].block_num, atom_id[0], atom_ctx.atom_molecules.find(atom_id[0])->second->num_blocks);
-         */
-        /******************************************************/
 
         if (swap_result == ACCEPTED) {
             num_accepted++;
