@@ -117,7 +117,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const t_clb_to_clb_directs* clb_to_clb_directs,
                                  const int num_seg_types);
 
-static void add_rr_class(const t_class* class_inf,
+static void add_internal_rr_class(const t_class* class_inf,
                          const int class_id,
                          RRGraphBuilder& rr_graph_builder,
                          t_physical_tile_type_ptr physical_tile,
@@ -126,7 +126,7 @@ static void add_rr_class(const t_class* class_inf,
                          t_rr_edge_info_set& rr_edges_to_create,
                          const int delayless_switch);
 
-static void add_rr_ipin_and_opin(RRGraphBuilder& rr_graph_builder,
+static void add_internal_rr_ipin_and_opin(RRGraphBuilder& rr_graph_builder,
                                  t_physical_tile_type_ptr physical_tile,
                                  const int pin_ptc,
                                  const int i,
@@ -238,7 +238,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                    const int delayless_switch,
                                    const DeviceGrid& grid);
 
-static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
+static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
                                    const int i,
                                    const int j,
                                    t_rr_edge_info_set& rr_edges_to_create,
@@ -1402,7 +1402,7 @@ static std::function<void(t_chan_width*)>   alloc_and_load_rr_graph(RRGraphBuild
                                    grid);
 
             if(is_flat) {
-                build_rr_sinks_sources_flat(rr_graph_builder,
+                build_internal_rr_sinks_sources_flat(rr_graph_builder,
                                             i,
                                             j,
                                             rr_edges_to_create,
@@ -1516,7 +1516,7 @@ static std::function<void(t_chan_width*)>   alloc_and_load_rr_graph(RRGraphBuild
 //
 //    for (size_t i = 0; i < grid.width(); ++i) {
 //        for (size_t j = 0; j < grid.height(); ++j) {
-//            build_rr_sinks_sources_flat(rr_graph_builder, i, j, rr_edges_to_create,
+//            build_internal_rr_sinks_sources_flat(rr_graph_builder, i, j, rr_edges_to_create,
 //                                        delayless_switch, grid);
 //
 //            //Create the actual SOURCE->OPIN, IPIN->SINK edges
@@ -1614,7 +1614,7 @@ void free_rr_graph() {
     invalidate_router_lookahead_cache();
 }
 
-static void add_rr_class(const t_class* class_inf,
+static void add_internal_rr_class(const t_class* class_inf,
                          const int class_id,
                          RRGraphBuilder& rr_graph_builder,
                          t_physical_tile_type_ptr physical_tile,
@@ -1622,8 +1622,7 @@ static void add_rr_class(const t_class* class_inf,
                          const int j,
                          t_rr_edge_info_set& rr_edges_to_create,
                          const int delayless_switch) {
-
-
+    VTR_ASSERT(!is_class_on_tile(physical_tile, class_id));
     RRNodeId class_inode = RRNodeId::INVALID();
 
     auto class_type = class_inf->type;
@@ -1668,7 +1667,7 @@ static void add_rr_class(const t_class* class_inf,
 
 }
 
-static void add_rr_ipin_and_opin(RRGraphBuilder& rr_graph_builder,
+static void add_internal_rr_ipin_and_opin(RRGraphBuilder& rr_graph_builder,
                                  t_physical_tile_type_ptr physical_tile,
                                  const int pin_ptc,
                                  const int i,
@@ -1676,7 +1675,7 @@ static void add_rr_ipin_and_opin(RRGraphBuilder& rr_graph_builder,
                                  const int width_offset,
                                  const int height_offset,
                                  const e_side side) {
-
+    VTR_ASSERT(!is_pin_on_tile(physical_tile, pin_ptc));
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId pin_node_id = RRNodeId::INVALID();
@@ -1865,7 +1864,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
     //Create the actual edges
 }
 
-static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
+static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
                                         const int i,
                                         const int j,
                                         t_rr_edge_info_set& rr_edges_to_create,
@@ -1899,7 +1898,7 @@ static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
             int class_id = class_pair.first;
             auto class_inf = class_pair.second;
             /* Add the IPIN->SINK and SRC->OPIN edges */
-            add_rr_class(class_inf,
+            add_internal_rr_class(class_inf,
                          class_id,
                          rr_graph_builder,
                          physical_tile,
@@ -1911,7 +1910,7 @@ static void build_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
 
         auto pins = get_cluster_internal_ipin_opin(cluster_blk_id);
         for (auto pin : pins) {
-            add_rr_ipin_and_opin(rr_graph_builder,
+            add_internal_rr_ipin_and_opin(rr_graph_builder,
                                  physical_tile,
                                  pin,
                                  i,
