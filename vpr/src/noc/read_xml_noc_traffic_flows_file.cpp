@@ -198,7 +198,7 @@ void check_traffic_flow_router_module_type(std::string router_module_name, Clust
     */
     if (!is_tile_compatible(noc_router_tile_type, router_module_logical_type)){
         
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "%s", "The supplied module name '%s' is not a NoC router. Found in file: %s, line: %d.", router_module_name, loc_data.filename_c_str(), loc_data.line(single_flow_tag));
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The supplied module name '%s' is not a NoC router.", router_module_name.c_str());
     }
    
     return;
