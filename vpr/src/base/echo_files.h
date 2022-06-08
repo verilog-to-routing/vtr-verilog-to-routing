@@ -2,6 +2,7 @@
 #define ECHO_FILES_H
 
 enum e_echo_files {
+
     //Input netlist
     E_ECHO_ATOM_NETLIST_ORIG,
     E_ECHO_ATOM_NETLIST_CLEANED,
@@ -49,6 +50,7 @@ enum e_echo_files {
     E_ECHO_SEG_DETAILS,
     E_ECHO_CHAN_DETAILS,
     E_ECHO_SBLOCK_PATTERN,
+    E_ECHO_TRACK_TO_PIN_MAP,
     E_ECHO_ENDPOINT_TIMING,
     E_ECHO_LOOKAHEAD_MAP,
     E_ECHO_RR_GRAPH_INDEXED_DATA,

@@ -21,6 +21,7 @@
 #include <fstream>
 
 #include "vtr_time.h"
+#include "vpr_types.h"
 #include "globals.h"
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
