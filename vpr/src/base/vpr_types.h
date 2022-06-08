@@ -109,10 +109,11 @@ constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 #endif
 
 enum class e_router_lookahead {
-    CLASSIC,      ///<VPR's classic lookahead (assumes uniform wire types)
-    MAP,          ///<Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
-    EXTENDED_MAP, ///<Lookahead with a more extensive node sampling method
-    NO_OP         ///<A no-operation lookahead which always returns zero
+    DONT_CARE = -1, /// AA: Used for when we don't care about the lookahead type, e.g. when serializing the rr_graph.
+    CLASSIC,        ///<VPR's classic lookahead (assumes uniform wire types)
+    MAP,            ///<Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+    EXTENDED_MAP,   ///<Lookahead with a more extensive node sampling method
+    NO_OP           ///<A no-operation lookahead which always returns zero
 };
 
 enum class e_route_bb_update {
@@ -1343,10 +1344,16 @@ struct t_det_routing_arch {
  *   @param Rmetal     Resistance of a routing track, per unit logic block length.
  *   @param direction  The direction of a routing track.
  *   @param index      index of the segment type used for this track.
- *                     Note that this index will stored the index of the segment
+ *                     Note that this index will store the index of the segment
  *                     relative to its **parallel** segment types, not all segments
  *                     as stored in device_ctx. Look in rr_graph.cpp: build_rr_graph
- *                     for details. 
+ *                     for details but here is an example: say our segment_inf_vec in 
+ *                     device_ctx is as follows: [seg_a_x, seg_b_x, seg_a_y, seg_b_y]
+ *                     when building the rr_graph, static segment_inf_vectors will be 
+ *                     created for each direction, thus you will have the following 
+ *                     2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y]. 
+ *                     As a result, e.g. seg_b_y::index == 1 (index in Y_vec) 
+ *                     and != 3 (index in device_ctx segment_inf_vec).
  *   @param abs_index  index is relative to the segment_inf vec as stored in device_ctx. 
  *                     Note that the above vector is **unifies** both x-parallel and 
  *                     y-parallel segments and is loaded up originally in read_xml_arch_file.cpp 
@@ -1434,8 +1441,8 @@ class t_chan_seg_details {
     const t_seg_details* seg_detail_ = nullptr;
 };
 
-/* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and verticalchannel)   
- * once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_segments-1]
+/* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and vertical channel)   
+ * once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_tracks-1]
  */
 typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
 

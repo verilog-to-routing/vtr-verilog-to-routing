@@ -328,7 +328,6 @@ void create_rr_graph(const t_graph_type graph_type,
                          grid,
                          segment_inf,
                          router_opts.base_cost_type,
-                         router_opts.lookahead_type,
                          &det_routing_arch->wire_to_rr_ipin_switch,
                          det_routing_arch->read_rr_graph_filename.c_str(),
                          router_opts.read_rr_edge_metadata,
@@ -523,9 +522,9 @@ static void build_rr_graph(const t_graph_type graph_type,
         //}
     }
 
-    /*map the internal segment indeces of the networks*/
+    /*map the internal segment indices of the networks*/
     if (clock_modeling == DEDICATED_NETWORK) {
-        ClockRRGraphBuilder::map_relative_seg_indeces(segment_index_map);
+        ClockRRGraphBuilder::map_relative_seg_indices(segment_index_map);
     }
     /* END SEG_DETAILS */
 
@@ -1809,7 +1808,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
 
         /* Edge arrays have now been built up.  Do everything else.  */
         /* AA: The cost_index should be w.r.t the index of the segment to its **parallel** 
-         * segment_inf vector. Note that when building channels, we use the indeces
+         * segment_inf vector. Note that when building channels, we use the indices
          * w.r.t segment_inf_x and segment_inf_y as computed earlier in 
          * build_rr_graph so it's fine to use .index() for to get the correct index.    
          */

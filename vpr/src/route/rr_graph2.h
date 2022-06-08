@@ -17,8 +17,8 @@
  * originally initialized to UN_SET until alloc_and_load_sb is called */
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 
-/* This map is used to get indeces w.r.t segment_inf_x or segment_inf_y based on parallel_axis of a segment, 
- * from indeces w.r.t the **unified** segment vector, segment_inf in devices context which stores all segments 
+/* This map is used to get indices w.r.t segment_inf_x or segment_inf_y based on parallel_axis of a segment, 
+ * from indices w.r.t the **unified** segment vector, segment_inf in devices context which stores all segments 
  * regardless of their axis. (see get_parallel_segs for more details)*/
 typedef std::unordered_multimap<size_t, std::pair<size_t, e_parallel_axis>> t_unified_to_parallel_seg_index;
 

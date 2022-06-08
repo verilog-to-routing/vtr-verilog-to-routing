@@ -1444,6 +1444,10 @@ enum e_Fc_type {
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
  *                       the track?  
  * seg_index: The index of the segment as stored in the appropriate Segs list*
+ *            Upon loading the architecture, we use this field to keep track *
+ *            the segment's index in the unified segment_inf vector. This is *
+ *            usefull when building the rr_graph for different Y & X channels*
+ *            interms of track distribution and segment type.                *
  * meta: Table storing extra arbitrary metadata attributes.                  */
 struct t_segment_inf {
     std::string name;
@@ -1467,6 +1471,9 @@ struct t_segment_inf {
 inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
     return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb && a.sb == b.sb;
 }
+
+/*provide hashing for t_segment_inf to enable the use of many std containers.
+ * Only the most important/varying fields are used (not worth the extra overhead to include all fields)*/
 
 struct t_hash_segment_inf {
     size_t operator()(const t_segment_inf& seg_inf) const noexcept {

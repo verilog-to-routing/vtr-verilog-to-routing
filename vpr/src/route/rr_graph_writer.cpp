@@ -29,7 +29,6 @@ void write_rr_graph(const char* file_name) {
     RrGraphSerializer reader(
         /*graph_type=*/t_graph_type(),
         /*base_cost_type=*/e_base_cost_type(),
-        /*lookahead_type=*/e_router_lookahead(),
         /*wire_to_rr_ipin_switch=*/nullptr,
         /*do_check_rr_graph=*/false,
         /*read_rr_graph_name=*/nullptr,

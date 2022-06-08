@@ -319,8 +319,10 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
     /* Holds temporary memory for parsing. */
     t_wireconn_scratchpad scratchpad;
 
-    /* get a single number for channel width */
-    //int channel_width = nodes_per_chan->max;
+    /* get a single number for channel width. 
+     * AA: Note that this needs be changed to support different horizontal and vertical channels. Future action item ... */
+
+    int channel_width = nodes_per_chan->max;
     if (nodes_per_chan->max != nodes_per_chan->x_min || nodes_per_chan->max != nodes_per_chan->y_min) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Custom switch blocks currently support consistent channel widths only.");
     }
@@ -333,6 +335,15 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
     t_wire_type_sizes wire_type_sizes;
     t_wire_type_sizes wire_type_sizes_x;
     t_wire_type_sizes wire_type_sizes_y;
+
+    /* Count the number of wires in each wire type in the specified channel. Note that this is representative of
+     * the wire count for every channel in direction due to the assumption stated above. 
+     * AA: This will not hold if we 
+     *     1) support different horizontal and vertical segment distributions
+     *     2) support non-uniform channel distributions. 
+     * 
+     * Future action item ...
+     */
 
     count_wire_type_sizes(chan_details_y[0][0].data(), nodes_per_chan->y_max, &wire_type_sizes_y);
     count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan->x_max, &wire_type_sizes_x);
@@ -358,6 +369,9 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                                    grid, &wire_type_sizes, directionality, &sb_row, sb_conns);
 
 #else
+
+    //channel_width is only used in FAST_SB_COMPUTATION, do below so it doesn't throw a compile warning.
+    (void)channel_width;
     /******** slow switch block computation method; computes switchblocks at each coordinate ********/
     /* iterate over all the switchblocks specified in the architecture */
     for (int i_sb = 0; i_sb < (int)switchblocks.size(); i_sb++) {
