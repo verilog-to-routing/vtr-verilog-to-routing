@@ -119,7 +119,7 @@ Graphics Options
 .. option:: --graphics_commands <string>
 
     A set of semi-colon seperated graphics commands.
-    Graphics commands must be surrounfed by quotation marks (e.g. --graphics_commands "save_graphics place.png;")
+    Graphics commands must be surrounded by quotation marks (e.g. --graphics_commands "save_graphics place.png;")
 
     * save_graphics <file>
          Saves graphics to the specified file (.png/.pdf/
