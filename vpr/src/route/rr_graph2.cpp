@@ -1401,14 +1401,13 @@ static void add_intra_ipin_opin_spatial_lookup(RRGraphBuilder& rr_graph_builder,
  *         This will block us when putting the RRGraphBuilder object as an input arguement 
  *         of this function
  */
-void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                         const t_chan_width* nodes_per_chan,
-                                         const int max_chan_width,
-                                         const DeviceGrid& grid,
-                                         int* index,
-                                         const t_chan_details& chan_details_x,
-                                         const t_chan_details& chan_details_y,
-                                         bool is_flat) {
+void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                    const t_chan_width* nodes_per_chan,
+                                    const DeviceGrid& grid,
+                                    int* index,
+                                    const t_chan_details& chan_details_x,
+                                    const t_chan_details& chan_details_y,
+                                    bool is_flat) {
     /* Allocates and loads all the structures needed for fast lookups of the   *
      * index of an rr_node.  rr_node_indices is a matrix containing the index  *
      * of the *first* rr_node at a given (i,j) location.                       */

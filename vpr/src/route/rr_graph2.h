@@ -24,14 +24,13 @@ typedef std::unordered_multimap<size_t, std::pair<size_t, e_parallel_axis>> t_un
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
-void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                         const t_chan_width* nodes_per_chan,
-                                         const int max_chan_width,
-                                         const DeviceGrid& grid,
-                                         int* index,
-                                         const t_chan_details& chan_details_x,
-                                         const t_chan_details& chan_details_y,
-                                         bool is_flat);
+void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                    const t_chan_width* nodes_per_chan,
+                                    const DeviceGrid& grid,
+                                    int* index,
+                                    const t_chan_details& chan_details_x,
+                                    const t_chan_details& chan_details_y,
+                                    bool is_flat);
 
 void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
