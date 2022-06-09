@@ -11,6 +11,7 @@
 #include "manual_moves.h"
 #include "globals.h"
 #include "draw.h"
+#include "draw_searchbar.h"
 #include "buttons.h"
 
 #ifndef NO_GRAPHICS
