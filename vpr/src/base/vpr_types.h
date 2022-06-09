@@ -109,11 +109,10 @@ constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 #endif
 
 enum class e_router_lookahead {
-    DONT_CARE = -1, /// AA: Used for when we don't care about the lookahead type, e.g. when serializing the rr_graph.
-    CLASSIC,        ///<VPR's classic lookahead (assumes uniform wire types)
-    MAP,            ///<Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
-    EXTENDED_MAP,   ///<Lookahead with a more extensive node sampling method
-    NO_OP           ///<A no-operation lookahead which always returns zero
+    CLASSIC,      ///<VPR's classic lookahead (assumes uniform wire types)
+    MAP,          ///<Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+    EXTENDED_MAP, ///<Lookahead with a more extensive node sampling method
+    NO_OP         ///<A no-operation lookahead which always returns zero
 };
 
 enum class e_route_bb_update {
