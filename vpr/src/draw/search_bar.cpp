@@ -2,6 +2,7 @@
 
 #    include <cstdio>
 #    include <sstream>
+#    include <cstring>
 
 #    include "vtr_assert.h"
 #    include "vtr_ndoffsetmatrix.h"
@@ -97,22 +98,25 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
             return;
         }
 
-        highlight_blocks((ClusterBlockId)block_id);
+        highlight_cluster_block((ClusterBlockId)block_id);
     }
 
     else if (search_type == "Block Name") {
         std::string block_name = "";
         ss >> block_name;
 
-        AtomBlockId a_block_id = AtomBlockId::INVALID();
-        a_block_id = atom_ctx.nlist.find_block(block_name);
-
-        if (a_block_id != AtomBlockId::INVALID()){
-            //Write a function here to highlight a specific internal
-            highlight_atom_block(a_block_id);
+        AtomBlockId atom_blk_id = AtomBlockId::INVALID();
+        atom_blk_id = atom_ctx.nlist.find_block(block_name);
+        //If block is found, the CLB containing it is highlighted
+        if (atom_blk_id != AtomBlockId::INVALID()){
+            ClusterBlockId block_id = atom_ctx.lookup.atom_clb(atom_blk_id);
+            //Highlighting atom block. IF function returns false, highlighting clb that contains
+            if(!highlight_atom_block(atom_blk_id, block_id, app)){
+                highlight_cluster_block(block_id);
+            }
             return;
         }
-        //Continues if atom block not found
+        //Continues if atom block not found (Checking if user searched a clb)
         ClusterBlockId block_id = ClusterBlockId::INVALID();
         block_id = cluster_ctx.clb_nlist.find_block(block_name);
 
@@ -120,7 +124,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
             warning_dialog_box("Invalid Block Name");
             return; //name not exist
         }
-        highlight_blocks(block_id); //found block
+        highlight_cluster_block(block_id); //found block
     }
 
     else if (search_type == "Net ID") {
@@ -140,14 +144,15 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Net Name") {
         std::string net_name = "";
         ss >> net_name;
-        AtomNetId net_id = AtomNetId::INVALID();
-        net_id = atom_ctx.nlist.find_net(net_name);
+        AtomNetId atom_net_id = AtomNetId::INVALID();
+        atom_net_id = atom_ctx.nlist.find_net(net_name);
 
-        if (net_id == AtomNetId::INVALID()) {
+        if (atom_net_id == AtomNetId::INVALID()) {
             warning_dialog_box("Invalid Net Name");
             return; //name not exist
         }
-        highlight_atom_net(net_id); //found net
+        ClusterNetId clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
+        highlight_nets(clb_net_id);
     }
 
     else
@@ -249,7 +254,12 @@ void auto_zoom_rr_node(int rr_node_id) {
     (application.get_canvas(application.get_main_canvas_id()))->get_camera().set_world(zoom_view);
 }
 
-void highlight_blocks(ClusterBlockId clb_index) {
+/**
+ * @brief Highlights the given cluster block
+ * 
+ * @param clb_index Cluster Index to be highlighted
+ */
+void highlight_cluster_block(ClusterBlockId clb_index) {
     char msg[vtr::bufsize];
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -276,6 +286,72 @@ void highlight_blocks(ClusterBlockId clb_index) {
 
     application.refresh_drawing();
 }
+
+/**
+ * @brief Finds and highlights the atom block. Returns true if block shows, false if not
+ * 
+ * @param atom_blk AtomBlockId being searched for
+ * @param cl_blk ClusterBlock containing atom_blk
+ * @param app ezgl:: application used
+ * @return true | If sub-block can be highlighted
+ * @return false | If sub-block not found (impossible in search case) or not shown at current zoom lvl
+ */
+bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::application* app){
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cl_ctx = g_vpr_ctx.clustering();
+    t_pb* pb = cl_ctx.clb_nlist.block_pb(cl_blk);
+
+    //Getting the pb* for the atom block
+    auto atom_block_pb = find_atom_block_in_pb(atom_ctx.nlist.block_name(atom_blk), pb);
+    if(!atom_block_pb) return false;    //If no block found, returning false
+
+    //Ensuring that block is drawn at current zoom lvl, returning false if not
+    auto atom_block_depth = atom_block_pb->pb_graph_node->pb_type->depth;
+    t_draw_state* draw_state = get_draw_state_vars();
+    int max_depth = draw_state->show_blk_internal;
+    if(atom_block_depth > max_depth) return false;
+
+    //Highlighting block
+    get_selected_sub_block_info().set(atom_block_pb, cl_blk);
+    app->refresh_drawing();
+    return true;
+}
+
+/**
+ * @brief Recursively looks through pb graph to find block w. given name
+ * 
+ * @param name name of block being searched for
+ * @param pb current node to be examined
+ * @return t_pb* t_pb ptr of block w. name "name"
+ */
+t_pb* find_atom_block_in_pb(std::string name, t_pb* pb){
+    //Checking if block is one being searched for
+    std::string pbName(pb->name);
+    if (pbName == name) return pb;
+    //If block has no children, returning
+    if (pb->child_pbs == nullptr) return nullptr;
+
+    int num_child_types = pb->get_num_child_types();
+    //Iterating through all child types
+    for (int i = 0; i < num_child_types; ++i) {
+        if(pb->child_pbs[i] == nullptr) continue;
+        int num_children_of_type = pb->get_num_children_of_type(i);
+        //Iterating through all of pb's children of given type
+        for (int j = 0; j < num_children_of_type; ++j) {
+            t_pb* child_pb = &pb->child_pbs[i][j];
+            //If child exists, recursively calling function on it
+            if (child_pb->name != nullptr) {
+                t_pb* subtree_result = find_atom_block_in_pb(name, child_pb);
+                //If a result is found, returning it to top of recursive calls
+                if (subtree_result != nullptr) {
+                    return subtree_result;
+                }
+            }
+        }   
+    }
+    return nullptr;
+}
+
 
 void highlight_nets(ClusterNetId net_id) {
     t_trace* tptr;
@@ -324,7 +400,7 @@ void highlight_blocks(std::string block_name) {
         return; //name not exist
     }
 
-    highlight_blocks(block_id); //found block
+    highlight_cluster_block(block_id); //found block
 }
 
 void warning_dialog_box(const char* message) {
@@ -368,18 +444,34 @@ void warning_dialog_box(const char* message) {
 void search_type_changed(GtkComboBox* self, ezgl::application* app) {
     auto type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(self));
     GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
+    GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
+    GtkTreeModel* netNames = GTK_TREE_MODEL(app->get_object("NetNames"));
+    GtkTreeModel* blockNames = GTK_TREE_MODEL(app->get_object("BlockNames"));
+    GtkWidget* keyLengthSpinButton = GTK_WIDGET(app->get_object("KeyLength"));
+    GtkWidget* keyLengthLabel = GTK_WIDGET(app->get_object("KeyLengthLabel"));
     //Ensuring a valid type was selected
     if (!type) return;
     if (type[0] == '\0') return;
     std::string searchType(type);
-    //Setting active completion model to blockCompleter if type selected is block Name
+
+    /*
+    If search type is name, connecting search bar to completion,
+    and connecting completion to the appropriate model (blocks or nets)
+    Additionally, visibility of key length setter is toggled by these changes
+    */
     if (searchType == "Block Name") {
-        GtkEntryCompletion* blockCompleter = GTK_ENTRY_COMPLETION(app->get_object("BlockNameCompleter"));
-        gtk_entry_set_completion(searchBar, blockCompleter);
-    } else if(searchType == "Net Name") {   //using netNameCompleter if type is nets
-        GtkEntryCompletion* netCompleter = GTK_ENTRY_COMPLETION(app->get_object("NetNameCompleter"));
-        gtk_entry_set_completion(searchBar, netCompleter);
+        gtk_entry_completion_set_model(completion, blockNames);
+        gtk_entry_set_completion(searchBar, completion);
+        gtk_widget_show(keyLengthSpinButton);
+        gtk_widget_show(keyLengthLabel);
+    } else if(searchType == "Net Name") {
+        gtk_entry_completion_set_model(completion, netNames);
+        gtk_entry_set_completion(searchBar, completion);
+        gtk_widget_show(keyLengthSpinButton);
+        gtk_widget_show(keyLengthLabel);
     } else {    //setting to null if option does not require auto-complete
+        gtk_widget_hide(keyLengthSpinButton);
+        gtk_widget_hide(keyLengthLabel);
         gtk_entry_set_completion(searchBar, nullptr);
     }
 }
@@ -421,6 +513,40 @@ void load_net_names(ezgl::application* app){
         gtk_list_store_set(netStorage, &iter,
                            0, (atom_ctx.nlist.net_name(id)).c_str(), -1);
     }
+}
+
+/**
+ * @brief A new matching function used for the wildcard search options
+ * Will be slower
+ * 
+ * @param completer the GtkEntryCompletion being used
+ * @param key a normalized and case-folded key representing the text
+ * @param iter GtkTreeIter pointing at the current entry being compared
+ * @param user_data null
+ * @return gboolean 
+ */
+gboolean customMatchingFunction(
+    GtkEntryCompletion* completer, const gchar* key, 
+    GtkTreeIter* iter, gpointer /*user data*/
+){
+    GtkTreeModel *model = gtk_entry_completion_get_model(completer);
+    const gchar *text;
+    gtk_tree_model_get(model, iter, 0, &text, -1);
+    //Removing case information
+    g_utf8_casefold(text, -1);
+    g_utf8_normalize(text, -1, G_NORMALIZE_DEFAULT);
+    std::string cppText(text);
+    //If substring not found, returning false;
+    return (cppText.find(key, 0) != std::string::npos);
+}
+
+/**
+ * @brief Updates min. key length when the value in spin button changes
+ */
+void key_length_val_changed(GtkSpinButton* self, ezgl::application* app){
+    auto newLength = gtk_spin_button_get_value(self);
+    GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
+    gtk_entry_completion_set_minimum_key_length(completion, newLength);
 }
 
 #endif /* NO_GRAPHICS */

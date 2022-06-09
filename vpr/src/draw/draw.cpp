@@ -352,18 +352,30 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
 
     //combo box for search type, created in main.ui
     GObject* search_type = (GObject*)app->get_object("SearchType");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID"); // index 0
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "Block Name");                                // index 1
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");   // index 2
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name"); // index 3
+                                   "Block Name");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "RR Node ID"); // index 4
+                                   "RR Node ID");                                                      
     //Important to have default option set, or else user can search w. no selected type which can cause crash
     gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
     g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
-    load_block_names(app);
+
+    load_block_names(app);  //Loading block and net names into GtkListStores
     load_net_names(app);
+
+    //Setting custom matching function for entry completion (searches whole string instead of start)
+    GtkEntryCompletion* wildcardComp = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
+    gtk_entry_completion_set_match_func(wildcardComp, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
+
+    //Hiding Match length Selecters
+    GtkSpinButton* completionKeyLength = GTK_SPIN_BUTTON(app->get_object("KeyLength"));
+    g_signal_connect(completionKeyLength, "value-changed", G_CALLBACK(key_length_val_changed), app);
+    gtk_widget_hide(GTK_WIDGET(completionKeyLength));
+    GtkWidget* keyLengthLabel = GTK_WIDGET(app->get_object("KeyLengthLabel"));
+    gtk_widget_hide(keyLengthLabel);
     button_for_toggle_nets();
     button_for_net_max_fanout();
     button_for_net_alpha();
@@ -437,6 +449,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box),
                      app);
 
+    //combo box for search type, created in main.ui
     GObject* search_type = (GObject*)app->get_object("SearchType");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
@@ -444,12 +457,24 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "RR Node ID");
+                                   "RR Node ID");                                                      
     //Important to have default option set, or else user can search w. no selected type which can cause crash
     gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
     g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
-    load_block_names(app);
+
+    load_block_names(app);  //Loading block and net names into GtkListStores
     load_net_names(app);
+
+    //Setting custom matching function for entry completion (searches whole string instead of start)
+    GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
+    gtk_entry_completion_set_match_func(completion, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
+
+    //Hiding Match length Selecters
+    GtkSpinButton* completionKeyLength = GTK_SPIN_BUTTON(app->get_object("KeyLength"));
+    g_signal_connect(completionKeyLength, "value-changed", G_CALLBACK(key_length_val_changed), app);
+    gtk_widget_hide(GTK_WIDGET(completionKeyLength));
+    GtkWidget* keyLengthLabel = GTK_WIDGET(app->get_object("KeyLengthLabel"));
+    gtk_widget_hide(keyLengthLabel);
 
     button_for_toggle_nets();
     button_for_net_max_fanout();

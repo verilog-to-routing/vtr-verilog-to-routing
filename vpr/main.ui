@@ -13,15 +13,22 @@
       </row>
     </data>
   </object>
-  <object class="GtkEntryCompletion" id="BlockNameCompleter">
-    <property name="model">BlockNames</property>
+  <object class="GtkEntryCompletion" id="Completion">
+    <property name="minimum_key_length">5</property>
     <property name="text_column">0</property>
     <child>
-      <object class="GtkCellRendererText" id="Renderer"/>
+      <object class="GtkCellRendererText" id="NetNameRenderer"/>
       <attributes>
         <attribute name="text">0</attribute>
       </attributes>
     </child>
+  </object>
+  <object class="GtkAdjustment" id="KeyLengthAdjustment">
+    <property name="lower">1</property>
+    <property name="upper">20</property>
+    <property name="value">5</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
   </object>
   <object class="GtkWindow" id="MainWindow">
     <property name="visible">True</property>
@@ -263,7 +270,35 @@
           </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkGrid" id="KeyLengthGrid">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkSpinButton" id="KeyLength">
+                <property name="can_focus">True</property>
+                <property name="margin_left">6</property>
+                <property name="adjustment">KeyLengthAdjustment</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="KeyLengthLabel">
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Min. Match Len.</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">4</property>
+            <property name="top_attach">0</property>
+          </packing>
         </child>
         <child>
           <placeholder/>
@@ -279,15 +314,5 @@
       <!-- column-name Names -->
       <column type="gchararray"/>
     </columns>
-  </object>
-  <object class="GtkEntryCompletion" id="NetNameCompleter">
-    <property name="model">NetNames</property>
-    <property name="text_column">0</property>
-    <child>
-      <object class="GtkCellRendererText" id="NetNameRenderer"/>
-      <attributes>
-        <attribute name="text">0</attribute>
-      </attributes>
-    </child>
   </object>
 </interface>
