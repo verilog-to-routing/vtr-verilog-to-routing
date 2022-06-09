@@ -141,3 +141,4 @@ tags
 #
 .idea
 cmake-build-debug
+/.metadata/

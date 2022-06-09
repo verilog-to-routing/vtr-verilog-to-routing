@@ -1568,15 +1568,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto segment_inf_x_ = get_parallel_segs(temp_rr_segs, seg_index_map, X_AXIS);
         auto segment_inf_y_ = get_parallel_segs(temp_rr_segs, seg_index_map, Y_AXIS);
 
-        /*AA: e_router_lookahead::DONT_CARE is used as a place holder. The lookahead type only has control over the orthocost indeces vector 
-         * which is only relevant to the classic lookahead. */
         alloc_and_load_rr_indexed_data(
             temp_rr_segs,
             segment_inf_x_,
             segment_inf_y_,
             *wire_to_rr_ipin_switch_,
-            base_cost_type_,
-            e_router_lookahead::DONT_CARE);
+            base_cost_type_);
 
         VTR_ASSERT(rr_indexed_data_->size() == seg_index_.size());
         for (size_t i = 0; i < seg_index_.size(); ++i) {

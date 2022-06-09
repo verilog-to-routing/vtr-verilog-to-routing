@@ -2,6 +2,7 @@
 
 #    include "draw_global.h"
 #    include "draw_types.h"
+#    include "draw_toggle_functions.h"
 #    include "globals.h"
 #    include "vpr_utils.h"
 #    include "draw.h"

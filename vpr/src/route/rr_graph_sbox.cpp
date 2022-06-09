@@ -86,7 +86,9 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width
 /* This routine permutes the track number to connect for topologies
  * SUBSET, UNIVERSAL, and WILTON. I added FULL (for fully flexible topology)
  * but the returned value is simply a dummy, since we don't need to permute
- * what connections to make for FULL (connect to EVERYTHING) */
+ * what connections to make for FULL (connect to EVERYTHING) 
+ * */
+
 int get_simple_switch_block_track(const enum e_side from_side,
                                   const enum e_side to_side,
                                   const int from_track,
