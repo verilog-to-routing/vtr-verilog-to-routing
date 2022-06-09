@@ -357,13 +357,12 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
                                    "Block Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "RR Node ID");                                                      
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");                                                      
     //Important to have default option set, or else user can search w. no selected type which can cause crash
     gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
     g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
 
-    load_block_names(app);  //Loading block and net names into GtkListStores
+    load_block_names(app); //Loading block and net names into GtkListStores
     load_net_names(app);
 
     //Setting custom matching function for entry completion (searches whole string instead of start)
@@ -456,13 +455,12 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
                                    "Block Name");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "RR Node ID");                                                      
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");                                                      
     //Important to have default option set, or else user can search w. no selected type which can cause crash
     gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
     g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
 
-    load_block_names(app);  //Loading block and net names into GtkListStores
+    load_block_names(app); //Loading block and net names into GtkListStores
     load_net_names(app);
 
     //Setting custom matching function for entry completion (searches whole string instead of start)

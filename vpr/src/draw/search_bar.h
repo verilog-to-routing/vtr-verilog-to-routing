@@ -16,7 +16,6 @@ void auto_zoom_rr_node(int rr_node_id);
 void highlight_cluster_block(ClusterBlockId clb_index);
 void highlight_nets(ClusterNetId net_id);
 void highlight_nets(std::string net_name);
-void highlight_blocks(std::string block_name);
 
 void load_block_names(ezgl::application* app);
 void load_net_names(ezgl::application* app);
@@ -25,8 +24,10 @@ void highlight_atom_block(AtomBlockId block_id);
 void highlight_atom_net(AtomNetId net_id);
 
 gboolean customMatchingFunction(
-    GtkEntryCompletion* completer, const gchar* key, 
-    GtkTreeIter* iter, gpointer user_data
+    GtkEntryCompletion* completer,
+    const gchar* key, 
+    GtkTreeIter* iter,
+    gpointer user_data
 );
 
 //Function to manage entry completions when search type is changed

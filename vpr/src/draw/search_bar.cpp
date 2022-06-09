@@ -108,10 +108,10 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         AtomBlockId atom_blk_id = AtomBlockId::INVALID();
         atom_blk_id = atom_ctx.nlist.find_block(block_name);
         //If block is found, the CLB containing it is highlighted
-        if (atom_blk_id != AtomBlockId::INVALID()){
+        if (atom_blk_id != AtomBlockId::INVALID()) {
             ClusterBlockId block_id = atom_ctx.lookup.atom_clb(atom_blk_id);
             //Highlighting atom block. IF function returns false, highlighting clb that contains
-            if(!highlight_atom_block(atom_blk_id, block_id, app)){
+            if (!highlight_atom_block(atom_blk_id, block_id, app)) {
                 highlight_cluster_block(block_id);
             }
             return;
@@ -296,20 +296,20 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
  * @return true | If sub-block can be highlighted
  * @return false | If sub-block not found (impossible in search case) or not shown at current zoom lvl
  */
-bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::application* app){
+bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::application* app) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cl_ctx = g_vpr_ctx.clustering();
     t_pb* pb = cl_ctx.clb_nlist.block_pb(cl_blk);
 
     //Getting the pb* for the atom block
     auto atom_block_pb = find_atom_block_in_pb(atom_ctx.nlist.block_name(atom_blk), pb);
-    if(!atom_block_pb) return false;    //If no block found, returning false
+    if (!atom_block_pb) return false;    //If no block found, returning false
 
     //Ensuring that block is drawn at current zoom lvl, returning false if not
     auto atom_block_depth = atom_block_pb->pb_graph_node->pb_type->depth;
     t_draw_state* draw_state = get_draw_state_vars();
     int max_depth = draw_state->show_blk_internal;
-    if(atom_block_depth > max_depth) return false;
+    if (atom_block_depth > max_depth) return false;
 
     //Highlighting block
     get_selected_sub_block_info().set(atom_block_pb, cl_blk);
@@ -324,7 +324,7 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
  * @param pb current node to be examined
  * @return t_pb* t_pb ptr of block w. name "name"
  */
-t_pb* find_atom_block_in_pb(std::string name, t_pb* pb){
+t_pb* find_atom_block_in_pb(std::string name, t_pb* pb) {
     //Checking if block is one being searched for
     std::string pbName(pb->name);
     if (pbName == name) return pb;
@@ -334,7 +334,7 @@ t_pb* find_atom_block_in_pb(std::string name, t_pb* pb){
     int num_child_types = pb->get_num_child_types();
     //Iterating through all child types
     for (int i = 0; i < num_child_types; ++i) {
-        if(pb->child_pbs[i] == nullptr) continue;
+        if (pb->child_pbs[i] == nullptr) continue;
         int num_children_of_type = pb->get_num_children_of_type(i);
         //Iterating through all of pb's children of given type
         for (int j = 0; j < num_children_of_type; ++j) {
@@ -347,7 +347,7 @@ t_pb* find_atom_block_in_pb(std::string name, t_pb* pb){
                     return subtree_result;
                 }
             }
-        }   
+        }
     }
     return nullptr;
 }
@@ -379,29 +379,6 @@ void highlight_nets(std::string net_name) {
     highlight_atom_net(net_id); //found net
 }
 
-void highlight_blocks(std::string block_name) {
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    AtomBlockId a_block_id = AtomBlockId::INVALID();
-    a_block_id = atom_ctx.nlist.find_block(block_name);
-
-    if (a_block_id != AtomBlockId::INVALID()){
-        //Write a function here to highlight a specific internal
-        return;
-    }
-    //Continues if atom block not found
-
-    ClusterBlockId block_id = ClusterBlockId::INVALID();
-    block_id = cluster_ctx.clb_nlist.find_block(block_name);
-
-    if (block_id == ClusterBlockId::INVALID()) {
-        warning_dialog_box("Invalid Block Name");
-        return; //name not exist
-    }
-
-    highlight_cluster_block(block_id); //found block
-}
 
 void warning_dialog_box(const char* message) {
     GObject* main_window;    // parent window over which to add the dialog
@@ -455,21 +432,21 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
     std::string searchType(type);
 
     /*
-    If search type is name, connecting search bar to completion,
-    and connecting completion to the appropriate model (blocks or nets)
-    Additionally, visibility of key length setter is toggled by these changes
-    */
+     * If search type is name, connecting search bar to completion,
+     * and connecting completion to the appropriate model (blocks or nets)
+     * Additionally, visibility of key length setter is toggled by these changes
+     */
     if (searchType == "Block Name") {
         gtk_entry_completion_set_model(completion, blockNames);
         gtk_entry_set_completion(searchBar, completion);
         gtk_widget_show(keyLengthSpinButton);
         gtk_widget_show(keyLengthLabel);
-    } else if(searchType == "Net Name") {
+    } else if (searchType == "Net Name") {
         gtk_entry_completion_set_model(completion, netNames);
         gtk_entry_set_completion(searchBar, completion);
         gtk_widget_show(keyLengthSpinButton);
         gtk_widget_show(keyLengthLabel);
-    } else {    //setting to null if option does not require auto-complete
+    } else { //setting to null if option does not require auto-complete
         gtk_widget_hide(keyLengthSpinButton);
         gtk_widget_hide(keyLengthLabel);
         gtk_entry_set_completion(searchBar, nullptr);
@@ -491,7 +468,7 @@ void load_block_names(ezgl::application* app) {
         gtk_list_store_set(blockStorage, &iter,
                            0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
     }
-    for (AtomBlockId id : atom_ctx.nlist.blocks()){
+    for (AtomBlockId id : atom_ctx.nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter,
                            0, (atom_ctx.nlist.block_name(id)).c_str(), -1);   
@@ -503,7 +480,7 @@ void load_block_names(ezgl::application* app) {
  * 
  * @param app ezgl application used for ui
  */
-void load_net_names(ezgl::application* app){
+void load_net_names(ezgl::application* app) {
     auto netStorage = GTK_LIST_STORE(app->get_object("NetNames"));
     auto& atom_ctx = g_vpr_ctx.atom();
     GtkTreeIter iter;
@@ -526,11 +503,13 @@ void load_net_names(ezgl::application* app){
  * @return gboolean 
  */
 gboolean customMatchingFunction(
-    GtkEntryCompletion* completer, const gchar* key, 
-    GtkTreeIter* iter, gpointer /*user data*/
-){
-    GtkTreeModel *model = gtk_entry_completion_get_model(completer);
-    const gchar *text;
+    GtkEntryCompletion* completer,
+    const gchar* key, 
+    GtkTreeIter* iter,
+    gpointer /*user data*/
+) {
+    GtkTreeModel* model = gtk_entry_completion_get_model(completer);
+    const gchar* text;
     gtk_tree_model_get(model, iter, 0, &text, -1);
     //Removing case information
     g_utf8_casefold(text, -1);
@@ -543,7 +522,7 @@ gboolean customMatchingFunction(
 /**
  * @brief Updates min. key length when the value in spin button changes
  */
-void key_length_val_changed(GtkSpinButton* self, ezgl::application* app){
+void key_length_val_changed(GtkSpinButton* self, ezgl::application* app) {
     auto newLength = gtk_spin_button_get_value(self);
     GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
     gtk_entry_completion_set_minimum_key_length(completion, newLength);
