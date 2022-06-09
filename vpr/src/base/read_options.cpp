@@ -1277,7 +1277,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
-            "A set of semi-colon seperated graphics commands.\n"
+            "A set of semi-colon seperated graphics commands. \n"
+            "Commands must be surrounded by quotation marks (e.g. --graphics_commands \"save_graphics place.png\")\n"
             "   Commands:\n"
             "      * save_graphics <file>\n"
             "           Saves graphics to the specified file (.png/.pdf/\n"
