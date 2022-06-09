@@ -19,6 +19,7 @@
 #include "string.h"
 #include "pack_types.h"
 #include "device_grid.h"
+#include "timing_fail_error.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
@@ -2020,4 +2021,6 @@ void print_timing_stats(std::string name,
             current.num_full_setup_updates - past.num_full_setup_updates,
             current.num_full_hold_updates - past.num_full_hold_updates,
             current.num_full_setup_hold_updates - past.num_full_setup_hold_updates);
+
+    error_if_timing_failed(name);
 }

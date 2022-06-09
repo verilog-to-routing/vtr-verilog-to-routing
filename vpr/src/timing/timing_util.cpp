@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "timing_util.h"
 #include "timing_info.h"
+#include "timing_fail_error.h"
 
 double sec_to_nanosec(double seconds) {
     return 1e9 * seconds;
@@ -415,6 +416,9 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
             sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
 
     VTR_LOG("\n");
+
+    check_if_failed_timing_constraints(setup_worst_neg_slack, "setup Worst", prefix);
+    check_if_failed_timing_constraints(setup_total_neg_slack, "setup Total", prefix);
 }
 
 /*
@@ -593,8 +597,12 @@ std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTiming
 }
 
 void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer, std::string prefix) {
-    VTR_LOG("%shold Worst Negative Slack (hWNS): %g ns\n", prefix.c_str(), sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer)));
-    VTR_LOG("%shold Total Negative Slack (hTNS): %g ns\n", prefix.c_str(), sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer)));
+    auto hold_worst_neg_slack = sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer));
+    auto hold_total_neg_slack = sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer));
+
+    VTR_LOG("%shold Worst Negative Slack (hWNS): %g ns\n", prefix.c_str(), hold_worst_neg_slack);
+    VTR_LOG("%shold Total Negative Slack (hTNS): %g ns\n", prefix.c_str(), hold_total_neg_slack);
+
     /*For testing*/
     //VTR_LOG("Hold Total Negative Slack within clbs: %g ns\n", sec_to_nanosec(find_total_negative_slack_within_clb_blocks(hold_analyzer)));
     VTR_LOG("\n");
@@ -637,6 +645,9 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
         }
     }
     VTR_LOG("\n");
+
+    check_if_failed_timing_constraints(hold_worst_neg_slack, "hold Worst", prefix);
+    check_if_failed_timing_constraints(hold_total_neg_slack, "hold Total", prefix);
 }
 
 /*
