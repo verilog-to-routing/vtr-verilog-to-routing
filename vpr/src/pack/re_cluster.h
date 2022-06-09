@@ -38,4 +38,17 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
                                   const ClusterBlockId& new_clb,
                                   bool during_packing,
                                   t_clustering_data& clustering_data);
+
+/**
+ * @brief This function swap two molecules between two different clusters.
+ * 
+ * This function can be called from 2 spots in the vpr flow. 
+ *   - First, during packing to optimize the initial clustered netlist 
+ *             (during_packing variable should be true.)
+ *   - Second, during placement (during_packing variable should be false)
+ */
+bool swap_two_molecules(t_pack_molecule* molecule_1,
+                        t_pack_molecule* molecule_2,
+                        bool during_packing,
+                        t_clustering_data& clustering_data);
 #endif
