@@ -532,7 +532,7 @@ enum class e_sb_type {
 };
 
 constexpr int NO_SWITCH = -1;
-constexpr int DEFAULT_SWITCH = -2;
+constexpr int DEFAULT_SWITCH = -2; 
 
 /* Describes the type for a physical tile
  * name: unique identifier for type
@@ -1688,6 +1688,7 @@ struct t_wireconn_inf {
     std::vector<t_wire_switchpoints> to_switchpoint_set;               //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
     SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
     SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   //The desired to_switchpoint_set ordering
+    int switch_override_indx = NO_SWITCH;                              // index in switch array of the switch used to override wire_switch of the 'to' set.
 
     std::string num_conns_formula; /* Specifies how many connections should be made for this wireconn.
                                     *
