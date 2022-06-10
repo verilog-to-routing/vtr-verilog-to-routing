@@ -365,18 +365,6 @@ void highlight_nets(ClusterNetId net_id) {
     }
 }
 
-void highlight_nets(std::string net_name) {
-    auto& atom_ctx = g_vpr_ctx.atom();
-
-    AtomNetId net_id = AtomNetId::INVALID();
-    net_id = atom_ctx.nlist.find_net(net_name);
-
-    if (net_id == AtomNetId::INVALID()) {
-        warning_dialog_box("Invalid Net Name");
-        return; //name not exist
-    }
-    highlight_atom_net(net_id); //found net
-}
 
 void warning_dialog_box(const char* message) {
     GObject* main_window;    // parent window over which to add the dialog

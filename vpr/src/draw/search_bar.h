@@ -21,7 +21,7 @@ void load_block_names(ezgl::application* app);
 void load_net_names(ezgl::application* app);
 
 void highlight_atom_block(AtomBlockId block_id);
-void highlight_atom_net(AtomNetId net_id);
+
 
 gboolean customMatchingFunction(
     GtkEntryCompletion* completer,
