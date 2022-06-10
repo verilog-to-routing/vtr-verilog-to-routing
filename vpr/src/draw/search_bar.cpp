@@ -365,7 +365,6 @@ void highlight_nets(ClusterNetId net_id) {
     }
 }
 
-
 void warning_dialog_box(const char* message) {
     GObject* main_window;    // parent window over which to add the dialog
     GtkWidget* content_area; // content area of the dialog
