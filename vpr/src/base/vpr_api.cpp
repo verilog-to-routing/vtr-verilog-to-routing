@@ -341,7 +341,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
             timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph);
         }
         {
-        	toggle_terminate_if_timing_fails(options->terminate_if_timing_fails);
+            toggle_terminate_if_timing_fails(options->terminate_if_timing_fails);
         }
     }
 
