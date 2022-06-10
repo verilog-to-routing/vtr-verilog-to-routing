@@ -25,10 +25,9 @@ void highlight_atom_net(AtomNetId net_id);
 
 gboolean customMatchingFunction(
     GtkEntryCompletion* completer,
-    const gchar* key, 
+    const gchar* key,
     GtkTreeIter* iter,
-    gpointer user_data
-);
+    gpointer user_data);
 
 //Function to manage entry completions when search type is changed
 void search_type_changed(GtkComboBox* /*self*/, ezgl::application* app);

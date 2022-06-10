@@ -303,7 +303,7 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
 
     //Getting the pb* for the atom block
     auto atom_block_pb = find_atom_block_in_pb(atom_ctx.nlist.block_name(atom_blk), pb);
-    if (!atom_block_pb) return false;    //If no block found, returning false
+    if (!atom_block_pb) return false; //If no block found, returning false
 
     //Ensuring that block is drawn at current zoom lvl, returning false if not
     auto atom_block_depth = atom_block_pb->pb_graph_node->pb_type->depth;
@@ -352,7 +352,6 @@ t_pb* find_atom_block_in_pb(std::string name, t_pb* pb) {
     return nullptr;
 }
 
-
 void highlight_nets(ClusterNetId net_id) {
     t_trace* tptr;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -378,7 +377,6 @@ void highlight_nets(std::string net_name) {
     }
     highlight_atom_net(net_id); //found net
 }
-
 
 void warning_dialog_box(const char* message) {
     GObject* main_window;    // parent window over which to add the dialog
@@ -471,7 +469,7 @@ void load_block_names(ezgl::application* app) {
     for (AtomBlockId id : atom_ctx.nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter,
-                           0, (atom_ctx.nlist.block_name(id)).c_str(), -1);   
+                           0, (atom_ctx.nlist.block_name(id)).c_str(), -1);
     }
 }
 
@@ -504,7 +502,7 @@ void load_net_names(ezgl::application* app) {
  */
 gboolean customMatchingFunction(
     GtkEntryCompletion* completer,
-    const gchar* key, 
+    const gchar* key,
     GtkTreeIter* iter,
     gpointer /*user data*/
 ) {
