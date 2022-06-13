@@ -1984,6 +1984,7 @@ static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builde
             int class_id = class_pair.first;
             auto class_inf = class_pair.second;
             /* Add the IPIN->SINK and SRC->OPIN edges */
+            VTR_ASSERT(class_id >= 0);
             add_internal_rr_class(class_inf,
                          class_id,
                          rr_graph_builder,
@@ -1996,14 +1997,15 @@ static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builde
 
         auto pins = get_cluster_internal_ipin_opin(cluster_blk_id);
         for (auto pin : pins) {
+            VTR_ASSERT(pin >= 0);
             add_internal_rr_ipin_and_opin(rr_graph_builder,
-                                 physical_tile,
-                                 pin,
-                                 i,
-                                 j,
-                                 0 /* Internal pin is added */,
-                                 0 /* Internal pin is added */,
-                                 e_side::TOP /* TOP side is considered for internal pins */);
+                                          physical_tile,
+                                          pin,
+                                          i,
+                                          j,
+                                          0 /* Internal pin is added */,
+                                          0 /* Internal pin is added */,
+                                          e_side::TOP /* TOP side is considered for internal pins */);
         }
     }
 
