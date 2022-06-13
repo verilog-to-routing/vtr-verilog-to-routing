@@ -3,6 +3,8 @@
 
 #include "read_xml_noc_traffic_flows_file.h"
 
+#include <random>
+
 namespace{
 
     TEST_CASE("test_verify_traffic_flow_router_modules", "[vpr_noc_traffic_flows_parser]"){
@@ -261,6 +263,100 @@ namespace{
             // now run the test function to verify that the current IO module doesnt have a logical type of a router
             // the function should faile since the module is of type IO
             REQUIRE_THROWS_WITH(check_traffic_flow_router_module_type(io_block_one, io_module_id, test, test_location, cluster_ctx, noc_router_ref), "The supplied module name 'io_block_one' is not a NoC router.");
+        }
+    }
+    TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "[vpr_noc_traffic_flows_parser]"){
+
+        // get the global netlist
+        ClusteringContext& cluster_ctx = g_vpr_ctx.mutable_clustering();
+        ClusteredNetlist* test_netlist = &cluster_ctx.clb_nlist;
+
+        // create a new clustered netlist
+        *test_netlist = ClusteredNetlist("test_netlist", "77");
+
+        // get the global device information
+        DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
+
+        // get the global noc information
+        NocContext& noc_ctx = g_vpr_ctx.mutable_noc();
+        // delete any previously created traffic flow info
+        noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
+
+        // create the logical type of a noc router
+        // there is a single logical type that is compatible with this subtile and it is a router
+        t_logical_block_type router_block;
+        char router[] = "router";
+        router_block.name = router;
+        t_logical_block_type_ptr router_ref = &router_block;
+        t_pb router_pb;
+
+        //set the index of the logical type as 0 (its the only block type in this test device)
+        router_block.index = 0;
+        // now add this logical type to the device
+        device_ctx.logical_block_types.push_back(router_block);
+
+        //need to create the noc router physical type
+        t_physical_tile_type noc_router;
+
+        // indicate that the noc_router physical tile is not an input/output
+        noc_router.is_input_type = false;
+        noc_router.is_output_type = false;
+        
+        // create a single subtile
+        t_sub_tile router_tile;
+
+        // add the logical tyes as the equivalent sites of the subtile
+        router_tile.equivalent_sites.push_back(router_ref);
+
+        // add the subtile to the physical noc router type
+        noc_router.sub_tiles.push_back(router_tile);
+
+        // create a reference to the physical type
+        t_physical_tile_type_ptr noc_router_ref = &noc_router;
+        // need to add the physical type of the router to the list of physical tiles that match to the router logical block
+        router_block.equivalent_tiles.push_back(noc_router_ref);
+
+        // define arbritary values for traffic flow bandwidths and latency
+        double traffic_flow_bandwidth = 0.0;
+        double traffic_flow_latency = 0.0;
+
+        // start by creating a set of router blocks in the design and add them to the clustered netlist
+
+        // define the test router block names
+        char router_one[] = "router_block_one";
+        char router_two[] = "router_block_two";
+        char router_three[] = "router_block_three";
+
+        ClusterBlockId router_block_one_id = test_netlist->create_block(router_one, &router_pb, router_ref);
+        ClusterBlockId router_block_two_id = test_netlist->create_block(router_two, &router_pb, router_ref);
+        ClusterBlockId router_block_three_id = test_netlist->create_block(router_three, &router_pb, router_ref);
+
+        // define the name of the test noc traffic flows file
+        std::string test_noc_traffic_flows_file_name = "noc_traffic_flows_file.flows";
+
+        SECTION("Test case when all router blocks in the design have an associated traffic flow"){ 
+            
+            // create a number of traffic flows that include all router blocks in the design
+            noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_one, router_two, router_block_one_id, router_block_two_id, traffic_flow_bandwidth, traffic_flow_latency);
+
+            noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_two, router_three, router_block_two_id, router_block_three_id, traffic_flow_bandwidth, traffic_flow_latency);
+
+            noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_three, router_one, router_block_three_id, router_block_one_id, traffic_flow_bandwidth, traffic_flow_latency);
+
+            // now check to see whether all router blocks in the design have an associated traffic flow (this is the function tested here)
+            // we expect this to pass 
+            CHECK(check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_ref, test_noc_traffic_flows_file_name) == true);
+        }
+        SECTION("Test case where some router blocks in the design do not have an associated traffic flow"){
+
+            // create a number of traffic flows that includes router_one and router_twp but does not include router_three
+            noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_one, router_two, router_block_one_id, router_block_two_id, traffic_flow_bandwidth, traffic_flow_latency);
+
+            noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_two, router_one, router_block_two_id, router_block_one_id, traffic_flow_bandwidth, traffic_flow_latency);
+
+            // now check to see whether all router blocks in the design have an associated traffic flow (this is the function tested here)
+            // we expect this fail 
+            CHECK(check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_ref, test_noc_traffic_flows_file_name) == false);
         }
     }
 }
