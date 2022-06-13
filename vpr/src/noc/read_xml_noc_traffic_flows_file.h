@@ -147,8 +147,11 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
  *                             on a NoC router tile.
  * @param noc_flows_file The name of the '.flows' file. Used when displaying
  *                       the error.
+ * @return bool True implies that all router blocks in the design have an
+ *              associated traffic flow. False means there are some router
+ *              blocks that do not have a an associated traffic flow.
  */
-void check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file);
+bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file);
 
 
 

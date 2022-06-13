@@ -216,7 +216,9 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
 
 }
 
-void check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file){
+bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file){
+
+    bool result = true;
 
     // contains the number of all the noc router blocks in the design
     const auto clustered_netlist_stats = ClusteredNetlistStats();
@@ -244,8 +246,10 @@ void check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& no
     if (noc_ctx.noc_traffic_flows_storage.get_number_of_routers_used_in_traffic_flows() != number_of_router_blocks_in_design){
 
         VTR_LOG_WARN("NoC traffic flows file '%s' does not contain all router modules in the design. Every router module in the design must be part of a traffic flow (communicating to another router). Otherwise the router is unused.\n", noc_flows_file.c_str());
+
+        result = false;
     }
 
-    return;
+    return result;
 
 }
