@@ -844,9 +844,9 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
-    std::unordered_map<int, const t_pb_graph_pin*> pb_pin_num_map; /* {pin, intra_cluster_pin_idx} */
-    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* {pb_pin_ptr, class_inf_idx} */
-    std::vector<t_class> logical_class_inf; /* {primitive_pin, class_number} */
+    std::unordered_map<int, const t_pb_graph_pin*> pb_pin_num_map; /* pb_pin_num_map[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* pb_pin_class_map[pb_graph_pin ptr] -> class logical number */
+    std::vector<t_class> logical_class_inf; /* logical_class_inf[class_logical_number] -> class */
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
@@ -1195,10 +1195,6 @@ class t_pb_graph_node {
     int* output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
 
-    int max_input_pin_mode_num;
-    int total_num_input_pins;
-    int total_num_output_pins;
-    int total_num_clock_pins;
     int total_primitive_count; /* total number of this primitive type in the cluster */
 
 
