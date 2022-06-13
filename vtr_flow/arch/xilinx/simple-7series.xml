@@ -1,9 +1,9 @@
-<!-- 
-  This architecture file is an approximation of the xilinx 7 series chip set. It's main purpose is to verify VPR's ability to 
-  accommodate xilinx specific routing (i.e. differing wire lengths and frequencies in the horizontal/vertical directions, differing chanel widths, 
-  and diagonal wire segments). Given that this architectures primary function is to test xilinx specific routing, the architecture includes only 
-  a simplified version of the Xilinx CLB that excludes carry logic. f4pga/symbiflow's arch.timing.xml and VTR's k6_N10_40nm.xml were pulled from to create 
-  this architecture description. 
+<!--
+  This architecture file is an approximation of the xilinx 7 series chip set. It's main purpose is to verify VPR's ability to
+  accommodate xilinx specific routing (i.e. differing wire lengths and frequencies in the horizontal/vertical directions, differing chanel widths,
+  and diagonal wire segments). Given that this architectures primary function is to test xilinx specific routing, the architecture includes only
+  a simplified version of the Xilinx CLB that excludes carry logic. f4pga/symbiflow's arch.timing.xml and VTR's k6_N10_40nm.xml were pulled from to create
+  this architecture description.
 
   - 40 nm technology
   - General purpose logic block excluding carry.
@@ -13,8 +13,8 @@
 -->
 <architecture>
   <!-- ODIN II specific config begins -->
-  <!-- 
-		 Given that basic LUTs, I/Os, and flip-flops already have special structures in 
+  <!--
+		 Given that basic LUTs, I/Os, and flip-flops already have special structures in
      blif (.names, .input, .output, and .latch) that describe them and that this arch
      contains CLB logic blocks only, no special models are needed for this architecture.
 	-->
@@ -82,25 +82,25 @@
   </device>
 
   <switchlist>
-    
+
     <!--the following muxes for unidirectional wires are pulled from k6_N10_40nm -->
     <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
     <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="7.247000e-11" mux_trans_size="1.222260" buf_size="auto"/>
   </switchlist>
 
   <segmentlist>
-		<!--- The following segment data is pulled from Table 1 of the NetCraker paper by Morten B. Petersen, 
+		<!--- The following segment data is pulled from Table 1 of the NetCraker paper by Morten B. Petersen,
     Stefan Nikolić and Mirjana Stojilović: see https://dl.acm.org/doi/10.1145/3431920.3439285. Frequencies
-    are calculated by dividing each wire segments count in the horizontal/vertical direction 
+    are calculated by dividing each wire segments count in the horizontal/vertical direction
     by the total width/hight of the architecture -->
 
     <!-- TODO: To more accurately approximate the seven series, support for both unidirectional and
-    bidirectional segments within the same segmentlist is needed. For now we declare all segments as 
+    bidirectional segments within the same segmentlist is needed. For now we declare all segments as
     unidirectional -->
 
-    <!-- TODO: For proper timing, Xilinx specific values for Rmetal and Cmetal are required. 
+    <!-- TODO: For proper timing, Xilinx specific values for Rmetal and Cmetal are required.
     For now we approximate using the values given in the k6_N10_40nm arch -->
-		
+
 		<segment axis="x" name="len1_x" freq="0.258064" length="1" type="unidir" Rmetal="101" Cmetal="22.5e-15">
 			<mux name="0"/>
 			<sb type="pattern">1 1</sb>
@@ -189,24 +189,24 @@
 			<cb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1</cb>
 		</segment>
 
-	
 
-  <!-- TODO: Support in VPR for diagonal wires is currently in the works. 
-  Until full support for this feature is implemented, this part of the 
+
+  <!-- TODO: Support in VPR for diagonal wires is currently in the works.
+  Until full support for this feature is implemented, this part of the
   Xilinx routing is excluded -->
 
 	</segmentlist>
   <complexblocklist>
     <!-- Define I/O pads begin -->
-    <!-- The structure of the IO from the k6_N10_40nm arch is 
-    used here to approximate the seven series IO. Timing values 
+    <!-- The structure of the IO from the k6_N10_40nm arch is
+    used here to approximate the seven series IO. Timing values
     are changed to match the seven series.-->
     <pb_type name="io">
       <input name="outpad" num_pins="1"/>
       <output name="inpad" num_pins="1"/>
       <clock name="clock" num_pins="1"/>
       <!-- IOs can operate as either inputs or outputs.
-		   Delays below are pulled from the IOBUF description 
+		   Delays below are pulled from the IOBUF description
        in f4pga/symbiflow's arch.timing.xml
 		   -->
       <mode name="inpad">
@@ -232,7 +232,7 @@
         </interconnect>
       </mode>
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <!-- IOs go on the periphery of the FPGA, for consistency, 
+      <!-- IOs go on the periphery of the FPGA, for consistency,
 			make it physically equivalent on all sides so that only one definition of I/Os is needed.
 		  -->
       <!-- Place I/Os on the sides of the FPGA -->
@@ -339,7 +339,7 @@
             <T_hold clock="clk" port="FDSE.D" value="1.81e-10"/>
             <T_clock_to_Q clock="clk" max="3.03e-10" port="FDSE.Q" min="9.900000000000001e-11"/>
           </pb_type>
-          <!-- The following interconnect matches that of the seven series. 
+          <!-- The following interconnect matches that of the seven series.
           Delays are pulled from the f4pga/symbiflow arch -->
           <interconnect>
             <mux name="AOUTMUX" input="ALUT.O5 ALUT.O6 FDSE[0].Q" output="fle.outMUX">
@@ -377,13 +377,14 @@
           <direct name="dir10" input="fle[3].outMUX" output="slice.O[9]"/>
           <direct name="dir11" input="fle[3].out" output="slice.O[10]"/>
           <direct name="dir12" input="fle[3].outQ" output="slice.O[11]"/>
-          <direct name="inA" input="slice.I[5:0]" output="fle[0].in"/>          
+          <direct name="inA" input="slice.I[5:0]" output="fle[0].in"/>
           <direct name="inB" input="slice.I[12:7]" output="fle[1].in"/>
           <direct name="inC" input="slice.I[19:14]" output="fle[2].in"/>
           <direct name="inD" input="slice.I[26:21]" output="fle[3].in"/>
         </interconnect>
       </pb_type>
-      <!-- :: EXPLAIN Crossbar here -->
+      <!-- Partial Crossbar with each input to the slice connected to 3 outputs from the same slice.
+      Values are taken from prjxray-db/artix7/tile_int_l -->
       <interconnect>
         <direct name="top_slice" input="clb.I[27:0]" output="slice[0].I"/>
         <direct name="bottom_slice" input="clb.I[55:28]" output="slice[1].I"/>
