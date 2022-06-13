@@ -22,6 +22,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <algorithm> // std::fill
 #include <math.h>
 #include "odin_types.h"
 #include "odin_globals.h"
@@ -244,50 +245,50 @@ void calculate_addsub_statistics(node_list_t* addsub) {
 }
 void count_node_type(nnode_t* node) {
     switch (node->type) {
-        case LOGICAL_OR:
-        case LOGICAL_AND:
-        case LOGICAL_NOR:
-        case LOGICAL_NAND:
-        case LOGICAL_XOR:
-        case LOGICAL_XNOR:
-        case LOGICAL_NOT:
+        case LOGICAL_OR:   //fallthrough
+        case LOGICAL_AND:  //fallthrough
+        case LOGICAL_NOR:  //fallthrough
+        case LOGICAL_NAND: //fallthrough
+        case LOGICAL_XOR:  //fallthrough
+        case LOGICAL_XNOR: //fallthrough
+        case LOGICAL_NOT:  //fallthrough
             num_removed_nodes[node->type]++;
             num_removed_nodes[GENERIC]++;
             break;
 
-        case MUX_2: //fallthrough
-        case SMUX_2:
+        case MUX_2:  //fallthrough
+        case SMUX_2: //fallthrough
             num_removed_nodes[MUX_2]++;
             num_removed_nodes[GENERIC]++;
             break;
 
-        case GENERIC:
+        case GENERIC: //fallthrough
             num_removed_nodes[node->type]++;
             break;
 
-        case MINUS:
+        case MINUS: //fallthrough
             /* Minus nodes are built of Add nodes */
             num_removed_nodes[ADD]++;
             break;
 
         case PAD_NODE: //fallthrough
-        case GND_NODE:
-        case VCC_NODE:
+        case GND_NODE: //fallthrough
+        case VCC_NODE: //fallthrough
             /* These are irrelevent so we dont output */
             break;
 
-        case INPUT_NODE: //fallthrough
-        case OUTPUT_NODE:
+        case INPUT_NODE:  //fallthrough
+        case OUTPUT_NODE: //fallthrough
             /* these stay untouched but are not added to the total*/
             num_removed_nodes[node->type]++;
             break;
 
         case CLOCK_NODE: //fallthrough
-        case FF_NODE:
-        case MULTIPLY:
-        case ADD:
-        case MEMORY:
-        case HARD_IP:
+        case FF_NODE:    //fallthrough
+        case MULTIPLY:   //fallthrough
+        case ADD:        //fallthrough
+        case MEMORY:     //fallthrough
+        case HARD_IP:    //fallthrough
             /* these stay untouched */
             num_removed_nodes[node->type]++;
             break;
@@ -300,11 +301,16 @@ void count_node_type(nnode_t* node) {
 }
 
 void report_removed_nodes(long long* node_list) {
-    if (!useless_nodes.node) return;
+    // return if there is no removed logic
+    if (!useless_nodes.node)
+        return;
+
     warning_message(NETLIST, unknown_location, "%s", "Following unused node(s) removed from the netlist:\n");
     for (int i = 0; i < operation_list_END; i++) {
-        if (node_list[i] > 0) {
-            std::string msg = std::string("Number of removed <") + operation_list_STR[i][ODIN_LONG_STRING] + "> node(s): ";
+        if (node_list[i] > UNUSED_NODE_TYPE) {
+            std::string msg = std::string("Number of removed <")
+                              + operation_list_STR[i][ODIN_LONG_STRING]
+                              + "> node(s): ";
             printf("%-42s%lld\n", msg.c_str(), node_list[i]);
         }
     }
