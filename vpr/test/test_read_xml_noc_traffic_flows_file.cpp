@@ -359,4 +359,56 @@ namespace{
             CHECK(check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_ref, test_noc_traffic_flows_file_name) == false);
         }
     }
+    TEST_CASE("test_check_for_duplicate_traffic_flow", "[vpr_noc_traffic_flows_parser]"){
+
+        // filler data for the xml information
+        // data for the xml parsing
+        pugi::xml_node test;
+        pugiutil::loc_data test_location;
+
+        // get the global noc information
+        NocContext& noc_ctx = g_vpr_ctx.mutable_noc();
+        // delete any previously created traffic flow info
+        noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
+
+        // define arbritary values for traffic flow bandwidths and latency
+        double traffic_flow_bandwidth = 0.0;
+        double traffic_flow_latency = 0.0;
+
+        SECTION("Test case where there are duplicate traffic flows"){
+
+            // create some sample clusterblock ids that can be used to generate traffic flows
+            ClusterBlockId router_block_zero_id(0);
+            ClusterBlockId router_block_one_id(1);
+
+            // create sample router block names that can be used to create a traffic flow
+            std::string router_block_zero = "router_block_zero";
+            std::string router_block_one = "router_block_one";
+
+            // now create a traffic flow
+            noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_block_zero, router_block_one, router_block_zero_id, router_block_one_id, traffic_flow_bandwidth, traffic_flow_latency);
+
+            // now run the test function with the situation where another traffic flow is being added with the exact same source and sink routers as above
+            // we expect the function to fail and erro to be thrown
+            REQUIRE_THROWS_WITH(check_for_duplicate_traffic_flow(router_block_zero_id, router_block_one_id, test, test_location, noc_ctx.noc_traffic_flows_storage), "The supplied traffic flow is a duplicate of another traffic flow (contain the same source and sink routers). Duplicate traffic flows are not allowed.");
+        }
+        SECTION("Test case where there are no duplicate traffic flows"){
+            
+            // create some sample clusterblock ids that can be used to generate traffic flows
+            ClusterBlockId router_block_zero_id(0);
+            ClusterBlockId router_block_one_id(1);
+            ClusterBlockId router_block_two_id(2);
+
+            // create sample router block names that can be used to create a traffic flow
+            std::string router_block_zero = "router_block_zero";
+            std::string router_block_one = "router_block_one";
+
+            // now create a traffic flow
+            noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_block_zero, router_block_one, router_block_zero_id, router_block_one_id, traffic_flow_bandwidth, traffic_flow_latency);
+
+            // now run the test function with the situation where another traffic flow is being added with sink router than what was used above
+            // we expect the function to pass and no error to be thrown
+            REQUIRE_NOTHROW(check_for_duplicate_traffic_flow(router_block_zero_id, router_block_two_id, test, test_location, noc_ctx.noc_traffic_flows_storage));
+        }
+    }
 }
