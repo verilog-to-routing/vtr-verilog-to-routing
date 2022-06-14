@@ -747,7 +747,7 @@ There may be times when a regression test fails its QoR test because its golden_
 Once the `-check_golden` command passes, the changes to the golden result can be committed so that the reg test will pass in future runs of vtr_reg_nightly_test3.
 
 ** **Attention** **: Even though the parsed files are located in different locations, the names of the parsed files 
-should differ.
+should be different.
 
 # Adding Tests
 
