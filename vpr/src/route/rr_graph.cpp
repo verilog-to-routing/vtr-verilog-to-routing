@@ -1695,13 +1695,13 @@ void free_rr_graph() {
 }
 
 static void add_internal_rr_class(const t_class* class_inf,
-                         const int class_id,
-                         RRGraphBuilder& rr_graph_builder,
-                         t_physical_tile_type_ptr physical_tile,
-                         const int i,
-                         const int j,
-                         t_rr_edge_info_set& rr_edges_to_create,
-                         const int delayless_switch) {
+                                  const int class_id,
+                                  RRGraphBuilder& rr_graph_builder,
+                                  t_physical_tile_type_ptr physical_tile,
+                                  const int i,
+                                  const int j,
+                                  t_rr_edge_info_set& rr_edges_to_create,
+                                  const int delayless_switch) {
     VTR_ASSERT(!is_class_on_tile(physical_tile, class_id));
     RRNodeId class_inode = RRNodeId::INVALID();
 
@@ -1748,13 +1748,13 @@ static void add_internal_rr_class(const t_class* class_inf,
 }
 
 static void add_internal_rr_ipin_and_opin(RRGraphBuilder& rr_graph_builder,
-                                 t_physical_tile_type_ptr physical_tile,
-                                 const int pin_ptc,
-                                 const int i,
-                                 const int j,
-                                 const int width_offset,
-                                 const int height_offset,
-                                 const e_side side) {
+                                          t_physical_tile_type_ptr physical_tile,
+                                          const int pin_ptc,
+                                          const int i,
+                                          const int j,
+                                          const int width_offset,
+                                          const int height_offset,
+                                          const e_side side) {
     VTR_ASSERT(!is_pin_on_tile(physical_tile, pin_ptc));
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -1984,7 +1984,9 @@ static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builde
             int class_id = class_pair.first;
             auto class_inf = class_pair.second;
             /* Add the IPIN->SINK and SRC->OPIN edges */
-            VTR_ASSERT(class_id >= 0);
+            /* We assume that the physical number of internal classes is higher than the number of
+             * classes on the border of the tile */
+            VTR_ASSERT(class_id >= type->class_inf.size());
             add_internal_rr_class(class_inf,
                          class_id,
                          rr_graph_builder,
@@ -1997,7 +1999,9 @@ static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builde
 
         auto pins = get_cluster_internal_ipin_opin(cluster_blk_id);
         for (auto pin : pins) {
-            VTR_ASSERT(pin >= 0);
+            /* We assume that the physical number of an internal pin is higher that the number of
+             * pins on the border of the tile */
+            VTR_ASSERT(pin >= type->num_pins);
             add_internal_rr_ipin_and_opin(rr_graph_builder,
                                           physical_tile,
                                           pin,
