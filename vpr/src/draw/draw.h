@@ -15,6 +15,7 @@
 #    include "search_bar.h"
 #    include "draw_debug.h"
 #    include "manual_moves.h"
+#    include "vtr_ndoffsetmatrix.h"
 
 extern ezgl::application::settings settings;
 extern ezgl::application application;
@@ -22,29 +23,35 @@ extern ezgl::application application;
 #endif /* NO_GRAPHICS */
 
 void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> timing_info);
+
 //Initializes the drawing locations.
 //FIXME: Currently broken if no rr-graph is loaded
 void init_draw_coords(float clb_width);
 
+/* Sets the static show_graphics and gr_automode variables to the    *
+ * desired values.  They control if graphics are enabled and, if so, *
+ * how often the user is prompted for input.                         */
 void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics, std::string graphics_commands);
 
+/* Allocates the structures needed to draw the placement and routing.*/
 void alloc_draw_structs(const t_arch* arch);
+
+/* Free everything allocated by alloc_draw_structs. Called after close_graphics()
+ * in vpr_api.c. */
 void free_draw_structs();
 
 #ifndef NO_GRAPHICS
-
-void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen, const e_side& pin_side);
-void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, const e_side& pin_side);
-
-void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d start, ezgl::point2d end, float relative_position = 1., float arrow_size = DEFAULT_ARROW_SIZE);
-void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d loc, ezgl::point2d start, ezgl::point2d end, float arrow_size = DEFAULT_ARROW_SIZE);
-void draw_triangle_along_line(ezgl::renderer* g, float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size = DEFAULT_ARROW_SIZE);
-
 const ezgl::color SELECTED_COLOR = ezgl::GREEN;
 const ezgl::color DRIVES_IT_COLOR = ezgl::RED;
 const ezgl::color DRIVEN_BY_IT_COLOR = ezgl::LIGHT_MEDIUM_BLUE;
 
 const float WIRE_DRAWING_WIDTH = 0.5;
+
+/* Find the edge between two rr nodes */
+t_edge_size find_edge(int prev_inode, int inode);
+
+/* Returns the track number of this routing resource node inode. */
+int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track);
 
 //Returns the drawing coordinates of the specified pin
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin);
@@ -52,38 +59,24 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin);
 //Returns the drawing coordinates of the specified tnode
 ezgl::point2d tnode_draw_coord(tatum::NodeId node);
 
-void annotate_draw_rr_node_costs(ClusterNetId net, int sink_rr_node);
-void clear_draw_rr_annotations();
-
+/* Converts a vtr Color to a ezgl Color. */
 ezgl::color to_ezgl_color(vtr::Color<float> color);
 
-void draw_screen();
+/* This helper function determines whether a net has been highlighted. The highlighting
+ * could be caused by the user clicking on a routing resource, toggled, or
+ * fan-in/fan-out of a highlighted node. */
+bool draw_if_net_highlighted(ClusterNetId inet);
+std::vector<int> trace_routed_connection_rr_nodes(
+    const ClusterNetId net_id,
+    const int driver_pin,
+    const int sink_pin);
 
-// search bar related functions
-ezgl::rectangle draw_get_rr_chan_bbox(int inode);
-void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId blk_id);
-void highlight_nets(char* message, int hit_node);
-void draw_highlight_fan_in_fan_out(const std::set<int>& nodes);
-std::set<int> draw_expand_non_configurable_rr_nodes(int hit_node);
-void deselect_all();
-
-// toggle functions
-void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_congestion(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_routing_congestion_cost(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void set_net_alpha_value(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-void set_net_alpha_value_with_enter(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-float get_net_alpha();
-
-ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
+/* Helper function for trace_routed_connection_rr_nodes
+ * Adds the rr nodes linking rt_node to sink_rr_node to rr_nodes_on_path
+ * Returns true if rt_node is on the path. */
+bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node,
+                                             int sink_rr_node,
+                                             std::vector<int>& rr_nodes_on_path);
 
 /* This routine highlights the blocks affected in the latest move      *
  * It highlights the old and new locations of the moved blocks         *
@@ -102,6 +95,13 @@ void clear_colored_locations();
 // If the input loc is marked in colored_locations vector, the function will return true and the correspnding color is sent back in loc_color
 // otherwise, the function returns false (the location isn't among the highlighted locations)
 bool highlight_loc_with_specific_color(int x, int y, ezgl::color& loc_color);
+
+/* Because the list of possible block type colours is finite, we wrap around possible colours if there are more
+ * block types than colour choices. This ensures we support any number of types, although the colours may repeat.*/
+ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
+
+/* Lightens a color's luminance [0, 1] by an aboslute 'amount' */
+ezgl::color lighten_color(ezgl::color color, float amount);
 
 #endif /* NO_GRAPHICS */
 

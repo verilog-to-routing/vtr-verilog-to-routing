@@ -12,7 +12,7 @@
 #include "vtr_time.h"
 #include "vpr_error.h"
 
-void ClockRRGraphBuilder::create_and_append_clock_rr_graph(int num_seg_types,
+void ClockRRGraphBuilder::create_and_append_clock_rr_graph(int num_seg_types_x,
                                                            t_rr_edge_info_set* rr_edges_to_create) {
     vtr::ScopedStartFinishTimer timer("Build clock network routing resource graph");
 
@@ -20,17 +20,17 @@ void ClockRRGraphBuilder::create_and_append_clock_rr_graph(int num_seg_types,
     auto& clock_networks = device_ctx.clock_networks;
     auto& clock_routing = device_ctx.clock_connections;
 
-    create_clock_networks_wires(clock_networks, num_seg_types, rr_edges_to_create);
+    create_clock_networks_wires(clock_networks, num_seg_types_x, rr_edges_to_create);
     create_clock_networks_switches(clock_routing, rr_edges_to_create);
 }
 
 // Clock network information comes from the arch file
 void ClockRRGraphBuilder::create_clock_networks_wires(const std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
-                                                      int num_segments,
+                                                      int num_segments_x,
                                                       t_rr_edge_info_set* rr_edges_to_create) {
     // Add rr_nodes for each clock network wire
     for (auto& clock_network : clock_networks) {
-        clock_network->create_rr_nodes_for_clock_network_wires(*this, rr_nodes_, *rr_graph_builder_, rr_edges_to_create, num_segments);
+        clock_network->create_rr_nodes_for_clock_network_wires(*this, rr_nodes_, *rr_graph_builder_, rr_edges_to_create, num_segments_x);
     }
 
     // Reduce the capacity of rr_nodes for performance
@@ -178,6 +178,13 @@ size_t ClockRRGraphBuilder::estimate_additional_nodes(const DeviceGrid& grid) {
     }
 
     return num_additional_nodes;
+}
+
+void ClockRRGraphBuilder::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    for (auto& clock_network : device_ctx.clock_networks)
+        clock_network->map_relative_seg_indices(indices_map);
 }
 
 void ClockRRGraphBuilder::add_edge(t_rr_edge_info_set* rr_edges_to_create,
