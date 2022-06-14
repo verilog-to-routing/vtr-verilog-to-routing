@@ -216,10 +216,10 @@ class t_rr_graph_storage {
     const char* node_side_string(RRNodeId id) const;
 
     /* PTC get methods */
-    short node_ptc_num(RRNodeId id) const;
-    short node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
-    short node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
-    short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_ptc_num(RRNodeId id) const;
+    int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
+    int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /* Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
     t_edge_size fan_in(RRNodeId id) const {
@@ -764,10 +764,10 @@ class t_rr_graph_view {
     }
 
     /* PTC get methods */
-    short node_ptc_num(RRNodeId id) const;
-    short node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
-    short node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
-    short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_ptc_num(RRNodeId id) const;
+    int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
+    int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /* Retrieve fan_in for RRNodeId. */
     t_edge_size fan_in(RRNodeId id) const {

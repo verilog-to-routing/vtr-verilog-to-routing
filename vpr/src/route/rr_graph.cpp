@@ -1986,7 +1986,7 @@ static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builde
             /* Add the IPIN->SINK and SRC->OPIN edges */
             /* We assume that the physical number of internal classes is higher than the number of
              * classes on the border of the tile */
-            VTR_ASSERT(class_id >= type->class_inf.size());
+            VTR_ASSERT(class_id >= (int)type->class_inf.size());
             add_internal_rr_class(class_inf,
                          class_id,
                          rr_graph_builder,
