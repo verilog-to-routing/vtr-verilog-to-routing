@@ -1,5 +1,5 @@
 #ifndef VPR_ERROR_H
-#define VPR_ERROR_H
+#    define VPR_ERROR_H
 
 /**
  * @file
@@ -35,22 +35,21 @@
  * 
  */
 
+#    include <cstdarg>
+#    include <string>
+#    include <unordered_set>
 
-#include <cstdarg>
-#include <string>
-#include <unordered_set>
-
-#include "vtr_error.h"
+#    include "vtr_error.h"
 
 /// This describes the error types seen in VPR
 enum e_vpr_error {
-    VPR_ERROR_UNKNOWN = 0,  /// Unknown Error
+    VPR_ERROR_UNKNOWN = 0, /// Unknown Error
 
     // Flow errors
-    VPR_ERROR_ARCH,         /// Error while parsing the architecture description file
-    VPR_ERROR_PACK,         /// Error while packing the netlist
-    VPR_ERROR_PLACE,        /// Error while placing the netlist
-    VPR_ERROR_ROUTE,        /// Error while routing the netlist
+    VPR_ERROR_ARCH,  /// Error while parsing the architecture description file
+    VPR_ERROR_PACK,  /// Error while packing the netlist
+    VPR_ERROR_PLACE, /// Error while placing the netlist
+    VPR_ERROR_ROUTE, /// Error while routing the netlist
     VPR_ERROR_TIMING,
     VPR_ERROR_POWER,
     VPR_ERROR_SDC,
@@ -67,7 +66,7 @@ enum e_vpr_error {
     VPR_ERROR_CLB_NETLIST,
     VPR_ERROR_ANALYSIS,
     VPR_ERROR_INTERRUPTED,
-    VPR_ERROR_DRAW,         /// Error while drawing the FPGA device
+    VPR_ERROR_DRAW, /// Error while drawing the FPGA device
 };
 /// \cond DO NOT DOCUMENT
 typedef enum e_vpr_error t_vpr_error_type;
@@ -111,15 +110,15 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
 //
 // g++ > 2.6 define __PRETTY_FUNC__ which includes class/namespace/overload
 // information, so we prefer to use it if possible
-#define VPR_THROW_FUNCTION __func__
-#ifdef __GNUC__
-#    ifdef __GNUC_MINOR__
-#        if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
-#            undef VPR_THROW_FUNCTION
-#            define VPR_THROW_FUNCTION __PRETTY_FUNCTION__
+#    define VPR_THROW_FUNCTION __func__
+#    ifdef __GNUC__
+#        ifdef __GNUC_MINOR__
+#            if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
+#                undef VPR_THROW_FUNCTION
+#                define VPR_THROW_FUNCTION __PRETTY_FUNCTION__
+#            endif
 #        endif
 #    endif
-#endif
 
 /*
  * Unconditionally throws a VprError condition with automatically specified
@@ -130,10 +129,10 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
  *
  * This macro is a wrapper around vpr_throw().
  */
-#define VPR_THROW(type, ...)                              \
-    do {                                                  \
-        vpr_throw(type, __FILE__, __LINE__, __VA_ARGS__); \
-    } while (false)
+#    define VPR_THROW(type, ...)                              \
+        do {                                                  \
+            vpr_throw(type, __FILE__, __LINE__, __VA_ARGS__); \
+        } while (false)
 
 /*
  * VPR_FATAL_ERROR() is used to signal an *unconditional* fatal error which should
@@ -141,10 +140,10 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
  *
  * This macro is a wrapper around VPR_THOW()
  */
-#define VPR_FATAL_ERROR(...)    \
-    do {                        \
-        VPR_THROW(__VA_ARGS__); \
-    } while (false)
+#    define VPR_FATAL_ERROR(...)    \
+        do {                        \
+            VPR_THROW(__VA_ARGS__); \
+        } while (false)
 
 /*
  * VPR_ERROR() is used to signal an error (potentially non-fatal) which by
@@ -155,10 +154,10 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
  * specifies file and line number of call site.
  *
  */
-#define VPR_ERROR(type, ...)                                                                \
-    do {                                                                                    \
-        vpr_throw_opt(type, VPR_THROW_FUNCTION, __func__, __FILE__, __LINE__, __VA_ARGS__); \
-    } while (false)
+#    define VPR_ERROR(type, ...)                                                                \
+        do {                                                                                    \
+            vpr_throw_opt(type, VPR_THROW_FUNCTION, __func__, __FILE__, __LINE__, __VA_ARGS__); \
+        } while (false)
 
 #endif
 /// \endcond

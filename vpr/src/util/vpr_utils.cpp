@@ -1496,7 +1496,7 @@ void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int
 
     if (vtr::split(src_string).size() > 1) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                  "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
+                        "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
     }
 
     // parse out the pb_type and port name, possibly pin_indices
