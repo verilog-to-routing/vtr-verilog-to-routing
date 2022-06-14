@@ -303,16 +303,17 @@ For the very large runs, you can submit your runs on a large cluster. A template
 a Slurm-managed cluster can be found under vtr_flow/tasks/slurm/
 
 ## Continuous integration (CI)
-Once the changes are pushed into the remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
+For the following tests, you can use remote servers instead of running them locally. Once the changes are pushed into the 
+remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
 will be triggered. The following tests are included in the workflow:
-* [vtr_reg_nightly_test1-3](./README.developers.md#vtr_reg_nightly_test1-3)
-* [vtr_reg_strong](./README.developers.md#vtr_reg_strong)
+* [vtr_reg_nightly_test1-3](#vtr_reg_nightly_test1-3)
+* [vtr_reg_strong](#vtr_reg_strong)
 * vtr_reg_yosys
 * vtr_reg_yosys_odin
 * odin_tech_strong
 * odin_reg_strong
 
-instructions on how to gather QoR results of CI runs can be found [here](./README.developers.md#Example:-Extracting-QoR-Data-from-CI-Runs).
+instructions on how to gather QoR results of CI runs can be found [here](#example-extracting-qor-data-from-ci-runs).
 
 #### Re-run CI Tests
 In the case that you want to re-run the CI tests, due to certain issues such as infrastructure failure,
@@ -586,7 +587,7 @@ Assume that we want to get the QoR results for "vtr_reg_nightly_test3". In the a
 contained in this test suit (vtr_reg_nightly_test3.) In the directory related to each benchmark, there is another directory
 named *run001*. Two files are here: *qor_results.txt*, and *parse_results.txt*. QoR results for all circuits tested in this
 benchmark are stored in these files.
-Using these parsed results, you can do a detailed QoR comparison using the instructions given [here](./README.developers.md#Comparing QoR Measurements).
+Using these parsed results, you can do a detailed QoR comparison using the instructions given [here](#comparing-qor-measurements).
 ![Parse File Dir](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/parse_result_dir.png)
 
 ** **Attention** ** If the previous run is not finished, you will not be able to re-run the CI tests. To circumvent this limitation,
