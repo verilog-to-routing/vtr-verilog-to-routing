@@ -591,24 +591,24 @@ const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
     return SIDE_STRING[NUM_SIDES];
 }
 
-void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, short new_ptc_num) {
+void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, int new_ptc_num) {
     node_ptc_[id].ptc_.pin_num = new_ptc_num; //TODO: eventually remove
 }
-void t_rr_graph_storage::set_node_pin_num(RRNodeId id, short new_pin_num) {
+void t_rr_graph_storage::set_node_pin_num(RRNodeId id, int new_pin_num) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
         VTR_LOG_ERROR("Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.pin_num = new_pin_num;
 }
 
-void t_rr_graph_storage::set_node_track_num(RRNodeId id, short new_track_num) {
+void t_rr_graph_storage::set_node_track_num(RRNodeId id, int new_track_num) {
     if (node_type(id) != CHANX && node_type(id) != CHANY) {
         VTR_LOG_ERROR("Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.track_num = new_track_num;
 }
 
-void t_rr_graph_storage::set_node_class_num(RRNodeId id, short new_class_num) {
+void t_rr_graph_storage::set_node_class_num(RRNodeId id, int new_class_num) {
     if (node_type(id) != SOURCE && node_type(id) != SINK) {
         VTR_LOG_ERROR("Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'", node_type_string(id));
     }
