@@ -1791,26 +1791,40 @@ struct t_lut_element {
     }
 };
 
-/* Network-on-chip(NoC) Router data type used to identify 
- * connections regarding individual routers in the network. */
+/**
+ * Represents a Network-on-chip(NoC) Router data type. It is used
+ * to store individual router information when parsing the arch file.
+ * */
 struct t_router {
+    /** A unique id provided by the user to identify a router. Must be a positive value*/
     int id = -1;
 
+    /** A value representing the approximate horizontal position on the FPGA device where the router
+     * tile is located*/
     double device_x_position = -1;
+    /** A value representing the approximate vertical position on the FPGA device where the router
+     * tile is located*/
     double device_y_position = -1;
 
+    /** A list of router ids that are connected to the current router*/
     std::vector<int> connection_list;
 };
 
-/* Network-on-chip(NoC) data type used to store the network 
- * properties and used when builidng a dedicated on-chip network*/
+/**
+ * Network-on-chip(NoC) data type used to store the network properties
+ * when parsing the arh file. This is used when building the dedicated on-chip
+ * network during the device creation.
+ * */
 struct t_noc_inf {
-    double link_bandwidth; // in Gbps
-    double link_latency;   // in nanoseconds
-    double router_latency; // in nanoseconds
+    double link_bandwidth; /*!< The maximum bandwidth supported in the NoC. This value is the same for all links. units in bps*/
+    double link_latency;   /*!< The worst case latency seen when traversing a link. This value is the same for all links. units in seconds*/
+    double router_latency; /*!< The worst case latency seen when traversing a router. This value is the same for all routers, units in seconds*/
 
+    /** A list of all routers in the NoC*/
     std::vector<t_router> router_list;
 
+    /** Represents the name of a router tile on the FPGA device. This should match the name used in the arch file when
+     * describing a NoC router tile within the FPGA device*/
     std::string noc_router_tile_name;
 };
 

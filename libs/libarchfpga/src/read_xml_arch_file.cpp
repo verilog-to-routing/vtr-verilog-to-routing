@@ -276,7 +276,7 @@ static T* get_type_by_name(const char* type_name, std::vector<T>& types);
 
 static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size);
 
-static bool parse_noc_router_connection_list(std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info);
+static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
 static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
@@ -4669,8 +4669,11 @@ static void processTopology(pugi::xml_node topology_tag, const pugiutil::loc_dat
     // The topology tag should have no attributes, check that
     pugiutil::expect_only_attributes(topology_tag, {}, loc_data);
 
-    // stores router information that includes the number of connections a router has within a given topology and also the number of times a router was declared in the arch file using the <router> tag
-    // in the datastructure below, the router id is the key and stored data is a pair, where the first element is describes the number router declarations and the second element describes the numbe router connections
+    /**
+     * Stores router information that includes the number of connections a router has within a given topology and also the number of times a router was declared in the arch file using the <router> tag.
+     * In the datastructure below, the router id is the key and the stored data is a pair, where the first element describes the number of router declarations and the second element describes the number of router connections.
+     * This is used only for erro checking.
+     */
     std::map<int, std::pair<int, int>> routers_in_arch_info;
 
     /* Now go through the children tags of topology, which is basically
@@ -4740,7 +4743,7 @@ static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& l
 
     if (router_connection_list_attribute_value.compare("") != 0) {
         // process the router connection list
-        router_connection_list_result = parse_noc_router_connection_list(router_info.connection_list, router_connection_list_attribute_value, routers_in_arch_info);
+        router_connection_list_result = parse_noc_router_connection_list(router_tag, loc_data, router_info.id, router_info.connection_list, router_connection_list_attribute_value, routers_in_arch_info);
 
         // check if the user provided a legal router connection list
         if (!router_connection_list_result) {
@@ -4852,13 +4855,13 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::
      *
      * THe reasoning for this is to reduce the number of calculated router positions.
      */
-    double vertical_router_seperation = (mesh_region_end_y - mesh_region_start_y) / (mesh_size - 1);
-    double horizontal_router_seperation = (mesh_region_end_x - mesh_region_start_x) / (mesh_size - 1);
+    double vertical_router_separation = (mesh_region_end_y - mesh_region_start_y) / (mesh_size - 1);
+    double horizontal_router_separation = (mesh_region_end_x - mesh_region_start_x) / (mesh_size - 1);
 
     t_router temp_router;
 
     // improper region check
-    if ((vertical_router_seperation <= 0) || (horizontal_router_seperation <= 0)) {
+    if ((vertical_router_separation <= 0) || (horizontal_router_separation <= 0)) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
                        "The NoC region is invalid.");
     }
@@ -4873,8 +4876,8 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::
             // calculate router position
             /* The first and last router of each column or row will be located on the mesh region boundary, the remaining routers will be placed within the region and seperated from other routers using the distance calculated previously.
              */
-            temp_router.device_x_position = (i * horizontal_router_seperation) + mesh_region_start_x;
-            temp_router.device_y_position = (j * vertical_router_seperation) + mesh_region_start_y;
+            temp_router.device_x_position = (i * horizontal_router_separation) + mesh_region_start_x;
+            temp_router.device_y_position = (j * vertical_router_separation) + mesh_region_start_y;
 
             // assign connections
             // check if there is a router to the left
@@ -4919,7 +4922,7 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::
  *
  * Go through the connections here and store them. Also make sure the list is legal.
  */
-static bool parse_noc_router_connection_list(std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
     // we wil be modifying the string so store it in a temporary variable
     // additinally, we peocess substrings seperated by spaces, so we add a space at the end of the string to be able to process the last sub-string
     std::string modified_attribute_value = connection_list_attribute_value + " ";
@@ -4949,19 +4952,23 @@ static bool parse_noc_router_connection_list(std::vector<int>& connection_list, 
 
         // check the case where a duplicate connection was provided
         if (std::find(connection_list.begin(), connection_list.end(), converted_connection) != connection_list.end()) {
-            archfpga_throw("", -1,
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
                            "The router with id:'%d' was included multiple times in the connection list for another router.", converted_connection);
+        }
+
+        // make sure that the current router isn't connected to itself
+        if (router_id == converted_connection){
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
+                          "The router with id:%d was added to its own connection list. A router cannot connect to itself.", router_id);
         }
 
         // if we are here then a legal router id was supplied, so store it
         connection_list.push_back(converted_connection);
-
         // update the connection information for the current router in the connection list
         update_router_info_in_arch(converted_connection, true, routers_in_arch_info);
 
         // before we process the next router connection, we need to delete the substring (current router connection)
         modified_attribute_value.erase(0, position + delimiter.length());
-
         // clear the buffer that stores the router connection in a string format for the next iteration
         single_connection.clear();
     }

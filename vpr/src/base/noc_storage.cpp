@@ -34,7 +34,16 @@ const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links(void) const {
 }
 
 // get router properties
-int NocStorage::get_noc_router_grid_position_x(NocRouterId id) const {
+const NocRouter& NocStorage::get_noc_router(NocRouterId id) const {
+    return router_storage[id];
+}
+
+NocRouter& NocStorage::get_mutable_noc_router(NocRouterId id) {
+    return router_storage[id];
+}
+
+
+/*int NocStorage::get_noc_router_grid_position_x(NocRouterId id) const {
     return router_storage[id].get_router_grid_position_x();
 }
 
@@ -48,10 +57,18 @@ int NocStorage::get_noc_router_id(NocRouterId id) const {
 
 std::string NocStorage::get_noc_router_design_module_ref(NocRouterId id) const {
     return router_storage[id].get_router_design_module_ref();
-}
+}*/
 
 // get link properties
-NocRouterId NocStorage::get_noc_link_source_router(NocLinkId id) const {
+const NocLink& NocStorage::get_noc_link(NocLinkId id) const {
+    link_storage[id];
+}
+
+NocLink& NocStorage::get_mutable_noc_link(NocLinkId id) {
+    return link_storage[id];
+}
+
+/*NocRouterId NocStorage::get_noc_link_source_router(NocLinkId id) const {
     return link_storage[id].get_source_router();
 }
 
@@ -65,7 +82,7 @@ double NocStorage::get_noc_link_bandwidth_usage(NocLinkId id) const {
 
 int NocStorage::get_noc_link_number_of_connections(NocLinkId id) const {
     return link_storage[id].get_number_of_connections();
-}
+}*/
 
 void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
@@ -95,7 +112,7 @@ void NocStorage::add_link(NocRouterId source, NocRouterId sink) {
     return;
 }
 
-// set router properties
+/*// set router properties
 void NocStorage::set_noc_router_design_module_ref(NocRouterId id, std::string design_module_ref) {
     router_storage[id].set_router_design_module_ref(design_module_ref);
 
@@ -113,7 +130,7 @@ void NocStorage::set_noc_link_number_of_connections(NocLinkId id, int number_of_
     link_storage[id].set_number_of_connections(number_of_connections);
 
     return;
-}
+}*/
 
 // assert the flag that indicates whether the noc was built or not
 // Once this function is called, the NoC cannot be modified further.

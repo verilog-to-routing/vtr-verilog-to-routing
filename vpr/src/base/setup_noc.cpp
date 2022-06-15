@@ -299,9 +299,6 @@ static void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model) {
     NocRouterId source_router;
     NocRouterId sink_router;
 
-    // store the id of each new link we create
-    NocLinkId created_link_id;
-
     // start of by creating enough space for the list of outgoing links for each router in the NoC
     noc_model->make_room_for_noc_router_link_list();
 
@@ -317,7 +314,6 @@ static void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model) {
 
             // add the link to the Noc
             noc_model->add_link(source_router, sink_router);
-            ;
         }
     }
 

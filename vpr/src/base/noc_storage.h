@@ -6,7 +6,7 @@
  *
  * The NocStorage class describes the embedded NoC in the
  * FPGA device. This includes all the routers and links in the NoC
- * and the connections between routers. Addiitionally, there are functions
+ * and the connections between routers. Additionally, there are functions
  * to access/modify the components of the NoC.
  *
  */
@@ -23,7 +23,7 @@
 #include "vpr_error.h"
 
 // represents the id of a link that does not exist in the NoC
-const NocLinkId INVALID_LINK_ID(-1);
+constexpr NocLinkId INVALID_LINK_ID(-1);
 
 class NocStorage {
   private:
@@ -60,27 +60,31 @@ class NocStorage {
     const vtr::vector<NocLinkId, NocLink>& get_noc_links(void) const;
 
     // getters for  routers
-    int get_noc_router_grid_position_x(NocRouterId id) const;
+    const NocRouter& get_noc_router(NocRouterId id) const;
+    NocRouter& get_mutable_noc_router(NocRouterId id);
+    /*int get_noc_router_grid_position_x(NocRouterId id) const;
     int get_noc_router_grid_position_y(NocRouterId id) const;
     int get_noc_router_id(NocRouterId id) const;
-    std::string get_noc_router_design_module_ref(NocRouterId id) const;
+    std::string get_noc_router_design_module_ref(NocRouterId id) const;*/
 
     // getters for links
-    NocRouterId get_noc_link_source_router(NocLinkId id) const;
+    const NocLink& get_noc_link(NocLinkId id) const;
+    NocLink& get_mutable_noc_link(NocLinkId id);
+    /*NocRouterId get_noc_link_source_router(NocLinkId id) const;
     NocRouterId get_noc_link_sink_router(NocLinkId id) const;
     double get_noc_link_bandwidth_usage(NocLinkId id) const;
-    int get_noc_link_number_of_connections(NocLinkId id) const;
+    int get_noc_link_number_of_connections(NocLinkId id) const;*/
 
     // setters for the NoC
     void add_router(int id, int grid_position_x, int grid_position_y);
     void add_link(NocRouterId source, NocRouterId sink);
 
-    // setters for the noc router
+   /* // setters for the noc router
     void set_noc_router_design_module_ref(NocRouterId id, std::string design_module_ref);
 
     // setters for the noc link
     void set_noc_link_bandwidth_usage(NocLinkId id, double bandwidth_usage);
-    void set_noc_link_number_of_connections(NocLinkId id, int number_of_connections);
+    void set_noc_link_number_of_connections(NocLinkId id, int number_of_connections);*/
 
     // general utiliy functions
     void finished_building_noc();
