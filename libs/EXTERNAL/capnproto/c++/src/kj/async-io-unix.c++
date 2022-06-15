@@ -51,6 +51,15 @@
 #include <limits.h>
 #include <sys/ioctl.h>
 
+#if !defined(SO_PEERCRED) && defined(LOCAL_PEERCRED)
+#include <sys/ucred.h>
+#endif
+
+#if !defined(SOL_LOCAL) && (__FreeBSD__ || __DragonflyBSD__)
+// On DragonFly or FreeBSD < 12.2 you're supposed to use 0 for SOL_LOCAL.
+#define SOL_LOCAL 0
+#endif
+
 namespace kj {
 
 namespace {
@@ -135,12 +144,34 @@ public:
   virtual ~AsyncStreamFd() noexcept(false) {}
 
   Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes) override {
-    return tryReadInternal(buffer, minBytes, maxBytes, 0);
+    return tryReadInternal(buffer, minBytes, maxBytes, nullptr, 0, {0,0})
+        .then([](ReadResult r) { return r.byteCount; });
+  }
+
+  Promise<ReadResult> tryReadWithFds(void* buffer, size_t minBytes, size_t maxBytes,
+                                     AutoCloseFd* fdBuffer, size_t maxFds) override {
+    return tryReadInternal(buffer, minBytes, maxBytes, fdBuffer, maxFds, {0,0});
+  }
+
+  Promise<ReadResult> tryReadWithStreams(
+      void* buffer, size_t minBytes, size_t maxBytes,
+      Own<AsyncCapabilityStream>* streamBuffer, size_t maxStreams) override {
+    auto fdBuffer = kj::heapArray<AutoCloseFd>(maxStreams);
+    auto promise = tryReadInternal(buffer, minBytes, maxBytes, fdBuffer.begin(), maxStreams, {0,0});
+
+    return promise.then([this, fdBuffer = kj::mv(fdBuffer), streamBuffer]
+                        (ReadResult result) mutable {
+      for (auto i: kj::zeroTo(result.capCount)) {
+        streamBuffer[i] = kj::heap<AsyncStreamFd>(eventPort, fdBuffer[i].release(),
+            LowLevelAsyncIoProvider::TAKE_OWNERSHIP | LowLevelAsyncIoProvider::ALREADY_CLOEXEC);
+      }
+      return result;
+    });
   }
 
   Promise<void> write(const void* buffer, size_t size) override {
-    ssize_t writeResult;
-    KJ_NONBLOCKING_SYSCALL(writeResult = ::write(fd, buffer, size)) {
+    ssize_t n;
+    KJ_NONBLOCKING_SYSCALL(n = ::write(fd, buffer, size)) {
       // Error.
 
       // We can't "return kj::READY_NOW;" inside this block because it causes a memory leak due to
@@ -154,28 +185,57 @@ public:
       return kj::READY_NOW;
     }
 
-    // A negative result means EAGAIN, which we can treat the same as having written zero bytes.
-    size_t n = writeResult < 0 ? 0 : writeResult;
-
-    if (n == size) {
+    if (n < 0) {
+      // EAGAIN -- need to wait for writability and try again.
+      return observer.whenBecomesWritable().then([=]() {
+        return write(buffer, size);
+      });
+    } else if (n == size) {
+      // All done.
       return READY_NOW;
-    }
-
-    // Fewer than `size` bytes were written, therefore we must be out of buffer space. Wait until
-    // the fd becomes writable again.
-    buffer = reinterpret_cast<const byte*>(buffer) + n;
-    size -= n;
-
-    return observer.whenBecomesWritable().then([=]() {
+    } else {
+      // Fewer than `size` bytes were written, but we CANNOT assume we're out of buffer space, as
+      // Linux is known to return partial reads/writes when interrupted by a signal -- yes, even
+      // for non-blocking operations. So, we'll need to write() again now, even though it will
+      // almost certainly fail with EAGAIN. See comments in the read path for more info.
+      buffer = reinterpret_cast<const byte*>(buffer) + n;
+      size -= n;
       return write(buffer, size);
-    });
+    }
   }
 
   Promise<void> write(ArrayPtr<const ArrayPtr<const byte>> pieces) override {
     if (pieces.size() == 0) {
-      return writeInternal(nullptr, nullptr);
+      return writeInternal(nullptr, nullptr, nullptr);
     } else {
-      return writeInternal(pieces[0], pieces.slice(1, pieces.size()));
+      return writeInternal(pieces[0], pieces.slice(1, pieces.size()), nullptr);
+    }
+  }
+
+  Promise<void> writeWithFds(ArrayPtr<const byte> data,
+                             ArrayPtr<const ArrayPtr<const byte>> moreData,
+                             ArrayPtr<const int> fds) override {
+    return writeInternal(data, moreData, fds);
+  }
+
+  Promise<void> writeWithStreams(ArrayPtr<const byte> data,
+                                 ArrayPtr<const ArrayPtr<const byte>> moreData,
+                                 Array<Own<AsyncCapabilityStream>> streams) override {
+    auto fds = KJ_MAP(stream, streams) {
+      return downcast<AsyncStreamFd>(*stream).fd;
+    };
+    auto promise = writeInternal(data, moreData, fds);
+    return promise.attach(kj::mv(fds), kj::mv(streams));
+  }
+
+  Promise<void> whenWriteDisconnected() override {
+    KJ_IF_MAYBE(p, writeDisconnectedPromise) {
+      return p->addBranch();
+    } else {
+      auto fork = observer.whenWriteDisconnected().fork();
+      auto result = fork.addBranch();
+      writeDisconnectedPromise = kj::mv(fork);
+      return kj::mv(result);
     }
   }
 
@@ -213,55 +273,13 @@ public:
     *length = socklen;
   }
 
-  kj::Promise<Maybe<Own<AsyncCapabilityStream>>> tryReceiveStream() override {
-    return tryReceiveFdImpl<Own<AsyncCapabilityStream>>();
+  kj::Maybe<int> getFd() const override {
+    return fd;
   }
 
-  kj::Promise<void> sendStream(Own<AsyncCapabilityStream> stream) override {
-    auto downcasted = stream.downcast<AsyncStreamFd>();
-    auto promise = sendFd(downcasted->fd);
-    return promise.attach(kj::mv(downcasted));
-  }
-
-  kj::Promise<kj::Maybe<AutoCloseFd>> tryReceiveFd() override {
-    return tryReceiveFdImpl<AutoCloseFd>();
-  }
-
-  kj::Promise<void> sendFd(int fdToSend) override {
-    struct msghdr msg;
-    struct iovec iov;
-    union {
-      struct cmsghdr cmsg;
-      char cmsgSpace[CMSG_LEN(sizeof(int))];
-    };
-    memset(&msg, 0, sizeof(msg));
-    memset(&iov, 0, sizeof(iov));
-    memset(cmsgSpace, 0, sizeof(cmsgSpace));
-
-    char c = 0;
-    iov.iov_base = &c;
-    iov.iov_len = 1;
-    msg.msg_iov = &iov;
-    msg.msg_iovlen = 1;
-
-    msg.msg_control = &cmsg;
-    msg.msg_controllen = sizeof(cmsgSpace);
-
-    cmsg.cmsg_len = sizeof(cmsgSpace);
-    cmsg.cmsg_level = SOL_SOCKET;
-    cmsg.cmsg_type = SCM_RIGHTS;
-    *reinterpret_cast<int*>(CMSG_DATA(&cmsg)) = fdToSend;
-
-    ssize_t n;
-    KJ_NONBLOCKING_SYSCALL(n = sendmsg(fd, &msg, 0));
-    if (n < 0) {
-      return observer.whenBecomesWritable().then([this,fdToSend]() {
-        return sendFd(fdToSend);
-      });
-    } else {
-      KJ_ASSERT(n == 1);
-      return kj::READY_NOW;
-    }
+  void registerAncillaryMessageHandler(
+      kj::Function<void(kj::ArrayPtr<AncillaryMessage>)> fn) override {
+    ancillaryMsgCallback = kj::mv(fn);
   }
 
   Promise<void> waitConnected() {
@@ -290,23 +308,162 @@ public:
 private:
   UnixEventPort& eventPort;
   UnixEventPort::FdObserver observer;
+  Maybe<ForkedPromise<void>> writeDisconnectedPromise;
+  Maybe<Function<void(ArrayPtr<AncillaryMessage>)>> ancillaryMsgCallback;
 
-  Promise<size_t> tryReadInternal(void* buffer, size_t minBytes, size_t maxBytes,
-                                  size_t alreadyRead) {
+  Promise<ReadResult> tryReadInternal(void* buffer, size_t minBytes, size_t maxBytes,
+                                      AutoCloseFd* fdBuffer, size_t maxFds,
+                                      ReadResult alreadyRead) {
     // `alreadyRead` is the number of bytes we have already received via previous reads -- minBytes,
     // maxBytes, and buffer have already been adjusted to account for them, but this count must
     // be included in the final return value.
 
     ssize_t n;
-    KJ_NONBLOCKING_SYSCALL(n = ::read(fd, buffer, maxBytes)) {
-      // Error.
+    if (maxFds == 0 && ancillaryMsgCallback == nullptr) {
+      KJ_NONBLOCKING_SYSCALL(n = ::read(fd, buffer, maxBytes)) {
+        // Error.
 
-      // We can't "return kj::READY_NOW;" inside this block because it causes a memory leak due to
-      // a bug that exists in both Clang and GCC:
-      //   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=33799
-      //   http://llvm.org/bugs/show_bug.cgi?id=12286
-      goto error;
+        // We can't "return kj::READY_NOW;" inside this block because it causes a memory leak due to
+        // a bug that exists in both Clang and GCC:
+        //   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=33799
+        //   http://llvm.org/bugs/show_bug.cgi?id=12286
+        goto error;
+      }
+    } else {
+      struct msghdr msg;
+      memset(&msg, 0, sizeof(msg));
+
+      struct iovec iov;
+      memset(&iov, 0, sizeof(iov));
+      iov.iov_base = buffer;
+      iov.iov_len = maxBytes;
+      msg.msg_iov = &iov;
+      msg.msg_iovlen = 1;
+
+      // Allocate space to receive a cmsg.
+      size_t msgBytes;
+      if (ancillaryMsgCallback == nullptr) {
+#if __APPLE__ || __FreeBSD__
+        // Until very recently (late 2018 / early 2019), FreeBSD suffered from a bug in which when
+        // an SCM_RIGHTS message was truncated on delivery, it would not close the FDs that weren't
+        // delivered -- they would simply leak: https://bugs.freebsd.org/131876
+        //
+        // My testing indicates that MacOS has this same bug as of today (April 2019). I don't know
+        // if they plan to fix it or are even aware of it.
+        //
+        // To handle both cases, we will always provide space to receive 512 FDs. Hopefully, this is
+        // greater than the maximum number of FDs that these kernels will transmit in one message
+        // PLUS enough space for any other ancillary messages that could be sent before the
+        // SCM_RIGHTS message to push it back in the buffer. I couldn't find any firm documentation
+        // on these limits, though -- I only know that Linux is limited to 253, and I saw a hint in
+        // a comment in someone else's application that suggested FreeBSD is the same. Hopefully,
+        // then, this is sufficient to prevent attacks. But if not, there's nothing more we can do;
+        // it's really up to the kernel to fix this.
+        msgBytes = CMSG_SPACE(sizeof(int) * 512);
+#else
+        msgBytes = CMSG_SPACE(sizeof(int) * maxFds);
+#endif
+      } else {
+        // If we want room for ancillary messages instead of or in addition to FDs, just use the
+        // same amount of cushion as in the MacOS/FreeBSD case above.
+        // Someday we may want to allow customization here, but there's no immediate use for it.
+        msgBytes = CMSG_SPACE(sizeof(int) * 512);
+      }
+
+      // On Linux, CMSG_SPACE will align to a word-size boundary, but on Mac it always aligns to a
+      // 32-bit boundary. I guess aligning to 32 bits helps avoid the problem where you
+      // surprisingly end up with space for two file descriptors when you only wanted one. However,
+      // cmsghdr's preferred alignment is word-size (it contains a size_t). If we stack-allocate
+      // the buffer, we need to make sure it is aligned properly (maybe not on x64, but maybe on
+      // other platforms), so we want to allocate an array of words (we use void*). So... we use
+      // CMSG_SPACE() and then additionally round up to deal with Mac.
+      size_t msgWords = (msgBytes + sizeof(void*) - 1) / sizeof(void*);
+      KJ_STACK_ARRAY(void*, cmsgSpace, msgWords, 16, 256);
+      auto cmsgBytes = cmsgSpace.asBytes();
+      memset(cmsgBytes.begin(), 0, cmsgBytes.size());
+      msg.msg_control = cmsgBytes.begin();
+      msg.msg_controllen = msgBytes;
+
+#ifdef MSG_CMSG_CLOEXEC
+      static constexpr int RECVMSG_FLAGS = MSG_CMSG_CLOEXEC;
+#else
+      static constexpr int RECVMSG_FLAGS = 0;
+#endif
+
+      KJ_NONBLOCKING_SYSCALL(n = ::recvmsg(fd, &msg, RECVMSG_FLAGS)) {
+        // Error.
+
+        // We can't "return kj::READY_NOW;" inside this block because it causes a memory leak due to
+        // a bug that exists in both Clang and GCC:
+        //   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=33799
+        //   http://llvm.org/bugs/show_bug.cgi?id=12286
+        goto error;
+      }
+
+      if (n >= 0) {
+        // Process all messages.
+        //
+        // WARNING DANGER: We have to be VERY careful not to miss a file descriptor here, because
+        // if we do, then that FD will never be closed, and a malicious peer could exploit this to
+        // fill up our FD table, creating a DoS attack. Some things to keep in mind:
+        // - CMSG_SPACE() could have rounded up the space for alignment purposes, and this could
+        //   mean we permitted the kernel to deliver more file descriptors than `maxFds`. We need
+        //   to close the extras.
+        // - We can receive multiple ancillary messages at once. In particular, there is also
+        //   SCM_CREDENTIALS. The sender decides what to send. They could send SCM_CREDENTIALS
+        //   first followed by SCM_RIGHTS. We need to make sure we see both.
+        size_t nfds = 0;
+        size_t spaceLeft = msg.msg_controllen;
+        Vector<AncillaryMessage> ancillaryMessages;
+        for (struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
+            cmsg != nullptr; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+          if (spaceLeft >= CMSG_LEN(0) &&
+              cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS) {
+            // Some operating systems (like MacOS) do not adjust csmg_len when the message is
+            // truncated. We must do so ourselves or risk overrunning the buffer.
+            auto len = kj::min(cmsg->cmsg_len, spaceLeft);
+            auto data = arrayPtr(reinterpret_cast<int*>(CMSG_DATA(cmsg)),
+                                 (len - CMSG_LEN(0)) / sizeof(int));
+            kj::Vector<kj::AutoCloseFd> trashFds;
+            for (auto fd: data) {
+              kj::AutoCloseFd ownFd(fd);
+              if (nfds < maxFds) {
+                fdBuffer[nfds++] = kj::mv(ownFd);
+              } else {
+                trashFds.add(kj::mv(ownFd));
+              }
+            }
+          } else if (spaceLeft >= CMSG_LEN(0) && ancillaryMsgCallback != nullptr) {
+            auto len = kj::min(cmsg->cmsg_len, spaceLeft);
+            auto data = ArrayPtr<const byte>(CMSG_DATA(cmsg), len - CMSG_LEN(0));
+            ancillaryMessages.add(cmsg->cmsg_level, cmsg->cmsg_type, data);
+          }
+
+          if (spaceLeft >= CMSG_LEN(0) && spaceLeft >= cmsg->cmsg_len) {
+            spaceLeft -= cmsg->cmsg_len;
+          } else {
+            spaceLeft = 0;
+          }
+        }
+
+#ifndef MSG_CMSG_CLOEXEC
+        for (size_t i = 0; i < nfds; i++) {
+          setCloseOnExec(fdBuffer[i]);
+        }
+#endif
+
+        if (ancillaryMessages.size() > 0) {
+          KJ_IF_MAYBE(fn, ancillaryMsgCallback) {
+            (*fn)(ancillaryMessages.asPtr());
+          }
+        }
+
+        alreadyRead.capCount += nfds;
+        fdBuffer += nfds;
+        maxFds -= nfds;
+      }
     }
+
     if (false) {
     error:
       return alreadyRead;
@@ -315,51 +472,41 @@ private:
     if (n < 0) {
       // Read would block.
       return observer.whenBecomesReadable().then([=]() {
-        return tryReadInternal(buffer, minBytes, maxBytes, alreadyRead);
+        return tryReadInternal(buffer, minBytes, maxBytes, fdBuffer, maxFds, alreadyRead);
       });
     } else if (n == 0) {
       // EOF -OR- maxBytes == 0.
       return alreadyRead;
     } else if (implicitCast<size_t>(n) >= minBytes) {
       // We read enough to stop here.
-      return alreadyRead + n;
+      alreadyRead.byteCount += n;
+      return alreadyRead;
     } else {
       // The kernel returned fewer bytes than we asked for (and fewer than we need).
 
       buffer = reinterpret_cast<byte*>(buffer) + n;
       minBytes -= n;
       maxBytes -= n;
-      alreadyRead += n;
+      alreadyRead.byteCount += n;
 
-      KJ_IF_MAYBE(atEnd, observer.atEndHint()) {
-        if (*atEnd) {
-          // We've already received an indication that the next read() will return EOF, so there's
-          // nothing to wait for.
-          return alreadyRead;
-        } else {
-          // As of the last time the event queue was checked, the kernel reported that we were
-          // *not* at the end of the stream. It's unlikely that this has changed in the short time
-          // it took to handle the event, therefore calling read() now will almost certainly fail
-          // with EAGAIN. Moreover, since EOF had not been received as of the last check, we know
-          // that even if it was received since then, whenBecomesReadable() will catch that. So,
-          // let's go ahead and skip calling read() here and instead go straight to waiting for
-          // more input.
-          return observer.whenBecomesReadable().then([=]() {
-            return tryReadInternal(buffer, minBytes, maxBytes, alreadyRead);
-          });
-        }
-      } else {
-        // The kernel has not indicated one way or the other whether we are likely to be at EOF.
-        // In this case we *must* keep calling read() until we either get a return of zero or
-        // EAGAIN.
-        return tryReadInternal(buffer, minBytes, maxBytes, alreadyRead);
-      }
+      // According to David Klempner, who works on Stubby at Google, we sadly CANNOT assume that
+      // we've consumed the whole read buffer here. If a signal is delivered in the middle of a
+      // read() -- yes, even a non-blocking read -- it can cause the kernel to return a partial
+      // result, with data still in the buffer.
+      //     https://bugzilla.kernel.org/show_bug.cgi?id=199131
+      //     https://twitter.com/CaptainSegfault/status/1112622245531144194
+      //
+      // Unfortunately, we have no choice but to issue more read()s until it either tells us EOF
+      // or EAGAIN. We used to have an optimization here using observer.atEndHint() (when it is
+      // non-null) to avoid a redundant call to read(). Alas...
+      return tryReadInternal(buffer, minBytes, maxBytes, fdBuffer, maxFds, alreadyRead);
     }
   }
 
   Promise<void> writeInternal(ArrayPtr<const byte> firstPiece,
-                              ArrayPtr<const ArrayPtr<const byte>> morePieces) {
-    const size_t iovmax = kj::miniposix::iovMax(1 + morePieces.size());
+                              ArrayPtr<const ArrayPtr<const byte>> morePieces,
+                              ArrayPtr<const int> fds) {
+    const size_t iovmax = kj::miniposix::iovMax();
     // If there are more than IOV_MAX pieces, we'll only write the first IOV_MAX for now, and
     // then we'll loop later.
     KJ_STACK_ARRAY(struct iovec, iov, kj::min(1 + morePieces.size(), iovmax), 16, 128);
@@ -375,23 +522,87 @@ private:
       iovTotal += iov[i].iov_len;
     }
 
-    ssize_t writeResult;
-    KJ_NONBLOCKING_SYSCALL(writeResult = ::writev(fd, iov.begin(), iov.size())) {
-      // Error.
-
-      // We can't "return kj::READY_NOW;" inside this block because it causes a memory leak due to
-      // a bug that exists in both Clang and GCC:
-      //   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=33799
-      //   http://llvm.org/bugs/show_bug.cgi?id=12286
-      goto error;
+    if (iovTotal == 0) {
+      KJ_REQUIRE(fds.size() == 0, "can't write FDs without bytes");
+      return kj::READY_NOW;
     }
+
+    ssize_t n;
+    if (fds.size() == 0) {
+      KJ_NONBLOCKING_SYSCALL(n = ::writev(fd, iov.begin(), iov.size()), iovTotal, iov.size()) {
+        // Error.
+
+        // We can't "return kj::READY_NOW;" inside this block because it causes a memory leak due to
+        // a bug that exists in both Clang and GCC:
+        //   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=33799
+        //   http://llvm.org/bugs/show_bug.cgi?id=12286
+        goto error;
+      }
+    } else {
+      struct msghdr msg;
+      memset(&msg, 0, sizeof(msg));
+      msg.msg_iov = iov.begin();
+      msg.msg_iovlen = iov.size();
+
+      // Allocate space to send a cmsg.
+      size_t msgBytes = CMSG_SPACE(sizeof(int) * fds.size());
+      // On Linux, CMSG_SPACE will align to a word-size boundary, but on Mac it always aligns to a
+      // 32-bit boundary. I guess aligning to 32 bits helps avoid the problem where you
+      // surprisingly end up with space for two file descriptors when you only wanted one. However,
+      // cmsghdr's preferred alignment is word-size (it contains a size_t). If we stack-allocate
+      // the buffer, we need to make sure it is aligned properly (maybe not on x64, but maybe on
+      // other platforms), so we want to allocate an array of words (we use void*). So... we use
+      // CMSG_SPACE() and then additionally round up to deal with Mac.
+      size_t msgWords = (msgBytes + sizeof(void*) - 1) / sizeof(void*);
+      KJ_STACK_ARRAY(void*, cmsgSpace, msgWords, 16, 256);
+      auto cmsgBytes = cmsgSpace.asBytes();
+      memset(cmsgBytes.begin(), 0, cmsgBytes.size());
+      msg.msg_control = cmsgBytes.begin();
+      msg.msg_controllen = msgBytes;
+
+      struct cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
+      cmsg->cmsg_level = SOL_SOCKET;
+      cmsg->cmsg_type = SCM_RIGHTS;
+      cmsg->cmsg_len = CMSG_LEN(sizeof(int) * fds.size());
+      memcpy(CMSG_DATA(cmsg), fds.begin(), fds.asBytes().size());
+
+      KJ_NONBLOCKING_SYSCALL(n = ::sendmsg(fd, &msg, 0)) {
+        // Error.
+
+        // We can't "return kj::READY_NOW;" inside this block because it causes a memory leak due to
+        // a bug that exists in both Clang and GCC:
+        //   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=33799
+        //   http://llvm.org/bugs/show_bug.cgi?id=12286
+        goto error;
+      }
+    }
+
     if (false) {
     error:
       return kj::READY_NOW;
     }
 
-    // A negative result means EAGAIN, which we can treat the same as having written zero bytes.
-    size_t n = writeResult < 0 ? 0 : writeResult;
+    if (n < 0) {
+      // Got EAGAIN. Nothing was written.
+      return observer.whenBecomesWritable().then([=]() {
+        return writeInternal(firstPiece, morePieces, fds);
+      });
+    } else if (n == 0) {
+      // Why would a sendmsg() with a non-empty message ever return 0 when writing to a stream
+      // socket? If there's no room in the send buffer, it should fail with EAGAIN. If the
+      // connection is closed, it should fail with EPIPE. Various documents and forum posts around
+      // the internet claim this can happen but no one seems to know when. My guess is it can only
+      // happen if we try to send an empty message -- which we didn't. So I think this is
+      // impossible. If it is possible, we need to figure out how to correctly handle it, which
+      // depends on what caused it.
+      //
+      // Note in particular that if 0 is a valid return here, and we sent an SCM_RIGHTS message,
+      // we need to know whether the message was sent or not, in order to decide whether to retry
+      // sending it!
+      KJ_FAIL_ASSERT("non-empty sendmsg() returned 0");
+    }
+
+    // Non-zero bytes were written. This also implies that *all* FDs were written.
 
     // Discard all data that was written, then issue a new write for what's left (if any).
     for (;;) {
@@ -402,12 +613,12 @@ private:
 
         if (iovTotal == 0) {
           // Oops, what actually happened is that we hit the IOV_MAX limit. Don't wait.
-          return writeInternal(firstPiece, morePieces);
+          return writeInternal(firstPiece, morePieces, nullptr);
         }
 
-        return observer.whenBecomesWritable().then([=]() {
-          return writeInternal(firstPiece, morePieces);
-        });
+        // As with read(), we cannot assume that a short write() really means the write buffer is
+        // full (see comments in the read path above). We have to write again.
+        return writeInternal(firstPiece, morePieces, nullptr);
       } else if (morePieces.size() == 0) {
         // First piece was fully-consumed and there are no more pieces, so we're done.
         KJ_DASSERT(n == firstPiece.size(), n);
@@ -420,71 +631,6 @@ private:
         morePieces = morePieces.slice(1, morePieces.size());
       }
     }
-  }
-
-  template <typename T>
-  kj::Promise<kj::Maybe<T>> tryReceiveFdImpl() {
-    struct msghdr msg;
-    memset(&msg, 0, sizeof(msg));
-
-    struct iovec iov;
-    memset(&iov, 0, sizeof(iov));
-    char c;
-    iov.iov_base = &c;
-    iov.iov_len = 1;
-    msg.msg_iov = &iov;
-    msg.msg_iovlen = 1;
-
-    // Allocate space to receive a cmsg.
-    union {
-      struct cmsghdr cmsg;
-      char cmsgSpace[CMSG_SPACE(sizeof(int))];
-    };
-    msg.msg_control = &cmsg;
-    msg.msg_controllen = sizeof(cmsgSpace);
-
-#ifdef MSG_CMSG_CLOEXEC
-    int recvmsgFlags = MSG_CMSG_CLOEXEC;
-#else
-    int recvmsgFlags = 0;
-#endif
-
-    ssize_t n;
-    KJ_NONBLOCKING_SYSCALL(n = recvmsg(fd, &msg, recvmsgFlags));
-    if (n < 0) {
-      return observer.whenBecomesReadable().then([this]() {
-        return tryReceiveFdImpl<T>();
-      });
-    } else if (n == 0) {
-      return kj::Maybe<T>(nullptr);
-    } else {
-      KJ_REQUIRE(msg.msg_controllen >= sizeof(cmsg),
-          "expected to receive FD over socket; received data instead");
-
-      // We expect an SCM_RIGHTS message with a single FD.
-      KJ_REQUIRE(cmsg.cmsg_level == SOL_SOCKET);
-      KJ_REQUIRE(cmsg.cmsg_type == SCM_RIGHTS);
-      KJ_REQUIRE(cmsg.cmsg_len == CMSG_LEN(sizeof(int)));
-
-      int receivedFd;
-      memcpy(&receivedFd, CMSG_DATA(&cmsg), sizeof(receivedFd));
-      return kj::Maybe<T>(wrapFd(receivedFd, (T*)nullptr));
-    }
-  }
-
-  AutoCloseFd wrapFd(int newFd, AutoCloseFd*) {
-    auto result = AutoCloseFd(newFd);
-#ifndef MSG_CMSG_CLOEXEC
-    setCloseOnExec(result);
-#endif
-    return result;
-  }
-  Own<AsyncCapabilityStream> wrapFd(int newFd, Own<AsyncCapabilityStream>*) {
-    return kj::heap<AsyncStreamFd>(eventPort, newFd,
-#ifdef MSG_CMSG_CLOEXEC
-        LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
-#endif
-        LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
   }
 };
 
@@ -781,6 +927,10 @@ public:
     return filter.shouldAllowParse(&addr.generic, addrlen);
   }
 
+  kj::Own<PeerIdentity> getIdentity(LowLevelAsyncIoProvider& llaiop,
+                                    LowLevelAsyncIoProvider::NetworkFilter& filter,
+                                    AsyncIoStream& stream) const;
+
 private:
   SocketAddress() {
     // We need to memset the whole object 0 otherwise Valgrind gets unhappy when we write it to a
@@ -952,12 +1102,21 @@ Promise<Array<SocketAddress>> SocketAddress::lookupHost(
 
 class FdConnectionReceiver final: public ConnectionReceiver, public OwnedFileDescriptor {
 public:
-  FdConnectionReceiver(UnixEventPort& eventPort, int fd,
+  FdConnectionReceiver(LowLevelAsyncIoProvider& lowLevel,
+                       UnixEventPort& eventPort, int fd,
                        LowLevelAsyncIoProvider::NetworkFilter& filter, uint flags)
-      : OwnedFileDescriptor(fd, flags), eventPort(eventPort), filter(filter),
+      : OwnedFileDescriptor(fd, flags), lowLevel(lowLevel), eventPort(eventPort), filter(filter),
         observer(eventPort, fd, UnixEventPort::FdObserver::OBSERVE_READ) {}
 
   Promise<Own<AsyncIoStream>> accept() override {
+    return acceptImpl(false).then([](AuthenticatedStream&& a) { return kj::mv(a.stream); });
+  }
+
+  Promise<AuthenticatedStream> acceptAuthenticated() override {
+    return acceptImpl(true);
+  }
+
+  Promise<AuthenticatedStream> acceptImpl(bool authenticated) {
     int newFd;
 
     struct sockaddr_storage addr;
@@ -972,12 +1131,36 @@ public:
 #endif
 
     if (newFd >= 0) {
+      kj::AutoCloseFd ownFd(newFd);
       if (!filter.shouldAllow(reinterpret_cast<struct sockaddr*>(&addr), addrlen)) {
-        // Drop disallowed address.
-        close(newFd);
-        return accept();
+        // Ignore disallowed address.
+        return acceptImpl(authenticated);
       } else {
-        return Own<AsyncIoStream>(heap<AsyncStreamFd>(eventPort, newFd, NEW_FD_FLAGS));
+        // TODO(perf):  As a hack for the 0.4 release we are always setting
+        //   TCP_NODELAY because Nagle's algorithm pretty much kills Cap'n Proto's
+        //   RPC protocol.  Later, we should extend the interface to provide more
+        //   control over this.  Perhaps write() should have a flag which
+        //   specifies whether to pass MSG_MORE.
+        int one = 1;
+        KJ_SYSCALL_HANDLE_ERRORS(::setsockopt(
+              ownFd.get(), IPPROTO_TCP, TCP_NODELAY, (char*)&one, sizeof(one))) {
+          case EOPNOTSUPP:
+          case ENOPROTOOPT: // (returned for AF_UNIX in cygwin)
+#if __FreeBSD__
+          case EINVAL: // (returned for AF_UNIX in FreeBSD)
+#endif
+            break;
+          default:
+            KJ_FAIL_SYSCALL("setsocketopt(IPPROTO_TCP, TCP_NODELAY)", error);
+        }
+
+        AuthenticatedStream result;
+        result.stream = heap<AsyncStreamFd>(eventPort, ownFd.release(), NEW_FD_FLAGS);
+        if (authenticated) {
+          result.peerIdentity = SocketAddress(reinterpret_cast<struct sockaddr*>(&addr), addrlen)
+              .getIdentity(lowLevel, filter, *result.stream);
+        }
+        return kj::mv(result);
       }
     } else {
       int error = errno;
@@ -988,8 +1171,8 @@ public:
         case EWOULDBLOCK:
 #endif
           // Not ready yet.
-          return observer.whenBecomesReadable().then([this]() {
-            return accept();
+          return observer.whenBecomesReadable().then([this,authenticated]() {
+            return acceptImpl(authenticated);
           });
 
         case EINTR:
@@ -1028,8 +1211,14 @@ public:
   void setsockopt(int level, int option, const void* value, uint length) override {
     KJ_SYSCALL(::setsockopt(fd, level, option, value, length));
   }
+  void getsockname(struct sockaddr* addr, uint* length) override {
+    socklen_t socklen = *length;
+    KJ_SYSCALL(::getsockname(fd, addr, &socklen));
+    *length = socklen;
+  }
 
 public:
+  LowLevelAsyncIoProvider& lowLevel;
   UnixEventPort& eventPort;
   LowLevelAsyncIoProvider::NetworkFilter& filter;
   UnixEventPort::FdObserver observer;
@@ -1127,7 +1316,7 @@ public:
   }
   Own<ConnectionReceiver> wrapListenSocketFd(
       int fd, NetworkFilter& filter, uint flags = 0) override {
-    return heap<FdConnectionReceiver>(eventPort, fd, filter, flags);
+    return heap<FdConnectionReceiver>(*this, eventPort, fd, filter, flags);
   }
   Own<DatagramPort> wrapDatagramSocketFd(
       int fd, NetworkFilter& filter, uint flags = 0) override {
@@ -1155,7 +1344,14 @@ public:
 
   Promise<Own<AsyncIoStream>> connect() override {
     auto addrsCopy = heapArray(addrs.asPtr());
-    auto promise = connectImpl(lowLevel, filter, addrsCopy);
+    auto promise = connectImpl(lowLevel, filter, addrsCopy, false);
+    return promise.attach(kj::mv(addrsCopy))
+        .then([](AuthenticatedStream&& a) { return kj::mv(a.stream); });
+  }
+
+  Promise<AuthenticatedStream> connectAuthenticated() override {
+    auto addrsCopy = heapArray(addrs.asPtr());
+    auto promise = connectImpl(lowLevel, filter, addrsCopy, true);
     return promise.attach(kj::mv(addrsCopy));
   }
 
@@ -1227,10 +1423,11 @@ private:
   Array<SocketAddress> addrs;
   uint counter = 0;
 
-  static Promise<Own<AsyncIoStream>> connectImpl(
+  static Promise<AuthenticatedStream> connectImpl(
       LowLevelAsyncIoProvider& lowLevel,
       LowLevelAsyncIoProvider::NetworkFilter& filter,
-      ArrayPtr<SocketAddress> addrs) {
+      ArrayPtr<SocketAddress> addrs,
+      bool authenticated) {
     KJ_ASSERT(addrs.size() > 0);
 
     return kj::evalNow([&]() -> Promise<Own<AsyncIoStream>> {
@@ -1241,14 +1438,21 @@ private:
         return lowLevel.wrapConnectingSocketFd(
             fd, addrs[0].getRaw(), addrs[0].getRawSize(), NEW_FD_FLAGS);
       }
-    }).then([](Own<AsyncIoStream>&& stream) -> Promise<Own<AsyncIoStream>> {
+    }).then([&lowLevel,&filter,addrs,authenticated](Own<AsyncIoStream>&& stream)
+        -> Promise<AuthenticatedStream> {
       // Success, pass along.
-      return kj::mv(stream);
-    }, [&lowLevel,&filter,addrs](Exception&& exception) mutable -> Promise<Own<AsyncIoStream>> {
+      AuthenticatedStream result;
+      result.stream = kj::mv(stream);
+      if (authenticated) {
+        result.peerIdentity = addrs[0].getIdentity(lowLevel, filter, *result.stream);
+      }
+      return kj::mv(result);
+    }, [&lowLevel,&filter,addrs,authenticated](Exception&& exception) mutable
+        -> Promise<AuthenticatedStream> {
       // Connect failed.
       if (addrs.size() > 1) {
         // Try the next address instead.
-        return connectImpl(lowLevel, filter, addrs.slice(1, addrs.size()));
+        return connectImpl(lowLevel, filter, addrs.slice(1, addrs.size()), authenticated);
       } else {
         // No more addresses to try, so propagate the exception.
         return kj::mv(exception);
@@ -1256,6 +1460,66 @@ private:
     });
   }
 };
+
+kj::Own<PeerIdentity> SocketAddress::getIdentity(kj::LowLevelAsyncIoProvider& llaiop,
+                                                 LowLevelAsyncIoProvider::NetworkFilter& filter,
+                                                 AsyncIoStream& stream) const {
+  switch (addr.generic.sa_family) {
+    case AF_INET:
+    case AF_INET6: {
+      auto builder = kj::heapArrayBuilder<SocketAddress>(1);
+      builder.add(*this);
+      return NetworkPeerIdentity::newInstance(
+          kj::heap<NetworkAddressImpl>(llaiop, filter, builder.finish()));
+    }
+    case AF_UNIX: {
+      LocalPeerIdentity::Credentials result;
+
+      // There is little documentation on what happens when the uid/pid can't be obtained, but I've
+      // seen vague references on the internet saying that a PID of 0 and a UID of uid_t(-1) are used
+      // as invalid values.
+
+// OpenBSD defines SO_PEERCRED but uses a different interface for it
+// hence we're falling back to LOCAL_PEERCRED
+#if defined(SO_PEERCRED) && !__OpenBSD__
+      struct ucred creds;
+      uint length = sizeof(creds);
+      stream.getsockopt(SOL_SOCKET, SO_PEERCRED, &creds, &length);
+      if (creds.pid > 0) {
+        result.pid = creds.pid;
+      }
+      if (creds.uid != static_cast<uid_t>(-1)) {
+        result.uid = creds.uid;
+      }
+
+#elif defined(LOCAL_PEERCRED)
+      // MacOS / FreeBSD / OpenBSD
+      struct xucred creds;
+      uint length = sizeof(creds);
+      stream.getsockopt(SOL_LOCAL, LOCAL_PEERCRED, &creds, &length);
+      KJ_ASSERT(length == sizeof(creds));
+      if (creds.cr_uid != static_cast<uid_t>(-1)) {
+        result.uid = creds.cr_uid;
+      }
+
+#if defined(LOCAL_PEERPID)
+      // MacOS only?
+      pid_t pid;
+      length = sizeof(pid);
+      stream.getsockopt(SOL_LOCAL, LOCAL_PEERPID, &pid, &length);
+      KJ_ASSERT(length == sizeof(pid));
+      if (pid > 0) {
+        result.pid = pid;
+      }
+#endif
+#endif
+
+      return LocalPeerIdentity::newInstance(result);
+    }
+    default:
+      return UnknownPeerIdentity::newInstance();
+  }
+}
 
 class SocketNetwork final: public Network {
 public:
@@ -1320,7 +1584,7 @@ Promise<size_t> DatagramPortImpl::send(
   msg.msg_name = const_cast<void*>(implicitCast<const void*>(addr.getRaw()));
   msg.msg_namelen = addr.getRawSize();
 
-  const size_t iovmax = kj::miniposix::iovMax(pieces.size());
+  const size_t iovmax = kj::miniposix::iovMax();
   KJ_STACK_ARRAY(struct iovec, iov, kj::min(pieces.size(), iovmax), 16, 64);
 
   for (size_t i: kj::indices(pieces)) {
@@ -1333,7 +1597,7 @@ Promise<size_t> DatagramPortImpl::send(
     // Too many pieces, but we can't use multiple syscalls because they'd send separate
     // datagrams. We'll have to copy the trailing pieces into a temporary array.
     //
-    // TODO(perf): On Linux we could use multiple syscalls via MSG_MORE.
+    // TODO(perf): On Linux we could use multiple syscalls via MSG_MORE or sendmsg/sendmmsg.
     size_t extraSize = 0;
     for (size_t i = iovmax - 1; i < pieces.size(); i++) {
       extraSize += pieces[i].size();
@@ -1344,8 +1608,8 @@ Promise<size_t> DatagramPortImpl::send(
       memcpy(extra.begin() + extraSize, pieces[i].begin(), pieces[i].size());
       extraSize += pieces[i].size();
     }
-    iov[iovmax - 1].iov_base = extra.begin();
-    iov[iovmax - 1].iov_len = extra.size();
+    iov.back().iov_base = extra.begin();
+    iov.back().iov_len = extra.size();
   }
 
   msg.msg_iov = iov.begin();
@@ -1419,6 +1683,10 @@ public:
         // when truncated. On other platforms (Linux) the length in cmsghdr will itself be
         // truncated to fit within the buffer.
 
+#if __APPLE__
+// On MacOS, `CMSG_SPACE(0)` triggers a bogus warning.
+#pragma GCC diagnostic ignored "-Wnull-pointer-arithmetic"
+#endif
         const byte* pos = reinterpret_cast<const byte*>(cmsg);
         size_t available = ancillaryBuffer.end() - pos;
         if (available < CMSG_SPACE(0)) {

@@ -23,6 +23,10 @@
 #define _GNU_SOURCE
 #endif
 
+#if _WIN32
+#include "win32-api-version.h"
+#endif
+
 #include "io.h"
 #include "debug.h"
 #include "miniposix.h"
@@ -31,10 +35,6 @@
 #include "vector.h"
 
 #if _WIN32
-#ifndef NOMINMAX
-#define NOMINMAX 1
-#endif
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "windows-sanity.h"
 #else
@@ -271,9 +271,9 @@ ArrayPtr<byte> ArrayOutputStream::getWriteBuffer() {
 }
 
 void ArrayOutputStream::write(const void* src, size_t size) {
-  if (src == fillPos) {
+  if (src == fillPos && fillPos != array.end()) {
     // Oh goody, the caller wrote directly into our buffer.
-    KJ_REQUIRE(size <= array.end() - fillPos);
+    KJ_REQUIRE(size <= array.end() - fillPos, size, fillPos, array.end() - fillPos);
     fillPos += size;
   } else {
     KJ_REQUIRE(size <= (size_t)(array.end() - fillPos),
@@ -299,9 +299,9 @@ ArrayPtr<byte> VectorOutputStream::getWriteBuffer() {
 }
 
 void VectorOutputStream::write(const void* src, size_t size) {
-  if (src == fillPos) {
+  if (src == fillPos && fillPos != vector.end()) {
     // Oh goody, the caller wrote directly into our buffer.
-    KJ_REQUIRE(size <= vector.end() - fillPos);
+    KJ_REQUIRE(size <= vector.end() - fillPos, size, fillPos, vector.end() - fillPos);
     fillPos += size;
   } else {
     if (vector.end() - fillPos < size) {
@@ -326,14 +326,13 @@ void VectorOutputStream::grow(size_t minSize) {
 
 AutoCloseFd::~AutoCloseFd() noexcept(false) {
   if (fd >= 0) {
-    unwindDetector.catchExceptionsIfUnwinding([&]() {
-      // Don't use SYSCALL() here because close() should not be repeated on EINTR.
-      if (miniposix::close(fd) < 0) {
-        KJ_FAIL_SYSCALL("close", errno, fd) {
-          break;
-        }
+    // Don't use SYSCALL() here because close() should not be repeated on EINTR.
+    if (miniposix::close(fd) < 0) {
+      KJ_FAIL_SYSCALL("close", errno, fd) {
+        // This ensures we don't throw an exception if unwinding.
+        break;
       }
-    });
+    }
   }
 }
 
@@ -378,7 +377,7 @@ void FdOutputStream::write(ArrayPtr<const ArrayPtr<const byte>> pieces) {
   OutputStream::write(pieces);
 
 #else
-  const size_t iovmax = miniposix::iovMax(pieces.size());
+  const size_t iovmax = miniposix::iovMax();
   while (pieces.size() > iovmax) {
     write(pieces.slice(0, iovmax));
     pieces = pieces.slice(iovmax, pieces.size());

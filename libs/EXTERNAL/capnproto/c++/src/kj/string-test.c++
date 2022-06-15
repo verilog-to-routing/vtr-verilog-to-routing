@@ -23,6 +23,7 @@
 #include <kj/compat/gtest.h>
 #include <string>
 #include "vector.h"
+#include <locale.h>
 
 namespace kj {
 namespace _ {  // private
@@ -231,6 +232,66 @@ KJ_TEST("parsing 'nan' returns canonical NaN value") {
   }
 }
 
+KJ_TEST("stringify array-of-array") {
+  int arr1[] = {1, 23};
+  int arr2[] = {456, 7890};
+  ArrayPtr<int> arr3[] = {arr1, arr2};
+  ArrayPtr<ArrayPtr<int>> array = arr3;
+
+  KJ_EXPECT(str(array) == "1, 23, 456, 7890");
+}
+
+KJ_TEST("ArrayPtr == StringPtr") {
+  StringPtr s = "foo"_kj;
+  ArrayPtr<const char> a = s;
+
+  KJ_EXPECT(a == s);
+#if __cplusplus >= 202000L
+  KJ_EXPECT(s == a);
+#endif
+}
+
+KJ_TEST("String == String") {
+  String a = kj::str("foo");
+  String b = kj::str("foo");
+  String c = kj::str("bar");
+
+  // We're trying to trigger the -Wambiguous-reversed-operator warning in Clang, but it seems
+  // magic asserts inadvertently squelch it. So, we use an alternate macro with no magic.
+#define KJ_EXPECT_NOMAGIC(cond) \
+    if (cond) {} else { KJ_FAIL_ASSERT("expected " #cond); }
+
+  KJ_EXPECT_NOMAGIC(a == a);
+  KJ_EXPECT_NOMAGIC(a == b);
+  KJ_EXPECT_NOMAGIC(a != c);
+}
+
+KJ_TEST("float stringification and parsing is not locale-dependent") {
+  // Remember the old locale, set it back when we're done.
+  char* oldLocaleCstr = setlocale(LC_NUMERIC, nullptr);
+  KJ_ASSERT(oldLocaleCstr != nullptr);
+  auto oldLocale = kj::str(oldLocaleCstr);
+  KJ_DEFER(setlocale(LC_NUMERIC, oldLocale.cStr()));
+
+  // Set the locale to "C".
+  KJ_ASSERT(setlocale(LC_NUMERIC, "C") != nullptr);
+
+  KJ_ASSERT(kj::str(1.5) == "1.5");
+  KJ_ASSERT(kj::str(1.5f) == "1.5");
+  KJ_EXPECT("1.5"_kj.parseAs<float>() == 1.5);
+  KJ_EXPECT("1.5"_kj.parseAs<double>() == 1.5);
+
+  if (setlocale(LC_NUMERIC, "es_ES") == nullptr &&
+      setlocale(LC_NUMERIC, "es_ES.utf8") == nullptr) {
+    // Some systems may not have the desired locale available.
+    KJ_LOG(WARNING, "Couldn't set locale to es_ES. Skipping this test.");
+  } else {
+    KJ_EXPECT(kj::str(1.5) == "1.5");
+    KJ_EXPECT(kj::str(1.5f) == "1.5");
+    KJ_EXPECT("1.5"_kj.parseAs<float>() == 1.5);
+    KJ_EXPECT("1.5"_kj.parseAs<double>() == 1.5);
+  }
+}
 }  // namespace
 }  // namespace _ (private)
 }  // namespace kj

@@ -19,8 +19,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// Includes just for need SOL_SOCKET and SO_SNDBUF
+#if _WIN32
+#include <kj/win32-api-version.h>
+
+#include <winsock2.h>
+#include <mswsock.h>
+#include <kj/windows-sanity.h>
+#else
+#include <sys/socket.h>
+#endif
+
 #include "serialize-async.h"
 #include <kj/debug.h>
+#include <kj/io.h>
 
 namespace capnp {
 
@@ -34,6 +46,10 @@ public:
   ~AsyncMessageReader() noexcept(false) {}
 
   kj::Promise<bool> read(kj::AsyncInputStream& inputStream, kj::ArrayPtr<word> scratchSpace);
+
+  kj::Promise<kj::Maybe<size_t>> readWithFds(
+      kj::AsyncCapabilityStream& inputStream,
+      kj::ArrayPtr<kj::AutoCloseFd> fds, kj::ArrayPtr<word> scratchSpace);
 
   // implements MessageReader ----------------------------------------
 
@@ -71,12 +87,32 @@ kj::Promise<bool> AsyncMessageReader::read(kj::AsyncInputStream& inputStream,
       return false;
     } else if (n < sizeof(firstWord)) {
       // EOF in first word.
-      KJ_FAIL_REQUIRE("Premature EOF.") {
-        return false;
-      }
+      kj::throwRecoverableException(KJ_EXCEPTION(DISCONNECTED, "Premature EOF."));
+      return false;
     }
 
     return readAfterFirstWord(inputStream, scratchSpace).then([]() { return true; });
+  });
+}
+
+kj::Promise<kj::Maybe<size_t>> AsyncMessageReader::readWithFds(
+    kj::AsyncCapabilityStream& inputStream, kj::ArrayPtr<kj::AutoCloseFd> fds,
+    kj::ArrayPtr<word> scratchSpace) {
+  return inputStream.tryReadWithFds(firstWord, sizeof(firstWord), sizeof(firstWord),
+                                    fds.begin(), fds.size())
+      .then([this,&inputStream,KJ_CPCAP(scratchSpace)]
+            (kj::AsyncCapabilityStream::ReadResult result) mutable
+            -> kj::Promise<kj::Maybe<size_t>> {
+    if (result.byteCount == 0) {
+      return kj::Maybe<size_t>(nullptr);
+    } else if (result.byteCount < sizeof(firstWord)) {
+      // EOF in first word.
+      kj::throwRecoverableException(KJ_EXCEPTION(DISCONNECTED, "Premature EOF."));
+      return kj::Maybe<size_t>(nullptr);
+    }
+
+    return readAfterFirstWord(inputStream, scratchSpace)
+        .then([result]() -> kj::Maybe<size_t> { return result.capCount; });
   });
 }
 
@@ -152,24 +188,57 @@ kj::Promise<kj::Own<MessageReader>> readMessage(
     kj::AsyncInputStream& input, ReaderOptions options, kj::ArrayPtr<word> scratchSpace) {
   auto reader = kj::heap<AsyncMessageReader>(options);
   auto promise = reader->read(input, scratchSpace);
-  return promise.then(kj::mvCapture(reader, [](kj::Own<MessageReader>&& reader, bool success) {
-    KJ_REQUIRE(success, "Premature EOF.") { break; }
+  return promise.then([reader = kj::mv(reader)](bool success) mutable -> kj::Own<MessageReader> {
+    if (!success) {
+      kj::throwRecoverableException(KJ_EXCEPTION(DISCONNECTED, "Premature EOF."));
+    }
     return kj::mv(reader);
-  }));
+  });
 }
 
 kj::Promise<kj::Maybe<kj::Own<MessageReader>>> tryReadMessage(
     kj::AsyncInputStream& input, ReaderOptions options, kj::ArrayPtr<word> scratchSpace) {
   auto reader = kj::heap<AsyncMessageReader>(options);
   auto promise = reader->read(input, scratchSpace);
-  return promise.then(kj::mvCapture(reader,
-        [](kj::Own<MessageReader>&& reader, bool success) -> kj::Maybe<kj::Own<MessageReader>> {
+  return promise.then([reader = kj::mv(reader)](bool success) mutable
+                      -> kj::Maybe<kj::Own<MessageReader>> {
     if (success) {
       return kj::mv(reader);
     } else {
       return nullptr;
     }
-  }));
+  });
+}
+
+kj::Promise<MessageReaderAndFds> readMessage(
+    kj::AsyncCapabilityStream& input, kj::ArrayPtr<kj::AutoCloseFd> fdSpace,
+    ReaderOptions options, kj::ArrayPtr<word> scratchSpace) {
+  auto reader = kj::heap<AsyncMessageReader>(options);
+  auto promise = reader->readWithFds(input, fdSpace, scratchSpace);
+  return promise.then([reader = kj::mv(reader), fdSpace](kj::Maybe<size_t> nfds) mutable
+                      -> MessageReaderAndFds {
+    KJ_IF_MAYBE(n, nfds) {
+      return { kj::mv(reader), fdSpace.slice(0, *n) };
+    } else {
+      kj::throwRecoverableException(KJ_EXCEPTION(DISCONNECTED, "Premature EOF."));
+      return { kj::mv(reader), nullptr };
+    }
+  });
+}
+
+kj::Promise<kj::Maybe<MessageReaderAndFds>> tryReadMessage(
+    kj::AsyncCapabilityStream& input, kj::ArrayPtr<kj::AutoCloseFd> fdSpace,
+    ReaderOptions options, kj::ArrayPtr<word> scratchSpace) {
+  auto reader = kj::heap<AsyncMessageReader>(options);
+  auto promise = reader->readWithFds(input, fdSpace, scratchSpace);
+  return promise.then([reader = kj::mv(reader), fdSpace](kj::Maybe<size_t> nfds) mutable
+                      -> kj::Maybe<MessageReaderAndFds> {
+    KJ_IF_MAYBE(n, nfds) {
+      return MessageReaderAndFds { kj::mv(reader), fdSpace.slice(0, *n) };
+    } else {
+      return nullptr;
+    }
+  });
 }
 
 // =======================================================================================
@@ -183,38 +252,254 @@ struct WriteArrays {
   kj::Array<kj::ArrayPtr<const byte>> pieces;
 };
 
-}  // namespace
+inline size_t tableSizeForSegments(size_t segmentsSize) {
+  return (segmentsSize + 2) & ~size_t(1);
+}
 
-kj::Promise<void> writeMessage(kj::AsyncOutputStream& output,
-                               kj::ArrayPtr<const kj::ArrayPtr<const word>> segments) {
+// Helper function that allocates and fills the pointed-to table with info about the segments and
+// populates the pieces array with pointers to the segments.
+void fillWriteArraysWithMessage(kj::ArrayPtr<const kj::ArrayPtr<const word>> segments,
+                                kj::ArrayPtr<_::WireValue<uint32_t>> table,
+                                kj::ArrayPtr<kj::ArrayPtr<const byte>> pieces) {
   KJ_REQUIRE(segments.size() > 0, "Tried to serialize uninitialized message.");
-
-  WriteArrays arrays;
-  arrays.table = kj::heapArray<_::WireValue<uint32_t>>((segments.size() + 2) & ~size_t(1));
 
   // We write the segment count - 1 because this makes the first word zero for single-segment
   // messages, improving compression.  We don't bother doing this with segment sizes because
   // one-word segments are rare anyway.
-  arrays.table[0].set(segments.size() - 1);
+  table[0].set(segments.size() - 1);
   for (uint i = 0; i < segments.size(); i++) {
-    arrays.table[i + 1].set(segments[i].size());
+    table[i + 1].set(segments[i].size());
   }
   if (segments.size() % 2 == 0) {
     // Set padding byte.
-    arrays.table[segments.size() + 1].set(0);
+    table[segments.size() + 1].set(0);
   }
 
-  arrays.pieces = kj::heapArray<kj::ArrayPtr<const byte>>(segments.size() + 1);
-  arrays.pieces[0] = arrays.table.asBytes();
-
+  KJ_ASSERT(pieces.size() == segments.size() + 1, "incorrectly sized pieces array during write");
+  pieces[0] = table.asBytes();
   for (uint i = 0; i < segments.size(); i++) {
-    arrays.pieces[i + 1] = segments[i].asBytes();
+    pieces[i + 1] = segments[i].asBytes();
   }
+}
 
-  auto promise = output.write(arrays.pieces);
+template <typename WriteFunc>
+kj::Promise<void> writeMessageImpl(kj::ArrayPtr<const kj::ArrayPtr<const word>> segments,
+                                   WriteFunc&& writeFunc) {
+  KJ_REQUIRE(segments.size() > 0, "Tried to serialize uninitialized message.");
+
+  WriteArrays arrays;
+  arrays.table = kj::heapArray<_::WireValue<uint32_t>>(tableSizeForSegments(segments.size()));
+  arrays.pieces = kj::heapArray<kj::ArrayPtr<const byte>>(segments.size() + 1);
+  fillWriteArraysWithMessage(segments, arrays.table, arrays.pieces);
+
+  auto promise = writeFunc(arrays.pieces);
 
   // Make sure the arrays aren't freed until the write completes.
   return promise.then(kj::mvCapture(arrays, [](WriteArrays&&) {}));
+}
+
+template <typename WriteFunc>
+kj::Promise<void> writeMessagesImpl(
+    kj::ArrayPtr<kj::ArrayPtr<const kj::ArrayPtr<const word>>> messages, WriteFunc&& writeFunc) {
+  KJ_REQUIRE(messages.size() > 0, "Tried to serialize zero messages.");
+
+  // Determine how large the shared table and pieces arrays needs to be.
+  size_t tableSize = 0;
+  size_t piecesSize = 0;
+  for (auto& segments : messages) {
+    tableSize += tableSizeForSegments(segments.size());
+    piecesSize += segments.size() + 1;
+  }
+  auto table = kj::heapArray<_::WireValue<uint32_t>>(tableSize);
+  auto pieces = kj::heapArray<kj::ArrayPtr<const byte>>(piecesSize);
+
+  size_t tableValsWritten = 0;
+  size_t piecesWritten = 0;
+  for (int i = 0; i < messages.size(); ++i) {
+    const size_t tableValsToWrite = tableSizeForSegments(messages[i].size());
+    const size_t piecesToWrite = messages[i].size() + 1;
+    fillWriteArraysWithMessage(
+        messages[i],
+        table.slice(tableValsWritten, tableValsWritten + tableValsToWrite),
+        pieces.slice(piecesWritten, piecesWritten + piecesToWrite));
+    tableValsWritten += tableValsToWrite;
+    piecesWritten += piecesToWrite;
+  }
+
+  auto promise = writeFunc(pieces);
+  return promise.attach(kj::mv(table), kj::mv(pieces));
+}
+
+}  // namespace
+
+kj::Promise<void> writeMessage(kj::AsyncOutputStream& output,
+                               kj::ArrayPtr<const kj::ArrayPtr<const word>> segments) {
+  return writeMessageImpl(segments,
+      [&](kj::ArrayPtr<const kj::ArrayPtr<const byte>> pieces) {
+    return output.write(pieces);
+  });
+}
+
+kj::Promise<void> writeMessage(kj::AsyncCapabilityStream& output, kj::ArrayPtr<const int> fds,
+                               kj::ArrayPtr<const kj::ArrayPtr<const word>> segments) {
+  return writeMessageImpl(segments,
+      [&](kj::ArrayPtr<const kj::ArrayPtr<const byte>> pieces) {
+    return output.writeWithFds(pieces[0], pieces.slice(1, pieces.size()), fds);
+  });
+}
+
+kj::Promise<void> writeMessages(
+    kj::AsyncOutputStream& output,
+    kj::ArrayPtr<kj::ArrayPtr<const kj::ArrayPtr<const word>>> messages) {
+  return writeMessagesImpl(messages,
+      [&](kj::ArrayPtr<const kj::ArrayPtr<const byte>> pieces) {
+    return output.write(pieces);
+  });
+}
+
+kj::Promise<void> writeMessages(
+    kj::AsyncOutputStream& output, kj::ArrayPtr<MessageBuilder*> builders) {
+  auto messages = kj::heapArray<kj::ArrayPtr<const kj::ArrayPtr<const word>>>(builders.size());
+  for (int i = 0; i < builders.size(); ++i) {
+    messages[i] = builders[i]->getSegmentsForOutput();
+  }
+  return writeMessages(output, messages);
+}
+
+kj::Promise<void> MessageStream::writeMessages(kj::ArrayPtr<MessageBuilder*> builders) {
+  auto messages = kj::heapArray<kj::ArrayPtr<const kj::ArrayPtr<const word>>>(builders.size());
+  for (int i = 0; i < builders.size(); ++i) {
+    messages[i] = builders[i]->getSegmentsForOutput();
+  }
+  return writeMessages(messages);
+}
+
+AsyncIoMessageStream::AsyncIoMessageStream(kj::AsyncIoStream& stream)
+  : stream(stream) {};
+
+kj::Promise<kj::Maybe<MessageReaderAndFds>> AsyncIoMessageStream::tryReadMessage(
+    kj::ArrayPtr<kj::AutoCloseFd> fdSpace,
+    ReaderOptions options,
+    kj::ArrayPtr<word> scratchSpace) {
+  return capnp::tryReadMessage(stream, options, scratchSpace)
+    .then([](kj::Maybe<kj::Own<MessageReader>> maybeReader) -> kj::Maybe<MessageReaderAndFds> {
+      KJ_IF_MAYBE(reader, maybeReader) {
+        return MessageReaderAndFds { kj::mv(*reader), nullptr };
+      } else {
+        return nullptr;
+      }
+    });
+}
+
+kj::Promise<void> AsyncIoMessageStream::writeMessage(
+    kj::ArrayPtr<const int> fds,
+    kj::ArrayPtr<const kj::ArrayPtr<const word>> segments) {
+  return capnp::writeMessage(stream, segments);
+}
+
+kj::Promise<void> AsyncIoMessageStream::writeMessages(
+    kj::ArrayPtr<kj::ArrayPtr<const kj::ArrayPtr<const word>>> messages) {
+  return capnp::writeMessages(stream, messages);
+}
+
+kj::Maybe<int> getSendBufferSize(kj::AsyncIoStream& stream) {
+  // TODO(perf): It might be nice to have a tryGetsockopt() that doesn't require catching
+  //   exceptions?
+  int bufSize = 0;
+  KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+    uint len = sizeof(int);
+    stream.getsockopt(SOL_SOCKET, SO_SNDBUF, &bufSize, &len);
+    KJ_ASSERT(len == sizeof(bufSize)) { break; }
+  })) {
+    if (exception->getType() != kj::Exception::Type::UNIMPLEMENTED) {
+      // TODO(someday): Figure out why getting SO_SNDBUF sometimes throws EINVAL. I suspect it
+      //   happens when the remote side has closed their read end, meaning we no longer have
+      //   a send buffer, but I don't know what is the best way to verify that that was actually
+      //   the reason. I'd prefer not to ignore EINVAL errors in general.
+
+      // kj::throwRecoverableException(kj::mv(*exception));
+    }
+    return nullptr;
+  }
+  return bufSize;
+}
+
+kj::Promise<void> AsyncIoMessageStream::end() {
+  stream.shutdownWrite();
+  return kj::READY_NOW;
+}
+
+kj::Maybe<int> AsyncIoMessageStream::getSendBufferSize() {
+  return capnp::getSendBufferSize(stream);
+}
+
+AsyncCapabilityMessageStream::AsyncCapabilityMessageStream(kj::AsyncCapabilityStream& stream)
+  : stream(stream) {};
+
+kj::Promise<kj::Maybe<MessageReaderAndFds>> AsyncCapabilityMessageStream::tryReadMessage(
+    kj::ArrayPtr<kj::AutoCloseFd> fdSpace,
+    ReaderOptions options,
+    kj::ArrayPtr<word> scratchSpace) {
+  return capnp::tryReadMessage(stream, fdSpace, options, scratchSpace);
+}
+
+kj::Promise<void> AsyncCapabilityMessageStream::writeMessage(
+    kj::ArrayPtr<const int> fds,
+    kj::ArrayPtr<const kj::ArrayPtr<const word>> segments) {
+  return capnp::writeMessage(stream, fds, segments);
+}
+
+kj::Promise<void> AsyncCapabilityMessageStream::writeMessages(
+    kj::ArrayPtr<kj::ArrayPtr<const kj::ArrayPtr<const word>>> messages) {
+  return capnp::writeMessages(stream, messages);
+}
+
+kj::Maybe<int> AsyncCapabilityMessageStream::getSendBufferSize() {
+  return capnp::getSendBufferSize(stream);
+}
+
+kj::Promise<void> AsyncCapabilityMessageStream::end() {
+  stream.shutdownWrite();
+  return kj::READY_NOW;
+}
+
+kj::Promise<kj::Own<MessageReader>> MessageStream::readMessage(
+    ReaderOptions options,
+    kj::ArrayPtr<word> scratchSpace) {
+  return tryReadMessage(options, scratchSpace).then([](kj::Maybe<kj::Own<MessageReader>> maybeResult) {
+    KJ_IF_MAYBE(result, maybeResult) {
+        return kj::mv(*result);
+    } else {
+        kj::throwRecoverableException(KJ_EXCEPTION(DISCONNECTED, "Premature EOF."));
+        KJ_UNREACHABLE;
+    }
+  });
+}
+
+kj::Promise<kj::Maybe<kj::Own<MessageReader>>> MessageStream::tryReadMessage(
+    ReaderOptions options,
+    kj::ArrayPtr<word> scratchSpace) {
+  return tryReadMessage(nullptr, options, scratchSpace)
+    .then([](auto maybeReaderAndFds) -> kj::Maybe<kj::Own<MessageReader>> {
+      KJ_IF_MAYBE(readerAndFds, maybeReaderAndFds) {
+        return kj::mv(readerAndFds->reader);
+      } else {
+        return nullptr;
+      }
+  });
+}
+
+kj::Promise<MessageReaderAndFds> MessageStream::readMessage(
+    kj::ArrayPtr<kj::AutoCloseFd> fdSpace,
+    ReaderOptions options, kj::ArrayPtr<word> scratchSpace) {
+  return tryReadMessage(fdSpace, options, scratchSpace).then([](auto maybeResult) {
+      KJ_IF_MAYBE(result, maybeResult) {
+        return kj::mv(*result);
+      } else {
+        kj::throwRecoverableException(KJ_EXCEPTION(DISCONNECTED, "Premature EOF."));
+        KJ_UNREACHABLE;
+      }
+  });
 }
 
 }  // namespace capnp

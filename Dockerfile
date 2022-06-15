@@ -24,6 +24,6 @@ RUN apt-get update -qq \
     && apt-get autoclean && apt-get clean && apt-get -y autoremove \
     && rm -rf /var/lib/apt/lists/*
 # Build VTR
-RUN make && make install
+RUN make -j$(nproc) && make install
 # Container's default launch command
 SHELL ["/bin/bash", "-c"]

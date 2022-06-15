@@ -97,6 +97,7 @@ struct Foo {
   listWithoutParam @31 :List;
   listWithTooManyParams @32 :List(Int32, Int64);
   listAnyPointer @33 :List(AnyPointer);
+  listAnyStruct @48 :List(AnyStruct);
   notAType @34 :notType;
   noParams @35 :Foo(Int32);
 
@@ -141,6 +142,7 @@ enum DupEnumerants {
 const recursive: UInt32 = .recursive;
 
 struct Generic(T, U) {
+  foo @0 :UInt32 $T;
 }
 
 struct UseGeneric {
@@ -158,4 +160,5 @@ using Baz = import "nosuchfile-unused.capnp".Baz;
 
 interface TestInterface {
   foo @0 (a :UInt32 = null);
+  bar @1 stream -> ();
 }
