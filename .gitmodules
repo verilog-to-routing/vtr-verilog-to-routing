@@ -1,0 +1,6 @@
+[submodule "libs/EXTERNAL/Surelog"]
+	path = libs/EXTERNAL/Surelog
+	url = https://github.com/chipsalliance/Surelog.git
+[submodule "libs/EXTERNAL/yosys-f4pga-plugins"]
+	path = libs/EXTERNAL/yosys-f4pga-plugins
+	url = https://github.com/chipsalliance/yosys-f4pga-plugins.git
