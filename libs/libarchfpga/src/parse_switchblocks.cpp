@@ -41,16 +41,16 @@ using vtr::t_formula_data;
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 //Load an XML wireconn specification into a t_wireconn_inf
-t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data, const t_arch_switch_inf* Switches, int num_switches);
+t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data, const t_arch_switch_inf* switches, int num_switches);
 
 //Process the desired order of a wireconn
 static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order);
 
 //Process a wireconn defined in the inline style (using attributes)
-void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* Switches, int num_switches);
+void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* switches, int num_switches);
 
 //Process a wireconn defined in the multinode style (more advanced specification)
-void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* Switches, int num_switches);
+void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* switches, int num_switches);
 
 //Process a <from> or <to> sub-node of a multinode wireconn
 t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiutil::loc_data& loc_data);
@@ -66,7 +66,7 @@ static void parse_comma_separated_wire_points(const char* ch, std::vector<t_wire
 static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn);
 
 /* parse switch_override in wireconn */
-static void parse_switch_override(const char* switch_override, t_wireconn_inf& wireconn, const t_arch_switch_inf* Switches, int num_switches);
+static void parse_switch_override(const char* switch_override, t_wireconn_inf& wireconn, const t_arch_switch_inf* switches, int num_switches);
 
 /* checks for correctness of a unidir switchblock. */
 static void check_unidir_switchblock(const t_switchblock_inf* sb);
@@ -82,7 +82,7 @@ static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn);
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns(const t_arch_switch_inf* Switches, int num_switches, pugi::xml_node Node, t_switchblock_inf* sb, const pugiutil::loc_data& loc_data) {
+void read_sb_wireconns(const t_arch_switch_inf* switches, int num_switches, pugi::xml_node Node, t_switchblock_inf* sb, const pugiutil::loc_data& loc_data) {
     /* Make sure that Node is a switchblock */
     check_node(Node, "switchblock", loc_data);
 
@@ -97,7 +97,7 @@ void read_sb_wireconns(const t_arch_switch_inf* Switches, int num_switches, pugi
         SubElem = get_first_child(Node, "wireconn", loc_data);
     }
     for (int i = 0; i < num_wireconns; i++) {
-        t_wireconn_inf wc = parse_wireconn(SubElem, loc_data, Switches, num_switches); // need to pass in switch info for switch override
+        t_wireconn_inf wc = parse_wireconn(SubElem, loc_data, switches, num_switches); // need to pass in switch info for switch override
         sb->wireconns.push_back(wc);
         SubElem = SubElem.next_sibling(SubElem.name());
     }
@@ -105,23 +105,23 @@ void read_sb_wireconns(const t_arch_switch_inf* Switches, int num_switches, pugi
     return;
 }
 
-t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data, const t_arch_switch_inf* Switches, int num_switches) {
+t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data, const t_arch_switch_inf* switches, int num_switches) {
     t_wireconn_inf wc;
 
     size_t num_children = count_children(node, "from", loc_data, ReqOpt::OPTIONAL);
     num_children += count_children(node, "to", loc_data, ReqOpt::OPTIONAL);
 
     if (num_children == 0) {
-        parse_wireconn_inline(node, loc_data, wc, Switches, num_switches);
+        parse_wireconn_inline(node, loc_data, wc, switches, num_switches);
     } else {
         VTR_ASSERT(num_children > 0);
-        parse_wireconn_multinode(node, loc_data, wc, Switches, num_switches);
+        parse_wireconn_multinode(node, loc_data, wc, switches, num_switches);
     }
 
     return wc;
 }
 
-void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* Switches, int num_switches) {
+void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* switches, int num_switches) {
     //Parse an inline wireconn definition, using attributes
     expect_only_attributes(node, {"num_conns", "from_type", "to_type", "from_switchpoint", "to_switchpoint", "from_order", "to_order", "switch_override"}, loc_data);
 
@@ -150,13 +150,13 @@ void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_da
 
     char_prop = get_attribute(node, "to_order", loc_data, ReqOpt::OPTIONAL).value();
     parse_switchpoint_order(char_prop, wc.to_switchpoint_order);
-    
+
     // parse switch overrides if they exist:
     char_prop = get_attribute(node, "switch_override", loc_data, ReqOpt::OPTIONAL).value();
-    parse_switch_override(char_prop, wc, Switches, num_switches);
+    parse_switch_override(char_prop, wc, switches, num_switches);
 }
 
-void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* Switches, int num_switches) {
+void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* switches, int num_switches) {
     expect_only_children(node, {"from", "to"}, loc_data);
 
     /* get the connection style */
@@ -170,7 +170,7 @@ void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc
     parse_switchpoint_order(char_prop, wc.to_switchpoint_order);
 
     char_prop = get_attribute(node, "switch_override", loc_data, ReqOpt::OPTIONAL).value();
-    parse_switch_override(char_prop, wc, Switches, num_switches);
+    parse_switch_override(char_prop, wc, switches, num_switches);
 
     size_t num_from_children = count_children(node, "from", loc_data);
     size_t num_to_children = count_children(node, "to", loc_data);
@@ -341,8 +341,7 @@ void read_sb_switchfuncs(pugi::xml_node Node, t_switchblock_inf* sb, const pugiu
     return;
 }
 
-static void parse_switch_override(const char* switch_override, t_wireconn_inf& wireconn, const t_arch_switch_inf* Switches, int num_switches){
-
+static void parse_switch_override(const char* switch_override, t_wireconn_inf& wireconn, const t_arch_switch_inf* switches, int num_switches) {
     // check to see if user did not specify a switch_override
     if (switch_override == std::string("")) {
         wireconn.switch_override_indx = DEFAULT_SWITCH; //Default
@@ -350,8 +349,8 @@ static void parse_switch_override(const char* switch_override, t_wireconn_inf& w
     }
 
     // iterate through the valid switch names in the arch looking for the requested switch_override
-    for(int i = 0; i < num_switches; i++){
-        if(0 == strcmp(switch_override, Switches[i].name)){
+    for (int i = 0; i < num_switches; i++) {
+        if (0 == strcmp(switch_override, switches[i].name)) {
             wireconn.switch_override_indx = i;
             return;
         }
