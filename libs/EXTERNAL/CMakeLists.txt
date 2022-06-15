@@ -17,20 +17,54 @@ endif()
 # The VTR root CMakeFile initializes the ODIN_USE_YOSYS or WITH_YOSYS
 # Yosys is compiled only if the user ask for it
 if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
+    # handle make program with both ninja and unix style
+    set(MAKE_PROGRAM "$(MAKE)")
+    if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+        set(MAKE_PROGRAM "make")
+    endif()
+
     add_subdirectory(libyosys)
 
-    # In addition to libyosys in the build folder, we copy the libyosys directory
-    # into a temporary folder in the VTR root, named Yosys, to have access to Yosys 
-    # execs for using in VTR scripts (similar to VPR/vpr or ODIN_II/odin_II)
-    add_custom_target(vtr-yosys ALL 
-                      DEPENDS yosys
-                            COMMAND ${CMAKE_COMMAND} -E 
-                                                    remove_directory ${VTR_SOURCE_DIR}/Yosys/                     
-                            COMMAND ${CMAKE_COMMAND} -E 
-                                                    make_directory ${VTR_SOURCE_DIR}/Yosys/
-                            COMMAND ${CMAKE_COMMAND} -E 
-                                                    copy_directory ${CMAKE_CURRENT_BINARY_DIR}/libyosys ${VTR_SOURCE_DIR}/Yosys/                     
+    # adding a custom target to download (submodules), and compile Yosys plugins
+    if(${YOSYS_SV_UHDM_PLUGIN})
+        # keep record of the yosys DAT dir
+        set(YOSYS_DATDIR ${libyosys_BINARY_DIR}/share/yosys)
+        # keep record of the yosys-uhdm-plugin-integration path
+        set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
+        set(YOSYS_F4PGA_PLUGINS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-f4pga-plugins)
+
+        # building Surelog, UHDM and sv2v in a custom command to avoid any target conflict with VTR targets
+        add_custom_command( OUTPUT ${libyosys_BINARY_DIR}/bin/surelog ${libyosys_BINARY_DIR}/bin/uhdm-dump ${libyosys_BINARY_DIR}/bin/uhdm-hier  DEPENDS yosys 
+                            # Surelog
+                            COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release
+                                                     -DCMAKE_INSTALL_PREFIX=${libyosys_BINARY_DIR}
+                                                     -DCMAKE_POSITION_INDEPENDENT_CODE=ON 
+                                                     -S ${SURELOG_SOURCE_DIR}
+                                                     -B ${SURELOG_SOURCE_DIR}/build
+                                                     -Wno-deprecated
+                                                     > /dev/null 2>&1
+                            COMMAND ${CMAKE_COMMAND} --build ${SURELOG_SOURCE_DIR}/build
+                                                     -j${CMAKE_BUILD_PARALLEL_LEVEL}
+                                                     > /dev/null 2>&1
+                            COMMAND ${CMAKE_COMMAND} --install ${SURELOG_SOURCE_DIR}/build
+                                                     > /dev/null 2>&1
+                            # UHDM
+                            COMMAND ${MAKE_PROGRAM}  -C ${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}
+                                                     PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
+                                                     UHDM_INSTALL_DIR=${libyosys_BINARY_DIR}
+                                                     install
+                                                     -j${CMAKE_BUILD_PARALLEL_LEVEL}
+                                                     > /dev/null 2>&1
+
                             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+        # create a custom target out of the plugins compilation result
+        add_custom_target(yosys-plugins ALL 
+                          DEPENDS 
+                          ${libyosys_BINARY_DIR}/bin/surelog 
+                          ${libyosys_BINARY_DIR}/bin/uhdm-dump
+                          ${libyosys_BINARY_DIR}/bin/uhdm-hier)
+    endif()
 
 endif()
 
