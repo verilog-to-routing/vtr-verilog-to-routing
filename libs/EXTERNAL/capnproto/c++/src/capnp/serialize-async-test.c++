@@ -23,6 +23,10 @@
 #define _GNU_SOURCE
 #endif
 
+#if _WIN32
+#include <kj/win32-api-version.h>
+#endif
+
 #include "serialize-async.h"
 #include "serialize.h"
 #include <kj/debug.h>
@@ -33,7 +37,6 @@
 #include <kj/compat/gtest.h>
 
 #if _WIN32
-#define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <kj/windows-sanity.h>
 namespace kj {
@@ -341,6 +344,42 @@ TEST(SerializeAsyncTest, WriteAsyncEvenSegmentCount) {
   });
 
   writeMessage(*output, message).wait(ioContext.waitScope);
+}
+
+TEST(SerializeAsyncTest, WriteMultipleMessagesAsync) {
+  PipeWithSmallBuffer fds;
+  auto ioContext = kj::setupAsyncIo();
+  auto output = ioContext.lowLevelProvider->wrapOutputFd(fds[1]);
+
+  const int numMessages = 5;
+  const int baseListSize = 16;
+  auto messages = kj::heapArrayBuilder<TestMessageBuilder>(numMessages);
+  for (int i = 0; i < numMessages; ++i) {
+    messages.add(i+1);
+    auto root = messages[i].getRoot<TestAllTypes>();
+    auto list = root.initStructList(baseListSize+i);
+    for (auto element: list) {
+      initTestMessage(element);
+    }
+  }
+
+  kj::Thread thread([&]() {
+    SocketInputStream input(fds[0]);
+    for (int i = 0; i < numMessages; ++i) {
+      InputStreamMessageReader reader(input);
+      auto listReader = reader.getRoot<TestAllTypes>().getStructList();
+      EXPECT_EQ(baseListSize+i, listReader.size());
+      for (auto element: listReader) {
+        checkTestMessage(element);
+      }
+    }
+  });
+
+  auto msgs = kj::heapArray<capnp::MessageBuilder*>(numMessages);
+  for (int i = 0; i < numMessages; ++i) {
+    msgs[i] = &messages[i];
+  }
+  writeMessages(*output, msgs).wait(ioContext.waitScope);
 }
 
 }  // namespace

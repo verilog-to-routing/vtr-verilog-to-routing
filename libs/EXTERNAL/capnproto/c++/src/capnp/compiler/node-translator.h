@@ -21,10 +21,6 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !defined(CAPNP_HEADER_WARNINGS)
-#pragma GCC system_header
-#endif
-
 #include <capnp/orphan.h>
 #include <capnp/compiler/grammar.capnp.h>
 #include <capnp/schema.capnp.h>
@@ -32,7 +28,11 @@
 #include <kj/vector.h>
 #include <kj/one-of.h>
 #include "error-reporter.h"
+#include "resolver.h"
+#include "generics.h"
 #include <map>
+
+CAPNP_BEGIN_HEADER
 
 namespace capnp {
 namespace compiler {
@@ -41,84 +41,7 @@ class NodeTranslator {
   // Translates one node in the schema from AST form to final schema form.  A "node" is anything
   // that has a unique ID, such as structs, enums, constants, and annotations, but not fields,
   // unions, enumerants, or methods (the latter set have 16-bit ordinals but not 64-bit global IDs).
-
 public:
-  class Resolver {
-    // Callback class used to find other nodes relative to this one.
-    //
-    // TODO(cleanup): This has evolved into being a full interface for traversing the node tree.
-    //   Maybe we should rename it as such, and move it out of NodeTranslator. See also
-    //   TODO(cleanup) on NodeTranslator::BrandedDecl.
-
-  public:
-    struct ResolvedDecl {
-      uint64_t id;
-      uint genericParamCount;
-      uint64_t scopeId;
-      Declaration::Which kind;
-      Resolver* resolver;
-
-      kj::Maybe<schema::Brand::Reader> brand;
-      // If present, then it is necessary to replace the brand scope with the given brand before
-      // using the target type. This happens when the decl resolved to an alias; all other fields
-      // of `ResolvedDecl` refer to the target of the alias, except for `scopeId` which is the
-      // scope that contained the alias.
-    };
-
-    struct ResolvedParameter {
-      uint64_t id;  // ID of the node declaring the parameter.
-      uint index;   // Index of the parameter.
-    };
-
-    typedef kj::OneOf<ResolvedDecl, ResolvedParameter> ResolveResult;
-
-    virtual kj::Maybe<ResolveResult> resolve(kj::StringPtr name) = 0;
-    // Look up the given name, relative to this node, and return basic information about the
-    // target.
-
-    virtual kj::Maybe<ResolveResult> resolveMember(kj::StringPtr name) = 0;
-    // Look up a member of this node.
-
-    virtual ResolvedDecl resolveBuiltin(Declaration::Which which) = 0;
-    virtual ResolvedDecl resolveId(uint64_t id) = 0;
-
-    virtual kj::Maybe<ResolvedDecl> getParent() = 0;
-    // Returns the parent of this scope, or null if this is the top scope.
-
-    virtual ResolvedDecl getTopScope() = 0;
-    // Get the top-level scope containing this node.
-
-    virtual kj::Maybe<Schema> resolveBootstrapSchema(uint64_t id, schema::Brand::Reader brand) = 0;
-    // Get the schema for the given ID.  If a schema is returned, it must be safe to traverse its
-    // dependencies via the Schema API.  A schema that is only at the bootstrap stage is
-    // acceptable.
-    //
-    // Throws an exception if the id is not one that was found by calling resolve() or by
-    // traversing other schemas.  Returns null if the ID is recognized, but the corresponding
-    // schema node failed to be built for reasons that were already reported.
-
-    virtual kj::Maybe<schema::Node::Reader> resolveFinalSchema(uint64_t id) = 0;
-    // Get the final schema for the given ID.  A bootstrap schema is not acceptable.  A raw
-    // node reader is returned rather than a Schema object because using a Schema object built
-    // by the final schema loader could trigger lazy initialization of dependencies which could
-    // lead to a cycle and deadlock.
-    //
-    // Throws an exception if the id is not one that was found by calling resolve() or by
-    // traversing other schemas.  Returns null if the ID is recognized, but the corresponding
-    // schema node failed to be built for reasons that were already reported.
-
-    virtual kj::Maybe<ResolvedDecl> resolveImport(kj::StringPtr name) = 0;
-    // Get the ID of an imported file given the import path.
-
-    virtual kj::Maybe<kj::Array<const byte>> readEmbed(kj::StringPtr name) = 0;
-    // Read and return the contents of a file for an `embed` expression.
-
-    virtual kj::Maybe<Type> resolveBootstrapType(schema::Type::Reader type, Schema scope) = 0;
-    // Compile a schema::Type into a Type whose dependencies may safely be traversed via the schema
-    // API. These dependencies may have only bootstrap schemas. Returns null if the type could not
-    // be constructed due to already-reported errors.
-  };
-
   NodeTranslator(Resolver& resolver, ErrorReporter& errorReporter,
                  const Declaration::Reader& decl, Orphan<schema::Node> wipNode,
                  bool compileAnnotations);
@@ -150,9 +73,12 @@ public:
   // If the final node has already been built, this will actually return the final node (in fact,
   // it's the same node object).
 
-  NodeSet finish();
+  NodeSet finish(Schema selfUnboundBootstrap);
   // Finish translating the node (including filling in all the pieces that are missing from the
   // bootstrap node) and return it.
+  //
+  // `selfUnboundBootstrap` is a Schema build using the Node returned by getBootstrapNode(), and
+  // with generic parameters "unbound", i.e. it was returned by SchemaLoader::getUnbound().
 
   static kj::Maybe<Resolver::ResolveResult> compileDecl(
       uint64_t scopeId, uint scopeParameterCount, Resolver& resolver, ErrorReporter& errorReporter,
@@ -168,8 +94,6 @@ private:
   class DuplicateOrdinalDetector;
   class StructLayout;
   class StructTranslator;
-  class BrandedDecl;
-  class BrandScope;
 
   Resolver& resolver;
   ErrorReporter& errorReporter;
@@ -198,7 +122,7 @@ private:
   struct UnfinishedValue {
     Expression::Reader source;
     schema::Type::Reader type;
-    Schema typeScope;
+    kj::Maybe<Schema> typeScope;
     schema::Value::Builder target;
   };
   kj::Vector<UnfinishedValue> unfinishedValues;
@@ -223,21 +147,6 @@ private:
   // The `members` arrays contain only members with ordinal numbers, in code order.  Other members
   // are handled elsewhere.
 
-  struct ImplicitParams {
-    // Represents a set of implicit parameters visible in the current context.
-
-    uint64_t scopeId;
-    // If zero, then any reference to an implciit param in this context should be compiled to a
-    // `implicitMethodParam` AnyPointer. If non-zero, it should be compiled to a `parameter`
-    // AnyPointer.
-
-    List<Declaration::BrandParameter>::Reader params;
-  };
-
-  static inline ImplicitParams noImplicitParams() {
-    return { 0, List<Declaration::BrandParameter>::Reader() };
-  }
-
   template <typename InitBrandFunc>
   uint64_t compileParamList(kj::StringPtr methodName, uint16_t ordinal, bool isResults,
                             Declaration::ParamList::Reader paramList,
@@ -259,15 +168,13 @@ private:
 
   void compileBootstrapValue(
       Expression::Reader source, schema::Type::Reader type, schema::Value::Builder target,
-      Schema typeScope = Schema());
+      kj::Maybe<Schema> typeScope = nullptr);
   // Calls compileValue() if this value should be interpreted at bootstrap time.  Otheriwse,
   // adds the value to `unfinishedValues` for later evaluation.
   //
-  // If `type` comes from some other node, `typeScope` is the schema for that node. This is only
-  // really needed for looking up generic parameter bindings, therefore if the type comes from
-  // the node being built, an empty "Schema" (the default) works here because the node being built
-  // is of course being built for all possible bindings and thus none of its generic parameters are
-  // bound.
+  // If `type` comes from some other node, `typeScope` is the schema for that node. Otherwise the
+  // scope of the type expression is assumed to be this node (meaning, in particular, that no
+  // generic type parameters are bound).
 
   void compileValue(Expression::Reader source, schema::Type::Reader type,
                     Schema typeScope, schema::Value::Builder target, bool isBootstrap);
@@ -318,3 +225,5 @@ private:
 
 }  // namespace compiler
 }  // namespace capnp
+
+CAPNP_END_HEADER

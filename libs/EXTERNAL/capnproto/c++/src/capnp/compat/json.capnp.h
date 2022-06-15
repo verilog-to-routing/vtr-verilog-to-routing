@@ -9,10 +9,12 @@
 #include <capnp/capability.h>
 #endif  // !CAPNP_LITE
 
-#if CAPNP_VERSION != 7000
+#if CAPNP_VERSION != 9001
 #error "Version mismatch between generated code and library headers.  You must use the same version of the Cap'n Proto compiler and library."
 #endif
 
+
+CAPNP_BEGIN_HEADER
 
 namespace capnp {
 namespace schemas {
@@ -27,6 +29,7 @@ CAPNP_DECLARE_SCHEMA(cfa794e8d19a0162);
 CAPNP_DECLARE_SCHEMA(c2f8c20c293e5319);
 CAPNP_DECLARE_SCHEMA(d7d879450a253e4b);
 CAPNP_DECLARE_SCHEMA(f061e22f0ae5c7b5);
+CAPNP_DECLARE_SCHEMA(a0a054dea32fd98c);
 
 }  // namespace schemas
 }  // namespace capnp
@@ -1171,4 +1174,6 @@ inline ::capnp::Orphan< ::capnp::Text> DiscriminatorOptions::Builder::disownValu
 
 }  // namespace
 }  // namespace
+
+CAPNP_END_HEADER
 
