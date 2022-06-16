@@ -21,15 +21,14 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !defined(CAPNP_HEADER_WARNINGS)
-#pragma GCC system_header
-#endif
-
 #include "layout.h"
 #include "pointer-helpers.h"
 #include "orphan.h"
 #include "list.h"
 #include <kj/windows-sanity.h>  // work-around macro conflict with `VOID`
+#include <kj/hash.h>
+
+CAPNP_BEGIN_HEADER
 
 namespace capnp {
 
@@ -509,7 +508,7 @@ public:
   inline Builder(decltype(nullptr)) {}
   inline Builder(_::StructBuilder builder): _builder(builder) {}
 
-#if !_MSC_VER  // TODO(msvc): MSVC ICEs on this. Try restoring when compiler improves.
+#if !_MSC_VER || defined(__clang__) // TODO(msvc): MSVC ICEs on this. Try restoring when compiler improves.
   template <typename T, typename = kj::EnableIf<CAPNP_KIND(FromBuilder<T>) == Kind::STRUCT>>
   inline Builder(T&& value)
       : _builder(_::PointerHelpers<FromBuilder<T>>::getInternalBuilder(kj::fwd<T>(value))) {}
@@ -641,7 +640,7 @@ public:
   inline Reader(): _reader(ElementSize::VOID) {}
   inline Reader(_::ListReader reader): _reader(reader) {}
 
-#if !_MSC_VER  // TODO(msvc): MSVC ICEs on this. Try restoring when compiler improves.
+#if !_MSC_VER || defined(__clang__) // TODO(msvc): MSVC ICEs on this. Try restoring when compiler improves.
   template <typename T, typename = kj::EnableIf<CAPNP_KIND(FromReader<T>) == Kind::LIST>>
   inline Reader(T&& value)
       : _reader(_::PointerHelpers<FromReader<T>>::getInternalReader(kj::fwd<T>(value))) {}
@@ -681,7 +680,7 @@ public:
   inline Builder(decltype(nullptr)): _builder(ElementSize::VOID) {}
   inline Builder(_::ListBuilder builder): _builder(builder) {}
 
-#if !_MSC_VER  // TODO(msvc): MSVC ICEs on this. Try restoring when compiler improves.
+#if !_MSC_VER || defined(__clang__) // TODO(msvc): MSVC ICEs on this. Try restoring when compiler improves.
   template <typename T, typename = kj::EnableIf<CAPNP_KIND(FromBuilder<T>) == Kind::LIST>>
   inline Builder(T&& value)
       : _builder(_::PointerHelpers<FromBuilder<T>>::getInternalBuilder(kj::fwd<T>(value))) {}
@@ -737,6 +736,27 @@ struct PipelineOp {
   };
 };
 
+inline uint KJ_HASHCODE(const PipelineOp& op) {
+  switch (op.type) {
+    case PipelineOp::NOOP: return kj::hashCode(op.type);
+    case PipelineOp::GET_POINTER_FIELD: return kj::hashCode(op.type, op.pointerIndex);
+  }
+  KJ_CLANG_KNOWS_THIS_IS_UNREACHABLE_BUT_GCC_DOESNT
+}
+
+inline bool operator==(const PipelineOp& a, const PipelineOp& b) {
+  if (a.type != b.type) return false;
+  switch (a.type) {
+    case PipelineOp::NOOP: return true;
+    case PipelineOp::GET_POINTER_FIELD: return a.pointerIndex == b.pointerIndex;
+  }
+  KJ_CLANG_KNOWS_THIS_IS_UNREACHABLE_BUT_GCC_DOESNT
+}
+
+inline bool operator!=(const PipelineOp& a, const PipelineOp& b) {
+  return !(a == b);
+}
+
 class PipelineHook {
   // Represents a currently-running call, and implements pipelined requests on its result.
 
@@ -753,6 +773,9 @@ public:
 
   template <typename Pipeline, typename = FromPipeline<Pipeline>>
   static inline kj::Own<PipelineHook> from(Pipeline&& pipeline);
+
+  template <typename Pipeline, typename = FromPipeline<Pipeline>>
+  static inline PipelineHook& from(Pipeline& pipeline);
 
 private:
   template <typename T> struct FromImpl;
@@ -1076,12 +1099,18 @@ struct PipelineHook::FromImpl {
   static inline kj::Own<PipelineHook> apply(typename T::Pipeline&& pipeline) {
     return from(kj::mv(pipeline._typeless));
   }
+  static inline PipelineHook& apply(typename T::Pipeline& pipeline) {
+    return from(pipeline._typeless);
+  }
 };
 
 template <>
 struct PipelineHook::FromImpl<AnyPointer> {
   static inline kj::Own<PipelineHook> apply(AnyPointer::Pipeline&& pipeline) {
     return kj::mv(pipeline.hook);
+  }
+  static inline PipelineHook& apply(AnyPointer::Pipeline& pipeline) {
+    return *pipeline.hook;
   }
 };
 
@@ -1090,6 +1119,13 @@ inline kj::Own<PipelineHook> PipelineHook::from(Pipeline&& pipeline) {
   return FromImpl<T>::apply(kj::fwd<Pipeline>(pipeline));
 }
 
+template <typename Pipeline, typename T>
+inline PipelineHook& PipelineHook::from(Pipeline& pipeline) {
+  return FromImpl<T>::apply(pipeline);
+}
+
 #endif  // !CAPNP_LITE
 
 }  // namespace capnp
+
+CAPNP_END_HEADER
