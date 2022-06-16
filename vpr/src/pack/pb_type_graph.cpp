@@ -137,7 +137,6 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 
     for (auto& type : device_ctx.logical_block_types) {
         if (type.pb_type) {
-            //#TODO: Because of using calloc, not all of the objects inside of the t_pb_graph_node are constructed properly - We should use new!
             type.pb_graph_head = (t_pb_graph_node*)vtr::calloc(1, sizeof(t_pb_graph_node));
             int pin_count_in_cluster = 0;
             alloc_and_load_pb_graph(type.pb_graph_head, nullptr,

@@ -822,6 +822,15 @@ struct t_physical_tile_port {
  * index: Keep track of type in array for easy access
  * physical_tile_index: index of the corresponding physical tile type
  *
+ * pb_pin_num_map: Contains all the pins, including pins on the root-level block and internal pins, in
+ * the logical block. The key of this map is the logical number of the pin, and the value is a pointer to the
+ * corresponding pb_graph_pin
+ *
+ * pb_pin_class_map: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
+ * index to logical_class_inf.
+ *
+ * logical_class_inf: Contains all the classes inside the logical block. The index of each class is the logical number associate with the class.
+ *
  * A logical block is the implementation of a component's functionality of the FPGA device
  * and it identifies its logical behaviour and internal connections.
  *
