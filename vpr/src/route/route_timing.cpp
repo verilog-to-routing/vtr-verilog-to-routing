@@ -216,7 +216,8 @@ static bool try_timing_driven_route_tmpl(const Netlist<>& netlist,
                                          const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                          std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                          std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                                         ScreenUpdatePriority first_iteration_priority);
+                                         ScreenUpdatePriority first_iteration_priority,
+                                         bool is_flat);
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(const Netlist<>& net_list,
@@ -227,7 +228,8 @@ bool try_timing_driven_route(const Netlist<>& net_list,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
                              std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                             ScreenUpdatePriority first_iteration_priority) {
+                             ScreenUpdatePriority first_iteration_priority,
+                             bool is_flat) {
 
         switch (router_opts.router_heap) {
             case e_heap_type::BINARY_HEAP:
@@ -240,7 +242,8 @@ bool try_timing_driven_route(const Netlist<>& net_list,
                     netlist_pin_lookup,
                     timing_info,
                     delay_calc,
-                    first_iteration_priority);
+                    first_iteration_priority,
+                    is_flat);
                 break;
             case e_heap_type::BUCKET_HEAP_APPROXIMATION:
                 return try_timing_driven_route_tmpl<ConnectionRouter<Bucket>>(
@@ -252,7 +255,8 @@ bool try_timing_driven_route(const Netlist<>& net_list,
                     netlist_pin_lookup,
                     timing_info,
                     delay_calc,
-                    first_iteration_priority);
+                    first_iteration_priority,
+                    is_flat);
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap type %d", router_opts.router_heap);
         }
@@ -268,7 +272,8 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
                                   const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                   std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                                  ScreenUpdatePriority first_iteration_priority) {
+                                  ScreenUpdatePriority first_iteration_priority,
+                                  bool is_flat) {
     /* Timing-driven routing algorithm.  The timing graph (includes slack)   *
      * must have already been allocated, and net_delay must have been allocated. *
      * Returns true if the routing succeeds, false otherwise.                    */

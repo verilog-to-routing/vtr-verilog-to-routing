@@ -27,7 +27,8 @@ bool try_timing_driven_route(const Netlist<>& net_list,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
                              std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                             ScreenUpdatePriority first_iteration_priority);
+                             ScreenUpdatePriority first_iteration_priority,
+                             bool is_flat);
 
 template<typename ConnectionRouter>
 bool try_timing_driven_route_net(ConnectionRouter& router,
