@@ -180,17 +180,34 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                       arch->Chans, det_routing_arch, segment_inf,
                       arch->Directs, arch->num_directs);
         }
-        success = try_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
-                            current,
-                            router_opts,
-                            analysis_opts,
-                            det_routing_arch, segment_inf,
-                            net_delay,
-                            timing_info,
-                            delay_calc,
-                            arch->Chans,
-                            arch->Directs, arch->num_directs,
-                            (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR);
+        if(router_opts.flat_routing) {
+            success = try_route((const Netlist<>&)g_vpr_ctx.atom().nlist,
+                                current,
+                                router_opts,
+                                analysis_opts,
+                                det_routing_arch, segment_inf,
+                                net_delay,
+                                timing_info,
+                                delay_calc,
+                                arch->Chans,
+                                arch->Directs, arch->num_directs,
+                                (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
+                                true);
+        } else {
+            success = try_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                                current,
+                                router_opts,
+                                analysis_opts,
+                                det_routing_arch, segment_inf,
+                                net_delay,
+                                timing_info,
+                                delay_calc,
+                                arch->Chans,
+                                arch->Directs, arch->num_directs,
+                                (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
+                                false);
+        }
+
         attempt_count++;
         fflush(stdout);
 
@@ -316,17 +333,34 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                           arch->Chans, det_routing_arch, segment_inf,
                           arch->Directs, arch->num_directs);
             }
-            success = try_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
-                                current,
-                                router_opts,
-                                analysis_opts,
-                                det_routing_arch,
-                                segment_inf,
-                                net_delay,
-                                timing_info,
-                                delay_calc,
-                                arch->Chans, arch->Directs, arch->num_directs,
-                                ScreenUpdatePriority::MINOR);
+
+            if(router_opts.flat_routing) {
+                success = try_route((const Netlist<>&)g_vpr_ctx.atom().nlist,
+                                    current,
+                                    router_opts,
+                                    analysis_opts,
+                                    det_routing_arch, segment_inf,
+                                    net_delay,
+                                    timing_info,
+                                    delay_calc,
+                                    arch->Chans,
+                                    arch->Directs, arch->num_directs,
+                                    ScreenUpdatePriority::MINOR,
+                                    true);
+            } else {
+                success = try_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                                    current,
+                                    router_opts,
+                                    analysis_opts,
+                                    det_routing_arch, segment_inf,
+                                    net_delay,
+                                    timing_info,
+                                    delay_calc,
+                                    arch->Chans,
+                                    arch->Directs, arch->num_directs,
+                                    (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
+                                    false);
+            }
 
             if (success && Fc_clipped == false) {
                 final = current;

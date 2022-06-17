@@ -12,7 +12,8 @@ void try_graph(int width_fac,
                std::vector<t_segment_inf>& segment_inf,
                t_chan_width_dist chan_width_dist,
                t_direct_inf* directs,
-               int num_directs);
+               int num_directs,
+               bool is_flat);
 
 bool try_route(const Netlist<>& net_list,
                int width_fac,
@@ -26,7 +27,8 @@ bool try_route(const Netlist<>& net_list,
                t_chan_width_dist chan_width_dist,
                t_direct_inf* directs,
                int num_directs,
-               ScreenUpdatePriority first_iteration_priority);
+               ScreenUpdatePriority first_iteration_priority,
+               bool is_flat);
 
 bool feasible_routing();
 
