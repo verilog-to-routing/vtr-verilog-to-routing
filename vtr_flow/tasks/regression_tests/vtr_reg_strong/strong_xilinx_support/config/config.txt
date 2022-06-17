@@ -15,7 +15,6 @@ circuit_list_add=stereovision3.v
 # Add architectures to list to sweep
 arch_list_add=simple-7series.xml
 
-############################ The following configurations are not changed and have been checked #####################
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
@@ -26,4 +25,4 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-track_memory_usage # TODO: Check this ##############################
+script_params=-track_memory_usage 

@@ -74,7 +74,7 @@
     <!-- TODO: PR #1883 allows for different horizontal and vertical uniform channel widths (an attribute of Xilinx arches)
     until that PR is merged, we give equal distributions here. -->
     <chan_width_distr>
-      <x distr="uniform" peak="1.000000"/>
+      <x distr="uniform" peak="0.652632"/>
       <y distr="uniform" peak="1.000000"/>
     </chan_width_distr>
     <switch_block type="wilton" fs="3"/>
