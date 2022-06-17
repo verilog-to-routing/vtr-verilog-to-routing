@@ -3,7 +3,7 @@
 
 /**
  * @file
- * @brief This header defines useful methods to identify VPR execution errors. The VTRUTIL API provides additional logging and error identification options and these can be found in [VTR Logging-Errors-Assertions](../vtrutil/logging.html). 
+ * @brief This header defines useful methods to identify VPR execution errors. The VTRUTIL API provides additional logging and error identification options and these can be found in [VTR Logging-Errors-Assertions](../vtrutil/logging.html). Within VPR the VTRUTIL API should be used primarily for logging warnings and errors should be identified using the methods shown below. 
  *
  * # VPR Error Macros #
  * 
@@ -43,30 +43,56 @@
 
 /// This describes the error types seen in VPR
 enum e_vpr_error {
-    VPR_ERROR_UNKNOWN = 0, /// Unknown Error
+    /// Unknown Error
+    VPR_ERROR_UNKNOWN = 0,
 
-    // Flow errors
-    VPR_ERROR_ARCH,  /// Error while parsing the architecture description file
-    VPR_ERROR_PACK,  /// Error while packing the netlist
-    VPR_ERROR_PLACE, /// Error while placing the netlist
-    VPR_ERROR_ROUTE, /// Error while routing the netlist
+    // Flow errors //
+
+    /// Error while parsing the architecture description file
+    VPR_ERROR_ARCH,
+    /// Error while packing the netlist
+    VPR_ERROR_PACK,
+    /// Error while placing the netlist
+    VPR_ERROR_PLACE,
+    /// Error while routing the netlist
+    VPR_ERROR_ROUTE,
+    /// Error during timing analysis
     VPR_ERROR_TIMING,
+    /// Error during power analysis
     VPR_ERROR_POWER,
+    /// Error while parsing the SDC file
     VPR_ERROR_SDC,
-
-    // File parsing errors
-    VPR_ERROR_NET_F,        /// Error while parsing the packed netlist file
-    VPR_ERROR_PLACE_F,      /// Error while parsing the placement file
-    VPR_ERROR_BLIF_F,       /// Error while parsing the blif file
-    VPR_ERROR_IC_NETLIST_F, /// Error while parsing the interchange netlist file
-
-    VPR_ERROR_IMPL_NETLIST_WRITER,
-    VPR_ERROR_NETLIST,
-    VPR_ERROR_ATOM_NETLIST,
-    VPR_ERROR_CLB_NETLIST,
+    /// Error while analyzing the implemented design
     VPR_ERROR_ANALYSIS,
+    /// Error while creating the GUI application
+    VPR_ERROR_DRAW,
+
+    // File parsing errors //
+
+    /// Error while parsing the packed netlist file
+    VPR_ERROR_NET_F,
+    /// Error while parsing the placement file
+    VPR_ERROR_PLACE_F,
+    /// Error while parsing the blif file
+    VPR_ERROR_BLIF_F,
+    /// Error while parsing the interchange netlist file
+    VPR_ERROR_IC_NETLIST_F,
+
+    // consistency and other errors //
+
+    /// Error in the netlist writer consistency
+    VPR_ERROR_IMPL_NETLIST_WRITER,
+    /// Error in the netlist consistency
+    VPR_ERROR_NETLIST,
+    /// Error in the atom netlist consistency
+    VPR_ERROR_ATOM_NETLIST,
+    /// Error in the clustered netlist consistency
+    VPR_ERROR_CLB_NETLIST,
+    /// Error if there was a interruption during program flow
     VPR_ERROR_INTERRUPTED,
-    VPR_ERROR_DRAW, /// Error while drawing the FPGA device
+
+    /// Another type of error
+    VPR_ERROR_OTHER
 };
 /// \cond DO NOT DOCUMENT
 typedef enum e_vpr_error t_vpr_error_type;
