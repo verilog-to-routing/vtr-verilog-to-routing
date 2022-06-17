@@ -63,24 +63,24 @@ constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 
-void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_nets button
-     * which is written in button.cpp                                         */
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    // get the pointer to the toggle_nets button
-    std::string button_name = "toggle_nets";
-    auto toggle_nets = find_button(button_name.c_str());
-
-    // use the pointer to get the active text
+/**
+ * @brief toggles net drawing status based on status of combo box
+ * 
+ * @param self ptr to gtkComboBox
+ * @param app ezgl::application
+ */
+void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app){
+    std::cout << "Nets toggled" << std::endl;
     enum e_draw_nets new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_nets));
-
+    t_draw_state* draw_state = get_draw_state_vars();
+    std::cout << draw_state << std::endl;
+    gchar* setting = gtk_combo_box_text_get_active_text(
+                            GTK_COMBO_BOX_TEXT(self));
+    std::cout << setting << std::endl;
     // assign corresponding enum value to draw_state->show_nets
-    if (strcmp(combo_box_content, "None") == 0)
+    if (strcmp(setting, "None") == 0)
         new_state = DRAW_NO_NETS;
-    else if (strcmp(combo_box_content, "Nets") == 0) {
+    else if (strcmp(setting, "Nets") == 0) {
         new_state = DRAW_NETS;
     } else { // "Logical Connections"
         new_state = DRAW_LOGICAL_CONNECTIONS;
@@ -89,12 +89,45 @@ void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/)
     draw_state->show_nets = new_state;
 
     //free dynamically allocated pointers
-    g_free(combo_box_content);
+    g_free(setting);
 
     //redraw
-    application.update_message(draw_state->default_message);
-    application.refresh_drawing();
+    app->update_message(draw_state->default_message);
+    app->refresh_drawing();  
 }
+
+// void toggle_nets_old(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+//     /* this is the callback function for runtime created toggle_nets button
+//      * which is written in button.cpp                                         */
+//     t_draw_state* draw_state = get_draw_state_vars();
+
+//     // get the pointer to the toggle_nets button
+//     std::string button_name = "toggle_nets";
+//     auto toggle_nets = find_button(button_name.c_str());
+
+//     // use the pointer to get the active text
+//     enum e_draw_nets new_state;
+//     gchar* combo_box_content = gtk_combo_box_text_get_active_text(
+//         GTK_COMBO_BOX_TEXT(toggle_nets));
+
+//     // assign corresponding enum value to draw_state->show_nets
+//     if (strcmp(combo_box_content, "None") == 0)
+//         new_state = DRAW_NO_NETS;
+//     else if (strcmp(combo_box_content, "Nets") == 0) {
+//         new_state = DRAW_NETS;
+//     } else { // "Logical Connections"
+//         new_state = DRAW_LOGICAL_CONNECTIONS;
+//     }
+//     draw_state->reset_nets_congestion_and_rr();
+//     draw_state->show_nets = new_state;
+
+//     //free dynamically allocated pointers
+//     g_free(combo_box_content);
+
+//     //redraw
+//     application.update_message(draw_state->default_message);
+//     application.refresh_drawing();
+// }
 
 void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     /* this is the callback function for runtime created toggle_rr button
@@ -378,7 +411,19 @@ void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, 
     application.refresh_drawing();
 }
 
-// Callback function for NetMax Fanout checkbox
+/**
+ * @brief CBK for Net Max Fanout spin button. Sets max fanout when val. changes
+ * 
+ * @param self self ptr to GtkSpinButton
+ * @param app ezgl::app
+ */
+void set_net_max_fanout(GtkSpinButton* self, ezgl::application* app){
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->draw_net_max_fanout = gtk_spin_button_get_value_as_int(self);
+    app->refresh_drawing();
+}
+
+// Deprecated
 void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     /* this is the callback function for runtime created net_max_fanout widget
      * which is written in button.cpp                                         */
@@ -395,17 +440,29 @@ void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data
     application.refresh_drawing();
 }
 
-void set_net_alpha_value(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    std::string button_name = "netAlpha";
-    auto net_alpha = find_button(button_name.c_str());
+/**
+ * @brief Set the net alpha value (transparency) based on value of spin button
+ * 
+ * @param self 
+ * @param app 
+ */
+void set_net_alpha_value(GtkSpinButton* self, ezgl::application* app){
     t_draw_state* draw_state = get_draw_state_vars();
-
-    //set draw_state->net_alpha to its corresponding value in the ui
-    int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)net_alpha);
-    draw_state->net_alpha = new_value;
-
-    //redraw
-    application.refresh_drawing();
+    draw_state->net_alpha = gtk_spin_button_get_value_as_int(self);
+    app->refresh_drawing();
 }
+
+// void set_net_alpha_value_old(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+//     std::string button_name = "netAlpha";
+//     auto net_alpha = find_button(button_name.c_str());
+//     t_draw_state* draw_state = get_draw_state_vars();
+
+//     //set draw_state->net_alpha to its corresponding value in the ui
+//     int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)net_alpha);
+//     draw_state->net_alpha = new_value;
+
+//     //redraw
+//     application.refresh_drawing();
+// }
 
 #endif

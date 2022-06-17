@@ -21,6 +21,7 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
+
 //location of spin buttons, combo boxes, and labels on grid
 gint box_width = 1;
 gint box_height = 1;
@@ -28,6 +29,7 @@ gint label_left_start_col = 0;
 gint box_left_start_col = 0;
 gint button_row = 2; // 2 is the row num of the window button in main.ui, add buttons starting from this row
 
+//DEPRECATED
 void button_for_net_alpha() {
     GObject* main_window = application.get_object(application.get_main_window_id().c_str());
     GObject* main_window_grid = application.get_object("InnerGrid");
@@ -54,70 +56,72 @@ void button_for_net_alpha() {
                              alpha_widget);
 }
 
-void button_for_toggle_nets() {
-    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
-    GObject* main_window_grid = application.get_object("InnerGrid");
+//DEPRECATED
+// void button_for_toggle_nets() {
+//     GObject* main_window = application.get_object(application.get_main_window_id().c_str());
+//     GObject* main_window_grid = application.get_object("InnerGrid");
 
-    //combo box for toggle_nets
-    GtkWidget* toggle_nets_widget = gtk_combo_box_text_new();
-    GtkWidget* toggle_nets_label = gtk_label_new("Toggle Nets:");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_nets_widget), "None");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_nets_widget), "Nets");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_nets_widget), "Logical Connections");
-    gtk_combo_box_set_active((GtkComboBox*)toggle_nets_widget, 0); // default set to None which has an index 0
-    gtk_widget_set_name(toggle_nets_widget, "toggle_nets");
+//     //combo box for toggle_nets
+//     GtkWidget* toggle_nets_widget = gtk_combo_box_text_new();
+//     GtkWidget* toggle_nets_label = gtk_label_new("Toggle Nets:");
+//     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_nets_widget), "None");
+//     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_nets_widget), "Nets");
+//     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_nets_widget), "Logical Connections");
+//     gtk_combo_box_set_active((GtkComboBox*)toggle_nets_widget, 0); // default set to None which has an index 0
+//     gtk_widget_set_name(toggle_nets_widget, "toggle_nets");
 
-    //attach to the grid
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_nets_label, label_left_start_col, button_row++, box_width, box_height);
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_nets_widget, box_left_start_col, button_row++, box_width, box_height);
+//     //attach to the grid
+//     gtk_grid_attach((GtkGrid*)main_window_grid, toggle_nets_label, label_left_start_col, button_row++, box_width, box_height);
+//     gtk_grid_attach((GtkGrid*)main_window_grid, toggle_nets_widget, box_left_start_col, button_row++, box_width, box_height);
 
-    //show newly added contents
-    gtk_widget_show_all((GtkWidget*)main_window);
+//     //show newly added contents
+//     gtk_widget_show_all((GtkWidget*)main_window);
 
-    //connect signals
-    g_signal_connect_swapped(GTK_COMBO_BOX_TEXT(toggle_nets_widget),
-                             "changed",
-                             G_CALLBACK(toggle_nets),
-                             toggle_nets_widget);
-}
+//     //connect signals
+//     g_signal_connect_swapped(GTK_COMBO_BOX_TEXT(toggle_nets_widget),
+//                              "changed",
+//                              G_CALLBACK(toggle_nets),
+//                              toggle_nets_widget);
+// }
 
-void button_for_net_max_fanout() {
-    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
-    GObject* main_window_grid = application.get_object("InnerGrid");
+//DEPRECATED
+// void button_for_net_max_fanout() {
+//     GObject* main_window = application.get_object(application.get_main_window_id().c_str());
+//     GObject* main_window_grid = application.get_object("InnerGrid");
 
-    //find maximum fanout
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& clb_nlist = cluster_ctx.clb_nlist;
-    size_t max_fanout = 0;
-    for (ClusterNetId net_id : clb_nlist.nets())
-        max_fanout = std::max(max_fanout, clb_nlist.net_sinks(net_id).size());
+//     //find maximum fanout
+//     auto& cluster_ctx = g_vpr_ctx.clustering();
+//     auto& clb_nlist = cluster_ctx.clb_nlist;
+//     size_t max_fanout = 0;
+//     for (ClusterNetId net_id : clb_nlist.nets())
+//         max_fanout = std::max(max_fanout, clb_nlist.net_sinks(net_id).size());
 
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& atom_nlist = atom_ctx.nlist;
-    size_t max_fanout2 = 0;
-    for (AtomNetId net_id : atom_nlist.nets())
-        max_fanout2 = std::max(max_fanout2, atom_nlist.net_sinks(net_id).size());
+//     auto& atom_ctx = g_vpr_ctx.atom();
+//     auto& atom_nlist = atom_ctx.nlist;
+//     size_t max_fanout2 = 0;
+//     for (AtomNetId net_id : atom_nlist.nets())
+//         max_fanout2 = std::max(max_fanout2, atom_nlist.net_sinks(net_id).size());
 
-    size_t max = std::max(max_fanout2, max_fanout);
+//     size_t max = std::max(max_fanout2, max_fanout);
 
-    //spin box for net_max_fanout, set the range and increment step
-    GtkWidget* net_max_fanout_widget = gtk_spin_button_new_with_range(0, (int)max, 1.);
-    GtkWidget* max_fanout_label = gtk_label_new("Net Max Fanout:");
-    gtk_widget_set_name(net_max_fanout_widget, "netMaxFanout");
+//     //spin box for net_max_fanout, set the range and increment step
+//     GtkWidget* net_max_fanout_widget = gtk_spin_button_new_with_range(0, (int)max, 1.);
+//     GtkWidget* max_fanout_label = gtk_label_new("Net Max Fanout:");
+//     gtk_widget_set_name(net_max_fanout_widget, "netMaxFanout");
 
-    //attach to the grid
-    gtk_grid_attach((GtkGrid*)main_window_grid, max_fanout_label, label_left_start_col, button_row++, box_width, box_height);
-    gtk_grid_attach((GtkGrid*)main_window_grid, net_max_fanout_widget, box_left_start_col, button_row++, box_width, box_height);
+//     //attach to the grid
+//     gtk_grid_attach((GtkGrid*)main_window_grid, max_fanout_label, label_left_start_col, button_row++, box_width, box_height);
+//     gtk_grid_attach((GtkGrid*)main_window_grid, net_max_fanout_widget, box_left_start_col, button_row++, box_width, box_height);
 
-    //show newly added contents
-    gtk_widget_show_all((GtkWidget*)main_window);
+//     //show newly added contents
+//     gtk_widget_show_all((GtkWidget*)main_window);
 
-    //connect signals
-    g_signal_connect_swapped((GtkSpinButton*)net_max_fanout_widget,
-                             "value_changed",
-                             G_CALLBACK(net_max_fanout),
-                             net_max_fanout_widget);
-}
+//     //connect signals
+//     g_signal_connect_swapped((GtkSpinButton*)net_max_fanout_widget,
+//                              "value_changed",
+//                              G_CALLBACK(net_max_fanout),
+//                              net_max_fanout_widget);
+// }
 
 void button_for_toggle_blk_internal() {
     GObject* main_window = application.get_object(application.get_main_window_id().c_str());

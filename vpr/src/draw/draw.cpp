@@ -56,6 +56,7 @@
 #include "breakpoint.h"
 #include "manual_moves.h"
 #include "move_utils.h"
+#include "ui.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
@@ -118,8 +119,6 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
 static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
     ezgl::application* app,
     bool is_new_window);
-static void toggle_window_mode(GtkWidget* /*widget*/,
-                               ezgl::application* /*app*/);
 static void setup_default_ezgl_callbacks(ezgl::application* app);
 static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
@@ -275,37 +274,13 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     if (!is_new_window)
         return;
 
-    //button to enter window_mode, created in main.ui
-    GtkButton* window = (GtkButton*)app->get_object("Window");
-    gtk_button_set_label(window, "Window");
-    g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
+    //Configuring basic buttons (search, save, window)
+    basic_button_setup(app);
 
-    //button to search, created in main.ui
-    GtkButton* search = (GtkButton*)app->get_object("Search");
-    gtk_button_set_label(search, "Search");
-    g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
-
-    //button for save graphcis, created in main.ui
-    GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
-    g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box),
-                     app);
-
-    //combo box for search type, created in main.ui
-    GObject* search_type = (GObject*)app->get_object("SearchType");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID"); // index 0
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "Block Name");                                // index 1
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");   // index 2
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name"); // index 3
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "RR Node ID"); // index 4
-    //Important to have default option set, or else user can search w. no selected type which can cause crash
-    gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
-    g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
+    //Loading names for
     load_block_names(app);
-    button_for_toggle_nets();
-    button_for_net_max_fanout();
-    button_for_net_alpha();
+
+    net_button_setup(app);
     button_for_toggle_blk_internal();
     button_for_toggle_block_pin_util();
     button_for_toggle_placement_macros();
@@ -364,34 +339,10 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     if (!is_new_window)
         return;
 
-    GtkButton* window = (GtkButton*)app->get_object("Window");
-    gtk_button_set_label(window, "Window");
-    g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
-
-    GtkButton* search = (GtkButton*)app->get_object("Search");
-    gtk_button_set_label(search, "Search");
-    g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
-
-    GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
-    g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box),
-                     app);
-
-    GObject* search_type = (GObject*)app->get_object("SearchType");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "Block Name");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "RR Node ID");
-    //Important to have default option set, or else user can search w. no selected type which can cause crash
-    gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
-    g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
+    basic_button_setup(app);
     load_block_names(app);
 
-    button_for_toggle_nets();
-    button_for_net_max_fanout();
-    button_for_net_alpha();
+    net_button_setup(app);
     button_for_toggle_blk_internal();
     button_for_toggle_block_pin_util();
     button_for_toggle_placement_macros();
@@ -527,7 +478,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 }
 
 #ifndef NO_GRAPHICS
-static void toggle_window_mode(GtkWidget* /*widget*/,
+void toggle_window_mode(GtkWidget* /*widget*/,
                                ezgl::application* /*app*/) {
     window_mode = true;
 }

@@ -103,6 +103,8 @@ ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 /* Lightens a color's luminance [0, 1] by an aboslute 'amount' */
 ezgl::color lighten_color(ezgl::color color, float amount);
 
+void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
+
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */

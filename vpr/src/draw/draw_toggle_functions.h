@@ -43,7 +43,7 @@
 
 /* Callback function for runtime created toggle_nets button in button.cpp. Controls whether or not nets are visualized.
  * Toggles value of draw_state->show_nets.*/
-void toggle_nets(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app);
 
 /* Callback function for runtime created toggle_rr button in button.cpp. Draws different groups of RRs depending on
  * user input. Changes value of draw_state->draw_rr_toggle. */
@@ -90,12 +90,12 @@ void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpoint
 
 /* Callback function for runtime created netMaxFanout widget in button.cpp.
  * Sets draw_state->draw_net_max_fanout to its corresponding value in the UI. */
-void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void set_net_max_fanout(GtkSpinButton* self, ezgl::application* app);
 
 /* Callback function for runtime created netAlpha widget in button.cpp.
  * Sets draw_state->net_alpha (a value from 0 to 1 representing transparency) to
  * its corresponding value in the UI. */
-void set_net_alpha_value(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void set_net_alpha_value(GtkSpinButton* self, ezgl::application* app);
 
 #endif /* NO_GRAPHICS */
 #endif /* DRAW_TOGGLE_FUNCTIONS_H */
