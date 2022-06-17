@@ -944,12 +944,12 @@ static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* h
 static ClusterPinId get_connected_cluster_pin_id(const ClusteredPinAtomPinsLookup& pin_look_up, ParentPinId pin, bool is_flat) {
     ClusterPinId cluster_pin_id = ClusterPinId::INVALID();
     if(is_flat) {/* Pin is in atom netlist */
-        AtomPinId atom_pin_id = get_atom_pin_id(pin);
+        AtomPinId atom_pin_id = convert_to_atom_pin_id(pin);
         cluster_pin_id = pin_look_up.connected_clb_pin(atom_pin_id);
 
 
     } else { /* Pin is in cluster netlist */
-        cluster_pin_id = get_cluster_pin_id(pin);
+        cluster_pin_id = convert_to_cluster_pin_id(pin);
     }
 
     return cluster_pin_id;

@@ -528,9 +528,9 @@ t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
 
 t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat) {
     if(is_flat) {
-        return physical_tile_type(get_atom_block_id(blk_id));
+        return physical_tile_type(convert_to_atom_block_id(blk_id));
     } else {
-        return physical_tile_type(get_cluster_block_id(blk_id));
+        return physical_tile_type(convert_to_cluster_block_id(blk_id));
     }
 }
 
@@ -636,9 +636,9 @@ t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
 
 t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat) {
     if(is_flat) {
-        return get_class_range_for_block(get_atom_block_id(blk_id));
+        return get_class_range_for_block(convert_to_atom_block_id(blk_id));
     } else {
-        return get_class_range_for_block(get_cluster_block_id(blk_id));
+        return get_class_range_for_block(convert_to_cluster_block_id(blk_id));
     }
 }
 
@@ -676,13 +676,13 @@ std::tuple<int, int> get_block_loc(const ParentBlockId& block_id, bool is_flat) 
     auto& place_ctx = g_vpr_ctx.placement();
 
     if(is_flat) {
-        AtomBlockId atom_block_id = get_atom_block_id(block_id);
+        AtomBlockId atom_block_id = convert_to_atom_block_id(block_id);
         auto& atom_look_up = g_vpr_ctx.atom().lookup;
         ClusterBlockId cluster_block_id = atom_look_up.atom_clb(atom_block_id);
         i = place_ctx.block_locs[cluster_block_id].loc.x;
         j = place_ctx.block_locs[cluster_block_id].loc.y;
     } else {
-        ClusterBlockId cluster_block_id = get_cluster_block_id(block_id);
+        ClusterBlockId cluster_block_id = convert_to_cluster_block_id(block_id);
         i = place_ctx.block_locs[cluster_block_id].loc.x;
         j = place_ctx.block_locs[cluster_block_id].loc.y;
     }
@@ -699,11 +699,11 @@ int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pi
     int class_num;
 
     if(is_flat) {
-        AtomPinId atom_pin_id = get_atom_pin_id(pin_id);
+        AtomPinId atom_pin_id = convert_to_atom_pin_id(pin_id);
         class_num = get_atom_pin_class_num(atom_pin_id);
     } else {
-        ClusterBlockId cluster_block_id = get_cluster_block_id(block_id);
-        ClusterPinId cluster_pin_id = get_cluster_pin_id(pin_id);
+        ClusterBlockId cluster_block_id = convert_to_cluster_block_id(block_id);
+        ClusterPinId cluster_pin_id = convert_to_cluster_pin_id(pin_id);
         auto type = physical_tile_type(cluster_block_id);
         int phys_pin = tile_pin_index(cluster_pin_id);
         class_num = get_class_num_from_pin_physical_num(type, phys_pin);

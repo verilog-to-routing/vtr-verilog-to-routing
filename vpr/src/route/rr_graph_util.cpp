@@ -125,13 +125,13 @@ int get_net_list_pin_rr_node_num(const AtomLookup& atom_lookup,
     // For the absorbed nets, we assume that the lookahead return 0.
     ClusterNetId cluster_net_id;
     if(is_flat) {
-        cluster_net_id = atom_lookup.clb_net(get_atom_net_id(net_id));
+        cluster_net_id = atom_lookup.clb_net(convert_to_atom_net_id(net_id));
         VTR_ASSERT(!(cluster_net_id == ClusterNetId::INVALID()));
         auto atom_pin_id = net_list.net_pin(net_id, pin_index);
-        auto cluster_pin_id = cluster_pin_lookup.connected_clb_pin(get_atom_pin_id(atom_pin_id));
+        auto cluster_pin_id = cluster_pin_lookup.connected_clb_pin(convert_to_atom_pin_id(atom_pin_id));
         cluster_pin_index = cluster_net_list.pin_net_index(cluster_pin_id);
     } else {
-        cluster_net_id = get_cluster_net_id(net_id);
+        cluster_net_id = convert_to_cluster_net_id(net_id);
         cluster_pin_index = pin_index;
     }
 

@@ -454,7 +454,7 @@ float route_budgets::calculate_clb_pin_slack(ParentNetId net_id,
 
     float curr_min_slack = delay_upper_bound[net_id][ipin];
     if(is_flat_) {
-        auto curr_atom_pin = get_atom_pin_id(pin);
+        auto curr_atom_pin = convert_to_atom_pin_id(pin);
         atom_pin = curr_atom_pin;
         curr_min_slack = timing_info->setup_pin_slack(curr_atom_pin);
     } else {
@@ -463,7 +463,7 @@ float route_budgets::calculate_clb_pin_slack(ParentNetId net_id,
         * Take the minimum of the atom pin slack as the CLB pin slack
         * minimum slack is used since it is guarantee then to be freed from long path problems
         */
-        for (const AtomPinId curr_atom_pin : netlist_pin_lookup.connected_atom_pins(get_cluster_pin_id(pin))) {
+        for (const AtomPinId curr_atom_pin : netlist_pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin))) {
             if (timing_info->setup_pin_slack(curr_atom_pin) == std::numeric_limits<float>::infinity() && type == SETUP) {
                 if (curr_min_slack == delay_upper_bound[net_id][ipin]) {
                     atom_pin = curr_atom_pin;
@@ -739,14 +739,14 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
 
                     bool update_budget = false;
                     if(is_flat_) {
-                        float hold_slack = timing_info->hold_pin_slack(get_atom_pin_id(pin_id));
+                        float hold_slack = timing_info->hold_pin_slack(convert_to_atom_pin_id(pin_id));
 
                         if (hold_slack <= 0) {
                             update_budget = true;
                             break;
                         }
                     } else {
-                        for (auto& atom_pin : netlist_pin_lookup.connected_atom_pins(get_cluster_pin_id(pin_id))) {
+                        for (auto& atom_pin : netlist_pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin_id))) {
                             float hold_slack = timing_info->hold_pin_slack(atom_pin);
 
                             if (hold_slack <= 0) {

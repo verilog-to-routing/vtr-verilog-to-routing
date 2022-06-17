@@ -59,42 +59,42 @@ int get_block_num_class(const ParentBlockId& block_id, bool is_flat);
 int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pin_id, bool is_flat);
 
 template<typename T>
-inline ClusterNetId get_cluster_net_id(T id) {
+inline ClusterNetId convert_to_cluster_net_id(T id) {
     std::size_t id_num = std::size_t(id);
     ClusterNetId cluster_net_id = ClusterNetId(id_num);
     return cluster_net_id;
 }
 
 template<typename T>
-inline AtomNetId get_atom_net_id(T id) {
+inline AtomNetId convert_to_atom_net_id(T id) {
     std::size_t id_num = std::size_t(id);
     AtomNetId atom_net_id = AtomNetId(id_num);
     return atom_net_id;
 }
 
 template<typename T>
-inline ClusterBlockId get_cluster_block_id(T id) {
+inline ClusterBlockId convert_to_cluster_block_id(T id) {
     std::size_t id_num = std::size_t(id);
     ClusterBlockId cluster_block_id = ClusterBlockId(id_num);
     return cluster_block_id;
 }
 
 template<typename T>
-inline AtomBlockId get_atom_block_id(T id){
+inline AtomBlockId convert_to_atom_block_id(T id){
     std::size_t id_num = std::size_t(id);
     AtomBlockId atom_block_id = AtomBlockId(id_num);
     return atom_block_id;
 }
 
 template<typename T>
-inline ClusterPinId get_cluster_pin_id(T id) {
+inline ClusterPinId convert_to_cluster_pin_id(T id) {
     std::size_t id_num = std::size_t(id);
     ClusterPinId cluster_pin_id = ClusterPinId(id_num);
     return cluster_pin_id;
 }
 
 template<typename T>
-inline AtomPinId get_atom_pin_id(T id) {
+inline AtomPinId convert_to_atom_pin_id(T id) {
     std::size_t id_num = std::size_t(id);
     AtomPinId atom_pin_id = AtomPinId(id_num);
     return atom_pin_id;

@@ -188,14 +188,10 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
 static void prune_unused_non_configurable_nets(CBRR& connections_inf,
                                                const Netlist<>& net_list);
 
-static void init_net_delay_from_lookahead(const AtomLookup& atom_lookup,
-                                          const RouterLookahead& router_lookahead,
-                                          const ClusteredPinAtomPinsLookup& cluster_pin_lookup,
+static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           const Netlist<>& net_list,
-                                          const ClusteredNetlist& cluster_net_list,
-                                          const vtr::vector<ClusterNetId, std::vector<int>>& cluster_net_terminals,
-                                          NetPinsMatrix<float>& net_delay,
-                                          bool is_flat);
+                                          const vtr::vector<ParentNetId, std::vector<int>>& net_rr_terminals,
+                                          NetPinsMatrix<float>& net_delay);
 
 #ifndef NO_GRAPHICS
 void update_router_info_and_check_bp(bp_router_type type, int net_id);
@@ -320,9 +316,9 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         }
     }
 
-    CBRR connections_inf{net_list, route_ctx.net_rr_terminals, router_opts.flat_routing};
+    CBRR connections_inf{net_list, route_ctx.net_rr_terminals, is_flat};
 
-    route_budgets budgeting_inf(net_list, router_opts.flat_routing);
+    route_budgets budgeting_inf(net_list, is_flat);
 
     const auto* router_lookahead = get_cached_router_lookahead(
         router_opts.lookahead_type,
@@ -394,14 +390,10 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
                 {
                     //Estimate initial connection delays from the router lookahead
-                    init_net_delay_from_lookahead(g_vpr_ctx.atom().lookup,
-                                                  *router_lookahead,
-                                                  netlist_pin_lookup,
+                    init_net_delay_from_lookahead(*router_lookahead,
                                                   net_list,
-                                                  g_vpr_ctx.clustering().clb_nlist,
-                                                  route_ctx.cluster_net_rr_terminals,
-                                                  net_delay,
-                                                  router_opts.flat_routing);
+                                                  route_ctx.net_rr_terminals,
+                                                  net_delay);
 
                     //Run STA to get estimated criticalities
                     timing_info->update();
@@ -2176,52 +2168,22 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf, const Netl
 }
 
 //Initializes net_delay based on best-case delay estimates from the router lookahead
-static void init_net_delay_from_lookahead(const AtomLookup& atom_lookup,
-                                          const RouterLookahead& router_lookahead,
-                                          const ClusteredPinAtomPinsLookup& cluster_pin_lookup,
+static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           const Netlist<>& net_list,
-                                          const ClusteredNetlist& cluster_net_list,
-                                          const vtr::vector<ClusterNetId, std::vector<int>>& cluster_net_terminals,
-                                          NetPinsMatrix<float>& net_delay,
-                                          bool is_flat) {
-    // TODO: Add document about what is happening here!
-
-
+                                          const vtr::vector<ParentNetId, std::vector<int>>& net_rr_terminals,
+                                          NetPinsMatrix<float>& net_delay) {
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.; //Ensures lookahead returns delay value
-    ClusterNetId cluster_net_id;
 
     for (auto net_id : net_list.nets()) {
         if (net_list.net_is_ignored(net_id)) continue;
-        // For the absorbed nets, we assume that the lookahead return 0.
-        if(is_flat) {
-            cluster_net_id = atom_lookup.clb_net(get_atom_net_id(net_id));
-            if(cluster_net_id == ClusterNetId::INVALID()) {
-                for(size_t ipin = 1; ipin < net_list.net_pins(net_id).size(); ++ipin) {
-                    net_delay[net_id][ipin] = 0.;
-                }
-                continue;
-            }
-        } else {
-            cluster_net_id = get_cluster_net_id(net_id);
-        }
 
-        int source_rr = cluster_net_terminals[cluster_net_id][0];;
+        int source_rr = net_rr_terminals[net_id][0];
 
         for (size_t ipin = 1; ipin < net_list.net_pins(net_id).size(); ++ipin) {
-            int sink_rr = get_net_list_pin_rr_node_num(atom_lookup,
-                                                       cluster_pin_lookup,
-                                                       net_list,
-                                                       cluster_net_list,
-                                                       cluster_net_terminals,
-                                                       net_id,
-                                                       ipin,
-                                                       is_flat);
+            int sink_rr = net_rr_terminals[net_id][ipin];
 
-            float est_delay = router_lookahead.get_expected_cost(RRNodeId(source_rr),
-                                                                 RRNodeId(sink_rr),
-                                                                 cost_params,
-                                                                 /*R_upstream=*/0.);
+            float est_delay = router_lookahead.get_expected_cost(RRNodeId(source_rr), RRNodeId(sink_rr), cost_params, /*R_upstream=*/0.);
             VTR_ASSERT(std::isfinite(est_delay) && est_delay < std::numeric_limits<float>::max());
 
             net_delay[net_id][ipin] = est_delay;
