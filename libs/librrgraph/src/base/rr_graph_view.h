@@ -25,9 +25,9 @@
  * - This avoids massive changes for each client on using the APIs
  *   as each frame view provides adhoc APIs for each client
  *
- * TODO: more compact frame views will be created, e.g., 
+ * TODO: more compact frame views will be created, e.g.,
  * - a mini frame view: contains only node and edges, representing the connectivity of the graph
- * - a geometry frame view: an extended mini frame view with node-level attributes, 
+ * - a geometry frame view: an extended mini frame view with node-level attributes,
  *                          in particular geometry information (type, x, y etc).
  *
  */
@@ -45,29 +45,29 @@ class RRGraphView {
                 const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
 
     /* Disable copy constructors and copy assignment operator
-     * This is to avoid accidental copy because it could be an expensive operation considering that the 
+     * This is to avoid accidental copy because it could be an expensive operation considering that the
      * memory footprint of the data structure could ~ Gb
-     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught 
+     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught
      * by compiler
      */
     RRGraphView(const RRGraphView&) = delete;
     void operator=(const RRGraphView&) = delete;
 
     /* -- Accessors -- */
-    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin' 
+    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin'
      * kind of accessors
      */
   public:
     /* Aggregates: create range-based loops for nodes
-     * To iterate over the nodes in a RRGraph,  
-     *    using a range-based loop is suggested. 
-     *  ----------------------------------------------------------------- 
-     *    Example: iterate over all the nodes 
-     *      // Strongly suggest to use a read-only rr_graph object 
-     *      const RRGraph& rr_graph; 
-     *      for (const RRNodeId& node : rr_graph.nodes()) { 
-     *        // Do something with each node 
-     *      } 
+     * To iterate over the nodes in a RRGraph,
+     *    using a range-based loop is suggested.
+     *  -----------------------------------------------------------------
+     *    Example: iterate over all the nodes
+     *      // Strongly suggest to use a read-only rr_graph object
+     *      const RRGraph& rr_graph;
+     *      for (const RRNodeId& node : rr_graph.nodes()) {
+     *        // Do something with each node
+     *      }
      */
     inline vtr::StrongIdRange<RRNodeId> nodes() const {
         return vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(num_nodes()));
@@ -188,7 +188,7 @@ class RRGraphView {
                  && (node_xhigh(node) == -1) && (node_yhigh(node) == -1));
     }
 
-    /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY). 
+    /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY).
      * This function is used for error checking; it checks if two nodes are physically adjacent (could be connected) based on their geometry.
      * It does not check the routing edges to see if they are, in fact, possible to connect in the current routing graph.
      * This function is inlined for runtime optimization. */
@@ -203,7 +203,7 @@ class RRGraphView {
         return true;
     }
 
-    /** @brief Check if node is within bounding box. 
+    /** @brief Check if node is within bounding box.
      * To return true, the RRNode must be completely contained within the specified bounding box, with the edges of the bounding box being inclusive.
      *This function is inlined for runtime optimization. */
     inline bool node_is_inside_bounding_box(RRNodeId node, vtr::Rect<int> bounding_box) const {
@@ -307,6 +307,13 @@ class RRGraphView {
         return node_storage_.edge_sink_node(id, iedge);
     }
 
+    /** @brief Get the source node for the iedge'th edge from specified RRNodeId.
+     *  This method should generally not be used, and instead first_edge and
+     * last_edge should be used.*/
+    inline RRNodeId edge_source_node(RRNodeId id, t_edge_size iedge) const {
+        return node_storage_.edge_source_node(id, iedge);
+    }
+
     /** @brief Detect if the edge is a configurable edge (controlled by a programmable routing multipler or a tri-state switch). */
     inline bool edge_is_configurable(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_is_configurable(id, iedge, rr_switch_inf_);
@@ -322,16 +329,16 @@ class RRGraphView {
         return node_storage_.num_non_configurable_edges(node, rr_switch_inf_);
     }
 
-    /** @brief A configurable edge represents a programmable switch between routing resources, which could be 
+    /** @brief A configurable edge represents a programmable switch between routing resources, which could be
      * a multiplexer
      * a tri-state buffer
-     * a pass gate 
+     * a pass gate
      * This API gets ID range for configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range configurable_edges(RRNodeId node) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)));
     }
 
-    /** @brief A non-configurable edge represents a hard-wired connection between routing resources, which could be 
+    /** @brief A non-configurable edge represents a hard-wired connection between routing resources, which could be
      * a non-configurable buffer that can not be turned off
      * a short metal connection that can not be turned off
      * This API gets ID range for non-configurable edges. This function is inlined for runtime optimization. */
@@ -357,26 +364,26 @@ class RRGraphView {
         return node_storage_.num_edges(node);
     }
 
-    /** @brief The ptc_num carries different meanings for different node types 
-     * (true in VPR RRG that is currently supported, may not be true in customized RRG) 
-     * CHANX or CHANY: the track id in routing channels 
-     * OPIN or IPIN: the index of pins in the logic block data structure 
-     * SOURCE and SINK: the class id of a pin (indicating logic equivalence of pins) in the logic block data structure  
-     * @note  
-     * This API is very powerful and developers should not use it unless it is necessary, 
-     * e.g the node type is unknown. If the node type is known, the more specific routines, `node_pin_num()`, 
+    /** @brief The ptc_num carries different meanings for different node types
+     * (true in VPR RRG that is currently supported, may not be true in customized RRG)
+     * CHANX or CHANY: the track id in routing channels
+     * OPIN or IPIN: the index of pins in the logic block data structure
+     * SOURCE and SINK: the class id of a pin (indicating logic equivalence of pins) in the logic block data structure
+     * @note
+     * This API is very powerful and developers should not use it unless it is necessary,
+     * e.g the node type is unknown. If the node type is known, the more specific routines, `node_pin_num()`,
      * `node_track_num()`and `node_class_num()`, for different types of nodes should be used.*/
     inline short node_ptc_num(RRNodeId node) const {
         return node_storage_.node_ptc_num(node);
     }
 
-    /** @brief Get the pin num of a routing resource node. This is designed for logic blocks, 
+    /** @brief Get the pin num of a routing resource node. This is designed for logic blocks,
      * which are IPIN and OPIN nodes. This function is inlined for runtime optimization. */
     inline short node_pin_num(RRNodeId node) const {
         return node_storage_.node_pin_num(node);
     }
 
-    /** @brief Get the track num of a routing resource node. This is designed for routing tracks, 
+    /** @brief Get the track num of a routing resource node. This is designed for routing tracks,
      * which are CHANX and CHANY nodes. This function is inlined for runtime optimization. */
     inline short node_track_num(RRNodeId node) const {
         return node_storage_.node_track_num(node);
@@ -498,7 +505,7 @@ class RRGraphView {
     /* rr_indexed_data_ and rr_segments_ are needed to lookup the segment information in  node_coordinate_to_string() */
     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data_;
 
-    /* RC data for nodes. This is a flyweight data */ 
+    /* RC data for nodes. This is a flyweight data */
     const std::vector<t_rr_rc_data>& rr_rc_data_;
 
     /* Segment info for rr nodes */
