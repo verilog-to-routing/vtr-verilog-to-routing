@@ -1,18 +1,4 @@
-/**
- *  The purpose of this file is to read and parse an xml file that has then
- *  a '.flows' extension. THis file contains the description of a number of
- *  traffic flows within the NoC. A traffic flow describes the communication
- *  between two routers in the NoC.
- * 
- *  All the processed traffic flows are stored inside the NocTrafficFlows class
- *  for future use.
- * 
- *  'read_xml_noc_traffic_flows_file' is the main function that performs all the
- *  tasks listed above and should be used externally to process the traffic
- *  flows file. This file also contains a number of internal helper
- *  functions that assist in parsing the traffic flows file.
- * 
- */
+
 #include "read_xml_noc_traffic_flows_file.h"
 
 
@@ -86,18 +72,18 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     // store the names of the routers part of this traffic flow
     std::string source_router_module_name = pugiutil::get_attribute(single_flow_tag, "src", loc_data, pugiutil::REQUIRED).value();
     
-    std::string destination_router_module_name = pugiutil::get_attribute(single_flow_tag, "dst", loc_data, pugiutil::REQUIRED).value();
+    std::string sink_router_module_name = pugiutil::get_attribute(single_flow_tag, "dst", loc_data, pugiutil::REQUIRED).value();
 
     //verify whether the router module names are legal
-    verify_traffic_flow_router_modules(source_router_module_name, destination_router_module_name, single_flow_tag, loc_data);
+    verify_traffic_flow_router_modules(source_router_module_name, sink_router_module_name, single_flow_tag, loc_data);
 
     // assign the unique block ids of the two router modules after clustering
     ClusterBlockId source_router_id = get_router_module_cluster_id(source_router_module_name, cluster_ctx, single_flow_tag, loc_data, noc_router_tile_type);
-    ClusterBlockId destination_router_id = get_router_module_cluster_id(destination_router_module_name, cluster_ctx, single_flow_tag, loc_data, noc_router_tile_type);
+    ClusterBlockId sink_router_id = get_router_module_cluster_id(sink_router_module_name, cluster_ctx, single_flow_tag, loc_data, noc_router_tile_type);
 
-    // verify that the source and destination modules are actually noc routers
+    // verify that the source and sink modules are actually noc routers
     check_traffic_flow_router_module_type(source_router_module_name, source_router_id, single_flow_tag, loc_data, cluster_ctx, noc_router_tile_type);
-    check_traffic_flow_router_module_type(destination_router_module_name, destination_router_id, single_flow_tag, loc_data, cluster_ctx, noc_router_tile_type);
+    check_traffic_flow_router_module_type(sink_router_module_name, sink_router_id, single_flow_tag, loc_data, cluster_ctx, noc_router_tile_type);
 
     // store the properties of the traffic flow
     double traffic_flow_bandwidth = pugiutil::get_attribute(single_flow_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_double(NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE);
@@ -107,26 +93,26 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     verify_traffic_flow_properties(traffic_flow_bandwidth, max_traffic_flow_latency, single_flow_tag, loc_data);
 
     // make sure that the current traffic flow was not added previously
-    check_for_duplicate_traffic_flow(source_router_id, destination_router_id,single_flow_tag, loc_data, *noc_traffic_flow_storage);
+    check_for_duplicate_traffic_flow(source_router_id, sink_router_id,single_flow_tag, loc_data, *noc_traffic_flow_storage);
 
     // The current flow information is legal, so store it
-    noc_traffic_flow_storage->create_noc_traffic_flow(source_router_module_name, destination_router_module_name, source_router_id, destination_router_id, traffic_flow_bandwidth, max_traffic_flow_latency);
+    noc_traffic_flow_storage->create_noc_traffic_flow(source_router_module_name, sink_router_module_name, source_router_id, sink_router_id, traffic_flow_bandwidth, max_traffic_flow_latency);
 
     return;
 
 }
 
-void verify_traffic_flow_router_modules(std::string source_router_name, std::string destination_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data){
+void verify_traffic_flow_router_modules(std::string source_router_name, std::string sink_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data){
 
     // check that the router module names were legal
-    if ((source_router_name.compare("") == 0) || (destination_router_name.compare("") == 0)){
+    if ((source_router_name.compare("") == 0) || (sink_router_name.compare("") == 0)){
         
-        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Invalid names for the source and destination NoC router modules.");
-    }// check if the source and destination routers have the same name
-    else if (source_router_name.compare(destination_router_name) == 0)
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Invalid names for the source and sink NoC router modules.");
+    }// check if the source and sink routers have the same name
+    else if (source_router_name.compare(sink_router_name) == 0)
     {
-        // Cannot have the source and destination routers have the same name (they need to be different). A flow cant go to a single router.
-        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Source and destination NoC routers cannot be the same modules.");
+        // Cannot have the source and sink routers have the same name (they need to be different). A flow cant go to a single router.
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Source and sink NoC routers cannot be the same modules.");
     }
 
     return;
@@ -197,7 +183,9 @@ void check_traffic_flow_router_module_type(std::string router_module_name, Clust
     t_logical_block_type_ptr router_module_logical_type = cluster_ctx.clb_nlist.block_type(router_module_id);
 
     /*
-        Check the current router modules logical type is compatible with the physical type if a noc router (can the module be placed on a noc router tile on the FPGA device). If not then this module is not a router so throw an error.
+        Check whether the current router modules logical type is compatible
+        with the physical type of a noc router (can the module be placed on a 
+        noc router tile on the FPGA device). If not then this module is not a router so throw an error.
     */
     if (!is_tile_compatible(noc_router_tile_type, router_module_logical_type)){
         

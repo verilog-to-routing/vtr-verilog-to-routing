@@ -1,6 +1,22 @@
 #ifndef READ_XML_NOC_TRAFFIC_FLOWS_FILE_H
 #define READ_XML_NOC_TRAFFIC_FLOWS_FILE_H
 
+/**
+ *  @brief The purpose of this file is to read and parse an xml file that has 
+ *         then a '.flows' extension. THis file contains the description of
+ *         a number of traffic flows within the NoC. A traffic flow describes
+ *         the communication between two routers in the NoC.
+ * 
+ *         All the processed traffic flows are stored inside the 
+ *         NocTrafficFlows class for future use.
+ * 
+ *         'read_xml_noc_traffic_flows_file' is the main function that performs 
+ *         all the tasks listed above and should be used externally to process
+ *         the traffic flows file. This file also contains a number of internal
+ *         helper functions that assist in parsing the traffic flows file.
+ * 
+ */
+
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 #include "read_xml_util.h"
@@ -60,12 +76,12 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
  *        cannot communicate with itself.
  * 
  * @param source_router_name A string value of the source router module name
- * @param destination_router_name A string value of the destination router
+ * @param sink_router_name A string value of the sink router
  *                                module name
  * @param single_flow_tag A xml tag that contains the traffic flow information
  * @param loc_data Contains location data about the current line in the xml file
  */
-void verify_traffic_flow_router_modules(std::string source_router_name, std::string destination_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+void verify_traffic_flow_router_modules(std::string source_router_name, std::string sink_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
 
 /**
  * @brief Ensures that the a given traffic flows data transmission size and
@@ -136,7 +152,7 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
  * @brief Verify that every router module in the design has an associated
  *        traffic flow to it. If a router module was instantiated in a design
  *        then it should be part of a traffic flow as either a source or
- *        destination router. If the module is not then we need to throw an
+ *        sink router. If the module is not then we need to throw an
  *        error. 
  * 
  * @param noc_ctx Contains the NoC information. Used to get the total number
@@ -170,19 +186,6 @@ bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& no
  *                                 traffic flow information.
  */
 void check_for_duplicate_traffic_flow(ClusterBlockId source_router_id, ClusterBlockId sink_router_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const NocTrafficFlows& noc_traffic_flow_storage);
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #endif

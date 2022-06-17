@@ -1,22 +1,3 @@
-/*
- * The NocTrafficFlows contains all the communication
- * happening within the NoC. This includes the source
- * and destination routers in the communication link, the
- * size of the data being tranferred and any constraints
- * put on the communication link (ex. maximum latency). All
- * this information is stored inside a traffic flow. 
- * 
- * The NocTrafficFlows stores a list of all the traffic flows in
- * a given design as provided by the user. Additionally it includes
- * a number of additional datastructures to quickly retrieve a traffic flow.
- * Additionally it provides information about all the routers in the design.
- * These include datastructures include:
- * - A set of all the routers in the design
- * - A list of all traffic flows for every router where the router
- *  is the source or destination of the traffic flow
- * - The processed status of each and every traffic flow
- * 
- */
 
 #include "noc_traffic_flows.h"
 #include "vpr_error.h"
@@ -33,9 +14,6 @@ const t_noc_traffic_flow& NocTrafficFlows::get_single_noc_traffic_flow(NocTraffi
     return list_of_noc_traffic_flows[traffic_flow_id];
 }
 
-/*
-    Given a router ClusterBlockId, return a list of traffic flows where the provided router is the source router of the traffic flow
-*/
 const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associated_to_source_router(ClusterBlockId source_router_id) const {
 
     const std::vector<NocTrafficFlowId>* traffic_flow_list = nullptr;
@@ -53,9 +31,6 @@ const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associat
     return traffic_flow_list;
 }
 
-/*
-    Given a router ClusterBlockId, return a list of traffic flows where the provided router is the sink router of the traffic flow
-*/
 const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associated_to_sink_router(ClusterBlockId source_router_id) const {
 
     const std::vector<NocTrafficFlowId>* traffic_flow_list = nullptr;
@@ -78,9 +53,6 @@ bool NocTrafficFlows::get_traffic_flow_processed_status(NocTrafficFlowId traffic
     return processed_traffic_flows[traffic_flow_id];
 }
 
-/*
-    Determines the number of unique router blocks that were used as a source or sink router in all traffic flows.
-*/
 int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void){
 
     return noc_router_blocks.size();
@@ -88,11 +60,6 @@ int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void){
 
 // setters for the traffic flows
 
-/*
-    Given all the information for a given traffic flow, create it
-    and add it to all the internal datastructures. Then add the two routers
-    in the newly created flow to the set of all routers in the design.
-*/
 void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency){
 
     // create and add the new traffic flow to the list
@@ -125,7 +92,6 @@ void NocTrafficFlows::set_traffic_flow_status(NocTrafficFlowId traffic_flow_id, 
 // utility functions for the noc traffic flows
 
 
-//Create the list that stores the status of all traffic flows
 void NocTrafficFlows::finshed_noc_traffic_flows_setup(void){
 
     // get the total number of traffic flows and create a vectorof the same size to hold the "processed status" of each traffic flow
@@ -136,7 +102,6 @@ void NocTrafficFlows::finshed_noc_traffic_flows_setup(void){
     return;
 }
 
-// set the status of all the traffic flows as not processed
 void NocTrafficFlows::reset_traffic_flows_processed_status(void){
 
     for (auto traffic_flow = processed_traffic_flows.begin(); traffic_flow != processed_traffic_flows.end(); traffic_flow++){
@@ -146,7 +111,7 @@ void NocTrafficFlows::reset_traffic_flows_processed_status(void){
 
     return;
 }
-// clear all the internal datastructures
+
 void NocTrafficFlows::clear_traffic_flows(void){
 
     // delete any information from internal datastructures
@@ -159,7 +124,6 @@ void NocTrafficFlows::clear_traffic_flows(void){
     return;
 }
 
-// given a ClusterBlockId, determine whether it is a router block or not
 bool NocTrafficFlows::check_if_cluster_block_is_a_noc_router(ClusterBlockId block_id){
 
     auto router_block = noc_router_blocks.find(block_id);
@@ -174,18 +138,15 @@ bool NocTrafficFlows::check_if_cluster_block_is_a_noc_router(ClusterBlockId bloc
 
 // private functions used internally
 
-/*
-    Given a router, add the current traffic flow to the list of traffic flows for the current router where it is a source or destination of the given flow
-*/
-void NocTrafficFlows::add_traffic_flow_to_associated_routers(NocTrafficFlowId traffic_flow_id, ClusterBlockId router_id, std::unordered_map<ClusterBlockId, std::vector<NocTrafficFlowId>>& router_associated_traffic_flows){
+void NocTrafficFlows::add_traffic_flow_to_associated_routers(NocTrafficFlowId traffic_flow_id, ClusterBlockId associated_router_id, std::unordered_map<ClusterBlockId, std::vector<NocTrafficFlowId>>& router_associated_traffic_flows){
 
     // get a reference to the list of traffic flows associated with the current router
-    auto router_traffic_flows = router_associated_traffic_flows.find(router_id);
+    auto router_traffic_flows = router_associated_traffic_flows.find(associated_router_id);
 
     // check if a list exists 
     if (router_traffic_flows == router_associated_traffic_flows.end()){
         // there exists no list of traffic flows for this router, so we add it with the newly created traffic flow id
-        router_associated_traffic_flows.insert(std::pair<ClusterBlockId, std::vector<NocTrafficFlowId>>(router_id, {traffic_flow_id}));
+        router_associated_traffic_flows.insert(std::pair<ClusterBlockId, std::vector<NocTrafficFlowId>>(associated_router_id, {traffic_flow_id}));
     }
     else{
         // there already is a list of traffic flows for the current router, so add it to the list
@@ -197,7 +158,6 @@ void NocTrafficFlows::add_traffic_flow_to_associated_routers(NocTrafficFlowId tr
 
 }
 
-// adds a router to the list of all router blocks in the design
 void NocTrafficFlows::add_router_to_block_set(ClusterBlockId router_block_id){
 
     noc_router_blocks.insert(router_block_id);
