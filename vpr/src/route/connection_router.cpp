@@ -493,6 +493,15 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
             }
         }
     }
+    if(is_flat_) {
+        t_rr_type to_type = rr_graph_->node_type(to_node);
+        if (to_type == IPIN || to_type == OPIN) {
+            int node_ptc = rr_graph_->node_ptc_num(to_node);
+            auto type = g_vpr_ctx.device().grid[to_xlow][to_ylow].type;
+            if (!is_pin_on_tile(type, node_ptc))
+                return;
+        }
+    }
 
     VTR_LOGV_DEBUG(router_debug_, "      Expanding node %d edge %zu -> %d\n",
                    from_node, size_t(from_edge), to_node_int);
@@ -970,7 +979,8 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
     const RRGraphView* rr_graph,
     const std::vector<t_rr_rc_data>& rr_rc_data,
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-    std::vector<t_rr_node_route_inf>& rr_node_route_inf) {
+    std::vector<t_rr_node_route_inf>& rr_node_route_inf,
+    bool is_flat) {
     switch (heap_type) {
         case e_heap_type::BINARY_HEAP:
             return std::make_unique<ConnectionRouter<BinaryHeap>>(
@@ -980,7 +990,8 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 rr_graph,
                 rr_rc_data,
                 rr_switch_inf,
-                rr_node_route_inf);
+                rr_node_route_inf,
+                is_flat);
         case e_heap_type::BUCKET_HEAP_APPROXIMATION:
             return std::make_unique<ConnectionRouter<Bucket>>(
                 grid,
@@ -989,7 +1000,8 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 rr_graph,
                 rr_rc_data,
                 rr_switch_inf,
-                rr_node_route_inf);
+                rr_node_route_inf,
+                is_flat);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap_type %d",
                             heap_type);

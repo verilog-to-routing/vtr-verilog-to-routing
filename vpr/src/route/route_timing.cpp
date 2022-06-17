@@ -343,7 +343,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         &device_ctx.rr_graph,
         device_ctx.rr_rc_data,
         device_ctx.rr_graph.rr_switch(),
-        route_ctx.rr_node_route_inf);
+        route_ctx.rr_node_route_inf,
+        router_opts.flat_routing);
 
     // Make sure template type ConnectionRouter is a ConnectionRouterInterface.
     static_assert(std::is_base_of<ConnectionRouterInterface, ConnectionRouter>::value, "ConnectionRouter must implement the ConnectionRouterInterface");
