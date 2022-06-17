@@ -335,10 +335,16 @@ std::unordered_map<int, const t_class*> get_logical_block_classes_map(t_physical
                                                                                 int relative_cap);
 
 std::unordered_map<int, const t_class*>  get_pb_graph_node_num_class_pairs(t_physical_tile_type_ptr physical_tile,
-                                            const t_sub_tile* sub_tile,
-                                            t_logical_block_type_ptr logical_block,
-                                            int sub_tile_relative_cap,
-                                            const t_pb_graph_node* pb_graph_node);
+                                                                          const t_sub_tile* sub_tile,
+                                                                          t_logical_block_type_ptr logical_block,
+                                                                          int sub_tile_relative_cap,
+                                                                          const t_pb_graph_node* pb_graph_node);
+
+t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr physical_tile,
+                                                     const t_sub_tile* sub_tile,
+                                                     t_logical_block_type_ptr logical_block,
+                                                     int sub_tile_relative_cap,
+                                                     const t_pb_graph_node* pb_graph_node);
 /** **/
 int get_total_num_sub_tile_internal_classes(const t_sub_tile* sub_tile);
 

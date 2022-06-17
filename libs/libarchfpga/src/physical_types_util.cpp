@@ -1054,6 +1054,38 @@ std::unordered_map<int, const t_class*>  get_pb_graph_node_num_class_pairs(t_phy
 
 }
 
+t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr physical_tile,
+                                                     const t_sub_tile* sub_tile,
+                                                     t_logical_block_type_ptr logical_block,
+                                                     int sub_tile_relative_cap,
+                                                     const t_pb_graph_node* pb_graph_node) {
+
+    t_class_range class_range;
+
+    auto pb_graph_node_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
+                                                                       sub_tile,
+                                                                       logical_block,
+                                                                       sub_tile_relative_cap,
+                                                                       pb_graph_node);
+    int max_key = std::numeric_limits<int>::min();
+    int min_key = std::numeric_limits<int>::max();
+
+    for(auto& class_pair : pb_graph_node_class_pairs) {
+        if(class_pair.first < min_key)
+            min_key = class_pair.first;
+
+        if(class_pair.first > max_key)
+            max_key = class_pair.first;
+    }
+
+    class_range.low = min_key;
+    class_range.high = max_key;
+
+    VTR_ASSERT(class_range.total() == (int)pb_graph_node_class_pairs.size());
+
+    return class_range;
+}
+
 /** **/
 
 int get_total_num_sub_tile_internal_classes(const t_sub_tile* sub_tile) {
