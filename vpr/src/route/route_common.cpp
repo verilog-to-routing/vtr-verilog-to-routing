@@ -216,7 +216,8 @@ void try_graph(int width_fac,
                std::vector<t_segment_inf>& segment_inf,
                t_chan_width_dist chan_width_dist,
                t_direct_inf* directs,
-               int num_directs) {
+               int num_directs,
+               bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     t_graph_type graph_type;
@@ -246,7 +247,8 @@ void try_graph(int width_fac,
                     segment_inf,
                     router_opts,
                     directs, num_directs,
-                    &warning_count);
+                    &warning_count,
+                    is_flat);
 }
 
 bool try_route(const Netlist<>& net_list,
@@ -261,7 +263,8 @@ bool try_route(const Netlist<>& net_list,
                t_chan_width_dist chan_width_dist,
                t_direct_inf* directs,
                int num_directs,
-               ScreenUpdatePriority first_iteration_priority) {
+               ScreenUpdatePriority first_iteration_priority,
+               bool is_flat) {
     /* Attempts a routing via an iterated maze router algorithm.  Width_fac *
      * specifies the relative width of the channels, while the members of   *
      * router_opts determine the value of the costs assigned to routing     *
@@ -271,7 +274,6 @@ bool try_route(const Netlist<>& net_list,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    bool is_flat = router_opts.flat_routing;
 
     t_graph_type graph_type;
     t_graph_type graph_directionality;
@@ -300,7 +302,7 @@ bool try_route(const Netlist<>& net_list,
                     directs,
                     num_directs,
                     &warning_count,
-                    router_opts.flat_routing);
+                    is_flat);
 //    if(router_opts.flat_routing) {
 //        add_intra_cluster_rr_graph(device_ctx.rr_graph_builder,
 //                                   graph_type,
@@ -348,7 +350,8 @@ bool try_route(const Netlist<>& net_list,
                                           netlist_pin_lookup,
                                           timing_info,
                                           delay_calc,
-                                          first_iteration_priority);
+                                          first_iteration_priority,
+                                          is_flat);
 
         profiling::time_on_fanout_analysis();
     }
@@ -522,8 +525,6 @@ void init_route_structs(const Netlist<>& net_list, int bb_factor, bool is_flat) 
                                                        net_list,
                                                        is_flat);
 
-    route_ctx.cluster_net_rr_terminals = load_cluster_net_rr_terminals(device_ctx.rr_graph,
-                                                                       g_vpr_ctx.clustering().clb_nlist);
     route_ctx.is_clock_net = load_is_clock_net(net_list, is_flat);
     route_ctx.route_bb = load_route_bb(net_list,
                                        bb_factor);
@@ -1041,6 +1042,7 @@ static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RR
                                                               j,
                                                               (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
                                                               iclass);
+            VTR_ASSERT(inode != RRNodeId::INVALID());
             net_rr_terminals[net_id][pin_count] = size_t(inode);
             pin_count++;
         }

@@ -169,8 +169,10 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 
     t_chan_width chan_width = setup_chan_width(router_opts, chan_width_dist);
 
+    /* For placement, we don't use flat-routing option */
+    //TODO: is_flat flag should not be set here - It should be passed to the function.
     alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf,
-                          directs, num_directs);
+                          directs, num_directs, false);
 
     const RouterLookahead* router_lookahead = get_cached_router_lookahead(
         router_opts.lookahead_type,
