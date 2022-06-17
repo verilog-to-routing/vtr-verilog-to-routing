@@ -21,6 +21,7 @@
 #include "noc_link.h"
 #include "vtr_assert.h"
 #include "vpr_error.h"
+#include "echo_files.h"
 
 // represents the id of a link that does not exist in the NoC
 constexpr NocLinkId INVALID_LINK_ID(-1);
@@ -60,31 +61,16 @@ class NocStorage {
     const vtr::vector<NocLinkId, NocLink>& get_noc_links(void) const;
 
     // getters for  routers
-    const NocRouter& get_noc_router(NocRouterId id) const;
-    NocRouter& get_mutable_noc_router(NocRouterId id);
-    /*int get_noc_router_grid_position_x(NocRouterId id) const;
-    int get_noc_router_grid_position_y(NocRouterId id) const;
-    int get_noc_router_id(NocRouterId id) const;
-    std::string get_noc_router_design_module_ref(NocRouterId id) const;*/
+    const NocRouter& get_single_noc_router(NocRouterId id) const;
+    NocRouter& get_single_mutable_noc_router(NocRouterId id);
 
     // getters for links
-    const NocLink& get_noc_link(NocLinkId id) const;
-    NocLink& get_mutable_noc_link(NocLinkId id);
-    /*NocRouterId get_noc_link_source_router(NocLinkId id) const;
-    NocRouterId get_noc_link_sink_router(NocLinkId id) const;
-    double get_noc_link_bandwidth_usage(NocLinkId id) const;
-    int get_noc_link_number_of_connections(NocLinkId id) const;*/
+    const NocLink& get_single_noc_link(NocLinkId id) const;
+    NocLink& get_single_mutable_noc_link(NocLinkId id);
 
     // setters for the NoC
     void add_router(int id, int grid_position_x, int grid_position_y);
     void add_link(NocRouterId source, NocRouterId sink);
-
-   /* // setters for the noc router
-    void set_noc_router_design_module_ref(NocRouterId id, std::string design_module_ref);
-
-    // setters for the noc link
-    void set_noc_link_bandwidth_usage(NocLinkId id, double bandwidth_usage);
-    void set_noc_link_number_of_connections(NocLinkId id, int number_of_connections);*/
 
     // general utiliy functions
     void finished_building_noc();
@@ -92,6 +78,7 @@ class NocStorage {
     NocRouterId convert_router_id(int id) const;
     void make_room_for_noc_router_link_list();
     NocLinkId get_parallel_link(NocLinkId current_link) const;
+    void echo_noc(char* file_name) const;
 };
 
 #endif

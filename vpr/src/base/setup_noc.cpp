@@ -20,8 +20,6 @@ static void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model,
 
 static void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model);
 
-static void echo_noc(char* file_name);
-
 /**
  * @brief Based on the NoC information provided by the user in the architecture
  *        description file, a NoC model is created. The model defines the
@@ -71,7 +69,7 @@ void setup_noc(const t_arch& arch) {
 
     // echo the noc info
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_NOC_MODEL)) {
-        echo_noc(getEchoFileName(E_ECHO_NOC_MODEL));
+        noc_ctx.noc_model.echo_noc(getEchoFileName(E_ECHO_NOC_MODEL));
     }
 
     return;
@@ -327,53 +325,4 @@ static void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model) {
  * 
  * @param file_name The name of the file that contains the NoC model info.
  */
-static void echo_noc(char* file_name) {
-    FILE* fp;
-    fp = vtr::fopen(file_name, "w");
 
-    fprintf(fp, "--------------------------------------------------------------\n");
-    fprintf(fp, "NoC\n");
-    fprintf(fp, "--------------------------------------------------------------\n");
-    fprintf(fp, "\n");
-
-    auto& noc_ctx = g_vpr_ctx.noc();
-
-    // print the overall constraints of the NoC
-    fprintf(fp, "NoC Constraints:\n");
-    fprintf(fp, "--------------------------------------------------------------\n");
-    fprintf(fp, "\n");
-    fprintf(fp, "Maximum NoC Link Bandwidth: %f\n", noc_ctx.noc_link_bandwidth);
-    fprintf(fp, "\n");
-    fprintf(fp, "NoC Link Latency: %f\n", noc_ctx.noc_link_latency);
-    fprintf(fp, "\n");
-    fprintf(fp, "NoC Router Latency: %f\n", noc_ctx.noc_router_latency);
-    fprintf(fp, "\n");
-
-    // print all the routers and their properties
-    fprintf(fp, "NoC Router List:\n");
-    fprintf(fp, "--------------------------------------------------------------\n");
-    fprintf(fp, "\n");
-
-    auto& noc_routers = noc_ctx.noc_model.get_noc_routers();
-
-    // go through each router and print its information
-    for (auto router = noc_routers.begin(); router != noc_routers.end(); router++) {
-        fprintf(fp, "Router %d:\n", router->get_router_id());
-        // if the router tile is larger than a single grid, the position represents the bottom left corner of the tile
-        fprintf(fp, "Equivalent Physical Tile Grid Position -> (%d,%d)\n", router->get_router_grid_position_x(), router->get_router_grid_position_y());
-        fprintf(fp, "Router Connections ->");
-
-        auto& router_connections = noc_ctx.noc_model.get_noc_router_connections(noc_ctx.noc_model.convert_router_id(router->get_router_id()));
-
-        // go through the links of the current router and add the connecting router to the list
-        for (auto router_link = router_connections.begin(); router_link != router_connections.end(); router_link++) {
-            fprintf(fp, " %d", noc_ctx.noc_model.get_noc_router_id(noc_ctx.noc_model.get_noc_link_sink_router(*router_link)));
-        }
-
-        fprintf(fp, "\n\n");
-    }
-
-    fclose(fp);
-
-    return;
-}

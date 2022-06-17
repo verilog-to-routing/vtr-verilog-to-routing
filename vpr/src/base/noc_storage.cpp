@@ -34,11 +34,11 @@ const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links(void) const {
 }
 
 // get router properties
-const NocRouter& NocStorage::get_noc_router(NocRouterId id) const {
+const NocRouter& NocStorage::get_single_noc_router(NocRouterId id) const {
     return router_storage[id];
 }
 
-NocRouter& NocStorage::get_mutable_noc_router(NocRouterId id) {
+NocRouter& NocStorage::get_single_mutable_noc_router(NocRouterId id) {
     return router_storage[id];
 }
 
@@ -60,11 +60,11 @@ std::string NocStorage::get_noc_router_design_module_ref(NocRouterId id) const {
 }*/
 
 // get link properties
-const NocLink& NocStorage::get_noc_link(NocLinkId id) const {
-    link_storage[id];
+const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
+    return link_storage[id];
 }
 
-NocLink& NocStorage::get_mutable_noc_link(NocLinkId id) {
+NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
     return link_storage[id];
 }
 
@@ -201,4 +201,45 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     }
 
     return parallel_link;
+}
+
+void NocStorage::echo_noc(char* file_name) const {
+
+    FILE* fp;
+    fp = vtr::fopen(file_name, "w");
+
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "NoC\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    // print all the routers and their properties
+    fprintf(fp, "NoC Router List:\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    // go through each router and print its information
+    for (auto router = router_storage.begin(); router != router_storage.end(); router++) {
+        fprintf(fp, "Router %d:\n", router->get_router_id());
+        // if the router tile is larger than a single grid, the position represents the bottom left corner of the tile
+        fprintf(fp, "Equivalent Physical Tile Grid Position -> (%d,%d)\n", router->get_router_grid_position_x(), router->get_router_grid_position_y());
+        fprintf(fp, "Router Connections ->");
+
+        auto& router_connections = this->get_noc_router_connections(this->convert_router_id(router->get_router_id()));
+
+        // go through the outgoing links of the current router and print the connecting router
+        for (auto link_id = router_connections.begin(); link_id != router_connections.end(); link_id++) {
+
+            const NocRouterId connecting_router_id = get_single_noc_link(*link_id).get_sink_router();
+        
+            fprintf(fp, " %d",  get_single_noc_router(connecting_router_id).get_router_id());
+        }
+
+        fprintf(fp, "\n\n");
+    }
+
+    fclose(fp);
+
+    return;
+
 }
