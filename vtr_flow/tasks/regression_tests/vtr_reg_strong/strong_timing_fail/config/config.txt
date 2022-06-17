@@ -25,4 +25,4 @@ pass_requirements_file=pass_requirements.timing_fail.txt
 
 # Script parameters
 #script_params=""
-script_params= --terminate_if_timing_fails on --sdc_file /sdc/samples/H.sdc
+script_params= --terminate_if_timing_fails on --sdc_file /sdc/samples/G.sdc
