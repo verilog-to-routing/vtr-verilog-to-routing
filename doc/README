@@ -27,6 +27,10 @@ To build the documentation locally you need sphinx installed:
     To install all the python requirements:
 
         $ pip install -r requirements.txt
+        
+    For the Doxygen XML generation you need Doxygen installed:
+		
+		$ apt-get install doxygen
 
 To build the documentation just run:
 
