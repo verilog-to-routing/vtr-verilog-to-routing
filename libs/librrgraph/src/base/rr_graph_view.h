@@ -47,13 +47,17 @@
  * - Timing analyzer
  * - GUI
  *
- * \internal
- * TODO: More compact frame views will be created, such as:
- * - A mini frame view: Contains only nodes and edges, representing the 
- *   connectivity of the graph.
- * - A geometry frame view: An extended mini frame view with node-level 
- *   attributes, particularly geometry information (type, x, y, etc.).
- * \endinternal
+ * Note that each client of rr_graph may get a frame view of the object
+ * The RRGraphView is the complete frame view of the routing resource graph
+ * - This helps to reduce the memory footprint for each client
+ * - This avoids massive changes for each client on using the APIs
+ *   as each frame view provides adhoc APIs for each client
+ *
+ * TODO: more compact frame views will be created, e.g.,
+ * - a mini frame view: contains only node and edges, representing the connectivity of the graph
+ * - a geometry frame view: an extended mini frame view with node-level attributes,
+ *                          in particular geometry information (type, x, y etc).
+ *
  */
 #include "rr_graph_builder.h"
 #include "rr_node.h"
@@ -73,16 +77,16 @@ class RRGraphView {
                 const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
 
     /* Disable copy constructors and copy assignment operator
-     * This is to avoid accidental copy because it could be an expensive operation considering that the 
+     * This is to avoid accidental copy because it could be an expensive operation considering that the
      * memory footprint of the data structure could ~ Gb
-     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught 
+     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught
      * by compiler
      */
     RRGraphView(const RRGraphView&) = delete;
     void operator=(const RRGraphView&) = delete;
 
     /* -- Accessors -- */
-    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin' 
+    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin'
      * kind of accessors
      */
   public:
@@ -261,9 +265,10 @@ class RRGraphView {
                  && (node_xhigh(node) == -1) && (node_yhigh(node) == -1));
     }
 
-    /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY). 
-     * @note This function performs error checking by determining whether two nodes are physically adjacent based on their geometry. It does not verify the routing edges to confirm if a connection is feasible within the current routing graph.
-     */
+    /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY).
+     * This function is used for error checking; it checks if two nodes are physically adjacent (could be connected) based on their geometry.
+     * It does not check the routing edges to see if they are, in fact, possible to connect in the current routing graph.
+     * This function is inlined for runtime optimization. */
     inline bool nodes_are_adjacent(RRNodeId chanx_node, RRNodeId chany_node) const {
         VTR_ASSERT(node_type(chanx_node) == CHANX && node_type(chany_node) == CHANY);
         if (node_ylow(chany_node) > node_ylow(chanx_node) + 1 || // verifies that chany_node is not more than one unit above chanx_node
@@ -429,6 +434,13 @@ class RRGraphView {
         return node_storage_.edge_sink_node(id, iedge);
     }
 
+    /** @brief Get the source node for the iedge'th edge from specified RRNodeId.
+     *  This method should generally not be used, and instead first_edge and
+     * last_edge should be used.*/
+    inline RRNodeId edge_source_node(RRNodeId id, t_edge_size iedge) const {
+        return node_storage_.edge_source_node(id, iedge);
+    }
+
     /** @brief Check if the edge is a configurable edge 
      * @note A configurable edge represents a programmable switch between routing resources, which could be 
      *  - a multiplexer
@@ -451,8 +463,11 @@ class RRGraphView {
         return node_storage_.num_non_configurable_edges(node, rr_switch_inf_);
     }
 
-    /** @brief Return ID range for configurable edges.  
-     */
+    /** @brief A configurable edge represents a programmable switch between routing resources, which could be
+     * a multiplexer
+     * a tri-state buffer
+     * a pass gate
+     * This API gets ID range for configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range configurable_edges(RRNodeId node) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)));
     }

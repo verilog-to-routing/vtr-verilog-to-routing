@@ -66,13 +66,13 @@ struct alignas(16) t_rr_node_data {
     t_rr_type type_ = NUM_RR_TYPES;
 
     /* The character is a hex number which is a 4-bit truth table for node sides
-     * The 4-bits in serial represent 4 sides on which a node could appear 
-     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0) 
+     * The 4-bits in serial represent 4 sides on which a node could appear
+     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0)
      *   - When a node appears on a given side, it is set to "1"
      *   - When a node does not appear on a given side, it is set to "0"
      * For example,
-     *   - '1' means '0001' in hex number, which means the node appears on TOP 
-     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides, 
+     *   - '1' means '0001' in hex number, which means the node appears on TOP
+     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides,
      */
     union {
         Direction direction;       //Valid only for CHANX/CHANY
@@ -338,6 +338,7 @@ class t_rr_graph_storage {
      * - num_non_configurable_edges(RRNodeId)
      * - edge_id(RRNodeId, t_edge_size)
      * - edge_sink_node(RRNodeId, t_edge_size)
+     * - edge_source_node(RRNodeId, t_edge_size)
      * - edge_switch(RRNodeId, t_edge_size)
      *
      * Only call these methods after partition_edges has been invoked.
@@ -412,7 +413,12 @@ class t_rr_graph_storage {
         return edge_dest_node_[edge];
     }
 
-    /** @brief Call the `apply` function with the edge id, source, and sink nodes of every edge. */
+    // Get the source node for the specified edge.
+    RRNodeId edge_source_node(const RREdgeId& edge) const {
+        return edge_src_node_[edge];
+    }
+
+    // Call the `apply` function with the edge id, source, and sink nodes of every edge.
     void for_each_edge(std::function<void(RREdgeId, RRNodeId, RRNodeId)> apply) const {
         for (size_t i = 0; i < edge_dest_node_.size(); i++) {
             RREdgeId edge(i);
@@ -429,7 +435,12 @@ class t_rr_graph_storage {
         return edge_sink_node(edge_id(id, iedge));
     }
 
-    /** @brief Get the switch used for the specified edge. */
+    // Get the source node for the iedge'th edge from specified RRNodeId.
+    RRNodeId edge_source_node(const RRNodeId& id, t_edge_size iedge) const {
+        return edge_source_node(edge_id(id, iedge));
+    }
+
+    // Get the switch used for the specified edge.
     short edge_switch(const RREdgeId& edge) const {
         return edge_switch_[edge];
     }
