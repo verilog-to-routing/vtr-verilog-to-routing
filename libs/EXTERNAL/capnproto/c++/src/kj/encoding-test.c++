@@ -58,6 +58,15 @@ void expectRes(EncodingResult<T> result,
   expectResImpl(kj::mv(result), arrayPtr(expected, s - 1), errors);
 }
 
+#if __cplusplus >= 202000L
+template <typename T, size_t s>
+void expectRes(EncodingResult<T> result,
+               const char8_t (&expected)[s],
+               bool errors = false) {
+  expectResImpl(kj::mv(result), arrayPtr(reinterpret_cast<const char*>(expected), s - 1), errors);
+}
+#endif
+
 template <typename T, size_t s>
 void expectRes(EncodingResult<T> result,
                byte (&expected)[s],
@@ -362,10 +371,12 @@ KJ_TEST("application/x-www-form-urlencoded encoding/decoding") {
 }
 
 KJ_TEST("C escape encoding/decoding") {
-  KJ_EXPECT(encodeCEscape("fooo\a\b\f\n\r\t\v\'\"\\bar") ==
-      "fooo\\a\\b\\f\\n\\r\\t\\v\\\'\\\"\\\\bar");
+  KJ_EXPECT(encodeCEscape("fooo\a\b\f\n\r\t\v\'\"\\barПривет, Мир! Ж=О") ==
+      "fooo\\a\\b\\f\\n\\r\\t\\v\\\'\\\"\\\\bar\xd0\x9f\xd1\x80\xd0\xb8\xd0\xb2\xd0\xb5\xd1\x82\x2c\x20\xd0\x9c\xd0\xb8\xd1\x80\x21\x20\xd0\x96\x3d\xd0\x9e");
   KJ_EXPECT(encodeCEscape("foo\x01\x7fxxx") ==
       "foo\\001\\177xxx");
+  byte bytes[] = {'f', 'o', 'o', 0, '\x01', '\x7f', 'x', 'x', 'x', 128, 254, 255};
+  KJ_EXPECT(encodeCEscape(bytes) == "foo\\000\\001\\177xxx\\200\\376\\377");
 
   expectRes(decodeCEscape("fooo\\a\\b\\f\\n\\r\\t\\v\\\'\\\"\\\\bar"),
       "fooo\a\b\f\n\r\t\v\'\"\\bar");
@@ -472,6 +483,51 @@ KJ_TEST("base64 encoding/decoding") {
         encoded == "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIz\n"
                    "NDU2\n",
         encoded);
+  }
+}
+
+KJ_TEST("base64 url encoding") {
+  {
+    // Handles empty.
+    auto encoded = encodeBase64Url(StringPtr("").asBytes());
+    KJ_EXPECT(encoded == "", encoded, encoded.size());
+  }
+
+  {
+    // Handles paddingless encoding.
+    auto encoded = encodeBase64Url(StringPtr("foo").asBytes());
+    KJ_EXPECT(encoded == "Zm9v", encoded, encoded.size());
+  }
+
+  {
+    // Handles padded encoding.
+    auto encoded1 = encodeBase64Url(StringPtr("quux").asBytes());
+    KJ_EXPECT(encoded1 == "cXV1eA", encoded1, encoded1.size());
+    auto encoded2 = encodeBase64Url(StringPtr("corge").asBytes());
+    KJ_EXPECT(encoded2 == "Y29yZ2U", encoded2, encoded2.size());
+  }
+
+  {
+    // No line breaks.
+    StringPtr fullLine = "012345678901234567890123456789012345678901234567890123";
+    auto encoded = encodeBase64Url(StringPtr(fullLine).asBytes());
+    KJ_EXPECT(
+        encoded == "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIz",
+        encoded);
+  }
+
+  {
+    // Replaces plusses.
+    const byte data[] = { 0b11111011, 0b11101111, 0b10111110 };
+    auto encoded = encodeBase64Url(data);
+    KJ_EXPECT(encoded == "----", encoded, encoded.size(), data);
+  }
+
+  {
+    // Replaces slashes.
+    const byte data[] = { 0b11111111, 0b11111111, 0b11111111 };
+    auto encoded = encodeBase64Url(data);
+    KJ_EXPECT(encoded == "____", encoded, encoded.size(), data);
   }
 }
 

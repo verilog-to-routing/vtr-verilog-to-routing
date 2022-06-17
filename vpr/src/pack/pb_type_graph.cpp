@@ -53,8 +53,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 
 static void set_logical_block_all_pins_indices(t_logical_block_type* logical_block);
 
-static std::tuple<int, int, int, int> get_pb_graph_node_num_all_pins(const t_pb_graph_node* pb_graph_node);
-
 static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(const t_pb_graph_node* pb_graph_node);
 
 static void add_logical_classes(t_logical_block_type* logical_block);
@@ -139,7 +137,6 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 
     for (auto& type : device_ctx.logical_block_types) {
         if (type.pb_type) {
-            //#TODO: Because of using calloc, not all of the objects inside of the t_pb_graph_node are constructed properly - We should use new!
             type.pb_graph_head = (t_pb_graph_node*)vtr::calloc(1, sizeof(t_pb_graph_node));
             int pin_count_in_cluster = 0;
             alloc_and_load_pb_graph(type.pb_graph_head, nullptr,
@@ -224,10 +221,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     pb_graph_node->num_output_ports = 0;
     pb_graph_node->num_clock_ports = 0;
 
-    pb_graph_node->max_input_pin_mode_num = -1;
-    pb_graph_node->total_num_input_pins = 0;
-    pb_graph_node->total_num_output_pins = 0;
-    pb_graph_node->total_num_clock_pins = 0;
     pb_graph_node->total_primitive_count = 0;
 
     /* Generate ports for pb graph node */
@@ -358,23 +351,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
         pb_graph_node->total_primitive_count = total_count;
     }
 
-    //Alloc and load number of pins for primitives inside the block
-
-
-    int total_num_input_pins;
-    int total_num_output_pins;
-    int total_num_clock_pins;
-    int max_pins_mode_num;
-
-    std::tie (total_num_input_pins, total_num_output_pins, total_num_clock_pins, max_pins_mode_num) =
-        get_pb_graph_node_num_all_pins(pb_graph_node);
-
-
-    pb_graph_node->total_num_input_pins = total_num_input_pins;
-    pb_graph_node->total_num_output_pins = total_num_output_pins;
-    pb_graph_node->total_num_clock_pins = total_num_clock_pins;
-    pb_graph_node->max_input_pin_mode_num = max_pins_mode_num;
-
 }
 
 
@@ -439,57 +415,6 @@ static void set_logical_block_all_pins_indices(t_logical_block_type* logical_blo
         }
     }
 
-}
-
-static std::tuple<int, int, int, int> get_pb_graph_node_num_all_pins(const t_pb_graph_node* pb_graph_node) {
-
-    //This function is a recursive function. This conditional statement is used to avoid computing what has already been computed(dynamic programming)
-    if(pb_graph_node->max_input_pin_mode_num != -1) {
-        return std::tuple<int, int, int, int> (pb_graph_node->total_num_input_pins, pb_graph_node->total_num_output_pins,
-                          pb_graph_node->total_num_clock_pins, pb_graph_node->max_input_pin_mode_num);
-    }
-
-    int total_num_input_pins = 0;
-    int total_num_output_pins = 0;
-    int total_num_clock_pins = 0;
-    int max_num_input_pins = 0;
-    int max_pins_mode_num = 0;
-    const t_pb_type* pb_type = pb_graph_node->pb_type;
-
-
-    for(int mode_idx = 0; mode_idx < pb_type->num_modes; mode_idx++) {
-        int mode_num_input_pins = 0;
-        auto curr_mode = &pb_type->modes[mode_idx];
-        for(int pb_type_num = 0; pb_type_num < curr_mode->num_pb_type_children; pb_type_num++) {
-            int num_pb = curr_mode->pb_type_children[pb_type_num].num_pb;
-            if(num_pb == 0)
-                continue;
-            t_pb_graph_node* child_pb_graph_node = &pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_num][0];
-            int tmp_num_input_pins, tmp_num_output_pins, tmp_num_clock_pins;
-            std::tie(tmp_num_input_pins, tmp_num_output_pins, tmp_num_clock_pins, std::ignore) =
-                get_pb_graph_node_num_all_pins(child_pb_graph_node);
-
-            tmp_num_input_pins *= num_pb;
-            tmp_num_output_pins *= num_pb;
-            tmp_num_clock_pins *= num_pb;
-            mode_num_input_pins += tmp_num_input_pins;
-
-            total_num_input_pins += tmp_num_input_pins;
-            total_num_output_pins += tmp_num_output_pins;
-            total_num_clock_pins += tmp_num_clock_pins;
-        }
-        max_num_input_pins = std::max(mode_num_input_pins, max_num_input_pins);
-        if(max_num_input_pins == mode_num_input_pins) {
-            max_pins_mode_num = mode_idx;
-        }
-
-    }
-
-    total_num_input_pins += pb_type->num_input_pins;
-    total_num_output_pins += pb_type->num_output_pins;
-    total_num_clock_pins += pb_type->num_clock_pins;
-
-    return std::tuple<int, int, int, int> (total_num_input_pins, total_num_output_pins, total_num_clock_pins, max_pins_mode_num);
 }
 
 static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(const t_pb_graph_node* pb_graph_node) {

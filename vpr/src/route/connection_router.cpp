@@ -501,6 +501,15 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
             }
         }
     }
+    if(is_flat_) {
+        t_rr_type to_type = rr_graph_->node_type(to_node);
+        if (to_type == IPIN || to_type == OPIN) {
+            int node_ptc = rr_graph_->node_ptc_num(to_node);
+            auto type = g_vpr_ctx.device().grid[to_xlow][to_ylow].type;
+            if (!is_pin_on_tile(type, node_ptc))
+                return;
+        }
+    }
 
     VTR_LOGV_DEBUG(router_debug_, "      Expanding node %d edge %zu -> %d\n",
                    from_node, size_t(from_edge), to_node_int);
@@ -769,14 +778,6 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         total_cost = compute_node_cost_using_rcv(cost_params, to_node, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
     } else {
         //Update total cost
-        float expected_cost = get_cost_from_lookahead(router_lookahead_,
-                                                      rr_nodes_,
-                                                      rr_graph_->node_lookup(),
-                                                      RRNodeId(to_node),
-                                                      RRNodeId(target_node),
-                                                      to->R_upstream,
-                                                      cost_params,
-                                                      is_flat_);
         float expected_cost = router_lookahead_.get_expected_cost(RRNodeId(to_node), RRNodeId(target_node), cost_params, to->R_upstream);
         VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
                        "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
@@ -986,7 +987,8 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
     const RRGraphView* rr_graph,
     const std::vector<t_rr_rc_data>& rr_rc_data,
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-    std::vector<t_rr_node_route_inf>& rr_node_route_inf) {
+    std::vector<t_rr_node_route_inf>& rr_node_route_inf,
+    bool is_flat) {
     switch (heap_type) {
         case e_heap_type::BINARY_HEAP:
             return std::make_unique<ConnectionRouter<BinaryHeap>>(
@@ -996,7 +998,8 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 rr_graph,
                 rr_rc_data,
                 rr_switch_inf,
-                rr_node_route_inf);
+                rr_node_route_inf,
+                is_flat);
         case e_heap_type::BUCKET_HEAP_APPROXIMATION:
             return std::make_unique<ConnectionRouter<Bucket>>(
                 grid,
@@ -1005,7 +1008,8 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 rr_graph,
                 rr_rc_data,
                 rr_switch_inf,
-                rr_node_route_inf);
+                rr_node_route_inf,
+                is_flat);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap_type %d",
                             heap_type);

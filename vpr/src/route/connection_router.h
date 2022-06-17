@@ -32,7 +32,11 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const std::vector<t_rr_rc_data>& rr_rc_data,
         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
         std::vector<t_rr_node_route_inf>& rr_node_route_inf,
+<<<<<<< HEAD
         bool is_flat)
+=======
+        bool is_flat = false)
+>>>>>>> c767522e688e3a035333f513dfef4fac1c6e99a9
         : grid_(grid)
         , router_lookahead_(router_lookahead)
         , rr_nodes_(rr_nodes.view())
@@ -273,6 +277,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
     const RRGraphView* rr_graph,
     const std::vector<t_rr_rc_data>& rr_rc_data,
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-    std::vector<t_rr_node_route_inf>& rr_node_route_inf);
+    std::vector<t_rr_node_route_inf>& rr_node_route_inf,
+    bool is_flat);
 
 #endif /* _CONNECTION_ROUTER_H */

@@ -45,6 +45,20 @@ struct ImplicitToInt {
   }
 };
 
+struct Immovable {
+  Immovable() = default;
+  KJ_DISALLOW_COPY(Immovable);
+};
+
+struct CopyOrMove {
+  // Type that detects the difference between copy and move.
+  CopyOrMove(int i): i(i) {}
+  CopyOrMove(CopyOrMove&& other): i(other.i) { other.i = -1; }
+  CopyOrMove(const CopyOrMove&) = default;
+
+  int i;
+};
+
 TEST(Common, Maybe) {
   {
     Maybe<int> m = 123;
@@ -61,6 +75,61 @@ TEST(Common, Maybe) {
       ADD_FAILURE();
     }
     EXPECT_EQ(123, m.orDefault(456));
+    bool ranLazy = false;
+    EXPECT_EQ(123, m.orDefault([&] {
+      ranLazy = true;
+      return 456;
+    }));
+    EXPECT_FALSE(ranLazy);
+
+    KJ_IF_MAYBE(v, m) {
+      int notUsedForRef = 5;
+      const int& ref = m.orDefault([&]() -> int& { return notUsedForRef; });
+
+      EXPECT_EQ(ref, *v);
+      EXPECT_EQ(&ref, v);
+
+      const int& ref2 = m.orDefault([notUsed = 5]() -> int { return notUsed; });
+      EXPECT_NE(&ref, &ref2);
+      EXPECT_EQ(ref2, 123);
+    } else {
+      ADD_FAILURE();
+    }
+  }
+
+  {
+    Maybe<int> empty;
+    int defaultValue = 5;
+    auto& ref1 = empty.orDefault([&defaultValue]() -> int& {
+      return defaultValue;
+    });
+    EXPECT_EQ(&ref1, &defaultValue);
+
+    auto ref2 = empty.orDefault([&]() -> int { return defaultValue; });
+    EXPECT_NE(&ref2, &defaultValue);
+  }
+
+  {
+    Maybe<int> m = 0;
+    EXPECT_FALSE(m == nullptr);
+    EXPECT_TRUE(m != nullptr);
+    KJ_IF_MAYBE(v, m) {
+      EXPECT_EQ(0, *v);
+    } else {
+      ADD_FAILURE();
+    }
+    KJ_IF_MAYBE(v, mv(m)) {
+      EXPECT_EQ(0, *v);
+    } else {
+      ADD_FAILURE();
+    }
+    EXPECT_EQ(0, m.orDefault(456));
+    bool ranLazy = false;
+    EXPECT_EQ(0, m.orDefault([&] {
+      ranLazy = true;
+      return 456;
+    }));
+    EXPECT_FALSE(ranLazy);
   }
 
   {
@@ -76,6 +145,12 @@ TEST(Common, Maybe) {
       EXPECT_EQ(0, *v);  // avoid unused warning
     }
     EXPECT_EQ(456, m.orDefault(456));
+    bool ranLazy = false;
+    EXPECT_EQ(456, m.orDefault([&] {
+      ranLazy = true;
+      return 456;
+    }));
+    EXPECT_TRUE(ranLazy);
   }
 
   int i = 234;
@@ -162,42 +237,67 @@ TEST(Common, Maybe) {
   }
 
   {
+    Maybe<int> mi = i;
+    Maybe<int&> m = mi;
+    EXPECT_FALSE(m == nullptr);
+    EXPECT_TRUE(m != nullptr);
+    KJ_IF_MAYBE(v, m) {
+      EXPECT_EQ(&KJ_ASSERT_NONNULL(mi), v);
+    } else {
+      ADD_FAILURE();
+    }
+    KJ_IF_MAYBE(v, mv(m)) {
+      EXPECT_EQ(&KJ_ASSERT_NONNULL(mi), v);
+    } else {
+      ADD_FAILURE();
+    }
+    EXPECT_EQ(234, m.orDefault(456));
+  }
+
+  {
+    Maybe<int> mi = nullptr;
+    Maybe<int&> m = mi;
+    EXPECT_TRUE(m == nullptr);
+    KJ_IF_MAYBE(v, m) {
+      KJ_FAIL_EXPECT(*v);
+    }
+  }
+
+  {
+    const Maybe<int> mi = i;
+    Maybe<const int&> m = mi;
+    EXPECT_FALSE(m == nullptr);
+    EXPECT_TRUE(m != nullptr);
+    KJ_IF_MAYBE(v, m) {
+      EXPECT_EQ(&KJ_ASSERT_NONNULL(mi), v);
+    } else {
+      ADD_FAILURE();
+    }
+    KJ_IF_MAYBE(v, mv(m)) {
+      EXPECT_EQ(&KJ_ASSERT_NONNULL(mi), v);
+    } else {
+      ADD_FAILURE();
+    }
+    EXPECT_EQ(234, m.orDefault(456));
+  }
+
+  {
+    const Maybe<int> mi = nullptr;
+    Maybe<const int&> m = mi;
+    EXPECT_TRUE(m == nullptr);
+    KJ_IF_MAYBE(v, m) {
+      KJ_FAIL_EXPECT(*v);
+    }
+  }
+
+  {
     // Verify orDefault() works with move-only types.
     Maybe<kj::String> m = nullptr;
     kj::String s = kj::mv(m).orDefault(kj::str("foo"));
     EXPECT_EQ("foo", s);
-  }
-
-  {
-    Maybe<int> m = &i;
-    EXPECT_FALSE(m == nullptr);
-    EXPECT_TRUE(m != nullptr);
-    KJ_IF_MAYBE(v, m) {
-      EXPECT_NE(v, &i);
-      EXPECT_EQ(234, *v);
-    } else {
-      ADD_FAILURE();
-    }
-    KJ_IF_MAYBE(v, mv(m)) {
-      EXPECT_NE(v, &i);
-      EXPECT_EQ(234, *v);
-    } else {
-      ADD_FAILURE();
-    }
-  }
-
-  {
-    Maybe<int> m = implicitCast<int*>(nullptr);
-    EXPECT_TRUE(m == nullptr);
-    EXPECT_FALSE(m != nullptr);
-    KJ_IF_MAYBE(v, m) {
-      ADD_FAILURE();
-      EXPECT_EQ(0, *v);  // avoid unused warning
-    }
-    KJ_IF_MAYBE(v, mv(m)) {
-      ADD_FAILURE();
-      EXPECT_EQ(0, *v);  // avoid unused warning
-    }
+    EXPECT_EQ("foo", kj::mv(m).orDefault([] {
+      return kj::str("foo");
+    }));
   }
 
   {
@@ -215,6 +315,82 @@ TEST(Common, Maybe) {
     } else {
       ADD_FAILURE();
     }
+  }
+
+  {
+    // Test usage of immovable types.
+    Maybe<Immovable> m;
+    KJ_EXPECT(m == nullptr);
+    m.emplace();
+    KJ_EXPECT(m != nullptr);
+    m = nullptr;
+    KJ_EXPECT(m == nullptr);
+  }
+
+  {
+    // Test that initializing Maybe<T> from Maybe<T&>&& does a copy, not a move.
+    CopyOrMove x(123);
+    Maybe<CopyOrMove&> m(x);
+    Maybe<CopyOrMove> m2 = kj::mv(m);
+    KJ_EXPECT(m == nullptr);  // m is moved out of and cleared
+    KJ_EXPECT(x.i == 123);  // but what m *referenced* was not moved out of
+    KJ_EXPECT(KJ_ASSERT_NONNULL(m2).i == 123);  // m2 is a copy of what m referenced
+  }
+
+  {
+    // Test that a moved-out-of Maybe<T> is left empty after move constructor.
+    Maybe<int> m = 123;
+    KJ_EXPECT(m != nullptr);
+
+    Maybe<int> n(kj::mv(m));
+    KJ_EXPECT(m == nullptr);
+    KJ_EXPECT(n != nullptr);
+  }
+
+  {
+    // Test that a moved-out-of Maybe<T> is left empty after move constructor.
+    Maybe<int> m = 123;
+    KJ_EXPECT(m != nullptr);
+
+    Maybe<int> n = kj::mv(m);
+    KJ_EXPECT(m == nullptr);
+    KJ_EXPECT(n != nullptr);
+  }
+
+  {
+    // Test that a moved-out-of Maybe<T&> is left empty when moved to a Maybe<T>.
+    int x = 123;
+    Maybe<int&> m = x;
+    KJ_EXPECT(m != nullptr);
+
+    Maybe<int> n(kj::mv(m));
+    KJ_EXPECT(m == nullptr);
+    KJ_EXPECT(n != nullptr);
+  }
+
+  {
+    // Test that a moved-out-of Maybe<T&> is left empty when moved to another Maybe<T&>.
+    int x = 123;
+    Maybe<int&> m = x;
+    KJ_EXPECT(m != nullptr);
+
+    Maybe<int&> n(kj::mv(m));
+    KJ_EXPECT(m == nullptr);
+    KJ_EXPECT(n != nullptr);
+  }
+
+  {
+    Maybe<int> m1 = 123;
+    Maybe<int> m2 = 123;
+    Maybe<int> m3 = 456;
+    Maybe<int> m4 = nullptr;
+    Maybe<int> m5 = nullptr;
+
+    KJ_EXPECT(m1 == m2);
+    KJ_EXPECT(m1 != m3);
+    KJ_EXPECT(m1 != m4);
+    KJ_EXPECT(m4 == m5);
+    KJ_EXPECT(m4 != m1);
   }
 }
 
@@ -522,6 +698,34 @@ KJ_TEST("kj::range()") {
     KJ_EXPECT(i == expected++);
   }
   KJ_EXPECT(expected == 8);
+}
+
+KJ_TEST("kj::defer()") {
+  bool executed;
+
+  // rvalue reference
+  {
+    executed = false;
+    auto deferred = kj::defer([&executed]() {
+      executed = true;
+    });
+    KJ_EXPECT(!executed);
+  }
+
+  KJ_EXPECT(executed);
+
+  // lvalue reference
+  auto executor = [&executed]() {
+    executed = true;
+  };
+
+  {
+    executed = false;
+    auto deferred = kj::defer(executor);
+    KJ_EXPECT(!executed);
+  }
+
+  KJ_EXPECT(executed);
 }
 
 }  // namespace

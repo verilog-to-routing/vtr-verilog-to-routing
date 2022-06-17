@@ -822,6 +822,15 @@ struct t_physical_tile_port {
  * index: Keep track of type in array for easy access
  * physical_tile_index: index of the corresponding physical tile type
  *
+ * pb_pin_num_map: Contains all the pins, including pins on the root-level block and internal pins, in
+ * the logical block. The key of this map is the logical number of the pin, and the value is a pointer to the
+ * corresponding pb_graph_pin
+ *
+ * pb_pin_class_map: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
+ * index to logical_class_inf.
+ *
+ * logical_class_inf: Contains all the classes inside the logical block. The index of each class is the logical number associate with the class.
+ *
  * A logical block is the implementation of a component's functionality of the FPGA device
  * and it identifies its logical behaviour and internal connections.
  *
@@ -844,9 +853,9 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
-    std::unordered_map<int, const t_pb_graph_pin*> pb_pin_num_map; /* {pin, intra_cluster_pin_idx} */
-    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* {pb_pin_ptr, class_inf_idx} */
-    std::vector<t_class> logical_class_inf; /* {primitive_pin, class_number} */
+    std::unordered_map<int, const t_pb_graph_pin*> pb_pin_num_map; /* pb_pin_num_map[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* pb_pin_class_map[pb_graph_pin ptr] -> class logical number */
+    std::vector<t_class> logical_class_inf; /* logical_class_inf[class_logical_number] -> class */
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
@@ -1195,10 +1204,6 @@ class t_pb_graph_node {
     int* output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
 
-    int max_input_pin_mode_num;
-    int total_num_input_pins;
-    int total_num_output_pins;
-    int total_num_clock_pins;
     int total_primitive_count; /* total number of this primitive type in the cluster */
 
 

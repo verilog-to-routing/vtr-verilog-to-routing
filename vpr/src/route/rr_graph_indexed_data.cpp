@@ -58,8 +58,7 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
                                     const std::vector<t_segment_inf>& segment_inf_x,
                                     const std::vector<t_segment_inf>& segment_inf_y,
                                     int wire_to_ipin_switch,
-                                    enum e_base_cost_type base_cost_type,
-                                    enum e_router_lookahead lookahed_type) {
+                                    enum e_base_cost_type base_cost_type) {
     int length, i, index;
 
     (void)segment_inf;
@@ -87,19 +86,24 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
     }
     device_ctx.rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).Tdel;
 
-    /* X-directed segments*/
     std::vector<int> ortho_costs;
 
-    if (lookahed_type == e_router_lookahead::CLASSIC) {
-        ortho_costs = find_ortho_cost_index(segment_inf_x, segment_inf_y, X_AXIS);
+    ortho_costs = find_ortho_cost_index(segment_inf_x, segment_inf_y, X_AXIS);
 
-    } else {
-        std::vector<int> x_costs(segment_inf_x.size(), CHANX_COST_INDEX_START + segment_inf_x.size());
-        std::vector<int> y_costs(segment_inf_y.size(), CHANX_COST_INDEX_START);
+    /* AA: The code below should replace find_ortho_cost_index call once we deprecate the CLASSIC lookahead as it is the only lookahead
+     * that actively uses the orthogonal cost indices. To avoid complicated dependencies with the rr_graph reader, regardless of the lookahead,
+     * we walk to the rr_graph edges to get these indices. */
+    /*
+     *
+     * std::vector<int> x_costs(segment_inf_x.size(), CHANX_COST_INDEX_START + segment_inf_x.size());
+     * std::vector<int> y_costs(segment_inf_y.size(), CHANX_COST_INDEX_START);
+     *
+     * std::move(x_costs.begin(), x_costs.end(), std::back_inserter(ortho_costs));
+     * std::move(y_costs.begin(), y_costs.end(), std::back_inserter(ortho_costs));
+     */
 
-        std::move(x_costs.begin(), x_costs.end(), std::back_inserter(ortho_costs));
-        std::move(y_costs.begin(), y_costs.end(), std::back_inserter(ortho_costs));
-    }
+    /* X-directed segments*/
+
     for (size_t iseg = 0; iseg < segment_inf_x.size(); ++iseg) {
         index = iseg + CHANX_COST_INDEX_START;
 
@@ -116,7 +120,7 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         device_ctx.rr_indexed_data[RRIndexedDataId(index)].seg_index = segment_inf_x[iseg].seg_index;
     }
 
-    // Y-directed segments
+    /* Y-directed segments*/
 
     for (size_t iseg = segment_inf_x.size(); iseg < ortho_costs.size(); ++iseg) {
         index = iseg + CHANX_COST_INDEX_START;

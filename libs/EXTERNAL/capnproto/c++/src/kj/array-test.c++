@@ -383,6 +383,20 @@ KJ_TEST("kj::arr()") {
   kj::Array<kj::String> array = kj::arr(kj::str("foo"), kj::str(123));
   KJ_EXPECT(array == kj::ArrayPtr<const kj::StringPtr>({"foo", "123"}));
 }
+
+struct ImmovableInt {
+  ImmovableInt(int i): i(i) {}
+  KJ_DISALLOW_COPY(ImmovableInt);
+  int i;
+};
+
+KJ_TEST("kj::arrOf()") {
+  kj::Array<ImmovableInt> array = kj::arrOf<ImmovableInt>(123, 456, 789);
+  KJ_ASSERT(array.size() == 3);
+  KJ_EXPECT(array[0].i == 123);
+  KJ_EXPECT(array[1].i == 456);
+  KJ_EXPECT(array[2].i == 789);
+}
 #endif
 
 struct DestructionOrderRecorder {
@@ -447,6 +461,7 @@ TEST(Array, AttachNested) {
   Array<Own<DestructionOrderRecorder>> combined = arr.attach(kj::mv(obj2)).attach(kj::mv(obj3));
 
   KJ_EXPECT(combined.begin() == ptr);
+  KJ_EXPECT(combined.size() == 1);
 
   KJ_EXPECT(obj1.get() == nullptr);
   KJ_EXPECT(obj2.get() == nullptr);

@@ -24,17 +24,16 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !defined(CAPNP_HEADER_WARNINGS)
-#pragma GCC system_header
-#endif
-
 #include "capability.h"
 #include "persistent.capnp.h"
+
+CAPNP_BEGIN_HEADER
 
 namespace capnp {
 
 class OutgoingRpcMessage;
 class IncomingRpcMessage;
+class RpcFlowController;
 
 template <typename SturdyRefHostId>
 class RpcSystem;
@@ -59,6 +58,7 @@ public:
     virtual kj::Promise<kj::Maybe<kj::Own<IncomingRpcMessage>>> receiveIncomingMessage() = 0;
     virtual kj::Promise<void> shutdown() = 0;
     virtual AnyStruct::Reader baseGetPeerVatId() = 0;
+    virtual kj::Own<RpcFlowController> newStream() = 0;
   };
   virtual kj::Maybe<kj::Own<Connection>> baseConnect(AnyStruct::Reader vatId) = 0;
   virtual kj::Promise<kj::Own<Connection>> baseAccept() = 0;
@@ -79,13 +79,15 @@ class RpcSystemBase {
   // Non-template version of RpcSystem.  Ignore this class; see RpcSystem in rpc.h.
 
 public:
-  RpcSystemBase(VatNetworkBase& network, kj::Maybe<Capability::Client> bootstrapInterface,
-                kj::Maybe<RealmGateway<>::Client> gateway);
-  RpcSystemBase(VatNetworkBase& network, BootstrapFactoryBase& bootstrapFactory,
-                kj::Maybe<RealmGateway<>::Client> gateway);
+  RpcSystemBase(VatNetworkBase& network, kj::Maybe<Capability::Client> bootstrapInterface);
+  RpcSystemBase(VatNetworkBase& network, BootstrapFactoryBase& bootstrapFactory);
   RpcSystemBase(VatNetworkBase& network, SturdyRefRestorerBase& restorer);
   RpcSystemBase(RpcSystemBase&& other) noexcept;
   ~RpcSystemBase() noexcept(false);
+
+  void setTraceEncoder(kj::Function<kj::String(const kj::Exception&)> func);
+
+  kj::Promise<void> run();
 
 private:
   class Impl;
@@ -99,29 +101,7 @@ private:
   friend class capnp::RpcSystem;
 };
 
-template <typename T> struct InternalRefFromRealmGateway_;
-template <typename InternalRef, typename ExternalRef, typename InternalOwner,
-          typename ExternalOwner>
-struct InternalRefFromRealmGateway_<RealmGateway<InternalRef, ExternalRef, InternalOwner,
-                                    ExternalOwner>> {
-  typedef InternalRef Type;
-};
-template <typename T>
-using InternalRefFromRealmGateway = typename InternalRefFromRealmGateway_<T>::Type;
-template <typename T>
-using InternalRefFromRealmGatewayClient = InternalRefFromRealmGateway<typename T::Calls>;
-
-template <typename T> struct ExternalRefFromRealmGateway_;
-template <typename InternalRef, typename ExternalRef, typename InternalOwner,
-          typename ExternalOwner>
-struct ExternalRefFromRealmGateway_<RealmGateway<InternalRef, ExternalRef, InternalOwner,
-                                    ExternalOwner>> {
-  typedef ExternalRef Type;
-};
-template <typename T>
-using ExternalRefFromRealmGateway = typename ExternalRefFromRealmGateway_<T>::Type;
-template <typename T>
-using ExternalRefFromRealmGatewayClient = ExternalRefFromRealmGateway<typename T::Calls>;
-
 }  // namespace _ (private)
 }  // namespace capnp
+
+CAPNP_END_HEADER

@@ -163,6 +163,10 @@ typedef struct {
  * save_graphics_file_base: Base of save graphis file name (i.e. before extension)
  * pres_fac: present congestion cost factor
  */
+/* Note: t_draw_struct is used in the same way as a Context, but cannot be a Context because Contexts are
+ * not copyable, while t_draw_struct must be. (t_draw_struct is copied to save a restore of the graphics state
+ * when running graphics commands.)
+ */
 struct t_draw_state {
     pic_type pic_on_screen = NO_PICTURE;
     e_draw_nets show_nets = DRAW_NO_NETS;

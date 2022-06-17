@@ -19,7 +19,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#if !_WIN32
-#define KJ_USE_PTHREAD_TLS 1
-#include "threadlocal-test.c++"
-#endif
+#pragma once
+
+// This exposes IndexingIterator as something compatible with std::iterator so that things like
+// std::copy work with List::begin/List::end.
+
+// Make sure that if this header is before list.h by the user it includes it to make
+// IndexingIterator visible to avoid brittle header problems.
+#include "../list.h"
+#include <iterator>
+
+namespace std {
+
+template <typename Container, typename Element>
+struct iterator_traits<capnp::_::IndexingIterator<Container, Element>>
+      : public std::iterator<std::random_access_iterator_tag, Element, int> {};
+
+}  // namespace std
+

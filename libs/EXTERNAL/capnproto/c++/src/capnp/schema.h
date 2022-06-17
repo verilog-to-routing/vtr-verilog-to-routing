@@ -21,17 +21,26 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !defined(CAPNP_HEADER_WARNINGS)
-#pragma GCC system_header
-#endif
-
 #if CAPNP_LITE
 #error "Reflection APIs, including this header, are not available in lite mode."
 #endif
 
+#undef CONST
+// For some ridiculous reason, Windows defines CONST to const. We have an enum value called CONST
+// in schema.capnp.h, so if this is defined, compilation is gonna fail. So we undef it because
+// that seems strictly better than failing entirely. But this could cause trouble for people later
+// on if they, say, include windows.h, then include schema.h, then include another windows API
+// header that uses CONST. I suppose they may have to re-#define CONST in between, or change the
+// header ordering. Sorry.
+//
+// Please don't file a bug report telling us to change our enum naming style. You are at least
+// seven years too late.
+
 #include <capnp/schema.capnp.h>
 #include <kj/hash.h>
 #include <kj/windows-sanity.h>  // work-around macro conflict with `VOID`
+
+CAPNP_BEGIN_HEADER
 
 namespace capnp {
 
@@ -142,6 +151,9 @@ public:
 
   kj::StringPtr getShortDisplayName() const;
   // Get the short version of the node's display name.
+
+  const kj::StringPtr getUnqualifiedName() const;
+  // Get the display name "nickname" of this node minus the prefix
 
 private:
   const _::RawBrandedSchema* raw;
@@ -259,6 +271,9 @@ public:
   // Finds the field whose `discriminantValue` is equal to the given value, or returns null if
   // there is no such field.  (If the schema does not represent a union or a struct containing
   // an unnamed union, then this always returns null.)
+
+  bool isStreamResult() const;
+  // Convenience method to check if this is the result type of a streaming RPC method.
 
 private:
   StructSchema(Schema base): Schema(base) {}
@@ -490,6 +505,9 @@ public:
 
   inline uint16_t getOrdinal() const { return ordinal; }
   inline uint getIndex() const { return ordinal; }
+
+  bool isStreaming() const { return getResultType().isStreamResult(); }
+  // Check if this is a streaming method.
 
   StructSchema getParamType() const;
   StructSchema getResultType() const;
@@ -974,3 +992,5 @@ inline Type Type::wrapInList(uint depth) const {
 }
 
 }  // namespace capnp
+
+CAPNP_END_HEADER

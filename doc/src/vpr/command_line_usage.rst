@@ -119,6 +119,7 @@ Graphics Options
 .. option:: --graphics_commands <string>
 
     A set of semi-colon seperated graphics commands.
+    Graphics commands must be surrounded by quotation marks (e.g. --graphics_commands "save_graphics place.png;")
 
     * save_graphics <file>
          Saves graphics to the specified file (.png/.pdf/
@@ -152,14 +153,14 @@ Graphics Options
 
     .. code-block:: none
 
-        save_graphics place.png; \
+        "save_graphics place.png; \
         set_nets 1; save_graphics nets1.png;\
         set_nets 2; save_graphics nets2.png; set_nets 0;\
         set_cpd 1; save_graphics cpd1.png; \
         set_cpd 3; save_graphics cpd3.png; set_cpd 0; \
         set_routing_util 5; save_graphics routing_util5.png; \
         set_routing_util 0; \
-        set_congestion 1; save_graphics congestion1.png;
+        set_congestion 1; save_graphics congestion1.png;"
 
     The above toggles various graphics settings (e.g. drawing nets, drawing critical path) and then saves the results to .png files.
     

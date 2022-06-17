@@ -1339,6 +1339,7 @@ static void add_intra_src_sink_spatial_lookup(RRGraphBuilder& rr_graph_builder,
     auto cluster_internal_classes = get_cluster_internal_class_pairs(cluster_blk_id);
     for (auto class_pair : cluster_internal_classes) {
         int class_num = class_pair.first;
+        VTR_ASSERT(class_num >= 0);
         auto primitive_class = class_pair.second;
         auto class_type = primitive_class->type;
         if (class_type == DRIVER) {
@@ -1372,6 +1373,7 @@ static void add_intra_ipin_opin_spatial_lookup(RRGraphBuilder& rr_graph_builder,
 
     auto internal_pins = get_cluster_internal_ipin_opin(cluster_blk_id);
     for (auto pin_num : internal_pins) {
+        VTR_ASSERT(pin_num >= 0);
         bool assigned_to_rr_node = false;
         auto pin_type = get_pin_type_from_pin_physical_num(type, pin_num);
         // It is assumed that all internal pins are on the top side
