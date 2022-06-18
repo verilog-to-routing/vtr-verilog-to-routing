@@ -39,7 +39,7 @@ void create_rr_graph(const t_graph_type graph_type,
                      const t_direct_inf* directs,
                      const int num_directs,
                      int* Warnings,
-                     bool is_flat = false);
+                     bool is_flat);
 
 //void add_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
 //                                const t_graph_type graph_type,

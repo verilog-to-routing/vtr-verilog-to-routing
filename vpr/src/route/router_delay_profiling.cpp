@@ -209,7 +209,8 @@ void alloc_routing_structs(t_chan_width chan_width,
                            t_det_routing_arch* det_routing_arch,
                            std::vector<t_segment_inf>& segment_inf,
                            const t_direct_inf* directs,
-                           const int num_directs) {
+                           const int num_directs,
+                           bool is_flat) {
     int warnings;
     t_graph_type graph_type;
 
@@ -230,7 +231,8 @@ void alloc_routing_structs(t_chan_width chan_width,
                     segment_inf,
                     router_opts,
                     directs, num_directs,
-                    &warnings);
+                    &warnings,
+                    is_flat);
 
     alloc_and_load_rr_node_route_structs();
 

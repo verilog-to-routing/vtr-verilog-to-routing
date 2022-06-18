@@ -98,14 +98,15 @@ class ClusteredPinTimingInvalidator {
                                   const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
                                   const AtomNetlist& atom_nlist,
                                   const AtomLookup& atom_lookup,
-                                  const tatum::TimingGraph& timing_graph) {
-        pin_first_edge_.reserve(clb_nlist.pins().size() + 1); //Exact
-        timing_edges_.reserve(clb_nlist.pins().size() + 1);   //Lower bound
+                                  const tatum::TimingGraph& timing_graph,
+                                  bool is_flat) {
+        size_t num_pins = is_flat ? atom_nlist.pins().size() : clb_nlist.pins().size();
+        pin_first_edge_.reserve(num_pins + 1); //Exact
+        timing_edges_.reserve(num_pins + 1);   //Lower bound
+        if(is_flat) {
+            for (AtomPinId atom_pin : atom_nlist.pins()) {
+                pin_first_edge_.push_back(timing_edges_.size());
 
-        for (ClusterPinId clb_pin : clb_nlist.pins()) {
-            pin_first_edge_.push_back(timing_edges_.size());
-
-            for (const AtomPinId atom_pin : clb_atom_pin_lookup.connected_atom_pins(clb_pin)) {
                 tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
 
                 if (!tedge) {
@@ -114,7 +115,23 @@ class ClusteredPinTimingInvalidator {
 
                 timing_edges_.push_back(tedge);
             }
+
+        } else {
+            for (ClusterPinId clb_pin : clb_nlist.pins()) {
+                pin_first_edge_.push_back(timing_edges_.size());
+
+                for (const AtomPinId atom_pin : clb_atom_pin_lookup.connected_atom_pins(clb_pin)) {
+                    tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
+
+                    if (!tedge) {
+                        continue;
+                    }
+
+                    timing_edges_.push_back(tedge);
+                }
+            }
         }
+
         //Sentinels
         timing_edges_.push_back(tatum::EdgeId::INVALID());
         pin_first_edge_.push_back(timing_edges_.size());

@@ -48,7 +48,8 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted,
                                  float worst_negative_slack,
-                                 const RoutingPredictor& routing_predictor);
+                                 const RoutingPredictor& routing_predictor,
+                                 bool is_flat);
 
 template<typename ConnectionRouter>
 bool timing_driven_route_net(ConnectionRouter& router,
@@ -67,7 +68,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
                              route_budgets& budgeting_inf,
                              float worst_neg_slack,
-                             const RoutingPredictor& routing_predictor);
+                             const RoutingPredictor& routing_predictor,
+                             bool is_flat);
 
 void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
                                        int** sink_order_ptr,

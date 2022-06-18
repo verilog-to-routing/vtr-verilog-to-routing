@@ -627,10 +627,10 @@ t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
         std::tie(physical_tile, sub_tile, sub_tile_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk);
         const t_pb_graph_node* pb_graph_node = atom_look_up.atom_pb_graph_node(atom_blk);
         return get_pb_graph_node_class_physical_range(physical_tile,
-                                             sub_tile,
-                                             logical_block,
-                                             sub_tile_cap,
-                                             pb_graph_node);
+                                                      sub_tile,
+                                                      logical_block,
+                                                      sub_tile_cap,
+                                                      pb_graph_node);
     }
 }
 
@@ -692,7 +692,7 @@ std::tuple<int, int> get_block_loc(const ParentBlockId& block_id, bool is_flat) 
 
 int get_block_num_class(const ParentBlockId& block_id, bool is_flat) {
     auto type = physical_tile_type(block_id, is_flat);
-    get_tile_class_max_ptc(type, is_flat);
+    return get_tile_class_max_ptc(type, is_flat);
 }
 
 int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pin_id, bool is_flat) {
@@ -2222,7 +2222,14 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     t_logical_block_type_ptr logical_block;
     std::tie(physical_type, sub_tile, sub_tile_rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
     auto pb_graph_pin = atom_look_up.atom_pin_pb_graph_pin(atom_pin_id);
-    int pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
+    int pin_physical_num = -1;
+    // #TODO: This is not a clean solution - Write a helper function to get rid of the if-statement
+    if(pb_graph_pin->is_root_block_pin()) {
+        pin_physical_num = get_physical_pin_at_sub_tile_location(physical_type, logical_block, sub_tile_rel_cap+sub_tile->capacity.low, pb_graph_pin->pin_number);
+    } else {
+        pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
+    }
+
     return get_class_num_from_pin_physical_num(physical_type, pin_physical_num);
 
 }

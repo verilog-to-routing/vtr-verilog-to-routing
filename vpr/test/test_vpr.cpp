@@ -131,7 +131,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
                  &options, &vpr_setup, &arch);
         vpr_setup.RouterOpts.read_rr_edge_metadata = true;
-        vpr_create_device(vpr_setup, arch);
+        vpr_create_device(vpr_setup, arch, false);
 
         const auto& device_ctx = g_vpr_ctx.device();
         const auto& rr_graph = device_ctx.rr_graph;

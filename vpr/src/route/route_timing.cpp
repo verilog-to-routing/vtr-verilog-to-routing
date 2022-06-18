@@ -183,7 +183,8 @@ static bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,
 static void generate_route_timing_reports(const t_router_opts& router_opts,
                                           const t_analysis_opts& analysis_opts,
                                           const SetupTimingInfo& timing_info,
-                                          const RoutingDelayCalculator& delay_calc);
+                                          const RoutingDelayCalculator& delay_calc,
+                                          bool is_flat);
 
 static void prune_unused_non_configurable_nets(CBRR& connections_inf,
                                                const Netlist<>& net_list);
@@ -366,7 +367,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         device_ctx.rr_rc_data,
         device_ctx.rr_graph.rr_switch(),
         route_ctx.rr_node_route_inf,
-        router_opts.flat_routing);
+        is_flat);
 
     // Make sure template type ConnectionRouter is a ConnectionRouterInterface.
     static_assert(std::is_base_of<ConnectionRouterInterface, ConnectionRouter>::value, "ConnectionRouter must implement the ConnectionRouterInterface");
@@ -405,7 +406,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
             route_timing_info = make_constant_timing_info(0.);
         }
         VTR_LOG("Initial Net Connection Criticality Histogram:\n");
-        print_router_criticality_histogram(net_list, *route_timing_info, netlist_pin_lookup, router_opts.flat_routing);
+        print_router_criticality_histogram(net_list, *route_timing_info, netlist_pin_lookup, is_flat);
     }
 
     std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
@@ -414,7 +415,8 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
                                                                                  netlist_pin_lookup,
                                                                                  atom_ctx.nlist,
                                                                                  atom_ctx.lookup,
-                                                                                 *timing_info->timing_graph());
+                                                                                 *timing_info->timing_graph(),
+                                                                                 is_flat);
     }
 
     RouterStats router_stats;
@@ -479,7 +481,8 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
                                                            budgeting_inf,
                                                            was_rerouted,
                                                            worst_negative_slack,
-                                                           routing_predictor);
+                                                           routing_predictor,
+                                                           is_flat);
 
             if (!is_routable) {
                 return (false); //Impossible to route
@@ -495,9 +498,9 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
         // Make sure any CLB OPINs used up by subblocks being hooked directly to them are reserved for that purpose
         bool rip_up_local_opins = (itry == 1 ? false : true);
-        if(!router_opts.flat_routing) {
+        if(!is_flat) {
             reserve_locally_used_opins(&small_heap, pres_fac,
-                                       router_opts.acc_fac, rip_up_local_opins, router_opts.flat_routing);
+                                       router_opts.acc_fac, rip_up_local_opins, is_flat);
         }
 
         /*
@@ -533,7 +536,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
             VTR_ASSERT_SAFE(timing_driven_check_net_delays(net_list, net_delay));
 
             if (itry == 1) {
-                generate_route_timing_reports(router_opts, analysis_opts, *timing_info, *delay_calc);
+                generate_route_timing_reports(router_opts, analysis_opts, *timing_info, *delay_calc, is_flat);
             }
         }
 
@@ -554,7 +557,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
         if (router_opts.save_routing_per_iteration) {
             std::string filename = vtr::string_fmt("iteration_%03d.route", itry);
-            print_route(net_list, nullptr, filename.c_str(), router_opts.flat_routing);
+            print_route(net_list, nullptr, filename.c_str(), is_flat);
         }
 
         //Update router stats (total)
@@ -831,7 +834,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
     }
 
     VTR_LOG("Final Net Connection Criticality Histogram:\n");
-    print_router_criticality_histogram(net_list, *route_timing_info, netlist_pin_lookup, router_opts.flat_routing);
+    print_router_criticality_histogram(net_list, *route_timing_info, netlist_pin_lookup, is_flat);
 
     VTR_LOG("Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu\n",
             router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops);
@@ -857,7 +860,8 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted,
                                  float worst_negative_slack,
-                                 const RoutingPredictor& routing_predictor) {
+                                 const RoutingPredictor& routing_predictor,
+                                 bool is_flat) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     bool is_routed = false;
@@ -896,7 +900,8 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                             pin_timing_invalidator,
                                             budgeting_inf,
                                             worst_negative_slack,
-                                            routing_predictor);
+                                            routing_predictor,
+                                            is_flat);
 
         profiling::net_fanout_end(net_list.net_sinks(net_id).size());
 
@@ -998,7 +1003,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
                              route_budgets& budgeting_inf,
                              float worst_neg_slack,
-                             const RoutingPredictor& routing_predictor) {
+                             const RoutingPredictor& routing_predictor,
+                             bool is_flat) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -1045,7 +1051,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                 pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info,
                                                                           netlist_pin_lookup,
                                                                           pin,
-                                                                          router_opts.flat_routing);
+                                                                          is_flat);
             } else {
                 // Use max_criticality for clock nets.
                 // calculate_clb_net_pin_criticality likely doesn't generate
@@ -1178,7 +1184,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       timing_info.get(),
                                       pin_timing_invalidator,
                                       netlist_pin_lookup,
-                                      router_opts.flat_routing);
+                                      is_flat);
 
     if (router_opts.update_lower_bound_delays) {
         for (int ipin : remaining_targets) {
@@ -2112,11 +2118,12 @@ static bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,
 static void generate_route_timing_reports(const t_router_opts& router_opts,
                                           const t_analysis_opts& analysis_opts,
                                           const SetupTimingInfo& timing_info,
-                                          const RoutingDelayCalculator& delay_calc) {
+                                          const RoutingDelayCalculator& delay_calc,
+                                          bool is_flat) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, router_opts.flat_routing);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
@@ -2168,10 +2175,18 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf, const Netl
 }
 
 //Initializes net_delay based on best-case delay estimates from the router lookahead
+<<<<<<< Updated upstream
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           const Netlist<>& net_list,
                                           const vtr::vector<ParentNetId, std::vector<int>>& net_rr_terminals,
                                           NetPinsMatrix<float>& net_delay) {
+=======
+static void init_net_delay_from_lookahead(const Netlist<>& net_list,
+                                          const RouterLookahead& router_lookahead,
+                                          NetPinsMatrix<float>& net_delay,
+                                          const vtr::vector<ParentNetId, std::vector<int>>& net_rr_terminals) {
+
+>>>>>>> Stashed changes
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.; //Ensures lookahead returns delay value
 
