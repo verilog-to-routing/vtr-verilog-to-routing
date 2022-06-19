@@ -365,7 +365,7 @@ void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, 
     } else if (strcmp(combo_box_content, "Expected (with edges)") == 0) {
         new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES;
     } else {
-        VPR_THROW(VPR_ERROR_DRAW, "Unrecognzied draw RR cost option");
+        VPR_FATAL_ERROR(VPR_ERROR_DRAW, "Unrecognzied draw RR cost option");
     }
 
     g_free(combo_box_content);
