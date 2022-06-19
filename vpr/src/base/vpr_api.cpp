@@ -370,8 +370,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     //, since it is called before routing, should be false.
     vpr_create_device(vpr_setup, arch, false);
 
-    // TODO: Placer still assumes that cluster net list is used
-    vpr_init_graphics(vpr_setup, arch);
+    // TODO: Placer still assumes that cluster net list is used - graphics can not work with flat routing yet
+    vpr_init_graphics(vpr_setup, arch, false);
     { //Place
         bool place_success = vpr_place_flow(vpr_setup, arch);
 
@@ -986,11 +986,11 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     init_draw_coords(chan_width_fac);
 }
 
-void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
+void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat) {
     /* Startup X graphics */
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
-                        vpr_setup.GraphicsCommands);
+                        vpr_setup.GraphicsCommands, is_flat);
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
         alloc_draw_structs(&arch);
 }

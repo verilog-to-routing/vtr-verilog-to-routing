@@ -2175,18 +2175,10 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf, const Netl
 }
 
 //Initializes net_delay based on best-case delay estimates from the router lookahead
-<<<<<<< Updated upstream
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           const Netlist<>& net_list,
                                           const vtr::vector<ParentNetId, std::vector<int>>& net_rr_terminals,
                                           NetPinsMatrix<float>& net_delay) {
-=======
-static void init_net_delay_from_lookahead(const Netlist<>& net_list,
-                                          const RouterLookahead& router_lookahead,
-                                          NetPinsMatrix<float>& net_delay,
-                                          const vtr::vector<ParentNetId, std::vector<int>>& net_rr_terminals) {
-
->>>>>>> Stashed changes
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.; //Ensures lookahead returns delay value
 

@@ -51,7 +51,7 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
 
 /* If an rr_node has been clicked on, it will be highlighted in MAGENTA.
  * If so, and toggle nets is selected, highlight the whole net in that colour.*/
-void highlight_nets(char* message, int hit_node);
+void highlight_nets(char* message, int hit_node, bool is_flat);
 
 /* If an rr_node has been clicked on, it will be either highlighted in MAGENTA,
  * or de-highlighted in WHITE. If highlighted, and toggle_rr is selected, highlight

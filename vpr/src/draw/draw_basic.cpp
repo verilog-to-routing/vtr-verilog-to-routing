@@ -456,7 +456,7 @@ void draw_routing_bb(ezgl::renderer* g) {
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto net_id = ClusterNetId(draw_state->show_routing_bb);
+    auto net_id = ParentNetId(draw_state->show_routing_bb);
     const t_bb* bb = &route_ctx.route_bb[net_id];
 
     //The router considers an RR node to be 'within' the the bounding box if it
@@ -495,7 +495,7 @@ void draw_routing_bb(ezgl::renderer* g) {
     msg += " (" + std::to_string(bb->xmin) + ", " + std::to_string(bb->ymin)
            + ", " + std::to_string(bb->xmax) + ", " + std::to_string(bb->ymax)
            + ")";
-    msg += " and routing for net '" + cluster_ctx.clb_nlist.net_name(net_id)
+    msg += " and routing for net '" + cluster_ctx.clb_nlist.net_name(convert_to_cluster_net_id(net_id))
            + "'";
     msg += " (#" + std::to_string(size_t(net_id)) + ")";
     application.update_message(msg.c_str());
@@ -529,17 +529,17 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
             && draw_state->net_color[net_id] == ezgl::BLACK)
             continue;
 
-        draw_routed_net(net_id, g);
+        draw_routed_net((ParentNetId&)net_id, g);
     } /* End for (each net) */
 }
 
-void draw_routed_net(ClusterNetId net_id, ezgl::renderer* g) {
+void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Don't draw. */
+    if (cluster_ctx.clb_nlist.net_is_ignored(convert_to_cluster_net_id(net_id))) /* Don't draw. */
         return;
 
     if (route_ctx.trace[net_id].head == nullptr) /* No routing->  Skip.  (Allows me to draw */
@@ -554,10 +554,10 @@ void draw_routed_net(ClusterNetId net_id, ezgl::renderer* g) {
         tptr = tptr->next;
         inode = tptr->index;
 
-        if (draw_if_net_highlighted(net_id)) {
+        if (draw_if_net_highlighted(convert_to_cluster_net_id(net_id))) {
             /* If a net has been highlighted, highlight the whole net in *
              * the same color.											 */
-            draw_state->draw_rr_node[inode].color = draw_state->net_color[net_id];
+            draw_state->draw_rr_node[inode].color = draw_state->net_color[convert_to_cluster_net_id(net_id)];
             draw_state->draw_rr_node[inode].node_highlighted = true;
         } else {
             /* If not highlighted, draw the node in default color. */
@@ -785,8 +785,8 @@ void draw_routing_util(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_usage = calculate_routing_usage(CHANX);
-    auto chany_usage = calculate_routing_usage(CHANY);
+    auto chanx_usage = calculate_routing_usage(CHANX, draw_state->is_flat);
+    auto chany_usage = calculate_routing_usage(CHANY, draw_state->is_flat);
 
     auto chanx_avail = calculate_routing_avail(CHANX);
     auto chany_avail = calculate_routing_avail(CHANY);

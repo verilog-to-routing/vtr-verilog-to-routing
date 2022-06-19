@@ -577,10 +577,12 @@ void try_place(const t_placer_opts& placer_opts,
         placer_criticalities = std::make_unique<PlacerCriticalities>(
             cluster_ctx.clb_nlist, netlist_pin_lookup);
 
+        // During placement, we only use cluster netlist. Thus, the is_flat parameter should be set to false
         pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>(
             cluster_ctx.clb_nlist, netlist_pin_lookup,
             atom_ctx.nlist, atom_ctx.lookup,
-            *timing_info->timing_graph());
+            *timing_info->timing_graph(),
+            false);
         //First time compute timing and costs, compute from scratch
         PlaceCritParams crit_params;
         crit_params.crit_exponent = first_crit_exponent;

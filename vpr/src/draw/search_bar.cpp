@@ -179,7 +179,7 @@ bool highlight_rr_nodes(int hit_node) {
     }
 
     if (draw_state->show_nets)
-        highlight_nets(message, hit_node);
+        highlight_nets(message, hit_node, draw_state->is_flat);
     else
         application.update_message(message);
 

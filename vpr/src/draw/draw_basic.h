@@ -58,7 +58,7 @@ void draw_x(float x, float y, float size, ezgl::renderer* g);
  * that are not coloured black (useful for drawing over the rr_graph).       */
 void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g);
 
-void draw_routed_net(ClusterNetId net, ezgl::renderer* g);
+void draw_routed_net(ParentNetId net, ezgl::renderer* g);
 
 //Draws the set of rr_nodes specified, using the colors set in draw_state
 void draw_partial_route(const std::vector<int>& rr_nodes_to_draw,

@@ -165,7 +165,7 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
 /* If an rr_node has been clicked on, it will be highlighted in MAGENTA.
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
-void highlight_nets(char* message, int hit_node) {
+void highlight_nets(char* message, int hit_node, bool is_flat) {
     t_trace* tptr;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -173,7 +173,7 @@ void highlight_nets(char* message, int hit_node) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        for (tptr = route_ctx.trace[net_id].head; tptr != nullptr;
+        for (tptr = route_ctx.trace[get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat)].head; tptr != nullptr;
              tptr = tptr->next) {
             if (draw_state->draw_rr_node[tptr->index].color == ezgl::MAGENTA) {
                 draw_state->net_color[net_id] = draw_state->draw_rr_node[tptr->index].color;

@@ -676,10 +676,7 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
     if(is_flat) {
         pin_crit = timing_info.setup_pin_criticality(convert_to_atom_pin_id(pin_id));
     } else {
-<<<<<<< Updated upstream
-=======
         //There may be multiple atom netlist pins connected to this CLB pin
->>>>>>> Stashed changes
         for (const auto atom_pin : pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin_id))) {
             //Take the maximum of the atom pin criticality as the CLB pin criticality
             pin_crit = std::max(pin_crit, timing_info.setup_pin_criticality(atom_pin));
