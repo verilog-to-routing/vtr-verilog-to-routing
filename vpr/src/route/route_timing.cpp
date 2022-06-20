@@ -1858,7 +1858,7 @@ static void print_router_criticality_histogram(const Netlist<>& net_list,
                                                const SetupTimingInfo& timing_info,
                                                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                                bool is_flat) {
-    print_histogram(create_criticality_histogram(net_list, timing_info, netlist_pin_lookup, 10, is_flat));
+    print_histogram(create_criticality_histogram(net_list, timing_info, netlist_pin_lookup, is_flat, 10));
 }
 
 //Returns true if the specified net fanout is classified as high fanout
