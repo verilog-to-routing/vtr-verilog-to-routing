@@ -197,6 +197,11 @@ void YYosys::init_yosys() {
     yosys_setup();
     yosys_banner();
 
+#   ifdef YOSYS_SV_UHDM_PLUGIN
+    /* Load SystemVerilog/UHDM plugins in the Yosys frontend */
+    run_pass(std::string("plugin -i systemverilog"));
+#   endif
+
     /* Read VTR baseline library first */
     run_pass(std::string("read_verilog -nomem2reg " + this->vtr_primitives_file));
     run_pass(std::string("setattr -mod -set keep_hierarchy 1 " + std::string(SINGLE_PORT_RAM_string)));
@@ -249,9 +254,37 @@ void YYosys::execute() {
     } else {
         // Read the hardware decription Verilog circuits
         // FOR loop enables include feature for Yosys+Odin (multiple Verilog input files)
-        for (auto verilog_circuit : this->verilog_circuits)
-            run_pass(std::string("read_verilog -sv -nolatches " + verilog_circuit));
-
+        for (auto circuit : this->verilog_circuits) {
+            // Read Verilog/SystemVerilog/UHDM files based on their type, considering the SystemVerilog/UHDM plugins
+#           ifdef YOSYS_SV_UHDM_PLUGIN
+                /* Load SystemVerilog/UHDM plugins in the Yosys frontend */
+                switch (configuration.input_file_type) {
+                    case(file_type_e::__VERILOG): // fallthrough
+                    case(file_type_e::__VERILOG_HEADER): {
+                        run_pass(std::string("puts \"Using Yosys read_uhdm command\""));
+                        run_pass(std::string("read_verilog -sv -nolatches " + circuit));
+                        break;
+                    }
+                    case(file_type_e::_SYSTEM_VERILOG): {
+                        run_pass(std::string("puts \"Using Yosys read_systemverilog command\""));
+                        run_pass(std::string("read_systemverilog " + circuit));
+                        break;
+                    }
+                    case(file_type_e::_UHDM): {
+                        run_pass(std::string("puts \"Using Yosys read_verilog command\""));
+                        run_pass(std::string("read_uhdm " + circuit));
+                        break;
+                    }
+                    default:{
+                        error_message(UTIL, unknown_location,
+                                      "Invalid file type (%s) for Yosys+Odin-II synthesizer.",file_extension_strmap[configuration.input_file_type]);
+                    }
+                }
+#           else
+                run_pass(std::string("puts \"Using Yosys read_verilog command\""));
+                run_pass(std::string("read_verilog -sv -nolatches " + circuit));
+#           endif
+        }
         // Check whether cells match libraries and find top module
         if (global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED) {
             run_pass(std::string("hierarchy -check -top " + global_args.top_level_module_name.value() + " -purge_lib"));
@@ -298,7 +331,7 @@ void YYosys::execute() {
         run_pass(std::string("pmuxtree"));
         // To possibly reduce word sizes by Yosys
         run_pass(std::string("wreduce"));
-        // "-undirven" to ensure there is no wire without drive
+        // "-undriven" to ensure there is no wire without drive
         // -noff #potential option to remove all sdffXX and etc. Only dff will remain
         // "opt_muxtree" removes dead branches, "opt_expr" performs const folding and
         // removes "undef" from mux inputs and replace muxes with buffers and inverters
