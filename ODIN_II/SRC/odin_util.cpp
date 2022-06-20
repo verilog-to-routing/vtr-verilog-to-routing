@@ -91,24 +91,78 @@ void create_directory(std::string path) {
     }
 }
 
-void assert_supported_file_extension(std::string input_file, loc_t loc) {
-    bool supported = false;
-    std::string extension = get_file_extension(input_file);
-    for (int i = 0; i < file_type_e::file_type_e_END && !supported; i++) {
-        supported = (file_type_strmap[extension] != file_type_e::file_type_e_END);
+/**
+ * @brief assert all input files have valid type and extenstion
+ * 
+ * @param name_list list of input files
+ * @param type the type to be checked with
+ */
+void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_e type) {
+    for (auto file_name : name_list) {
+        // lookup the file type string from file extension map
+        auto file_ext_str = string_to_lower(get_file_extension(file_name));
+        auto file_ext_it = file_extension_strmap.find(file_ext_str);
+
+        // Unsupported file types should be already check.
+        // However, we double-check here
+        if (file_ext_it == file_extension_strmap.end()) {
+            assert_supported_file_extension(file_name, unknown_location);
+        } else {
+            file_type_e file_type = file_ext_it->second;
+            // Check if the file_name extension matches with type
+            switch (type) {
+                case (file_type_e::_VERILOG): // fallthrough
+                case (file_type_e::_VERILOG_HEADER): {
+                    if (file_type != file_type_e::_VERILOG && file_type != file_type_e::_VERILOG_HEADER)
+                        error_message(UTIL, unknown_location,
+                                      "File (%s) has an invalid extension (%s), supposed to be a %s or %s file { %s, %s },\
+                                      please see ./odin --help",
+                                      file_name.c_str(),
+                                      file_ext_str.c_str(),
+                                      search_strmap_value(file_type_strmap, file_type_e::_VERILOG).first.c_str(),
+                                      search_strmap_value(file_type_strmap, file_type_e::_VERILOG_HEADER).first.c_str(),
+                                      search_strmap_value(file_extension_strmap, file_type_e::_VERILOG).first.c_str(),
+                                      search_strmap_value(file_extension_strmap, file_type_e::_VERILOG_HEADER).first.c_str());
+                    break;
+                }
+                case (file_type_e::_SYSTEM_VERILOG): //fallthorugh
+                case (file_type_e::_UHDM):           //fallthorugh
+                case (file_type_e::_BLIF):           //fallthorugh
+                case (file_type_e::_EBLIF): {
+                    if (file_type != type)
+                        error_message(UTIL, unknown_location,
+                                      "File (%s) has an invalid extension (%s), supposed to be a %s file { %s },\
+                                      please see ./odin --help",
+                                      file_name.c_str(),
+                                      file_ext_str.c_str(),
+                                      search_strmap_value(file_type_strmap, type).first.c_str(),
+                                      search_strmap_value(file_extension_strmap, type).first.c_str());
+                    break;
+                }
+                case (file_type_e::_ILANG): // fallthrough
+                default: {
+                    assert_supported_file_extension(file_name, unknown_location);
+                    break;
+                }
+            }
+        }
     }
+}
+
+void assert_supported_file_extension(std::string input_file, loc_t loc) {
+    bool supported = (file_extension_strmap.find(string_to_lower(get_file_extension(input_file))) != file_extension_strmap.end());
 
     if (!supported) {
         std::string supported_extension_list = "";
-        for (auto iter : file_type_strmap) {
+        for (auto iter : file_extension_strmap) {
             supported_extension_list += " ";
-            supported_extension_list += iter.second;
+            supported_extension_list += iter.first;
         }
 
         possible_error_message(UTIL, loc,
                                "File (%s) has an unsupported extension (%s), Odin only supports { %s }",
                                input_file.c_str(),
-                               extension.c_str(),
+                               get_file_extension(input_file).c_str(),
                                supported_extension_list.c_str());
     }
 }
@@ -804,25 +858,53 @@ long int pow2(int to_the_power) {
 /*
  * Changes the given string to upper case.
  */
-void string_to_upper(char* string) {
+char* string_to_upper(char* string) {
     if (string) {
         unsigned int i;
         for (i = 0; i < strlen(string); i++) {
             string[i] = toupper(string[i]);
         }
     }
+    return (string);
 }
 
 /*
  * Changes the given string to lower case.
  */
-void string_to_lower(char* string) {
+char* string_to_lower(char* string) {
     if (string) {
         unsigned int i;
         for (i = 0; i < strlen(string); i++) {
             string[i] = tolower(string[i]);
         }
     }
+    return (string);
+}
+
+/**
+ * @brief create a new string by transforming the given string to upper case
+ * 
+ * @param string to be transformed string
+ * 
+ * @return the transformed string in a new container
+ */
+std::string string_to_upper(std::string string) {
+    if (!string.empty())
+        std::transform(string.begin(), string.end(), string.begin(), ::toupper);
+    return (string);
+}
+
+/**
+ * @brief create a new string by transforming the given string to lower case
+ * 
+ * @param string to be transformed string
+ * 
+ * @return the transformed string in a new container
+ */
+std::string string_to_lower(std::string string) {
+    if (!string.empty())
+        std::transform(string.begin(), string.end(), string.begin(), ::tolower);
+    return (string);
 }
 
 /*

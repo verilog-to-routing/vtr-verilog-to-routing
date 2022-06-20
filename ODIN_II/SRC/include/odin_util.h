@@ -12,9 +12,19 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t
 std::string get_file_extension(std::string input_file);
 std::string get_directory(std::string input_file);
 void create_directory(std::string path);
+void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_e type);
 void assert_supported_file_extension(std::string input_file, loc_t loc);
 FILE* open_file(const char* file_name, const char* open_type);
 void get_current_path();
+
+/* to find the key of a specific value in strmap [RESTRICTED USE - only for error handling] */
+template<typename T>
+auto search_strmap_value(strmap<T> map, T value) {
+    auto it = std::find_if(map.begin(), map.end(), [=](const auto record) {
+        return (record.second == value);
+    });
+    return *it;
+}
 
 const char* name_based_on_op(operation_list op);
 const char* name_based_on_ids(ids op);
@@ -46,8 +56,10 @@ void* my_malloc_struct(long bytes_to_alloc);
 
 void reverse_string(char* token, int length);
 char* append_string(const char* string, const char* appendage, ...);
-void string_to_upper(char* string);
-void string_to_lower(char* string);
+char* string_to_upper(char* string);
+char* string_to_lower(char* string);
+std::string string_to_upper(std::string string);
+std::string string_to_lower(std::string string);
 
 int is_binary_string(char* string);
 int is_octal_string(char* string);

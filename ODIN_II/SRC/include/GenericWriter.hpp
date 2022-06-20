@@ -62,7 +62,7 @@ class GenericWriter : public GenericIO {
      */
 
     /* to create the output file */
-    void _create_file(const char* file_name, const file_type_e file_type = _UNDEFINED);
+    void _create_file(const char* file_name, const file_type_e file_type = file_type_e_END);
 
   protected:
     FILE* output_file;

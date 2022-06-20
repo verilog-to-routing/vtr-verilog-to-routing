@@ -36,6 +36,7 @@
 
 #include "odin_globals.h"
 #include "odin_types.h"
+#include "odin_util.h"
 #include "netlist_utils.h"
 #include "arch_types.h"
 #include "parse_making_ast.h"
@@ -510,7 +511,7 @@ void get_options(int argc, char** argv) {
 
     ext_elaborator_group.add_argument(global_args.elaborator, "--elaborator")
         .help("Specify an external elaborator")
-        .default_value("Odin")
+        .default_value("odin")
         .metavar("ELABORATTOR");
 
     ext_elaborator_group.add_argument(global_args.show_yosys_log, "--show_yosys_log")
@@ -731,6 +732,7 @@ void get_options(int argc, char** argv) {
     if (!global_args.verilog_files.value().empty()) {
         //parse comma separated list of verilog files
         configuration.list_of_file_names = global_args.verilog_files.value();
+        assert_valid_file_extenstion(configuration.list_of_file_names, file_type_e::_VERILOG);
         configuration.input_file_type = file_type_e::_VERILOG;
 
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
@@ -743,7 +745,7 @@ void get_options(int argc, char** argv) {
     }
 
     if (global_args.elaborator.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.elaborator_type = elaborator_strmap[global_args.elaborator];
+        configuration.elaborator_type = elaborator_strmap.at(string_to_lower(global_args.elaborator.value()));
     }
 
     if (global_args.show_yosys_log.provenance() == argparse::Provenance::SPECIFIED) {

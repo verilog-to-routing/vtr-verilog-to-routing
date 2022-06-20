@@ -50,7 +50,7 @@ class GenericIO {
     virtual void _write(const netlist_t* netlist);
 
     /* to create the output file */
-    virtual void _create_file(const char* file_name, const file_type_e file_type = _UNDEFINED);
+    virtual void _create_file(const char* file_name, const file_type_e file_type = file_type_e_END);
 };
 
 #endif // __GENERIC_IO_H__

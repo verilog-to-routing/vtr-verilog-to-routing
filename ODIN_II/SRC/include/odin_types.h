@@ -187,9 +187,10 @@ enum file_type_e {
     _ILANG, /* not supported yet */
     _VERILOG,
     _VERILOG_HEADER,
+    _SYSTEM_VERILOG, /* supported by the SystemVerilog/UHDM plugin for Yosys */
+    _UHDM,           /* supported by the SystemVerilog/UHDM plugin for Yosys */
     _BLIF,
-    _EBLIF,     /* not supported yet */
-    _UNDEFINED, /* EROOR */
+    _EBLIF, /* not supported yet */
     file_type_e_END
 };
 
