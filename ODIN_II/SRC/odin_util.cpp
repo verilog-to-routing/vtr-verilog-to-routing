@@ -102,6 +102,7 @@ void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_
         // lookup the file type string from file extension map
         auto file_ext_str = string_to_lower(get_file_extension(file_name));
         auto file_ext_it = file_extension_strmap.find(file_ext_str);
+        auto file_ext_it_r = file_extension_strmap.find(file_type_e::_VERILOG);
 
         // Unsupported file types should be already check.
         // However, we double-check here
@@ -119,10 +120,10 @@ void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_
                                       please see ./odin --help",
                                       file_name.c_str(),
                                       file_ext_str.c_str(),
-                                      search_strmap_value(file_type_strmap, file_type_e::_VERILOG).first.c_str(),
-                                      search_strmap_value(file_type_strmap, file_type_e::_VERILOG_HEADER).first.c_str(),
-                                      search_strmap_value(file_extension_strmap, file_type_e::_VERILOG).first.c_str(),
-                                      search_strmap_value(file_extension_strmap, file_type_e::_VERILOG_HEADER).first.c_str());
+                                      file_type_strmap.find(file_type_e::_VERILOG)->second.c_str(),
+                                      file_type_strmap.find(file_type_e::_VERILOG_HEADER)->second.c_str(),
+                                      file_extension_strmap.find(file_type_e::_VERILOG)->second.c_str(),
+                                      file_extension_strmap.find(file_type_e::_VERILOG_HEADER)->second.c_str());
                     break;
                 }
                 case (file_type_e::_SYSTEM_VERILOG): //fallthorugh
@@ -135,8 +136,8 @@ void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_
                                       please see ./odin --help",
                                       file_name.c_str(),
                                       file_ext_str.c_str(),
-                                      search_strmap_value(file_type_strmap, type).first.c_str(),
-                                      search_strmap_value(file_extension_strmap, type).first.c_str());
+                                      file_type_strmap.find(type)->second.c_str(),
+                                      file_extension_strmap.find(type)->second.c_str());
                     break;
                 }
                 case (file_type_e::_ILANG): // fallthrough

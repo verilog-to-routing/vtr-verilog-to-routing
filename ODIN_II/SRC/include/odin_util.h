@@ -17,15 +17,6 @@ void assert_supported_file_extension(std::string input_file, loc_t loc);
 FILE* open_file(const char* file_name, const char* open_type);
 void get_current_path();
 
-/* to find the key of a specific value in strmap [RESTRICTED USE - only for error handling] */
-template<typename T>
-auto search_strmap_value(strmap<T> map, T value) {
-    auto it = std::find_if(map.begin(), map.end(), [=](const auto record) {
-        return (record.second == value);
-    });
-    return *it;
-}
-
 const char* name_based_on_op(operation_list op);
 const char* name_based_on_ids(ids op);
 const char* node_name_based_on_op(nnode_t* node);

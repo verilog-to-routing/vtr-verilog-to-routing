@@ -183,6 +183,9 @@ extern const char* ids_STR[];
 template<typename T>
 using strmap = std::unordered_map<std::string, T>;
 
+template<typename T>
+using strbimap = vtr::unordered_bimap<std::string, T>;
+
 enum file_type_e {
     _ILANG, /* not supported yet */
     _VERILOG,
