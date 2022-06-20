@@ -1352,10 +1352,11 @@ void vpr_analysis(const Netlist<>& net_list,
         //Load the net delays
 
         NetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(net_list);
+        ClbNetPinsMatrix<float>& cluster_net_delay = (ClbNetPinsMatrix<float>&)net_delay;
         load_net_delay_from_routing(net_list, net_delay);
 
         //Do final timing analysis
-        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
+        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, cluster_net_delay);
         auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
         timing_info->update();
 
