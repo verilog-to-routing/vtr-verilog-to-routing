@@ -726,11 +726,13 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
         auto& cluster_ctx = g_vpr_ctx.clustering();
         NetPinsMatrix<float> net_delay;
+
         if(router_opts.flat_routing) {
             net_delay = make_net_pins_matrix<float>((const Netlist<>&)g_vpr_ctx.atom().nlist);
         } else {
             net_delay = make_net_pins_matrix<float>((const Netlist<>&)cluster_ctx.clb_nlist);
         }
+        ClbNetPinsMatrix<float>& cluster_net_delay = (ClbNetPinsMatrix<float>&) net_delay;
 
         //Initialize the delay calculator
         std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
@@ -738,7 +740,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         if (vpr_setup.Timing.timing_analysis_enabled) {
             auto& atom_ctx = g_vpr_ctx.atom();
 
-            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
+            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, cluster_net_delay);
 
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
         }
