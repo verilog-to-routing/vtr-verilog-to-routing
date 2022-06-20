@@ -53,7 +53,7 @@ int main(int argc, const char** argv) {
 
         /* Read options, architecture, and circuit netlist */
         vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
-        auto net_list = vpr_setup.RouterOpts.flat_routing ? (const Netlist<>&) g_vpr_ctx.atom().nlist :
+        const Netlist<>& net_list = vpr_setup.RouterOpts.flat_routing ? (const Netlist<>&) g_vpr_ctx.atom().nlist :
                                                           (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
         if (Options.show_version) {
             vpr_free_all(net_list, Arch, vpr_setup);
