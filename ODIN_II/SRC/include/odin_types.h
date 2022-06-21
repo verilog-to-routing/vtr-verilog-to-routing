@@ -92,7 +92,7 @@ struct global_args_t {
     std::string current_path;
 
     argparse::ArgValue<std::string> config_file;
-    argparse::ArgValue<std::vector<std::string>> verilog_files;
+    argparse::ArgValue<std::vector<std::string>> input_files;
     argparse::ArgValue<std::string> blif_file;
     argparse::ArgValue<std::string> output_file;
     argparse::ArgValue<std::string> arch_file;   // Name of the FPGA architecture file

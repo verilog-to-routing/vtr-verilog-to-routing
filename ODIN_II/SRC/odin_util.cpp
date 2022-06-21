@@ -102,7 +102,6 @@ void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_
         // lookup the file type string from file extension map
         auto file_ext_str = string_to_lower(get_file_extension(file_name));
         auto file_ext_it = file_extension_strmap.find(file_ext_str);
-        auto file_ext_it_r = file_extension_strmap.find(file_type_e::_VERILOG);
 
         // Unsupported file types should be already check.
         // However, we double-check here
@@ -126,10 +125,22 @@ void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_
                                       file_extension_strmap.find(file_type_e::_VERILOG_HEADER)->second.c_str());
                     break;
                 }
-                case (file_type_e::_SYSTEM_VERILOG): //fallthorugh
-                case (file_type_e::_UHDM):           //fallthorugh
-                case (file_type_e::_BLIF):           //fallthorugh
-                case (file_type_e::_EBLIF): {
+                case (file_type_e::_SYSTEM_VERILOG): //fallthrough
+                case (file_type_e::_UHDM): {
+                    if (configuration.elaborator_type != elaborator_e::_YOSYS) {
+                        error_message(UTIL, unknown_location,
+                                      "Utilizing SystemVerilog/UHDM plugins requires activating the Yosys frontend. %s",
+                                      "Please recompile the VTR project either with the \"WITH_YOSYS\" or \"ODIN_USE_YOSYS\" flag on.");
+                    } else {
+#ifndef YOSYS_SV_UHDM_PLUGIN
+                        error_message(UTIL, unknown_location, "%s",
+                                      "Utilizing SystemVerilog/UHDM plugins requires an active corresponding compile flag. %s"
+                                      "Please recompile the VTR project with the \"YOSYS_SV_UHDM_PLUGIN\" flag on.");
+#endif
+                    }
+                    [[fallthrough]];
+                }
+                case (file_type_e::_BLIF): {
                     if (file_type != type)
                         error_message(UTIL, unknown_location,
                                       "File (%s) has an invalid extension (%s), supposed to be a %s file { %s },\
@@ -140,6 +151,7 @@ void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_
                                       file_extension_strmap.find(type)->second.c_str());
                     break;
                 }
+                case (file_type_e::_EBLIF): //fallthrough
                 case (file_type_e::_ILANG): // fallthrough
                 default: {
                     assert_supported_file_extension(file_name, unknown_location);
@@ -1242,15 +1254,37 @@ char* str_collate(char* str1, char* str2) {
 /**
  * (function: print_input_files_info)
  * 
- * @brief This shows the name of input file, whether Verilog or BLIF
+ * @brief This shows the name of input files
  */
 void print_input_files_info() {
-    if (configuration.input_file_type == file_type_e::_VERILOG) {
-        for (std::string v_file : global_args.verilog_files.value())
-            printf("Verilog: %s\n", vtr::basename(v_file).c_str());
+    switch (configuration.input_file_type) {
+        case (file_type_e::_ILANG):          // fallthrough
+        case (file_type_e::_VERILOG):        // fallthrough
+        case (file_type_e::_VERILOG_HEADER): //fallthrough
+        case (file_type_e::_SYSTEM_VERILOG): //fallthorugh
+        case (file_type_e::_UHDM): {
+            for (std::string v_file : global_args.input_files.value())
+                printf("Input %s file: %s\n", file_type_strmap[configuration.input_file_type].c_str(), vtr::basename(v_file).c_str());
+            break;
+        }
+        case (file_type_e::_EBLIF): //fallthrough
+        case (file_type_e::_BLIF): {
+            printf("Input BLIF file: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
+            break;
+        }
+        default: {
+            // Invalid file type, should have been already checked in the beginning of Odin-II
+            std::string supported_extension_list = "";
+            for (auto iter : file_extension_strmap) {
+                supported_extension_list += " ";
+                supported_extension_list += iter.first;
+            }
 
-    } else if (configuration.input_file_type == file_type_e::_BLIF) {
-        printf("Input BLIF file: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
+            possible_error_message(UTIL, unknown_location,
+                                   "Invalid input file extension, Odin only supports { %s }",
+                                   supported_extension_list.c_str());
+            break;
+        }
     }
 
     fflush(stdout);

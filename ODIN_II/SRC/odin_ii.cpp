@@ -491,14 +491,29 @@ void get_options(int argc, char** argv) {
         .help("Configuration file")
         .metavar("XML_CONFIGURATION_FILE");
 
-    input_grp.add_argument(global_args.verilog_files, "-V")
-        .help("list of Verilog HDL file")
+    input_grp.add_argument(global_args.input_files, "-v")
+        .help("List of Verilog HDL file")
         .nargs('+')
         .metavar("VERILOG_FILE");
+
+    input_grp.add_argument(global_args.input_files, "-s")
+        .help("List of SystemVerilog HDL file")
+        .nargs('+')
+        .metavar("SYSTEMVERILOG_FILE");
+
+    input_grp.add_argument(global_args.input_files, "-u")
+        .help("List of UHDM HDL file")
+        .nargs('+')
+        .metavar("UHDM_FILE");
 
     input_grp.add_argument(global_args.blif_file, "-b")
         .help("BLIF file")
         .metavar("BLIF_FILE");
+
+    input_grp.add_argument(global_args.input_files, "-V")
+        .help("DEPRECATED")
+        .nargs('+')
+        .metavar("N/A");
 
     auto& output_grp = parser.add_argument_group("output files");
 
@@ -715,10 +730,18 @@ void get_options(int argc, char** argv) {
             global_args.config_file.provenance() == argparse::Provenance::SPECIFIED, //have a config file
             global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED,   //have a BLIF file
             global_args.tcl_file.provenance() == argparse::Provenance::SPECIFIED,    //have a TCL file that includes HDL designs
-            global_args.verilog_files.value().size() > 0                             //have a Verilog input list
+            global_args.input_files.value().size() > 0                               //have a Verilog input list
         })) {
         parser.print_usage();
-        warning_message(PARSE_ARGS, unknown_location, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta BLIF file(-b)\n\ta Verilog file(-V)\n\ta TCL file including HDL designs(-S)\nUnless is used for infrastructure directly\n");
+        warning_message(PARSE_ARGS, unknown_location, "%s",
+                        "Must include only one of either:\n\t\
+                            a config file(-c)\n\t\
+                            a BLIF file(-b)\n\t\
+                            a Verilog file(-v)\n\t\
+                            a SystemVerilog file(-s)\n\t\
+                            an UHDM file(-u)\n\t\
+                            a TCL file including HDL designs(-S)\n\
+                        Unless is used for infrastructure directly\n");
     }
 
     //adjust thread count
@@ -729,11 +752,23 @@ void get_options(int argc, char** argv) {
         std::max(1, std::min(thread_requested, std::min((CONCURENCY_LIMIT - 1), max_thread))), argparse::Provenance::SPECIFIED);
 
     //Allow some config values to be overriden from command line
-    if (!global_args.verilog_files.value().empty()) {
+    if (!global_args.input_files.value().empty()) {
         //parse comma separated list of verilog files
-        configuration.list_of_file_names = global_args.verilog_files.value();
-        assert_valid_file_extenstion(configuration.list_of_file_names, file_type_e::_VERILOG);
-        configuration.input_file_type = file_type_e::_VERILOG;
+        configuration.list_of_file_names = global_args.input_files.value();
+        std::string arg_name = string_to_lower(global_args.input_files.argument_name());
+        if (arg_name == "-v")
+            configuration.input_file_type = file_type_e::_VERILOG;
+        else if (arg_name == "-s")
+            configuration.input_file_type = file_type_e::_SYSTEM_VERILOG;
+        else if (arg_name == "-u")
+            configuration.input_file_type = file_type_e::_UHDM;
+        else {
+            // Unknown argument name, should have been already checked in the argparse library
+            error_message(PARSE_ARGS, unknown_location,
+                          "Invalid argument (%s) is passed to Odin-II, for correct usage please see ./odin --help",
+                          arg_name.c_str());
+        }
+        assert_valid_file_extenstion(configuration.list_of_file_names, configuration.input_file_type);
 
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
