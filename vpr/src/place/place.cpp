@@ -561,8 +561,11 @@ void try_place(const t_placer_opts& placer_opts,
         /*
          * Initialize timing analysis
          */
-        placement_delay_calc = std::make_shared<PlacementDelayCalculator>(
-            atom_ctx.nlist, atom_ctx.lookup, p_timing_ctx.connection_delay);
+        // For placement, we don't use flat-routing
+        placement_delay_calc = std::make_shared<PlacementDelayCalculator>( atom_ctx.nlist,
+                                                                          atom_ctx.lookup,
+                                                                          p_timing_ctx.connection_delay,
+                                                                          false);
         placement_delay_calc->set_tsu_margin_relative(
             placer_opts.tsu_rel_margin);
         placement_delay_calc->set_tsu_margin_absolute(
@@ -2058,7 +2061,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]  */
 
         p_timing_ctx.connection_delay = make_net_pins_matrix<float>(
-            cluster_ctx.clb_nlist, 0.f);
+            (const Netlist<>&)cluster_ctx.clb_nlist, 0.f);
         p_timing_ctx.proposed_connection_delay = make_net_pins_matrix<float>(
             cluster_ctx.clb_nlist, 0.f);
 
