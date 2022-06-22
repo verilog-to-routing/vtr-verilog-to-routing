@@ -249,7 +249,7 @@ class NocStorage {
      * @brief Two links are considered parallel when the source router of one
      * link is the sink router of the second link and when the sink router
      * of one link is the source router of the other link. Given a link, this
-     * functions finds a parallel link, if not link is found then an invalid
+     * functions finds a parallel link, if no link is found then an invalid
      * link is returned.
      * 
      * Example:
