@@ -116,10 +116,10 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
     cost_params.criticality = 1.;
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
-
+    /* This function is called during placement. Thus, the flat routing option should be disabled. */
     auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
-                                                  /*segment_inf=*/{});
+                                                  /*segment_inf=*/{}, false);
     // This router is used during placement - Thus, we is_flat is set to false.
     ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,

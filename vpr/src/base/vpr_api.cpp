@@ -665,11 +665,13 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
     if (placer_needs_lookahead(vpr_setup)) {
         // Prime lookahead cache to avoid adding lookahead computation cost to
         // the placer timer.
+        // Flat_routing is disabled in placement
         get_cached_router_lookahead(
             vpr_setup.RouterOpts.lookahead_type,
             vpr_setup.RouterOpts.write_router_lookahead,
             vpr_setup.RouterOpts.read_router_lookahead,
-            vpr_setup.Segments);
+            vpr_setup.Segments,
+            false);
     }
 
     try_place(vpr_setup.PlacerOpts,
@@ -842,6 +844,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
                               NetPinsMatrix<float>& net_delay) {
+    bool is_flat = vpr_setup.RouterOpts.flat_routing;
     if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
         // Prime lookahead cache to avoid adding lookahead computation cost to
         // the routing timer.
@@ -849,7 +852,8 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
             vpr_setup.RouterOpts.lookahead_type,
             vpr_setup.RouterOpts.write_router_lookahead,
             vpr_setup.RouterOpts.read_router_lookahead,
-            vpr_setup.Segments);
+            vpr_setup.Segments,
+            is_flat);
     }
 
     vtr::ScopedStartFinishTimer timer("Routing");
@@ -858,7 +862,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
     }
     bool status = false;
-    if(vpr_setup.RouterOpts.flat_routing) {
+    if(is_flat) {
         status = try_route((const Netlist<>&)g_vpr_ctx.atom().nlist,
                            fixed_channel_width,
                            vpr_setup.RouterOpts,
@@ -872,7 +876,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                            arch.Directs,
                            arch.num_directs,
                            ScreenUpdatePriority::MAJOR,
-                           true);
+                           is_flat);
 
     } else {
          status = try_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
@@ -888,7 +892,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                            arch.Directs,
                            arch.num_directs,
                            ScreenUpdatePriority::MAJOR,
-                           false);
+                           is_flat);
     }
 
     return RouteStatus(status, fixed_channel_width);

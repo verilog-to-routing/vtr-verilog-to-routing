@@ -41,7 +41,8 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
         router_opts.lookahead_type,
         router_opts.write_router_lookahead,
         router_opts.read_router_lookahead,
-        segment_inf);
+        segment_inf,
+        router_opts.flat_routing);
 
     ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,

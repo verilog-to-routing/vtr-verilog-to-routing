@@ -325,7 +325,8 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         router_opts.lookahead_type,
         router_opts.write_router_lookahead,
         router_opts.read_router_lookahead,
-        segment_inf);
+        segment_inf,
+        is_flat);
 
     /*
      * Routing parameters

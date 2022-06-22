@@ -97,8 +97,8 @@ static void do_one_route(const Netlist<>& net_list,
             router_opts.lookahead_type,
             router_opts.write_router_lookahead,
             router_opts.read_router_lookahead,
-            segment_inf
-            );
+            segment_inf,
+            router_opts.flat_routing);
 
     ConnectionRouter<BinaryHeap> router(
             device_ctx.grid,
@@ -150,8 +150,8 @@ static void profile_source(const Netlist<>& net_list,
             router_opts.lookahead_type,
             router_opts.write_router_lookahead,
             router_opts.read_router_lookahead,
-            segment_inf
-            );
+            segment_inf,
+            router_opts.flat_routing);
     RouterDelayProfiler profiler(net_list, router_lookahead.get(), router_opts.flat_routing);
 
     int start_x = 0;
