@@ -1,39 +1,25 @@
-/*
- * The NocStorage defines the embedded NoC in the FPGA device.
- * The NocStorage contains the following information:
- * - A list of all the routers in the NoC (NocRouter objects)
- * - A list of all the links in the NoC (NocLink objects)
- * - A connections list for each router. This is simply a list
- * of outgoing links of each router.   
- * There are also a number of functions defined here that can be used
- * to access the above information or modify them.
- */
 
 #include "noc_storage.h"
 
-// clear all the graph data structures
+
 NocStorage::NocStorage() {
     clear_noc();
 }
 
 // getters for the NoC
 
-// get the outgoing links for a router in the NoC
 const std::vector<NocLinkId>& NocStorage::get_noc_router_connections(NocRouterId id) const {
     return router_link_list[id];
 }
 
-// get the list of all routers in the NoC
 const vtr::vector<NocRouterId, NocRouter>& NocStorage::get_noc_routers(void) const {
     return router_storage;
 }
 
-// get the list of all links in the NoC
 const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links(void) const {
     return link_storage;
 }
 
-// get router properties
 const NocRouter& NocStorage::get_single_noc_router(NocRouterId id) const {
     return router_storage[id];
 }
@@ -41,23 +27,6 @@ const NocRouter& NocStorage::get_single_noc_router(NocRouterId id) const {
 NocRouter& NocStorage::get_single_mutable_noc_router(NocRouterId id) {
     return router_storage[id];
 }
-
-
-/*int NocStorage::get_noc_router_grid_position_x(NocRouterId id) const {
-    return router_storage[id].get_router_grid_position_x();
-}
-
-int NocStorage::get_noc_router_grid_position_y(NocRouterId id) const {
-    return router_storage[id].get_router_grid_position_y();
-}
-
-int NocStorage::get_noc_router_id(NocRouterId id) const {
-    return router_storage[id].get_router_id();
-}
-
-std::string NocStorage::get_noc_router_design_module_ref(NocRouterId id) const {
-    return router_storage[id].get_router_design_module_ref();
-}*/
 
 // get link properties
 const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
@@ -68,21 +37,6 @@ NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
     return link_storage[id];
 }
 
-/*NocRouterId NocStorage::get_noc_link_source_router(NocLinkId id) const {
-    return link_storage[id].get_source_router();
-}
-
-NocRouterId NocStorage::get_noc_link_sink_router(NocLinkId id) const {
-    return link_storage[id].get_sink_router();
-}
-
-double NocStorage::get_noc_link_bandwidth_usage(NocLinkId id) const {
-    return link_storage[id].get_bandwidth_usage();
-}
-
-int NocStorage::get_noc_link_number_of_connections(NocLinkId id) const {
-    return link_storage[id].get_number_of_connections();
-}*/
 
 void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
@@ -112,29 +66,6 @@ void NocStorage::add_link(NocRouterId source, NocRouterId sink) {
     return;
 }
 
-/*// set router properties
-void NocStorage::set_noc_router_design_module_ref(NocRouterId id, std::string design_module_ref) {
-    router_storage[id].set_router_design_module_ref(design_module_ref);
-
-    return;
-}
-
-// set link properties
-void NocStorage::set_noc_link_bandwidth_usage(NocLinkId id, double bandwidth_usage) {
-    link_storage[id].set_bandwidth_usage(bandwidth_usage);
-
-    return;
-}
-
-void NocStorage::set_noc_link_number_of_connections(NocLinkId id, int number_of_connections) {
-    link_storage[id].set_number_of_connections(number_of_connections);
-
-    return;
-}*/
-
-// assert the flag that indicates whether the noc was built or not
-// Once this function is called, the NoC cannot be modified further.
-// THis is useful as it ensured the NoC is only modified initially when it is built
 void NocStorage::finished_building_noc(void) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     built_noc = true;
@@ -152,14 +83,6 @@ void NocStorage::clear_noc(void) {
     return;
 }
 
-/*
- * The router IDs provided by the user cannot be used to
- * identify the routers inside NocStorage. So, the router ids
- * are converted to a NocRouterId that can be used to quickly identify
- * a router. When given a router id, it can be converted to the corresponding
- * NocRouterId here.
- *
- */
 NocRouterId NocStorage::convert_router_id(int id) const {
     std::unordered_map<int, NocRouterId>::const_iterator result = router_id_conversion_table.find(id);
 
@@ -170,18 +93,11 @@ NocRouterId NocStorage::convert_router_id(int id) const {
     return result->second;
 }
 
-void NocStorage::make_room_for_noc_router_link_list() {
+void NocStorage::make_room_for_noc_router_link_list(void) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     router_link_list.resize(router_storage.size());
 }
 
-/*
- * Two links are considered parallel when the source router of one link
- * is the destination router of the second line. And when the desitnantion
- * router of one link is the source router of the other link. Sometimes
- * it is usful to get the parallel link of a given link. SO, when given
- * a link id, the parallel link id is returned here.
- */
 NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     // get the current source and sink router
     NocRouterId curr_source_router = link_storage[current_link].get_source_router();
@@ -220,19 +136,19 @@ void NocStorage::echo_noc(char* file_name) const {
 
     // go through each router and print its information
     for (auto router = router_storage.begin(); router != router_storage.end(); router++) {
-        fprintf(fp, "Router %d:\n", router->get_router_id());
+        fprintf(fp, "Router %d:\n", router->get_router_user_id());
         // if the router tile is larger than a single grid, the position represents the bottom left corner of the tile
         fprintf(fp, "Equivalent Physical Tile Grid Position -> (%d,%d)\n", router->get_router_grid_position_x(), router->get_router_grid_position_y());
         fprintf(fp, "Router Connections ->");
 
-        auto& router_connections = this->get_noc_router_connections(this->convert_router_id(router->get_router_id()));
+        auto& router_connections = this->get_noc_router_connections(this->convert_router_id(router->get_router_user_id()));
 
         // go through the outgoing links of the current router and print the connecting router
         for (auto link_id = router_connections.begin(); link_id != router_connections.end(); link_id++) {
 
             const NocRouterId connecting_router_id = get_single_noc_link(*link_id).get_sink_router();
         
-            fprintf(fp, " %d",  get_single_noc_router(connecting_router_id).get_router_id());
+            fprintf(fp, " %d",  get_single_noc_router(connecting_router_id).get_router_user_id());
         }
 
         fprintf(fp, "\n\n");

@@ -651,9 +651,12 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             // covert the router id
             noc_router_id = noc_model.convert_router_id(router_id);
 
+            // get the router that we are testing from the NoC
+            NocRouter test_router = noc_model.get_single_noc_router(noc_router_id);
+
             // now check that the proper physical router was assigned to
-            REQUIRE(noc_model.get_noc_router_grid_position_x(noc_router_id) == list_of_routers[router_id - 1].grid_width_position);
-            REQUIRE(noc_model.get_noc_router_grid_position_y(noc_router_id) == list_of_routers[router_id - 1].grid_height_position);
+            REQUIRE(test_router.get_router_grid_position_x() == list_of_routers[router_id - 1].grid_width_position);
+            REQUIRE(test_router.get_router_grid_position_y() == list_of_routers[router_id - 1].grid_height_position);
         }
     }
     SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is exacrly the same as on the FPGA.") {
@@ -688,9 +691,12 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             // covert the router id
             noc_router_id = noc_model.convert_router_id(router_id);
 
+            // get the router that we are testing now from the NoC
+            NocRouter test_router = noc_model.get_single_noc_router(noc_router_id);
+
             // now check that the proper physical router was assigned to
-            REQUIRE(noc_model.get_noc_router_grid_position_x(noc_router_id) == list_of_routers[router_id - 1].grid_width_position);
-            REQUIRE(noc_model.get_noc_router_grid_position_y(noc_router_id) == list_of_routers[router_id - 1].grid_height_position);
+            REQUIRE(test_router.get_router_grid_position_x() == list_of_routers[router_id - 1].grid_width_position);
+            REQUIRE(test_router.get_router_grid_position_y() == list_of_routers[router_id - 1].grid_height_position);
         }
     }
     SECTION("Test create routers when a logical router can be matched to two physical routers. The number of routers is exactly the same as on the FPGA.") {
@@ -843,21 +849,29 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
     // call the function to test
     create_noc_links(&noc_info, &noc_model);
 
-    NocRouterId current_source_router;
-    NocRouterId current_destination_router;
+    NocRouterId current_source_router_id;
+    NocRouterId current_destination_router_id;
 
     std::vector<int>::iterator router_connection;
 
     // now verify the created links
     for (int router_id = 1; router_id < 10; router_id++) {
-        current_source_router = noc_model.convert_router_id(router_id);
+        current_source_router_id = noc_model.convert_router_id(router_id);
 
         router_connection = noc_info.router_list[router_id - 1].connection_list.begin();
 
-        for (auto noc_link = noc_model.get_noc_router_connections(current_source_router).begin(); noc_link != noc_model.get_noc_router_connections(current_source_router).begin(); noc_link++) {
-            current_destination_router = noc_model.get_noc_link_sink_router(*noc_link);
+        for (auto noc_link = noc_model.get_noc_router_connections(current_source_router_id).begin(); noc_link != noc_model.get_noc_router_connections(current_source_router_id).begin(); noc_link++) {
+            
+            // get the connecting link
+            NocLink connecting_link = noc_model.get_single_noc_link(*noc_link);
+            
+            // get the destination router
+            current_destination_router_id = connecting_link.get_sink_router();
+            NocRouter current_destination_router = noc_model.get_single_noc_router(current_destination_router_id);
 
-            REQUIRE((noc_model.get_noc_router_id(current_destination_router)) == (*router_connection));
+
+
+            REQUIRE((current_destination_router.get_router_user_id()) == (*router_connection));
 
             router_connection++;
         }

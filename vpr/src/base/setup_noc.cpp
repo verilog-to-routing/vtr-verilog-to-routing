@@ -318,11 +318,3 @@ static void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model) {
     return;
 }
 
-/**
- * @brief Writes out the NoC model infromation to a file. This includes
- *        the noc constraints, the list of routers and their connections
- *        to other routers in the NoC.
- * 
- * @param file_name The name of the file that contains the NoC model info.
- */
-
