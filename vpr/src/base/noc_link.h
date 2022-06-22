@@ -21,6 +21,20 @@
  * bandwidth needed by this link. This is useful to track as it
  * can indicate when a link is being overused (the bandwidth usage
  * exceeds the links supported capability).
+ * 
+ * Example:
+ * 
+ *  ----------                       ----------
+ *  /        /        link           /        /
+ *  / router / --------------------->/ router /
+ *  /   a    /                       /   b    /
+ *  /        /                       /        /
+ *  /--------/                       /--------/
+ * 
+ * In the example above the links source router would be router a and
+ * the sink router would be router b. 
+ * 
+ * 
  */
 
 #include <iostream>

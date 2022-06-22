@@ -40,7 +40,7 @@ class NocRouter {
   private:
     /** this represents a unique id provided by the user when describing the NoC topology in the arch file. The intended
      * use is to report errors with rouer ids the user understands*/
-    int router_id;
+    int router_user_id;
 
     // device position of the physical router tile
     int router_grid_position_x; /*<! Represents the horizontal grid position on the device the physical router tile is located*/
@@ -57,7 +57,7 @@ class NocRouter {
      * @brief Gets the unique id assigned by the user for the physical router
      * @return A numerical value (integer) that represents the physical router id
      */
-    int get_router_id(void) const;
+    int get_router_user_id(void) const;
 
     /**
      * @brief Gets the horizontal position on the FPGA device that the physical router is located
