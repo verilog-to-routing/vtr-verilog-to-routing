@@ -16,19 +16,18 @@
 #    include "buttons.h"
 #    include "intra_logic_block.h"
 #    include "clustered_netlist.h"
-#    include "ui.h"
+#    include "ui_setup.h"
 #    include "save_graphics.h"
 
 #    include "ezgl/point.hpp"
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
-
-static size_t get_max_fanout();
-
 /**
- * @brief configures basic buttons, including window, search, save etc..
+ * @brief configures basic buttons
  * 
+ * Sets up Window, Search, Save, and SearchType buttons. Buttons are 
+ * created in glade main.ui file. Connects them to their cbk functions
  * @param app ezgl::application*
  */
 void basic_button_setup(ezgl::application* app){
@@ -52,27 +51,11 @@ void basic_button_setup(ezgl::application* app){
     g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
 }
 
-static size_t get_max_fanout(){
-    //find maximum fanout
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& clb_nlist = cluster_ctx.clb_nlist;
-    size_t max_fanout = 0;
-    for (ClusterNetId net_id : clb_nlist.nets())
-        max_fanout = std::max(max_fanout, clb_nlist.net_sinks(net_id).size());
-
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& atom_nlist = atom_ctx.nlist;
-    size_t max_fanout2 = 0;
-    for (AtomNetId net_id : atom_nlist.nets())
-        max_fanout2 = std::max(max_fanout2, atom_nlist.net_sinks(net_id).size());
-
-    size_t max = std::max(max_fanout2, max_fanout);
-    return max;
-}
-
 /**
  * @brief sets up net related buttons and connects their signals
  * 
+ * Sets up the toggle nets combo box, net alpha spin button, and max fanout
+ * spin button which are created in main.ui file. Found in Net Settings dropdown
  * @param app 
  */
 void net_button_setup(ezgl::application* app){
@@ -88,9 +71,61 @@ void net_button_setup(ezgl::application* app){
 
     //Manages net max fanout
     GtkSpinButton* max_fanout = GTK_SPIN_BUTTON(app->get_object("NetMaxFanout"));
-    g_signal_connect(max_fanout, "value_changed", G_CALLBACK(set_net_max_fanout), app);
+    g_signal_connect(max_fanout, "value-changed", G_CALLBACK(set_net_max_fanout), app);
     gtk_spin_button_set_increments(max_fanout, 1, 1);
-    gtk_spin_button_set_range(max_fanout, 0, (int)get_max_fanout());
+    gtk_spin_button_set_range(max_fanout, 0, (double)get_max_fanout());
+}
+
+/**
+ * @brief sets up block related buttons, connects their signals
+ * 
+ * Connects signals and sets init. values for blk internals spin button,
+ * blk pin util combo box, and placement macros combo box created in
+ * main.ui. Found in Block Settings dropdown
+ * @param app 
+ */
+void block_button_setup(ezgl::application* app){
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    //Toggle block internals
+    GtkSpinButton* blk_internals_button = GTK_SPIN_BUTTON(app->get_object("ToggleBlkInternals"));
+    g_signal_connect(blk_internals_button, "value-changed", G_CALLBACK(toggle_blk_internal_cbk), app);
+    gtk_spin_button_set_increments(blk_internals_button, 1, 1);
+    gtk_spin_button_set_range(blk_internals_button, 0., (double)(draw_state->max_sub_blk_lvl - 1));
+
+    //Toggle Block Pin Util
+    GtkComboBoxText* blk_pin_util = GTK_COMBO_BOX_TEXT(app->get_object("ToggleBlkPinUtil"));
+    g_signal_connect(blk_pin_util, "changed", G_CALLBACK(toggle_blk_pin_util_cbk), app);
+
+    //Toggle Placement Macros
+    GtkComboBoxText* placement_macros = GTK_COMBO_BOX_TEXT(app->get_object("TogglePlacementMacros"));
+    g_signal_connect(placement_macros, "changed", G_CALLBACK(placement_macros_cbk), app);
+
+}
+
+
+void routing_button_setup(ezgl::application* app, bool show_crit_path){
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    //Toggle RR
+    
+
+    //Toggle Congestion
+
+    //Toggle Congestion Cost
+
+    //Toggle Routing BB
+    
+    //Toggle Routing Util
+
+    //Toggle Router Expansion Costs
+
+    //Toggle Crit Path
+    if(show_crit_path){
+
+    } else {
+        //Hide critical path label and selection
+    }
 }
 
 

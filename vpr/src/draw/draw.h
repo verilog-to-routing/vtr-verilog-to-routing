@@ -105,6 +105,8 @@ ezgl::color lighten_color(ezgl::color color, float amount);
 
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 
+size_t get_max_fanout();
+
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */

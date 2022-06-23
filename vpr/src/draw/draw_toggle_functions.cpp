@@ -96,38 +96,34 @@ void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app){
     app->refresh_drawing();  
 }
 
-// void toggle_nets_old(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-//     /* this is the callback function for runtime created toggle_nets button
-//      * which is written in button.cpp                                         */
-//     t_draw_state* draw_state = get_draw_state_vars();
+void toggle_rr_cbk(GtkComboBox* self, ezgl::application* app){
+    t_draw_state* draw_state = get_draw_state_vars();
 
-//     // get the pointer to the toggle_nets button
-//     std::string button_name = "toggle_nets";
-//     auto toggle_nets = find_button(button_name.c_str());
+    enum e_draw_rr_toggle new_state;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
+    if (strcmp(combo_box_content, "None") == 0)
+        new_state = DRAW_NO_RR;
+    else if (strcmp(combo_box_content, "Nodes") == 0)
+        new_state = DRAW_NODES_RR;
+    else if (strcmp(combo_box_content, "Nodes SBox") == 0)
+        new_state = DRAW_NODES_SBOX_RR;
+    else if (strcmp(combo_box_content, "Nodes SBox CBox") == 0)
+        new_state = DRAW_NODES_SBOX_CBOX_RR;
+    else if (strcmp(combo_box_content, "Nodes SBox CBox Internal") == 0)
+        new_state = DRAW_NODES_SBOX_CBOX_INTERNAL_RR;
+    else
+        // all rr
+        new_state = DRAW_ALL_RR;
 
-//     // use the pointer to get the active text
-//     enum e_draw_nets new_state;
-//     gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-//         GTK_COMBO_BOX_TEXT(toggle_nets));
+    //free dynamically allocated pointers
+    g_free(combo_box_content);
 
-//     // assign corresponding enum value to draw_state->show_nets
-//     if (strcmp(combo_box_content, "None") == 0)
-//         new_state = DRAW_NO_NETS;
-//     else if (strcmp(combo_box_content, "Nets") == 0) {
-//         new_state = DRAW_NETS;
-//     } else { // "Logical Connections"
-//         new_state = DRAW_LOGICAL_CONNECTIONS;
-//     }
-//     draw_state->reset_nets_congestion_and_rr();
-//     draw_state->show_nets = new_state;
+    draw_state->reset_nets_congestion_and_rr();
+    draw_state->draw_rr_toggle = new_state;
 
-//     //free dynamically allocated pointers
-//     g_free(combo_box_content);
-
-//     //redraw
-//     application.update_message(draw_state->default_message);
-//     application.refresh_drawing();
-// }
+    app->add_canvas(draw_state->default_message);
+    app->refresh_drawing();
+}
 
 void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     /* this is the callback function for runtime created toggle_rr button
@@ -289,36 +285,38 @@ void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /
     application.refresh_drawing();
 }
 
-void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_blk_internal button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk fn for block internals spin button, updates values
+ * 
+ * @param self ptr to self
+ * @param app ezgl::app
+ */
+void toggle_blk_internal_cbk(GtkSpinButton* self, ezgl::application* app){
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_blk_internal";
-    auto toggle_blk_internal = find_button(button_name.c_str());
-
-    int new_value = gtk_spin_button_get_value_as_int(
-        (GtkSpinButton*)toggle_blk_internal);
+    int new_value = gtk_spin_button_get_value_as_int(self);
     if (new_value < 0)
         draw_state->show_blk_internal = 0;
     else if (new_value >= draw_state->max_sub_blk_lvl)
         draw_state->show_blk_internal = draw_state->max_sub_blk_lvl - 1;
-    else
+    else 
         draw_state->show_blk_internal = new_value;
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
-void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_block_pin_util button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk function when pin util gets changed in ui; sets pin util drawing to new val
+ * 
+ * @param self ptr to selt
+ * @param app ezgl::app
+ */
+void toggle_blk_pin_util_cbk(GtkComboBoxText* self, ezgl::application* app){
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_block_pin_util";
-    auto toggle_block_pin_util = find_button(button_name.c_str());
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(
         GTK_COMBO_BOX_TEXT(toggle_block_pin_util));
     if (strcmp(combo_box_content, "None") == 0) {
         draw_state->show_blk_pin_util = DRAW_NO_BLOCK_PIN_UTIL;
         draw_reset_blk_colors();
-        application.update_message(draw_state->default_message);
+        app->update_message(draw_state->default_message);
     } else if (strcmp(combo_box_content, "All") == 0)
         draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_TOTAL;
     else if (strcmp(combo_box_content, "Inputs") == 0)
@@ -327,25 +325,25 @@ void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer
         draw_state->show_blk_pin_util = DRAW_BLOCK_PIN_UTIL_OUTPUTS;
 
     g_free(combo_box_content);
-    application.refresh_drawing();
+    app->refresh_drawing();    
 }
 
-void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_placement_macros button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk function when pin util gets changed in ui; sets pin util drawing to new val
+ * 
+ * @param self ptr to selt
+ * @param app ezgl::app
+ */
+void placement_macros_cbk(GtkComboBoxText* self, ezgl::application* app){
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_placement_macros";
-    auto toggle_placement_macros = find_button(button_name.c_str());
-
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_placement_macros));
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
     if (strcmp(combo_box_content, "None") == 0)
         draw_state->show_placement_macros = DRAW_NO_PLACEMENT_MACROS;
     else
         draw_state->show_placement_macros = DRAW_PLACEMENT_MACROS;
 
     g_free(combo_box_content);
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
 void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
@@ -423,23 +421,6 @@ void set_net_max_fanout(GtkSpinButton* self, ezgl::application* app){
     app->refresh_drawing();
 }
 
-// Deprecated
-void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created net_max_fanout widget
-     * which is written in button.cpp                                         */
-    std::string button_name = "netMaxFanout";
-    auto max_fanout = find_button(button_name.c_str());
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    //set draw_state->draw_net_max_fanout to its corresponding value in the ui
-    int new_value = gtk_spin_button_get_value_as_int(
-        (GtkSpinButton*)max_fanout);
-    draw_state->draw_net_max_fanout = new_value;
-
-    //redraw
-    application.refresh_drawing();
-}
-
 /**
  * @brief Set the net alpha value (transparency) based on value of spin button
  * 
@@ -451,18 +432,5 @@ void set_net_alpha_value(GtkSpinButton* self, ezgl::application* app){
     draw_state->net_alpha = gtk_spin_button_get_value_as_int(self);
     app->refresh_drawing();
 }
-
-// void set_net_alpha_value_old(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-//     std::string button_name = "netAlpha";
-//     auto net_alpha = find_button(button_name.c_str());
-//     t_draw_state* draw_state = get_draw_state_vars();
-
-//     //set draw_state->net_alpha to its corresponding value in the ui
-//     int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)net_alpha);
-//     draw_state->net_alpha = new_value;
-
-//     //redraw
-//     application.refresh_drawing();
-// }
 
 #endif

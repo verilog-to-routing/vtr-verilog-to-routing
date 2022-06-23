@@ -56,7 +56,7 @@
 #include "breakpoint.h"
 #include "manual_moves.h"
 #include "move_utils.h"
-#include "ui.h"
+#include "ui_setup.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
@@ -281,9 +281,8 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     load_block_names(app);
 
     net_button_setup(app);
-    button_for_toggle_blk_internal();
-    button_for_toggle_block_pin_util();
-    button_for_toggle_placement_macros();
+
+    block_button_setup(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -292,7 +291,11 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
 static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
     ezgl::application* app,
     bool is_new_window) {
-    initial_setup_NO_PICTURE_to_PLACEMENT(app, is_new_window);
+    if (!is_new_window)
+        return;
+    basic_button_setup(app);
+    net_button_setup(app);
+    block_button_setup(app);
     button_for_toggle_crit_path();
 }
 
@@ -301,7 +304,11 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
  * PLACEMENT_to_ROUTING */
 static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
                                                bool is_new_window) {
-    initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(app, is_new_window);
+    if (!is_new_window)
+        return;                                           
+    basic_button_setup(app);
+    net_button_setup(app);
+    block_button_setup(app);
     button_for_toggle_rr();
     button_for_toggle_congestion();
     button_for_toggle_congestion_cost();
@@ -340,12 +347,8 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
         return;
 
     basic_button_setup(app);
-    load_block_names(app);
-
     net_button_setup(app);
-    button_for_toggle_blk_internal();
-    button_for_toggle_block_pin_util();
-    button_for_toggle_placement_macros();
+    block_button_setup(app);
     button_for_toggle_rr();
     button_for_toggle_congestion();
     button_for_toggle_congestion_cost();
@@ -1329,6 +1332,28 @@ ezgl::color lighten_color(ezgl::color color, float amount) {
     hsl.l = std::max(0., std::min(MAX_LUMINANCE, hsl.l + amount));
 
     return hsl2color(hsl);
+}
+/**
+ * @brief Returns the max fanout
+ * 
+ * @return size_t 
+ */
+size_t get_max_fanout(){
+    //find maximum fanout
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+    size_t max_fanout = 0;
+    for (ClusterNetId net_id : clb_nlist.nets())
+        max_fanout = std::max(max_fanout, clb_nlist.net_sinks(net_id).size());
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& atom_nlist = atom_ctx.nlist;
+    size_t max_fanout2 = 0;
+    for (AtomNetId net_id : atom_nlist.nets())
+        max_fanout2 = std::max(max_fanout2, atom_nlist.net_sinks(net_id).size());
+
+    size_t max = std::max(max_fanout2, max_fanout);
+    return max;
 }
 
 #endif /* NO_GRAPHICS */
