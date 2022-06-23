@@ -303,36 +303,18 @@
   <object class="GtkPopover" id="RoutingPopover">
     <property name="can_focus">False</property>
     <child>
-      <object class="GtkCheckButton" id="clipRoutingUtil">
-        <property name="label" translatable="yes">Clip Routing Util</property>
-        <property name="visible">True</property>
-        <property name="can_focus">True</property>
-        <property name="receives_default">False</property>
-        <property name="xalign">0</property>
-        <property name="yalign">0.30000001192092896</property>
-        <property name="draw_indicator">True</property>
-      </object>
-    </child>
-  </object>
-  <object class="GtkPopover" id="SearchPopover">
-    <property name="can_focus">False</property>
-    <child>
       <object class="GtkGrid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <object class="GtkComboBoxText" id="SearchType">
-            <property name="name">SearchType</property>
+          <object class="GtkCheckButton" id="clipRoutingUtil">
+            <property name="label" translatable="yes">Clip Routing Util</property>
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="active">0</property>
-            <items>
-              <item translatable="yes">Block ID</item>
-              <item translatable="yes">Block Name</item>
-              <item translatable="yes">Net ID</item>
-              <item translatable="yes">Net Name</item>
-              <item translatable="yes">RR Node ID</item>
-            </items>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="xalign">0</property>
+            <property name="yalign">0.30000001192092896</property>
+            <property name="draw_indicator">True</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
@@ -349,20 +331,42 @@
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">0</property>
+            <property name="top_attach">1</property>
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="Search">
-            <property name="label" translatable="yes">Search</property>
+          <object class="GtkComboBoxText" id="SearchType">
+            <property name="name">SearchType</property>
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
+            <property name="can_focus">False</property>
+            <property name="active">0</property>
+            <items>
+              <item translatable="yes">Block ID</item>
+              <item translatable="yes">Block Name</item>
+              <item translatable="yes">Net ID</item>
+              <item translatable="yes">Net Name</item>
+              <item translatable="yes">RR Node ID</item>
+            </items>
           </object>
           <packing>
-            <property name="left_attach">2</property>
-            <property name="top_attach">0</property>
+            <property name="left_attach">0</property>
+            <property name="top_attach">1</property>
           </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
         </child>
         <child>
           <placeholder/>
@@ -469,27 +473,6 @@
           </packing>
         </child>
         <child>
-          <object class="GtkMenuButton" id="SearchMenuButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="focus_on_click">False</property>
-            <property name="receives_default">True</property>
-            <property name="popover">SearchPopover</property>
-            <child>
-              <object class="GtkImage" id="GtkSearchImage">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="valign">center</property>
-                <property name="stock">gtk-find</property>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">0</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkMenuButton" id="BlockMenuButton">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -566,6 +549,18 @@
           </object>
           <packing>
             <property name="left_attach">4</property>
+            <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="Search">
+            <property name="label" translatable="yes">Search</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
             <property name="top_attach">0</property>
           </packing>
         </child>
