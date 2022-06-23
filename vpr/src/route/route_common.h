@@ -132,6 +132,14 @@ bool router_needs_lookahead(enum e_router_algorithm router_algorithm);
 
 std::string describe_unrouteable_connection(const int source_node, const int sink_node);
 
+float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
+                              const RRGraphView& rr_graph_view,
+                              RRNodeId from_node,
+                              RRNodeId to_node,
+                              float R_upstream,
+                              const t_conn_cost_params cost_params,
+                              bool is_flat);
+
 /* Creates a new t_heap object to be placed on the heap, if the new cost    *
  * given is lower than the current path_cost to this channel segment.  The  *
  * index of its predecessor is stored to make traceback easy.  The index of *
@@ -232,3 +240,5 @@ void push_back_node_with_info(
 
     heap->push_back(hptr);
 }
+
+

@@ -1837,3 +1837,80 @@ std::string describe_unrouteable_connection(const int source_node, const int sin
 
     return msg;
 }
+
+float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
+                              const RRGraphView& rr_graph_view,
+                              RRNodeId from_node,
+                              RRNodeId to_node,
+                              float R_upstream,
+                              const t_conn_cost_params cost_params,
+                              bool is_flat) {
+    if(is_flat) {
+        auto& device_ctx = g_vpr_ctx.device();
+
+        float expected_delay_cost = std::numeric_limits<float>::infinity();
+
+        auto from_node_type = rr_graph_view.node_type(from_node);
+
+        auto to_node_type = rr_graph_view.node_type(to_node);
+
+        int from_node_low_x = rr_graph_view.node_xlow(from_node);
+        int from_node_low_y = rr_graph_view.node_ylow(from_node);
+
+        int to_node_low_x = rr_graph_view.node_xlow(to_node);
+        int to_node_low_y = rr_graph_view.node_ylow(to_node);
+
+        int from_ptc = rr_graph_view.node_ptc_num(from_node);
+
+        int to_ptc = rr_graph_view.node_ptc_num(to_node);
+
+        bool from_node_on_tile = is_node_on_tile(from_node_type, from_node_low_x, from_node_low_y, from_ptc);
+
+        bool to_node_on_tile = is_node_on_tile(to_node_type, to_node_low_x, to_node_low_y, to_ptc);
+
+        if(from_node_low_x == to_node_low_x && from_node_low_y == to_node_low_y) {
+            if(!from_node_on_tile && to_node_on_tile)
+                return 0.0;
+        }
+
+        RRNodeId on_tile_from_node = RRNodeId::INVALID();
+        RRNodeId on_tile_to_node = RRNodeId::INVALID();
+        if(from_node_on_tile
+            || from_node_type == t_rr_type::CHANY
+            || from_node_type == t_rr_type::CHANX) {
+            on_tile_from_node = from_node;
+        } else {
+            int node_ptc = 0;
+            while(on_tile_from_node == RRNodeId::INVALID()) {
+                for(auto side : SIDES) {
+                    on_tile_from_node =  device_ctx.rr_graph.node_lookup().find_node(to_node_low_x, to_node_low_y, to_node_type, node_ptc, side);
+                    if(on_tile_from_node != RRNodeId::INVALID())
+                        break;
+                }
+                node_ptc++;
+            }
+        }
+        // to_node should be only SINK/IPIN, and in the case of flat routing it should be inside cluster - Anyway, this
+        // if statement is added for the sake of completeness
+        if(to_node_on_tile
+            || to_node_type == t_rr_type::CHANY
+            || to_node_type == t_rr_type::CHANX) {
+            on_tile_to_node = to_node;
+        } else {
+            int node_ptc = 0;
+            while(on_tile_to_node == RRNodeId::INVALID()) {
+                for(auto side : SIDES) {
+                    on_tile_to_node =  device_ctx.rr_graph.node_lookup().find_node(to_node_low_x, to_node_low_y, to_node_type, node_ptc, side);
+                    if(on_tile_to_node != RRNodeId::INVALID())
+                        break;
+                }
+                node_ptc++;
+            }
+        }
+        expected_delay_cost = router_lookahead.get_expected_cost(on_tile_from_node, on_tile_to_node, cost_params, R_upstream);
+        VTR_ASSERT(std::isfinite(expected_delay_cost));
+        return expected_delay_cost;
+    } else {
+        return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
+    }
+}

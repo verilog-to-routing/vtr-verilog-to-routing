@@ -205,15 +205,24 @@ t_wire_cost_map f_wire_cost_map;
 
 /******** File-Scope Functions ********/
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y);
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
+static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf, bool is_flat);
 
 /* returns index of a node from which to start routing */
 static RRNodeId get_start_node(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored is added to an entry in the routing_cost_map */
-static void run_dijkstra(RRNodeId start_node, int start_x, int start_y, t_routing_cost_map& routing_cost_map, t_dijkstra_data* data);
+static void run_dijkstra(RRNodeId start_node,
+                         int start_x,
+                         int start_y,
+                         t_routing_cost_map& routing_cost_map,
+                         t_dijkstra_data* data,
+                         bool is_flat);
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNodeId, float>& node_visited_costs, vtr::vector<RRNodeId, bool>& node_expanded, std::priority_queue<PQ_Entry>& pq);
+static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
+                                       vtr::vector<RRNodeId, float>& node_visited_costs,
+                                       vtr::vector<RRNodeId, bool>& node_expanded,
+                                       std::priority_queue<PQ_Entry>& pq,
+                                       bool is_flat);
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_routing_cost_map& routing_cost_map);
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
@@ -368,7 +377,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
 
     //First compute the delay map when starting from the various wire types
     //(CHANX/CHANY)in the routing architecture
-    compute_router_wire_lookahead(segment_inf);
+    compute_router_wire_lookahead(segment_inf, is_flat_);
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
@@ -403,7 +412,7 @@ Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, in
     return f_wire_cost_map[chan_index][seg_index][delta_x][delta_y];
 }
 
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf) {
+static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf, bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -528,7 +537,8 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                                  sample_x,
                                  sample_y,
                                  routing_cost_map,
-                                 &dijkstra_data);
+                                 &dijkstra_data,
+                                 is_flat);
                 }
 
                 if (false) print_router_cost_map(routing_cost_map);
@@ -591,7 +601,13 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
 
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored is added to an entry in the routing_cost_map */
-static void run_dijkstra(RRNodeId start_node, int start_x, int start_y, t_routing_cost_map& routing_cost_map, t_dijkstra_data* data) {
+static void run_dijkstra(RRNodeId start_node,
+                         int start_x,
+                         int start_y,
+                         t_routing_cost_map& routing_cost_map,
+                         t_dijkstra_data* data,
+                         bool is_flat) {
+
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -645,13 +661,17 @@ static void run_dijkstra(RRNodeId start_node, int start_x, int start_y, t_routin
             }
         }
 
-        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq);
+        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq, is_flat);
         node_expanded[curr_node] = true;
     }
 }
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNodeId, float>& node_visited_costs, vtr::vector<RRNodeId, bool>& node_expanded, std::priority_queue<PQ_Entry>& pq) {
+static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
+                                       vtr::vector<RRNodeId,float>& node_visited_costs,
+                                       vtr::vector<RRNodeId, bool>& node_expanded,
+                                       std::priority_queue<PQ_Entry>& pq,
+                                       bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -659,6 +679,14 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNode
 
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
+        if(is_flat) {
+            if(!is_node_on_tile(rr_graph.node_type(child_node),
+                                 rr_graph.node_xlow(child_node),
+                                 rr_graph.node_ylow(child_node),
+                                 rr_graph.node_ptc_num(child_node))) {
+                continue;
+            }
+        }
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
 
         if (rr_graph.node_type(child_node) == SINK) return;

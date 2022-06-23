@@ -31,7 +31,7 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(
     std::string read_lookahead,
     const std::vector<t_segment_inf>& segment_inf,
     bool is_flat) {
-    std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(router_lookahead_type);
+    std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(router_lookahead_type, is_flat);
 
     if (read_lookahead.empty()) {
         router_lookahead->compute(segment_inf);

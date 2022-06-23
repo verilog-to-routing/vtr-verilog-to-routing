@@ -38,8 +38,7 @@ struct t_pin_inst_port {
 
 static std::tuple<int, int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_index, bool is_flat);
 
-// #TODO: remove the default value for is_flat
-static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr type, int pin_index, bool is_flat = false);
+static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr type, int pin_index, bool is_flat);
 
 static int get_sub_tile_num_internal_classes(const t_sub_tile* sub_tile);
 
@@ -728,14 +727,24 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
 }
 
 std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_type_ptr type, int class_index) {
-    VTR_ASSERT(class_index < (int)type->class_inf.size());
-
-    auto class_inf = type->class_inf[class_index];
+    //TODO: is_flat flag should be passed to this function
+    bool is_flat = class_index >= (int)type->class_inf.size();
+    t_class class_inf;
+    if(is_flat) {
+        auto logical_block = get_logical_block_from_class_physical_num(type, class_index);
+        int class_loigcal_num = get_class_logical_num_from_class_physical_num(type, class_index);
+        class_inf = logical_block->logical_class_inf[class_loigcal_num];
+    } else {
+        class_inf = type->class_inf[class_index];
+    }
 
     std::vector<t_pin_inst_port> pin_info;
     for (int ipin = 0; ipin < class_inf.num_pins; ++ipin) {
         int pin_index = class_inf.pinlist[ipin];
-        pin_info.push_back(block_type_pin_index_to_pin_inst(type, pin_index));
+        if(is_flat) {
+            pin_index = get_pin_physical_num_from_class_physical_num(type, class_index, pin_index);
+        }
+        pin_info.push_back(block_type_pin_index_to_pin_inst(type, pin_index, is_flat));
     }
 
     auto cmp = [](const t_pin_inst_port& lhs, const t_pin_inst_port& rhs) {

@@ -582,7 +582,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         // During placement, we only use cluster netlist. Thus, the is_flat parameter should be set to false
         pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>(
-            cluster_ctx.clb_nlist, netlist_pin_lookup,
+            (const Netlist<>&)cluster_ctx.clb_nlist, netlist_pin_lookup,
             atom_ctx.nlist, atom_ctx.lookup,
             *timing_info->timing_graph(),
             false);

@@ -300,7 +300,7 @@ template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                                              std::vector<PQ_Entry_Base_Cost>,
                                                              std::greater<PQ_Entry_Base_Cost>>* pq);
 
-t_src_opin_delays compute_router_src_opin_lookahead() {
+t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat /*= false */) {
     vtr::ScopedStartFinishTimer timer("Computing src/opin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
@@ -336,6 +336,21 @@ t_src_opin_delays compute_router_src_opin_lookahead() {
                 const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.x(), sample_loc.y(), rr_type);
                 for (RRNodeId node_id : rr_nodes_at_loc) {
                     int ptc = rr_graph.node_ptc_num(node_id);
+
+                    /* If flat_routing is enabled, rr_nodes_at_loc contains nodes which are inside the tiles. For the time being,
+                     * we don't want to adapt lookahead to flat_routing. As a result, we just ignore internal nodes in this function.
+                     * In the compute function, we assume that only the nodes on the tile are given as input.
+                     * */
+                    if(is_flat) {
+                        if(rr_type == SOURCE) {
+                            if(!is_class_on_tile(&device_ctx.physical_tile_types[itile], ptc))
+                                continue;
+                        } else {
+                            VTR_ASSERT(rr_type == OPIN);
+                            if(!is_pin_on_tile(&device_ctx.physical_tile_types[itile], ptc))
+                                continue;
+                        }
+                    }
 
                     if (ptc >= int(src_opin_delays[itile].size())) {
                         src_opin_delays[itile].resize(ptc + 1); //Inefficient but functional...

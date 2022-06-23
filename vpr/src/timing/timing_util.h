@@ -94,33 +94,27 @@ class ClusteredPinTimingInvalidator {
     typedef vtr::Range<const tatum::EdgeId*> tedge_range;
 
   public:
-    ClusteredPinTimingInvalidator(const ClusteredNetlist& clb_nlist,
+    ClusteredPinTimingInvalidator(const Netlist<>& net_list,
                                   const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
                                   const AtomNetlist& atom_nlist,
                                   const AtomLookup& atom_lookup,
                                   const tatum::TimingGraph& timing_graph,
                                   bool is_flat) {
-        size_t num_pins = is_flat ? atom_nlist.pins().size() : clb_nlist.pins().size();
+        size_t num_pins = net_list.pins().size();
         pin_first_edge_.reserve(num_pins + 1); //Exact
         timing_edges_.reserve(num_pins + 1);   //Lower bound
-        if(is_flat) {
-            for (AtomPinId atom_pin : atom_nlist.pins()) {
-                pin_first_edge_.push_back(timing_edges_.size());
-
-                tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
+        for (ParentPinId pin_id : net_list.pins()) {
+            pin_first_edge_.push_back(timing_edges_.size());
+            if(is_flat) {
+                tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, convert_to_atom_pin_id(pin_id));
 
                 if (!tedge) {
                     continue;
                 }
 
                 timing_edges_.push_back(tedge);
-            }
-
-        } else {
-            for (ClusterPinId clb_pin : clb_nlist.pins()) {
-                pin_first_edge_.push_back(timing_edges_.size());
-
-                for (const AtomPinId atom_pin : clb_atom_pin_lookup.connected_atom_pins(clb_pin)) {
+            } else {
+                for (const AtomPinId atom_pin : clb_atom_pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin_id))) {
                     tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
 
                     if (!tedge) {
@@ -136,11 +130,11 @@ class ClusteredPinTimingInvalidator {
         timing_edges_.push_back(tatum::EdgeId::INVALID());
         pin_first_edge_.push_back(timing_edges_.size());
 
-        VTR_ASSERT(pin_first_edge_.size() == clb_nlist.pins().size() + 1);
+        VTR_ASSERT(pin_first_edge_.size() == net_list.pins().size() + 1);
     }
 
     //Returns the set of timing edges associated with the specified cluster pin
-    tedge_range pin_timing_edges(ClusterPinId pin) const {
+    tedge_range pin_timing_edges(ParentPinId pin) const {
         int ipin = size_t(pin);
         return vtr::make_range(&timing_edges_[pin_first_edge_[ipin]],
                                &timing_edges_[pin_first_edge_[ipin + 1]]);
@@ -149,7 +143,7 @@ class ClusteredPinTimingInvalidator {
     //Invalidates all timing edges associated with the clustered netlist connection
     //driving the specified pin
     template<class TimingInfo>
-    void invalidate_connection(ClusterPinId pin, TimingInfo* timing_info) {
+    void invalidate_connection(ParentPinId pin, TimingInfo* timing_info) {
         if (invalidated_pins_.count(pin)) return; //Already invalidated
 
         for (tatum::EdgeId edge : pin_timing_edges(pin)) {
@@ -192,7 +186,7 @@ class ClusteredPinTimingInvalidator {
   private:
     std::vector<int> pin_first_edge_; //Indicies into timing_edges corresponding
     std::vector<tatum::EdgeId> timing_edges_;
-    vtr::vec_id_set<ClusterPinId> invalidated_pins_;
+    vtr::vec_id_set<ParentPinId> invalidated_pins_;
 };
 
 /*

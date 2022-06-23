@@ -192,7 +192,9 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf,
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           const Netlist<>& net_list,
                                           const vtr::vector<ParentNetId, std::vector<int>>& net_rr_terminals,
-                                          NetPinsMatrix<float>& net_delay);
+                                          NetPinsMatrix<float>& net_delay,
+                                          const RRGraphView& rr_graph,
+                                          bool is_flat);
 
 #ifndef NO_GRAPHICS
 void update_router_info_and_check_bp(bp_router_type type, int net_id);
@@ -395,7 +397,9 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
                     init_net_delay_from_lookahead(*router_lookahead,
                                                   net_list,
                                                   route_ctx.net_rr_terminals,
-                                                  net_delay);
+                                                  net_delay,
+                                                  device_ctx.rr_graph,
+                                                  is_flat);
 
                     //Run STA to get estimated criticalities
                     timing_info->update();
@@ -412,12 +416,21 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
     std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
     if (timing_info) {
-        pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>(cluster_ctx.clb_nlist,
-                                                                                 netlist_pin_lookup,
-                                                                                 atom_ctx.nlist,
-                                                                                 atom_ctx.lookup,
-                                                                                 *timing_info->timing_graph(),
-                                                                                 is_flat);
+        if(is_flat) {
+            pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>((const Netlist<>&)atom_ctx.nlist,
+                                                                                     netlist_pin_lookup,
+                                                                                     atom_ctx.nlist,
+                                                                                     atom_ctx.lookup,
+                                                                                     *timing_info->timing_graph(),
+                                                                                     is_flat);
+        } else {
+            pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>((const Netlist<>&)cluster_ctx.clb_nlist,
+                                                                                     netlist_pin_lookup,
+                                                                                     atom_ctx.nlist,
+                                                                                     atom_ctx.lookup,
+                                                                                     *timing_info->timing_graph(),
+                                                                                     is_flat);
+        }
     }
 
     RouterStats router_stats;
@@ -2179,7 +2192,9 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf, const Netl
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           const Netlist<>& net_list,
                                           const vtr::vector<ParentNetId, std::vector<int>>& net_rr_terminals,
-                                          NetPinsMatrix<float>& net_delay) {
+                                          NetPinsMatrix<float>& net_delay,
+                                          const RRGraphView& rr_graph,
+                                          bool is_flat) {
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.; //Ensures lookahead returns delay value
 
@@ -2191,7 +2206,13 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
         for (size_t ipin = 1; ipin < net_list.net_pins(net_id).size(); ++ipin) {
             int sink_rr = net_rr_terminals[net_id][ipin];
 
-            float est_delay = router_lookahead.get_expected_cost(RRNodeId(source_rr), RRNodeId(sink_rr), cost_params, /*R_upstream=*/0.);
+            float est_delay = get_cost_from_lookahead(router_lookahead,
+                                                      rr_graph,
+                                                      RRNodeId(source_rr),
+                                                      RRNodeId(sink_rr),
+                                                      0.,
+                                                      cost_params,
+                                                      is_flat);
             VTR_ASSERT(std::isfinite(est_delay) && est_delay < std::numeric_limits<float>::max());
 
             net_delay[net_id][ipin] = est_delay;

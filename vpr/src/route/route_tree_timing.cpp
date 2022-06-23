@@ -738,8 +738,7 @@ void update_net_delays_from_route_tree(float* net_delay,
             //Delay changed, invalidate for incremental timing update
             VTR_ASSERT_SAFE(timing_info);
             ParentPinId pin = net_list.net_pin(inet, isink);
-            ClusterPinId cluster_pin_id = get_connected_cluster_pin_id(pin_look_up, pin, is_flat);
-            pin_timing_invalidator->invalidate_connection(cluster_pin_id, timing_info);
+            pin_timing_invalidator->invalidate_connection(pin, timing_info);
         }
 
         net_delay[isink] = new_delay;

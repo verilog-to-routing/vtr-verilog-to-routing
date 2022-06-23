@@ -93,8 +93,6 @@ bool is_node_on_tile(t_rr_type node_type,
         VTR_ASSERT(node_type == IPIN || node_type == SINK || node_type == OPIN || node_type == SOURCE);
         auto& device_ctx = g_vpr_ctx.device();
         t_physical_tile_type_ptr tile_type = device_ctx.grid[root_x][root_y].type;
-        // TODO: to get the range of ptc numbers related to pins on the cluster, in contrast to the pins inside the cluster, a helper function
-        // needs to be written.
         if (node_type == IPIN || node_type == OPIN) {
             return is_pin_on_tile(tile_type, node_ptc);
         } else {

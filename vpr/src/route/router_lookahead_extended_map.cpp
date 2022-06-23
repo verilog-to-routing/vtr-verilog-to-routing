@@ -135,8 +135,7 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
     VTR_ASSERT_SAFE_MSG(false,
                         vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
                                         rr_node_arch_name(size_t(from_node)).c_str(),
-                                        describe_rr_node(size_t(from_node)).c_str())
-                            .c_str());
+                                        describe_rr_node(size_t(from_node)).c_str()).c_str());
 }
 
 float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {

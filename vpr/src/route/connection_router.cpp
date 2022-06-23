@@ -11,14 +11,7 @@
 //as valid start locations for the current connection.
 //
 //Returns either the last element of the path, or nullptr if no path is found
-//static float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
-//                                     const RRGraphView& rr_graph_view,
-//                                     const RRSpatialLookup& rr_spatial_lookup,
-//                                     RRNodeId from_node,
-//                                     RRNodeId to_node,
-//                                     float R_upstream,
-//                                     const t_conn_cost_params cost_params,
-//                                     bool is_flat);
+
 template<typename Heap>
 std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_from_route_tree(
     t_rt_node* rt_root,
@@ -778,7 +771,13 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         total_cost = compute_node_cost_using_rcv(cost_params, to_node, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
     } else {
         //Update total cost
-        float expected_cost = router_lookahead_.get_expected_cost(RRNodeId(to_node), RRNodeId(target_node), cost_params, to->R_upstream);
+        float expected_cost = get_cost_from_lookahead(router_lookahead_,
+                                                      *rr_graph_,
+                                                      RRNodeId(to_node),
+                                                      RRNodeId(target_node),
+                                                      to->R_upstream,
+                                                      cost_params,
+                                                      is_flat_);
         VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
                        "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
                        rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node).c_str(),
@@ -865,7 +864,13 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
         // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
         float tot_cost = backward_path_cost
                          + cost_params.astar_fac
-                               * router_lookahead_.get_expected_cost(RRNodeId(inode), RRNodeId(target_node), cost_params, R_upstream);
+                               * get_cost_from_lookahead(router_lookahead_,
+                                                         *rr_graph_,
+                                                         RRNodeId(inode),
+                                                         RRNodeId(target_node),
+                                                         R_upstream,
+                                                         cost_params,
+                                                         is_flat_);
         VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode).c_str());
 
         push_back_node(&heap_, rr_node_route_inf_,
@@ -1015,72 +1020,4 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type he
     }
 }
 
-//static float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
-//                                     const RRGraphView& rr_graph_view,
-//                                     const RRSpatialLookup& rr_spatial_lookup,
-//                                     RRNodeId from_node,
-//                                     RRNodeId to_node,
-//                                     float R_upstream,
-//                                     const t_conn_cost_params cost_params,
-//                                     bool is_flat) {
-//    if(is_flat) {
-//        float expected_delay_cost = std::numeric_limits<float>::infinity();
-//
-//        auto from_node_type = rr_graph_view.node_type(from_node);
-//
-//        auto to_node_type = rr_graph_view.node_type(to_node);
-//
-//        int from_node_low_x = rr_graph_view.node_xlow(from_node);
-//        int from_node_low_y = rr_graph_view.node_ylow(from_node);
-//
-//        int to_node_low_x = rr_graph_view.node_xlow(to_node);
-//        int to_node_low_y = rr_graph_view.node_ylow(to_node);
-//
-//        int from_ptc = rr_graph_view.node_ptc_num(from_node);
-//
-//        int to_ptc = rr_graph_view.node_ptc_num(to_node);
-//
-//        bool from_node_on_tile = is_node_on_tile(from_node_type, from_node_low_x, from_node_low_y, from_ptc);
-//
-//        bool to_node_on_tile = is_node_on_tile(to_node_type, to_node_low_x, to_node_low_y, to_ptc);
-//
-//        if ((!from_node_on_tile) && (!to_node_on_tile)) { return 0.; }
-//
-//        std::vector<RRNodeId> from_nodes;
-//        std::vector<RRNodeId> to_nodes;
-//        if(from_node_on_tile
-//            || from_node_type == t_rr_type::CHANY
-//            || from_node_type == t_rr_type::CHANX) {
-//            from_nodes.push_back(from_node);
-//        } else {
-//            // TODO: Ideally, this function should be changed in a way to only return nodes which are located on the tile and connected to the
-//            // given internal node
-//            from_nodes = get_nodes_on_tile(rr_spatial_lookup,
-//                                           rr_graph_view.node_type(from_node),
-//                                           from_node_low_x,
-//                                           from_node_low_y);
-//        }
-//        // to_node should be only SINK/IPIN, and in the case of flat routing it should be inside cluster - Anyway, this
-//        // if statement is added for the sake of completeness
-//        if(to_node_on_tile
-//            || to_node_type == t_rr_type::CHANY
-//            || to_node_type == t_rr_type::CHANX) {
-//            to_nodes.push_back(to_node);
-//        } else {
-//            to_nodes = get_nodes_on_tile(rr_spatial_lookup,
-//                                         rr_graph_view.node_type(to_node),
-//                                         to_node_low_x,
-//                                         to_node_low_y);
-//        }
-//        for(auto from_node_ : from_nodes) {
-//            for(auto to_node_ : to_nodes) {
-//                auto tmp_cost = router_lookahead.get_expected_cost(from_node_, to_node_, cost_params, R_upstream);
-//                expected_delay_cost = std::min(expected_delay_cost, tmp_cost);
-//            }
-//        }
-//        VTR_ASSERT(std::isfinite(expected_delay_cost));
-//        return expected_delay_cost;
-//    } else {
-//        return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
-//    }
-//}
+
