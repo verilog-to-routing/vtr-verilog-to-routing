@@ -235,7 +235,7 @@ def run(
             output_netlist.name,
             "-a",
             architecture_file.name,
-            "-sim_dir",
+            "--sim_dir",
             str(sim_dir),
             "-g",
             "100",

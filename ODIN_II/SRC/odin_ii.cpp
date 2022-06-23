@@ -663,7 +663,7 @@ void get_options(int argc, char** argv) {
         .action(argparse::Action::STORE_TRUE)
         .metavar("BATCH FLAG");
 
-    other_sim_grp.add_argument(global_args.sim_directory, "-sim_dir")
+    other_sim_grp.add_argument(global_args.sim_directory, "--sim_dir")
         .help("Directory output for simulation")
         .default_value(DEFAULT_OUTPUT)
         .metavar("SIMULATION_DIRECTORY");
