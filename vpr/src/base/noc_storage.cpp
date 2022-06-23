@@ -20,6 +20,18 @@ const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links(void) const {
     return link_storage;
 }
 
+double NocStorage::get_noc_link_bandwidth(void) const {
+    return noc_link_bandwidth;
+}
+
+double NocStorage::get_noc_link_latency(void) const {
+    return noc_link_latency;
+}
+
+double NocStorage::get_noc_router_latency(void) const {
+    return noc_router_latency;
+}
+
 const NocRouter& NocStorage::get_single_noc_router(NocRouterId id) const {
     return router_storage[id];
 }
@@ -37,6 +49,7 @@ NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
     return link_storage[id];
 }
 
+// setters for the NoC
 
 void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
@@ -63,6 +76,21 @@ void NocStorage::add_link(NocRouterId source, NocRouterId sink) {
     NocLinkId added_link_id((int)link_storage.size() - 1);
     router_link_list[source].push_back(added_link_id);
 
+    return;
+}
+
+void NocStorage::set_noc_link_bandwidth(double link_bandwidth){
+    noc_link_bandwidth = link_bandwidth;
+    return;
+}
+
+void NocStorage::set_noc_link_latency(double link_latency){
+    noc_link_latency = link_latency;
+    return;
+}
+
+void NocStorage::set_noc_router_latency(double router_latency){
+    noc_router_latency = router_latency;
     return;
 }
 
@@ -127,6 +155,17 @@ void NocStorage::echo_noc(char* file_name) const {
     fprintf(fp, "--------------------------------------------------------------\n");
     fprintf(fp, "NoC\n");
     fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    // print the overall constraints of the NoC
+    fprintf(fp, "NoC Constraints:\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+    fprintf(fp, "Maximum NoC Link Bandwidth: %f\n", noc_link_bandwidth);
+    fprintf(fp, "\n");
+    fprintf(fp, "NoC Link Latency: %f\n", noc_link_latency);
+    fprintf(fp, "\n");
+    fprintf(fp, "NoC Router Latency: %f\n", noc_router_latency);
     fprintf(fp, "\n");
 
     // print all the routers and their properties

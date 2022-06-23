@@ -44,9 +44,9 @@ void setup_noc(const t_arch& arch) {
     generate_noc(arch, noc_ctx, noc_router_tiles);
 
     // store the general noc properties
-    noc_ctx.noc_link_bandwidth = arch.noc->link_bandwidth;
-    noc_ctx.noc_link_latency = arch.noc->link_latency;
-    noc_ctx.noc_router_latency = arch.noc->router_latency;
+    noc_ctx.noc_model.set_noc_link_bandwidth(arch.noc->link_bandwidth);
+    noc_ctx.noc_model.set_noc_link_latency(arch.noc->link_latency);
+    noc_ctx.noc_model.set_noc_router_latency(arch.noc->router_latency);
 
     // echo the noc info
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_NOC_MODEL)) {

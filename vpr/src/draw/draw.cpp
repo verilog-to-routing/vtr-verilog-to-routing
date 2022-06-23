@@ -1297,7 +1297,7 @@ static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors)
     auto& noc_ctx = g_vpr_ctx.noc();
 
     // get the maximum badnwidth per link
-    double max_noc_link_bandwidth = noc_ctx.noc_link_bandwidth;
+    double max_noc_link_bandwidth = noc_ctx.noc_model.get_noc_link_bandwidth();
 
     // check to see if a color map was already created previously
     if (draw_state->noc_usage_color_map == nullptr) {

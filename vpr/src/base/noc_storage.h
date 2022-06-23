@@ -90,6 +90,23 @@ class NocStorage {
      */
     bool built_noc;
 
+    /**
+     * @brief Represents the maximum allowed bandwidth for the links in the NoC (in Gbps)
+     */
+    double noc_link_bandwidth;
+
+    /**
+     * @brief Represents the delay expected when going through a link (in
+     * seconds)
+     */
+    double noc_link_latency;
+
+    /**
+     * @brief Represents the expected delay when going through a router (in
+     * seconds))
+     */
+    double noc_router_latency;
+
     // prevent "copying" of this object
     NocStorage(const NocStorage&) = delete;
     void operator=(const NocStorage&) = delete;
@@ -127,6 +144,34 @@ class NocStorage {
      * @return A vector of links. 
      */
     const vtr::vector<NocLinkId, NocLink>& get_noc_links(void) const;
+
+    /**
+     * @brief Get the maximum allowable bandwidth for a link
+     * within the NoC.
+     * 
+     * @return a numeric value that represents the link bandwith in bps
+     */
+
+    double get_noc_link_bandwidth(void) const;
+
+    /**
+     * @brief Get the latency of traversing through a link in
+     * the NoC.
+     * 
+     * @return a numeric value that represents the link latency in seconds
+     */
+
+    double get_noc_link_latency(void) const;
+
+    /**
+     * @brief Get the latency of traversing through a router in
+     * the NoC.
+     * 
+     * @return a numeric value that represents the router latency in seconds
+     */
+
+    double get_noc_router_latency(void) const;
+
 
     // getters for  routers
     
@@ -203,6 +248,30 @@ class NocStorage {
      * into (incoming to the router) 
      */
     void add_link(NocRouterId source, NocRouterId sink);
+
+    /**
+     * @brief Set the maximum allowable bandwidth for a link
+     * within the NoC.
+     * 
+     */
+
+    void set_noc_link_bandwidth(double link_bandwidth);
+
+    /**
+     * @brief Set the latency of traversing through a link in
+     * the NoC.
+     * 
+     */
+
+    void set_noc_link_latency(double link_latency);
+
+    /**
+     * @brief Set the latency of traversing through a router in
+     * the NoC.
+     * 
+     */
+
+    void set_noc_router_latency(double router_latency);
 
     // general utiliy functions
     /**
