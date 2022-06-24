@@ -128,14 +128,14 @@ void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_
                 case (file_type_e::_SYSTEM_VERILOG): //fallthrough
                 case (file_type_e::_UHDM): {
                     if (configuration.elaborator_type != elaborator_e::_YOSYS) {
-                        error_message(UTIL, unknown_location,
-                                      "Utilizing SystemVerilog/UHDM plugins requires activating the Yosys frontend. %s",
-                                      "Please recompile the VTR project either with the \"WITH_YOSYS\" or \"ODIN_USE_YOSYS\" flag on.");
+#ifndef ODIN_USE_YOSYS
+                        error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
+#else
+                        error_message(UTIL, unknown_location, "%s", YOSYS_PLUGINS_WITH_ODIN_ERROR);
+#endif
                     } else {
 #ifndef YOSYS_SV_UHDM_PLUGIN
-                        error_message(UTIL, unknown_location, "%s",
-                                      "Utilizing SystemVerilog/UHDM plugins requires an active corresponding compile flag. %s"
-                                      "Please recompile the VTR project with the \"YOSYS_SV_UHDM_PLUGIN\" flag on.");
+                        error_message(UTIL, unknown_location, "%s", YOSYS_PLUGINS_NOT_COMPILED);
 #endif
                     }
                     [[fallthrough]];

@@ -349,8 +349,9 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         ODIN_ERROR_CODE error_code;
 
         print_input_files_info();
+        assert_valid_file_extenstion(configuration.list_of_file_names, configuration.input_file_type);
 
-        if (configuration.input_file_type == file_type_e::_VERILOG || configuration.coarsen) {
+        if (configuration.input_file_type != file_type_e::_BLIF || configuration.coarsen) {
             try {
                 error_code = synthesize();
                 printf("Odin_II synthesis has finished with code: %d\n", error_code);
@@ -768,7 +769,6 @@ void get_options(int argc, char** argv) {
                           "Invalid argument (%s) is passed to Odin-II, for correct usage please see ./odin --help",
                           arg_name.c_str());
         }
-        assert_valid_file_extenstion(configuration.list_of_file_names, configuration.input_file_type);
 
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
