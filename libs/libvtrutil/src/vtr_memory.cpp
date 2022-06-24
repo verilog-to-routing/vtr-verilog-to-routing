@@ -6,6 +6,7 @@
 #include "vtr_memory.h"
 #include "vtr_error.h"
 #include "vtr_util.h"
+#include "vtr_log.h"
 
 #ifndef __GLIBC__
 #    include <stdlib.h>
@@ -48,11 +49,11 @@ void* calloc(size_t nelem, size_t size) {
 void* malloc(size_t size) {
     void* ret;
     if (size == 0) {
-        return nullptr;
+    	return nullptr;
     }
 
     if ((ret = std::malloc(size)) == nullptr && size != 0) {
-        throw VtrError("Unable to malloc memory.", __FILE__, __LINE__);
+    	throw VtrError("Unable to malloc memory.", __FILE__, __LINE__);
     }
     return (ret);
 }
@@ -67,6 +68,7 @@ void* realloc(void* ptr, size_t size) {
     }
     return (ret);
 }
+
 
 void* chunk_malloc(size_t size, t_chunk* chunk_info) {
     /* This routine should be used for allocating fairly small data             *
