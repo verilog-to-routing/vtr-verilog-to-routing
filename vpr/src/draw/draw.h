@@ -78,6 +78,8 @@ bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node,
                                              int sink_rr_node,
                                              std::vector<int>& rr_nodes_on_path);
 
+void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer* g);
+
 // toggle functions
 <<<<<<< HEAD
 void toggle_noc_display(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
