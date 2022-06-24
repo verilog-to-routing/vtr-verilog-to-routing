@@ -50,7 +50,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     int source_node = rt_root->inode;
 
     if (heap_.is_empty_heap()) {
-        VTR_LOG("No source in route tree: %s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
+        VTR_LOG("No source in route tree: %s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
 
         free_route_tree(rt_root);
         return nullptr;
@@ -108,7 +108,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     }
 
     if (cheapest == nullptr) {
-        VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
+        VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
 
         free_route_tree(rt_root);
         return nullptr;
@@ -139,7 +139,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     int source_node = rt_root->inode;
 
     if (heap_.is_empty_heap()) {
-        VTR_LOG("No source in route tree: %s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
+        VTR_LOG("No source in route tree: %s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
 
         free_route_tree(rt_root);
         return std::make_pair(false, t_heap());
@@ -170,7 +170,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     }
 
     if (cheapest == nullptr) {
-        VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node).c_str());
+        VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
 
         free_route_tree(rt_root);
         heap_.empty_heap();
@@ -225,7 +225,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
                 rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost, cheapest->backward_path_cost, route_ctx);
             }
 
-            VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(inode).c_str());
+            VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(inode, is_flat_).c_str());
             break;
         }
 
@@ -550,7 +550,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
 
     next.R_upstream = current->R_upstream;
 
-    VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node, describe_rr_node(to_node).c_str());
+    VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node, describe_rr_node(to_node, is_flat_).c_str());
 
     evaluate_timing_driven_node_costs(&next,
                                       cost_params,
@@ -780,8 +780,8 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
                                                       is_flat_);
         VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
                        "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
-                       rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node).c_str(),
-                       rr_node_arch_name(target_node).c_str(), describe_rr_node(target_node).c_str(),
+                       rr_node_arch_name(to_node, is_flat_).c_str(), describe_rr_node(to_node, is_flat_).c_str(),
+                       rr_node_arch_name(target_node, is_flat_).c_str(), describe_rr_node(target_node, is_flat_).c_str(),
                        expected_cost, to->R_upstream);
         total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
     }
@@ -871,7 +871,9 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                                                          R_upstream,
                                                          cost_params,
                                                          is_flat_);
-        VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode).c_str());
+        VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode,
+                       tot_cost,
+                       describe_rr_node(inode, is_flat_).c_str());
 
         push_back_node(&heap_, rr_node_route_inf_,
                        inode, tot_cost, NO_PREVIOUS, RREdgeId::INVALID(),

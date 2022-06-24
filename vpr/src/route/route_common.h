@@ -130,7 +130,7 @@ void free_trace_data(t_trace* trace);
 
 bool router_needs_lookahead(enum e_router_algorithm router_algorithm);
 
-std::string describe_unrouteable_connection(const int source_node, const int sink_node);
+std::string describe_unrouteable_connection(const int source_node, const int sink_node, bool is_flat);
 
 float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               const RRGraphView& rr_graph_view,

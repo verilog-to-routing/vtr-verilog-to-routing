@@ -191,7 +191,7 @@ void sync_grid_to_blocks() {
     }
 }
 
-std::string rr_node_arch_name(int inode) {
+std::string rr_node_arch_name(int inode, bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -205,7 +205,7 @@ std::string rr_node_arch_name(int inode) {
     } else if (rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK) {
         //Set of pins associated with SOURCE/SINK
         auto type = device_ctx.grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
-        auto pin_names = block_type_class_index_to_pin_names(type, rr_graph.node_class_num(rr_node));
+        auto pin_names = block_type_class_index_to_pin_names(type, rr_graph.node_class_num(rr_node), is_flat);
         if (pin_names.size() > 1) {
             rr_node_arch_name += rr_graph.node_type_string(RRNodeId(inode));
             rr_node_arch_name += " connected to ";

@@ -1828,12 +1828,12 @@ bool router_needs_lookahead(enum e_router_algorithm router_algorithm) {
     }
 }
 
-std::string describe_unrouteable_connection(const int source_node, const int sink_node) {
+std::string describe_unrouteable_connection(const int source_node, const int sink_node, bool is_flat) {
     std::string msg = vtr::string_fmt(
         "Cannot route from %s (%s) to "
         "%s (%s) -- no possible path",
-        rr_node_arch_name(source_node).c_str(), describe_rr_node(source_node).c_str(),
-        rr_node_arch_name(sink_node).c_str(), describe_rr_node(sink_node).c_str());
+        rr_node_arch_name(source_node, is_flat).c_str(), describe_rr_node(source_node).c_str(),
+        rr_node_arch_name(sink_node, is_flat).c_str(), describe_rr_node(sink_node).c_str());
 
     return msg;
 }

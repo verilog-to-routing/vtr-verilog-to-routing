@@ -336,9 +336,8 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                            rr_node_arch_name(size_t(from_node)).c_str(),
-                                            describe_rr_node(size_t(from_node)).c_str())
-                                .c_str());
+                                            rr_node_arch_name(size_t(from_node), is_flat_).c_str(),
+                                            describe_rr_node(size_t(from_node), is_flat_).c_str()).c_str());
 
     } else if (from_type == CHANX || from_type == CHANY) {
         VTR_ASSERT_SAFE(from_type == CHANX || from_type == CHANY);
@@ -360,7 +359,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                            rr_node_arch_name(size_t(from_node)).c_str(),
+                                            rr_node_arch_name(size_t(from_node), is_flat_).c_str(),
                                             describe_rr_node(size_t(from_node)).c_str())
                                 .c_str());
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
@@ -381,7 +380,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    this->src_opin_delays = util::compute_router_src_opin_lookahead();
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 }
 
 void MapLookahead::read(const std::string& file) {
@@ -389,7 +388,7 @@ void MapLookahead::read(const std::string& file) {
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    this->src_opin_delays = util::compute_router_src_opin_lookahead();
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 }
 
 void MapLookahead::write(const std::string& file) const {

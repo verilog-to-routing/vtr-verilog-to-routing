@@ -281,7 +281,7 @@ typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin
 // and the tile's IPIN. If there are many connections to the same IPIN, the one with the minimum delay is selected.
 typedef std::vector<std::vector<t_reachable_wire_inf>> t_chan_ipins_delays;
 
-t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat=false);
+t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat);
 t_chan_ipins_delays compute_router_chan_ipin_lookahead();
 
 } // namespace util

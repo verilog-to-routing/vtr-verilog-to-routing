@@ -16,7 +16,7 @@ static std::unique_ptr<RouterLookahead> make_router_lookahead_object(e_router_lo
     } else if (router_lookahead_type == e_router_lookahead::MAP) {
         return std::make_unique<MapLookahead>(is_flat);
     } else if (router_lookahead_type == e_router_lookahead::EXTENDED_MAP) {
-        return std::make_unique<ExtendedMapLookahead>();
+        return std::make_unique<ExtendedMapLookahead>(is_flat);
     } else if (router_lookahead_type == e_router_lookahead::NO_OP) {
         return std::make_unique<NoOpLookahead>();
     }

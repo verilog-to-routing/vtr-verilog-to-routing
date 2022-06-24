@@ -938,6 +938,8 @@ struct t_pb_type {
     t_pin_to_pin_annotation* annotations = nullptr; /* [0..num_annotations-1] */
     int num_annotations = 0;
 
+    int index_in_logical_block = 0;
+
     /* Power related members */
     t_pb_type_power* pb_type_power = nullptr;
 

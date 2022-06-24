@@ -164,7 +164,9 @@ std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type
 std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat = false);
 
 ///@brief Returns the name of the class_index'th pin class on the specified block type
-std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_type_ptr type, int class_index);
+std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_type_ptr type,
+                                                             int class_index,
+                                                             bool is_flat);
 
 ///@brief Returns the physical tile type matching a given physical tile type name, or nullptr (if not found)
 t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types);
