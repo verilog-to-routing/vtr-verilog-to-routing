@@ -6,12 +6,14 @@ import shutil
 from collections import OrderedDict
 from pathlib import Path
 import vtr
+from vtr.error import VtrError
 
 # supported input file type by Yosys
 FILE_TYPES = {
     ".v": "Verilog",
     ".vh": "Verilog",
     ".sv": "SystemVerilog",
+    ".uhdm": "UHDM",
     ".blif": "BLIF",
     ".aig": "aiger",
     ".json": "JSON",
@@ -26,6 +28,25 @@ YOSYS_LIB_FILES = {
     "SPRAMR": "spram_rename.v",
     "DPRAMR": "dpram_rename.v",
 }
+
+YOSYS_PARSERS = ["yosys", "surelog", "yosys-plugin"]
+
+
+def get_input_file_type(circuit_list):
+    """Return the type of input files, should all be the same"""
+    file_type = FILE_TYPES[os.path.splitext(circuit_list[0])[1].lower()]
+    # Check the extensions of input files
+    for circuit in circuit_list:
+        local_file_type = FILE_TYPES[os.path.splitext(circuit)[1].lower()]
+        if local_file_type != file_type:
+            raise VtrError(
+                "File ({circuit}) has different type than other input file, \
+                            all input files should have share a common type.".format(
+                    circuit=circuit
+                )
+            )
+
+    return file_type
 
 
 def create_circuits_list(main_circuit, include_files):
@@ -58,6 +79,7 @@ def init_script_file(
     yosys_dpram_full_path,
     yosys_spram_rename_full_path,
     yosys_dpram_rename_full_path,
+    temp_dir,
     circuit_list,
     output_netlist,
     memory_addr_width,
@@ -75,7 +97,11 @@ def init_script_file(
     vtr.file_replace(
         yosys_script_full_path,
         {
+<<<<<<< HEAD
             "XXX": "{}".format(" ".join(str(s) for s in circuit_list)),
+=======
+            "XXX": str(vtr.paths.scripts_path / temp_dir / circuit_list[0]),
+>>>>>>> [Infra]: install Yosys and its plugins in VTR_ROOT/Yosys, in addition
             "YYY": yosys_models_full_path,
             "SSS": yosys_spram_full_path,
             "DDD": yosys_dpram_full_path,
@@ -99,7 +125,7 @@ def init_script_file(
     vtr.file_replace(yosys_dpram_rename_full_path, {"PPP": memory_addr_width})
 
 
-# pylint: disable=too-many-arguments, too-many-locals
+# pylint: disable=too-many-arguments, too-many-locals, too-many-statements, too-many-branches
 def run(
     architecture_file,
     circuit_file,
@@ -212,12 +238,51 @@ def run(
         yosys_dpram_full_path,
         yosys_spram_rename_full_path,
         yosys_dpram_rename_full_path,
+        temp_dir,
         circuit_list,
         output_netlist.name,
         vtr.determine_memory_addr_width(str(architecture_file)),
         min_hard_mult_size,
         min_hard_adder_size,
     )
+
+    # check if SystemVerilog/UHDM plugins are installed
+    yosys_bin = Path(vtr.paths.yosys_path / "bin")
+    surelog_exec_path = Path(yosys_bin / "surelog")
+    uhdm_dump_exec_path = Path(yosys_bin / "uhdm-dump")
+    uhdm_hier_exec_path = Path(yosys_bin / "uhdm-hier")
+
+    # get input file extension
+    input_file_type = get_input_file_type(circuit_list)
+    # set the parser
+    if "parser" in yosys_args:
+        if yosys_args["parser"] in YOSYS_PARSERS:
+            os.environ["PARSER"] = yosys_args["parser"]
+            del yosys_args["parser"]
+        else:
+            raise VtrError(
+                "Invalid parser is specified for Yosys, available parsers are [{}]".format(
+                    " ".join(str(x) for x in YOSYS_PARSERS)
+                )
+            )
+    elif (
+        surelog_exec_path.is_file()
+        and uhdm_dump_exec_path.is_file()
+        and uhdm_hier_exec_path.is_file()
+    ):
+        os.environ["PARSER"] = {
+            FILE_TYPES[".v"]: "yosys",
+            FILE_TYPES[".sv"]: "yosys-plugin",
+            FILE_TYPES[".uhdm"]: "surelog",
+        }[input_file_type]
+    else:
+        if input_file_type in [FILE_TYPES[".v"], FILE_TYPES[".vh"], FILE_TYPES[".sv"]]:
+            os.environ["PARSER"] = "yosys"
+        else:
+            raise VtrError(
+                "The VTR-Yosys parser has full support for Verilog and partial support \
+                for SystemVerilog. Please install Yosys-plugins to utilize other parsers."
+            )
 
     cmd = [yosys_exec]
 

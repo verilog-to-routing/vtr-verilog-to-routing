@@ -33,7 +33,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
         set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
         set(YOSYS_F4PGA_PLUGINS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-f4pga-plugins)
 
-        # building Surelog, UHDM and sv2v in a custom command to avoid any target conflict with VTR targets
+        # building Surelog and UHDM in a custom command to avoid any target conflict with VTR targets
         add_custom_command( OUTPUT ${libyosys_BINARY_DIR}/bin/surelog ${libyosys_BINARY_DIR}/bin/uhdm-dump ${libyosys_BINARY_DIR}/bin/uhdm-hier  DEPENDS yosys 
                             # Surelog
                             COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release
@@ -64,6 +64,22 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
                           ${libyosys_BINARY_DIR}/bin/surelog 
                           ${libyosys_BINARY_DIR}/bin/uhdm-dump
                           ${libyosys_BINARY_DIR}/bin/uhdm-hier)
+    endif()
+
+    # In addition to libyosys in the build folder, we copy the libyosys directory
+    # into a temporary folder in the VTR root, named Yosys, to have access to Yosys 
+    # (plugins) execs for using in VTR scripts (similar to VPR/vpr or ODIN_II/odin_II)
+    add_custom_target(vtr-yosys ALL 
+                      DEPENDS yosys
+                            COMMAND ${CMAKE_COMMAND} -E 
+                                                    remove_directory ${VTR_SOURCE_DIR}/Yosys/                     
+                            COMMAND ${CMAKE_COMMAND} -E 
+                                                    make_directory ${VTR_SOURCE_DIR}/Yosys/
+                            COMMAND ${CMAKE_COMMAND} -E 
+                                                    copy_directory ${CMAKE_CURRENT_BINARY_DIR}/libyosys ${VTR_SOURCE_DIR}/Yosys/                     
+                            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    if(${YOSYS_SV_UHDM_PLUGIN})
+        add_dependencies(vtr-yosys yosys-plugins)
     endif()
 
 endif()
