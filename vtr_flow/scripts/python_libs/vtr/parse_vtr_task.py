@@ -148,7 +148,7 @@ def vtr_command_main(arg_list, prog=None):
         num_failed = 0
 
         jobs = create_jobs(args, configs, after_run=True)
-        parse_tasks(configs, jobs)
+        parse_tasks(configs, jobs, args.alt_tasks_dir)
 
         if args.create_golden:
             create_golden_results_for_tasks(configs)
@@ -178,29 +178,29 @@ def vtr_command_main(arg_list, prog=None):
     return num_failed
 
 
-def parse_tasks(configs, jobs):
+def parse_tasks(configs, jobs, alt_tasks_dir=None):
     """
     Parse the selection of tasks specified in configs and associated jobs
     """
     for config in configs:
         config_jobs = [job for job in jobs if job.task_name() == config.task_name]
-        parse_task(config, config_jobs)
+        parse_task(config, config_jobs, alt_tasks_dir=alt_tasks_dir)
 
 
-def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE):
+def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE, alt_tasks_dir=None):
     """
     Parse a single task run.
 
     This generates a file parse_results.txt in the task's working directory,
     which is an amalgam of the parse_rests.txt's produced by each job (flow invocation)
     """
-    run_dir = find_latest_run_dir(config)
+    run_dir = find_latest_run_dir(config, alt_tasks_dir)
 
     # Record max widths for pretty printing
     max_arch_len = len("architecture")
     max_circuit_len = len("circuit")
     for job in config_jobs:
-        work_dir = job.work_dir(get_latest_run_dir(find_task_dir(config)))
+        work_dir = job.work_dir(get_latest_run_dir(find_task_dir(config, alt_tasks_dir)))
         if job.parse_command():
             parse_filepath = str(PurePath(work_dir) / flow_metrics_basename)
             with open(parse_filepath, "w+") as parse_file:
@@ -550,9 +550,9 @@ def calculate_individual_geo_mean(lines, index, geo_mean, num):
     return geo_mean, num, previous_value
 
 
-def find_latest_run_dir(config):
+def find_latest_run_dir(config, alt_tasks_dir=None):
     """Find the latest run directory for given configuration"""
-    task_dir = find_task_dir(config)
+    task_dir = find_task_dir(config, alt_tasks_dir)
 
     run_dir = get_latest_run_dir(task_dir)
 
