@@ -67,7 +67,42 @@ enum NocLinkShift {
     BOTTOM_SHIFT
 };
 
-
+/**
+ * @brief Displays the NoC on the FPGA device. Displaying the NoC goes through the following steps:
+ * - First check to make sure that the user selected to button to display the NoC otherwise don't display it
+ * - Highlight the Noc routers by drawing a marker on top of them in the canvas
+ * - Draw the links that connect the routers together (based on topology)
+ * - If the user selected the option to show the NoC link usage, then color the links to represent how much
+ * of their capacity is being used
+ * - The drawing is done on top of the FPGA device within the canvas
+ *
+ * Below we have an example of how the Noc is displayed for a FPGA device with 2 routers:
+ *
+ * Before NoC display:
+ *    *********************                      *********************
+ *    *                   *                      *                   *
+ *    *                   *                      *                   *
+ *    *                   *                      *                   *
+ *    *                   *                      *                   *
+ *    *                   *                      *                   *
+ *    *                   *                      *                   *
+ *    *                   *                      *                   *
+ *    *********************                      *********************
+ *
+ * After NoC display:
+ *
+ *    *********************                      *********************
+ *    *                   *                      *                   *
+ *    *                   *                      *                   *
+ *    *       ****<-------*----------------------*-------****        *
+ *    *       *  *        *                      *       *  *        *
+ *    *       ****--------*----------------------*------>****        *
+ *    *                   *                      *                   *
+ *    *                   *                      *                   *
+ *    *********************                      *********************
+ *
+ * @param g canvas renderer.
+ */
 void draw_noc(ezgl::renderer* g);
 
 // draw_noc helper functions
@@ -135,7 +170,7 @@ void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId
  * will overlap. This vector describes how the two links should be moved
  * so that they do not overlap.
  */
-void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors, ezgl::rectangle noc_connection_marker_bbox, const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions);
+void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors, ezgl::rectangle noc_connection_marker_bbox, const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions);
 
 /**
  * @brief Goes through all the links within the NoC and updates the color that
