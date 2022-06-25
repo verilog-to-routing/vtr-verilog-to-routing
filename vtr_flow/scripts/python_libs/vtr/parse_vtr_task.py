@@ -148,7 +148,7 @@ def vtr_command_main(arg_list, prog=None):
         num_failed = 0
 
         jobs = create_jobs(args, configs, after_run=True)
-        parse_tasks(configs, jobs)
+        parse_tasks(configs, jobs, args.alt_tasks_dir)
 
         if args.create_golden:
             create_golden_results_for_tasks(configs)
