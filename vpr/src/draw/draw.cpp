@@ -536,27 +536,6 @@ static void toggle_window_mode(GtkWidget* /*widget*/,
     window_mode = true;
 }
 
-void toggle_noc_display(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/)
-{
-    /* this is the callback function for runtime created toggle_noc_display button
-     * which is written in button.cpp                                         */
-    t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_noc_display";
-    auto toggle_crit_path = find_button(button_name.c_str());
-
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_crit_path));
-    if (strcmp(combo_box_content, "None") == 0) {
-        draw_state->draw_noc = DRAW_NO_NOC;
-    } else if (strcmp(combo_box_content, "NoC Links") == 0)
-        draw_state->draw_noc = DRAW_NOC_LINKS;
-    else
-        draw_state->draw_noc = DRAW_NOC_LINK_USAGE;
-
-    g_free(combo_box_content);
-    application.refresh_drawing();
-}
-
 #endif // NO_GRAPHICS
 
 void alloc_draw_structs(const t_arch* arch) {
