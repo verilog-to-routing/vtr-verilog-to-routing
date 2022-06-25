@@ -6,6 +6,7 @@
 #    include "noc_storage.h"
 #    include "vpr_error.h"
 #    include "vtr_math.h"
+#    include "draw_basic.h"
 
 void draw_noc(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
