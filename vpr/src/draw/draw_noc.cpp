@@ -287,7 +287,6 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
 
 void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions) {
     auto& noc_ctx = g_vpr_ctx.noc();
-    //const NocStorage* noc_model = &noc_ctx.noc_model;
 
     int number_of_links = list_of_noc_link_shift_directions.size();
 
@@ -323,58 +322,64 @@ void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>
 }
 
 NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2d link_end_point) {
-    // get the coordinates of the provided line
+    // get the coordinates of the provided line that represents a link
     double x_coord_start = link_start_point.x;
     double y_coord_start = link_start_point.y;
 
     double x_coord_end = link_end_point.x;
     double y_coord_end = link_end_point.y;
 
-    // create a horizontal line that connects to the start point of the provided line and spans a predefined length
+    // create a horizontal line that connects to the start point of the provided link and spans a predefined length
     double x_coord_horizontal_start = link_start_point.x;
     double y_coord_horizontal_start = link_start_point.y;
 
     double x_coord_horziontal_end = x_coord_horizontal_start + HORIZONTAL_LINE_LENGTH;
     double y_coord_horizontal_end = link_start_point.y;
 
-    // stores the line type
+    // stores the link type
     NocLinkType result = NocLinkType::INVALID_TYPE;
 
-    // we can check quickly if the line is vertical or horizontal without calculating the cross product. If it is vertical or horizontal then we just return. Otherwise we have to calculate it.
+    // we can check quickly if the link is vertical or horizontal without calculating the dot product. If it is vertical or horizontal then we just return. Otherwise we have to calculate it.
 
-    // check if the line is vertical by determining if there is any horizontal change
+    // check if the link is vertical by determining if there is any horizontal change
     if (vtr::isclose(x_coord_end - x_coord_start, 0.0)) {
         result = NocLinkType::VERTICAL;
 
         return result;
     }
 
-    // check if the line is horizontal by determinig if there is any vertical shift
+    // check if the link is horizontal by determinig if there is any vertical shift
     if (vtr::isclose(y_coord_end - y_coord_start, 0.0)) {
         result = NocLinkType::HORIZONTAL;
 
         return result;
     }
 
-    // if we are here then the line has a slope, so we use the cross product to determine the angle
-    double angle = acos(((x_coord_end - x_coord_start) * (x_coord_horziontal_end - x_coord_horizontal_start) + (y_coord_end - y_coord_start) * (y_coord_horizontal_end - y_coord_horizontal_start)) / (sqrt(pow(x_coord_end - x_coord_start, 2.0) + pow(y_coord_end - y_coord_start, 2.0)) * sqrt(pow(x_coord_horziontal_end - x_coord_horizontal_start, 2.0) + pow(y_coord_horizontal_end - y_coord_horizontal_start, 2.0))));
+    // if we are here then the line that represents a link has a slope, so we use the dot product to determine the angle between the line and the horizontal line created above that connects to the link.
+
+    // get the magnitude of the link
+    double link_magnitude = sqrt(pow(x_coord_end - x_coord_start, 2.0) + pow(y_coord_end - y_coord_start, 2.0));
+    // get the dot product of the two connecting line
+    double dot_product_of_link_and_horizontal_line = (x_coord_end - x_coord_start) * (x_coord_horziontal_end - x_coord_horizontal_start) + (y_coord_end - y_coord_start) * (y_coord_horizontal_end - y_coord_horizontal_start);
+    // calculate the angle
+    double angle = acos(dot_product_of_link_and_horizontal_line /(link_magnitude * HORIZONTAL_LINE_LENGTH));
 
     // the angle is in the first or fourth quandrant of the unit circle
     if ((angle > 0) && (angle < (PI_RADIAN / 2))) {
-        // if it is a positive sloped line, then the y coordinate of the end point is higher the y-coordinate of the horizontal line
+        // if the link is a positive sloped line, then its end point must be higher than its start point (must be higher than the connected horizontal line)
         if (y_coord_end > y_coord_horizontal_end) {
             result = NocLinkType::POSITVE_SLOPE;
-        } else { // if the end y-coordinate is less than the horizontal line then we have a negative sloped line
+        } else { // if the end point is lower than the start point (lower than the connected horizontal line) then it must be negatively sloped
 
             result = NocLinkType::NEGATIVE_SLOPE;
         }
 
     } else { // the case where the angle is in the 3rd and 4th quandrant of the unit cirle
 
-        // if the line is positive sloped, then the y-coordinate of the end point is lower than the y-coordinate of the horizontal line
+        // if the link is a positive sloped line, then its end point must be lower than its start point (must be lower than the connected horizontal line)
         if (y_coord_end < y_coord_horizontal_end) {
             result = NocLinkType::POSITVE_SLOPE;
-        } else { // if the end y-coordinate of is greater than the horizontal line then we have a negative sloped line
+        } else { // if the end point is higher than the start point (higher than the connected horizontal line) then it must be negatively sloped
 
             result = NocLinkType::NEGATIVE_SLOPE;
         }
@@ -392,7 +397,7 @@ void shift_noc_link(noc_link_draw_coords& link_coords, NocLinkShift link_shift_d
      *
      * positive slope line: shift the link to the bottom right and top left corners of the connection marker
      *
-     * negative slope line: shift the link to the bottom left and top roght corners of the connection marker
+     * negative slope line: shift the link to the bottom left and top right corners of the connection marker
      *
      */
 

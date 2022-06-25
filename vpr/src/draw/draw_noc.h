@@ -76,7 +76,8 @@ enum NocLinkShift {
  * of their capacity is being used
  * - The drawing is done on top of the FPGA device within the canvas
  *
- * Below we have an example of how the Noc is displayed for a FPGA device with 2 routers:
+ * Below we have an example of how the Noc is displayed for a FPGA device with 
+ * 2 routers:
  *
  * Before NoC display:
  *    *********************                      *********************
@@ -198,10 +199,10 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors);
 void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions);
 
 /**
- * @brief The type (orientation) of a line is determine here. A second
+ * @brief The type (orientation) of a line is determined here. A second
  *        horizontal line is created that connects to the starting point of the
  *        provided line (function input). Then the angle between the two
- *        lines is calculated using the cross product. Based on this angle, the 
+ *        lines are calculated using the dot product. Based on this angle, the 
  *        line direction is determined (vertical, horizontal, positive sloped 
  *        or negative sloped).
  * 
