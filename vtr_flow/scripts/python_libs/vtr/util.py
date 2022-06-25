@@ -450,13 +450,21 @@ def get_next_run_dir(base_dir):
     return str(PurePath(base_dir) / run_dir_name(get_next_run_number(base_dir)))
 
 
-def find_task_dir(config):
+def find_task_dir(config, alt_tasks_dir=None):
     """
-    find the task directory
+    Finds the task directory.
+
+    Returns the parent of the config directory, or if specified,
+    a directory with the task's name in an alternate location
     """
     task_dir = None
-    # Task dir is just above the config directory
-    task_dir = Path(config.config_dir).parent
+
+    if alt_tasks_dir is None:
+        task_dir = Path(config.config_dir).parent
+    else:
+        task_dir = Path(alt_tasks_dir) / config.task_name
+        if not task_dir.exists():
+            task_dir.mkdir(parents=True)
     assert task_dir.is_dir
 
     return str(task_dir)
