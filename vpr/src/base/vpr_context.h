@@ -284,7 +284,7 @@ struct ClusteringHelperContext : public Context {
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs;
 
     ~ClusteringHelperContext() {
-        free(primitives_list);
+        delete[](primitives_list);
     }
 };
 
