@@ -237,7 +237,7 @@ void free_clustering_data(const t_packer_opts& packer_opts,
     clustering_data.intra_lb_routing.clear();
 
     if (packer_opts.hill_climbing_flag)
-        free(clustering_data.hill_climbing_inputs_avail);
+        delete[](clustering_data.hill_climbing_inputs_avail);
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
         cluster_ctx.clb_nlist.remove_block(blk_id);
