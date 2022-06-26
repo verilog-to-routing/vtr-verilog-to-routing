@@ -356,9 +356,9 @@ void free_pb_graph_edges() {
         }
         edges_head = edges_head->next;
         num_edges_head = num_edges_head->next;
-        vtr::free(edges);
-        vtr::free(cur_num);
-        vtr::free(cur);
+        delete[](edges);
+        delete(cur_num);
+        delete(cur);
     }
 }
 
@@ -712,12 +712,14 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
         out_count += num_output_ptrs[i_outset];
     }
 
-    edges = (t_pb_graph_edge*)vtr::calloc(in_count * out_count, sizeof(t_pb_graph_edge));
-    cur = (vtr::t_linked_vptr*)vtr::malloc(sizeof(vtr::t_linked_vptr));
+    edges = new t_pb_graph_edge[in_count * out_count];
+    for (int i = 0; i < (in_count*out_count);i++)
+    	edges[i] = t_pb_graph_edge();
+    cur = new vtr::t_linked_vptr;
     cur->next = edges_head;
     edges_head = cur;
     cur->data_vptr = (void*)edges;
-    cur = (vtr::t_linked_vptr*)vtr::malloc(sizeof(vtr::t_linked_vptr));
+    cur = new vtr::t_linked_vptr;
     cur->next = num_edges_head;
     num_edges_head = cur;
     cur->data_vptr = (void*)((intptr_t)in_count * out_count);
@@ -790,12 +792,14 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
     }
 
     /* Allocate memory for edges */
-    t_pb_graph_edge* edges = (t_pb_graph_edge*)vtr::calloc(pins_per_set * num_output_sets, sizeof(t_pb_graph_edge));
-    vtr::t_linked_vptr* cur = (vtr::t_linked_vptr*)vtr::malloc(sizeof(vtr::t_linked_vptr));
+    t_pb_graph_edge* edges = new t_pb_graph_edge[pins_per_set * num_output_sets];
+    for (int i = 0; i < (pins_per_set * num_output_sets);i++)
+    	edges[i] = t_pb_graph_edge();
+    vtr::t_linked_vptr* cur = new vtr::t_linked_vptr;
     cur->next = edges_head;
     edges_head = cur;
     cur->data_vptr = (void*)edges;
-    cur = (vtr::t_linked_vptr*)vtr::malloc(sizeof(vtr::t_linked_vptr));
+    cur = new vtr::t_linked_vptr;
     cur->next = num_edges_head;
     num_edges_head = cur;
     cur->data_vptr = (void*)((intptr_t)num_input_ptrs[0]);
@@ -869,12 +873,14 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
                   "Mux must have one output\n");
     }
 
-    edges = (t_pb_graph_edge*)vtr::calloc(num_input_sets, sizeof(t_pb_graph_edge));
-    cur = (vtr::t_linked_vptr*)vtr::malloc(sizeof(vtr::t_linked_vptr));
+    edges = new t_pb_graph_edge[num_input_sets];
+    for (int i = 0; i < (num_input_sets);i++)
+    	edges[i] = t_pb_graph_edge();
+    cur = new vtr::t_linked_vptr;
     cur->next = edges_head;
     edges_head = cur;
     cur->data_vptr = (void*)edges;
-    cur = (vtr::t_linked_vptr*)vtr::malloc(sizeof(vtr::t_linked_vptr));
+    cur = new vtr::t_linked_vptr;
     cur->next = num_edges_head;
     num_edges_head = cur;
     cur->data_vptr = (void*)((intptr_t)num_input_sets);
