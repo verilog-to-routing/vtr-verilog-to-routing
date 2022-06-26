@@ -411,10 +411,10 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
                 vtr::free(pb_graph_node->interconnect_pins[i][j].input_pins);
                 vtr::free(pb_graph_node->interconnect_pins[i][j].output_pins);
             }
-            vtr::free(pb_graph_node->interconnect_pins[i]);
+            delete[](pb_graph_node->interconnect_pins[i]);
         }
     }
-    vtr::free(pb_graph_node->interconnect_pins);
+    delete[](pb_graph_node->interconnect_pins);
     vtr::free(pb_graph_node->pb_node_power);
 
     for (i = 0; i < pb_type->num_modes; i++) {
