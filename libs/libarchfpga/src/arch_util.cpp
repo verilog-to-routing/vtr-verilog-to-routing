@@ -322,10 +322,10 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
                 vtr::free(pb_graph_node->input_pins[i][j].pin_timing_del_max);
             if (pb_graph_node->input_pins[i][j].pin_timing_del_min)
                 vtr::free(pb_graph_node->input_pins[i][j].pin_timing_del_min);
-            if (pb_graph_node->input_pins[i][j].input_edges)
-                vtr::free(pb_graph_node->input_pins[i][j].input_edges);
-            if (pb_graph_node->input_pins[i][j].output_edges)
-                vtr::free(pb_graph_node->input_pins[i][j].output_edges);
+//            if (pb_graph_node->input_pins[i][j].input_edges)
+//                vtr::free(pb_graph_node->input_pins[i][j].input_edges);
+//            if (pb_graph_node->input_pins[i][j].output_edges)
+//                vtr::free(pb_graph_node->input_pins[i][j].output_edges);
             if (pb_graph_node->input_pins[i][j].parent_pin_class)
                 delete[](pb_graph_node->input_pins[i][j].parent_pin_class);
         }
@@ -339,10 +339,10 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
                 vtr::free(pb_graph_node->output_pins[i][j].pin_timing_del_max);
             if (pb_graph_node->output_pins[i][j].pin_timing_del_min)
                 vtr::free(pb_graph_node->output_pins[i][j].pin_timing_del_min);
-            if (pb_graph_node->output_pins[i][j].input_edges)
-                vtr::free(pb_graph_node->output_pins[i][j].input_edges);
-            if (pb_graph_node->output_pins[i][j].output_edges)
-                vtr::free(pb_graph_node->output_pins[i][j].output_edges);
+//            if (pb_graph_node->output_pins[i][j].input_edges)
+//                vtr::free(pb_graph_node->output_pins[i][j].input_edges);
+//            if (pb_graph_node->output_pins[i][j].output_edges)
+//                vtr::free(pb_graph_node->output_pins[i][j].output_edges);
             if (pb_graph_node->output_pins[i][j].parent_pin_class)
                 delete[](pb_graph_node->output_pins[i][j].parent_pin_class);
 
@@ -368,10 +368,10 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
                 vtr::free(pb_graph_node->clock_pins[i][j].pin_timing_del_max);
             if (pb_graph_node->clock_pins[i][j].pin_timing_del_min)
                 vtr::free(pb_graph_node->clock_pins[i][j].pin_timing_del_min);
-            if (pb_graph_node->clock_pins[i][j].input_edges)
-                vtr::free(pb_graph_node->clock_pins[i][j].input_edges);
-            if (pb_graph_node->clock_pins[i][j].output_edges)
-                vtr::free(pb_graph_node->clock_pins[i][j].output_edges);
+//            if (pb_graph_node->clock_pins[i][j].input_edges)
+//                vtr::free(pb_graph_node->clock_pins[i][j].input_edges);
+//            if (pb_graph_node->clock_pins[i][j].output_edges)
+//                vtr::free(pb_graph_node->clock_pins[i][j].output_edges);
             if (pb_graph_node->clock_pins[i][j].parent_pin_class)
                 delete[](pb_graph_node->clock_pins[i][j].parent_pin_class);
         }
