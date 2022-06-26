@@ -261,9 +261,9 @@ static void load_delay_annotations(const int line_num,
     }
 
     //Allocate and load the delay matrix
-    delay_matrix = (float**)vtr::malloc(sizeof(float*) * num_inputs);
+    delay_matrix = new float*[num_inputs];
     for (i = 0; i < num_inputs; i++) {
-        delay_matrix[i] = (float*)vtr::malloc(sizeof(float) * num_outputs);
+        delay_matrix[i] = new float[num_outputs];
     }
 
     if (input_format == E_ANNOT_PIN_TO_PIN_MATRIX) {
@@ -471,9 +471,9 @@ static void load_delay_annotations(const int line_num,
         free(num_out_ptrs);
     }
     for (i = 0; i < num_inputs; i++) {
-        free(delay_matrix[i]);
+        delete[](delay_matrix[i]);
     }
-    free(delay_matrix);
+    delete[](delay_matrix);
 }
 
 static void inferr_unspecified_pb_graph_node_delays(t_pb_graph_node* pb_graph_node) {
