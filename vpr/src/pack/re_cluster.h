@@ -23,9 +23,9 @@
  *   - Second, during placement (during_packing variable should be false)
  */
 bool move_mol_to_new_cluster(t_pack_molecule* molecule,
-                             t_clustering_data& clustering_data,
                              bool during_packing,
-                             int verbosity);
+                             int verbosity,
+                             t_clustering_data& clustering_data);
 
 /**
  * @brief This function moves a molecule out of its cluster to another cluster that already exists.

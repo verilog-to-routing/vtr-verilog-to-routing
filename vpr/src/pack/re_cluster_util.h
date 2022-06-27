@@ -115,4 +115,8 @@ void commit_mol_removal(const t_pack_molecule* molecule,
                         t_lb_router_data*& router_data,
                         t_clustering_data& clustering_data);
 
+bool check_type_and_mode_compitability(const ClusterBlockId& old_clb,
+                                       const ClusterBlockId& new_clb,
+                                       int verbosity);
+
 #endif

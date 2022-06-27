@@ -17,7 +17,7 @@ const char* name_suffix = "_m";
 //static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
 static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin);
 static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type, t_pb_routes& pb_route);
-static bool count_children_pbs(const t_pb* pb);
+//static bool count_children_pbs(const t_pb* pb);
 static void fix_atom_pin_mapping(const AtomBlockId blk);
 
 static void fix_cluster_pins_after_moving(const ClusterBlockId clb_index);
@@ -36,9 +36,9 @@ static void fix_cluster_net_after_moving(const t_pack_molecule* molecule,
                                          const ClusterBlockId& new_clb);
 
 static void rebuild_cluster_placemet_stats(const ClusterBlockId& clb_index,
-                                    const std::vector<AtomBlockId>& clb_atoms,
-                                    int type_idx,
-                                    int mode);
+                                           const std::vector<AtomBlockId>& clb_atoms,
+                                           int type_idx,
+                                           int mode);
 
 /*****************  API functions ***********************/
 ClusterBlockId atom_to_cluster(const AtomBlockId& atom) {
@@ -195,7 +195,6 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
     t_ext_pin_util target_ext_pin_util = helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(new_clb)->name);
     t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(new_clb);
     t_pb* temp_pb = cluster_ctx.clb_nlist.block_pb(new_clb);
-
 
     //re-build cluster placement stats
     rebuild_cluster_placemet_stats(new_clb, new_clb_atoms, cluster_ctx.clb_nlist.block_type(new_clb)->index, cluster_ctx.clb_nlist.block_pb(new_clb)->mode);
@@ -575,6 +574,7 @@ static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin) {
     pb_route[driver].sink_pb_pin_ids.push_back(ipin);
 }
 
+#if 0
 static bool count_children_pbs(const t_pb* pb) {
     if (pb == nullptr)
         return 0;
@@ -588,11 +588,12 @@ static bool count_children_pbs(const t_pb* pb) {
     }
     return false;
 }
+#endif
 
 static void rebuild_cluster_placemet_stats(const ClusterBlockId& clb_index,
-                                    const std::vector<AtomBlockId>& clb_atoms,
-                                    int type_idx,
-                                    int mode) {
+                                           const std::vector<AtomBlockId>& clb_atoms,
+                                           int type_idx,
+                                           int mode) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -648,4 +649,24 @@ void commit_mol_removal(const t_pack_molecule* molecule,
         cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
         cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
     }
+}
+
+bool check_type_and_mode_compitability(const ClusterBlockId& old_clb,
+                                       const ClusterBlockId& new_clb,
+                                       int verbosity) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    //Check that the old and new clusters are the same type
+    if (cluster_ctx.clb_nlist.block_type(old_clb) != cluster_ctx.clb_nlist.block_type(new_clb)) {
+        VTR_LOGV(verbosity > 4, "Move aborted. New and old cluster blocks are not of the same type");
+        return false;
+    }
+
+    //Check that the old and new clusters are the mode
+    if (cluster_ctx.clb_nlist.block_pb(old_clb)->mode != cluster_ctx.clb_nlist.block_pb(new_clb)->mode) {
+        VTR_LOGV(verbosity > 4, "Move aborted. New and old cluster blocks are not of the same mode");
+        return false;
+    }
+
+    return true;
 }

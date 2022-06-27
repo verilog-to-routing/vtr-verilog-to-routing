@@ -5,9 +5,9 @@
 #include "cluster_router.h"
 
 bool move_mol_to_new_cluster(t_pack_molecule* molecule,
-                             t_clustering_data& clustering_data,
                              bool during_packing,
-                             int verbosity) {
+                             int verbosity,
+                             t_clustering_data& clustering_data) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& device_ctx = g_vpr_ctx.device();
@@ -99,21 +99,12 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
     int molecule_size = get_array_size_of_molecule(molecule);
     t_lb_router_data* old_router_data = nullptr;
     std::vector<AtomBlockId> new_clb_atoms = cluster_to_atoms(new_clb);
-
-    //Check that the old and new clusters are the same type
     ClusterBlockId old_clb = atom_to_cluster(root_atom_id);
-    if (cluster_ctx.clb_nlist.block_type(old_clb) != cluster_ctx.clb_nlist.block_type(new_clb)) {
-        VTR_LOGV(verbosity > 4, "Atom:%zu move aborted. New and old cluster blocks are not of the same type",
-                root_atom_id);
-        return false;
-    }
 
-    //Check that the old and new clusters are the mode
-    if (cluster_ctx.clb_nlist.block_pb(old_clb)->mode != cluster_ctx.clb_nlist.block_pb(new_clb)->mode) {
-        VTR_LOGV(verbosity > 4, "Atom:%zu move aborted. New and old cluster blocks are not of the same mode",
-                root_atom_id);
+    //check old and new clusters compitability
+    bool is_compitable = check_type_and_mode_compitability(old_clb, new_clb, verbosity);
+    if (!is_compitable)
         return false;
-    }
 
     //remove the molecule from its current cluster
     remove_mol_from_cluster(molecule, molecule_size, old_clb, old_router_data);
