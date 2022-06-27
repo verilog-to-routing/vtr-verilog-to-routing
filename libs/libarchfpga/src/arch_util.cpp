@@ -298,7 +298,7 @@ static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_desc
         if (type.pb_type) {
             if (type.pb_graph_head) {
                 free_pb_graph(type.pb_graph_head);
-                vtr::free(type.pb_graph_head);
+                delete(type.pb_graph_head);
             }
         }
     }
@@ -378,13 +378,13 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
         delete[] pb_graph_node->clock_pins[i];
     }
 
-    vtr::free(pb_graph_node->input_pins);
-    vtr::free(pb_graph_node->output_pins);
-    vtr::free(pb_graph_node->clock_pins);
+    delete[](pb_graph_node->input_pins);
+    delete[](pb_graph_node->output_pins);
+    delete[](pb_graph_node->clock_pins);
 
-    vtr::free(pb_graph_node->num_input_pins);
-    vtr::free(pb_graph_node->num_output_pins);
-    vtr::free(pb_graph_node->num_clock_pins);
+    delete[](pb_graph_node->num_input_pins);
+    delete[](pb_graph_node->num_output_pins);
+    delete[](pb_graph_node->num_clock_pins);
 
     delete[](pb_graph_node->input_pin_class_size);
     delete[](pb_graph_node->output_pin_class_size);
