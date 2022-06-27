@@ -127,12 +127,25 @@ static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*d
 static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void run_graphics_commands(std::string commands);
 
+// draw_noc helper functions
+static ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type_ptr noc_router_logical_block_type);
+
+static void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId, NocRouter>& router_list, ezgl::rectangle connection_marker_bbox);
+
+static void draw_noc_links(ezgl::renderer* g, const t_logical_block_type_ptr noc_router_logical_block_type, vtr::vector<NocLinkId, ezgl::color>& noc_link_colors, ezgl::rectangle noc_connection_marker_bbox, const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions);
+
+static void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors);
+
 /************************** File Scope Variables ****************************/
 
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
+
+// defines the area of the marker that represents connection points between links
+// area is equivalent to the %x of the area of the router
+constexpr float SIZE_OF_NOC_MARKER = 0.30;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943

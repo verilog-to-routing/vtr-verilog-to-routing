@@ -228,6 +228,14 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ///@brief Sets the flag in net_is_global_ = state
     void set_net_is_global(ClusterNetId net_id, bool state);
 
+    /**
+     * @brief Given a name of a block and logical type, go through all the
+     *        cluster blocks of that type and return the id of a block where 
+     *        the block name matches to provided name.
+     * 
+     */
+    ClusterBlockId find_block_with_matching_name(const std::string& name, t_logical_block_type_ptr blk_type) const;
+
   private: //Private Members
     /*
      * Netlist compression/optimization
@@ -241,6 +249,9 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 
     ///@brief Shrinks internal data structures to required size to reduce memory consumption
     void shrink_to_fit_impl() override;
+
+    ///@brief Group the block to its corresponding logical type
+    void add_block_to_logical_type(ClusterBlockId blk_id,t_logical_block_type_ptr type);
 
     /*
      * Component removal
@@ -277,8 +288,10 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     vtr::vector_map<ClusterBlockId, t_pb*> block_pbs_;                              ///<Physical block representing the clustering & internal hierarchy of each CLB
     vtr::vector_map<ClusterBlockId, t_logical_block_type_ptr> block_types_;         ///<The type of logical block this user circuit block is mapped to
     vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; ///<The logical pin associated with each physical tile pin
-
-    //Pins
+    std::unordered_map<std::string, std::vector<ClusterBlockId>> block_type_to_id;///<Group the physical blocks by their logical types
+                    /// each logical type contains a list of blocks that are
+                    /// its type
+                    /// the key here is the logical type name
     /**
      * @brief The logical pin index of this block (i.e. pin index in t_logical_block_type)
      *        corresponding to the clustered pin

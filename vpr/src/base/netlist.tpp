@@ -458,6 +458,41 @@ BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block(const std::string& na
     }
 }
 
+/**
+ * @brief Finds a block where the blocks name contains within it the
+ *        provided input name. The intented use is to find the block id of a 
+ *        hard block when provided with the its module name in the HDL design.
+ *        
+ *        For example, suppose a RAM block was instantiated in the design and it
+ *        was named "test_ram". The generated netlist would not have the block
+ *        named as "test_ram", instead it would be something different but the
+ *        name should contain "test_ram" inside it since it represents that  
+ *        block. If "test_ram" is provided to find_block() above, then an 
+ *        invalid block ID would be returned. The find_block_with_matching_name
+ *        () can instead be used and it should find the ram block that has 
+ *        "test_ram" within its name.
+ * 
+ */
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block_with_matching_name(const std::string& name) const {
+
+    BlockId matching_blk_id = BlockId::INVALID();
+    const std::string blk_name;
+    
+    // go through all the blocks in the netlist
+    for (auto blk_id = block_ids_.begin(); blk_id != block_ids_.end(); blk_id++){
+        // get the corresponding block name
+        blk_name = &strings_[block_names_[*blk_id]];
+        // check whether the current block name contains the input string within it
+        if (blk_name.find(name) != std::string::npos){
+            matching_blk_id = blk_id;
+            break;
+        }
+    }
+    return matching_blk_id;
+}
+
+
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 PortId Netlist<BlockId, PortId, PinId, NetId>::find_port(const BlockId blk_id, const std::string& name) const {
     VTR_ASSERT_SAFE(valid_block_id(blk_id));
