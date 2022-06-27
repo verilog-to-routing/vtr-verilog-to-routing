@@ -170,15 +170,15 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* p
         for (i = 0; i < num_in_sets; i++) {
             free(in_port[i]);
         }
-        free(in_port);
-        free(num_in_ptrs);
+        delete[](in_port);
+        delete[](num_in_ptrs);
     }
     if (out_port != nullptr) {
         for (i = 0; i < num_out_sets; i++) {
             free(out_port[i]);
         }
-        free(out_port);
-        free(num_out_ptrs);
+        delete[](out_port);
+        delete[](num_out_ptrs);
     }
 }
 
@@ -460,15 +460,15 @@ static void load_delay_annotations(const int line_num,
         for (i = 0; i < num_in_sets; i++) {
             free(in_port[i]);
         }
-        free(in_port);
-        free(num_in_ptrs);
+        delete[](in_port);
+        delete[](num_in_ptrs);
     }
     if (out_port != nullptr) {
         for (i = 0; i < num_out_sets; i++) {
             free(out_port[i]);
         }
-        free(out_port);
-        free(num_out_ptrs);
+        delete[](out_port);
+        delete[](num_out_ptrs);
     }
     for (i = 0; i < num_inputs; i++) {
         delete[](delay_matrix[i]);
