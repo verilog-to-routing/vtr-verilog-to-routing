@@ -18,6 +18,7 @@ enum e_vpr_error {
     VPR_ERROR_TIMING,
     VPR_ERROR_POWER,
     VPR_ERROR_SDC,
+    VPR_ERROR_XDC,
 
     // File parsing errors
     VPR_ERROR_NET_F,        // Error while parsing the packed netlist file

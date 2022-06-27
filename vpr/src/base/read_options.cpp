@@ -1519,6 +1519,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help("Path to timing constraints file in SDC format")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.XDCFiles, "--xdc_files")
+        .nargs('+')
+        .default_value({})
+        .help("Path to Xilinx's Design Constraints file")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.read_rr_graph_file, "--read_rr_graph")
         .help(
             "The routing resource graph file to load."

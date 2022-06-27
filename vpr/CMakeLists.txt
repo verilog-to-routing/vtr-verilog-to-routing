@@ -53,6 +53,9 @@ add_library(libvpr STATIC
              ${LIB_SOURCES}
 )
 
+#Find TCL
+find_package(TCL REQUIRED)
+target_link_libraries(libvpr tcl)
 
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 
@@ -84,6 +87,7 @@ target_link_libraries(libvpr
                         libargparse
                         libpugixml
                         librrgraph
+                        libtclcpp
 )
 
 #link graphics library only when graphics set to on

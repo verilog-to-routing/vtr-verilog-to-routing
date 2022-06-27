@@ -721,6 +721,7 @@ struct t_file_name_opts {
     std::string CmosTechFile;
     std::string out_file_prefix;
     std::string read_vpr_constraints_file;
+    std::vector<std::string> read_xdc_constraints_files;
     std::string write_vpr_constraints_file;
     std::string write_block_usage;
     bool verify_file_digests;
@@ -1250,6 +1251,9 @@ struct t_router_opts {
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
     int reorder_rr_graph_nodes_seed = 1;
+
+    // Options related to FPGA Interchange
+    bool FPGAInterchange;
 };
 
 struct t_analysis_opts {

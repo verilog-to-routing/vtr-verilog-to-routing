@@ -32,6 +32,7 @@ sudo apt install -y \
   libxml++2.6-dev \
   libreadline-dev \
   tcl-dev \
+  tk-dev \
   libffi-dev \
   perl \
   texinfo \

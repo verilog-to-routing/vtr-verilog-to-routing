@@ -97,6 +97,7 @@ void SetupVPR(const t_options* Options,
     FileNameOpts->CmosTechFile = Options->CmosTechFile;
     FileNameOpts->out_file_prefix = Options->out_file_prefix;
     FileNameOpts->read_vpr_constraints_file = Options->read_vpr_constraints_file;
+    FileNameOpts->read_xdc_constraints_files = Options->XDCFiles;
     FileNameOpts->write_vpr_constraints_file = Options->write_vpr_constraints_file;
     FileNameOpts->write_block_usage = Options->write_block_usage;
 
@@ -118,6 +119,7 @@ void SetupVPR(const t_options* Options,
                             Arch,
                             device_ctx.physical_tile_types,
                             device_ctx.logical_block_types);
+                VTR_ASSERT_MSG(Options->XDCFiles.value().size() != 0, "XDC constraints are not supported for VTR format");
                 break;
             case e_arch_format::FPGAInterchange:
                 VTR_LOG("Use FPGA Interchange device\n");
@@ -422,6 +424,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
 
     RouterOpts->max_logged_overused_rr_nodes = Options.max_logged_overused_rr_nodes;
     RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
+    RouterOpts->FPGAInterchange = (Options.arch_format == e_arch_format::FPGAInterchange);
 }
 
 static void SetupAnnealSched(const t_options& Options,

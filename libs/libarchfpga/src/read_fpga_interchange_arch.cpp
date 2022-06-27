@@ -21,6 +21,7 @@
 #include "arch_types.h"
 
 #include "read_fpga_interchange_arch.h"
+#include "fpga_interchange_arch_utils.h"
 
 /*
  * FPGA Interchange Device frontend
@@ -35,11 +36,6 @@
 using namespace DeviceResources;
 using namespace LogicalNetlist;
 using namespace capnp;
-
-// Necessary to reduce code verbosity when getting the pin directions
-static const auto INPUT = LogicalNetlist::Netlist::Direction::INPUT;
-static const auto OUTPUT = LogicalNetlist::Netlist::Direction::OUTPUT;
-static const auto INOUT = LogicalNetlist::Netlist::Direction::INOUT;
 
 static const auto LOGIC = Device::BELCategory::LOGIC;
 static const auto ROUTING = Device::BELCategory::ROUTING;
@@ -58,16 +54,6 @@ struct t_package_pin {
     std::string bel_name;
 };
 
-struct t_bel_cell_mapping {
-    size_t cell;
-    size_t site;
-    std::vector<std::pair<size_t, size_t>> pins;
-
-    bool operator<(const t_bel_cell_mapping& other) const {
-        return cell < other.cell || (cell == other.cell && site < other.site);
-    }
-};
-
 // Intermediate data type to store information on interconnects to be created
 struct t_ic_data {
     std::string input;
@@ -77,82 +63,6 @@ struct t_ic_data {
 };
 
 /****************** Utility functions ******************/
-
-/**
- * @brief The FPGA interchange timing model includes three different corners (min, typ and max) for each of the two
- * speed_models (slow and fast).
- *
- * Timing data can be found on PIPs, nodes, site pins and bel pins.
- * This function retrieves the timing value based on the wanted speed model and the wanted corner.
- *
- * More information on the FPGA Interchange timing model can be found here:
- *   - https://github.com/chipsalliance/fpga-interchange-schema/blob/main/interchange/DeviceResources.capnp
- */
-static float get_corner_value(Device::CornerModel::Reader model, const char* speed_model, const char* value) {
-    bool slow_model = std::string(speed_model) == std::string("slow");
-    bool fast_model = std::string(speed_model) == std::string("fast");
-
-    bool min_corner = std::string(value) == std::string("min");
-    bool typ_corner = std::string(value) == std::string("typ");
-    bool max_corner = std::string(value) == std::string("max");
-
-    if (!slow_model && !fast_model) {
-        archfpga_throw("", __LINE__,
-                       "Wrong speed model `%s`. Expected `slow` or `fast`\n", speed_model);
-    }
-
-    if (!min_corner && !typ_corner && !max_corner) {
-        archfpga_throw("", __LINE__,
-                       "Wrong corner model `%s`. Expected `min`, `typ` or `max`\n", value);
-    }
-
-    bool has_fast = model.getFast().hasFast();
-    bool has_slow = model.getSlow().hasSlow();
-
-    if (slow_model && has_slow) {
-        auto half = model.getSlow().getSlow();
-        if (min_corner && half.getMin().isMin()) {
-            return half.getMin().getMin();
-        } else if (typ_corner && half.getTyp().isTyp()) {
-            return half.getTyp().getTyp();
-        } else if (max_corner && half.getMax().isMax()) {
-            return half.getMax().getMax();
-        } else {
-            if (half.getMin().isMin()) {
-                return half.getMin().getMin();
-            } else if (half.getTyp().isTyp()) {
-                return half.getTyp().getTyp();
-            } else if (half.getMax().isMax()) {
-                return half.getMax().getMax();
-            } else {
-                archfpga_throw("", __LINE__,
-                               "Invalid speed model %s. No value found!\n", speed_model);
-            }
-        }
-    } else if (fast_model && has_fast) {
-        auto half = model.getFast().getFast();
-        if (min_corner && half.getMin().isMin()) {
-            return half.getMin().getMin();
-        } else if (typ_corner && half.getTyp().isTyp()) {
-            return half.getTyp().getTyp();
-        } else if (max_corner && half.getMax().isMax()) {
-            return half.getMax().getMax();
-        } else {
-            if (half.getMin().isMin()) {
-                return half.getMin().getMin();
-            } else if (half.getTyp().isTyp()) {
-                return half.getTyp().getTyp();
-            } else if (half.getMax().isMax()) {
-                return half.getMax().getMax();
-            } else {
-                archfpga_throw("", __LINE__,
-                               "Invalid speed model %s. No value found!\n", speed_model);
-            }
-        }
-    }
-
-    return 0.;
-}
 
 /** @brief Returns the port corresponding to the given model in the architecture */
 static t_model_ports* get_model_port(t_arch* arch, std::string model, std::string port, bool fail = true) {
@@ -258,6 +168,29 @@ static t_pin_to_pin_annotation get_pack_pattern(std::string pp_name, std::string
     return pp;
 }
 
+static void add_segment_with_default_values(t_segment_inf& seg, std::string name) {
+    // Use default values as we will populate rr_graph with correct values
+    // This segments are just declaration of future use
+    seg.name = name;
+    seg.length = 1;
+    seg.frequency = 1;
+    seg.Rmetal = 1e2;
+    seg.Cmetal = 1e-15;
+    seg.parallel_axis = BOTH_AXIS;
+
+    // TODO: Only bi-directional segments are created, but it the interchange format
+    //       has directionality information on PIPs, which may be used to infer the
+    //       segments' directonality.
+    seg.directionality = BI_DIRECTIONAL;
+    seg.arch_wire_switch = 1;
+    seg.arch_opin_switch = 1;
+    seg.cb.resize(1);
+    seg.cb[0] = true;
+    seg.sb.resize(2);
+    seg.sb[0] = true;
+    seg.sb[1] = true;
+}
+
 /****************** End Utility functions ******************/
 
 struct ArchReader {
@@ -284,7 +217,8 @@ struct ArchReader {
         // Preprocess arch information
         process_luts();
         process_package_pins();
-        process_cell_bel_mappings();
+        auto func = std::bind(&ArchReader::str, this, std::placeholders::_1);
+        process_cell_bel_mappings(ar_, bel_cell_mappings_, func);
         process_constants();
         process_bels_and_sites();
 
@@ -334,7 +268,6 @@ struct ArchReader {
 
     // Bel Cell mappings
     std::unordered_map<uint32_t, std::set<t_bel_cell_mapping>> bel_cell_mappings_;
-    std::unordered_map<std::string, int> segment_name_to_segment_idx;
 
     // Utils
 
@@ -448,6 +381,24 @@ struct ArchReader {
         return pad_bels_.count(name) != 0;
     }
 
+    void add_ltype(std::function<int(int)> map,
+                   const char* name,
+                   t_sub_tile& sub_tile,
+                   t_physical_tile_type& type) {
+        vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
+        auto ltype = get_type_by_name<t_logical_block_type>(name, ltypes_);
+
+        for (int npin = 0; npin < ltype->pb_type->num_ports; npin++) {
+            t_physical_pin physical_pin(map(npin));
+            t_logical_pin logical_pin(npin);
+
+            directs_map.insert(logical_pin, physical_pin);
+        }
+
+        type.tile_block_pin_directs_map[ltype->index][sub_tile.index] = directs_map;
+        sub_tile.equivalent_sites.push_back(ltype);
+    }
+
     /** @brief Utility function to fill in all the necessary information for the sub_tile
      *
      *  Given a physical tile type and a corresponding sub tile with additional information on the IO pin count
@@ -460,7 +411,13 @@ struct ArchReader {
      *      - equivalent_sites
      *      - tile_block_pin_directs_map
      **/
-    void fill_sub_tile(t_physical_tile_type& type, t_sub_tile& sub_tile, int num_pins, int input_count, int output_count) {
+    void fill_sub_tile(t_physical_tile_type& type,
+                       t_sub_tile& sub_tile,
+                       int num_pins,
+                       int input_count,
+                       int output_count,
+                       std::unordered_map<std::string, int>* port_name_to_sub_tile_idx = nullptr,
+                       Device::SiteTypeInTileType::Reader* site_in_tile = nullptr) {
         sub_tile.num_phy_pins += num_pins;
         type.num_pins += num_pins;
         type.num_inst_pins += num_pins;
@@ -482,19 +439,35 @@ struct ArchReader {
             }
         }
 
-        vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
+        if (site_in_tile) {
+            auto site_types = ar_.getSiteTypeList();
+            auto site_type = site_types[site_in_tile->getPrimaryType()];
+            auto alt_sites_pins = site_in_tile->getAltPinsToPrimaryPins();
 
-        for (int npin = 0; npin < type.num_pins; npin++) {
-            t_physical_pin physical_pin(npin);
-            t_logical_pin logical_pin(npin);
+            if (take_sites_.count(site_type.getName()) != 0) {
+                std::function<int(int)> map = [](int x) { return x; };
+                add_ltype(map, sub_tile.name, sub_tile, type);
+            }
 
-            directs_map.insert(logical_pin, physical_pin);
+            for (int i = 0; i < (int)site_type.getAltSiteTypes().size(); ++i) {
+                auto alt_site = site_types[site_type.getAltSiteTypes()[i]];
+
+                if (take_sites_.count(alt_site.getName()) == 0)
+                    continue;
+
+                auto pin_map = alt_sites_pins[i];
+
+                std::function<int(int)> map = [pin_map, site_type, port_name_to_sub_tile_idx, this](int x) {
+                    auto pin = site_type.getPins()[pin_map.getPins()[x]];
+                    return (*port_name_to_sub_tile_idx)[str(pin.getName())];
+                };
+
+                add_ltype(map, str(alt_site.getName()).c_str(), sub_tile, type);
+            }
+        } else {
+            std::function<int(int)> map = [](int x) { return x; };
+            add_ltype(map, sub_tile.name, sub_tile, type);
         }
-
-        auto ltype = get_type_by_name<t_logical_block_type>(sub_tile.name, ltypes_);
-        sub_tile.equivalent_sites.push_back(ltype);
-
-        type.tile_block_pin_directs_map[ltype->index][sub_tile.index] = directs_map;
 
         // Assign FC specs
         int iblk_pin = 0;
@@ -769,7 +742,22 @@ struct ArchReader {
                 if (found)
                     take_sites_.insert(site_type.getName());
 
-                // TODO: Enable also alternative site types handling
+                for (auto alt_site_idx : site_type.getAltSiteTypes()) {
+                    auto alt_site = site_types[alt_site_idx];
+                    found = false;
+                    for (auto bel : alt_site.getBels()) {
+                        auto bel_name = bel.getName();
+                        bool res = bel_cell_mappings_.find(bel_name) != bel_cell_mappings_.end();
+
+                        found |= res;
+
+                        if (res || is_pad(str(bel_name)))
+                            take_bels_.insert(bel_name);
+                    }
+
+                    if (found)
+                        take_sites_.insert(alt_site.getName());
+                }
             }
         }
     }
@@ -818,10 +806,13 @@ struct ArchReader {
     }
 
     void process_package_pins() {
+        std::unordered_map<std::string, std::string> site_to_pin_map;
+
         for (auto package : ar_.getPackages()) {
             for (auto pin : package.getPackagePins()) {
                 t_package_pin pckg_pin;
                 pckg_pin.name = str(pin.getPackagePin());
+                
 
                 if (pin.getBel().isBel()) {
                     pckg_pin.bel_name = str(pin.getBel().getBel());
@@ -832,64 +823,35 @@ struct ArchReader {
                     pckg_pin.site_name = str(pin.getSite().getSite());
 
                 package_pins_.push_back(pckg_pin);
+
+                site_to_pin_map[pckg_pin.site_name] = pckg_pin.name;
             }
         }
-    }
 
-    void process_cell_bel_mappings() {
-        auto primLib = ar_.getPrimLibs();
-        auto portList = primLib.getPortList();
+        /* Populate phys_grid_mapping - associate pin names with grid locations */
+        for (const auto& tile : ar_.getTileList()) {
+            int site_idx = 0;
+            for (const auto& site : tile.getSites()) {
+                int subtile = site_idx++;
 
-        for (auto cell_mapping : ar_.getCellBelMap()) {
-            size_t cell_name = cell_mapping.getCell();
+                std::string site_name = str(site.getName());
+                auto it = site_to_pin_map.find(site_name);
+                if (it == site_to_pin_map.end())
+                    continue;
+                std::string& pin_name = it->second;
 
-            int found_valid_prim = false;
-            for (auto primitive : primLib.getCellDecls()) {
-                bool is_prim = str(primitive.getLib()) == std::string("primitives");
-                bool is_cell = cell_name == primitive.getName();
+                auto tile_type = ar_.getTileTypeList()[tile.getType()];
 
-                bool has_inout = false;
-                for (auto port_idx : primitive.getPorts()) {
-                    auto port = portList[port_idx];
+                /* TODO: All tiles are currently set to 1x1 size, but this is done in process_tiles method which gets
+                 * called later. We should split this logic in a way that's more suitable for constraining pins,
+                 * because currently the line below makes an assumption about tile size which happens to be true only
+                 * due to process_tiles implementation.
+                 * 
+                 * A similar thing could be said about subtile indexing.
+                 */
+                t_phys_map_region pin_region { tile.getCol() + 1, tile.getRow() + 1, 1, 1, subtile };
 
-                    if (port.getDir() == INOUT) {
-                        has_inout = true;
-                        break;
-                    }
-                }
-
-                if (is_prim && is_cell && !has_inout) {
-                    found_valid_prim = true;
-                    break;
-                }
-            }
-
-            if (!found_valid_prim)
-                continue;
-
-            for (auto common_pins : cell_mapping.getCommonPins()) {
-                std::vector<std::pair<size_t, size_t>> pins;
-
-                for (auto pin_map : common_pins.getPins())
-                    pins.emplace_back(pin_map.getCellPin(), pin_map.getBelPin());
-
-                for (auto site_type_entry : common_pins.getSiteTypes()) {
-                    size_t site_type = site_type_entry.getSiteType();
-
-                    for (auto bel : site_type_entry.getBels()) {
-                        t_bel_cell_mapping mapping;
-
-                        mapping.cell = cell_name;
-                        mapping.site = site_type;
-                        mapping.pins = pins;
-
-                        std::set<t_bel_cell_mapping> maps{mapping};
-                        auto res = bel_cell_mappings_.emplace(bel, maps);
-                        if (!res.second) {
-                            res.first->second.insert(mapping);
-                        }
-                    }
-                }
+                arch_->phys_grid_mapping[pin_name] = std::move(pin_region);
             }
         }
     }
@@ -1957,8 +1919,14 @@ struct ArchReader {
 
             bool has_valid_sites = false;
 
-            for (auto site_type : tile.getSiteTypes())
-                has_valid_sites |= take_sites_.count(siteTypeList[site_type.getPrimaryType()].getName()) != 0;
+            for (auto site_type : tile.getSiteTypes()) {
+                auto site_ = siteTypeList[site_type.getPrimaryType()];
+                has_valid_sites |= take_sites_.count(site_.getName()) != 0;
+                for (auto alt_site_idx : site_.getAltSiteTypes()) {
+                    auto alt_site_ = siteTypeList[alt_site_idx];
+                    has_valid_sites |= take_sites_.count(alt_site_.getName()) != 0;
+                }
+            }
 
             if (!has_valid_sites)
                 continue;
@@ -1991,17 +1959,21 @@ struct ArchReader {
     }
 
     void process_sub_tiles(t_physical_tile_type& type, Device::TileType::Reader& tile) {
-        // TODO: only one subtile at the moment
         auto siteTypeList = ar_.getSiteTypeList();
         for (auto site_in_tile : tile.getSiteTypes()) {
             t_sub_tile sub_tile;
 
+            bool site_taken = false;
+
             auto site = siteTypeList[site_in_tile.getPrimaryType()];
+            site_taken |= take_sites_.count(site.getName()) != 0;
+            for (auto alt_site_idx : site.getAltSiteTypes()) {
+                auto alt_site = siteTypeList[alt_site_idx];
+                site_taken |= take_sites_.count(alt_site.getName()) != 0;
+            }
 
-            if (take_sites_.count(site.getName()) == 0)
+            if (!site_taken)
                 continue;
-
-            auto pins_to_wires = site_in_tile.getPrimaryPinsToTileWires();
 
             sub_tile.index = type.capacity;
             sub_tile.name = vtr::strdup(str(site.getName()).c_str());
@@ -2013,8 +1985,7 @@ struct ArchReader {
             int icount = 0;
             int ocount = 0;
 
-            std::unordered_map<std::string, std::string> port_name_to_wire_name;
-            int idx = 0;
+            std::unordered_map<std::string, int> port_name_to_sub_tile_idx;
             for (auto dir : {INPUT, OUTPUT}) {
                 int port_idx_by_type = 0;
                 for (auto pin : site.getPins()) {
@@ -2025,9 +1996,9 @@ struct ArchReader {
 
                     port.name = vtr::strdup(str(pin.getName()).c_str());
 
-                    port_name_to_wire_name[std::string(port.name)] = str(pins_to_wires[idx++]);
-
                     sub_tile.sub_tile_to_tile_pin_indices.push_back(type.num_pins + port_idx);
+
+                    port_name_to_sub_tile_idx[str(pin.getName())] = port_idx;
                     port.index = port_idx++;
 
                     port.absolute_first_pin_index = abs_first_pin_idx++;
@@ -2046,9 +2017,9 @@ struct ArchReader {
             }
 
             auto pins_size = site.getPins().size();
-            fill_sub_tile(type, sub_tile, pins_size, icount, ocount);
+            fill_sub_tile(type, sub_tile, pins_size, icount, ocount, &port_name_to_sub_tile_idx, &site_in_tile);
 
-            type.sub_tiles.push_back(sub_tile);
+            type.sub_tiles.emplace_back(sub_tile);
         }
     }
 
@@ -2205,6 +2176,7 @@ struct ArchReader {
         t_sub_tile sub_tile;
         sub_tile.index = 0;
         sub_tile.name = vtr::strdup(const_block_.c_str());
+        sub_tile.capacity.set(0, 0);
         int count = 0;
         for (auto const_cell : const_cells) {
             sub_tile.sub_tile_to_tile_pin_indices.push_back(count);
@@ -2215,7 +2187,7 @@ struct ArchReader {
 
             port.name = vtr::strdup((const_cell.first + "_" + const_cell.second).c_str());
 
-            port.index = port.absolute_first_pin_index = port.port_index_by_type = 0;
+            port.index = port.absolute_first_pin_index = port.port_index_by_type = count;
 
             sub_tile.ports.push_back(port);
 
@@ -2295,10 +2267,10 @@ struct ArchReader {
                 grid_def.loc_defs.emplace_back(std::move(single));
             }
 
-            // The constant source tile will be placed at (0, 0)
+            // The constant source tile will be placed at (1, max_height)
             t_grid_loc_def constant(const_block_, 1);
             constant.x.start_expr = std::to_string(1);
-            constant.y.start_expr = std::to_string(1);
+            constant.y.start_expr = std::to_string(grid_def.height - 1);
 
             constant.x.end_expr = constant.x.start_expr + " + w - 1";
             constant.y.end_expr = constant.y.start_expr + " + h - 1";
@@ -2345,101 +2317,27 @@ struct ArchReader {
     }
 
     void process_switches() {
-        std::set<std::pair<bool, uint32_t>> pip_timing_models;
-        for (auto tile_type : ar_.getTileTypeList()) {
-            for (auto pip : tile_type.getPips()) {
-                pip_timing_models.insert(std::pair<bool, uint32_t>(pip.getBuffered21(), pip.getTiming()));
-                if (!pip.getDirectional())
-                    pip_timing_models.insert(std::pair<bool, uint32_t>(pip.getBuffered20(), pip.getTiming()));
-            }
+        std::set<std::tuple<int, bool>> seen;
+        pip_types(seen, ar_);
+
+        arch_->num_switches = seen.size() + 2;
+
+        if (arch_->num_switches > 0) {
+            arch_->Switches = new t_arch_switch_inf[arch_->num_switches];
         }
 
-        auto timing_data = ar_.getPipTimings();
+        std::vector<std::tuple<std::tuple<int, bool>, int>> pips_models_;
+        process_switches_array<t_arch_switch_inf*, int>(ar_, seen, arch_->Switches, pips_models_);
 
-        std::vector<std::pair<bool, uint32_t>> pip_timing_models_list;
-        pip_timing_models_list.reserve(pip_timing_models.size());
-
-        for (auto entry : pip_timing_models) {
-            pip_timing_models_list.push_back(entry);
-        }
-
-        size_t num_switches = pip_timing_models.size() + 2;
-        std::string switch_name;
-
-        arch_->num_switches = num_switches;
-
-        if (num_switches > 0) {
-            arch_->Switches = new t_arch_switch_inf[num_switches];
-        }
-
-        float R, Cin, Cint, Cout, Tdel;
-        for (size_t i = 0; i < num_switches; ++i) {
+        for (int i = 0; i < arch_->num_switches; ++i) {
             t_arch_switch_inf* as = &arch_->Switches[i];
-
-            R = Cin = Cint = Cout = Tdel = 0.0;
-            SwitchType type;
-
-            if (i == 0) {
-                switch_name = "short";
-                type = SwitchType::SHORT;
-                R = 0.0;
-            } else if (i == 1) {
-                switch_name = "generic";
-                type = SwitchType::MUX;
-                R = 0.0;
-            } else {
-                auto entry = pip_timing_models_list[i - 2];
-                auto model = timing_data[entry.second];
-                std::stringstream name;
-                std::string mux_type_string = entry.first ? "mux_" : "passGate_";
-                name << mux_type_string;
-
-                // FIXME: allow to dynamically choose different speed models and corners
-                R = get_corner_value(model.getOutputResistance(), "slow", "min");
-                name << "R" << std::scientific << R;
-
-                Cin = get_corner_value(model.getInputCapacitance(), "slow", "min");
-                name << "Cin" << std::scientific << Cin;
-
-                Cout = get_corner_value(model.getOutputCapacitance(), "slow", "min");
-                name << "Cout" << std::scientific << Cout;
-
-                if (entry.first) {
-                    Cint = get_corner_value(model.getInternalCapacitance(), "slow", "min");
-                    name << "Cinternal" << std::scientific << Cint;
-                }
-
-                Tdel = get_corner_value(model.getInternalDelay(), "slow", "min");
-                name << "Tdel" << std::scientific << Tdel;
-
-                switch_name = name.str() + std::to_string(i);
-                type = entry.first ? SwitchType::MUX : SwitchType::PASS_GATE;
-            }
-
-            /* Should never happen */
-            if (switch_name == std::string(VPR_DELAYLESS_SWITCH_NAME)) {
-                archfpga_throw(arch_file_, __LINE__,
-                               "Switch name '%s' is a reserved name for VPR internal usage!", switch_name.c_str());
-            }
-
-            as->name = vtr::strdup(switch_name.c_str());
-            as->set_type(type);
-            as->mux_trans_size = as->type() == SwitchType::MUX ? 1 : 0;
-
-            as->R = R;
-            as->Cin = Cin;
-            as->Cout = Cout;
-            as->Cinternal = Cint;
-            as->set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel);
 
             if (as->type() == SwitchType::SHORT || as->type() == SwitchType::PASS_GATE) {
                 as->buf_size_type = BufferSize::ABSOLUTE;
-                as->buf_size = 0;
                 as->power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
                 as->power_buffer_size = 0.;
             } else {
                 as->buf_size_type = BufferSize::AUTO;
-                as->buf_size = 0.;
                 as->power_buffer_type = POWER_BUFFER_TYPE_AUTO;
             }
         }
@@ -2448,47 +2346,40 @@ struct ArchReader {
     void process_segments() {
         // Segment names will be taken from wires connected to pips
         // They are good representation for nodes
+
+        auto wires = ar_.getWires();
+        auto wire_types = ar_.getWireTypes();
+
+        std::unordered_map<size_t, Device::WireCategory> wire_map;
+        for (auto wire : wires) {
+            auto type = wire_types[wire.getType()];
+            wire_map.emplace(wire.getWire(), type.getCategory());
+        }
+
         std::set<uint32_t> wire_names;
         for (auto tile_type : ar_.getTileTypeList()) {
-            auto wires = tile_type.getWires();
+            auto tile_wires = tile_type.getWires();
+
             for (auto pip : tile_type.getPips()) {
-                wire_names.insert(wires[pip.getWire0()]);
-                wire_names.insert(wires[pip.getWire1()]);
+                auto wire0 = tile_wires[pip.getWire0()];
+                auto wire1 = tile_wires[pip.getWire1()];
+
+                if (wire_map[wire0] == Device::WireCategory::GENERAL)
+                    wire_names.insert(wire0);
+
+                if (wire_map[wire1] == Device::WireCategory::GENERAL)
+                    wire_names.insert(wire1);
             }
         }
 
-        // FIXME: have only one segment type for the time being, so that
-        //        the RR graph generation is correct.
-        //        This can be removed once the RR graph reader from the interchange
-        //        device is ready and functional.
-        size_t num_seg = 1; //wire_names.size();
+        int num_seg = wire_names.size() + 1;
 
         arch_->Segments.resize(num_seg);
-        size_t index = 0;
+
+        size_t index = 1;
+        add_segment_with_default_values(arch_->Segments[0], std::string("__generic__"));
         for (auto i : wire_names) {
-            if (index >= num_seg) break;
-
-            // Use default values as we will populate rr_graph with correct values
-            // This segments are just declaration of future use
-            arch_->Segments[index].name = str(i);
-            arch_->Segments[index].length = 1;
-            arch_->Segments[index].frequency = 1;
-            arch_->Segments[index].Rmetal = 1e-12;
-            arch_->Segments[index].Cmetal = 1e-12;
-            arch_->Segments[index].parallel_axis = BOTH_AXIS;
-
-            // TODO: Only bi-directional segments are created, but it the interchange format
-            //       has directionality information on PIPs, which may be used to infer the
-            //       segments' directonality.
-            arch_->Segments[index].directionality = BI_DIRECTIONAL;
-            arch_->Segments[index].arch_wire_switch = 1;
-            arch_->Segments[index].arch_opin_switch = 1;
-            arch_->Segments[index].cb.resize(1);
-            arch_->Segments[index].cb[0] = true;
-            arch_->Segments[index].sb.resize(2);
-            arch_->Segments[index].sb[0] = true;
-            arch_->Segments[index].sb[1] = true;
-            segment_name_to_segment_idx[str(i)] = index;
+            add_segment_with_default_values(arch_->Segments[index], str(i));
             ++index;
         }
     }

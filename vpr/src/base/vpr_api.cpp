@@ -69,6 +69,8 @@
 #include "cluster.h"
 #include "output_clustering.h"
 #include "vpr_constraints_reader.h"
+#include "tclcpp.h"
+#include "xdc_constraints.h"
 #include "place_constraints.h"
 #include "place_util.h"
 
@@ -343,8 +345,16 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     //Initialize vpr floorplanning constraints
     auto& filename_opts = vpr_setup->FileNameOpts;
-    if (!filename_opts.read_vpr_constraints_file.empty()) {
+    if (!filename_opts.read_vpr_constraints_file.empty())
         load_vpr_constraints_file(filename_opts.read_vpr_constraints_file.c_str());
+    if (filename_opts.read_xdc_constraints_files.size()) {
+        try {
+            load_xdc_constraints_files(filename_opts.read_xdc_constraints_files, *arch, atom_ctx.nlist);
+        } catch (const TCL_eErroneousTCL& e) {
+            vpr_throw(VPR_ERROR_XDC, e.filename.c_str(), e.line, e.message.c_str());
+        } catch (const TCL_eException& e) {
+            VPR_THROW(VPR_ERROR_OTHER, "Error loading XDC: %s\n", std::string(e).c_str());
+        }
     }
 
     fflush(stdout);
@@ -1402,6 +1412,9 @@ void vpr_print_error(const VprError& vpr_error) {
                 break;
             case VPR_ERROR_SDC:
                 error_type = "SDC file";
+                break;
+            case VPR_ERROR_XDC:
+                error_type = "XDC file";
                 break;
             case VPR_ERROR_NET_F:
                 error_type = "Netlist file";

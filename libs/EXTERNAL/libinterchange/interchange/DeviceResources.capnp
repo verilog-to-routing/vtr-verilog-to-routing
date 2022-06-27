@@ -59,9 +59,8 @@ annotation wireRef(*) :WireRef;
 using WireIdx = UInt32;
 
 struct WireTypeRef {
-    type  @0 :Ref.ReferenceType = parent;
+    type  @0 :Ref.ReferenceType = rootValue;
     field @1 :Text = "wireTypes";
-    depth @2 :Int32 = 1;
 }
 annotation wireTypeRef(*) :WireTypeRef;
 using WireTypeIdx = UInt32;
@@ -81,19 +80,15 @@ using TileTypeSiteTypeIdx = UInt32;
 using TileTypeSubTileIdx = UInt16;
 
 struct PIPTimingRef {
-  type  @0 :Ref.ReferenceType = parent;
-  field @1 :Text = "pipTimingList";
-  depth @2 :Int32 = 1;
-
+  type  @0 :Ref.ReferenceType = rootValue;
+  field @1 :Text = "pipTimings";
 }
 annotation pipTimingRef(*) :PIPTimingRef;
 using PipTimingIdx = UInt32;
 
 struct NodeTimingRef {
-  type  @0 :Ref.ReferenceType = parent;
-  field @1 :Text = "nodeTimingList";
-  depth @2 :Int32 = 1;
-
+  type  @0 :Ref.ReferenceType = rootValue;
+  field @1 :Text = "nodeTimings";
 }
 annotation nodeTimingRef(*) :NodeTimingRef;
 using NodeTimingIdx = UInt32;
@@ -632,7 +627,7 @@ struct Device {
   }
 
   struct PinDelay {
-    pin   @0 : BELPinIdx $belPinRef();
+    pin   @0 : BELPinIdx;
     union {
       noClock   @1 : Void;
       clockEdge @2 : ClockEdge;
