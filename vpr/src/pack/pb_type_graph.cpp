@@ -584,13 +584,13 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
         for (j = 0; j < num_input_pb_graph_node_sets; j++) {
             vtr::free(input_pb_graph_node_pins[j]);
         }
-        vtr::free(input_pb_graph_node_pins);
+        delete[](input_pb_graph_node_pins);
         for (j = 0; j < num_output_pb_graph_node_sets; j++) {
             vtr::free(output_pb_graph_node_pins[j]);
         }
-        vtr::free(output_pb_graph_node_pins);
-        vtr::free(num_input_pb_graph_node_pins);
-        vtr::free(num_output_pb_graph_node_pins);
+        delete[](output_pb_graph_node_pins);
+        delete[](num_input_pb_graph_node_pins);
+        delete[](num_output_pb_graph_node_pins);
     }
 }
 
@@ -647,9 +647,8 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                   "No matching '{' for '}' in port %s\n", port_string);
     }
 
-    pb_graph_pins = (t_pb_graph_pin***)vtr::calloc(*num_sets,
-                                                   sizeof(t_pb_graph_pin**));
-    *num_ptrs = (int*)vtr::calloc(*num_sets, sizeof(int));
+    pb_graph_pins = new t_pb_graph_pin**[*num_sets]{nullptr};
+    *num_ptrs = new int[*num_sets]{0};
 
     curr_set = 0;
     for (i = 0; i < num_tokens; i++) {
