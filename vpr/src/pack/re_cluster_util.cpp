@@ -35,6 +35,11 @@ static void fix_cluster_net_after_moving(const t_pack_molecule* molecule,
                                          const ClusterBlockId& old_clb,
                                          const ClusterBlockId& new_clb);
 
+static void rebuild_cluster_placemet_stats(const ClusterBlockId& clb_index,
+                                    const std::vector<AtomBlockId>& clb_atoms,
+                                    int type_idx,
+                                    int mode);
+
 /*****************  API functions ***********************/
 ClusterBlockId atom_to_cluster(const AtomBlockId& atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -46,18 +51,11 @@ std::vector<AtomBlockId> cluster_to_atoms(const ClusterBlockId& cluster) {
     return (cluster_lookup.atoms_in_cluster(cluster));
 }
 
-bool remove_mol_from_cluster(const t_pack_molecule* molecule,
+void remove_mol_from_cluster(const t_pack_molecule* molecule,
                              int molecule_size,
                              ClusterBlockId& old_clb,
-                             t_lb_router_data*& router_data,
-                             t_clustering_data& clustering_data,
-                             bool during_packing) {
+                             t_lb_router_data*& router_data) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-
-    t_pb* temp_pb = const_cast<t_pb*>(atom_ctx.lookup.atom_pb(molecule->atom_block_ids[0]));
-    t_pb* next_pb;
 
     //Determine the cluster ID
     old_clb = atom_to_cluster(molecule->atom_block_ids[molecule->root]);
@@ -72,30 +70,6 @@ bool remove_mol_from_cluster(const t_pack_molecule* molecule,
             remove_atom_from_target(router_data, molecule->atom_block_ids[i_atom]);
         }
     }
-
-    //check cluster legality
-    bool is_cluster_legal = check_cluster_legality(0, E_DETAILED_ROUTE_AT_END_ONLY, router_data);
-
-    if (is_cluster_legal) {
-        for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
-            if (molecule->atom_block_ids[i_atom]) {
-                revert_place_atom_block(molecule->atom_block_ids[i_atom], router_data);
-            }
-        }
-
-        cleanup_pb(cluster_ctx.clb_nlist.block_pb(old_clb));
-
-        if (during_packing) {
-            free_intra_lb_nets(clustering_data.intra_lb_routing[old_clb]);
-            clustering_data.intra_lb_routing[old_clb] = router_data->saved_lb_nets;
-            router_data->saved_lb_nets = nullptr;
-        } else {
-            cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
-            cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
-        }
-    }
-    //return true if succeeded
-    return (is_cluster_legal);
 }
 
 void commit_mol_move(const ClusterBlockId& old_clb,
@@ -133,6 +107,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                bool enable_pin_feasibility_filter,
                                ClusterBlockId clb_index,
                                bool during_packing,
+                               int verbosity,
                                t_clustering_data& clustering_data,
                                t_lb_router_data** router_data,
                                PartitionRegion& temp_cluster_pr) {
@@ -140,8 +115,6 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-
-    int verbosity = 0;
 
     /* Cluster's PartitionRegion is empty initially, meaning it has no floorplanning constraints */
     PartitionRegion empty_pr;
@@ -181,7 +154,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
 
     // If clustering succeeds, add it to the clb netlist
     if (pack_result == BLK_PASSED) {
-        VTR_LOGV(verbosity > 2, "\tPASSED_SEED: Block Type %s\n", type->name);
+        VTR_LOGV(verbosity > 4, "\tPASSED_SEED: Block Type %s\n", type->name);
         //Once clustering succeeds, add it to the clb netlist
         if (pb->name != nullptr) {
             free(pb->name);
@@ -222,6 +195,10 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
     t_ext_pin_util target_ext_pin_util = helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(new_clb)->name);
     t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(new_clb);
     t_pb* temp_pb = cluster_ctx.clb_nlist.block_pb(new_clb);
+
+
+    //re-build cluster placement stats
+    rebuild_cluster_placemet_stats(new_clb, new_clb_atoms, cluster_ctx.clb_nlist.block_type(new_clb)->index, cluster_ctx.clb_nlist.block_pb(new_clb)->mode);
 
     //re-build router_data structure for this cluster
     t_lb_router_data* router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb, new_clb_atoms);
@@ -612,8 +589,7 @@ static bool count_children_pbs(const t_pb* pb) {
     return false;
 }
 
-#if 1
-void rebuild_cluster_placemet_stats(const ClusterBlockId& clb_index,
+static void rebuild_cluster_placemet_stats(const ClusterBlockId& clb_index,
                                     const std::vector<AtomBlockId>& clb_atoms,
                                     int type_idx,
                                     int mode) {
@@ -643,4 +619,33 @@ void rebuild_cluster_placemet_stats(const ClusterBlockId& clb_index,
         }
     }
 }
-#endif
+
+bool is_cluster_legal(t_lb_router_data*& router_data) {
+    return (check_cluster_legality(0, E_DETAILED_ROUTE_AT_END_ONLY, router_data));
+}
+
+void commit_mol_removal(const t_pack_molecule* molecule,
+                        const int& molecule_size,
+                        const ClusterBlockId& old_clb,
+                        bool during_packing,
+                        t_lb_router_data*& router_data,
+                        t_clustering_data& clustering_data) {
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
+        if (molecule->atom_block_ids[i_atom]) {
+            revert_place_atom_block(molecule->atom_block_ids[i_atom], router_data);
+        }
+    }
+
+    cleanup_pb(cluster_ctx.clb_nlist.block_pb(old_clb));
+
+    if (during_packing) {
+        free_intra_lb_nets(clustering_data.intra_lb_routing[old_clb]);
+        clustering_data.intra_lb_routing[old_clb] = router_data->saved_lb_nets;
+        router_data->saved_lb_nets = nullptr;
+    } else {
+        cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
+        cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
+    }
+}

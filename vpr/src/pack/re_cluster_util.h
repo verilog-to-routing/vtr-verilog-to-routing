@@ -47,12 +47,10 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
  * It aborts the removal and returns false if the removal will make the old cluster 
  * illegal
  */
-bool remove_mol_from_cluster(const t_pack_molecule* molecule,
+void remove_mol_from_cluster(const t_pack_molecule* molecule,
                              int molecule_size,
                              ClusterBlockId& old_clb,
-                             t_lb_router_data*& router_data,
-                             t_clustering_data& clustering_data,
-                             bool during_packing);
+                             t_lb_router_data*& router_data);
 
 /**
  * @brief A function that starts a new cluster for one specific molecule
@@ -67,6 +65,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
                                bool enable_pin_feasibility_filter,
                                ClusterBlockId clb_index,
                                bool during_packing,
+                               int verbosity,
                                t_clustering_data& clustering_data,
                                t_lb_router_data** router_data,
                                PartitionRegion& temp_cluster_pr);
@@ -107,9 +106,13 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   bool during_packing,
                                   t_clustering_data& clustering_data);
 
-void rebuild_cluster_placemet_stats(const ClusterBlockId& clb_index,
-                                    const std::vector<AtomBlockId>& clb_atoms,
-                                    int type_idx,
-                                    int mode);
+bool is_cluster_legal(t_lb_router_data*& router_data);
+
+void commit_mol_removal(const t_pack_molecule* molecule,
+                        const int& molecule_size,
+                        const ClusterBlockId& old_clb,
+                        bool during_packing,
+                        t_lb_router_data*& router_data,
+                        t_clustering_data& clustering_data);
 
 #endif
