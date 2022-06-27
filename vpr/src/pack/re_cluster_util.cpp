@@ -49,8 +49,16 @@ std::vector<AtomBlockId> cluster_to_atoms(const ClusterBlockId& cluster) {
 bool remove_mol_from_cluster(const t_pack_molecule* molecule,
                              int molecule_size,
                              ClusterBlockId& old_clb,
-                             t_lb_router_data*& router_data) {
+                             t_lb_router_data*& router_data,
+                             t_clustering_data& clustering_data,
+                             bool during_packing) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    t_pb* temp_pb = const_cast<t_pb*>(atom_ctx.lookup.atom_pb(molecule->atom_block_ids[0]));
+    t_pb* next_pb;
+
     //Determine the cluster ID
     old_clb = atom_to_cluster(molecule->atom_block_ids[molecule->root]);
     std::vector<AtomBlockId> old_clb_atoms = cluster_to_atoms(old_clb);
@@ -74,53 +82,27 @@ bool remove_mol_from_cluster(const t_pack_molecule* molecule,
                 revert_place_atom_block(molecule->atom_block_ids[i_atom], router_data);
             }
         }
-    }
 
+        cleanup_pb(cluster_ctx.clb_nlist.block_pb(old_clb));
+
+        if (during_packing) {
+            free_intra_lb_nets(clustering_data.intra_lb_routing[old_clb]);
+            clustering_data.intra_lb_routing[old_clb] = router_data->saved_lb_nets;
+            router_data->saved_lb_nets = nullptr;
+        } else {
+            cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
+            cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
+        }
+    }
     //return true if succeeded
     return (is_cluster_legal);
 }
 
 void commit_mol_move(const ClusterBlockId& old_clb,
                      const ClusterBlockId& new_clb,
-                     std::vector<t_pb*>& mol_pbs,
-                     t_lb_router_data*& old_router_data,
-                     t_clustering_data& clustering_data,
                      bool during_packing,
                      bool new_clb_created) {
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.device();
-
-    for (auto old_atom_pb : mol_pbs) {
-        t_pb* temp = old_atom_pb;
-        t_pb* next = temp->parent_pb;
-        //char* atom_name = vtr::strdup(temp->name);
-        bool has_more_children;
-
-        //delete atom pb
-        cleanup_pb(temp);
-
-        has_more_children = count_children_pbs(next);
-        //keep deleting the parent pbs if they were created only for the removed atom
-        while (!has_more_children) {
-            temp = next;
-            next = next->parent_pb;
-            cleanup_pb(temp);
-            has_more_children = count_children_pbs(next);
-        }
-    }
-
-    cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
-    cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(old_router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
-
-    if (during_packing) {
-        free_intra_lb_nets(clustering_data.intra_lb_routing[old_clb]);
-        //delete clustering_data.intra_lb_routing[old_clb];
-        clustering_data.intra_lb_routing[old_clb] = old_router_data->saved_lb_nets;
-        old_router_data->saved_lb_nets = nullptr;
-    }
-
-    free_router_data(old_router_data);
-    old_router_data = nullptr;
 
     if (!during_packing && new_clb_created) {
         int imacro;
@@ -239,6 +221,7 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
     e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
     t_ext_pin_util target_ext_pin_util = helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(new_clb)->name);
     t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(new_clb);
+    t_pb* temp_pb = cluster_ctx.clb_nlist.block_pb(new_clb);
 
     //re-build router_data structure for this cluster
     t_lb_router_data* router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb, new_clb_atoms);
@@ -246,14 +229,15 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
     pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[block_type->index]),
                                     molecule,
                                     helper_ctx.primitives_list,
-                                    cluster_ctx.clb_nlist.block_pb(new_clb),
+                                    temp_pb,
                                     helper_ctx.num_models,
                                     helper_ctx.max_cluster_size,
                                     new_clb,
                                     E_DETAILED_ROUTE_FOR_EACH_ATOM,
                                     router_data,
                                     0,
-                                    helper_ctx.enable_pin_feasibility_filter,
+                                    //helper_ctx.enable_pin_feasibility_filter,
+                                    false,
                                     helper_ctx.feasible_block_array_size,
                                     target_ext_pin_util,
                                     temp_cluster_pr);
@@ -285,6 +269,40 @@ void fix_clustered_netlist(t_pack_molecule* molecule,
     fix_cluster_net_after_moving(molecule, molecule_size, old_clb, new_clb);
 }
 
+void revert_mol_move(const ClusterBlockId& old_clb,
+                     t_pack_molecule* molecule,
+                     t_lb_router_data*& old_router_data,
+                     bool during_packing,
+                     t_clustering_data& clustering_data) {
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+
+    PartitionRegion temp_cluster_pr_original;
+    e_block_pack_status pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(old_clb)->index]),
+                                                        molecule,
+                                                        helper_ctx.primitives_list,
+                                                        cluster_ctx.clb_nlist.block_pb(old_clb),
+                                                        helper_ctx.num_models,
+                                                        helper_ctx.max_cluster_size,
+                                                        old_clb,
+                                                        E_DETAILED_ROUTE_FOR_EACH_ATOM,
+                                                        old_router_data,
+                                                        0,
+                                                        helper_ctx.enable_pin_feasibility_filter,
+                                                        helper_ctx.feasible_block_array_size,
+                                                        helper_ctx.target_external_pin_util.get_pin_util(cluster_ctx.clb_nlist.block_type(old_clb)->name),
+                                                        temp_cluster_pr_original);
+
+    VTR_ASSERT(pack_result == BLK_PASSED);
+    if (during_packing) {
+        free_intra_lb_nets(clustering_data.intra_lb_routing[old_clb]);
+        clustering_data.intra_lb_routing[old_clb] = old_router_data->saved_lb_nets;
+        old_router_data->saved_lb_nets = nullptr;
+    } else {
+        cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
+        cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(old_router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
+    }
+}
 /*******************************************/
 /************ static functions *************/
 /*******************************************/
@@ -593,3 +611,36 @@ static bool count_children_pbs(const t_pb* pb) {
     }
     return false;
 }
+
+#if 1
+void rebuild_cluster_placemet_stats(const ClusterBlockId& clb_index,
+                                    const std::vector<AtomBlockId>& clb_atoms,
+                                    int type_idx,
+                                    int mode) {
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    t_cluster_placement_stats* cluster_placement_stats = &(helper_ctx.cluster_placement_stats[type_idx]);
+
+    reset_cluster_placement_stats(cluster_placement_stats);
+    set_mode_cluster_placement_stats(cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node, mode);
+
+    std::set<t_pb_graph_node*> list_of_pb_atom_nodes;
+    t_cluster_placement_primitive* cur_cluster_placement_primitive;
+
+    for (auto& atom_blk : clb_atoms) {
+        list_of_pb_atom_nodes.insert(atom_ctx.lookup.atom_pb(atom_blk)->pb_graph_node);
+    }
+
+    for (int i = 0; i < cluster_placement_stats->num_pb_types; i++) {
+        cur_cluster_placement_primitive = cluster_placement_stats->valid_primitives[i]->next_primitive;
+        while (cur_cluster_placement_primitive != nullptr) {
+            if (list_of_pb_atom_nodes.find(cur_cluster_placement_primitive->pb_graph_node) != list_of_pb_atom_nodes.end()) {
+                cur_cluster_placement_primitive->valid = false;
+            }
+            cur_cluster_placement_primitive = cur_cluster_placement_primitive->next_primitive;
+        }
+    }
+}
+#endif
