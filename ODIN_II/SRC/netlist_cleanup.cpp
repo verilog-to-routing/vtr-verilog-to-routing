@@ -321,6 +321,6 @@ void remove_unused_logic(netlist_t* netlist) {
     mark_output_dependencies(netlist);
     identify_unused_nodes(netlist);
     remove_unused_nodes(&useless_nodes);
-    report_removed_nodes(num_removed_nodes);
+    if (global_args.all_warnings) report_removed_nodes(num_removed_nodes);
     calculate_addsub_statistics(&addsub_nodes);
 }

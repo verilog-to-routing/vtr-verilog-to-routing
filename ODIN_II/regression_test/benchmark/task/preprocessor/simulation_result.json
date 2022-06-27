@@ -169,10 +169,10 @@
         "generated_blif": "ifdef_undefined_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Simulation produced fewer than 2 vectors."
+            "[SIMULATION] Simulation produced fewer than 2 vectors."
         ]
     },
     "preprocessor/ifndef_defined/no_arch": {
@@ -180,10 +180,10 @@
         "generated_blif": "ifndef_defined_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Simulation produced fewer than 2 vectors."
+            "[SIMULATION] Simulation produced fewer than 2 vectors."
         ]
     },
     "preprocessor/undef/no_arch": {
@@ -221,12 +221,12 @@
         "generated_blif": "nested_ifdef_alldef_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 0 mismatch:",
-            "[OUTPUT_BLIF] Vector 1 mismatch:",
-            "[OUTPUT_BLIF] Vector 2 mismatch:"
+            "[SIMULATION] Vector 0 mismatch:",
+            "[SIMULATION] Vector 1 mismatch:",
+            "[SIMULATION] Vector 2 mismatch:"
         ]
     },
     "preprocessor/nested_ifdef_middef/no_arch": {
@@ -234,12 +234,12 @@
         "generated_blif": "nested_ifdef_middef_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 0 mismatch:",
-            "[OUTPUT_BLIF] Vector 1 mismatch:",
-            "[OUTPUT_BLIF] Vector 2 mismatch:"
+            "[SIMULATION] Vector 0 mismatch:",
+            "[SIMULATION] Vector 1 mismatch:",
+            "[SIMULATION] Vector 2 mismatch:"
         ]
     },
     "preprocessor/nested_ifdef_nonedef/no_arch": {
@@ -261,12 +261,12 @@
         "generated_blif": "nested_ifdef_outsidedef_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 0 mismatch:",
-            "[OUTPUT_BLIF] Vector 1 mismatch:",
-            "[OUTPUT_BLIF] Vector 2 mismatch:"
+            "[SIMULATION] Vector 0 mismatch:",
+            "[SIMULATION] Vector 1 mismatch:",
+            "[SIMULATION] Vector 2 mismatch:"
         ]
     },
     "preprocessor/nested_ifdef_twodef/no_arch": {
@@ -274,12 +274,12 @@
         "generated_blif": "nested_ifdef_twodef_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 0 mismatch:",
-            "[OUTPUT_BLIF] Vector 1 mismatch:",
-            "[OUTPUT_BLIF] Vector 2 mismatch:"
+            "[SIMULATION] Vector 0 mismatch:",
+            "[SIMULATION] Vector 1 mismatch:",
+            "[SIMULATION] Vector 2 mismatch:"
         ]
     },
     "DEFAULT": {
