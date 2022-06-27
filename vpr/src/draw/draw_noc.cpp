@@ -363,7 +363,7 @@ NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2
     // get the dot product of the two connecting line
     double dot_product_of_link_and_horizontal_line = (x_coord_end - x_coord_start) * (x_coord_horziontal_end - x_coord_horizontal_start) + (y_coord_end - y_coord_start) * (y_coord_horizontal_end - y_coord_horizontal_start);
     // calculate the angle
-    double angle = acos(dot_product_of_link_and_horizontal_line /(link_magnitude * HORIZONTAL_LINE_LENGTH));
+    double angle = acos(dot_product_of_link_and_horizontal_line / (link_magnitude * HORIZONTAL_LINE_LENGTH));
 
     // the angle is in the first or fourth quandrant of the unit circle
     if ((angle > 0) && (angle < (PI_RADIAN / 2))) {

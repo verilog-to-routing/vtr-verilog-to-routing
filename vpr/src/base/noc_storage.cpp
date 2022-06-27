@@ -1,7 +1,6 @@
 
 #include "noc_storage.h"
 
-
 NocStorage::NocStorage() {
     clear_noc();
 }
@@ -79,17 +78,17 @@ void NocStorage::add_link(NocRouterId source, NocRouterId sink) {
     return;
 }
 
-void NocStorage::set_noc_link_bandwidth(double link_bandwidth){
+void NocStorage::set_noc_link_bandwidth(double link_bandwidth) {
     noc_link_bandwidth = link_bandwidth;
     return;
 }
 
-void NocStorage::set_noc_link_latency(double link_latency){
+void NocStorage::set_noc_link_latency(double link_latency) {
     noc_link_latency = link_latency;
     return;
 }
 
-void NocStorage::set_noc_router_latency(double router_latency){
+void NocStorage::set_noc_router_latency(double router_latency) {
     noc_router_latency = router_latency;
     return;
 }
@@ -148,7 +147,6 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
 }
 
 void NocStorage::echo_noc(char* file_name) const {
-
     FILE* fp;
     fp = vtr::fopen(file_name, "w");
 
@@ -184,10 +182,9 @@ void NocStorage::echo_noc(char* file_name) const {
 
         // go through the outgoing links of the current router and print the connecting router
         for (auto link_id = router_connections.begin(); link_id != router_connections.end(); link_id++) {
-
             const NocRouterId connecting_router_id = get_single_noc_link(*link_id).get_sink_router();
-        
-            fprintf(fp, " %d",  get_single_noc_router(connecting_router_id).get_router_user_id());
+
+            fprintf(fp, " %d", get_single_noc_router(connecting_router_id).get_router_user_id());
         }
 
         fprintf(fp, "\n\n");
@@ -196,5 +193,4 @@ void NocStorage::echo_noc(char* file_name) const {
     fclose(fp);
 
     return;
-
 }

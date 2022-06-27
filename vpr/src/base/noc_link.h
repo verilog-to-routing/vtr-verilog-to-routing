@@ -43,10 +43,9 @@
 
 class NocLink {
   private:
-
     // the two routers that are connected by this link
     NocRouterId source_router; /*!< The router which has this link as an outgoing edge*/
-    NocRouterId sink_router; /*!< The router which uses this link as an incoming edge*/
+    NocRouterId sink_router;   /*!< The router which uses this link as an incoming edge*/
 
     double bandwidth_usage; /*!< Represents the bandwidth of the data being transmitted on the link. Units in bps*/
 

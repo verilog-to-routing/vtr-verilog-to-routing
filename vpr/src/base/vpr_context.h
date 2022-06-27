@@ -427,7 +427,6 @@ struct NocContext : public Context {
      * The NoC model is created once from the architecture file description. 
      */
     NocStorage noc_model;
-
 };
 
 /**

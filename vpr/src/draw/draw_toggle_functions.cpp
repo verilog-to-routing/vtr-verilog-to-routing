@@ -378,8 +378,7 @@ void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, 
     application.refresh_drawing();
 }
 
-void toggle_noc_display(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/)
-{
+void toggle_noc_display(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     /* this is the callback function for runtime created toggle_noc_display button
      * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();

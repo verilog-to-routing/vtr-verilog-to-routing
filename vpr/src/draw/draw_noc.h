@@ -212,7 +212,6 @@ void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>
  */
 NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2d link_end_point);
 
-
 /**
  * @brief Given the starting and end coordinates of a line that represents a
  *        NoC link, the line shifted to a new set of coordinates based on its

@@ -9,7 +9,6 @@
 #include "vtr_math.h"
 #include "echo_files.h"
 
-
 void setup_noc(const t_arch& arch) {
     // variable to store all the noc router tiles within the FPGA device
     // physical routers
@@ -119,7 +118,7 @@ void generate_noc(const t_arch& arch, NocContext& noc_ctx, std::vector<t_noc_rou
 }
 
 void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::vector<t_noc_router_tile_position>& noc_router_tiles) {
-    // keep track of the shortest distance between a user described router (noc description in the arch file) and a physical router on the FPGA 
+    // keep track of the shortest distance between a user described router (noc description in the arch file) and a physical router on the FPGA
     double shortest_distance;
     double curr_calculated_distance;
     // stores the index of a physical router within the noc_router_tiles that is closest to a given user described router
@@ -140,7 +139,7 @@ void create_noc_routers(const t_noc_inf& noc_info, NocStorage* noc_model, std::v
     int error_case_physical_router_index_1;
     int error_case_physical_router_index_2;
 
-    // keep track of the router assignments (store the user router id that was assigned to each physical router tile) 
+    // keep track of the router assignments (store the user router id that was assigned to each physical router tile)
     // this is used in error checking, after determining the closest physical router for a user described router in the arch file, the datastructure below can be used to check if that physical router was already assigned previously
     std::vector<int> router_assignments;
     router_assignments.resize(noc_router_tiles.size(), PHYSICAL_ROUTER_NOT_ASSIGNED);
@@ -245,4 +244,3 @@ void create_noc_links(const t_noc_inf* noc_info, NocStorage* noc_model) {
 
     return;
 }
-

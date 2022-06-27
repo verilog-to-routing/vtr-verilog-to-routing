@@ -4957,9 +4957,9 @@ static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pu
         }
 
         // make sure that the current router isn't connected to itself
-        if (router_id == converted_connection){
+        if (router_id == converted_connection) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
-                          "The router with id:%d was added to its own connection list. A router cannot connect to itself.", router_id);
+                           "The router with id:%d was added to its own connection list. A router cannot connect to itself.", router_id);
         }
 
         // if we are here then a legal router id was supplied, so store it

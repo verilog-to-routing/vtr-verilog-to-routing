@@ -52,7 +52,6 @@ constexpr NocLinkId INVALID_LINK_ID(-1);
 
 class NocStorage {
   private:
- 
     vtr::vector<NocRouterId, NocRouter> router_storage; /*<! Contains all the routers in the NoC*/
 
     // list of outgoing links for each router
@@ -64,8 +63,7 @@ class NocStorage {
      */
     vtr::vector<NocRouterId, std::vector<NocLinkId>> router_link_list;
 
-    vtr::vector<NocLinkId, NocLink> link_storage;/*<! Contains all the links in the NoC*/
-
+    vtr::vector<NocLinkId, NocLink> link_storage; /*<! Contains all the links in the NoC*/
 
     /**
      * @brief The user provides an ID for the router when describing the NoC
@@ -172,9 +170,8 @@ class NocStorage {
 
     double get_noc_router_latency(void) const;
 
-
     // getters for  routers
-    
+
     /**
      * @brief Given a unique router identifier, get the corresponding router
      * within the NoC. The router cannot be modified, so the intended use

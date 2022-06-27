@@ -27,7 +27,7 @@ ClusterBlockId NocRouter::get_router_block_ref(void) const {
 }
 
 // setters
-void NocRouter::set_router_block_ref(ClusterBlockId router_block_ref_id){
+void NocRouter::set_router_block_ref(ClusterBlockId router_block_ref_id) {
     router_block_ref = router_block_ref_id;
     return;
 }

@@ -53,7 +53,6 @@ TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
         converted_id = (NocRouterId)router_number;
         NocRouter router_to_verify = test_noc.get_single_noc_router(converted_id);
 
-
         // compare all the router properties
         REQUIRE(golden_set[router_number].get_router_user_id() == router_to_verify.get_router_user_id());
 
@@ -163,20 +162,18 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 
     // verify that the links were added properly to the NoC
     for (int link_number = 0; link_number < total_num_of_links; link_number++) {
-        
         // converting current link to the index used by the NocStorage class
         link_id = (NocLinkId)link_number;
         // using the link index, get it from the NoC
         NocLink current_link_to_test = test_noc.get_single_noc_link(link_id);
 
         // now get the source and sink routers of the test link
-        NocRouter test_link_source_router =  test_noc.get_single_noc_router(current_link_to_test.get_source_router());
-        NocRouter test_link_sink_router =  test_noc.get_single_noc_router(current_link_to_test.get_sink_router());
+        NocRouter test_link_source_router = test_noc.get_single_noc_router(current_link_to_test.get_source_router());
+        NocRouter test_link_sink_router = test_noc.get_single_noc_router(current_link_to_test.get_sink_router());
 
         // now get the source and sink routers of the golde link
         NocRouter golden_link_source_router = test_noc.get_single_noc_router(golden_set[link_number].get_source_router());
         NocRouter golden_link_sink_router = test_noc.get_single_noc_router(golden_set[link_number].get_sink_router());
-
 
         // verify the test link by checking that the source and sink routers match the golden reference link
         REQUIRE(golden_link_source_router.get_router_user_id() == test_link_source_router.get_router_user_id());

@@ -683,15 +683,12 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
         router_connection = noc_info.router_list[router_id - 1].connection_list.begin();
 
         for (auto noc_link = noc_model.get_noc_router_connections(current_source_router_id).begin(); noc_link != noc_model.get_noc_router_connections(current_source_router_id).begin(); noc_link++) {
-            
             // get the connecting link
             NocLink connecting_link = noc_model.get_single_noc_link(*noc_link);
-            
+
             // get the destination router
             current_destination_router_id = connecting_link.get_sink_router();
             NocRouter current_destination_router = noc_model.get_single_noc_router(current_destination_router_id);
-
-
 
             REQUIRE((current_destination_router.get_router_user_id()) == (*router_connection));
 
