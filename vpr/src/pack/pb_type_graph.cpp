@@ -125,7 +125,8 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 
     for (auto& type : device_ctx.logical_block_types) {
         if (type.pb_type) {
-            type.pb_graph_head = (t_pb_graph_node*)vtr::calloc(1, sizeof(t_pb_graph_node));
+            type.pb_graph_head = new t_pb_graph_node;
+            *type.pb_graph_head = t_pb_graph_node();
             int pin_count_in_cluster = 0;
             alloc_and_load_pb_graph(type.pb_graph_head, nullptr,
                                     type.pb_type, 0, load_power_structures, pin_count_in_cluster);
@@ -219,13 +220,20 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
         }
     }
 
-    pb_graph_node->num_input_pins = (int*)vtr::calloc(pb_graph_node->num_input_ports, sizeof(int));
-    pb_graph_node->num_output_pins = (int*)vtr::calloc(pb_graph_node->num_output_ports, sizeof(int));
-    pb_graph_node->num_clock_pins = (int*)vtr::calloc(pb_graph_node->num_clock_ports, sizeof(int));
+    if (pb_graph_node->num_input_ports > 0){
+    	pb_graph_node->num_input_pins = new int[pb_graph_node->num_input_ports]{0};
+    	pb_graph_node->input_pins = new t_pb_graph_pin*[pb_graph_node->num_input_ports]{nullptr};
+    }
 
-    pb_graph_node->input_pins = (t_pb_graph_pin**)vtr::calloc(pb_graph_node->num_input_ports, sizeof(t_pb_graph_pin*));
-    pb_graph_node->output_pins = (t_pb_graph_pin**)vtr::calloc(pb_graph_node->num_output_ports, sizeof(t_pb_graph_pin*));
-    pb_graph_node->clock_pins = (t_pb_graph_pin**)vtr::calloc(pb_graph_node->num_clock_ports, sizeof(t_pb_graph_pin*));
+    if (pb_graph_node->num_output_ports > 0){
+    	pb_graph_node->num_output_pins = new int[pb_graph_node->num_output_ports]{0};
+    	pb_graph_node->output_pins = new t_pb_graph_pin*[pb_graph_node->num_output_ports]{nullptr};
+    }
+
+    if (pb_graph_node->num_clock_ports > 0){
+    	pb_graph_node->num_clock_pins = new int [pb_graph_node->num_clock_ports]{0};
+    	pb_graph_node->clock_pins = new t_pb_graph_pin*[pb_graph_node->num_clock_ports]{nullptr};
+    }
 
     i_input = i_output = i_clockport = 0;
     for (i = 0; i < pb_type->num_ports; i++) {
