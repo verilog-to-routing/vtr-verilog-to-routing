@@ -57,6 +57,7 @@
 #include "manual_moves.h"
 #include "move_utils.h"
 #include "ui_setup.h"
+#include "buttons.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
@@ -309,8 +310,7 @@ static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
     basic_button_setup(app);
     net_button_setup(app);
     block_button_setup(app);
-    button_for_toggle_rr();
-    button_for_toggle_congestion();
+    routing_button_setup(app);
     button_for_toggle_congestion_cost();
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
@@ -349,8 +349,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     basic_button_setup(app);
     net_button_setup(app);
     block_button_setup(app);
-    button_for_toggle_rr();
-    button_for_toggle_congestion();
+    routing_button_setup(app);
     button_for_toggle_congestion_cost();
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();

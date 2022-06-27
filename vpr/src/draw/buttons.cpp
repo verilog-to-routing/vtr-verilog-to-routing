@@ -61,113 +61,84 @@ void button_for_toggle_crit_path() {
                              toggle_crit_path_widget);
 }
 
+void button_for_toggle_congestion_cost(){};
+
 void button_for_toggle_rr() {
-    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
-    GObject* main_window_grid = application.get_object("InnerGrid");
+    // GObject* main_window = application.get_object(application.get_main_window_id().c_str());
+    // GObject* main_window_grid = application.get_object("InnerGrid");
 
-    GtkWidget* toggle_rr_widget = gtk_combo_box_text_new();
-    GtkWidget* toggle_rr_label = gtk_label_new("Toggle RR:");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "None");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "Nodes");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "Nodes SBox");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "Nodes SBox CBox");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "Nodes SBox CBox Internal");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "All");
-    gtk_combo_box_set_active((GtkComboBox*)toggle_rr_widget, 0); // default set to None which has an index 0
-    gtk_widget_set_name(toggle_rr_widget, "toggle_rr");
+    // GtkWidget* toggle_rr_widget = gtk_combo_box_text_new();
+    // GtkWidget* toggle_rr_label = gtk_label_new("Toggle RR:");
+    // gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "None");
+    // gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "Nodes");
+    // gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "Nodes SBox");
+    // gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "Nodes SBox CBox");
+    // gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "Nodes SBox CBox Internal");
+    // gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "All");
+    // gtk_combo_box_set_active((GtkComboBox*)toggle_rr_widget, 0); // default set to None which has an index 0
+    // gtk_widget_set_name(toggle_rr_widget, "toggle_rr");
 
-    //attach to the grid
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_rr_label, label_left_start_col, button_row++, box_width, box_height);
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_rr_widget, box_left_start_col, button_row++, box_width, box_height);
+    // //attach to the grid
+    // gtk_grid_attach((GtkGrid*)main_window_grid, toggle_rr_label, label_left_start_col, button_row++, box_width, box_height);
+    // gtk_grid_attach((GtkGrid*)main_window_grid, toggle_rr_widget, box_left_start_col, button_row++, box_width, box_height);
 
-    //show newly added contents
-    gtk_widget_show_all((GtkWidget*)main_window);
+    // //show newly added contents
+    // gtk_widget_show_all((GtkWidget*)main_window);
 
-    //connect signals
-    g_signal_connect_swapped(GTK_COMBO_BOX_TEXT(toggle_rr_widget),
-                             "changed",
-                             G_CALLBACK(toggle_rr),
-                             toggle_rr_widget);
+    // //connect signals
+    // g_signal_connect_swapped(GTK_COMBO_BOX_TEXT(toggle_rr_widget),
+    //                          "changed",
+    //                          G_CALLBACK(toggle_rr),
+    //                          toggle_rr_widget);
 }
 
 void button_for_toggle_congestion() {
-    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
-    GObject* main_window_grid = application.get_object("InnerGrid");
+    // GObject* main_window = application.get_object(application.get_main_window_id().c_str());
+    // GObject* main_window_grid = application.get_object("InnerGrid");
 
-    GtkWidget* toggle_congestion_widget = gtk_combo_box_text_new();
-    GtkWidget* toggle_congestion_label = gtk_label_new("Toggle Congestion:");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_congestion_widget), "None");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_congestion_widget), "Congested");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_congestion_widget), "Congested with Nets");
-    gtk_combo_box_set_active((GtkComboBox*)toggle_congestion_widget, 0); // default set to None which has an index 0
-    gtk_widget_set_name(toggle_congestion_widget, "toggle_congestion");
+    // GtkWidget* toggle_congestion_widget = gtk_combo_box_text_new();
+    // GtkWidget* toggle_congestion_label = gtk_label_new("Toggle Congestion:");
+    // gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_congestion_widget), "None");
+    // gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_congestion_widget), "Congested");
+    // gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_congestion_widget), "Congested with Nets");
+    // gtk_combo_box_set_active((GtkComboBox*)toggle_congestion_widget, 0); // default set to None which has an index 0
+    // gtk_widget_set_name(toggle_congestion_widget, "toggle_congestion");
 
-    //attach to the grid
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_congestion_label, label_left_start_col, button_row++, box_width, box_height);
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_congestion_widget, box_left_start_col, button_row++, box_width, box_height);
+    // //attach to the grid
+    // gtk_grid_attach((GtkGrid*)main_window_grid, toggle_congestion_label, label_left_start_col, button_row++, box_width, box_height);
+    // gtk_grid_attach((GtkGrid*)main_window_grid, toggle_congestion_widget, box_left_start_col, button_row++, box_width, box_height);
 
-    //show newly added contents
-    gtk_widget_show_all((GtkWidget*)main_window);
+    // //show newly added contents
+    // gtk_widget_show_all((GtkWidget*)main_window);
 
-    //connect signals
-    g_signal_connect_swapped(GTK_COMBO_BOX_TEXT(toggle_congestion_widget),
-                             "changed",
-                             G_CALLBACK(toggle_congestion),
-                             toggle_congestion_widget);
-}
-
-void button_for_toggle_congestion_cost() {
-    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
-    GObject* main_window_grid = application.get_object("InnerGrid");
-
-    GtkWidget* toggle_routing_congestion_cost_widget = gtk_combo_box_text_new();
-    GtkWidget* toggle_routing_congestion_cost_label = gtk_label_new("Toggle Routing Cong Cost:");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost_widget), "None");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost_widget), "Total Routing Costs");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost_widget), "Log Total Routing Costs");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost_widget), "Acc Routing Costs");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost_widget), "Log Acc Routing Costs");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost_widget), "Pres Routing Costs");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost_widget), "Log Pres Routing Costs");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost_widget), "Base Routing Costs");
-    gtk_combo_box_set_active((GtkComboBox*)toggle_routing_congestion_cost_widget, 0); // default set to None which has an index 0
-    gtk_widget_set_name(toggle_routing_congestion_cost_widget, "toggle_routing_congestion_cost");
-
-    //attach to the grid
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_routing_congestion_cost_label, label_left_start_col, button_row++, box_width, box_height);
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_routing_congestion_cost_widget, box_left_start_col, button_row++, box_width, box_height);
-
-    //show newly added contents
-    gtk_widget_show_all((GtkWidget*)main_window);
-
-    //connect signals
-    g_signal_connect_swapped(GTK_COMBO_BOX_TEXT(toggle_routing_congestion_cost_widget),
-                             "changed",
-                             G_CALLBACK(toggle_routing_congestion_cost),
-                             toggle_routing_congestion_cost_widget);
+    // //connect signals
+    // g_signal_connect_swapped(GTK_COMBO_BOX_TEXT(toggle_congestion_widget),
+    //                          "changed",
+    //                          G_CALLBACK(toggle_congestion),
+    //                          toggle_congestion_widget);
 }
 
 void button_for_toggle_routing_bounding_box() {
-    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
-    GObject* main_window_grid = application.get_object("InnerGrid");
-    auto& route_ctx = g_vpr_ctx.routing();
+//     GObject* main_window = application.get_object(application.get_main_window_id().c_str());
+//     GObject* main_window_grid = application.get_object("InnerGrid");
+//     auto& route_ctx = g_vpr_ctx.routing();
 
-    GtkWidget* toggle_routing_bounding_box_widget = gtk_spin_button_new_with_range(-1., (route_ctx.route_bb.size() - 1), 1.);
-    GtkWidget* toggle_routing_bounding_box_label = gtk_label_new("Toggle Routing Bounding Box:");
-    gtk_widget_set_name(toggle_routing_bounding_box_widget, "toggle_routing_bounding_box");
+//     GtkWidget* toggle_routing_bounding_box_widget = gtk_spin_button_new_with_range(-1., (route_ctx.route_bb.size() - 1), 1.);
+//     GtkWidget* toggle_routing_bounding_box_label = gtk_label_new("Toggle Routing Bounding Box:");
+//     gtk_widget_set_name(toggle_routing_bounding_box_widget, "toggle_routing_bounding_box");
 
-    //attach to the grid
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_routing_bounding_box_label, label_left_start_col, button_row++, box_width, box_height);
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_routing_bounding_box_widget, box_left_start_col, button_row++, box_width, box_height);
+//     //attach to the grid
+//     gtk_grid_attach((GtkGrid*)main_window_grid, toggle_routing_bounding_box_label, label_left_start_col, button_row++, box_width, box_height);
+//     gtk_grid_attach((GtkGrid*)main_window_grid, toggle_routing_bounding_box_widget, box_left_start_col, button_row++, box_width, box_height);
 
-    //show newly added contents
-    gtk_widget_show_all((GtkWidget*)main_window);
+//     //show newly added contents
+//     gtk_widget_show_all((GtkWidget*)main_window);
 
-    //connect signals
-    g_signal_connect_swapped((GtkSpinButton*)toggle_routing_bounding_box_widget,
-                             "value_changed",
-                             G_CALLBACK(toggle_routing_bounding_box),
-                             toggle_routing_bounding_box_widget);
+//     //connect signals
+//     g_signal_connect_swapped((GtkSpinButton*)toggle_routing_bounding_box_widget,
+//                              "value_changed",
+//                              G_CALLBACK(toggle_routing_bounding_box),
+//                              toggle_routing_bounding_box_widget);
 }
 
 void button_for_toggle_routing_util() {

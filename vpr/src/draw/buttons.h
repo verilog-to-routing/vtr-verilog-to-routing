@@ -11,8 +11,8 @@
 
 //BUTTONS.H
 
-
-void button_for_toggle_rr();
+void button_for_toggle_crit_path()
+;void button_for_toggle_rr();
 void button_for_toggle_congestion();
 void button_for_toggle_congestion_cost();
 void button_for_toggle_routing_bounding_box();

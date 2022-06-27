@@ -104,28 +104,32 @@ void block_button_setup(ezgl::application* app){
 }
 
 
-void routing_button_setup(ezgl::application* app, bool show_crit_path){
+void routing_button_setup(ezgl::application* app){
+    auto& route_ctx = g_vpr_ctx.routing();
     t_draw_state* draw_state = get_draw_state_vars();
 
     //Toggle RR
-    
+    GtkComboBoxText* toggle_rr_box = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRR"));
+    g_signal_connect(toggle_rr_box, "changed", G_CALLBACK(toggle_rr_cbk), app);
 
     //Toggle Congestion
+    GtkComboBoxText* toggle_congestion = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCongestion"));
+    g_signal_connect(toggle_congestion, "changed", G_CALLBACK(toggle_cong_cbk), app);
 
     //Toggle Congestion Cost
+    GtkComboBoxText* toggle_cong_cost = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCongestionCost"));
+    g_signal_connect(toggle_cong_cost, "changed", G_CALLBACK(toggle_cong_cost_cbk), app);
 
     //Toggle Routing BB
+    GtkSpinButton* toggle_routing_bbox = GTK_SPIN_BUTTON(app->get_object("ToggleRoutingBBox"));
+    g_signal_connect(toggle_routing_bbox, "value-changed", G_CALLBACK(toggle_routing_bbox_cbk), app);
+    gtk_spin_button_set_increments(toggle_routing_bbox, 1, 1);
+    gtk_spin_button_set_range(toggle_routing_bbox, -1., (double)(route_ctx.route_bb.size() - 1));
+    gtk_spin_button_set_value(toggle_routing_bbox, -1.);
     
     //Toggle Routing Util
 
     //Toggle Router Expansion Costs
-
-    //Toggle Crit Path
-    if(show_crit_path){
-
-    } else {
-        //Hide critical path label and selection
-    }
 }
 
 
