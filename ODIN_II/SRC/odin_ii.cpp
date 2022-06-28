@@ -147,7 +147,7 @@ static void optimization() {
         }
 
         if (block_memories_info.read_only_memory_list || block_memories_info.block_memory_list) {
-            /* Perform a hard block registration and splitting in width */
+            /* Perform a hard block registration and splitting in width for Yosys generated memory blocks */
             iterate_block_memories(syn_netlist);
             free_block_memories();
         }

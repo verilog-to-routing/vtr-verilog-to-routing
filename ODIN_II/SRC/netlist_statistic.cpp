@@ -12,14 +12,6 @@
 #include "odin_util.h"
 #include "vtr_memory.h"
 
-/**
- * The cutoff for the number of netlist nodes. 
- * Technically, Odin-II prints statistics for 
- * netlist nodes that the total number of them
- * is greater than this value. 
- */
-#define UNUSED_NODE_TYPE 0
-
 static void init(metric_t* m);
 static void print_stats(metric_t* m);
 static void copy(metric_t* dest, metric_t* src);
