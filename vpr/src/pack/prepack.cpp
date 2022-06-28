@@ -211,7 +211,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
                     if (!output_edge->pack_pattern_indices) {
-                        output_edge->pack_pattern_indices = (int*)vtr::malloc(output_edge->num_pack_patterns * sizeof(int));
+                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
                     }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
@@ -244,7 +244,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
                     if (!output_edge->pack_pattern_indices) {
-                        output_edge->pack_pattern_indices = (int*)vtr::malloc(output_edge->num_pack_patterns * sizeof(int));
+                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
                     }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
@@ -277,7 +277,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
                     if (output_edge->pack_pattern_indices == nullptr) {
-                        output_edge->pack_pattern_indices = (int*)vtr::malloc(output_edge->num_pack_patterns * sizeof(int));
+                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
                     }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
