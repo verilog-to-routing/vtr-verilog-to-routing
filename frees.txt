@@ -1,2 +1,0 @@
-Free pointer to 0x555fd26c47f0 in /home/mahjenni/Desktop/vtr-verilog-to-routing/libs/libvtrutil/src/vtr_memory.cpp at line 51
-
