@@ -2621,8 +2621,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "This should be on only when the FPGA device contains a NoC and the provided netlist connects to the NoC.")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
-<<<<<<< HEAD
-=======
     
     noc_grp.add_argument<std::string>(args.noc_flows_file, "--noc_flows_file")
         .help(
@@ -2630,7 +2628,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "This is required if the --noc option is turned on.")
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
->>>>>>> noc_traffic_flows_parser
 
     return parser;
 }
