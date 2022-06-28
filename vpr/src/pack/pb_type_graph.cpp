@@ -520,7 +520,7 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
         if (mode->num_interconnect > 0) {
             pb_graph_parent_node->interconnect_pins[mode->index] = new t_interconnect_pins[mode->num_interconnect];
         }
-        for (int i = 0; i < mode->num_interconnect; i++)
+        for (i = 0; i < mode->num_interconnect; i++)
             pb_graph_parent_node->interconnect_pins[mode->index][i] = t_interconnect_pins();
     }
 
@@ -645,8 +645,13 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                   "No matching '{' for '}' in port %s\n", port_string);
     }
 
-    pb_graph_pins = new t_pb_graph_pin** [*num_sets] { nullptr };
-    *num_ptrs = new int[*num_sets]{0};
+    pb_graph_pins = new t_pb_graph_pin** [*num_sets];
+    *num_ptrs = new int[*num_sets];
+    for (int i = 0 ; i < *num_sets; i ++){
+    	pb_graph_pins[i] = nullptr;
+    	(*num_ptrs)[i] = 0;
+    }
+
 
     curr_set = 0;
     for (i = 0; i < num_tokens; i++) {
@@ -908,8 +913,13 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
                       "# of pins for a particular data line of a mux must equal number of pins at output of mux\n");
         }
-        edges[i_inset].input_pins = new t_pb_graph_pin* [num_output_ptrs[0]] { nullptr };
-        edges[i_inset].output_pins = new t_pb_graph_pin* [num_output_ptrs[0]] { nullptr };
+        edges[i_inset].input_pins = new t_pb_graph_pin* [num_output_ptrs[0]];
+        edges[i_inset].output_pins = new t_pb_graph_pin* [num_output_ptrs[0]];
+        for (int i = 0 ; i < num_output_ptrs[0] ; i ++){
+        	 edges[i_inset].input_pins[i] = nullptr;
+        	 edges[i_inset].output_pins[i] = nullptr;
+        }
+
         edges[i_inset].num_input_pins = num_output_ptrs[0];
         edges[i_inset].num_output_pins = num_output_ptrs[0];
         for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {

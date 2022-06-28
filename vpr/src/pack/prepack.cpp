@@ -352,7 +352,10 @@ void free_list_of_pack_patterns(std::vector<t_pack_patterns>& list_of_pack_patte
 void free_pack_pattern(t_pack_patterns* pack_pattern) {
     if (pack_pattern) {
         int num_pack_pattern_blocks = pack_pattern->num_blocks;
-        t_pack_pattern_block** pattern_block_list = new t_pack_pattern_block* [num_pack_pattern_blocks] { nullptr };
+        t_pack_pattern_block** pattern_block_list = new t_pack_pattern_block* [num_pack_pattern_blocks];
+        for (int i = 0 ; i < num_pack_pattern_blocks ; i++)
+        	pattern_block_list[i] = nullptr;
+
         free(pack_pattern->name);
         delete[](pack_pattern->is_block_optional);
         free_pack_pattern_block(pack_pattern->root_block, pattern_block_list);
@@ -783,8 +786,9 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
 
-    if (num_packing_patterns > 0)
-        is_used = new bool[num_packing_patterns]{false};
+     is_used = new bool[num_packing_patterns];
+     for (int i = 0; i < num_packing_patterns; i++)
+    	 is_used[i] = false;
 
     cur_molecule = list_of_molecules_head = nullptr;
 
