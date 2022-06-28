@@ -349,7 +349,7 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
             if (pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs) {
                 for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
                     if (pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k]) {
-                        delete[](pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k]);
+                        vtr::free(pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k]);
                     }
                 }
                 delete[](pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs);
