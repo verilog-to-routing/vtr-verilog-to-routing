@@ -298,7 +298,7 @@ static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_desc
         if (type.pb_type) {
             if (type.pb_graph_head) {
                 free_pb_graph(type.pb_graph_head);
-                delete(type.pb_graph_head);
+                delete (type.pb_graph_head);
             }
         }
     }
@@ -322,10 +322,10 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
                 vtr::free(pb_graph_node->input_pins[i][j].pin_timing_del_max);
             if (pb_graph_node->input_pins[i][j].pin_timing_del_min)
                 vtr::free(pb_graph_node->input_pins[i][j].pin_timing_del_min);
-//            if (pb_graph_node->input_pins[i][j].input_edges)
-//                vtr::free(pb_graph_node->input_pins[i][j].input_edges);
-//            if (pb_graph_node->input_pins[i][j].output_edges)
-//                vtr::free(pb_graph_node->input_pins[i][j].output_edges);
+            //            if (pb_graph_node->input_pins[i][j].input_edges)
+            //                vtr::free(pb_graph_node->input_pins[i][j].input_edges);
+            //            if (pb_graph_node->input_pins[i][j].output_edges)
+            //                vtr::free(pb_graph_node->input_pins[i][j].output_edges);
             if (pb_graph_node->input_pins[i][j].parent_pin_class)
                 delete[](pb_graph_node->input_pins[i][j].parent_pin_class);
         }
@@ -339,10 +339,10 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
                 vtr::free(pb_graph_node->output_pins[i][j].pin_timing_del_max);
             if (pb_graph_node->output_pins[i][j].pin_timing_del_min)
                 vtr::free(pb_graph_node->output_pins[i][j].pin_timing_del_min);
-//            if (pb_graph_node->output_pins[i][j].input_edges)
-//                vtr::free(pb_graph_node->output_pins[i][j].input_edges);
-//            if (pb_graph_node->output_pins[i][j].output_edges)
-//                vtr::free(pb_graph_node->output_pins[i][j].output_edges);
+            //            if (pb_graph_node->output_pins[i][j].input_edges)
+            //                vtr::free(pb_graph_node->output_pins[i][j].input_edges);
+            //            if (pb_graph_node->output_pins[i][j].output_edges)
+            //                vtr::free(pb_graph_node->output_pins[i][j].output_edges);
             if (pb_graph_node->output_pins[i][j].parent_pin_class)
                 delete[](pb_graph_node->output_pins[i][j].parent_pin_class);
 
@@ -411,7 +411,7 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
         }
     }
     delete[](pb_graph_node->interconnect_pins);
-    delete(pb_graph_node->pb_node_power);
+    delete (pb_graph_node->pb_node_power);
 
     for (i = 0; i < pb_type->num_modes; i++) {
         for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {

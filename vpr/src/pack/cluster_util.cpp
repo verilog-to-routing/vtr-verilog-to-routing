@@ -515,7 +515,7 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
     unclustered_list_head_size = max_molecule_stats.num_used_ext_inputs + 1;
 
     for (int i = 0; i <= max_molecule_stats.num_used_ext_inputs; i++) {
-    	clustering_data.unclustered_list_head[i] = t_molecule_link();
+        clustering_data.unclustered_list_head[i] = t_molecule_link();
         clustering_data.unclustered_list_head[i].next = nullptr;
     }
 
@@ -577,8 +577,7 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
         }
         cur_molecule = cur_molecule->next;
     }
-    *primitives_list = new t_pb_graph_node*[max_molecule_size]{nullptr};
-
+    *primitives_list = new t_pb_graph_node* [max_molecule_size] { nullptr };
 }
 
 /*****************************************/
@@ -813,7 +812,7 @@ void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_size) {
     pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
     pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
     pb->pb_stats->num_feasible_blocks = NOT_VALID;
-    pb->pb_stats->feasible_blocks = new t_pack_molecule* [feasible_block_array_size];
+    pb->pb_stats->feasible_blocks = new t_pack_molecule*[feasible_block_array_size];
 
     pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 
