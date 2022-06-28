@@ -1235,9 +1235,9 @@ class t_pb_graph_pin {
   public:
     t_port* port = nullptr;
     int pin_number = 0;
-    std::vector<t_pb_graph_edge*> input_edges{nullptr}; /* [0..num_input_edges] */
+    std::vector<t_pb_graph_edge*> input_edges; /* [0..num_input_edges] */
     int num_input_edges = 0;
-    std::vector<t_pb_graph_edge*> output_edges{nullptr}; /* [0..num_output_edges] */
+    std::vector<t_pb_graph_edge*> output_edges; /* [0..num_output_edges] */
     int num_output_edges = 0;
 
     t_pb_graph_node* parent_node = nullptr;
