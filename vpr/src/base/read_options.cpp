@@ -2833,6 +2833,15 @@ bool verify_args(const t_options& args) {
                         args.router_lookahead_type.argument_name().c_str());
     }
 
+    /**
+     * @brief If the user provided the "--noc" command line option, then there
+     * must be a NoC in the FPGA and the netlist must include NoC routers.
+     * Therefore, the user must also provide a noc traffic flows file to
+     * describe the communication within the NoC. We ensure that a noc traffic
+     * flows file is provided when the "--noc" option is used. If it is not
+     * provided, we throw an error.
+     * 
+     */
     if (args.noc.provenance() == Provenance::SPECIFIED && args.noc_flows_file.provenance() != Provenance::SPECIFIED) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "--noc_flows_file option must be specified if --noc is turned on.\n");
