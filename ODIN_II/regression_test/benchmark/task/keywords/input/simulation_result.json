@@ -4,7 +4,7 @@
         "generated_blif": "multiple_declarations_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] More lines (8) than values (7)."
+            "[SIMULATION] More lines (8) than values (7)."
         ]
     },
     "DEFAULT": {

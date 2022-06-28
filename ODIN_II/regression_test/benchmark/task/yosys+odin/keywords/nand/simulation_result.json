@@ -49,10 +49,10 @@
         "generated_blif": "range_nand_ultra_wide_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Too few vectors in regression_test/benchmark/verilog/keywords/nand/range_nand_ultra_wide_yosys_output"
+            "[SIMULATION] Too few vectors in regression_test/benchmark/verilog/keywords/nand/range_nand_ultra_wide_yosys_output"
         ]
     },
     "nand/range_nand_wide/no_arch": {

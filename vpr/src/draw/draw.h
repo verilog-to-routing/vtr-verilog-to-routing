@@ -34,7 +34,8 @@ void init_draw_coords(float clb_width);
 void init_graphics_state(bool show_graphics_val,
                          int gr_automode_val,
                          enum e_route_type route_type,
-                         bool save_graphics, std::string graphics_commands,
+                         bool save_graphics,
+                         std::string graphics_commands,
                          bool is_flat);
 
 /* Allocates the structures needed to draw the placement and routing.*/
