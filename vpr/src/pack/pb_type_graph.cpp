@@ -302,8 +302,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 
     /* Power */
     if (load_power_structures) {
-        pb_graph_node->pb_node_power = (t_pb_graph_node_power*)vtr::calloc(1,
-                                                                           sizeof(t_pb_graph_node_power));
+        pb_graph_node->pb_node_power = new t_pb_graph_node_power;
+        *pb_graph_node->pb_node_power = t_pb_graph_node_power();
         pb_graph_node->pb_node_power->transistor_cnt_buffers = 0.;
         pb_graph_node->pb_node_power->transistor_cnt_interc = 0.;
         pb_graph_node->pb_node_power->transistor_cnt_pb_children = 0.;
@@ -420,17 +420,13 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
                 interconnect->interconnect_power->port_info_initialized = true;
             }
 
-            interc_pins->input_pins = (t_pb_graph_pin***)vtr::calloc(num_input_sets,
-                                                                     sizeof(t_pb_graph_pin**));
+            interc_pins->input_pins = new t_pb_graph_pin**[num_input_sets];
             for (set_idx = 0; set_idx < num_input_sets; set_idx++) {
-                interc_pins->input_pins[set_idx] = (t_pb_graph_pin**)vtr::calloc(interconnect->interconnect_power->num_pins_per_port,
-                                                                                 sizeof(t_pb_graph_pin*));
+                interc_pins->input_pins[set_idx] = new t_pb_graph_pin*[interconnect->interconnect_power->num_pins_per_port];
             }
 
-            interc_pins->output_pins = (t_pb_graph_pin***)vtr::calloc(1,
-                                                                      sizeof(t_pb_graph_pin**));
-            interc_pins->output_pins[0] = (t_pb_graph_pin**)vtr::calloc(interconnect->interconnect_power->num_pins_per_port,
-                                                                        sizeof(t_pb_graph_pin*));
+            interc_pins->output_pins = new t_pb_graph_pin**[1];
+            interc_pins->output_pins[0] = new t_pb_graph_pin*[interconnect->interconnect_power->num_pins_per_port];
 
             for (pin_idx = 0; pin_idx < interconnect->interconnect_power->num_pins_per_port; pin_idx++) {
                 for (set_idx = 0; set_idx < num_input_sets; set_idx++) {
@@ -475,11 +471,9 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
             }
 
             /* Input Pins */
-            interc_pins->input_pins = (t_pb_graph_pin***)vtr::calloc(interconnect->interconnect_power->num_input_ports,
-                                                                     sizeof(t_pb_graph_pin**));
+            interc_pins->input_pins = new t_pb_graph_pin**[interconnect->interconnect_power->num_input_ports];
             for (port_idx = 0; port_idx < interconnect->interconnect_power->num_input_ports; port_idx++) {
-                interc_pins->input_pins[port_idx] = (t_pb_graph_pin**)vtr::calloc(interconnect->interconnect_power->num_pins_per_port,
-                                                                                  sizeof(t_pb_graph_pin*));
+                interc_pins->input_pins[port_idx] = new t_pb_graph_pin*[interconnect->interconnect_power->num_pins_per_port];
             }
             num_ports = 0;
             for (set_idx = 0; set_idx < num_input_sets; set_idx++) {
@@ -489,11 +483,9 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
             }
 
             /* Output Pins */
-            interc_pins->output_pins = (t_pb_graph_pin***)vtr::calloc(interconnect->interconnect_power->num_output_ports,
-                                                                      sizeof(t_pb_graph_pin**));
+            interc_pins->output_pins = new t_pb_graph_pin**[interconnect->interconnect_power->num_output_ports];
             for (port_idx = 0; port_idx < interconnect->interconnect_power->num_output_ports; port_idx++) {
-                interc_pins->output_pins[port_idx] = (t_pb_graph_pin**)vtr::calloc(interconnect->interconnect_power->num_pins_per_port,
-                                                                                   sizeof(t_pb_graph_pin*));
+                interc_pins->output_pins[port_idx] = new t_pb_graph_pin*[interconnect->interconnect_power->num_pins_per_port];
             }
             num_ports = 0;
             for (set_idx = 0; set_idx < num_output_sets; set_idx++) {

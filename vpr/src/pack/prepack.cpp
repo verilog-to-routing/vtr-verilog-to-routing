@@ -151,7 +151,7 @@ std::vector<t_pack_patterns> alloc_and_load_pack_patterns() {
              * For carry-chains, since carry-chains are typically quite flexible in terms
              * of size, it is optional whether or not an atom in a netlist matches any
              * particular block inside the chain */
-            list_of_packing_patterns[i].is_block_optional = (bool*)vtr::malloc(L_num_blocks * sizeof(bool));
+            list_of_packing_patterns[i].is_block_optional = new bool [L_num_blocks];
             for (int k = 0; k < L_num_blocks; k++) {
                 list_of_packing_patterns[i].is_block_optional[k] = false;
                 if (list_of_packing_patterns[i].is_chain && list_of_packing_patterns[i].root_block->block_id != k) {
@@ -352,14 +352,14 @@ void free_list_of_pack_patterns(std::vector<t_pack_patterns>& list_of_pack_patte
 void free_pack_pattern(t_pack_patterns* pack_pattern) {
     if (pack_pattern) {
         int num_pack_pattern_blocks = pack_pattern->num_blocks;
-        t_pack_pattern_block** pattern_block_list = (t_pack_pattern_block**)vtr::calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block*));
+        t_pack_pattern_block** pattern_block_list = new t_pack_pattern_block*[num_pack_pattern_blocks]{nullptr};
         free(pack_pattern->name);
-        free(pack_pattern->is_block_optional);
+        delete[](pack_pattern->is_block_optional);
         free_pack_pattern_block(pack_pattern->root_block, pattern_block_list);
         for (int j = 0; j < num_pack_pattern_blocks; j++) {
             free(pattern_block_list[j]);
         }
-        free(pattern_block_list);
+        delete[](pattern_block_list);
     }
 }
 
@@ -779,7 +779,8 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
 
-    is_used = (bool*)vtr::calloc(num_packing_patterns, sizeof(bool));
+    if (num_packing_patterns> 0)
+    is_used = new bool[num_packing_patterns]{false};
 
     cur_molecule = list_of_molecules_head = nullptr;
 
@@ -839,7 +840,7 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
             }
         }
     }
-    free(is_used);
+    delete[](is_used);
 
     /* List all atom blocks as a molecule for blocks that do not belong to any molecules.
      * This allows the packer to be consistent as it now packs molecules only instead of atoms and molecules
