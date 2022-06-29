@@ -9,25 +9,25 @@ A Constraints File Example
 --------------------------
 
 .. code-block:: xml
-    :caption: An example of a placement constraints file in XML format.
-    :linenos:
+	:caption: An example of a placement constraints file in XML format.
+	:linenos:
 
-<vpr_constraints tool_name="vpr">
-     <partition_list>
-	  <partition name="Part0">
-	       <add_atom name_pattern="li354">
-	       <add_atom name_pattern="alu*"> <!-- Regular expressions can be used to provide name patterns of the primitives to be added -->
-	       <add_atom name_pattern="n877">
-	       <add_region x_low="3" y_low="1" x_high="7" y_high="2"> <!-- Two rectangular regions are specified, together describing an L-shaped region -->
-	       <add_region x_low="7" y_low="3" x_high="7" y_high="6">
-	  </partition>
-	  <partition name="Part1">
-	       <add_region x_low="3" y_low="3" x_high="7" y_high="7" subtile="0"> <!-- One specific location is specified -->
-	       <add_atom name_pattern="n4917">
-	       <add_atom name_pattern="n6010">
-	  </partition>
-     </partition_list>
-</vpr_constraints>
+	<vpr_constraints tool_name="vpr">
+     		<partition_list>
+	  	<partition name="Part0">
+	       		<add_atom name_pattern="li354">
+	       		<add_atom name_pattern="alu*"> <!-- Regular expressions can be used to provide name patterns of the primitives to be added -->
+	       		<add_atom name_pattern="n877">
+	      		 <add_region x_low="3" y_low="1" x_high="7" y_high="2"> <!-- Two rectangular regions are specified, together describing an L-shaped region -->
+	       		<add_region x_low="7" y_low="3" x_high="7" y_high="6"
+	  	 </partition>
+	 	 <partition name="Part1">
+	       		<add_region x_low="3" y_low="3" x_high="7" y_high="7" subtile="0"> <!-- One specific location is specified -->
+	       		<add_atom name_pattern="n4917">
+	      		<add_atom name_pattern="n6010">
+	  	</partition>
+     		</partition_list>
+	</vpr_constraints>
 
 .. _end:
 
