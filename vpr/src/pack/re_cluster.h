@@ -52,5 +52,6 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
 bool swap_two_molecules(t_pack_molecule* molecule_1,
                         t_pack_molecule* molecule_2,
                         bool during_packing,
+                        int verbosity,
                         t_clustering_data& clustering_data);
 #endif
