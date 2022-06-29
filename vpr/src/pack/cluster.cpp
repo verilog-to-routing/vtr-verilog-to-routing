@@ -190,8 +190,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     if (packer_opts.hill_climbing_flag) {
         clustering_data.hill_climbing_inputs_avail = new int[helper_ctx.max_cluster_size + 1];
-        for(int i = 0 ; i < helper_ctx.max_cluster_size + 1; i++)
-        	clustering_data.hill_climbing_inputs_avail[i] = 0;
+        for (int i = 0; i < helper_ctx.max_cluster_size + 1; i++)
+            clustering_data.hill_climbing_inputs_avail[i] = 0;
     } else {
         clustering_data.hill_climbing_inputs_avail = nullptr; /* if used, die hard */
     }

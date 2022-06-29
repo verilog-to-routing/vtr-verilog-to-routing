@@ -310,6 +310,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     }
 
     /* Allocate and load child nodes for each mode and create interconnect in each mode */
+
     pb_graph_node->child_pb_graph_nodes = (t_pb_graph_node***)vtr::calloc(pb_type->num_modes, sizeof(t_pb_graph_node**));
     for (i = 0; i < pb_type->num_modes; i++) {
         pb_graph_node->child_pb_graph_nodes[i] = (t_pb_graph_node**)vtr::calloc(pb_type->modes[i].num_pb_type_children,
@@ -324,12 +325,10 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
         }
     }
 
-    if (pb_type->num_modes > 0) {
-        pb_graph_node->interconnect_pins = new t_interconnect_pins* [pb_type->num_modes] { nullptr };
-    } else {
-        pb_graph_node->interconnect_pins = nullptr;
-    }
+    pb_graph_node->interconnect_pins = new t_interconnect_pins*[pb_type->num_modes];
+
     for (i = 0; i < pb_type->num_modes; i++) {
+        pb_graph_node->interconnect_pins[i] = nullptr;
         /* Create interconnect for mode */
         alloc_and_load_mode_interconnect(pb_graph_node,
                                          pb_graph_node->child_pb_graph_nodes[i], &pb_type->modes[i],
@@ -645,13 +644,12 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                   "No matching '{' for '}' in port %s\n", port_string);
     }
 
-    pb_graph_pins = new t_pb_graph_pin** [*num_sets];
+    pb_graph_pins = new t_pb_graph_pin**[*num_sets];
     *num_ptrs = new int[*num_sets];
-    for (int i = 0 ; i < *num_sets; i ++){
-    	pb_graph_pins[i] = nullptr;
-    	(*num_ptrs)[i] = 0;
+    for (i = 0; i < *num_sets; i++) {
+        pb_graph_pins[i] = nullptr;
+        (*num_ptrs)[i] = 0;
     }
-
 
     curr_set = 0;
     for (i = 0; i < num_tokens; i++) {
@@ -913,11 +911,11 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
                       "# of pins for a particular data line of a mux must equal number of pins at output of mux\n");
         }
-        edges[i_inset].input_pins = new t_pb_graph_pin* [num_output_ptrs[0]];
-        edges[i_inset].output_pins = new t_pb_graph_pin* [num_output_ptrs[0]];
-        for (int i = 0 ; i < num_output_ptrs[0] ; i ++){
-        	 edges[i_inset].input_pins[i] = nullptr;
-        	 edges[i_inset].output_pins[i] = nullptr;
+        edges[i_inset].input_pins = new t_pb_graph_pin*[num_output_ptrs[0]];
+        edges[i_inset].output_pins = new t_pb_graph_pin*[num_output_ptrs[0]];
+        for (int i = 0; i < num_output_ptrs[0]; i++) {
+            edges[i_inset].input_pins[i] = nullptr;
+            edges[i_inset].output_pins[i] = nullptr;
         }
 
         edges[i_inset].num_input_pins = num_output_ptrs[0];
