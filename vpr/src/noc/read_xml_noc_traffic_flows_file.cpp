@@ -54,6 +54,11 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file){
 
     noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
 
+    // dump out the NocTrafficFlows class information if the user requested it
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_NOC_TRAFFIC_FLOWS)) {
+        noc_ctx.noc_traffic_flows_storage.echo_noc_traffic_flows(getEchoFileName(E_ECHO_NOC_TRAFFIC_FLOWS));
+    }
+
     return;
 
 }

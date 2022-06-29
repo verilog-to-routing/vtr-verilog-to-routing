@@ -26,6 +26,7 @@
 #include "vtr_util.h"
 #include "ShowSetup.h"
 #include "vpr_error.h"
+#include "echo_files.h"
 
 #include "noc_data_types.h"
 #include "noc_traffic_flows.h"
