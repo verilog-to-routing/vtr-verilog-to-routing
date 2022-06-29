@@ -56,10 +56,10 @@ static void print_stats() {
     num_clb_inputs_used = new int[device_ctx.logical_block_types.size()];
     num_clb_outputs_used = new int[device_ctx.logical_block_types.size()];
 
-    for (int i = 0 ; i < device_ctx.logical_block_types.size(); i ++){
-    	num_clb_types[i] = 0;
-    	num_clb_inputs_used[i] = 0;
-    	num_clb_outputs_used[i] = 0;
+    for (int i = 0; i < (int)device_ctx.logical_block_types.size(); i++) {
+        num_clb_types[i] = 0;
+        num_clb_inputs_used[i] = 0;
+        num_clb_outputs_used[i] = 0;
     }
 
     for (auto net_id : atom_ctx.nlist.nets()) {

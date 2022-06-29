@@ -353,7 +353,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
                 lb_type_rr_node_graph[pin_index].num_modes = num_modes;
                 lb_type_rr_node_graph[pin_index].num_fanout = new short[num_modes];
                 lb_type_rr_node_graph[pin_index].outedges = new t_lb_type_rr_node_edge*[num_modes];
-                for (int i = 0; i < num_modes; i++){
+                for (int i = 0; i < num_modes; i++) {
                     lb_type_rr_node_graph[pin_index].outedges[i] = nullptr;
                     lb_type_rr_node_graph[pin_index].num_fanout[i] = 0;
                 }
@@ -452,7 +452,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
                 lb_type_rr_node_graph[pin_index].num_modes = num_modes;
                 lb_type_rr_node_graph[pin_index].num_fanout = new short[num_modes];
                 lb_type_rr_node_graph[pin_index].outedges = new t_lb_type_rr_node_edge*[num_modes];
-                for (int i = 0; i < num_modes; i++){
+                for (int i = 0; i < num_modes; i++) {
                     lb_type_rr_node_graph[pin_index].outedges[i] = nullptr;
                     lb_type_rr_node_graph[pin_index].num_fanout[i] = 0;
                 }
@@ -507,7 +507,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
                     lb_type_rr_node_graph[pin_index].num_modes = num_modes;
                     lb_type_rr_node_graph[pin_index].num_fanout = new short[num_modes];
                     lb_type_rr_node_graph[pin_index].outedges = new t_lb_type_rr_node_edge*[num_modes];
-                    for (int i = 0; i < num_modes; i++){
+                    for (int i = 0; i < num_modes; i++) {
                         lb_type_rr_node_graph[pin_index].outedges[i] = nullptr;
                         lb_type_rr_node_graph[pin_index].num_fanout[i] = 0;
                     }
@@ -540,7 +540,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
                     lb_type_rr_node_graph[pin_index].num_modes = num_modes;
                     lb_type_rr_node_graph[pin_index].num_fanout = new short[num_modes];
                     lb_type_rr_node_graph[pin_index].outedges = new t_lb_type_rr_node_edge*[num_modes];
-                    for (int i = 0; i < num_modes; i++){
+                    for (int i = 0; i < num_modes; i++) {
                         lb_type_rr_node_graph[pin_index].outedges[i] = nullptr;
                         lb_type_rr_node_graph[pin_index].num_fanout[i] = 0;
                     }
@@ -592,7 +592,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
                 lb_type_rr_node_graph[pin_index].num_modes = num_modes;
                 lb_type_rr_node_graph[pin_index].num_fanout = new short[num_modes];
                 lb_type_rr_node_graph[pin_index].outedges = new t_lb_type_rr_node_edge*[num_modes];
-                for (int i = 0; i < num_modes; i++){
+                for (int i = 0; i < num_modes; i++) {
                     lb_type_rr_node_graph[pin_index].outedges[i] = nullptr;
                     lb_type_rr_node_graph[pin_index].num_fanout[i] = 0;
                 }
