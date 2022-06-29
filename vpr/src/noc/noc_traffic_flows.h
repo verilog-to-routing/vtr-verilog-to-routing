@@ -28,14 +28,15 @@
  * around to different tiles on the FPGA device.
  * 
  */
-
-#include "clustered_netlist_fwd.h"
-#include "noc_data_types.h"
-#include "vtr_vector.h"
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "clustered_netlist_fwd.h"
+#include "noc_data_types.h"
+#include "vtr_vector.h"
+#include "echo_files.h"
+#include "vtr_util.h"
 
 
 /*
@@ -292,6 +293,15 @@ class NocTrafficFlows
          * @return false THe block is not a router
          */
         bool check_if_cluster_block_is_a_noc_router(ClusterBlockId block_id);
+
+        /**
+         * @brief Writes out the NocTrafficFlows class information to a file.
+         * This includes printing out each internal datastructure information.
+         * 
+         * @param file_name The name of the file that contains the NoC
+         * traffic flow information   
+         */
+        void echo_noc_traffic_flows(char* file_name);
 
 };
 

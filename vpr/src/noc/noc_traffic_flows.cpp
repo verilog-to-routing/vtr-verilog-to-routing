@@ -164,3 +164,101 @@ void NocTrafficFlows::add_router_to_block_set(ClusterBlockId router_block_id){
 
     return;
 }
+
+void NocTrafficFlows::echo_noc_traffic_flows(char* file_name){
+    FILE* fp;
+    fp = vtr::fopen(file_name, "w");
+
+    // file header
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "NoC Traffic Flows\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    // print all the routers and their properties
+    fprintf(fp, "List of NoC Traffic Flows:\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    int traffic_flow_id = 0;
+
+    // go through each traffic flow and print its information
+    for(auto traffic_flow = list_of_noc_traffic_flows.begin(); traffic_flow != list_of_noc_traffic_flows.end(); traffic_flow++){
+        
+        // print the current traffic flows data
+        fprintf(fp, "Traffic flow ID: %d\n", traffic_flow_id);
+        fprintf(fp, "Traffic flow source router block name: %s\n", traffic_flow->source_router_module_name.c_str());
+        fprintf(fp, "Traffic flow source router block cluster ID: %lu\n", (size_t)traffic_flow->source_router_cluster_id);
+        fprintf(fp, "Traffic flow sink router block name: %s\n", traffic_flow->sink_router_module_name.c_str());
+        fprintf(fp, "Traffic flow sink router block cluster ID: %lu\n", (size_t)traffic_flow->sink_router_cluster_id);
+        fprintf(fp, "Traffic flow bandwidth: %f bps\n", traffic_flow->traffic_flow_bandwidth);
+        fprintf(fp, "Traffic flow latency: %f seconds\n", traffic_flow->max_traffic_flow_latency);
+
+        // seperate the next link information
+        fprintf(fp, "\n");
+    }
+
+    // now print the associated traffic flow information for router cluster blocks that act as source routers in traffic flows
+    fprintf(fp, "List of traffic flows where the router block cluster is a source router:\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    // go through each router block cluster and print its associated traffic flows where the cluster is a source router for those traffic flows
+    // we only print out the traffic flow ids
+    for (auto it = source_router_associated_traffic_flows.begin(); it != source_router_associated_traffic_flows.end(); it++){
+
+        // print the current router cluster id
+        fprintf(fp, "Cluster ID %lu: ", (size_t)it->first);
+
+        // get the vector of associated traffic flows
+        auto assoc_traffic_flows = &(it->second);
+
+        // now go through the traffic flows this router is a source router and add it
+        for (auto traffic_flow = assoc_traffic_flows->begin(); traffic_flow != assoc_traffic_flows->end(); traffic_flow++){
+
+            fprintf(fp, "%lu ", (size_t)*traffic_flow);
+        }
+
+        // seperate the next cluster information
+        fprintf(fp, "\n\n");
+    }
+
+    // now print the associated traffic flow information for router cluster blocks that act as source routers in traffic flows
+    fprintf(fp, "List of traffic flows where the router block cluster is a sink router:\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    // go through each router block cluster and print its associated traffic flows where the cluster is a sink router for those traffic flows
+    // we only print out the traffic flow ids
+    for (auto it = sink_router_associated_traffic_flows.begin(); it != sink_router_associated_traffic_flows.end(); it++){
+
+        // print the current router cluster id
+        fprintf(fp, "Router block cluster ID %lu: ", (size_t)it->first);
+
+        // get the vector of associated traffic flows
+        auto assoc_traffic_flows = &(it->second);
+
+        // now go through the traffic flows this router is a sink router and add it
+        for (auto traffic_flow = assoc_traffic_flows->begin(); traffic_flow != assoc_traffic_flows->end(); traffic_flow++){
+
+            fprintf(fp, "%lu ", (size_t)*traffic_flow);
+        }
+
+        // seperate the next cluster information
+        fprintf(fp, "\n\n");
+    }
+
+    // now print all the unique router block cluster ids in the netlist
+    fprintf(fp, "List of all router block cluster IDs in the netlist:\n");
+    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "\n");
+
+    // print all the unique router block cluster ids
+    for (auto single_router_block = noc_router_blocks.begin(); single_router_block != noc_router_blocks.end(); single_router_block++){
+
+        fprintf(fp, "Router cluster block ID: %lu\n", (size_t)*single_router_block);
+    }
+    
+    return;
+
+}
