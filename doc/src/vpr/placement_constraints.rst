@@ -9,8 +9,8 @@ A Constraints File Example
 --------------------------
 
 .. code-block:: xml
-:caption: An example of a placement constraints file in XML format.
-:linenos:
+    :caption: An example of a placement constraints file in XML format.
+    :linenos:
 
 <vpr_constraints tool_name="vpr">
      <partition_list>
@@ -19,7 +19,7 @@ A Constraints File Example
 	       <add_atom name_pattern="alu*"> <!-- Regular expressions can be used to provide name patterns of the primitives to be added -->
 	       <add_atom name_pattern="n877">
 	       <add_region x_low="3" y_low="1" x_high="7" y_high="2"> <!-- Two rectangular regions are specified, together describing an L-shaped region -->
-	       <add_region x_low="7" y_low="3" x_high="7" y_high="6"
+	       <add_region x_low="7" y_low="3" x_high="7" y_high="6">
 	  </partition>
 	  <partition name="Part1">
 	       <add_region x_low="3" y_low="3" x_high="7" y_high="7" subtile="0"> <!-- One specific location is specified -->
