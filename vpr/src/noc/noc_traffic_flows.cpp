@@ -196,6 +196,9 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name){
 
         // seperate the next link information
         fprintf(fp, "\n");
+
+        // update the id for the next traffic flow
+        traffic_flow_id++;
     }
 
     // now print the associated traffic flow information for router cluster blocks that act as source routers in traffic flows
@@ -258,6 +261,8 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name){
 
         fprintf(fp, "Router cluster block ID: %lu\n", (size_t)*single_router_block);
     }
+
+    vtr::fclose(fp);
     
     return;
 
