@@ -769,7 +769,7 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
     VTR_LOG("\n");
 }
 
-static void ShowNocOpts(const t_noc_opts& NocOpts){
+static void ShowNocOpts(const t_noc_opts& NocOpts) {
     VTR_LOG("NocOpts.noc_flows_file: %s\n", NocOpts.noc_flows_file.c_str());
     VTR_LOG("\n");
 

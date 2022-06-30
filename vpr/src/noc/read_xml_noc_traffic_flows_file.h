@@ -96,8 +96,7 @@ void verify_traffic_flow_router_modules(std::string source_router_name, std::str
  * @param single_flow_tag A xml tag that contains the traffic flow information
  * @param loc_data Contains location data about the current line in the xml file
  */
-void 
-verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
 
 /**
  * @brief Given a router module name in the design, retrieve the
@@ -187,6 +186,5 @@ bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& no
  *                                 traffic flow information.
  */
 void check_for_duplicate_traffic_flow(ClusterBlockId source_router_id, ClusterBlockId sink_router_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const NocTrafficFlows& noc_traffic_flow_storage);
-
 
 #endif
