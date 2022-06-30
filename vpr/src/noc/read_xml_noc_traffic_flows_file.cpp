@@ -75,9 +75,9 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     pugiutil::expect_only_attributes(single_flow_tag, expected_single_flow_attributes, loc_data);
     
     // store the names of the routers part of this traffic flow
-    std::string source_router_module_name = pugiutil::get_attribute(single_flow_tag, "src", loc_data, pugiutil::REQUIRED).value();
+    std::string source_router_module_name = pugiutil::get_attribute(single_flow_tag, "src", loc_data, pugiutil::REQUIRED).as_string();
     
-    std::string sink_router_module_name = pugiutil::get_attribute(single_flow_tag, "dst", loc_data, pugiutil::REQUIRED).value();
+    std::string sink_router_module_name = pugiutil::get_attribute(single_flow_tag, "dst", loc_data, pugiutil::REQUIRED).as_string();
 
     //verify whether the router module names are legal
     verify_traffic_flow_router_modules(source_router_module_name, sink_router_module_name, single_flow_tag, loc_data);
@@ -156,8 +156,13 @@ ClusterBlockId get_router_module_cluster_id(std::string router_module_name, cons
         // go through each logical type and check if there is a cluster block
         // of that type that also matches the input module name
         for (auto logical_type = supported_noc_logical_types->begin(); logical_type != supported_noc_logical_types->end(); logical_type++){
-
-            router_module_id = cluster_ctx.clb_nlist.find_block_with_matching_name(router_module_name, *logical_type);
+            
+            try{
+                router_module_id = cluster_ctx.clb_nlist.find_block_with_matching_name(router_module_name, *logical_type);
+            }catch(const std::regex_error& error){
+                // if there was an error with matching the regex string,report it to the user here
+                vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), error.what());
+            }
 
             // found a block for the current logical type, so exit
             if ((size_t)router_module_id != (size_t)ClusterBlockId::INVALID()){
@@ -254,22 +259,26 @@ void check_for_duplicate_traffic_flow(ClusterBlockId source_router_id, ClusterBl
 
     const std::vector<NocTrafficFlowId>*  list_of_associated_traffic_flows_to_source_router = noc_traffic_flow_storage.get_traffic_flows_associated_to_source_router(source_router_id);
 
-    /*
-        Go through all the traffic flows that exist with the current source router and check to see if any of those traffic flows have a sink router
-        that matches current sink router. When this happens then the two traffic flows are duplicates and an error should be thrown.
-    */
-    for (auto traffic_flow_id = list_of_associated_traffic_flows_to_source_router->begin(); traffic_flow_id != list_of_associated_traffic_flows_to_source_router->end(); traffic_flow_id++){
-        
-        ClusterBlockId curr_sink_router_id = noc_traffic_flow_storage.get_single_noc_traffic_flow(*traffic_flow_id).sink_router_cluster_id;
+    // make sure the router is associated to atleast one traffic flow
+    if (list_of_associated_traffic_flows_to_source_router != nullptr){
 
-        // compare the current traffic flows sink router with the new traffic flows sink router
-        if ((size_t)curr_sink_router_id == (size_t)sink_router_id){
+        /*
+            Go through all the traffic flows that exist with the current source router and check to see if any of those traffic flows have a sink router
+            that matches current sink router. When this happens then the two traffic flows are duplicates and an error should be thrown.
+        */
+        for (auto traffic_flow_id = list_of_associated_traffic_flows_to_source_router->begin(); traffic_flow_id != list_of_associated_traffic_flows_to_source_router->end(); traffic_flow_id++){
             
-            // the routers are the same, so this is a duplicate traffic flow. thrown an error
-            vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The supplied traffic flow is a duplicate of another traffic flow (contain the same source and sink routers). Duplicate traffic flows are not allowed.");
+            ClusterBlockId curr_sink_router_id = noc_traffic_flow_storage.get_single_noc_traffic_flow(*traffic_flow_id).sink_router_cluster_id;
+
+            // compare the current traffic flows sink router with the new traffic flows sink router
+            if ((size_t)curr_sink_router_id == (size_t)sink_router_id){
+                
+                // the routers are the same, so this is a duplicate traffic flow. thrown an error
+                vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The supplied traffic flow is a duplicate of another traffic flow (contain the same source and sink routers). Duplicate traffic flows are not allowed.");
+
+            }
 
         }
-
     }
 
     return;
