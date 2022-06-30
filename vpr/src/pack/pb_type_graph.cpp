@@ -361,9 +361,9 @@ void free_pb_graph_edges() {
             if (edges[i].pack_pattern_indices) {
                 delete[](edges[i].pack_pattern_indices);
             }
-            if (edges[i].pack_pattern_names) {
-                vtr::free(edges[i].pack_pattern_names);
-            }
+           // if (edges[i].pack_pattern_names) {
+               // vtr::free(edges[i].pack_pattern_names);
+           // }
         }
         edges_head = edges_head->next;
         num_edges_head = num_edges_head->next;
@@ -579,11 +579,11 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
                           mode->interconnect[i].output_string);
         }
         for (j = 0; j < num_input_pb_graph_node_sets; j++) {
-            vtr::free(input_pb_graph_node_pins[j]);
+            delete[](input_pb_graph_node_pins[j]);
         }
         delete[](input_pb_graph_node_pins);
         for (j = 0; j < num_output_pb_graph_node_sets; j++) {
-            vtr::free(output_pb_graph_node_pins[j]);
+            delete[](output_pb_graph_node_pins[j]);
         }
         delete[](output_pb_graph_node_pins);
         delete[](num_input_pb_graph_node_pins);
@@ -1169,7 +1169,19 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
     int prev_num_pins = *num_pins;
     *num_pins += (abs(pb_msb - pb_lsb) + 1) * (abs(pin_msb - pin_lsb) + 1);
-    *pb_graph_pins = (t_pb_graph_pin**)vtr::realloc(*pb_graph_pins, *num_pins * sizeof(t_pb_graph_pin*));
+
+    if (prev_num_pins > 0){
+    	std::vector<t_pb_graph_pin*>temp(*pb_graph_pins, *pb_graph_pins + prev_num_pins);
+    	delete[](*pb_graph_pins);
+    	*pb_graph_pins = new t_pb_graph_pin*[*num_pins];
+    	for (i = 0 ; i < prev_num_pins ; i ++)
+    		(*pb_graph_pins)[i] = temp[i];
+    }
+    else{
+    	*pb_graph_pins = new t_pb_graph_pin*[*num_pins];
+    }
+
+
     i = j = 0;
 
     ipb = pb_lsb;

@@ -323,21 +323,26 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
             && current_pb_graph_pin->port->type == IN_PORT) {
             reference_pin->num_connectable_primitive_input_pins[depth]++;
 
-            //                    std::vector<t_pb_graph_pin*> temp(reference_pin->list_of_connectable_input_pin_ptrs[depth],
-            //                                		reference_pin->list_of_connectable_input_pin_ptrs[depth] + reference_pin->num_connectable_primitive_input_pins[depth] - 1);
-            //
-            //                                delete[]reference_pin->list_of_connectable_input_pin_ptrs[depth];
-            //                                reference_pin->list_of_connectable_input_pin_ptrs[depth] = new t_pb_graph_pin*[reference_pin->num_connectable_primitive_input_pins[depth]];
-            //                                for (i = 0 ; i < reference_pin->num_connectable_primitive_input_pins[depth] - 1 ; i++)
-            //                                	reference_pin->list_of_connectable_input_pin_ptrs[depth][i] = temp[i];
-            //
-            //                    			reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
-            //                                                                                         - 1] = current_pb_graph_pin;
+            if (reference_pin->num_connectable_primitive_input_pins[depth] - 1 > 0){
+           std::vector<t_pb_graph_pin*> temp(reference_pin->list_of_connectable_input_pin_ptrs[depth],
+                reference_pin->list_of_connectable_input_pin_ptrs[depth] + reference_pin->num_connectable_primitive_input_pins[depth] - 1);
 
-            reference_pin->list_of_connectable_input_pin_ptrs[depth] = (t_pb_graph_pin**)vtr::realloc(
-                reference_pin->list_of_connectable_input_pin_ptrs[depth],
-                reference_pin->num_connectable_primitive_input_pins[depth]
-                    * sizeof(t_pb_graph_pin*));
+           delete[]reference_pin->list_of_connectable_input_pin_ptrs[depth];
+           reference_pin->list_of_connectable_input_pin_ptrs[depth] = new t_pb_graph_pin*[reference_pin->num_connectable_primitive_input_pins[depth]];
+           for (i = 0 ; i < reference_pin->num_connectable_primitive_input_pins[depth] - 1 ; i++)
+                                            	reference_pin->list_of_connectable_input_pin_ptrs[depth][i] = temp[i];
+
+            reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
+                                                                                                     - 1] = current_pb_graph_pin;
+            }
+
+            else{
+            	reference_pin->list_of_connectable_input_pin_ptrs[depth] = new t_pb_graph_pin*[reference_pin->num_connectable_primitive_input_pins[depth]];
+            }
+//            reference_pin->list_of_connectable_input_pin_ptrs[depth] = (t_pb_graph_pin**)vtr::realloc(
+//                reference_pin->list_of_connectable_input_pin_ptrs[depth],
+//                reference_pin->num_connectable_primitive_input_pins[depth]
+//                    * sizeof(t_pb_graph_pin*));
             reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
                                                                      - 1]
                 = current_pb_graph_pin;
