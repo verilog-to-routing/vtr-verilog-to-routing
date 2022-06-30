@@ -204,11 +204,37 @@
           </object>
           <packing>
             <property name="left_attach">0</property>
+            <property name="top_attach">3</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="CritPathLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Toggle Critical Path:</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
             <property name="top_attach">4</property>
           </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkComboBoxText" id="ToggleCritPath">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="active">0</property>
+            <items>
+              <item translatable="yes">None</item>
+              <item translatable="yes">Crit Path Flylines</item>
+              <item translatable="yes">Crit Path Flylines Delays</item>
+              <item translatable="yes">Crit Path Routing</item>
+              <item translatable="yes">Crit Path Routing Delays</item>
+            </items>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">5</property>
+          </packing>
         </child>
       </object>
     </child>
@@ -439,7 +465,56 @@
           </packing>
         </child>
         <child>
-          <placeholder/>
+          <object class="GtkComboBoxText" id="ToggleRoutingExpansionCost">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="active">0</property>
+            <items>
+              <item translatable="yes">None</item>
+              <item translatable="yes">Total</item>
+              <item translatable="yes">Known</item>
+              <item translatable="yes">Expected</item>
+              <item translatable="yes">Total (with edges)</item>
+              <item translatable="yes">Known (with edges)</item>
+              <item translatable="yes">Expected (with edges)</item>
+            </items>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">9</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="ToggleRoutingUtilLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Toggle Routing Util:</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">10</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="ToggleRoutingUtil">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="active">0</property>
+            <items>
+              <item translatable="yes">None</item>
+              <item translatable="yes">Routing Util</item>
+              <item translatable="yes">Routing Util with Value</item>
+              <item translatable="yes">Routing Util with Formula</item>
+              <item translatable="yes">Routing Util over Blocks</item>
+            </items>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">11</property>
+          </packing>
         </child>
         <child>
           <object class="GtkCheckButton" id="clipRoutingUtil">
@@ -454,23 +529,8 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">10</property>
+            <property name="position">12</property>
           </packing>
-        </child>
-        <child>
-          <object class="GtkLabel" id="CritPathLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Toggle Critical Path:</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">11</property>
-          </packing>
-        </child>
-        <child>
-          <placeholder/>
         </child>
       </object>
     </child>

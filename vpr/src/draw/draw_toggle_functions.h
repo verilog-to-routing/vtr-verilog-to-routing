@@ -91,33 +91,15 @@ void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app);
 
 /* Callback function for runtime created toggle_routing_util button in ui_setup.cpp.
  * Draws different types of routing utils based on user input: . Changes value of draw_state->show_routing_util. */
-void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-
-/* Callback function for runtime created toggle_blk_internal button in ui_setup.cpp.
- * With each consecutive click of the button, a lower level in the
- * pb_graph will be shown for every clb. When the number of clicks on the button exceeds
- * the maximum level of sub-blocks that exists in the pb_graph, internals drawing
- * will be disabled. DEPRECATED*/
-void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+void toggle_router_util_cbk(GtkComboBoxText* self, ezgl::application* app);
 
 /* Callback function for runtime created toggle_crit_path button in ui_setup.cpp.
  * Draws different types of critical path based on user input. Changes value of draw_state->show_crit_path. */
-void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-
-/* Callback function for runtime created toggle_block_pin_util button in ui_setup.cpp.
- * Draws different types of routing block pin utils based on user input. Changes value of draw_state->show_blk_pin_util. 
- * DEPRECATED*/
-void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_crit_path_cbk(GtkComboBoxText* self, ezgl::application* app);
 
 /* Callback function for runtime created toggle_router_expansion_costs in ui_setup.cpp.
  * Draws different router expansion costs based on user input. Changes value of draw_state->show_router_expansion_cost. */
-void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-
-/* Callback function for runtime created toggle_placement_macros button in ui_setup.cpp.
- * Controls if placement macros should be visualized. Changes value of draw_state->show_placement_macros. */
-void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-
-
+void toggle_expansion_cost_cbk(GtkComboBoxText* self, ezgl::application* app);
 
 #endif /* NO_GRAPHICS */
 #endif /* DRAW_TOGGLE_FUNCTIONS_H */

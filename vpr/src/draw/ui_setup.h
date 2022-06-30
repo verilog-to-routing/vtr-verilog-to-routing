@@ -14,12 +14,11 @@ void basic_button_setup(ezgl::application* app);
 void net_button_setup(ezgl::application* app);
 void block_button_setup(ezgl::application* app);
 void routing_button_setup(ezgl::application* app);
-void setup_toggle_crit_path(bool show);
-
+void crit_path_button_setup(ezgl::application* app);
+void hide_crit_path_button(ezgl::application* app);
 
 void hide_widget(std::string widgetName, ezgl::application* app);
 void show_widget(std::string widgetName, ezgl::application* app);
-
 
 #endif /* NO_GRAPHICS */
 

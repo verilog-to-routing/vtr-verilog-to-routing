@@ -106,6 +106,7 @@ static float get_router_expansion_cost(const t_rr_node_route_inf node_inf,
 static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_main_canvas(ezgl::renderer* g);
+static void default_setup(ezgl::application* app);
 static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
                                                   bool is_new_window);
 static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
@@ -267,6 +268,12 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 }
 
+static void default_setup(ezgl::application* app){
+    basic_button_setup(app);
+    net_button_setup(app);
+    block_button_setup(app);
+}
+
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_PLACEMENT */
@@ -275,15 +282,15 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     if (!is_new_window)
         return;
 
-    //Configuring basic buttons (search, save, window)
-    basic_button_setup(app);
+    //Configuring visible buttons
+    default_setup(app);
 
     //Loading names for
     load_block_names(app);
 
-    net_button_setup(app);
-
-    block_button_setup(app);
+    //Hiding unused functionality
+    hide_widget("RoutingMenuButton", app);
+    hide_crit_path_button(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -294,10 +301,11 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
     bool is_new_window) {
     if (!is_new_window)
         return;
-    basic_button_setup(app);
-    net_button_setup(app);
-    block_button_setup(app);
-    button_for_toggle_crit_path();
+    default_setup(app);
+    crit_path_button_setup(app);
+
+    //Hiding unused routing menu
+    hide_widget("RoutingMenuButton", app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -306,15 +314,11 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
 static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
                                                bool is_new_window) {
     if (!is_new_window)
-        return;                                           
-    basic_button_setup(app);
-    net_button_setup(app);
-    block_button_setup(app);
+        return;
+    default_setup(app);
     routing_button_setup(app);
-    button_for_toggle_congestion_cost();
-    button_for_toggle_routing_bounding_box();
-    button_for_toggle_routing_util();
-    button_for_toggle_router_expansion_costs();
+
+    hide_crit_path_button(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -322,20 +326,13 @@ static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
  * ROUTING_to_PLACEMENT */
 static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
                                                bool is_new_window) {
-    initial_setup_PLACEMENT_to_ROUTING(app, is_new_window);
-    std::string toggle_rr = "toggle_rr";
-    std::string toggle_congestion = "toggle_congestion";
-    std::string toggle_routing_congestion_cost = "toggle_routing_congestion_cost";
-    std::string toggle_routing_bounding_box = "toggle_routing_bounding_box";
-    std::string toggle_routing_util = "toggle_rr";
-    std::string toggle_router_expansion_costs = "toggle_router_expansion_costs";
+    if (!is_new_window)
+        return;
+    default_setup(app);
 
-    delete_button(toggle_rr.c_str());
-    delete_button(toggle_congestion.c_str());
-    delete_button(toggle_routing_congestion_cost.c_str());
-    delete_button(toggle_routing_bounding_box.c_str());
-    delete_button(toggle_routing_util.c_str());
-    delete_button(toggle_router_expansion_costs.c_str());
+    //Hiding unused functionality
+    hide_widget("RoutingMenuButton", app);
+    hide_crit_path_button(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -345,15 +342,10 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
                                                 bool is_new_window) {
     if (!is_new_window)
         return;
-
-    basic_button_setup(app);
-    net_button_setup(app);
-    block_button_setup(app);
+    default_setup(app);
     routing_button_setup(app);
-    button_for_toggle_congestion_cost();
-    button_for_toggle_routing_bounding_box();
-    button_for_toggle_routing_util();
-    button_for_toggle_router_expansion_costs();
+
+    hide_crit_path_button(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -362,8 +354,11 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
 static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
     ezgl::application* app,
     bool is_new_window) {
-    initial_setup_NO_PICTURE_to_ROUTING(app, is_new_window);
-    button_for_toggle_crit_path();
+    if (!is_new_window)
+        return;
+    default_setup(app);
+    routing_button_setup(app);
+    crit_path_button_setup(app);
 }
 #endif //NO_GRAPHICS
 
@@ -481,7 +476,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
 #ifndef NO_GRAPHICS
 void toggle_window_mode(GtkWidget* /*widget*/,
-                               ezgl::application* /*app*/) {
+                        ezgl::application* /*app*/) {
     window_mode = true;
 }
 
@@ -1337,7 +1332,7 @@ ezgl::color lighten_color(ezgl::color color, float amount) {
  * 
  * @return size_t 
  */
-size_t get_max_fanout(){
+size_t get_max_fanout() {
     //find maximum fanout
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;

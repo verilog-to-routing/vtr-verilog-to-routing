@@ -30,7 +30,7 @@
  * created in glade main.ui file. Connects them to their cbk functions
  * @param app ezgl::application*
  */
-void basic_button_setup(ezgl::application* app){
+void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
     gtk_button_set_label(window, "Window");
@@ -58,7 +58,7 @@ void basic_button_setup(ezgl::application* app){
  * spin button which are created in main.ui file. Found in Net Settings dropdown
  * @param app 
  */
-void net_button_setup(ezgl::application* app){
+void net_button_setup(ezgl::application* app) {
     //Toggle net signal connection
     GtkComboBoxText* toggle_nets = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNets"));
     g_signal_connect(toggle_nets, "changed", G_CALLBACK(toggle_nets_cbk), app);
@@ -73,7 +73,7 @@ void net_button_setup(ezgl::application* app){
     GtkSpinButton* max_fanout = GTK_SPIN_BUTTON(app->get_object("NetMaxFanout"));
     g_signal_connect(max_fanout, "value-changed", G_CALLBACK(set_net_max_fanout), app);
     gtk_spin_button_set_increments(max_fanout, 1, 1);
-    gtk_spin_button_set_range(max_fanout, 0, (double)get_max_fanout());
+    gtk_spin_button_set_range(max_fanout, 0., (double)get_max_fanout());
 }
 
 /**
@@ -84,7 +84,7 @@ void net_button_setup(ezgl::application* app){
  * main.ui. Found in Block Settings dropdown
  * @param app 
  */
-void block_button_setup(ezgl::application* app){
+void block_button_setup(ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     //Toggle block internals
@@ -100,11 +100,14 @@ void block_button_setup(ezgl::application* app){
     //Toggle Placement Macros
     GtkComboBoxText* placement_macros = GTK_COMBO_BOX_TEXT(app->get_object("TogglePlacementMacros"));
     g_signal_connect(placement_macros, "changed", G_CALLBACK(placement_macros_cbk), app);
-
 }
 
-
-void routing_button_setup(ezgl::application* app){
+/**
+ * @brief configures and connects signals/functions for routing buttons
+ * 
+ * @param app 
+ */
+void routing_button_setup(ezgl::application* app) {
     auto& route_ctx = g_vpr_ctx.routing();
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -126,11 +129,35 @@ void routing_button_setup(ezgl::application* app){
     gtk_spin_button_set_increments(toggle_routing_bbox, 1, 1);
     gtk_spin_button_set_range(toggle_routing_bbox, -1., (double)(route_ctx.route_bb.size() - 1));
     gtk_spin_button_set_value(toggle_routing_bbox, -1.);
-    
-    //Toggle Routing Util
 
-    //Toggle Router Expansion Costs
+    //Toggle Routing Expansion Costs
+    GtkComboBoxText* toggle_expansion_cost = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRoutingExpansionCost"));
+    g_signal_connect(toggle_expansion_cost, "changed", G_CALLBACK(toggle_expansion_cost_cbk), app);
+
+    //Toggle Router Util
+    GtkComboBoxText* toggle_router_util = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRoutingUtil"));
+    g_signal_connect(toggle_router_util, "changed", G_CALLBACK(toggle_router_util_cbk), app);
 }
 
+void crit_path_button_setup(ezgl::application* app) {
+    GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
+    g_signal_connect(toggle_crit_path, "changed", G_CALLBACK(toggle_crit_path_cbk), app);
+}
+
+void hide_crit_path_button(ezgl::application* app) {
+    hide_widget("CritPathLabel", app);
+    hide_widget("ToggleCritPath", app);
+}
+
+/**
+ * @brief Hides the widget with the given name
+ * 
+ * @param widgetName string of widget name in main.ui
+ * @param app ezgl app
+ */
+void hide_widget(std::string widgetName, ezgl::application* app) {
+    GtkWidget* widget = GTK_WIDGET(app->get_object(widgetName.c_str()));
+    gtk_widget_hide(widget);
+}
 
 #endif /* NO_GRAPHICS */
