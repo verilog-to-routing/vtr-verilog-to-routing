@@ -70,11 +70,11 @@ def init_script_file(
         yosys_script_full_path,
         {
             "XXX": circuit_list[0],
-            "YYY": "./" + YOSYS_LIB_FILES["YSMDL"],
-            "SSS": "./" + YOSYS_LIB_FILES["SPRAM"],
-            "DDD": "./" + YOSYS_LIB_FILES["DPRAM"],
-            "SSR": "./" + YOSYS_LIB_FILES["SPRAMR"],
-            "DDR": "./" + YOSYS_LIB_FILES["DPRAMR"],
+            "YYY": yosys_models_full_path,
+            "SSS": yosys_spram_full_path,
+            "DDD": yosys_dpram_full_path,
+            "SSR": yosys_spram_rename_full_path,
+            "DDR": yosys_dpram_rename_full_path,
             "TTT": str(vtr.paths.yosys_lib_path),
             "ZZZ": output_netlist,
         },
@@ -165,14 +165,14 @@ def run(
         yosys_base_script = str(Path(yosys_script).resolve())
 
     # Copy the script file
-    yosys_script = "synthesis.ys"
+    yosys_script = "synthesis.tcl"
     yosys_script_full_path = str(temp_dir / yosys_script)
     shutil.copyfile(yosys_base_script, yosys_script_full_path)
 
     # Copy the yosys models file
     yosys_models = YOSYS_LIB_FILES["YSMDL"]
     yosys_base_models = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["YSMDL"])
-    yosys_models_full_path = str(temp_dir / yosys_models)
+    yosys_models_full_path = str(vtr.paths.scripts_path / temp_dir / yosys_models)
     shutil.copyfile(yosys_base_models, yosys_models_full_path)
 
     # Copy the VTR memory blocks file
@@ -184,10 +184,10 @@ def run(
     yosys_base_dpram = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["DPRAM"])
     yosys_base_spram_rename = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["SPRAMR"])
     yosys_base_dpram_rename = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["DPRAMR"])
-    yosys_spram_full_path = str(temp_dir / yosys_spram)
-    yosys_dpram_full_path = str(temp_dir / yosys_dpram)
-    yosys_spram_rename_full_path = str(temp_dir / yosys_spram_rename)
-    yosys_dpram_rename_full_path = str(temp_dir / yosys_dpram_rename)
+    yosys_spram_full_path = str(vtr.paths.scripts_path / temp_dir / yosys_spram)
+    yosys_dpram_full_path = str(vtr.paths.scripts_path / temp_dir / yosys_dpram)
+    yosys_spram_rename_full_path = str(vtr.paths.scripts_path / temp_dir / yosys_spram_rename)
+    yosys_dpram_rename_full_path = str(vtr.paths.scripts_path / temp_dir / yosys_dpram_rename)
     shutil.copyfile(yosys_base_spram, yosys_spram_full_path)
     shutil.copyfile(yosys_base_dpram, yosys_dpram_full_path)
     shutil.copyfile(yosys_base_spram_rename, yosys_spram_rename_full_path)
@@ -220,7 +220,7 @@ def run(
         else:
             pass
 
-    cmd += ["-s", yosys_script]
+    cmd += ["-c", yosys_script]
 
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1
