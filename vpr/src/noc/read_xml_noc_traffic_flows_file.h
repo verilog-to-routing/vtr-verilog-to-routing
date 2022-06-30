@@ -3,7 +3,7 @@
 
 /**
  *  @brief The purpose of this file is to read and parse an xml file that has 
- *         then a '.flows' extension. THis file contains the description of
+ *         then a '.flows' extension. This file contains the description of
  *         a number of traffic flows within the NoC. A traffic flow describes
  *         the communication between two routers in the NoC.
  * 

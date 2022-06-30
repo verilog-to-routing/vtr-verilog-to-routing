@@ -110,11 +110,11 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
 void verify_traffic_flow_router_modules(std::string source_router_name, std::string sink_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data){
 
     // check that the router module names were legal
-    if ((source_router_name.compare("") == 0) || (sink_router_name.compare("") == 0)){
+    if ((source_router_name == "") || (sink_router_name == "")){
         
         vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Invalid names for the source and sink NoC router modules.");
     }// check if the source and sink routers have the same name
-    else if (source_router_name.compare(sink_router_name) == 0)
+    else if (source_router_name == sink_router_name)
     {
         // Cannot have the source and sink routers have the same name (they need to be different). A flow cant go to a single router.
         vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Source and sink NoC routers cannot be the same modules.");
@@ -165,20 +165,20 @@ ClusterBlockId get_router_module_cluster_id(std::string router_module_name, cons
             }
 
             // found a block for the current logical type, so exit
-            if ((size_t)router_module_id != (size_t)ClusterBlockId::INVALID()){
+            if (router_module_id != ClusterBlockId::INVALID()){
                 break;
             }
 
         }
         // found a block for the current sub tile, so exit
-        if ((size_t)router_module_id != (size_t)ClusterBlockId::INVALID()){
+        if (router_module_id != ClusterBlockId::INVALID()){
             break;
         }
     
     }
 
     // check if a valid block id was found
-    if ((size_t)router_module_id == (size_t)ClusterBlockId::INVALID()){
+    if (router_module_id == ClusterBlockId::INVALID()){
         // if here then the module did not exist in the design, so throw an error
         vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The router module '%s' does not exist in the design.", router_module_name.c_str());
     }
@@ -271,7 +271,7 @@ void check_for_duplicate_traffic_flow(ClusterBlockId source_router_id, ClusterBl
             ClusterBlockId curr_sink_router_id = noc_traffic_flow_storage.get_single_noc_traffic_flow(*traffic_flow_id).sink_router_cluster_id;
 
             // compare the current traffic flows sink router with the new traffic flows sink router
-            if ((size_t)curr_sink_router_id == (size_t)sink_router_id){
+            if (curr_sink_router_id == sink_router_id){
                 
                 // the routers are the same, so this is a duplicate traffic flow. thrown an error
                 vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The supplied traffic flow is a duplicate of another traffic flow (contain the same source and sink routers). Duplicate traffic flows are not allowed.");
