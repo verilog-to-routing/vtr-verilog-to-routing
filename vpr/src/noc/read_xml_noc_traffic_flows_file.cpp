@@ -68,7 +68,7 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     // contains all traffic flows
     NocTrafficFlows* noc_traffic_flow_storage = &noc_ctx.noc_traffic_flows_storage;
 
-    // an accepted list of attributes for the single flow tag
+    // an accepted set of attributes for the single flow tag
     std::vector<std::string> expected_single_flow_attributes = {"src", "dst", "bandwidth", "latency_cons"};
 
     // check that only the accepted single flow  attributes are found in the tag
@@ -257,16 +257,16 @@ bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& no
 
 void check_for_duplicate_traffic_flow(ClusterBlockId source_router_id, ClusterBlockId sink_router_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const NocTrafficFlows& noc_traffic_flow_storage){
 
-    const std::vector<NocTrafficFlowId>*  list_of_associated_traffic_flows_to_source_router = noc_traffic_flow_storage.get_traffic_flows_associated_to_source_router(source_router_id);
+    const std::vector<NocTrafficFlowId>*  associated_traffic_flows_to_source_router = noc_traffic_flow_storage.get_traffic_flows_associated_to_source_router(source_router_id);
 
     // make sure the router is associated to atleast one traffic flow
-    if (list_of_associated_traffic_flows_to_source_router != nullptr){
+    if (associated_traffic_flows_to_source_router != nullptr){
 
         /*
             Go through all the traffic flows that exist with the current source router and check to see if any of those traffic flows have a sink router
             that matches current sink router. When this happens then the two traffic flows are duplicates and an error should be thrown.
         */
-        for (auto traffic_flow_id = list_of_associated_traffic_flows_to_source_router->begin(); traffic_flow_id != list_of_associated_traffic_flows_to_source_router->end(); traffic_flow_id++){
+        for (auto traffic_flow_id = associated_traffic_flows_to_source_router->begin(); traffic_flow_id != associated_traffic_flows_to_source_router->end(); traffic_flow_id++){
             
             ClusterBlockId curr_sink_router_id = noc_traffic_flow_storage.get_single_noc_traffic_flow(*traffic_flow_id).sink_router_cluster_id;
 

@@ -8,8 +8,9 @@
  * 
  * Overview
  * ======== 
- * The NocTrafficFlows class contains a list of t_noc_traffic_flow in a given 
- * design. Each traffic flow is indexed by a unique id that can be used to
+ * The NocTrafficFlows class contains all traffic flows in a given 
+ * design. A traffic flow is defined by the t_noc_traffic_flow struct.
+ * Each traffic flow is indexed by a unique id that can be used to
  * retrieve information about them.  
  * 
  * The class also associates traffic flows to their source routers (start point)
@@ -20,7 +21,7 @@
  * as routers will be moved throughout the chip. Therefore this class provides
  * a datastructure to keep track of which flows have been updated (re-routed).
  * 
- * Finally, this class also stores a list of all router blocks in the design.
+ * Finally, this class also stores all router blocks in the design.
  * 
  * This class will be primarily used during 
  * placement to identify which routers inside the NoC(NocStorage) need to
@@ -80,14 +81,14 @@ class NocTrafficFlows
     private:
 
         /** contains all the traffic flows provided by the user and their information*/
-        vtr::vector<NocTrafficFlowId, t_noc_traffic_flow> list_of_noc_traffic_flows;
+        vtr::vector<NocTrafficFlowId, t_noc_traffic_flow> noc_traffic_flows;
 
         /**
             A traffic flow has a source and destination router associated to it. So when either the source or destination router for a given flow is moved, we need to find a new route between them. 
             
             Therefore, during placement if two router blocks are swapped, then the only traffic flows we need to re-route are the flows where the two routers are either the source or destination routers of those flows. 
 
-            The datastructures below store a list of traffic flows for each router when the router is a source for the traffic flow. Similarily, there is a another datastructure where a list of traffic flows are stored for each router where the router is a sink for the traffic flow. The routers are indexed by their ClusterBlockId.
+            The datastructures below store all traffic flows for each router where the router is a source for the traffic flow. Similarily, there is a another datastructure where all traffic flows are stored for each router where the router is a sink for the traffic flow. The routers are indexed by their ClusterBlockId.
 
             This is done so that the traffic that need to be re-routed during placement can be quickly found. 
         */
@@ -121,13 +122,13 @@ class NocTrafficFlows
         /**
          * @brief Given a router that is either a source or sink of
          * a traffic flow, the corresponding traffic flow is added
-         * to a list of traffic flows associated to the router.
+         * to a vector of traffic flows associated to the router.
          * 
          * @param traffic_flow_id A unique id that represents a traffic flow.
          * @param associated_router_id A ClusterblockId that represents a
          *                             router block. 
          * @param router_associated_traffic_flows A datastructure that stores
-         * a list of traffic flows for a given router block where the traffic
+         * a vector of traffic flows for a given router block where the traffic
          * flows have the router as a source or sink within the flow.
          *                                        
          */
@@ -149,7 +150,7 @@ class NocTrafficFlows
 
         /**
          * @brief Given a unique id of a traffic flow (t_noc_traffic_flow)
-         * retrieve it from the list of all traffic flows in the design. The
+         * retrieve it from the vector of all traffic flows in the design. The
          * retrieved traffic flow cannot be modified but can be used to
          * retireve information such as the routers involved.
          * 
@@ -161,29 +162,30 @@ class NocTrafficFlows
         const t_noc_traffic_flow& get_single_noc_traffic_flow(NocTrafficFlowId traffic_flow_id) const;
 
         /**
-         * @brief Get a list of all traffic flows that have a given router
+         * @brief Get a vector of all traffic flows that have a given router
          * block in the clustered netlist as the source (starting point) in the 
          * flow.
          * 
          * @param source_router_id A unique identifier that represents the
          * a router block in the clustered netlist. This router block will
          * be the source router in the retrieved traffic flow.
-         * @return const std::vector<NocTrafficFlowId>* A list of traffic flows
-         * that have the input router block parameter as the source in the
+         * @return const std::vector<NocTrafficFlowId>* A vector of traffic 
+         * flows that have the input router block parameter as the source in the
          * flow.
          */
         const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_source_router(ClusterBlockId source_router_id) const;
         
         /**
-         * @brief Get a list of all traffic flows that have a given router
+         * @brief Get a vector of all traffic flows that have a given router
          * block in the clustered netlist as the sink (end point) in the 
          * flow.
          * 
          * @param sink_router_id A unique identifier that represents the
          * a router block in the clustered netlist. This router block will
          * be the sink router in the retrieved traffic flow.
-         * @return const std::vector<NocTrafficFlowId>* A list of traffic flows
-         * that have the input router block parameter as the sink in the flow.
+         * @return const std::vector<NocTrafficFlowId>* A vector of traffic 
+         * flows that have the input router block parameter as the sink in the
+         * flow.
          */
         const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_sink_router(ClusterBlockId sink_router_id) const;
 
@@ -217,12 +219,12 @@ class NocTrafficFlows
 
         /**
          * @brief Given a set of parameters that describe a traffic
-         * flow, create it an add it to the list of traffic flows in the
+         * flow, create it an add it to the vector of traffic flows in the
          * design. Additionally, the two router blocks involved have their
          * ids stored to to keep track of all router blocks that are used
          * in traffic flows. Finally, the newly created traffic flow is
-         * added to a list of traffic flows associated to both the
-         * source and sink routers of the flow.
+         * also added to a vector of traffic flows that are associated to both 
+         * the source and sink routers of the flow.
          * 
          * @param source_router_module_name A string that represents the
          * name of the source router block in the traffic flow. THis is
@@ -258,7 +260,7 @@ class NocTrafficFlows
 
         /**
          * @brief Determines the total number of traffic flows in
-         * the design and creates a list to keep track of the traffic
+         * the design and creates a vector to keep track of the traffic
          * flows processed status. This function should be called after
          * all the traffic flows have been created. The traffic flows are
          * all initialized to being not processed.
