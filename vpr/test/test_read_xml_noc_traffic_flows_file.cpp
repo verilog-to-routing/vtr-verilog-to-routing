@@ -20,7 +20,7 @@ namespace{
             std::string src_router_name = "";
             std::string dst_router_name = "test";
 
-            REQUIRE_THROWS_WITH(verify_traffic_flow_router_modules(src_router_name, dst_router_name, test, test_location), "Invalid names for the source and destination NoC router modules.");
+            REQUIRE_THROWS_WITH(verify_traffic_flow_router_modules(src_router_name, dst_router_name, test, test_location), "Invalid names for the source and sink NoC router modules.");
 
         }
         SECTION("Test case where the router module names for both the source and destination routers are the same"){
@@ -28,7 +28,7 @@ namespace{
             std::string src_router_name = "same_router";
             std::string dst_router_name = "same_router";
 
-            REQUIRE_THROWS_WITH(verify_traffic_flow_router_modules(src_router_name, dst_router_name, test, test_location), "Source and destination NoC routers cannot be the same modules.");
+            REQUIRE_THROWS_WITH(verify_traffic_flow_router_modules(src_router_name, dst_router_name, test, test_location), "Source and sink NoC routers cannot be the same modules.");
         }
         SECTION("Test case where the source and destination router module names are legeal"){
 
