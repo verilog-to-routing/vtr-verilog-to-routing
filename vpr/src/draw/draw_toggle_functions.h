@@ -88,6 +88,12 @@ void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, 
  * Controls if placement macros should be visualized. Changes value of draw_state->show_placement_macros. */
 void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 
+/* Callback function for runtime created toggle_noc_display 
+ * in button.cpp.
+ * Controls if the NoC on chip should be visualized and whether the link usage
+ * in the NoC should be visualized. Changes value of draw_state->draw_noc */
+void toggle_noc_display(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+
 /* Callback function for runtime created netMaxFanout widget in button.cpp.
  * Sets draw_state->draw_net_max_fanout to its corresponding value in the UI. */
 void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);

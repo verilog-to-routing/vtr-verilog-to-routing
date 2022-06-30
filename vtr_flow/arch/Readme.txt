@@ -44,3 +44,9 @@ of different fracturable LUT and configurable memory architectures.
 The intention is to provide more examples of the specification language.
 As these architecture files do not have delay models, we don't recommend
 drawing conclusions from them.
+
+# Architectures with an Embedded Network on Chip (NoC)
+
+These architecture files include examples on how to describe the topology 
+of an embedded NoC within the FPGA device. These example architecture
+files can be found under the "noc" subdirectory.
