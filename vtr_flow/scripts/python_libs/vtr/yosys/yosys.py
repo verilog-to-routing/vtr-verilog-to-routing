@@ -69,7 +69,7 @@ def init_script_file(
     vtr.file_replace(
         yosys_script_full_path,
         {
-            "XXX": circuit_list[0],
+            "XXX": "{}".format(" ".join(str(s) for s in circuit_list)),
             "YYY": yosys_models_full_path,
             "SSS": yosys_spram_full_path,
             "DDD": yosys_dpram_full_path,
@@ -120,6 +120,9 @@ def run(
 
         circuit_file :
             Circuit file to optimize
+
+        include_files :
+            list of header files
 
         output_netlist :
             File name to output the resulting circuit to

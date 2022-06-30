@@ -109,6 +109,9 @@ def run(
         circuit_file :
             Circuit file to optimize
 
+        include_files :
+            list of header files
+
         output_netlist :
             File name to output the resulting circuit to
 
