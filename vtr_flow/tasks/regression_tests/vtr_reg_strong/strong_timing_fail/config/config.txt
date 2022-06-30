@@ -25,4 +25,4 @@ pass_requirements_file=pass_requirements.timing_fail.txt
 
 # Script parameters
 script_params= --terminate_if_timing_fails on --max_router_iterations 150 
-script_params_list_add= -sdc_file sdc/samples/G.sdc
+script_params_list_add= -sdc_file sdc/samples/impossible_pass_timing.sdc
