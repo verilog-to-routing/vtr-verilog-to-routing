@@ -1,0 +1,7 @@
+<traffic_flows>
+
+	<single_flow src="^router:noc_router_four\|flit_out_two\[0\]~reg0$" dst="^router:noc_router_two\|flit_out_two\[0\]~reg0$" bandwidth="56" latency_cons="67" />
+
+	<single_flow src="^router:noc_router_three\|flit_out_two\[0\]~reg0$" dst="^router:noc_router_one\|flit_out_two\[0\]~reg0$" bandwidth="56" latency_cons="67" />
+
+</traffic_flows>
