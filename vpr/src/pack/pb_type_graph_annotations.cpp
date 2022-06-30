@@ -154,9 +154,7 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* p
                      * can use this info to only annotate existing edges */
                     if (iedge != in_port[i][j]->num_output_edges) {
                         in_port[i][j]->output_edges[iedge]->num_pack_patterns++;
-                        in_port[i][j]->output_edges[iedge]->pack_pattern_names = (const char**)vtr::realloc(
-                            in_port[i][j]->output_edges[iedge]->pack_pattern_names,
-                            sizeof(char*) * in_port[i][j]->output_edges[iedge]->num_pack_patterns);
+                        in_port[i][j]->output_edges[iedge]->pack_pattern_names.resize(in_port[i][j]->output_edges[iedge]->num_pack_patterns);
                         in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns - 1] = value;
                     }
                     p++;
@@ -168,14 +166,14 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* p
 
     if (in_port != nullptr) {
         for (i = 0; i < num_in_sets; i++) {
-            free(in_port[i]);
+            delete[](in_port[i]);
         }
         delete[](in_port);
         delete[](num_in_ptrs);
     }
     if (out_port != nullptr) {
         for (i = 0; i < num_out_sets; i++) {
-            free(out_port[i]);
+            delete[](out_port[i]);
         }
         delete[](out_port);
         delete[](num_out_ptrs);
@@ -395,9 +393,9 @@ static void load_delay_annotations(const int line_num,
                     if (num_new_sinks > 0) {
                         //Reallocate
                         src_pin->num_pin_timing += num_new_sinks;
-                        src_pin->pin_timing = (t_pb_graph_pin**)vtr::realloc(src_pin->pin_timing, sizeof(t_pb_graph_pin*) * src_pin->num_pin_timing);
-                        src_pin->pin_timing_del_max = (float*)vtr::realloc(src_pin->pin_timing_del_max, sizeof(float) * src_pin->num_pin_timing);
-                        src_pin->pin_timing_del_min = (float*)vtr::realloc(src_pin->pin_timing_del_min, sizeof(float) * src_pin->num_pin_timing);
+                        src_pin->pin_timing.resize(src_pin->num_pin_timing);
+                        src_pin->pin_timing_del_max.resize(src_pin->num_pin_timing);
+                        src_pin->pin_timing_del_min.resize(src_pin->num_pin_timing);
 
                         //Store the sink pins and initial delays to invalid
                         size_t ipin_timing = src_pin->num_pin_timing - num_new_sinks;
@@ -458,14 +456,14 @@ static void load_delay_annotations(const int line_num,
     //Clean-up
     if (in_port != nullptr) {
         for (i = 0; i < num_in_sets; i++) {
-            free(in_port[i]);
+            delete[](in_port[i]);
         }
         delete[](in_port);
         delete[](num_in_ptrs);
     }
     if (out_port != nullptr) {
         for (i = 0; i < num_out_sets; i++) {
-            free(out_port[i]);
+            delete[](out_port[i]);
         }
         delete[](out_port);
         delete[](num_out_ptrs);

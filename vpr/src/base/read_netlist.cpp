@@ -751,7 +751,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                         }
                     }
                     for (j = 0; j < num_sets; j++) {
-                        free(pin_node[j]);
+                        delete[](pin_node[j]);
                     }
                     delete[](pin_node);
                     delete[](num_ptrs);
@@ -820,7 +820,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                         }
                     }
                     for (j = 0; j < num_sets; j++) {
-                        free(pin_node[j]);
+                        delete[](pin_node[j]);
                     }
                     delete[](pin_node);
                     delete[](num_ptrs);
