@@ -281,19 +281,17 @@ void ClusteredNetlist::shrink_to_fit_impl() {
  *        block in a list where all the other blocks in the list are of the
  *        blocks logical type.
  */
-void ClusteredNetlist::add_block_to_logical_type(ClusterBlockId blk_id, t_logical_block_type_ptr type){
-
+void ClusteredNetlist::add_block_to_logical_type(ClusterBlockId blk_id, t_logical_block_type_ptr type) {
     std::string logical_block_type_name = type->name;
 
     // check if a group of blocks exist for the current logical block type
     // basically checking if this is the first time we are seeing this logical block type
     auto logical_type_blocks = block_type_to_id.find(logical_block_type_name);
 
-    if (logical_type_blocks == block_type_to_id.end()){
+    if (logical_type_blocks == block_type_to_id.end()) {
         // if the current logical block doesnt exist then create a new group of blocks for it and add it
         block_type_to_id.emplace(logical_block_type_name, std::vector<ClusterBlockId>({blk_id}));
-    }
-    else{
+    } else {
         // current logical block exists, so add the current block to the group other blocks of this type
         logical_type_blocks->second.push_back(blk_id);
     }
@@ -360,26 +358,24 @@ bool ClusteredNetlist::validate_net_sizes_impl(size_t num_nets) const {
  * 
  */
 ClusterBlockId ClusteredNetlist::find_block_with_matching_name(const std::string& name, t_logical_block_type_ptr blk_type) const {
-
     ClusterBlockId blk_id = ClusterBlockId::INVALID();
     auto blks_of_logical_type = block_type_to_id.find(blk_type->name);
     std::regex name_to_match(name);
 
-    if (blks_of_logical_type != block_type_to_id.end()){
+    if (blks_of_logical_type != block_type_to_id.end()) {
         // get the list of blocks that are of the specified logical type
         const std::vector<ClusterBlockId>* blk_list = &blks_of_logical_type->second;
-        
-        // go through the list of blocks to find if any block name matches the provided name (contains the input string in its name)
-        for (auto blk = blk_list->begin(); blk != blk_list->end(); blk++){
 
+        // go through the list of blocks to find if any block name matches the provided name (contains the input string in its name)
+        for (auto blk = blk_list->begin(); blk != blk_list->end(); blk++) {
             // another thing you can do is go through blocks and instead string.find(), you can use a regular expression version (so match a regular expression)
 
             // check for the string match
-            if (std::regex_match(Netlist::block_name(*blk), name_to_match)){
+            if (std::regex_match(Netlist::block_name(*blk), name_to_match)) {
                 blk_id = *blk;
                 break;
             }
-        } 
+        }
     }
     return blk_id;
 }

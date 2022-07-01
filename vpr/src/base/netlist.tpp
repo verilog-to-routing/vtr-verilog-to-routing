@@ -475,23 +475,21 @@ BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block(const std::string& na
  */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block_with_matching_name(const std::string& name) const {
-
     BlockId matching_blk_id = BlockId::INVALID();
     const std::string blk_name;
-    
+
     // go through all the blocks in the netlist
-    for (auto blk_id = block_ids_.begin(); blk_id != block_ids_.end(); blk_id++){
+    for (auto blk_id = block_ids_.begin(); blk_id != block_ids_.end(); blk_id++) {
         // get the corresponding block name
         blk_name = &strings_[block_names_[*blk_id]];
         // check whether the current block name contains the input string within it
-        if (blk_name.find(name) != std::string::npos){
+        if (blk_name.find(name) != std::string::npos) {
             matching_blk_id = blk_id;
             break;
         }
     }
     return matching_blk_id;
 }
-
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 PortId Netlist<BlockId, PortId, PinId, NetId>::find_port(const BlockId blk_id, const std::string& name) const {
