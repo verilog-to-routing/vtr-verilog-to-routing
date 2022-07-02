@@ -2225,7 +2225,7 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     int pin_physical_num = -1;
     // #TODO: This is not a clean solution - Write a helper function to get rid of the if-statement
     if(pb_graph_pin->is_root_block_pin()) {
-        pin_physical_num = get_physical_pin_at_sub_tile_location(physical_type, logical_block, sub_tile_rel_cap+sub_tile->capacity.low, pb_graph_pin->pin_number);
+        pin_physical_num = get_physical_pin_at_sub_tile_location(physical_type, logical_block, sub_tile_rel_cap+sub_tile->capacity.low, pb_graph_pin->pin_count_in_cluster);
     } else {
         pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
     }

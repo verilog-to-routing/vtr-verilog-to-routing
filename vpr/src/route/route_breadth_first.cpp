@@ -119,7 +119,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
     VTR_LOG("Routing failed.\n");
 
 #ifdef ROUTER_DEBUG
-    print_invalid_routing_info();
+    print_invalid_routing_info((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist);
 #endif
 
     return (false);

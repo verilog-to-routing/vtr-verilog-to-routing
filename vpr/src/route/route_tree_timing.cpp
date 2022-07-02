@@ -70,7 +70,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_r
 
 static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node);
 
-static ClusterPinId get_connected_cluster_pin_id(const ClusteredPinAtomPinsLookup& pin_look_up, ParentPinId pin, bool is_flat);
+//static ClusterPinId get_connected_cluster_pin_id(const ClusteredPinAtomPinsLookup& pin_look_up, ParentPinId pin, bool is_flat);
 
 void collect_route_tree_connections(const t_rt_node* node, std::multiset<std::tuple<int, int, int>>& connections);
 
@@ -724,9 +724,7 @@ void update_net_delays_from_route_tree(float* net_delay,
                                        const t_rt_node* const* rt_node_of_sink,
                                        ParentNetId inet,
                                        TimingInfo* timing_info,
-                                       ClusteredPinTimingInvalidator* pin_timing_invalidator,
-                                       const ClusteredPinAtomPinsLookup& pin_look_up,
-                                       bool is_flat) {
+                                       NetPinTimingInvalidator* pin_timing_invalidator) {
     /* Goes through all the sinks of this net and copies their delay values from
      * the route_tree to the net_delay array.                                    */
 
@@ -940,19 +938,19 @@ static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* h
     return {head, tail};
 }
 
-static ClusterPinId get_connected_cluster_pin_id(const ClusteredPinAtomPinsLookup& pin_look_up, ParentPinId pin, bool is_flat) {
-    ClusterPinId cluster_pin_id = ClusterPinId::INVALID();
-    if(is_flat) {/* Pin is in atom netlist */
-        AtomPinId atom_pin_id = convert_to_atom_pin_id(pin);
-        cluster_pin_id = pin_look_up.connected_clb_pin(atom_pin_id);
-
-
-    } else { /* Pin is in cluster netlist */
-        cluster_pin_id = convert_to_cluster_pin_id(pin);
-    }
-
-    return cluster_pin_id;
-}
+//static ClusterPinId get_connected_cluster_pin_id(const ClusteredPinAtomPinsLookup& pin_look_up, ParentPinId pin, bool is_flat) {
+//    ClusterPinId cluster_pin_id = ClusterPinId::INVALID();
+//    if(is_flat) {/* Pin is in atom netlist */
+//        AtomPinId atom_pin_id = convert_to_atom_pin_id(pin);
+//        cluster_pin_id = pin_look_up.connected_clb_pin(atom_pin_id);
+//
+//
+//    } else { /* Pin is in cluster netlist */
+//        cluster_pin_id = convert_to_cluster_pin_id(pin);
+//    }
+//
+//    return cluster_pin_id;
+//}
 
 t_trace* traceback_from_route_tree(ParentNetId inet,
                                    const t_rt_node* root,

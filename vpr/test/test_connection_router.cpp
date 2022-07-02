@@ -15,6 +15,7 @@ namespace {
 
 // Route from source_node to sink_node, returning either the delay, or infinity if unroutable.
 static float do_one_route(int source_node, int sink_node, const t_router_opts& router_opts, const std::vector<t_segment_inf>& segment_inf) {
+    bool is_flat = router_opts.flat_routing;
     auto& device_ctx = g_vpr_ctx.device();
 
     t_rt_node* rt_root = init_route_tree_to_source_no_net(source_node);
@@ -34,7 +35,9 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
 
-    route_budgets budgeting_inf;
+    const Netlist<>& net_list = is_flat ? (const Netlist<>&) g_vpr_ctx.atom().nlist :
+                                        (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
+    route_budgets budgeting_inf(net_list, is_flat);
 
     RouterStats router_stats;
     auto router_lookahead = make_router_lookahead(
@@ -118,6 +121,10 @@ TEST_CASE("connection_router", "[vpr]") {
     vpr_install_signal_handler();
     vpr_initialize_logging();
 
+    bool is_flat = vpr_setup.RouterOpts.flat_routing;
+    const Netlist<>& net_list = is_flat ? (const Netlist<>&) g_vpr_ctx.atom().nlist :
+                                        (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
+
     // Command line arguments
     const char* argv[] = {
         "test_vpr",
@@ -169,8 +176,10 @@ TEST_CASE("connection_router", "[vpr]") {
     REQUIRE(delay < std::numeric_limits<float>::infinity());
 
     // Clean up
-    free_routing_structs();
-    vpr_free_all(arch, vpr_setup);
+    free_routing_structs(net_list);
+    vpr_free_all(net_list,
+                 arch,
+                 vpr_setup);
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
     free_pack_molecules(atom_ctx.list_of_pack_molecules.release());

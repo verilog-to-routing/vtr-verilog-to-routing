@@ -94,7 +94,7 @@ static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RR
                                                                   const Netlist<>& net_list,
                                                                   bool is_flat);
 
-static vtr::vector<ClusterNetId, std::vector<int>> load_cluster_net_rr_terminals(const RRGraphView& rr_graph, const ClusteredNetlist& clb_nlist);
+//static vtr::vector<ClusterNetId, std::vector<int>> load_cluster_net_rr_terminals(const RRGraphView& rr_graph, const ClusteredNetlist& clb_nlist);
 
 static vtr::vector<ParentBlockId, std::vector<int>> load_rr_clb_sources(const RRGraphView& rr_graph,
                                                                          const Netlist<>& net_list,
@@ -1051,43 +1051,43 @@ static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RR
     return net_rr_terminals;
 }
 
-static vtr::vector<ClusterNetId, std::vector<int>> load_cluster_net_rr_terminals(const RRGraphView& rr_graph, const ClusteredNetlist& clb_nlist) {
-
-    vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
-
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    auto nets = clb_nlist.nets();
-    net_rr_terminals.resize(nets.size());
-
-    for (auto net_id : clb_nlist.nets()) {
-        auto net_pins = clb_nlist.net_pins(net_id);
-        net_rr_terminals[net_id].resize(net_pins.size());
-
-        int pin_count = 0;
-        for (auto pin_id : clb_nlist.net_pins(net_id)) {
-            auto block_id = clb_nlist.pin_block(pin_id);
-            int i = place_ctx.block_locs[block_id].loc.x;
-            int j = place_ctx.block_locs[block_id].loc.y;
-            auto type = physical_tile_type(block_id);
-
-            /* In the routing graph, each (x, y) location has unique pins on it
-             * so when there is capacity, blocks are packed and their pin numbers
-             * are offset to get their actual rr_node */
-            int phys_pin = tile_pin_index(pin_id);
-
-            int iclass = type->pin_class[phys_pin];
-
-            RRNodeId inode = rr_graph.node_lookup().find_node(i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-                                                              iclass);
-            net_rr_terminals[net_id][pin_count] = size_t(inode);
-            pin_count++;
-        }
-    }
-
-    return net_rr_terminals;
-
-}
+//static vtr::vector<ClusterNetId, std::vector<int>> load_cluster_net_rr_terminals(const RRGraphView& rr_graph, const ClusteredNetlist& clb_nlist) {
+//
+//    vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
+//
+//    auto& place_ctx = g_vpr_ctx.placement();
+//
+//    auto nets = clb_nlist.nets();
+//    net_rr_terminals.resize(nets.size());
+//
+//    for (auto net_id : clb_nlist.nets()) {
+//        auto net_pins = clb_nlist.net_pins(net_id);
+//        net_rr_terminals[net_id].resize(net_pins.size());
+//
+//        int pin_count = 0;
+//        for (auto pin_id : clb_nlist.net_pins(net_id)) {
+//            auto block_id = clb_nlist.pin_block(pin_id);
+//            int i = place_ctx.block_locs[block_id].loc.x;
+//            int j = place_ctx.block_locs[block_id].loc.y;
+//            auto type = physical_tile_type(block_id);
+//
+//            /* In the routing graph, each (x, y) location has unique pins on it
+//             * so when there is capacity, blocks are packed and their pin numbers
+//             * are offset to get their actual rr_node */
+//            int phys_pin = tile_pin_index(pin_id);
+//
+//            int iclass = type->pin_class[phys_pin];
+//
+//            RRNodeId inode = rr_graph.node_lookup().find_node(i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
+//                                                              iclass);
+//            net_rr_terminals[net_id][pin_count] = size_t(inode);
+//            pin_count++;
+//        }
+//    }
+//
+//    return net_rr_terminals;
+//
+//}
 
 /* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
  * in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
@@ -1378,7 +1378,10 @@ void print_route(const Netlist<>& net_list,
                         int pin_num = rr_graph.node_pin_num(rr_node);
                         int xoffset = device_ctx.grid[ilow][jlow].width_offset;
                         int yoffset = device_ctx.grid[ilow][jlow].height_offset;
-                        int sub_tile_offset = physical_tile->get_sub_tile_loc_from_pin(pin_num);
+                        const t_sub_tile* sub_tile;
+                        int sub_tile_rel_cap;
+                        std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_num);
+                        int sub_tile_offset = sub_tile->capacity.low + sub_tile_rel_cap;
 
                         ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[sub_tile_offset];
                         VTR_ASSERT(iblock);

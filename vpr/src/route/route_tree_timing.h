@@ -26,9 +26,7 @@ void update_net_delays_from_route_tree(float* net_delay,
                                        const t_rt_node* const* rt_node_of_sink,
                                        ParentNetId inet,
                                        TimingInfo* timing_info,
-                                       ClusteredPinTimingInvalidator* pin_timing_invalidator,
-                                       const ClusteredPinAtomPinsLookup& pin_look_up,
-                                       bool is_flat);
+                                       NetPinTimingInvalidator* pin_timing_invalidator);
 
 void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
 void load_route_tree_rr_route_inf(t_rt_node* root);

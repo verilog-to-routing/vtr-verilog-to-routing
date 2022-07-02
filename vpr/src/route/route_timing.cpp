@@ -279,7 +279,6 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& atom_ctx = g_vpr_ctx.atom();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     //Initially, the router runs normally trying to reduce congestion while
@@ -414,23 +413,14 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         print_router_criticality_histogram(net_list, *route_timing_info, netlist_pin_lookup, is_flat);
     }
 
-    std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
+    std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator;
     if (timing_info) {
-        if(is_flat) {
-            pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>((const Netlist<>&)atom_ctx.nlist,
-                                                                                     netlist_pin_lookup,
-                                                                                     atom_ctx.nlist,
-                                                                                     atom_ctx.lookup,
-                                                                                     *timing_info->timing_graph(),
-                                                                                     is_flat);
-        } else {
-            pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>((const Netlist<>&)cluster_ctx.clb_nlist,
-                                                                                     netlist_pin_lookup,
-                                                                                     atom_ctx.nlist,
-                                                                                     atom_ctx.lookup,
-                                                                                     *timing_info->timing_graph(),
-                                                                                     is_flat);
-        }
+        pin_timing_invalidator = std::make_unique<NetPinTimingInvalidator>((const Netlist<>&)atom_ctx.nlist,
+                                                                                 netlist_pin_lookup,
+                                                                                 atom_ctx.nlist,
+                                                                                 atom_ctx.lookup,
+                                                                                 *timing_info->timing_graph(),
+                                                                                 is_flat);
     }
 
     RouterStats router_stats;
@@ -843,7 +833,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         ++num_routing_failed;
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-        if (f_router_debug) print_invalid_routing_info();
+        if (f_router_debug) print_invalid_routing_info(net_list);
 #endif
     }
 
@@ -870,7 +860,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  NetPinsMatrix<float>& net_delay,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                  std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                 NetPinTimingInvalidator* pin_timing_invalidator,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted,
                                  float worst_negative_slack,
@@ -1014,7 +1004,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              float* net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                             NetPinTimingInvalidator* pin_timing_invalidator,
                              route_budgets& budgeting_inf,
                              float worst_neg_slack,
                              const RoutingPredictor& routing_predictor,
@@ -1148,8 +1138,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
 
         enable_router_debug(router_opts, net_id, sink_rr, itry, &router);
 
-        VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
-
         cost_params.criticality = pin_criticality[target_pin];
 
         if (budgeting_inf.if_set()) {
@@ -1196,9 +1184,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       rt_node_of_sink,
                                       net_id,
                                       timing_info.get(),
-                                      pin_timing_invalidator,
-                                      netlist_pin_lookup,
-                                      is_flat);
+                                      pin_timing_invalidator);
 
     if (router_opts.update_lower_bound_delays) {
         for (int ipin : remaining_targets) {
@@ -1206,13 +1192,13 @@ bool timing_driven_route_net(ConnectionRouter& router,
         }
     }
 
-    if (!net_list.net_is_ignored(net_id)) {
-        for (unsigned ipin = 1; ipin < net_list.net_pins(net_id).size(); ++ipin) {
-            if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK
-                VTR_ASSERT(rr_graph.node_type(RRNodeId(rt_node_of_sink[ipin]->parent_node->parent_node->inode)) == OPIN);
-            }
-        }
-    }
+//    if (!net_list.net_is_ignored(net_id)) {
+//        for (unsigned ipin = 1; ipin < net_list.net_pins(net_id).size(); ++ipin) {
+//            if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK
+//                VTR_ASSERT(rr_graph.node_type(RRNodeId(rt_node_of_sink[ipin]->parent_node->parent_node->inode)) == OPIN);
+//            }
+//        }
+//    }
     VTR_ASSERT_MSG(g_vpr_ctx.routing().rr_node_route_inf[rt_root->inode].occ() <= rr_graph.node_capacity(RRNodeId(rt_root->inode)), "SOURCE should never be congested");
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time

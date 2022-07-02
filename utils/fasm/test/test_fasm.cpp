@@ -322,13 +322,12 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         } else {
             sync_netlists_to_routing(g_vpr_ctx.device(),
                                      g_vpr_ctx.mutable_atom(),
-                                     g_vpr_ctx.mutable_clustering(),
                                      g_vpr_ctx.atom().lookup,
+                                     g_vpr_ctx.mutable_clustering(),
                                      g_vpr_ctx.placement(),
                                      g_vpr_ctx.routing(),
-                                     (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
                                      vpr_setup.PackerOpts.pack_verbosity > 2,
-                                     vpr_setup.RouterOpts.flat_routing,);
+                                     vpr_setup.RouterOpts.flat_routing);
         }
     }
 

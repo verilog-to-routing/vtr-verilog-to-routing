@@ -244,9 +244,9 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
 #endif
 
 /********************* Static subroutines local to place.c *******************/
-#ifdef VERBOSE
-static void print_clb_placement(const char* fname);
-#endif
+//#ifdef VERBOSE
+//static void print_clb_placement(const char* fname);
+//#endif
 
 static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
@@ -272,7 +272,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               MoveGenerator& move_generator,
                               ManualMoveGenerator& manual_move_generator,
                               SetupTimingInfo* timing_info,
-                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                              NetPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
                               const PlaceDelayModel* delay_model,
                               PlacerCriticalities* criticalities,
@@ -297,7 +297,7 @@ static int check_placement_consistency();
 static int check_block_placement_consistency();
 static int check_macro_placement_consistency();
 
-static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t_annealing_sched annealing_sched, const PlaceDelayModel* delay_model, PlacerCriticalities* criticalities, PlacerSetupSlacks* setup_slacks, SetupTimingInfo* timing_info, MoveGenerator& move_generator, ManualMoveGenerator& manual_move_generator, ClusteredPinTimingInvalidator* pin_timing_invalidator, t_pl_blocks_to_be_moved& blocks_affected, const t_placer_opts& placer_opts, MoveTypeStat& move_type_stat);
+static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t_annealing_sched annealing_sched, const PlaceDelayModel* delay_model, PlacerCriticalities* criticalities, PlacerSetupSlacks* setup_slacks, SetupTimingInfo* timing_info, MoveGenerator& move_generator, ManualMoveGenerator& manual_move_generator, NetPinTimingInvalidator* pin_timing_invalidator, t_pl_blocks_to_be_moved& blocks_affected, const t_placer_opts& placer_opts, MoveTypeStat& move_type_stat);
 
 static int count_connections();
 
@@ -309,7 +309,7 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
 
 static void invalidate_affected_connections(
     const t_pl_blocks_to_be_moved& blocks_affected,
-    ClusteredPinTimingInvalidator* pin_tedges_invalidator,
+    NetPinTimingInvalidator* pin_tedges_invalidator,
     TimingInfo* timing_info);
 
 static bool driven_by_moved_block(const ClusterNetId net,
@@ -361,7 +361,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           const PlaceDelayModel* delay_model,
                                           PlacerCriticalities* criticalities,
                                           PlacerSetupSlacks* setup_slacks,
-                                          ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                          NetPinTimingInvalidator* pin_timing_invalidator,
                                           SetupTimingInfo* timing_info);
 
 static void placement_inner_loop(const t_annealing_state* state,
@@ -370,7 +370,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  t_placer_statistics* stats,
                                  t_placer_costs* costs,
                                  int* moves_since_cost_recompute,
-                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                 NetPinTimingInvalidator* pin_timing_invalidator,
                                  const PlaceDelayModel* delay_model,
                                  PlacerCriticalities* criticalities,
                                  PlacerSetupSlacks* setup_slacks,
@@ -467,7 +467,7 @@ void try_place(const t_placer_opts& placer_opts,
     std::unique_ptr<PlacerSetupSlacks> placer_setup_slacks;
 
     std::unique_ptr<PlacerCriticalities> placer_criticalities;
-    std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
+    std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator;
 
     manual_move_generator = std::make_unique<ManualMoveGenerator>();
 
@@ -581,7 +581,7 @@ void try_place(const t_placer_opts& placer_opts,
             cluster_ctx.clb_nlist, netlist_pin_lookup);
 
         // During placement, we only use cluster netlist. Thus, the is_flat parameter should be set to false
-        pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>(
+        pin_timing_invalidator = std::make_unique<NetPinTimingInvalidator>(
             (const Netlist<>&)cluster_ctx.clb_nlist, netlist_pin_lookup,
             atom_ctx.nlist, atom_ctx.lookup,
             *timing_info->timing_graph(),
@@ -831,11 +831,11 @@ void try_place(const t_placer_opts& placer_opts,
             update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT,
                           timing_info);
 
-#ifdef VERBOSE
-            if (getEchoEnabled()) {
-                print_clb_placement("first_iteration_clb_placement.echo");
-            }
-#endif
+//#ifdef VERBOSE
+//            if (getEchoEnabled()) {
+//                print_clb_placement("first_iteration_clb_placement.echo");
+//            }
+//#endif
         } while (state.outer_loop_update(stats.success_rate, costs, placer_opts,
                                          annealing_sched));
         /* Outer loop of the simmulated annealing ends */
@@ -918,11 +918,11 @@ void try_place(const t_placer_opts& placer_opts,
     // TODO:
     // 1. add some subroutine hierarchy!  Too big!
 
-#ifdef VERBOSE
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
-        print_clb_placement(getEchoFileName(E_ECHO_END_CLB_PLACEMENT));
-    }
-#endif
+//#ifdef VERBOSE
+//    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
+//        print_clb_placement(getEchoFileName(E_ECHO_END_CLB_PLACEMENT));
+//    }
+//#endif
 
     // Update physical pin values
     for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
@@ -1003,7 +1003,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           const PlaceDelayModel* delay_model,
                                           PlacerCriticalities* criticalities,
                                           PlacerSetupSlacks* setup_slacks,
-                                          ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                          NetPinTimingInvalidator* pin_timing_invalidator,
                                           SetupTimingInfo* timing_info) {
     if (!placer_opts.place_algorithm.is_timing_driven()) {
         return;
@@ -1042,7 +1042,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  t_placer_statistics* stats,
                                  t_placer_costs* costs,
                                  int* moves_since_cost_recompute,
-                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                 NetPinTimingInvalidator* pin_timing_invalidator,
                                  const PlaceDelayModel* delay_model,
                                  PlacerCriticalities* criticalities,
                                  PlacerSetupSlacks* setup_slacks,
@@ -1193,7 +1193,7 @@ static int count_connections() {
 }
 
 ///@brief Find the starting temperature for the annealing loop.
-static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t_annealing_sched annealing_sched, const PlaceDelayModel* delay_model, PlacerCriticalities* criticalities, PlacerSetupSlacks* setup_slacks, SetupTimingInfo* timing_info, MoveGenerator& move_generator, ManualMoveGenerator& manual_move_generator, ClusteredPinTimingInvalidator* pin_timing_invalidator, t_pl_blocks_to_be_moved& blocks_affected, const t_placer_opts& placer_opts, MoveTypeStat& move_type_stat) {
+static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t_annealing_sched annealing_sched, const PlaceDelayModel* delay_model, PlacerCriticalities* criticalities, PlacerSetupSlacks* setup_slacks, SetupTimingInfo* timing_info, MoveGenerator& move_generator, ManualMoveGenerator& manual_move_generator, NetPinTimingInvalidator* pin_timing_invalidator, t_pl_blocks_to_be_moved& blocks_affected, const t_placer_opts& placer_opts, MoveTypeStat& move_type_stat) {
     if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
     }
@@ -1314,7 +1314,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               MoveGenerator& move_generator,
                               ManualMoveGenerator& manual_move_generator,
                               SetupTimingInfo* timing_info,
-                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                              NetPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
                               const PlaceDelayModel* delay_model,
                               PlacerCriticalities* criticalities,
@@ -1957,11 +1957,11 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
  * values for `proposed_connection_delay` and `connection_delay`.
  *
  * Invalidate all the timing graph edges associated with these connections via
- * the ClusteredPinTimingInvalidator class.
+ * the NetPinTimingInvalidator class.
  */
 static void invalidate_affected_connections(
     const t_pl_blocks_to_be_moved& blocks_affected,
-    ClusteredPinTimingInvalidator* pin_tedges_invalidator,
+    NetPinTimingInvalidator* pin_tedges_invalidator,
     TimingInfo* timing_info) {
     VTR_ASSERT_SAFE(timing_info);
     VTR_ASSERT_SAFE(pin_tedges_invalidator);
@@ -2853,24 +2853,24 @@ int check_macro_placement_consistency() {
     return error;
 }
 
-#ifdef VERBOSE
-static void print_clb_placement(const char* fname) {
-    /* Prints out the clb placements to a file.  */
-    FILE* fp;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    fp = vtr::fopen(fname, "w");
-    fprintf(fp, "Complex block placements:\n\n");
-
-    fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
-    for (auto i : cluster_ctx.clb_nlist.blocks()) {
-        fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i), place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].sub_tile);
-    }
-
-    fclose(fp);
-}
-#endif
+//#ifdef VERBOSE
+//static void print_clb_placement(const char* fname) {
+//    /* Prints out the clb placements to a file.  */
+//    FILE* fp;
+//    auto& cluster_ctx = g_vpr_ctx.clustering();
+//    auto& place_ctx = g_vpr_ctx.placement();
+//
+//    fp = vtr::fopen(fname, "w");
+//    fprintf(fp, "Complex block placements:\n\n");
+//
+//    fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
+//    for (auto i : cluster_ctx.clb_nlist.blocks()) {
+//        fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i), place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].sub_tile);
+//    }
+//
+//    fclose(fp);
+//}
+//#endif
 
 static void free_try_swap_arrays() {
     g_vpr_ctx.mutable_placement().compressed_block_grids.clear();

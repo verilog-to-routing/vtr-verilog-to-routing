@@ -343,7 +343,7 @@ void t_rr_graph_storage::assign_first_edges() {
                 node_first_edge_[RRNodeId(node_id)] = RREdgeId(first_id);
                 first_id = second_id;
                 node_id += 1;
-                VTR_ASSERT(node_first_edge_.size());
+                VTR_ASSERT(node_id < node_first_edge_.size());
             }
 
             VTR_ASSERT(node_id == current_node_id);

@@ -89,12 +89,12 @@ std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& 
 //For efficiency, it pre-calculates and stores the mapping from ClusterPinId -> tatum::EdgeIds,
 //and tracks whether a particular ClusterPinId has been already invalidated (to avoid the expense
 //of invalidating it multiple times)
-class ClusteredPinTimingInvalidator {
+class NetPinTimingInvalidator {
   public:
     typedef vtr::Range<const tatum::EdgeId*> tedge_range;
 
   public:
-    ClusteredPinTimingInvalidator(const Netlist<>& net_list,
+    NetPinTimingInvalidator(const Netlist<>& net_list,
                                   const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
                                   const AtomNetlist& atom_nlist,
                                   const AtomLookup& atom_lookup,
@@ -159,7 +159,10 @@ class ClusteredPinTimingInvalidator {
     }
 
   private:
-    tatum::EdgeId atom_pin_to_timing_edge(const tatum::TimingGraph& timing_graph, const AtomNetlist& atom_nlist, const AtomLookup& atom_lookup, const AtomPinId atom_pin) {
+    tatum::EdgeId atom_pin_to_timing_edge(const tatum::TimingGraph& timing_graph,
+                                          const AtomNetlist& atom_nlist,
+                                          const AtomLookup& atom_lookup,
+                                          const AtomPinId atom_pin) {
         tatum::NodeId pin_tnode = atom_lookup.atom_pin_tnode(atom_pin);
         VTR_ASSERT_SAFE(pin_tnode);
 

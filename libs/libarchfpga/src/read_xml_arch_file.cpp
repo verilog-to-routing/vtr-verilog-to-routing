@@ -192,7 +192,7 @@ static void ProcessMode(vtr::string_internment* strings,
                         const bool timing_enabled,
                         const t_arch& arch,
                         const pugiutil::loc_data& loc_data,
-                        int& pb_idx);
+                        int& parent_pb_idx);
 static t_metadata_dict ProcessMetadata(vtr::string_internment* strings, pugi::xml_node Parent, const pugiutil::loc_data& loc_data);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node,
