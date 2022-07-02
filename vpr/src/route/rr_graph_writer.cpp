@@ -24,7 +24,7 @@
 /************************ Subroutine definitions ****************************/
 
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
-void write_rr_graph(const char* file_name) {
+void write_rr_graph(const char* file_name, bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     RrGraphSerializer reader(
         /*graph_type=*/t_graph_type(),
@@ -47,7 +47,8 @@ void write_rr_graph(const char* file_name) {
         device_ctx.grid,
         &device_ctx.rr_graph_builder.rr_node_metadata(),
         &device_ctx.rr_graph_builder.rr_edge_metadata(),
-        &device_ctx.arch->strings);
+        &device_ctx.arch->strings,
+        is_flat);
 
     if (vtr::check_file_name_extension(file_name, ".xml")) {
         std::fstream fp;

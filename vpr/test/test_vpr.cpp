@@ -150,7 +150,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         vpr::add_rr_node_metadata(src_inode, vtr::string_view("node"), vtr::string_view("test node"));
         vpr::add_rr_edge_metadata(src_inode, sink_inode, switch_id, vtr::string_view("edge"), vtr::string_view("test edge"));
 
-        write_rr_graph(kRrGraphFile);
+        write_rr_graph(kRrGraphFile, false);
         vpr_free_all((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, arch, vpr_setup);
 
         auto& atom_ctx = g_vpr_ctx.mutable_atom();

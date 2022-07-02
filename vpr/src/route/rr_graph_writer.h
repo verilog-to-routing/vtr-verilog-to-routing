@@ -8,6 +8,6 @@
 
 #include "physical_types.h"
 
-void write_rr_graph(const char* file_name);
+void write_rr_graph(const char* file_name, bool is_flat);
 
 #endif

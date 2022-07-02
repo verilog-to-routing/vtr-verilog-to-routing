@@ -13,6 +13,7 @@ void load_rr_file(const t_graph_type graph_type,
                   int* wire_to_rr_ipin_switch,
                   const char* read_rr_graph_name,
                   bool read_edge_metadata,
-                  bool do_check_rr_graph);
+                  bool do_check_rr_graph,
+                  bool is_flat);
 
 #endif /* RR_GRAPH_READER_H */

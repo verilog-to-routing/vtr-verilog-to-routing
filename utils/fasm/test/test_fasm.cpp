@@ -274,7 +274,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             }
         }
 
-        write_rr_graph(kRrGraphFile);
+        write_rr_graph(kRrGraphFile, false);
         if(vpr_setup.RouterOpts.flat_routing) {
             vpr_free_all((const Netlist<>&) g_vpr_ctx.atom().nlist, arch, vpr_setup);
         } else {

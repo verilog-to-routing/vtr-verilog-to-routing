@@ -18,7 +18,9 @@
 #include "route_tree_timing.h"
 
 /******************** Subroutines local to this module **********************/
-static void check_node_and_range(int inode, enum e_route_type route_type);
+static void check_node_and_range(int inode,
+                                 enum e_route_type route_type,
+                                 bool is_flat);
 static void check_source(const Netlist<>& net_list,
                          RRNodeId inode,
                          ParentNetId net_id,
@@ -33,7 +35,8 @@ static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(ParentNetId inet, bool* connected_to_route);
 static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
-                                         enum e_route_type route_type);
+                                         enum e_route_type route_type,
+                                         bool is_flat);
 
 static void check_all_non_configurable_edges(bool is_flat);
 static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets, bool is_flat);
@@ -81,7 +84,9 @@ void check_route(const Netlist<>& net_list,
                   "Error in check_route -- routing resources are overused.\n");
     }
 
-    check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type);
+    check_locally_used_clb_opins(route_ctx.clb_opins_used_locally,
+                                 route_type,
+                                 is_flat);
 
     auto connected_to_route = std::make_unique<bool[]>(rr_graph.num_nodes());
     std::fill_n(connected_to_route.get(), rr_graph.num_nodes(), false);
@@ -107,7 +112,7 @@ void check_route(const Netlist<>& net_list,
         }
 
         inode = tptr->index;
-        check_node_and_range(inode, route_type);
+        check_node_and_range(inode, route_type, is_flat);
         check_switch(tptr, num_switches);
         connected_to_route[inode] = true; /* Mark as in path. */
 
@@ -123,7 +128,7 @@ void check_route(const Netlist<>& net_list,
         while (tptr != nullptr) {
             inode = tptr->index;
             net_pin_index = tptr->net_pin_index;
-            check_node_and_range(inode, route_type);
+            check_node_and_range(inode, route_type, is_flat);
             check_switch(tptr, num_switches);
 
             if (prev_switch == OPEN) { //Start of a new branch
@@ -562,7 +567,8 @@ void recompute_occupancy_from_scratch(const AtomLookup& atom_look_up, bool is_fl
 }
 
 static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
-                                         enum e_route_type route_type) {
+                                         enum e_route_type route_type,
+                                         bool is_flat) {
     /* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
      * legal routing if subblocks connect to OPINs directly.                    */
 
@@ -580,7 +586,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 
             for (ipin = 0; ipin < num_local_opins; ipin++) {
                 inode = clb_opins_used_locally[blk_id][iclass][ipin];
-                check_node_and_range(inode, route_type); /* Node makes sense? */
+                check_node_and_range(inode, route_type, is_flat); /* Node makes sense? */
 
                 /* Now check that node is an OPIN of the right type. */
 
@@ -604,7 +610,9 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
     }
 }
 
-static void check_node_and_range(int inode, enum e_route_type route_type) {
+static void check_node_and_range(int inode,
+                                 enum e_route_type route_type,
+                                 bool is_flat) {
     /* Checks that inode is within the legal range, then calls check_node to    *
      * check that everything else about the node is OK.                         */
 
@@ -614,7 +622,10 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_graph.num_nodes() - 1);
     }
-    check_rr_node(inode, route_type, device_ctx);
+    check_rr_node(inode,
+                  route_type,
+                  device_ctx,
+                  is_flat);
 }
 
 //Checks that all non-configurable edges are in a legal configuration
