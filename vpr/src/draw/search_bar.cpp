@@ -157,11 +157,11 @@ bool highlight_rr_nodes(int hit_node) {
                 draw_state->draw_rr_node[node].node_highlighted = false;
             }
             //Print info about all nodes to terminal
-            VTR_LOG("%s\n", describe_rr_node(node).c_str());
+            VTR_LOG("%s\n", describe_rr_node(node, draw_state->is_flat).c_str());
         }
 
         //Show info about *only* hit node to graphics
-        std::string info = describe_rr_node(hit_node);
+        std::string info = describe_rr_node(hit_node, draw_state->is_flat);
 
         sprintf(message, "Selected %s", info.c_str());
         rr_highlight_message = message;

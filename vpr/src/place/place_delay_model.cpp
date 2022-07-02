@@ -361,9 +361,9 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, Cluste
             VPR_ERROR(VPR_ERROR_PLACE,
                       "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d) to %s (at %d,%d)\n"
                       "in comp_td_single_connection_delay: Delay is less than 0\n",
-                      block_type_pin_index_to_name(physical_tile_type(source_block), source_block_ipin).c_str(),
+                      block_type_pin_index_to_name(physical_tile_type(source_block), source_block_ipin, false).c_str(),
                       source_x, source_y,
-                      block_type_pin_index_to_name(physical_tile_type(sink_block), sink_block_ipin).c_str(),
+                      block_type_pin_index_to_name(physical_tile_type(sink_block), sink_block_ipin, false).c_str(),
                       sink_x, sink_y,
                       delay_source_to_sink);
         }

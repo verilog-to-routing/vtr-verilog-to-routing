@@ -97,7 +97,8 @@ static bool timing_driven_route_sink(ConnectionRouter& router,
                                      SpatialRouteTreeLookup& spatial_rt_lookup,
                                      RouterStats& router_stats,
                                      route_budgets& budgeting_inf,
-                                     const RoutingPredictor& routing_predictor);
+                                     const RoutingPredictor& routing_predictor,
+                                     bool is_flat);
 
 template<typename ConnectionRouter>
 static bool timing_driven_pre_route_to_clock_root(ConnectionRouter& router,
@@ -108,7 +109,8 @@ static bool timing_driven_pre_route_to_clock_root(ConnectionRouter& router,
                                                   int high_fanout_threshold,
                                                   t_rt_node* rt_root,
                                                   SpatialRouteTreeLookup& spatial_rt_lookup,
-                                                  RouterStats& router_stats);
+                                                  RouterStats& router_stats,
+                                                  bool is_flat);
 
 void disable_expansion_and_remove_sink_from_route_tree_nodes(t_rt_node* node);
 
@@ -833,7 +835,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         ++num_routing_failed;
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-        if (f_router_debug) print_invalid_routing_info(net_list);
+        if (f_router_debug) print_invalid_routing_info(net_list, is_flat);
 #endif
     }
 
@@ -1121,7 +1123,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                                    router_opts.high_fanout_threshold,
                                                    rt_root,
                                                    spatial_route_tree_lookup,
-                                                   router_stats)) {
+                                                   router_stats,
+                                                   is_flat)) {
             return false;
         }
     }
@@ -1163,7 +1166,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       spatial_route_tree_lookup,
                                       router_stats,
                                       budgeting_inf,
-                                      routing_predictor))
+                                      routing_predictor,
+                                      is_flat))
             return false;
 
         profiling::conn_finish(route_ctx.net_rr_terminals[net_id][0],
@@ -1218,13 +1222,14 @@ static bool timing_driven_pre_route_to_clock_root(ConnectionRouter& router,
                                                   int high_fanout_threshold,
                                                   t_rt_node* rt_root,
                                                   SpatialRouteTreeLookup& spatial_rt_lookup,
-                                                  RouterStats& router_stats) {
+                                                  RouterStats& router_stats,
+                                                  bool is_flat) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& m_route_ctx = g_vpr_ctx.mutable_routing();
 
     bool high_fanout = is_high_fanout(net_list.net_sinks(net_id).size(), high_fanout_threshold);
 
-    VTR_LOGV_DEBUG(f_router_debug, "Net %zu pre-route to (%s)\n", size_t(net_id), describe_rr_node(sink_node).c_str());
+    VTR_LOGV_DEBUG(f_router_debug, "Net %zu pre-route to (%s)\n", size_t(net_id), describe_rr_node(sink_node, is_flat).c_str());
 
     profiling::sink_criticality_start();
 
@@ -1248,7 +1253,7 @@ static bool timing_driven_pre_route_to_clock_root(ConnectionRouter& router,
         ParentBlockId src_block = net_list.net_driver_block(net_id);
         VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s' (#%zu)\n",
                 net_list.block_name(src_block).c_str(),
-                describe_rr_node(sink_node).c_str(),
+                describe_rr_node(sink_node, is_flat).c_str(),
                 net_list.net_name(net_id).c_str(),
                 size_t(net_id));
         if (f_router_debug) {
@@ -1317,7 +1322,8 @@ static bool timing_driven_route_sink(ConnectionRouter& router,
                                      SpatialRouteTreeLookup& spatial_rt_lookup,
                                      RouterStats& router_stats,
                                      route_budgets& budgeting_inf,
-                                     const RoutingPredictor& routing_predictor) {
+                                     const RoutingPredictor& routing_predictor,
+                                     bool is_flat) {
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -1325,7 +1331,7 @@ static bool timing_driven_route_sink(ConnectionRouter& router,
     profiling::sink_criticality_start();
 
     int sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
-    VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(sink_node).c_str());
+    VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(sink_node, is_flat).c_str());
 
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 

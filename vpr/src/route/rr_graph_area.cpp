@@ -31,7 +31,8 @@ static void count_unidir_routing_transistors(std::vector<t_segment_inf>& segment
                                              int wire_to_ipin_switch,
                                              float R_minW_nmos,
                                              float R_minW_pmos,
-                                             const float trans_sram_bit);
+                                             const float trans_sram_bit,
+                                             bool is_flat);
 
 static float get_cblock_trans(int* num_inputs_to_cblock, int wire_to_ipin_switch, int max_inputs_to_cblock, float trans_sram_bit);
 
@@ -54,7 +55,8 @@ void count_routing_transistors(enum e_directionality directionality,
                                int wire_to_ipin_switch,
                                std::vector<t_segment_inf>& segment_inf,
                                float R_minW_nmos,
-                               float R_minW_pmos) {
+                               float R_minW_pmos,
+                               bool is_flat) {
     /* Counts how many transistors are needed to implement the FPGA routing      *
      * resources.  Call this only when an rr_graph exists.  It does not count    *
      * the transistors used in logic blocks, but it counts the transistors in    *
@@ -74,7 +76,7 @@ void count_routing_transistors(enum e_directionality directionality,
         count_bidir_routing_transistors(num_switch, wire_to_ipin_switch, R_minW_nmos, R_minW_pmos, trans_sram_bit);
     } else {
         VTR_ASSERT(directionality == UNI_DIRECTIONAL);
-        count_unidir_routing_transistors(segment_inf, wire_to_ipin_switch, R_minW_nmos, R_minW_pmos, trans_sram_bit);
+        count_unidir_routing_transistors(segment_inf, wire_to_ipin_switch, R_minW_nmos, R_minW_pmos, trans_sram_bit, is_flat);
     }
 }
 
@@ -305,7 +307,8 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                                       int wire_to_ipin_switch,
                                       float R_minW_nmos,
                                       float R_minW_pmos,
-                                      const float trans_sram_bit) {
+                                      const float trans_sram_bit,
+                                      bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -411,7 +414,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                                             "Uni-directional RR node driven by non-configurable "
                                             "BUFFER has fan in %d (expected 1)\n",
                                             fan_in);
-                                        msg += "  " + describe_rr_node(size_t(to_node));
+                                        msg += "  " + describe_rr_node(size_t(to_node), is_flat);
                                         VPR_FATAL_ERROR(VPR_ERROR_OTHER, msg.c_str());
                                     }
 

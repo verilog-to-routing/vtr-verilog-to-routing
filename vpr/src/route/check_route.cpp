@@ -40,7 +40,9 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 
 static void check_all_non_configurable_edges(bool is_flat);
 static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets, bool is_flat);
-static void check_net_for_stubs(const Netlist<>& net_list, ParentNetId net);
+static void check_net_for_stubs(const Netlist<>& net_list,
+                                ParentNetId net,
+                                bool is_flat);
 
 /************************ Subroutine definitions ****************************/
 
@@ -144,8 +146,8 @@ void check_route(const Netlist<>& net_list,
                               "  %s\n"
                               "  %s\n",
                               size_t(net_id),
-                              describe_rr_node(prev_node).c_str(),
-                              describe_rr_node(inode).c_str());
+                              describe_rr_node(prev_node, is_flat).c_str(),
+                              describe_rr_node(inode, is_flat).c_str());
                 }
 
                 connected_to_route[inode] = true; /* Mark as in path. */
@@ -179,7 +181,9 @@ void check_route(const Netlist<>& net_list,
             }
         }
 
-        check_net_for_stubs(net_list, net_id);
+        check_net_for_stubs(net_list,
+                            net_id,
+                            is_flat);
 
         reset_flags(net_id, connected_to_route.get());
 
@@ -710,7 +714,7 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                     cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
 
                 for (auto inode : difference) {
-                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(inode).c_str());
+                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(inode, is_flat).c_str());
                 }
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
@@ -778,8 +782,8 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                 for (t_node_edge missing_edge : dedupped_difference) {
                     msg += vtr::string_fmt("  Expected RR Node: %d and RR Node: %d to be non-configurably connected, but edge missing from routing:\n",
                                            missing_edge.from_node, missing_edge.to_node);
-                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.from_node).c_str());
-                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.to_node).c_str());
+                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.from_node, is_flat).c_str());
+                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.to_node, is_flat).c_str());
                 }
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
@@ -823,7 +827,9 @@ class StubFinder {
 //The only exception are stubs required by non-configurable switches (e.g. shorts).
 //
 //We treat any configurable stubs as an error.
-void check_net_for_stubs(const Netlist<>& net_list, ParentNetId net) {
+void check_net_for_stubs(const Netlist<>& net_list,
+                         ParentNetId net,
+                         bool is_flat) {
     StubFinder stub_finder(net_list);
 
     bool any_stubs = stub_finder.CheckNet(net);
@@ -831,7 +837,7 @@ void check_net_for_stubs(const Netlist<>& net_list, ParentNetId net) {
         std::string msg = vtr::string_fmt("Route tree for net '%s' (#%zu) contains stub branches rooted at:\n",
                                           net_list.net_name(net).c_str(), size_t(net));
         for (int inode : stub_finder.stub_nodes()) {
-            msg += vtr::string_fmt("    %s\n", describe_rr_node(inode).c_str());
+            msg += vtr::string_fmt("    %s\n", describe_rr_node(inode, is_flat).c_str());
         }
 
         VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());

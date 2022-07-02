@@ -353,7 +353,8 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                                                               const t_chan_width* nodes_per_chan,
                                                               const e_fc_type fc_type,
                                                               const enum e_directionality directionality,
-                                                              bool* Fc_clipped);
+                                                              bool* Fc_clipped,
+                                                              bool is_flat);
 
 static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_graph,
                                                         RRNodeId from_rr,
@@ -455,7 +456,10 @@ void create_rr_graph(const t_graph_type graph_type,
 
     process_non_config_sets();
 
-    verify_rr_node_indices(grid, device_ctx.rr_graph, device_ctx.rr_graph.rr_nodes());
+    verify_rr_node_indices(grid,
+                           device_ctx.rr_graph,
+                           device_ctx.rr_graph.rr_nodes(),
+                           is_flat);
 
     print_rr_graph_stats();
 
@@ -741,13 +745,13 @@ static void build_rr_graph(const t_graph_type graph_type,
     } else {
         bool Fc_clipped = false;
         Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), &nodes_per_chan,
-                                         e_fc_type::IN, directionality, &Fc_clipped);
+                                         e_fc_type::IN, directionality, &Fc_clipped, is_flat);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
         Fc_clipped = false;
         Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), &nodes_per_chan,
-                                          e_fc_type::OUT, directionality, &Fc_clipped);
+                                          e_fc_type::OUT, directionality, &Fc_clipped, is_flat);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
@@ -1299,7 +1303,8 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                                                               const t_chan_width* nodes_per_chan,
                                                               const e_fc_type fc_type,
                                                               const enum e_directionality directionality,
-                                                              bool* Fc_clipped) {
+                                                              bool* Fc_clipped,
+                                                              bool is_flat) {
     //Initialize Fc of all blocks to zero
     auto zeros = vtr::Matrix<int>({size_t(max_pins), segment_inf.size()}, 0);
     std::vector<vtr::Matrix<int>> Fc(types.size(), zeros);
@@ -1344,14 +1349,14 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                     if (std::fmod(fc_spec.fc_value, fac) != 0.) {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Absolute Fc value must be a multiple of %d (was %f) between block pin '%s' and wire segment '%s'",
                                         fac, fc_spec.fc_value,
-                                        block_type_pin_index_to_name(&type, fc_spec.pins[0]).c_str(),
+                                        block_type_pin_index_to_name(&type, fc_spec.pins[0], is_flat).c_str(),
                                         segment_inf[iseg].name.c_str());
                     }
 
                     if (fc_spec.fc_value < fac) {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Absolute Fc value must be at least %d (was %f) between block pin '%s' to wire segment %s",
                                         fac, fc_spec.fc_value,
-                                        block_type_pin_index_to_name(&type, fc_spec.pins[0]).c_str(),
+                                        block_type_pin_index_to_name(&type, fc_spec.pins[0], is_flat).c_str(),
                                         segment_inf[iseg].name.c_str());
                     }
 

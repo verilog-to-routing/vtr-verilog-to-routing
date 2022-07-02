@@ -1214,7 +1214,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const t_physical_tile_type* tile;
         int ptc;
         std::tie(tile, ptc) = context;
-        if (block_type_pin_index_to_name(tile, ptc) != value) {
+        if (block_type_pin_index_to_name(tile, ptc, is_flat_) != value) {
             report_error(
                 "Architecture file does not match RR graph's block pin list");
         }
@@ -1278,7 +1278,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const t_physical_tile_type* tile;
         int ptc;
         std::tie(tile, ptc) = context;
-        temp_string_ = block_type_pin_index_to_name(tile, ptc);
+        temp_string_ = block_type_pin_index_to_name(tile, ptc, is_flat_);
         return temp_string_.c_str();
     }
     inline int get_pin_ptc(const std::pair<const t_physical_tile_type*, int>& context) final {

@@ -1696,7 +1696,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
 }
 
 //Print information about an invalid routing, caused by overused routing resources
-void print_invalid_routing_info(const Netlist<>& net_list) {
+void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -1835,8 +1835,8 @@ std::string describe_unrouteable_connection(const int source_node, const int sin
     std::string msg = vtr::string_fmt(
         "Cannot route from %s (%s) to "
         "%s (%s) -- no possible path",
-        rr_node_arch_name(source_node, is_flat).c_str(), describe_rr_node(source_node).c_str(),
-        rr_node_arch_name(sink_node, is_flat).c_str(), describe_rr_node(sink_node).c_str());
+        rr_node_arch_name(source_node, is_flat).c_str(), describe_rr_node(source_node, is_flat).c_str(),
+        rr_node_arch_name(sink_node, is_flat).c_str(), describe_rr_node(sink_node, is_flat).c_str());
 
     return msg;
 }

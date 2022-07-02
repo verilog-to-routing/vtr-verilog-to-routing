@@ -123,7 +123,7 @@ void print_traceback(const t_trace* trace);
 
 void print_rr_node_route_inf();
 void print_rr_node_route_inf_dot();
-void print_invalid_routing_info(const Netlist<>& net_list);
+void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat);
 
 t_trace* alloc_trace_data();
 void free_trace_data(t_trace* trace);
