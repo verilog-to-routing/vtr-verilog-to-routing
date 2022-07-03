@@ -417,12 +417,12 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
     std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator;
     if (timing_info) {
-        pin_timing_invalidator = std::make_unique<NetPinTimingInvalidator>((const Netlist<>&)atom_ctx.nlist,
-                                                                                 netlist_pin_lookup,
-                                                                                 atom_ctx.nlist,
-                                                                                 atom_ctx.lookup,
-                                                                                 *timing_info->timing_graph(),
-                                                                                 is_flat);
+        pin_timing_invalidator = std::make_unique<NetPinTimingInvalidator>(net_list,
+                                                                           netlist_pin_lookup,
+                                                                           atom_ctx.nlist,
+                                                                           atom_ctx.lookup,
+                                                                           *timing_info->timing_graph(),
+                                                                           is_flat);
     }
 
     RouterStats router_stats;

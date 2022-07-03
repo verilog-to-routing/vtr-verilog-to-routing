@@ -2131,7 +2131,6 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
 
         auto driving_pins = get_physical_pin_driving_pins(physical_type,
                                                           logical_block,
-                                                          pb->mode,
                                                           pin);
 
         for(auto driving_pin : driving_pins) {

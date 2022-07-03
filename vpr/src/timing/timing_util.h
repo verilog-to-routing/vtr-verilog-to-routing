@@ -95,11 +95,11 @@ class NetPinTimingInvalidator {
 
   public:
     NetPinTimingInvalidator(const Netlist<>& net_list,
-                                  const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
-                                  const AtomNetlist& atom_nlist,
-                                  const AtomLookup& atom_lookup,
-                                  const tatum::TimingGraph& timing_graph,
-                                  bool is_flat) {
+                            const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
+                            const AtomNetlist& atom_nlist,
+                            const AtomLookup& atom_lookup,
+                            const tatum::TimingGraph& timing_graph,
+                            bool is_flat) {
         size_t num_pins = net_list.pins().size();
         pin_first_edge_.reserve(num_pins + 1); //Exact
         timing_edges_.reserve(num_pins + 1);   //Lower bound
@@ -114,7 +114,9 @@ class NetPinTimingInvalidator {
 
                 timing_edges_.push_back(tedge);
             } else {
-                for (const AtomPinId atom_pin : clb_atom_pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin_id))) {
+                auto cluster_pin_id = convert_to_cluster_pin_id(pin_id);
+                auto atom_pins = clb_atom_pin_lookup.connected_atom_pins(cluster_pin_id);
+                for (const AtomPinId atom_pin : atom_pins) {
                     tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
 
                     if (!tedge) {

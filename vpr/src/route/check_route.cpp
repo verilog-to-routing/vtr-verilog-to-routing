@@ -31,7 +31,7 @@ static void check_sink(const Netlist<>& net_list,
                        ParentNetId net_id,
                        bool* pin_done);
 static void check_switch(t_trace* tptr, int num_switch);
-static bool check_adjacent(int from_node, int to_node);
+static bool check_adjacent(int from_node, int to_node, bool is_flat);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(ParentNetId inet, bool* connected_to_route);
 static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
@@ -139,7 +139,7 @@ void check_route(const Netlist<>& net_list,
                               "in check_route: node %d does not link into existing routing for net %d.\n", inode, size_t(net_id));
                 }
             } else { //Continuing along existing branch
-                connects = check_adjacent(prev_node, inode);
+                connects = check_adjacent(prev_node, inode, is_flat);
                 if (!connects) {
                     VPR_ERROR(VPR_ERROR_ROUTE,
                               "in check_route: found non-adjacent segments in traceback while checking net %d:\n"
@@ -315,7 +315,7 @@ static void reset_flags(ParentNetId inet, bool* connected_to_route) {
     }
 }
 
-static bool check_adjacent(int from_node, int to_node) {
+static bool check_adjacent(int from_node, int to_node, bool is_flat) {
     /* This routine checks if the rr_node to_node is reachable from from_node.   *
      * It returns true if is reachable and false if it is not.  Check_node has   *
      * already been used to verify that both nodes are valid rr_nodes, so only   *
@@ -323,6 +323,10 @@ static bool check_adjacent(int from_node, int to_node) {
      * Special case: direct OPIN to IPIN connections need not be adjacent.  These
      * represent specially-crafted connections such as carry-chains or more advanced
      * blocks where adjacency is overridden by the architect */
+
+    if(from_node == 93551 && to_node == 91930) {
+        std::cout << "Hi!" << std::endl;
+    }
 
     int from_xlow, from_ylow, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
     int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh;
@@ -379,7 +383,7 @@ static bool check_adjacent(int from_node, int to_node) {
                 to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
                 VTR_ASSERT(from_grid_type == to_grid_type);
 
-                iclass = to_grid_type->pin_class[to_ptc];
+                iclass = get_class_num_from_pin_physical_num(to_grid_type, to_ptc);
                 if (iclass == from_ptc)
                     num_adj++;
             }
@@ -390,8 +394,12 @@ static bool check_adjacent(int from_node, int to_node) {
             break;
 
         case OPIN:
+            from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
             if (to_type == CHANX || to_type == CHANY) {
                 num_adj += 1; //adjacent
+            } else if (is_flat) {
+                VTR_ASSERT(to_type == OPIN || to_type == IPIN); // If pin is located inside a cluster
+                return true;
             } else {
                 VTR_ASSERT(to_type == IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
                 return true;                 /* Special case, direct OPIN to IPIN connections need not be adjacent */
@@ -400,7 +408,13 @@ static bool check_adjacent(int from_node, int to_node) {
             break;
 
         case IPIN:
-            VTR_ASSERT(to_type == SINK);
+            from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
+            if (is_flat){
+                VTR_ASSERT(to_type == OPIN || to_type == IPIN || to_type == SINK);
+            } else {
+                VTR_ASSERT(to_type == SINK);
+            }
+
 
             //An IPIN should be contained within the bounding box of it's connected sink
             if (from_xlow >= to_xlow
@@ -410,10 +424,14 @@ static bool check_adjacent(int from_node, int to_node) {
                 from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
                 to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
                 VTR_ASSERT(from_grid_type == to_grid_type);
-
-                iclass = from_grid_type->pin_class[from_ptc];
-                if (iclass == to_ptc)
+                if(to_type == SINK) {
+                    iclass = get_class_num_from_pin_physical_num(from_grid_type, from_ptc);
+                    if (iclass == to_ptc)
+                        num_adj++;
+                } else {
                     num_adj++;
+                }
+
             }
             break;
 
@@ -603,11 +621,11 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                 }
 
                 ipin = rr_graph.node_pin_num(RRNodeId(inode));
-                if (physical_tile_type(blk_id)->pin_class[ipin] != iclass) {
+                if (get_class_num_from_pin_physical_num(physical_tile_type(blk_id), ipin) != iclass) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                     "in check_locally_used_opins: block #%lu (%s):\n"
                                     "\tExpected class %d local OPIN has class %d -- rr_node #: %d.\n",
-                                    size_t(blk_id), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass, physical_tile_type(blk_id)->pin_class[ipin], inode);
+                                    size_t(blk_id), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass, get_class_num_from_pin_physical_num(physical_tile_type(blk_id), ipin), inode);
                 }
             }
         }
