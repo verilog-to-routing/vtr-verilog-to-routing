@@ -22,6 +22,14 @@ void free_clustered_netlist(void) {
     cluster_ctx.clb_nlist = ClusteredNetlist();
 }
 
+/*
+ * Delete all the logical block types within the global device.
+ */
+void free_device(void) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    device_ctx.logical_block_types.clear();
+}
+
 TEST_CASE("test_verify_traffic_flow_router_modules", "[vpr_noc_traffic_flows_parser]") {
     // filler data for the xml information
     // data for the xml parsing
@@ -354,6 +362,9 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
 
         // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
+
+        // clear the global device
+        free_device();
     }
     SECTION("Test case where some router blocks in the design do not have an associated traffic flow") {
         // create a number of traffic flows that includes router_one and router_twp but does not include router_three
@@ -367,6 +378,9 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
 
         // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
+
+        // clear the global device
+        free_device();
     }
 }
 TEST_CASE("test_check_for_duplicate_traffic_flow", "[vpr_noc_traffic_flows_parser]") {
