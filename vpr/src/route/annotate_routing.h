@@ -10,10 +10,9 @@
  * Function declaration
  *******************************************************************/
 
-vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& device_ctx,
-                                                         const ClusteringContext& clustering_ctx,
+vtr::vector<RRNodeId, ParentNetId> annotate_rr_node_nets(const Netlist<>& net_list,
+                                                         const DeviceContext& device_ctx,
                                                          const RoutingContext& routing_ctx,
-                                                         const AtomLookup& atom_look_up,
                                                          const bool& verbose,
                                                          bool is_flat);
 

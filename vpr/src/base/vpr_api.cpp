@@ -1291,25 +1291,26 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
      *   - Turn on verbose output when users require verbose output
      *     for packer (default verbosity is set to 2 for compact logs)
      */
-    if (route_status.success()) {
-        sync_netlists_to_routing(g_vpr_ctx.device(),
-                                 g_vpr_ctx.mutable_atom(),
-                                 g_vpr_ctx.atom().lookup,
-                                 g_vpr_ctx.mutable_clustering(),
-                                 g_vpr_ctx.placement(),
-                                 g_vpr_ctx.routing(),
-                                 vpr_setup.PackerOpts.pack_verbosity > 2,
-                                 vpr_setup.RouterOpts.flat_routing);
-
-
-        std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
-        write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
-                                     Arch.architecture_id,
-                                     post_routing_packing_output_file_name.c_str());
-    } else {
-        VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to illegal circuit implementation\n");
-    }
-    VTR_LOG("\n");
+//    if (route_status.success()) {
+//        sync_netlists_to_routing(net_list,
+//                                 g_vpr_ctx.device(),
+//                                 g_vpr_ctx.mutable_atom(),
+//                                 g_vpr_ctx.atom().lookup,
+//                                 g_vpr_ctx.mutable_clustering(),
+//                                 g_vpr_ctx.placement(),
+//                                 g_vpr_ctx.routing(),
+//                                 vpr_setup.PackerOpts.pack_verbosity > 2,
+//                                 vpr_setup.RouterOpts.flat_routing);
+//
+//
+//        std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
+//        write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
+//                                     Arch.architecture_id,
+//                                     post_routing_packing_output_file_name.c_str());
+//    } else {
+//        VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to illegal circuit implementation\n");
+//    }
+//    VTR_LOG("\n");
 
     vpr_analysis(net_list,
                  vpr_setup,

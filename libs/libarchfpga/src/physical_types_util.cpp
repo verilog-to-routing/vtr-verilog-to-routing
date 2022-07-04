@@ -542,6 +542,8 @@ int get_physical_pin_at_sub_tile_location(t_physical_tile_type_ptr physical_tile
                                           t_logical_block_type_ptr logical_block,
                                           int sub_tile_capacity,
                                           int pin) {
+
+    VTR_ASSERT(pin < physical_tile->num_pins);
     int sub_tile_index = get_logical_block_physical_sub_tile_index(physical_tile, logical_block, sub_tile_capacity);
 
     if (sub_tile_index == OPEN) {
