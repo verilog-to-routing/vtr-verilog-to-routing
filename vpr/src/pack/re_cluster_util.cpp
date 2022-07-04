@@ -54,12 +54,13 @@ std::vector<AtomBlockId> cluster_to_atoms(const ClusterBlockId& cluster) {
 void remove_mol_from_cluster(const t_pack_molecule* molecule,
                              int molecule_size,
                              ClusterBlockId& old_clb,
+                             std::vector<AtomBlockId>& old_clb_atoms,
                              t_lb_router_data*& router_data) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
 
     //Determine the cluster ID
     old_clb = atom_to_cluster(molecule->atom_block_ids[molecule->root]);
-    std::vector<AtomBlockId> old_clb_atoms = cluster_to_atoms(old_clb);
+    //std::vector<AtomBlockId> old_clb_atoms = cluster_to_atoms(old_clb);
 
     //re-build router_data structure for this cluster
     router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, old_clb, old_clb_atoms);
@@ -68,6 +69,7 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
     for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
         if (molecule->atom_block_ids[i_atom]) {
             remove_atom_from_target(router_data, molecule->atom_block_ids[i_atom]);
+            old_clb_atoms.erase(std::remove(old_clb_atoms.begin(), old_clb_atoms.end(), molecule->atom_block_ids[i_atom]));
         }
     }
 }

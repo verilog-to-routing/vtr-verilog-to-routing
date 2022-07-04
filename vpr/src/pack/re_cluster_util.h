@@ -50,6 +50,7 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
 void remove_mol_from_cluster(const t_pack_molecule* molecule,
                              int molecule_size,
                              ClusterBlockId& old_clb,
+                             std::vector<AtomBlockId>& old_clb_atoms,
                              t_lb_router_data*& router_data);
 
 /**
