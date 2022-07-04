@@ -2,30 +2,35 @@
 #include "catch2/matchers/catch_matchers_all.hpp"
 
 #include "read_xml_noc_traffic_flows_file.h"
-#include "vpr_api.h"
 
 #include <random>
 
-
 namespace {
 
-    // local datastructure clearing functions
+// local datastructure clearing functions
 
-    /*
-        Delete all the blocks in the global clustered netlist.
-        Then create an empty clustered netlist and assign it
-        to the globabl clustered netlist.
-    */
-    void free_clustered_netlist(void){
-        auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-        
-        for (auto blk_id : cluster_ctx.clb_nlist.blocks()){
-            cluster_ctx.clb_nlist.remove_block(blk_id);
-        }
+/*
+ * Delete all the blocks in the global clustered netlist.
+ * Then create an empty clustered netlist and assign it
+ * to the globabl clustered netlist.
+ */
+void free_clustered_netlist(void) {
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
-        cluster_ctx.clb_nlist = ClusteredNetlist();
-
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        cluster_ctx.clb_nlist.remove_block(blk_id);
     }
+
+    cluster_ctx.clb_nlist = ClusteredNetlist();
+}
+
+/*
+ * Delete all the logical types within the global device.
+ */
+void free_device(void) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    device_ctx.logical_block_types.clear();
+}
 
 TEST_CASE("test_verify_traffic_flow_router_modules", "[vpr_noc_traffic_flows_parser]") {
     // filler data for the xml information
@@ -261,7 +266,7 @@ TEST_CASE("test_check_traffic_flow_router_module_type", "[vpr_noc_traffic_flows_
         REQUIRE_NOTHROW(check_traffic_flow_router_module_type(router_one, router_module_id, test, test_location, cluster_ctx, noc_router_ref));
 
         // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
-       free_clustered_netlist();
+        free_clustered_netlist();
     }
     SECTION("Test case where the traffic flow module is not of type router") {
         // create a name for a IO block
@@ -275,7 +280,7 @@ TEST_CASE("test_check_traffic_flow_router_module_type", "[vpr_noc_traffic_flows_
         REQUIRE_THROWS_WITH(check_traffic_flow_router_module_type(io_block_one, io_module_id, test, test_location, cluster_ctx, noc_router_ref), "The supplied module name 'io_block_one' is not a NoC router.");
 
         // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
-       free_clustered_netlist();
+        free_clustered_netlist();
     }
 }
 TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "[vpr_noc_traffic_flows_parser]") {
@@ -356,6 +361,12 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
         // now check to see whether all router blocks in the design have an associated traffic flow (this is the function tested here)
         // we expect this to pass
         CHECK(check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_ref, test_noc_traffic_flows_file_name) == true);
+
+        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        free_clustered_netlist();
+
+        // clear the global device
+        free_device();
     }
     SECTION("Test case where some router blocks in the design do not have an associated traffic flow") {
         // create a number of traffic flows that includes router_one and router_twp but does not include router_three
@@ -366,6 +377,12 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
         // now check to see whether all router blocks in the design have an associated traffic flow (this is the function tested here)
         // we expect this fail
         CHECK(check_that_all_router_blocks_have_an_associated_traffic_flow(noc_ctx, noc_router_ref, test_noc_traffic_flows_file_name) == false);
+
+        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        free_clustered_netlist();
+
+        // clear the global device
+        free_device();
     }
 }
 TEST_CASE("test_check_for_duplicate_traffic_flow", "[vpr_noc_traffic_flows_parser]") {
