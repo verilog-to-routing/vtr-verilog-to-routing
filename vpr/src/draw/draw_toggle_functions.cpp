@@ -1,6 +1,14 @@
-/*draw_toggle_functions.cpp contains callback functions that change draw_state variables
- * connected to buttons and sliders on the GUI.
+/**
+ * @file draw_toggle_functions.cpp
+ * @author Sebastian Lievano (sebastian.lievanoarzayus@mail.utoronto.ca)
+ * @brief Callback functions for ui elements
+ * @date July 4th, 2022
+ * 
+ * This file contains all of the callback functions for UI elements. 
+ * Please add any new callback functions here, and if it makes sense, add _cbk at the end 
+ * of function name to prevent someone else calling it in any non gtk context. 
  */
+
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
@@ -405,7 +413,7 @@ void toggle_expansion_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
  * @param self self ptr to GtkSpinButton
  * @param app ezgl::app
  */
-void set_net_max_fanout(GtkSpinButton* self, ezgl::application* app) {
+void set_net_max_fanout_cbk(GtkSpinButton* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
     draw_state->draw_net_max_fanout = gtk_spin_button_get_value_as_int(self);
     app->refresh_drawing();
@@ -418,7 +426,7 @@ void set_net_max_fanout(GtkSpinButton* self, ezgl::application* app) {
  * @param self 
  * @param app 
  */
-void set_net_alpha_value(GtkSpinButton* self, ezgl::application* app) {
+void set_net_alpha_value_cbk(GtkSpinButton* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
     draw_state->net_alpha = gtk_spin_button_get_value_as_int(self);
     app->refresh_drawing();

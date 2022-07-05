@@ -65,13 +65,13 @@ void net_button_setup(ezgl::application* app) {
 
     //Manages net alpha
     GtkSpinButton* net_alpha = GTK_SPIN_BUTTON(app->get_object("NetAlpha"));
-    g_signal_connect(net_alpha, "value-changed", G_CALLBACK(set_net_alpha_value), app);
+    g_signal_connect(net_alpha, "value-changed", G_CALLBACK(set_net_alpha_value_cbk), app);
     gtk_spin_button_set_increments(net_alpha, 1, 1);
     gtk_spin_button_set_range(net_alpha, 1, 255);
 
     //Manages net max fanout
     GtkSpinButton* max_fanout = GTK_SPIN_BUTTON(app->get_object("NetMaxFanout"));
-    g_signal_connect(max_fanout, "value-changed", G_CALLBACK(set_net_max_fanout), app);
+    g_signal_connect(max_fanout, "value-changed", G_CALLBACK(set_net_max_fanout_cbk), app);
     gtk_spin_button_set_increments(max_fanout, 1, 1);
     gtk_spin_button_set_range(max_fanout, 0., (double)get_max_fanout());
 }

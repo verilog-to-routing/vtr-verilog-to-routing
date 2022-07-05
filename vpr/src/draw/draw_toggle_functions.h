@@ -1,6 +1,12 @@
 #ifndef DRAW_TOGGLE_FUNCTIONS_H
 #define DRAW_TOGGLE_FUNCTIONS_H
 
+/**
+ * @file draw_toggle_functions.h
+ * @author Sebastian Lievano
+ * @brief Declarations of callback functions.
+ */
+
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
@@ -47,12 +53,12 @@ void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app);
 
 /* Callback function for runtime created netMaxFanout widget in ui_setup.cpp.
  * Sets draw_state->draw_net_max_fanout to its corresponding value in the UI. */
-void set_net_max_fanout(GtkSpinButton* self, ezgl::application* app);
+void set_net_max_fanout_cbk(GtkSpinButton* self, ezgl::application* app);
 
 /* Callback function for runtime created netAlpha widget in ui_setup.cpp.
  * Sets draw_state->net_alpha (a value from 0 to 1 representing transparency) to
  * its corresponding value in the UI. */
-void set_net_alpha_value(GtkSpinButton* self, ezgl::application* app);
+void set_net_alpha_value_cbk(GtkSpinButton* self, ezgl::application* app);
 
 /* Callback function for runtime created toggle_blk_internal button in ui_setup.cpp.
  * With each consecutive click of the button, a lower level in the
