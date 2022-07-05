@@ -268,6 +268,14 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 }
 
+/**
+ * @brief Default setup function, connects signals/sets up ui created in main.ui file
+ * 
+ * To minimize code repetition, this function sets up all buttons that ALWAYS get set up.
+ * If you want to add to the initial setup functions, and your new setup function will always be called, 
+ * please put it here instead of writing it 5 independent times. Thanks!
+ * @param app ezgl application
+ */
 static void default_setup(ezgl::application* app){
     basic_button_setup(app);
     net_button_setup(app);
@@ -285,7 +293,7 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     //Configuring visible buttons
     default_setup(app);
 
-    //Loading names for
+    //THIS WILL BE CHANGED SOON IGNORE
     load_block_names(app);
 
     //Hiding unused functionality
