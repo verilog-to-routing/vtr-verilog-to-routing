@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.9)
 
 project("libarchfpga")
 
-file(GLOB_RECURSE EXEC_SOURCES main.cpp)
+file(GLOB_RECURSE EXEC_SOURCES src/main.cpp)
 file(GLOB_RECURSE LIB_SOURCES src/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
@@ -41,3 +41,10 @@ if (READ_ARCH_USES_IPO)
 endif()
 
 install(TARGETS libarchfpga read_arch DESTINATION bin)
+
+# 
+# Unit Tests
+#
+file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+add_executable(test_archfpga ${TEST_SOURCES})
+target_link_libraries(test_archfpga Catch2::Catch2WithMain libarchfpga)

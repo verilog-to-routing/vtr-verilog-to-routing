@@ -2617,6 +2617,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help("Signal activities file for all nets (see documentation).")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    auto& noc_grp = parser.add_argument_group("noc options");
+
+    noc_grp.add_argument<bool, ParseOnOff>(args.noc, "--noc")
+        .help(
+            "Enables a NoC-driven placer that optimizes the placement of routers on the NoC."
+            "Also enables an option in the graphical display that can be used to display the NoC on the FPGA."
+            "This should be on only when the FPGA device contains a NoC and the provided netlist connects to the NoC.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     return parser;
 }
 

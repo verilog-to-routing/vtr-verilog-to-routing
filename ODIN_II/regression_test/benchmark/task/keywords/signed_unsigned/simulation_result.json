@@ -4,13 +4,13 @@
         "generated_blif": "signed_to_signed_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 0 mismatch:",
-            "[OUTPUT_BLIF] Vector 1 mismatch:",
-            "[OUTPUT_BLIF] Vector 4 mismatch:",
-            "[OUTPUT_BLIF] Vector 5 mismatch:"
+            "[SIMULATION] Vector 0 mismatch:",
+            "[SIMULATION] Vector 1 mismatch:",
+            "[SIMULATION] Vector 4 mismatch:",
+            "[SIMULATION] Vector 5 mismatch:"
         ]
     },
     "signed_unsigned/signed_to_unsigned/no_arch": {
@@ -18,13 +18,13 @@
         "generated_blif": "signed_to_unsigned_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 0 mismatch:",
-            "[OUTPUT_BLIF] Vector 1 mismatch:",
-            "[OUTPUT_BLIF] Vector 4 mismatch:",
-            "[OUTPUT_BLIF] Vector 5 mismatch:"
+            "[SIMULATION] Vector 0 mismatch:",
+            "[SIMULATION] Vector 1 mismatch:",
+            "[SIMULATION] Vector 4 mismatch:",
+            "[SIMULATION] Vector 5 mismatch:"
         ]
     },
     "signed_unsigned/unsigned_to_signed/no_arch": {
