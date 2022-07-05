@@ -1,7 +1,12 @@
-#ifndef UI_H
-#define UI_H
+#ifndef UISETUP_H
+#define UISETUP_H
 
 #ifndef NO_GRAPHICS
+/**
+ * @file UI_SETUP.H
+ * @author Sebastian Lievano
+ * @brief declares ui setup functions
+ */
 
 #    include "draw_global.h"
 
@@ -22,4 +27,4 @@ void show_widget(std::string widgetName, ezgl::application* app);
 
 #endif /* NO_GRAPHICS */
 
-#endif /* UI_H */
+#endif /* UISETUP_H */

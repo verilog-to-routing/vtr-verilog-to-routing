@@ -1,13 +1,13 @@
 #ifndef NO_GRAPHICS
-
-/*
- * This file defines all runtime created spin buttons, combo boxes, and labels. All 
- * button_for_toggle_X() functions are called in initial_setup_X functions in draw.cpp.
- * Each function creates a label and a combo box/spin button and connects the signal to 
- * the corresponding toggle_X callback functions, which are also defined in draw.cpp.
+/**
+ * @file UI_SETUP.CPP
+ * @author Sebastian Lievano
+ * @date July 4th, 2022
+ * @brief Manages setup for main.ui created buttons
  * 
- * Authors: Dingyu (Tina) Yang
- * Last updated: Aug 2019
+ * This file contains the various setup functions for all of the ui functions.
+ * As of June 2022, gtk ui items are to be created through Glade/main.ui file (see Docs)
+ * Each function here initializes a different set of ui buttons, connecting their callback functions
  */
 
 #    include "draw_global.h"
@@ -139,11 +139,21 @@ void routing_button_setup(ezgl::application* app) {
     g_signal_connect(toggle_router_util, "changed", G_CALLBACK(toggle_router_util_cbk), app);
 }
 
+/**
+ * @brief connects critical path button to its cbk fn
+ * 
+ * @param app ezgl application
+ */
 void crit_path_button_setup(ezgl::application* app) {
     GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
     g_signal_connect(toggle_crit_path, "changed", G_CALLBACK(toggle_crit_path_cbk), app);
 }
 
+/**
+ * @brief hides critical path button
+ * 
+ * @param app ezgl app
+ */
 void hide_crit_path_button(ezgl::application* app) {
     hide_widget("CritPathLabel", app);
     hide_widget("ToggleCritPath", app);
