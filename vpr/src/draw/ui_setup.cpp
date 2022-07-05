@@ -109,7 +109,6 @@ void block_button_setup(ezgl::application* app) {
  */
 void routing_button_setup(ezgl::application* app) {
     auto& route_ctx = g_vpr_ctx.routing();
-    t_draw_state* draw_state = get_draw_state_vars();
 
     //Toggle RR
     GtkComboBoxText* toggle_rr_box = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRR"));

@@ -276,7 +276,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
  * please put it here instead of writing it 5 independent times. Thanks!
  * @param app ezgl application
  */
-static void default_setup(ezgl::application* app){
+static void default_setup(ezgl::application* app) {
     basic_button_setup(app);
     net_button_setup(app);
     block_button_setup(app);

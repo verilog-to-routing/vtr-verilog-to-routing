@@ -273,9 +273,9 @@ void toggle_router_util_cbk(GtkComboBoxText* self, ezgl::application* app) {
     draw_state->show_routing_util = new_state;
 
     if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
-        application.update_message(draw_state->default_message);
+        app->update_message(draw_state->default_message);
     }
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
 /**
