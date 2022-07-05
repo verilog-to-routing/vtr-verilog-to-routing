@@ -63,6 +63,9 @@ enum e_echo_files {
     E_ECHO_FINAL_ROUTING_TIMING_GRAPH,
     E_ECHO_ANALYSIS_TIMING_GRAPH,
 
+    //NoC
+    E_ECHO_NOC_MODEL,
+
     E_ECHO_END_TOKEN
 };
 

@@ -138,6 +138,9 @@ struct t_options {
     argparse::ArgValue<int> floorplan_num_horizontal_partitions;
     argparse::ArgValue<int> floorplan_num_vertical_partitions;
 
+    /*NoC Options*/
+    argparse::ArgValue<bool> noc;
+
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
     argparse::ArgValue<int> RecomputeCritIter;

@@ -55,6 +55,8 @@
 #include "route_common.h"
 #include "breakpoint.h"
 #include "manual_moves.h"
+#include "draw_noc.h"
+
 #include "move_utils.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -90,8 +92,6 @@
 #    define OLD_BLK_LOC_COLOR blk_GOLD
 #    define NEW_BLK_LOC_COLOR blk_GREEN
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
-
-/********************** Subroutines local to this module ********************/
 
 void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name);
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y);
@@ -258,6 +258,8 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     draw_logical_connections(g);
 
+    draw_noc(g);
+
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
@@ -315,6 +317,7 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     button_for_toggle_blk_internal();
     button_for_toggle_block_pin_util();
     button_for_toggle_placement_macros();
+    button_for_displaying_noc();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -407,6 +410,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
     button_for_toggle_router_expansion_costs();
+    button_for_displaying_noc();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
