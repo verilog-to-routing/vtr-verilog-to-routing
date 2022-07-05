@@ -324,10 +324,6 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
      * represent specially-crafted connections such as carry-chains or more advanced
      * blocks where adjacency is overridden by the architect */
 
-    if(from_node == 93551 && to_node == 91930) {
-        std::cout << "Hi!" << std::endl;
-    }
-
     int from_xlow, from_ylow, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
     int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh;
     bool reached;
