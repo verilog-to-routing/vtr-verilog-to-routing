@@ -494,15 +494,6 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
             }
         }
     }
-//    if(is_flat_) {
-//        t_rr_type to_type = rr_graph_->node_type(to_node);
-//        if (to_type == IPIN || to_type == OPIN) {
-//            int node_ptc = rr_graph_->node_ptc_num(to_node);
-//            auto type = g_vpr_ctx.device().grid[to_xlow][to_ylow].type;
-//            if (!is_pin_on_tile(type, node_ptc))
-//                return;
-//        }
-//    }
 
     VTR_LOGV_DEBUG(router_debug_, "      Expanding node %d edge %zu -> %d\n",
                    from_node, size_t(from_edge), to_node_int);
