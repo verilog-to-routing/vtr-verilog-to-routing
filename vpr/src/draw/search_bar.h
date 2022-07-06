@@ -39,6 +39,10 @@ void key_length_val_changed(GtkSpinButton* self, ezgl::application* app);
 t_pb* find_atom_block_in_pb(std::string name, t_pb* pb);
 
 bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::application* app);
+
+void enable_autocomplete(ezgl::application* app);
+
+std::string get_search_type(ezgl::application* app);
 #endif /* NO_GRAPHICS */
 
 #endif /* SEARCH_BAR_H */

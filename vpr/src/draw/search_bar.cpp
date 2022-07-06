@@ -58,16 +58,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     std::string user_input = text;
     std::stringstream ss(user_input);
 
-    GObject* combo_box = (GObject*)app->get_object("SearchType");
-    gchar* type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box));
-    //Checking that a type is selected
-    if (type && type[0] == '\0') {
-        warning_dialog_box("Please select a search type");
-        app->refresh_drawing();
-        return;
-    }
-
-    std::string search_type(type);
+    auto search_type = get_search_type(app);
 
     // reset
     deselect_all();
@@ -423,17 +414,10 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
      */
     if (searchType == "Block Name") {
         gtk_entry_completion_set_model(completion, blockNames);
-        gtk_entry_set_completion(searchBar, completion);
-        gtk_widget_show(keyLengthSpinButton);
-        gtk_widget_show(keyLengthLabel);
     } else if (searchType == "Net Name") {
         gtk_entry_completion_set_model(completion, netNames);
-        gtk_entry_set_completion(searchBar, completion);
-        gtk_widget_show(keyLengthSpinButton);
-        gtk_widget_show(keyLengthLabel);
     } else { //setting to null if option does not require auto-complete
-        gtk_widget_hide(keyLengthSpinButton);
-        gtk_widget_hide(keyLengthLabel);
+        gtk_entry_completion_set_model(completion, NULL);
         gtk_entry_set_completion(searchBar, nullptr);
     }
 }
@@ -511,6 +495,54 @@ void key_length_val_changed(GtkSpinButton* self, ezgl::application* app) {
     auto newLength = gtk_spin_button_get_value(self);
     GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
     gtk_entry_completion_set_minimum_key_length(completion, newLength);
+}
+
+void enable_autocomplete(ezgl::application* app){
+    std::cout << "enabling autocomplete" << std::endl;
+    GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
+    GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
+    std::string searchType = get_search_type(app);
+    if(gtk_entry_completion_get_model(completion) == NULL){
+        std::cout << "NO MODEL SELECTED" << std::endl;
+        return;
+    }
+    gtk_entry_set_completion(searchBar, completion);
+    gtk_entry_completion_set_minimum_key_length(completion, 1);
+    gtk_entry_completion_complete(completion);
+    std::string oldText(gtk_entry_get_text(searchBar));
+    if(oldText.length() == 0) return;
+
+    gtk_entry_set_text(searchBar, "");
+    
+    for(int i = 0; i < oldText.length(); ++i){
+        gtk_widget_grab_focus(GTK_WIDGET(searchBar));
+        GdkEvent new_event;
+        new_event.key.type = GDK_KEY_PRESS;
+        new_event.key.window = gtk_widget_get_parent_window(GTK_WIDGET(searchBar));
+        new_event.key.send_event = TRUE;
+        new_event.key.time = GDK_CURRENT_TIME;
+        new_event.key.keyval = gdk_unicode_to_keyval((int)oldText[i]);
+        new_event.key.state = GDK_KEY_PRESS_MASK;
+        new_event.key.length = 0;
+        new_event.key.string = 0;
+        new_event.key.hardware_keycode = 0;
+        new_event.key.group = 0;
+        gdk_event_put(&new_event);
+    }
+}
+
+
+std::string get_search_type(ezgl::application* app){
+    GObject* combo_box = (GObject*)app->get_object("SearchType");
+    gchar* type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box));
+    //Checking that a type is selected
+    if (type && type[0] == '\0') {
+        warning_dialog_box("Please select a search type");
+        app->refresh_drawing();
+        return "Failed lol";
+    }
+    std::string searchType(type);
+    return searchType;
 }
 
 #endif /* NO_GRAPHICS */

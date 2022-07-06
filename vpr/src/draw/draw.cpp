@@ -2891,12 +2891,31 @@ static bool highlight_rr_nodes(float x, float y) {
 }
 
 #    if defined(X11) && !defined(__MINGW32__)
-void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name) {
+void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
     std::string key(key_name);
+    std::cout << "Pressed " << key << std::endl;
+    if(gtk_widget_is_focus(GTK_WIDGET(app->get_object("TextInput")))){
+        std::cout << "Typing" << std::endl;
+        if(key == "Return"){
+            std::cout << "Loading autocomplete results" << std::endl;
+            enable_autocomplete(app);
+        }
+    }
 }
 #    else
-void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* /*key_name*/) {
+void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
+    std::string key(key_name);
+    std::cout << "Pressed " << key << std::endl;
+    GtkWidget* searchBar = GTK_WIDGET(app->get_object("TextInput"));
+    if(gtk_widget_is_focus(searchBar)){
+        std::cout << "Typing" << std::endl;
+        std::string oldText(gtk_entry_get_text(GTK_ENTRY(searchBar)));
+        if(key == "Return"){
+            std::cout << "Loading autocomplete results" << std::endl;
+            enable_autocomplete(app);
+        }
+    }
 }
 #    endif
 
