@@ -126,6 +126,9 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_close_graphics(const t_vpr_setup& vpr_setup);
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch);
+
+void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch);
+
 void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
 void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);
 
@@ -155,6 +158,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_annealing_sched* AnnealSched,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
+                   t_noc_opts* NocOpts,
                    t_det_routing_arch* RoutingArch,
                    std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,

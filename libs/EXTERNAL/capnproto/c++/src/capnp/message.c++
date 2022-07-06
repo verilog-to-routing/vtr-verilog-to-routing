@@ -33,11 +33,13 @@ namespace {
 
 class DummyCapTableReader: public _::CapTableReader {
 public:
-#if !CAPNP_LITE
   kj::Maybe<kj::Own<ClientHook>> extractCap(uint index) override {
+#if CAPNP_LITE
+    KJ_UNIMPLEMENTED("no cap tables in lite mode");
+#else
     return nullptr;
-  }
 #endif
+  }
 };
 static KJ_CONSTEXPR(const) DummyCapTableReader dummyCapTableReader = DummyCapTableReader();
 
@@ -80,6 +82,9 @@ bool MessageReader::isCanonical() {
   return rootIsCanonical && allWordsConsumed;
 }
 
+size_t MessageReader::sizeInWords() {
+  return arena()->sizeInWords();
+}
 
 AnyPointer::Reader MessageReader::getRootInternal() {
   if (!allocatedArena) {
@@ -176,6 +181,14 @@ bool MessageBuilder::isCanonical() {
   const word* readHead = segment->getStartPtr() + 1;
   return _::PointerReader::getRoot(segment, nullptr, segment->getStartPtr(), kj::maxValue)
                                   .isCanonical(&readHead);
+}
+
+size_t MessageBuilder::sizeInWords() {
+  return arena()->sizeInWords();
+}
+
+kj::Own<_::CapTableBuilder> MessageBuilder::releaseBuiltinCapTable() {
+  return arena()->releaseLocalCapTable();
 }
 
 // =======================================================================================

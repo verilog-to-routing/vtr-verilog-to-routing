@@ -34,10 +34,10 @@
         "generated_blif": "range_and_int_wide_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 6 mismatch:"
+            "[SIMULATION] Vector 6 mismatch:"
         ]
     },
     "and/range_and_ultra_wide/no_arch": {
