@@ -55,17 +55,19 @@ class NocRouting {
          * @brief Finds a route that goes from the starting router in a 
          * traffic flow to the destination router. Derived classes will
          * primarily differ by the routing algorithm they use. The expectation
-         * is that this function should be implemented in the derived classes
-         * to 
+         * is that this function should be overridden in the derived classes
+         * to implement the routing algorithm.
          * 
-         * @param src_router The source router if a traffic flow. Identifies the
-         * starting point within the NoC.
-         * @param sink_router The destination router of a traffic flow.
-         * Identifies the destination point within the NoC.
+         * @param src_router_id The source router of a traffic flow. Identifies 
+         * the starting point of the route within the NoC. This is represents
+         * a unique identifier of the source router.
+         * @param sink_router_id The destination router of a traffic flow.
+         * Identifies the ending point of the route within the NoC.This is 
+         * represents a unique identifier of the destination router.
          * @param noc_model A model of the NoC. This is used to traverse the
          * NoC and find a route between the two routers.
          */
-        virtual void route_flow(NocRouterId src_router, NocRouterId sink_router,const NocStorage& noc_model) = 0;
+        virtual void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, const NocStorage& noc_model) = 0;
 
 
     // protected functions that are only accessible to derived classes. 
