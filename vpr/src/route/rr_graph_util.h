@@ -2,8 +2,6 @@
 #define RR_GRAPH_UTIL_H
 
 #include "vpr_types.h"
-#include "clustered_netlist_utils.h"
-#include "rr_spatial_lookup.h"
 
 int seg_index_of_cblock(t_rr_type from_rr_type, int to_node);
 
