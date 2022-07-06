@@ -128,11 +128,15 @@ class XYRouting : public NocRouting {
      * @brief Based on the position of the current router the algorithm is
      * visiting, this function determines the next direction to travel. 
      * 
-     * @param sink_router_x_position 
-     * @param sink_router_y_position 
-     * @param curr_router_x_position 
-     * @param curr_router_y_position 
-     * @return RouteDirection 
+     * @param sink_router_x_position The horizontal grid position of the
+     * destination router on the FPGA
+     * @param sink_router_y_position  The vertical grid position of the
+     * destination router on the FPGA
+     * @param curr_router_x_position The horizontal grid position of the
+     * router that is currently being visited on the FPGA
+     * @param curr_router_y_position The vertical grid position of the router
+     * that is currently being visited on the FPGA
+     * @return RouteDirection The direction to travel next
      */
     RouteDirection get_direction_to_travel(int sink_router_x_position, int sink_router_y_position, int curr_router_x_position, int curr_router_y_position);
 
@@ -143,13 +147,17 @@ class XYRouting : public NocRouting {
      * guaranteed to point in the intended direction, So this function makes
      * sure that the link chosen points in the intended direction.
      * 
-     * @param curr_router
-     * @param curr_router_x_position
-     * @param curr_router_y_position
-     * @param next_step_direction 
-     * @param noc_model 
-     * @return true 
-     * @return false 
+     * @param curr_router_id The unique identifier of the current router that
+     * is being visited on the FPGA
+     * @param curr_router_x_position The horizontal grid position of the
+     * router that is currently being visited on the FPGA
+     * @param curr_router_y_position he vertical grid position of the router
+     * that is currently being visited on the FPGA
+     * @param next_step_direction The direction to travel next
+     * @param noc_model A model of the NoC. This is used to traverse the
+     * NoC and find a route between the two routers.
+     * @return true A suitable link was found that we can traverse next
+     * @return false N suitable links were found that could be traversed
      */
     bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, const NocStorage& noc_model);
 
