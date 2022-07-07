@@ -86,13 +86,13 @@ void free_all_lb_type_rr_graph(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs
                 if (node->outedges != nullptr) {
                     for (int imode = 0; imode < node->num_modes; imode++) {
                         if (node->outedges[imode] != nullptr) {
-                            delete[](node->outedges[imode]);
+                            delete[] node->outedges[imode];
                         }
                     }
-                    delete[](node->outedges);
+                    delete[] node->outedges;
                 }
                 if (node->num_fanout != nullptr) {
-                    delete[](node->num_fanout);
+                    delete[] node->num_fanout;
                 }
             }
         }

@@ -356,10 +356,10 @@ void free_pb_graph_edges() {
         cur_num = num_edges_head;
         edges = (t_pb_graph_edge*)cur->data_vptr;
         for (int i = 0; i < (intptr_t)cur_num->data_vptr; i++) {
-            delete[](edges[i].input_pins);
-            delete[](edges[i].output_pins);
+            delete[] edges[i].input_pins;
+            delete[] edges[i].output_pins;
             if (edges[i].pack_pattern_indices) {
-                delete[](edges[i].pack_pattern_indices);
+                delete[] edges[i].pack_pattern_indices;
             }
             // if (edges[i].pack_pattern_names) {
             // vtr::free(edges[i].pack_pattern_names);
@@ -367,9 +367,9 @@ void free_pb_graph_edges() {
         }
         edges_head = edges_head->next;
         num_edges_head = num_edges_head->next;
-        delete[](edges);
-        delete (cur_num);
-        delete (cur);
+        delete[] edges;
+        delete cur_num;
+        delete cur;
     }
 }
 
@@ -579,15 +579,15 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
                           mode->interconnect[i].output_string);
         }
         for (j = 0; j < num_input_pb_graph_node_sets; j++) {
-            delete[](input_pb_graph_node_pins[j]);
+            delete[] input_pb_graph_node_pins[j];
         }
         delete[](input_pb_graph_node_pins);
         for (j = 0; j < num_output_pb_graph_node_sets; j++) {
-            delete[](output_pb_graph_node_pins[j]);
+            delete[] output_pb_graph_node_pins[j];
         }
-        delete[](output_pb_graph_node_pins);
-        delete[](num_input_pb_graph_node_pins);
-        delete[](num_output_pb_graph_node_pins);
+        delete[] output_pb_graph_node_pins;
+        delete[] num_input_pb_graph_node_pins;
+        delete[] num_output_pb_graph_node_pins;
     }
 }
 

@@ -357,12 +357,12 @@ void free_pack_pattern(t_pack_patterns* pack_pattern) {
             pattern_block_list[i] = nullptr;
 
         free(pack_pattern->name);
-        delete[](pack_pattern->is_block_optional);
+        delete[] pack_pattern->is_block_optional;
         free_pack_pattern_block(pack_pattern->root_block, pattern_block_list);
         for (int j = 0; j < num_pack_pattern_blocks; j++) {
-            delete (pattern_block_list[j]);
+            delete pattern_block_list[j];
         }
-        delete[](pattern_block_list);
+        delete[] pattern_block_list;
     }
 }
 
@@ -848,7 +848,7 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
             }
         }
     }
-    delete[](is_used);
+    delete[] is_used;
 
     /* List all atom blocks as a molecule for blocks that do not belong to any molecules.
      * This allows the packer to be consistent as it now packs molecules only instead of atoms and molecules
@@ -917,7 +917,7 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
         free_pack_pattern_block(connection->from_block, pattern_block_list);
         free_pack_pattern_block(connection->to_block, pattern_block_list);
         next = connection->next;
-        delete (connection);
+        delete connection;
         connection = next;
     }
 }

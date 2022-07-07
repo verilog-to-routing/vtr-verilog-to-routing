@@ -166,17 +166,17 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* p
 
     if (in_port != nullptr) {
         for (i = 0; i < num_in_sets; i++) {
-            delete[](in_port[i]);
+            delete[] in_port[i];
         }
-        delete[](in_port);
-        delete[](num_in_ptrs);
+        delete[] in_port;
+        delete[] num_in_ptrs;
     }
     if (out_port != nullptr) {
         for (i = 0; i < num_out_sets; i++) {
-            delete[](out_port[i]);
+            delete[] out_port[i];
         }
-        delete[](out_port);
-        delete[](num_out_ptrs);
+        delete[] out_port;
+        delete[] num_out_ptrs;
     }
 }
 
@@ -456,22 +456,22 @@ static void load_delay_annotations(const int line_num,
     //Clean-up
     if (in_port != nullptr) {
         for (i = 0; i < num_in_sets; i++) {
-            delete[](in_port[i]);
+            delete[] in_port[i];
         }
-        delete[](in_port);
-        delete[](num_in_ptrs);
+        delete[] in_port;
+        delete[] num_in_ptrs;
     }
     if (out_port != nullptr) {
         for (i = 0; i < num_out_sets; i++) {
-            delete[](out_port[i]);
+            delete[] out_port[i];
         }
-        delete[](out_port);
-        delete[](num_out_ptrs);
+        delete[] out_port;
+        delete[] num_out_ptrs;
     }
     for (i = 0; i < num_inputs; i++) {
-        delete[](delay_matrix[i]);
+        delete[] delay_matrix[i];
     }
-    delete[](delay_matrix);
+    delete[] delay_matrix;
 }
 
 static void inferr_unspecified_pb_graph_node_delays(t_pb_graph_node* pb_graph_node) {

@@ -130,9 +130,9 @@ static void print_stats() {
     }
     VTR_LOG("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
             total_nets_absorbed, (int)atom_ctx.nlist.nets().size(), (int)atom_ctx.nlist.nets().size() - total_nets_absorbed);
-    delete[](num_clb_types);
-    delete[](num_clb_inputs_used);
-    delete[](num_clb_outputs_used);
+    delete[] num_clb_types;
+    delete[] num_clb_inputs_used;
+    delete[] num_clb_outputs_used;
     /* TODO: print more stats */
 }
 

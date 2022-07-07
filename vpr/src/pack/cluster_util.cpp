@@ -237,15 +237,15 @@ void free_clustering_data(const t_packer_opts& packer_opts,
     clustering_data.intra_lb_routing.clear();
 
     if (packer_opts.hill_climbing_flag)
-        delete[](clustering_data.hill_climbing_inputs_avail);
+        delete[] clustering_data.hill_climbing_inputs_avail;
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
         cluster_ctx.clb_nlist.remove_block(blk_id);
 
     cluster_ctx.clb_nlist = ClusteredNetlist();
 
-    delete[](clustering_data.unclustered_list_head);
-    delete[](clustering_data.memory_pool);
+    delete[] clustering_data.unclustered_list_head;
+    delete[] clustering_data.memory_pool;
 }
 
 //check the clustering and output it
@@ -545,7 +545,7 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
 
         next_ptr++;
     }
-    delete[](molecule_array);
+    delete[] molecule_array;
 
     /* load net info */
     auto& atom_ctx = g_vpr_ctx.atom();
