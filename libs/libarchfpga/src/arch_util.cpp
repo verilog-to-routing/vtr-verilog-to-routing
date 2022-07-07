@@ -330,7 +330,7 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
                 for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
                     delete[] pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k];
                 }
-                delete[]pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs;
+                delete[] pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs;
             }
 
             if (pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins)
