@@ -75,6 +75,8 @@ static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::reg
 static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
 static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 
+static void add_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
+
 /******************** Subroutine definitions *********************************/
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required) {
@@ -1177,6 +1179,16 @@ static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lo
     delete[] pb_graph_pin_lookup_from_type;
 }
 
+static void add_child_to_list (std::list<const t_pb*>& pb_list, const t_pb* parent_pb) {
+    for(int child_pb_type_idx = 0; child_pb_type_idx < parent_pb->get_num_child_types(); child_pb_type_idx++) {
+        int num_children = parent_pb->get_num_children_of_type(child_pb_type_idx);
+        for (int child_idx = 0; child_idx < num_children; child_idx++) {
+            const t_pb* child_pb = &parent_pb->child_pbs[child_pb_type_idx][child_idx];
+            pb_list.push_back(child_pb);
+        }
+    }
+}
+
 /**
  * Create lookup table that returns a pointer to the pb given [index to block][pin_id].
  */
@@ -1281,13 +1293,8 @@ std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(Cluster
     std::list<const t_pb*> internal_pbs;
     const t_pb* pb = cluster_net_list.block_pb(cluster_block_id);
 
-    for(int child_pb_type_idx = 0; child_pb_type_idx < pb->get_num_child_types(); child_pb_type_idx++) {
-        int num_children = pb->get_num_children_of_type(child_pb_type_idx);
-        for (int child_idx = 0; child_idx < num_children; child_idx++) {
-            const t_pb* child_pb = &pb->child_pbs[child_pb_type_idx][child_idx];
-            internal_pbs.push_back(child_pb);
-        }
-    }
+    // Classes on the tile are already added. Thus, we should ** not ** add the top-level block's classes.
+    add_child_to_list(internal_pbs, pb);
 
     while(!internal_pbs.empty()) {
         pb = internal_pbs.front();
@@ -1303,14 +1310,7 @@ std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(Cluster
             VTR_ASSERT(insert_res.second == true);
         }
 
-        int num_child_pb_type = pb->get_num_child_types();
-        for(int child_pb_type_idx = 0; child_pb_type_idx < num_child_pb_type; child_pb_type_idx++) {
-            int num_children = pb->get_num_children_of_type(child_pb_type_idx);
-            for (int child_idx = 0; child_idx < num_children; child_idx++) {
-                const t_pb* child_pb = &pb->child_pbs[child_pb_type_idx][child_idx];
-                internal_pbs.push_back(child_pb);
-            }
-        }
+        add_child_to_list(internal_pbs, pb);
 
     }
 
@@ -1319,16 +1319,6 @@ std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(Cluster
 
 std::vector<int> get_cluster_internal_ipin_opin(ClusterBlockId cluster_blk_id) {
     std::vector<int> internal_pins;
-
-    auto add_child_to_list = [] (std::list<const t_pb*>& pb_list, const t_pb* parent_pb) {
-        for(int child_pb_type_idx = 0; child_pb_type_idx < parent_pb->get_num_child_types(); child_pb_type_idx++) {
-            int num_children = parent_pb->get_num_children_of_type(child_pb_type_idx);
-            for (int child_idx = 0; child_idx < num_children; child_idx++) {
-                const t_pb* child_pb = &parent_pb->child_pbs[child_pb_type_idx][child_idx];
-                pb_list.push_back(child_pb);
-            }
-        }
-    };
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
 
@@ -1345,7 +1335,7 @@ std::vector<int> get_cluster_internal_ipin_opin(ClusterBlockId cluster_blk_id) {
 
     std::list<const t_pb*> internal_pbs;
     const t_pb* pb = cluster_net_list.block_pb(cluster_blk_id);
-    // Pins on the tile are already added. Thus, we should ** not ** at the top-level block's pins.
+    // Pins on the tile are already added. Thus, we should ** not ** at the top-level block's classes.
     add_child_to_list(internal_pbs, pb);
 
 

@@ -275,18 +275,18 @@ static void build_block_edges(RRGraphBuilder& rr_graph_builder,
                               int j,
                               const int delayless_switch);
 
-static void add_parent_children_edges(RRGraphBuilder& rr_graph_builder,
-                                      t_rr_edge_info_set& rr_edges_to_create,
-                                      t_physical_tile_type_ptr physical_type,
-                                      const t_sub_tile* sub_tile,
-                                      t_logical_block_type_ptr logical_block,
-                                      const t_pb* pb,
-                                      int rel_cap,
-                                      int i,
-                                      int j,
-                                      const int delayless_switch);
+static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
+                         t_rr_edge_info_set& rr_edges_to_create,
+                         t_physical_tile_type_ptr physical_type,
+                         const t_sub_tile* sub_tile,
+                         t_logical_block_type_ptr logical_block,
+                         const t_pb* pb,
+                         int rel_cap,
+                         int i,
+                         int j,
+                         const int delayless_switch);
 
-static RRNodeId get_input_output_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
+static RRNodeId get_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
                                    t_physical_tile_type_ptr physical_tile,
                                    const int i,
                                    const int j,
@@ -2066,19 +2066,16 @@ static void build_block_edges(RRGraphBuilder& rr_graph_builder,
                               const int delayless_switch) {
 
 
-    if(pb->is_primitive())
-        return;
-
-    add_parent_children_edges(rr_graph_builder,
-                              rr_edges_to_create,
-                              physical_type,
-                              sub_tile,
-                              logical_block,
-                              pb,
-                              rel_cap,
-                              i,
-                              j,
-                              delayless_switch);
+    add_pb_edges(rr_graph_builder,
+                 rr_edges_to_create,
+                 physical_type,
+                 sub_tile,
+                 logical_block,
+                 pb,
+                 rel_cap,
+                 i,
+                 j,
+                 delayless_switch);
 
     int num_child_pb_type = pb->get_num_child_types();
     for(int child_pb_type_idx = 0; child_pb_type_idx < num_child_pb_type; child_pb_type_idx++) {
@@ -2102,16 +2099,16 @@ static void build_block_edges(RRGraphBuilder& rr_graph_builder,
 
 }
 
-static void add_parent_children_edges(RRGraphBuilder& rr_graph_builder,
-                                      t_rr_edge_info_set& rr_edges_to_create,
-                                      t_physical_tile_type_ptr physical_type,
-                                      const t_sub_tile* sub_tile,
-                                      t_logical_block_type_ptr logical_block,
-                                      const t_pb* pb,
-                                      int rel_cap,
-                                      int i,
-                                      int j,
-                                      const int delayless_switch) {
+static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
+                         t_rr_edge_info_set& rr_edges_to_create,
+                         t_physical_tile_type_ptr physical_type,
+                         const t_sub_tile* sub_tile,
+                         t_logical_block_type_ptr logical_block,
+                         const t_pb* pb,
+                         int rel_cap,
+                         int i,
+                         int j,
+                         const int delayless_switch) {
 
     auto pin_nums = get_pb_pins(physical_type,
                                  sub_tile,
@@ -2119,40 +2116,37 @@ static void add_parent_children_edges(RRGraphBuilder& rr_graph_builder,
                                  pb,
                                  rel_cap);
     for(auto pin : pin_nums) {
-        auto parent_pin_node_id = get_input_output_pin_rr_node_id(rr_graph_builder,
-                                                                  physical_type,
-                                                                  i,
-                                                                  j,
-                                                                  pin);
+        auto parent_pin_node_id = get_pin_rr_node_id(rr_graph_builder,
+                                                     physical_type,
+                                                     i,
+                                                     j,
+                                                     pin);
         VTR_ASSERT(parent_pin_node_id != RRNodeId::INVALID());
-        auto pin_type = get_pin_type_from_pin_physical_num(physical_type, pin);
 
-        auto connected_pins = get_connected_child_pins(physical_type,
-                                                       logical_block,
-                                                       pb->mode,
-                                                       pin);
+        auto driving_pins = get_physical_pin_driving_pins(physical_type,
+                                                          logical_block,
+                                                          pin);
 
-        for(auto connected_pin : connected_pins) {
-            auto conn_pin_node_id = get_input_output_pin_rr_node_id(rr_graph_builder,
+        for(auto driving_pin : driving_pins) {
+            auto conn_pin_node_id = get_pin_rr_node_id(rr_graph_builder,
                                                        physical_type,
                                                        i,
                                                        j,
-                                                       connected_pin);
-            VTR_ASSERT(conn_pin_node_id != RRNodeId::INVALID());
-
-            if(pin_type == e_pin_type::RECEIVER) { /* INPUT PIN */
-                rr_edges_to_create.emplace_back(parent_pin_node_id, conn_pin_node_id, delayless_switch);
-            } else { /* OUTPUT PIN */
-                VTR_ASSERT(pin_type == e_pin_type::DRIVER);
-                rr_edges_to_create.emplace_back(conn_pin_node_id, parent_pin_node_id, delayless_switch);
+                                                       driving_pin);
+            // If the node_id is INVALID it means that it belongs to a pin which is not added to the RR Graph. The pin is not added
+            // since it belongs to a certain mode or block which is not used in cluster netlist
+            if(conn_pin_node_id == RRNodeId::INVALID()) {
+                continue;
             }
+
+            rr_edges_to_create.emplace_back(conn_pin_node_id, parent_pin_node_id, delayless_switch);
 
         }
     }
 
 }
 
-static RRNodeId get_input_output_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
+static RRNodeId get_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
                                    t_physical_tile_type_ptr physical_tile,
                                    const int i,
                                    const int j,
@@ -2205,7 +2199,7 @@ static std::tuple<t_rr_type, int, RRNodeId> get_pin_spec_from_class (RRGraphBuil
 
 
     // get node id
-    node_id = get_input_output_pin_rr_node_id(rr_graph_builder,
+    node_id = get_pin_rr_node_id(rr_graph_builder,
                                               physical_tile,
                                               i,
                                               j,
