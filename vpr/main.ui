@@ -148,7 +148,7 @@
       </object>
     </child>
   </object>
-  <object class="GtkPopover" id="DebugPopover">
+  <object class="GtkPopover" id="MiscPopover">
     <property name="name">test</property>
     <property name="can_focus">False</property>
     <child>
@@ -756,17 +756,17 @@
           </packing>
         </child>
         <child>
-          <object class="GtkMenuButton" id="DebugMenuButton">
+          <object class="GtkMenuButton" id="MiscMenuButton">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="focus_on_click">False</property>
             <property name="receives_default">True</property>
-            <property name="popover">DebugPopover</property>
+            <property name="popover">MiscPopover</property>
             <child>
-              <object class="GtkLabel" id="DebugMenuLabel">
+              <object class="GtkLabel" id="MiscMenuLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Debug</property>
+                <property name="label" translatable="yes">Misc.</property>
               </object>
             </child>
           </object>
