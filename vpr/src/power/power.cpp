@@ -774,7 +774,7 @@ static void dealloc_mux_graph_rec(t_mux_node* node) {
         for (child_idx = 0; child_idx < node->num_inputs; child_idx++) {
             dealloc_mux_graph_rec(&node->children[child_idx]);
         }
-        free(node->children);
+        delete[] node->children;
     }
 }
 
