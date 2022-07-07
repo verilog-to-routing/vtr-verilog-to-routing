@@ -1269,6 +1269,11 @@ struct t_analysis_opts {
     e_timing_update_type timing_update_type;
 };
 
+// used to store NoC specific options, when supplied as an input by the user
+struct t_noc_opts {
+    bool noc; ///<options to model the noc within the FPGA device
+};
+
 /**
  * @brief Defines the detailed routing architecture of the FPGA.
  *
@@ -1644,6 +1649,7 @@ struct t_vpr_setup {
     t_annealing_sched AnnealSched;  ///<Placement option annealing schedule
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
+    t_noc_opts NocOpts;             ///<Options for the NoC
     t_det_routing_arch RoutingArch; ///<routing architecture
     std::vector<t_lb_type_rr_node>* PackerRRGraph;
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture

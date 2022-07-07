@@ -9,7 +9,7 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
-//BUTTONS.H
+void button_for_displaying_noc();
 
 void delete_button(const char* button_name);
 GtkWidget* find_button(const char* button_name);

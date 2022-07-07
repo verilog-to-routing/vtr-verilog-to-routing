@@ -23,6 +23,7 @@
 #include "debug.h"
 #include <kj/compat/gtest.h>
 #include <stdexcept>
+#include <stdint.h>
 
 namespace kj {
 namespace _ {  // private
@@ -30,9 +31,11 @@ namespace {
 
 TEST(Exception, TrimSourceFilename) {
 #if _WIN32
-  if (trimSourceFilename(__FILE__) != "kj\\exception-test.c++")
-#endif
+  EXPECT_TRUE(trimSourceFilename(__FILE__) == "kj/exception-test.c++" ||
+              trimSourceFilename(__FILE__) == "kj\\exception-test.c++");
+#else
   EXPECT_EQ(trimSourceFilename(__FILE__), "kj/exception-test.c++");
+#endif
 }
 
 TEST(Exception, RunCatchingExceptions) {
@@ -169,7 +172,7 @@ TEST(Exception, ScopeSuccessFail) {
 }
 #endif
 
-#if __GNUG__
+#if __GNUG__ || defined(__clang__)
 kj::String testStackTrace() __attribute__((noinline));
 #elif _MSC_VER
 __declspec(noinline) kj::String testStackTrace();
@@ -203,6 +206,86 @@ KJ_TEST("getStackTrace() returns correct line number, not line + 1") {
   auto wrong = kj::str("exception-test.c++:", __LINE__);
 
   KJ_ASSERT(strstr(trace.cStr(), wrong.cStr()) == nullptr, trace, wrong);
+}
+
+#if !KJ_NO_EXCEPTIONS
+KJ_TEST("InFlightExceptionIterator works") {
+  bool caught = false;
+  try {
+    KJ_DEFER({
+      try {
+        KJ_FAIL_ASSERT("bar");
+      } catch (const kj::Exception& e) {
+        InFlightExceptionIterator iter;
+        KJ_IF_MAYBE(e2, iter.next()) {
+          KJ_EXPECT(e2 == &e, e2->getDescription());
+        } else {
+          KJ_FAIL_EXPECT("missing first exception");
+        }
+
+        KJ_IF_MAYBE(e2, iter.next()) {
+          KJ_EXPECT(e2->getDescription() == "foo", e2->getDescription());
+        } else {
+          KJ_FAIL_EXPECT("missing second exception");
+        }
+
+        KJ_EXPECT(iter.next() == nullptr, "more than two exceptions");
+
+        caught = true;
+      }
+    });
+    KJ_FAIL_ASSERT("foo");
+  } catch (const kj::Exception& e) {
+    // expected
+  }
+
+  KJ_EXPECT(caught);
+}
+#endif
+
+KJ_TEST("computeRelativeTrace") {
+  auto testCase = [](uint expectedPrefix,
+                     ArrayPtr<const uintptr_t> trace, ArrayPtr<const uintptr_t> relativeTo) {
+    auto tracePtr = KJ_MAP(x, trace) { return (void*)x; };
+    auto relativeToPtr = KJ_MAP(x, relativeTo) { return (void*)x; };
+
+    auto result = computeRelativeTrace(tracePtr, relativeToPtr);
+    KJ_EXPECT(result.begin() == tracePtr.begin());
+
+    KJ_EXPECT(result.size() == expectedPrefix, trace, relativeTo, result);
+  };
+
+  testCase(8,
+      {1, 2, 3, 4, 5, 6, 7, 8},
+      {8, 7, 6, 5, 4, 3, 2, 1});
+
+  testCase(5,
+      {1, 2, 3, 4, 5, 6, 7, 8},
+      {8, 7, 6, 5, 5, 6, 7, 8});
+
+  testCase(5,
+      {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+      {8, 7, 6, 5, 5, 6, 7, 8});
+
+  testCase(5,
+      {1, 2, 3, 4, 5, 6, 7, 8, 6, 7, 8},
+      {8, 7, 6, 5, 5, 6, 7, 8});
+
+  testCase(9,
+      {1, 2, 3, 4, 5, 6, 7, 8, 5, 5, 6, 7, 8},
+      {8, 7, 6, 5, 5, 6, 7, 8});
+
+  testCase(5,
+      {1, 2, 3, 4, 5, 5, 6, 7, 8, 5, 6, 7, 8},
+      {8, 7, 6, 5, 5, 6, 7, 8});
+
+  testCase(5,
+      {1, 2, 3, 4, 5, 6, 7, 8},
+      {8, 7, 6, 5, 5, 6, 7, 8, 7, 8});
+
+  testCase(5,
+      {1, 2, 3, 4, 5, 6, 7, 8},
+      {8, 7, 6, 5, 6, 7, 8, 7, 8});
 }
 
 }  // namespace

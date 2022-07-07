@@ -204,6 +204,8 @@ void free_arch(t_arch* arch) {
     if (arch->clocks) {
         vtr::free(arch->clocks->clock_inf);
     }
+
+    delete (arch->noc);
 }
 
 //Frees all models in the linked list

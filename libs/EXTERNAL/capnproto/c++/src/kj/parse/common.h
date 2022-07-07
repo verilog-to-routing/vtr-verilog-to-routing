@@ -35,18 +35,21 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !KJ_HEADER_WARNINGS
-#pragma GCC system_header
-#endif
-
 #include "../common.h"
 #include "../memory.h"
 #include "../array.h"
 #include "../tuple.h"
 #include "../vector.h"
-#if _MSC_VER && !__clang__
+
+#if _MSC_VER && _MSC_VER < 1920 && !__clang__
+#define KJ_MSVC_BROKEN_DECLTYPE 1
+#endif
+
+#if KJ_MSVC_BROKEN_DECLTYPE
 #include <type_traits>  // result_of_t
 #endif
+
+KJ_BEGIN_HEADER
 
 namespace kj {
 namespace parse {
@@ -103,10 +106,9 @@ template <typename T> struct OutputType_;
 template <typename T> struct OutputType_<Maybe<T>> { typedef T Type; };
 template <typename Parser, typename Input>
 using OutputType = typename OutputType_<
-#if _MSC_VER && !__clang__
+#if KJ_MSVC_BROKEN_DECLTYPE
     std::result_of_t<Parser(Input)>
-    // The instance<T&>() based version below results in:
-    //   C2064: term does not evaluate to a function taking 1 arguments
+    // The instance<T&>() based version below results in many compiler errors on MSVC2017.
 #else
     decltype(instance<Parser&>()(instance<Input&>()))
 #endif
@@ -819,3 +821,5 @@ constexpr EndOfInput_ endOfInput = EndOfInput_();
 
 }  // namespace parse
 }  // namespace kj
+
+KJ_END_HEADER

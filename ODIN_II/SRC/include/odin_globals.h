@@ -8,6 +8,14 @@
 #include "read_xml_arch_file.h"
 #include "HardSoftLogicMixer.hpp"
 
+/**
+ * The cutoff for the number of netlist nodes. 
+ * Technically, Odin-II prints statistics for 
+ * netlist nodes that the total number of them
+ * is greater than this value. 
+ */
+constexpr long long UNUSED_NODE_TYPE = 0;
+
 extern t_logical_block_type* type_descriptors;
 
 /* VERILOG SYNTHESIS GLOBALS */

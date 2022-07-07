@@ -536,7 +536,9 @@ EncodingResult<Array<byte>> decodeBinaryUriComponent(
 
 // =======================================================================================
 
-String encodeCEscape(ArrayPtr<const byte> bytes) {
+namespace _ { // private
+
+String encodeCEscapeImpl(ArrayPtr<const byte> bytes, bool isBinary) {
   Vector<char> escaped(bytes.size());
 
   for (byte b: bytes) {
@@ -552,7 +554,7 @@ String encodeCEscape(ArrayPtr<const byte> bytes) {
       case '\"': escaped.addAll(StringPtr("\\\"")); break;
       case '\\': escaped.addAll(StringPtr("\\\\")); break;
       default:
-        if (b < 0x20 || b == 0x7f) {
+        if (b < 0x20 || b == 0x7f || (isBinary && b > 0x7f)) {
           // Use octal escape, not hex, because hex escapes technically have no length limit and
           // so can create ambiguity with subsequent characters.
           escaped.add('\\');
@@ -569,6 +571,8 @@ String encodeCEscape(ArrayPtr<const byte> bytes) {
   escaped.add(0);
   return String(escaped.releaseAsArray());
 }
+
+} // namespace
 
 EncodingResult<Array<byte>> decodeBinaryCEscape(ArrayPtr<const char> text, bool nulTerminate) {
   Vector<byte> result(text.size() + nulTerminate);
@@ -729,6 +733,7 @@ int base64_encode_block(const char* plaintext_in, int length_in,
 
   switch (state_in->step) {
     while (1) {
+      KJ_FALLTHROUGH;
   case step_A:
       if (plainchar == plaintextend) {
         state_in->result = result;
@@ -739,7 +744,7 @@ int base64_encode_block(const char* plaintext_in, int length_in,
       result = (fragment & 0x0fc) >> 2;
       *codechar++ = base64_encode_value(result);
       result = (fragment & 0x003) << 4;
-      // fallthrough
+      KJ_FALLTHROUGH;
   case step_B:
       if (plainchar == plaintextend) {
         state_in->result = result;
@@ -750,7 +755,7 @@ int base64_encode_block(const char* plaintext_in, int length_in,
       result |= (fragment & 0x0f0) >> 4;
       *codechar++ = base64_encode_value(result);
       result = (fragment & 0x00f) << 2;
-      // fallthrough
+      KJ_FALLTHROUGH;
   case step_C:
       if (plainchar == plaintextend) {
         state_in->result = result;
@@ -852,7 +857,7 @@ typedef enum {
   step_a, step_b, step_c, step_d
 } base64_decodestep;
 
-typedef struct {
+struct base64_decodestate {
   bool hadErrors = false;
   size_t nPaddingBytesSeen = 0;
   // Output state. `nPaddingBytesSeen` is not guaranteed to be correct if `hadErrors` is true. It is
@@ -861,7 +866,7 @@ typedef struct {
 
   base64_decodestep step = step_a;
   char plainchar = 0;
-} base64_decodestate;
+};
 
 int base64_decode_value(char value_in) {
   // Returns either the fragment value or: -1 on whitespace, -2 on padding, -3 on invalid input.
@@ -908,6 +913,7 @@ int base64_decode_block(const char* code_in, const int length_in,
   {
     while (1)
     {
+      KJ_FALLTHROUGH;
   case step_a:
       do {
         if (codechar == code_in+length_in) {
@@ -920,7 +926,7 @@ int base64_decode_block(const char* code_in, const int length_in,
         ERROR_IF(fragment < -1);
       } while (fragment < 0);
       *plainchar    = (fragment & 0x03f) << 2;
-      // fallthrough
+      KJ_FALLTHROUGH;
   case step_b:
       do {
         if (codechar == code_in+length_in) {
@@ -938,7 +944,7 @@ int base64_decode_block(const char* code_in, const int length_in,
       } while (fragment < 0);
       *plainchar++ |= (fragment & 0x030) >> 4;
       *plainchar    = (fragment & 0x00f) << 4;
-      // fallthrough
+      KJ_FALLTHROUGH;
   case step_c:
       do {
         if (codechar == code_in+length_in) {
@@ -958,7 +964,7 @@ int base64_decode_block(const char* code_in, const int length_in,
       ERROR_IF(state_in->nPaddingBytesSeen > 0);
       *plainchar++ |= (fragment & 0x03c) >> 2;
       *plainchar    = (fragment & 0x003) << 6;
-      // fallthrough
+      KJ_FALLTHROUGH;
   case step_d:
       do {
         if (codechar == code_in+length_in) {
@@ -999,6 +1005,26 @@ EncodingResult<Array<byte>> decodeBase64(ArrayPtr<const char> input) {
   }
 
   return EncodingResult<Array<byte>>(kj::mv(output), state.hadErrors);
+}
+
+String encodeBase64Url(ArrayPtr<const byte> bytes) {
+  // TODO(perf): Rewrite as single pass?
+  // TODO(someday): Write decoder?
+
+  auto base64 = kj::encodeBase64(bytes);
+
+  for (char& c: base64) {
+    if (c == '+') c = '-';
+    if (c == '/') c = '_';
+  }
+
+  // Remove trailing '='s.
+  kj::ArrayPtr<const char> slice = base64;
+  while (slice.size() > 0 && slice.back() == '=') {
+    slice = slice.slice(0, slice.size() - 1);
+  }
+
+  return kj::str(slice);
 }
 
 } // namespace kj

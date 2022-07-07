@@ -22,7 +22,7 @@ a fully-functional Cap'n Proto client and server.
 ## KJ Concurrency Framework
 
 RPC naturally requires a notion of concurrency.  Unfortunately,
-[all concurrency models suck](https://plus.google.com/u/0/+KentonVarda/posts/D95XKtB5DhK).
+[all concurrency models suck](https://web.archive.org/web/20170718202612/https://plus.google.com/+KentonVarda/posts/D95XKtB5DhK).
 
 Cap'n Proto's RPC is based on the [KJ library](cxx.html#kj-library)'s event-driven concurrency
 framework.  The core of the KJ asynchronous framework (events, promises, callbacks) is defined in
@@ -35,8 +35,8 @@ must have its own event loop.  KJ discourages fine-grained interaction between t
 synchronization is expensive and error-prone.  Instead, threads are encouraged to communicate
 through Cap'n Proto RPC.
 
-KJ's event loop model bears a lot of similarity to the Javascript concurrency model.  Experienced
-Javascript hackers -- especially node.js hackers -- will feel right at home.
+KJ's event loop model bears a lot of similarity to the JavaScript concurrency model.  Experienced
+JavaScript hackers -- especially node.js hackers -- will feel right at home.
 
 _As of version 0.4, the only supported way to communicate between threads is over pipes or
 socketpairs.  This will be improved in future versions.  For now, just set up an RPC connection
@@ -64,7 +64,7 @@ kj::Promise<void> sendEmail(kj::StringPtr address,
 // the message has been successfully sent.
 {% endhighlight %}
 
-As you will see, KJ promises are very similar to the evolving Javascript promise standard, and
+As you will see, KJ promises are very similar to the evolving JavaScript promise standard, and
 much of the [wisdom around it](https://www.google.com/search?q=javascript+promises) can be directly
 applied to KJ promises.
 

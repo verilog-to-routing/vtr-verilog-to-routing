@@ -76,6 +76,7 @@ export PATH="$PATH:/home/kbuilder/.local/bin"
 export CC=gcc-9
 export CXX=g++-9
 
+python3 -m pip install -U pip
 python3 -m pip install -r requirements.txt
 
 echo "----------------------------------------"
