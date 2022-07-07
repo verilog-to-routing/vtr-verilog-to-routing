@@ -483,7 +483,10 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
             output_nets_hash->add(name, new_net);
         }
 
-        if (!configuration.coarsen || new_node->type == SPRAM || new_node->type == DPRAM) {
+        if (!configuration.coarsen
+            || !configuration.decode_names
+            || new_node->type == SPRAM
+            || new_node->type == DPRAM) {
             // Name the node subcircuit_name~hard_block_number so that the name is unique.
             odin_sprintf(buffer, "%s~%ld", subcircuit_name, hard_block_number++);
             new_node->name = make_full_ref_name(buffer, NULL, NULL, NULL, -1);

@@ -360,6 +360,14 @@ def vtr_command_argparser(prog=None):
         help="Make flip-flops rising edge for coarse-grain input BLIFs in the techmap"
         + "(Odin-II synthesis flow generates rising edge FFs by default)",
     )
+    odin.add_argument(
+        "-encode_names",
+        default=False,
+        action="store_true",
+        dest="encode_names",
+        help="Enable Odin-II utilization of operation-type-encoded naming style for Yosys"
+        + " coarse-grained RTLIL nodes",
+    )
     #
     # YOSYS arguments
     #
@@ -673,6 +681,7 @@ def process_odin_args(args):
     odin_args["adder_type"] = args.adder_type
     odin_args["top_module"] = args.top_module
     odin_args["elaborator"] = args.elaborator
+    odin_args["encode_names"] = args.encode_names
 
     if args.adder_cin_global:
         odin_args["adder_cin_global"] = True

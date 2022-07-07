@@ -87,7 +87,7 @@ def init_config_file(
     config_file.write(odin_config_full_path)
 
 
-# pylint: disable=too-many-arguments, too-many-locals
+# pylint: disable=too-many-arguments, too-many-locals, too-many-branches
 def run(
     architecture_file,
     circuit_file,
@@ -190,6 +190,11 @@ def run(
     cmd = [odin_exec]
     use_odin_simulation = False
 
+    # handling the Odin-II decode_name flag for Yosys coarse-grained BLIFs
+    if not odin_args["encode_names"]:
+        odin_args["decode_names"] = True
+    del odin_args["encode_names"]
+
     if "use_odin_simulation" in odin_args:
         use_odin_simulation = True
         del odin_args["use_odin_simulation"]
@@ -245,4 +250,4 @@ def run(
         )
 
 
-# pylint: enable=too-many-arguments, too-many-locals
+# pylint: enable=too-many-arguments, too-many-locals, too-many-branches
