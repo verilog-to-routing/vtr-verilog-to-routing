@@ -763,7 +763,7 @@ static void power_usage_clock_single(t_power_usage* power_usage,
 /* Frees a multiplexer graph */
 static void dealloc_mux_graph(t_mux_node* node) {
     dealloc_mux_graph_rec(node);
-    free(node);
+    delete(node);
 }
 
 static void dealloc_mux_graph_rec(t_mux_node* node) {
@@ -1197,9 +1197,9 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     }
 
     /* Initialize RR Graph Structures */
-    rr_node_power = (t_rr_node_power*)vtr::calloc(rr_graph.num_nodes(),
-                                                  sizeof(t_rr_node_power));
+    rr_node_power = new t_rr_node_power[rr_graph.num_nodes()];
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    	rr_node_power[(size_t)rr_id] = t_rr_node_power();
         rr_node_power[(size_t)rr_id].driver_switch_type = OPEN;
     }
 
@@ -1303,12 +1303,13 @@ bool power_init(const char* power_out_filepath,
     power_ctx.arch = arch->power;
     power_ctx.commonly_used = new t_power_commonly_used;
     power_ctx.tech = (t_power_tech*)vtr::malloc(sizeof(t_power_tech));
-    power_ctx.output = (t_power_output*)vtr::malloc(sizeof(t_power_output));
+    power_ctx.output = new t_power_output;
 
     /* Set up Logs */
     power_ctx.output->num_logs = POWER_LOG_NUM_TYPES;
-    power_ctx.output->logs = (t_log*)vtr::calloc(power_ctx.output->num_logs,
-                                                 sizeof(t_log));
+    power_ctx.output->logs = new t_log[power_ctx.output->num_logs];
+    for (int i = 0 ; i < power_ctx.output->num_logs; i++)
+    	power_ctx.output->logs[i] = t_log();
     power_ctx.output->logs[POWER_LOG_ERROR].name = vtr::strdup("Errors");
     power_ctx.output->logs[POWER_LOG_WARNING].name = vtr::strdup("Warnings");
 
@@ -1377,7 +1378,7 @@ bool power_uninit() {
                 break;
         }
     }
-    free(rr_node_power);
+    delete[](rr_node_power);
 
     /* Free mux architectures */
     for (std::map<float, t_power_mux_info*>::iterator it = power_ctx.commonly_used->mux_info.begin();
@@ -1409,8 +1410,8 @@ bool power_uninit() {
         free(power_ctx.output->logs[log_idx].messages);
         free(power_ctx.output->logs[log_idx].name);
     }
-    free(power_ctx.output->logs);
-    free(power_ctx.output);
+    delete[](power_ctx.output->logs);
+    delete(power_ctx.output);
 
     power_pb_pins_uninit();
 
