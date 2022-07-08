@@ -200,7 +200,7 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
 //    power_ctx.tech->nmos_leakage_info = (t_power_nmos_leakage_inf*)vtr::calloc(num_nmos_sizes, sizeof(t_power_nmos_leakage_inf));
     power_ctx.tech->nmos_leakage_info = new t_power_nmos_leakage_inf[num_nmos_sizes];
     for (i = 0 ; i < num_nmos_sizes; i++)
-    	power_ctx.tech->nmos_mux_info[i] = t_power_nmos_mux_inf();
+    	power_ctx.tech->nmos_leakage_info[i] = t_power_nmos_leakage_inf();
 
     auto me = get_first_child(parent, "nmos", loc_data);
     nmos_idx = 0;
@@ -214,6 +214,7 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
         nmos_info->leakage_pairs = new t_power_nmos_leakage_pair[num_leakage_pairs];
         for (i = 0 ; i < num_leakage_pairs; i++)
         	nmos_info->leakage_pairs[i] = t_power_nmos_leakage_pair();
+
         auto child = get_first_child(me, "nmos_leakage", loc_data);
         i = 0;
         while (child) {
