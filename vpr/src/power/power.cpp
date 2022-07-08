@@ -1302,8 +1302,8 @@ bool power_init(const char* power_out_filepath,
     /* Set global power architecture & options */
     power_ctx.arch = arch->power;
     power_ctx.commonly_used = new t_power_commonly_used;
-    power_ctx.tech = (t_power_tech*)vtr::malloc(sizeof(t_power_tech));
-//    power_ctx.tech = new t_power_tech;
+//    power_ctx.tech = (t_power_tech*)vtr::malloc(sizeof(t_power_tech));
+    power_ctx.tech = new t_power_tech;
     power_ctx.output = new t_power_output;
 
     /* Set up Logs */
