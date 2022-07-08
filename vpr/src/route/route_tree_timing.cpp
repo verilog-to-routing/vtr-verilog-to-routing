@@ -80,7 +80,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
     /* Allocates any structures needed to build the routing trees. */
 
     auto& device_ctx = g_vpr_ctx.device();
-    bool route_tree_structs_are_allocated = (rr_node_to_rt_node.size() == size_t(device_ctx.rr_nodes.size())
+    bool route_tree_structs_are_allocated = (rr_node_to_rt_node.size() == size_t(device_ctx.rr_graph.num_nodes())
                                              || rt_node_free_list != nullptr);
     if (route_tree_structs_are_allocated) {
         if (exists_ok) {
@@ -91,7 +91,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
         }
     }
 
-    rr_node_to_rt_node = std::vector<t_rt_node*>(device_ctx.rr_nodes.size(), nullptr);
+    rr_node_to_rt_node = std::vector<t_rt_node*>(device_ctx.rr_graph.num_nodes(), nullptr);
 
     return true;
 }
@@ -216,7 +216,7 @@ t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRout
     short iswitch;
 
     auto& device_ctx = g_vpr_ctx.device();
-
+    const auto& rr_graph = device_ctx.rr_graph;
     //Create a new subtree from the target in hptr to existing routing
     start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, target_net_pin_index, &sink_rt_node);
 
@@ -234,8 +234,10 @@ t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRout
     if (subtree_parent_rt_node != nullptr) { /* Parent exists. */
         Tdel_start = subtree_parent_rt_node->Tdel;
         iswitch = unbuffered_subtree_rt_root->parent_switch;
-        Tdel_start += device_ctx.rr_switch_inf[iswitch].R * unbuffered_subtree_rt_root->C_downstream;
-        Tdel_start += device_ctx.rr_switch_inf[iswitch].Tdel;
+        /*TODO Just a note (no action needed for this PR):In future, we need to consider APIs that returns
+         * the Tdel for a routing trace in RRGraphView.*/
+        Tdel_start += rr_graph.rr_switch_inf(RRSwitchId(iswitch)).R * unbuffered_subtree_rt_root->C_downstream;
+        Tdel_start += rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
     } else { /* Subtree starts at SOURCE */
         Tdel_start = 0.;
     }
@@ -320,7 +322,7 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
     std::unordered_set<int> all_visited;         //does not include sink
     inode = hptr->prev_node();
     RREdgeId edge = hptr->prev_edge();
-    short iswitch = device_ctx.rr_nodes.edge_switch(edge);
+    short iswitch = rr_graph.rr_nodes().edge_switch(edge);
 
     /* For all "new" nodes in the main path */
     // inode is node index of previous node
@@ -359,7 +361,7 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
         downstream_rt_node = rt_node;
         edge = route_ctx.rr_node_route_inf[inode].prev_edge;
         inode = route_ctx.rr_node_route_inf[inode].prev_node;
-        iswitch = device_ctx.rr_nodes.edge_switch(edge);
+        iswitch = rr_graph.rr_nodes().edge_switch(edge);
     }
 
     //Inode is now the branch point to the old routing; do not need
@@ -418,17 +420,16 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
                 VTR_ASSERT(rt_node->inode == rr_node);
             }
         }
-        for (int iedge : device_ctx.rr_nodes[rr_node].non_configurable_edges()) {
+        for (int iedge : rr_graph.non_configurable_edges(RRNodeId(rr_node))) {
             //Recursive case: expand children
-            VTR_ASSERT(!device_ctx.rr_nodes[rr_node].edge_is_configurable(iedge));
-
-            int to_rr_node = device_ctx.rr_nodes[rr_node].edge_sink_node(iedge);
+            VTR_ASSERT(!rr_graph.edge_is_configurable(RRNodeId(rr_node), iedge));
+            int to_rr_node = size_t(rr_graph.edge_sink_node(RRNodeId(rr_node), iedge));
 
             //Recurse
             t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node, true, visited);
 
             if (!child_rt_node) continue;
-            int iswitch = device_ctx.rr_nodes[rr_node].edge_switch(iedge);
+            int iswitch = rr_graph.edge_switch(RRNodeId(rr_node), iedge);
 
             //Create the edge
             t_linked_rt_edge* linked_rt_edge = alloc_linked_rt_edge();
@@ -467,12 +468,12 @@ void load_new_subtree_R_upstream(t_rt_node* rt_node) {
     float R_upstream = 0.;
     if (parent_rt_node) {
         int iswitch = rt_node->parent_switch;
-        bool switch_buffered = device_ctx.rr_switch_inf[iswitch].buffered();
+        bool switch_buffered = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).buffered();
 
         if (!switch_buffered) {
             R_upstream += parent_rt_node->R_upstream; //Parent upstream R
         }
-        R_upstream += device_ctx.rr_switch_inf[iswitch].R; //Parent switch R
+        R_upstream += rr_graph.rr_switch_inf(RRSwitchId(iswitch)).R; //Parent switch R
     }
     R_upstream += rr_graph.node_R(RRNodeId(inode)); //Current node R
 
@@ -497,11 +498,11 @@ float load_new_subtree_C_downstream(t_rt_node* rt_node) {
              * produces an "internal capacitance". We account for this internal capacitance of the
              * switch by adding it to the total capacitance of the node.*/
 
-            C_downstream += device_ctx.rr_switch_inf[edge->iswitch].Cinternal;
+            C_downstream += rr_graph.rr_switch_inf(RRSwitchId(edge->iswitch)).Cinternal;
 
             float C_downstream_child = load_new_subtree_C_downstream(edge->child);
 
-            if (!device_ctx.rr_switch_inf[edge->iswitch].buffered()) {
+            if (!rr_graph.rr_switch_inf(RRSwitchId(edge->iswitch)).buffered()) {
                 C_downstream += C_downstream_child;
             }
         }
@@ -524,7 +525,7 @@ update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_path_rt_node) {
     float C_downstream_addition;
 
     auto& device_ctx = g_vpr_ctx.device();
-
+    const auto& rr_graph = device_ctx.rr_graph;
     rt_node = start_of_new_path_rt_node;
     parent_rt_node = rt_node->parent_node;
     iswitch = rt_node->parent_switch;
@@ -534,7 +535,7 @@ update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_path_rt_node) {
      * by an unbuffered switch, so the ancestors downstream capacitance must be equal to the sum
      * of the child's downstream capacitance with the internal capacitance of the switch.*/
 
-    C_downstream_addition = rt_node->C_downstream + device_ctx.rr_switch_inf[iswitch].Cinternal;
+    C_downstream_addition = rt_node->C_downstream + rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Cinternal;
 
     /* Having set the value of C_downstream_addition, we must check whethere the parent switch
      * is a buffered or unbuffered switch with the if statement below. If the parent switch is
@@ -546,15 +547,15 @@ update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_path_rt_node) {
      * capacitance will be increased by the sum of the child's downstream capacitance with
      * the internal capacitance of the parent switch in the while loop/.*/
 
-    if (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == true) {
-        C_downstream_addition = device_ctx.rr_switch_inf[iswitch].Cinternal;
+    if (parent_rt_node != nullptr && rr_graph.rr_switch_inf(RRSwitchId(iswitch)).buffered() == true) {
+        C_downstream_addition = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Cinternal;
         rt_node = parent_rt_node;
         rt_node->C_downstream += C_downstream_addition;
         parent_rt_node = rt_node->parent_node;
         iswitch = rt_node->parent_switch;
     }
 
-    while (parent_rt_node != nullptr && device_ctx.rr_switch_inf[iswitch].buffered() == false) {
+    while (parent_rt_node != nullptr && rr_graph.rr_switch_inf(RRSwitchId(iswitch)).buffered() == false) {
         rt_node = parent_rt_node;
         rt_node->C_downstream += C_downstream_addition;
         parent_rt_node = rt_node->parent_node;
@@ -595,8 +596,8 @@ void load_route_tree_Tdel(t_rt_node* subtree_rt_root, float Tarrival) {
         iswitch = linked_rt_edge->iswitch;
         child_node = linked_rt_edge->child;
 
-        Tchild = Tdel + device_ctx.rr_switch_inf[iswitch].R * child_node->C_downstream;
-        Tchild += device_ctx.rr_switch_inf[iswitch].Tdel; /* Intrinsic switch delay. */
+        Tchild = Tdel + rr_graph.rr_switch_inf(RRSwitchId(iswitch)).R * child_node->C_downstream;
+        Tchild += rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel; /* Intrinsic switch delay. */
         load_route_tree_Tdel(child_node, Tchild);
 
         linked_rt_edge = linked_rt_edge->next;
@@ -695,7 +696,7 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
             indent.c_str(), rt_node->inode, rr_graph.node_type_string(RRNodeId(rt_node->inode)), rt_node->net_pin_index, rt_node->R_upstream, rt_node->C_downstream, rt_node->Tdel);
 
     if (rt_node->parent_switch != OPEN) {
-        bool parent_edge_configurable = device_ctx.rr_switch_inf[rt_node->parent_switch].configurable();
+        bool parent_edge_configurable = rr_graph.rr_switch_inf(RRSwitchId(rt_node->parent_switch)).configurable();
         if (!parent_edge_configurable) {
             VTR_LOG("*");
         }
@@ -828,7 +829,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
                 // set.
                 auto set_itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
                 if (non_config_node_set_usage != nullptr && set_itr != device_ctx.rr_node_to_non_config_node_set.end()) {
-                    if (device_ctx.rr_switch_inf[iswitch].configurable()) {
+                    if (rr_graph.rr_switch_inf(RRSwitchId(iswitch)).configurable()) {
                         (*non_config_node_set_usage)[set_itr->second] += 1;
                     }
                 }
@@ -851,7 +852,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             // usage of the set.
             auto set_itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
             if (non_config_node_set_usage != nullptr && set_itr != device_ctx.rr_node_to_non_config_node_set.end()) {
-                if (device_ctx.rr_switch_inf[iswitch].configurable()) {
+                if (rr_graph.rr_switch_inf(RRSwitchId(iswitch)).configurable()) {
                     (*non_config_node_set_usage)[set_itr->second] += 1;
                 }
             }
@@ -1023,7 +1024,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
 
             // After removing an edge, check if non_config_node_set_usage
             // needs an update.
-            if (non_config_node_set_usage != nullptr && node_set != -1 && device_ctx.rr_switch_inf[old_edge->iswitch].configurable()) {
+            if (non_config_node_set_usage != nullptr && node_set != -1 && rr_graph.rr_switch_inf(RRSwitchId(old_edge->iswitch)).configurable()) {
                 (*non_config_node_set_usage)[node_set] -= 1;
                 VTR_ASSERT((*non_config_node_set_usage)[node_set] >= 0);
             }
@@ -1087,7 +1088,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
 
         bool reached_non_configurably = false;
         if (node->parent_node) {
-            reached_non_configurably = !device_ctx.rr_switch_inf[node->parent_switch].configurable();
+            reached_non_configurably = !rr_graph.rr_switch_inf(RRSwitchId(node->parent_switch)).configurable();
 
             if (reached_non_configurably) {
                 // Check if this non-configurable node set is in use.
@@ -1117,7 +1118,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
         //
         //  Then prune this node.
         //
-        if (non_config_node_set_usage != nullptr && node_set != -1 && device_ctx.rr_switch_inf[node->parent_switch].configurable() && (*non_config_node_set_usage)[node_set] == 0) {
+        if (non_config_node_set_usage != nullptr && node_set != -1 && rr_graph.rr_switch_inf(RRSwitchId(node->parent_switch)).configurable() && (*non_config_node_set_usage)[node_set] == 0) {
             // This node should be pruned, re-prune edges once more.
             //
             // If the following is true:
@@ -1376,14 +1377,14 @@ bool is_valid_route_tree(const t_rt_node* root) {
     int inode = root->inode;
     short iswitch = root->parent_switch;
     if (root->parent_node) {
-        if (device_ctx.rr_switch_inf[iswitch].buffered()) {
-            float R_upstream_check = rr_graph.node_R(RRNodeId(inode)) + device_ctx.rr_switch_inf[iswitch].R;
+        if (rr_graph.rr_switch_inf(RRSwitchId(iswitch)).buffered()) {
+            float R_upstream_check = rr_graph.node_R(RRNodeId(inode)) + rr_graph.rr_switch_inf(RRSwitchId(iswitch)).R;
             if (!vtr::isclose(root->R_upstream, R_upstream_check, RES_REL_TOL, RES_ABS_TOL)) {
                 VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, R_upstream_check);
                 return false;
             }
         } else {
-            float R_upstream_check = rr_graph.node_R(RRNodeId(inode)) + root->parent_node->R_upstream + device_ctx.rr_switch_inf[iswitch].R;
+            float R_upstream_check = rr_graph.node_R(RRNodeId(inode)) + root->parent_node->R_upstream + rr_graph.rr_switch_inf(RRSwitchId(iswitch)).R;
             if (!vtr::isclose(root->R_upstream, R_upstream_check, RES_REL_TOL, RES_ABS_TOL)) {
                 VTR_LOG("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, R_upstream_check);
                 return false;
@@ -1419,9 +1420,9 @@ bool is_valid_route_tree(const t_rt_node* root) {
             return false;
         }
 
-        C_downstream_children += device_ctx.rr_switch_inf[edge->iswitch].Cinternal;
+        C_downstream_children += rr_graph.rr_switch_inf(RRSwitchId(edge->iswitch)).Cinternal;
 
-        if (!device_ctx.rr_switch_inf[edge->iswitch].buffered()) {
+        if (!rr_graph.rr_switch_inf(RRSwitchId(edge->iswitch)).buffered()) {
             C_downstream_children += edge->child->C_downstream;
         }
 

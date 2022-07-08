@@ -28,7 +28,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
     const auto& rr_graph = device_ctx.rr_graph;
 
     vtr::vector<RRNodeId, ClusterNetId> rr_node_nets;
-    rr_node_nets.resize(device_ctx.rr_nodes.size(), ClusterNetId::INVALID());
+    rr_node_nets.resize(rr_graph.num_nodes(), ClusterNetId::INVALID());
 
     for (auto net_id : clustering_ctx.clb_nlist.nets()) {
         if (clustering_ctx.clb_nlist.net_is_ignored(net_id)) {
@@ -52,7 +52,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
                  * whose capacity is 1 
                  */
                 if ((rr_node_nets[rr_node])
-                    && (1 == device_ctx.rr_nodes.node_capacity(rr_node))
+                    && (1 == rr_graph.node_capacity(rr_node))
                     && (net_id != rr_node_nets[rr_node])) {
                     VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS,
                                     "Detect two nets '%s' and '%s' that are mapped to the same rr_node '%ld'!\n%s\n",

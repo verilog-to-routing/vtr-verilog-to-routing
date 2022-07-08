@@ -126,7 +126,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     recompute_occupancy_from_scratch();
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
-    OveruseInfo overuse_info(device_ctx.rr_nodes.size());
+    OveruseInfo overuse_info(device_ctx.rr_graph.num_nodes());
     pathfinder_update_acc_cost_and_overuse_info(router_opts.acc_fac, overuse_info);
 
     reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
@@ -249,7 +249,6 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
         } else if (tokens[0] == "Node:") {
             /*An actual line, go through each node and add it to the route tree*/
             inode = atoi(tokens[1].c_str());
-            auto node = device_ctx.rr_nodes[inode];
 
             /*First node needs to be source. It is isolated to correctly set heap head.*/
             if (node_count == 0 && tokens[2] != "SOURCE") {
@@ -309,7 +308,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             }
 
             ptc = atoi(tokens[5 + offset].c_str());
-            if (node.ptc_num() != ptc) {
+            if (rr_graph.node_ptc_num(RRNodeId(inode)) != ptc) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "The ptc num of node %d does not match the rr graph", inode);
             }
@@ -318,7 +317,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             if (tokens[6 + offset] != "Switch:") {
                 /*This is an opin or ipin, process its pin nums*/
                 if (!is_io_type(device_ctx.grid[x][y].type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
-                    int pin_num = device_ctx.rr_nodes[inode].ptc_num();
+                    int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
 
                     auto type = device_ctx.grid[x][y].type;
                     int height_offset = device_ctx.grid[x][y].height_offset;
@@ -506,21 +505,19 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
     if (prev_node == node) return false;
 
     auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_nodes;
-    const auto& switch_info = device_ctx.rr_switch_inf;
-
+    const auto& rr_graph = device_ctx.rr_graph;
     // If it's starting a new sub branch this is ok
-    if (device_ctx.rr_graph.node_type(prev_node) == SINK) return true;
+    if (rr_graph.node_type(prev_node) == SINK) return true;
 
     for (RREdgeId edge : rr_graph.edge_range(prev_node)) {
         //If the sink node is reachable by previous node return true
-        if (rr_graph.edge_sink_node(edge) == node) {
+        if (rr_graph.rr_nodes().edge_sink_node(edge) == node) {
             return true;
         }
 
         // If there are any non-configurable branches return true
-        short edge_switch = rr_graph.edge_switch(edge);
-        if (!(switch_info[edge_switch].configurable())) return true;
+        short edge_switch = rr_graph.rr_nodes().edge_switch(edge);
+        if (!(rr_graph.rr_switch_inf(RRSwitchId(edge_switch)).configurable())) return true;
     }
 
     // If it's part of a non configurable node list, return true

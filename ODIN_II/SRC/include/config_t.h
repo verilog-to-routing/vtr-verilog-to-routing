@@ -10,6 +10,7 @@ struct config_t {
     std::vector<std::string> list_of_file_names;
 
     std::string debug_output_path; // path for where to output the debug outputs
+    std::string dsp_verilog;       // path for the output Verilog file including target DSPs' declaration
     enum file_type_e input_file_type;
     enum file_type_e output_file_type;
     enum elaborator_e elaborator_type;

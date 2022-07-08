@@ -38,6 +38,7 @@
 #include "place.h"
 #include "SetupGrid.h"
 #include "setup_clocks.h"
+#include "setup_noc.h"
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -288,6 +289,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->AnnealSched,
              &vpr_setup->RouterOpts,
              &vpr_setup->AnalysisOpts,
+             &vpr_setup->NocOpts,
              &vpr_setup->RoutingArch,
              &vpr_setup->PackerRRGraph,
              vpr_setup->Segments,
@@ -313,17 +315,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     /* Read blif file and sweep unused components */
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    atom_ctx.nlist = read_and_process_circuit(options->circuit_format,
-                                              vpr_setup->PackerOpts.blif_file_name.c_str(),
-                                              vpr_setup->user_models,
-                                              vpr_setup->library_models,
-                                              vpr_setup->NetlistOpts.const_gen_inference,
-                                              vpr_setup->NetlistOpts.absorb_buffer_luts,
-                                              vpr_setup->NetlistOpts.sweep_dangling_primary_ios,
-                                              vpr_setup->NetlistOpts.sweep_dangling_nets,
-                                              vpr_setup->NetlistOpts.sweep_dangling_blocks,
-                                              vpr_setup->NetlistOpts.sweep_constant_primary_outputs,
-                                              vpr_setup->NetlistOpts.netlist_verbosity);
+    atom_ctx.nlist = read_and_process_circuit(options->circuit_format, *vpr_setup, *arch);
 
     if (vpr_setup->PowerOpts.do_power) {
         //Load the net activity file for power estimation
@@ -358,6 +350,9 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     }
 
     fflush(stdout);
+
+    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+    helper_ctx.lb_type_rr_graphs = vpr_setup->PackerRRGraph;
 }
 
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
@@ -392,6 +387,14 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     { //Analysis
         vpr_analysis_flow(vpr_setup, arch, route_status);
     }
+
+    //clean packing-placement data
+    if (vpr_setup.PackerOpts.doPacking == STAGE_DO) {
+        auto& helper_ctx = g_vpr_ctx.mutable_helper();
+        free_cluster_placement_stats(helper_ctx.cluster_placement_stats);
+    }
+
+    //close the graphics
     vpr_close_graphics(vpr_setup);
 
     return route_status.success();
@@ -402,6 +405,8 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
     vpr_create_device_grid(vpr_setup, arch);
 
     vpr_setup_clock_networks(vpr_setup, arch);
+
+    vpr_setup_noc(vpr_setup, arch);
 
     if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
         vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width);
@@ -497,6 +502,33 @@ void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     }
 }
 
+/**
+ * @brief If the user provided the "--noc on" option then the noc is
+ *        setup by creating an internal model and storing the NoC
+ *        constraints. Additionally, the graphics state is updated
+ *        to include a NoC button to display it.
+ * 
+ * @param vpr_setup A datastructure that stores all the user provided option
+ *                  to vpr.
+ * @param arch Contains the parsed information from the architecture
+ *             description file.
+ */
+void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
+    // check if the user provided the option to model the noc
+    if (vpr_setup.NocOpts.noc == true) {
+        // create the NoC model based on the user description from the arch file
+        setup_noc(arch);
+
+#ifndef NO_GRAPHICS
+        // setup the graphics
+        // if the user turned on "noc" in the command line, then we also want them to have the option to display the noc, so set that option here to be able to display it.
+        // if the "noc" was not turned on, then we don't need to provide the user with the option to display it
+        t_draw_state* draw_state = get_draw_state_vars();
+        draw_state->show_noc_button = true;
+#endif
+    }
+}
+
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
     auto& packer_opts = vpr_setup.PackerOpts;
 
@@ -526,8 +558,8 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         /* Sanity check the resulting netlist */
         check_netlist(packer_opts.pack_verbosity);
 
-        /* Output the netlist stats to console. */
-        printClusteredNetlistStats();
+        /* Output the netlist stats to console and optionally to file. */
+        writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage.c_str());
 
         // print the total number of used physical blocks for each
         // physical block type after finishing the packing stage
@@ -642,7 +674,8 @@ bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     //Write out a vpr floorplanning constraints file if the option is specified
     if (!filename_opts.write_vpr_constraints_file.empty()) {
-        write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile);
+        write_vpr_floorplan_constraints(filename_opts.write_vpr_constraints_file.c_str(), placer_opts.place_constraint_expand, placer_opts.place_constraint_subtile,
+                                        placer_opts.floorplan_num_horizontal_partitions, placer_opts.floorplan_num_vertical_partitions);
     }
 
     return true;
@@ -1139,6 +1172,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_annealing_sched* AnnealSched,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
+                   t_noc_opts* NocOpts,
                    t_det_routing_arch* RoutingArch,
                    std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
@@ -1162,6 +1196,7 @@ void vpr_setup_vpr(t_options* Options,
              AnnealSched,
              RouterOpts,
              AnalysisOpts,
+             NocOpts,
              RoutingArch,
              PackerRRGraph,
              Segments,
@@ -1287,7 +1322,13 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
         //Write the post-syntesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
-            netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc);
+            netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc,
+                           vpr_setup.AnalysisOpts);
+        }
+
+        //Write the post-implementation merged netlist
+        if (vpr_setup.AnalysisOpts.gen_post_implementation_merged_netlist) {
+            merged_netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc, vpr_setup.AnalysisOpts);
         }
 
         //Do power analysis

@@ -412,6 +412,18 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
 void AnalyticPlacer::update_macros() {
     for (auto& macro : g_vpr_ctx.mutable_placement().pl_macros) {
         ClusterBlockId head_id = macro.members[0].blk_index;
+        bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, true);
+
+        //if macro can not be placed in this head pos, change the head pos
+        if (!mac_can_be_placed) {
+            size_t macro_size = macro.members.size();
+            blk_locs[head_id].loc -= macro.members[macro_size - 1].offset;
+        }
+
+        //macro should be placed successfully after changing the head position
+        VTR_ASSERT(macro_can_be_placed(macro, blk_locs[head_id].loc, true));
+
+        //update other member's location based on head pos
         for (auto member = ++macro.members.begin(); member != macro.members.end(); ++member) {
             blk_locs[member->blk_index].loc = blk_locs[head_id].loc + member->offset;
         }

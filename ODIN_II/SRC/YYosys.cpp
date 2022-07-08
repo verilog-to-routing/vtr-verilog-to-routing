@@ -42,9 +42,11 @@
 #include <sys/wait.h> // wait
 
 #include "YYosys.hpp"
-#include "config_t.h"   // configuration
-#include "odin_util.h"  // get_directory
-#include "odin_error.h" // error_message
+#include "Verilog.hpp"
+#include "config_t.h"    // configuration
+#include "odin_util.h"   // get_directory
+#include "odin_error.h"  // error_message
+#include "hard_blocks.h" // hard_block_names
 
 #ifdef ODIN_USE_YOSYS
 #    include "kernel/yosys.h" // Yosys
@@ -122,6 +124,8 @@ void YYosys::perform_elaboration() {
     if (this->yosys_pid == 0) {
         /* initalize Yosys */
         this->init_yosys();
+        /* generate and load DSP declarations */
+        this->load_target_dsp_blocks();
         /* perform elaboration using Yosys API */
         this->elaborate();
 
@@ -141,6 +145,35 @@ void YYosys::perform_elaboration() {
         /* Yosys successfully generated coarse-grain BLIF file */
         this->re_initialize_odin_globals();
     }
+#endif
+}
+
+/**
+ * ---------------------------------------------------------------------------------------------
+ * (function: load_target_dsp_blocks)
+ * 
+ * @brief this routine generates a Verilog file, including the 
+ * declaration of all DSP blocks available in the targer architecture.
+ * Then, the Verilog fle is read by Yosys to make it aware of them
+ * -------------------------------------------------------------------------------------------*/
+void YYosys::load_target_dsp_blocks() {
+#ifndef ODIN_USE_YOSYS
+    error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
+#else
+    Verilog::Writer vw = Verilog::Writer();
+    vw._create_file(configuration.dsp_verilog.c_str());
+
+    t_model* hb = Arch.models;
+    while (hb) {
+        // declare hardblocks in a verilog file
+        if (strcmp(hb->name, SINGLE_PORT_RAM_string) && strcmp(hb->name, DUAL_PORT_RAM_string) && strcmp(hb->name, "multiply") && strcmp(hb->name, "adder"))
+            vw.declare_blackbox(hb->name);
+
+        hb = hb->next;
+    }
+
+    vw._write(NULL);
+    run_pass(std::string("read_verilog -nomem2reg " + configuration.dsp_verilog));
 #endif
 }
 
@@ -217,13 +250,15 @@ void YYosys::execute() {
         // Read the hardware decription Verilog circuits
         // FOR loop enables include feature for Yosys+Odin (multiple Verilog input files)
         for (auto verilog_circuit : this->verilog_circuits)
-            run_pass(std::string("read_verilog -nomem2reg -nolatches " + verilog_circuit));
+            run_pass(std::string("read_verilog -sv -nolatches " + verilog_circuit));
 
         // Check whether cells match libraries and find top module
-        run_pass(std::string("hierarchy -check -auto-top"));
+        if (global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED) {
+            run_pass(std::string("hierarchy -check -top " + global_args.top_level_module_name.value() + " -purge_lib"));
+        } else {
+            run_pass(std::string("hierarchy -check -auto-top -purge_lib"));
+        }
 
-        // Use a readable name convention
-        run_pass(std::string("autoname"));
         // Translate processes to netlist components such as MUXs, FFs and latches
         run_pass(std::string("proc; opt;"));
         // Extraction and optimization of finite state machines
@@ -231,11 +266,18 @@ void YYosys::execute() {
         // Collects memories, their port and create multiport memory cells
         run_pass(std::string("memory_collect; memory_dff; opt;"));
 
+        // Use a readable name convention
+        // [NOTE]: the 'autoname' process has a high memory footprint for giant netlists
+        // we run it after basic optimization passes to reduce the overhead (see issue #2031)
+        run_pass(std::string("autoname"));
+
         // Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
         run_pass(std::string("check"));
         // Transform asynchronous dffs to synchronous dffs using techlib files provided by Yosys
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adff2dff.v"));
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adffe2dff.v"));
+        // To resolve Yosys internal indexed part-select circuitries
+        run_pass(std::string("techmap */t:$shift */t:$shiftx"));
 
         /**
          * convert yosys mem blocks to BRAMs / ROMs
@@ -254,8 +296,13 @@ void YYosys::execute() {
         run_pass(std::string("flatten"));
         // Transforms PMUXes into trees of regular multiplexers
         run_pass(std::string("pmuxtree"));
+        // To possibly reduce word sizes by Yosys
+        run_pass(std::string("wreduce"));
         // "-undirven" to ensure there is no wire without drive
-        run_pass(std::string("opt -undriven -full")); // -noff #potential option to remove all sdffXX and etc. Only dff will remain
+        // -noff #potential option to remove all sdffXX and etc. Only dff will remain
+        // "opt_muxtree" removes dead branches, "opt_expr" performs const folding and
+        // removes "undef" from mux inputs and replace muxes with buffers and inverters
+        run_pass(std::string("opt -undriven -full; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;"));
         // Use a readable name convention
         run_pass(std::string("autoname"));
         // Print statistics
@@ -300,7 +347,7 @@ void YYosys::output_blif() {
 
     // "-param" is to print non-standard cells parameters
     // "-impltf" is to not show the definition of primary netlist ports, i.e., VCC, GND and PAD, in the output.
-    run_pass(std::string("write_blif -param -impltf " + this->coarse_grain_blif));
+    run_pass(std::string("write_blif -blackbox -param -impltf " + this->coarse_grain_blif));
 #endif
 }
 

@@ -22,6 +22,7 @@
 #include "read_blif.h"
 #include "cluster.h"
 #include "SetupGrid.h"
+#include "re_cluster.h"
 
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
@@ -41,31 +42,32 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_model* library_models,
               float interc_delay,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+
     std::unordered_set<AtomNetId> is_clock;
-    std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;                     //The molecules associated with each atom block
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
     const t_model* cur_model;
-    int num_models;
+    t_clustering_data clustering_data;
     std::vector<t_pack_patterns> list_of_packing_patterns;
-    std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules(nullptr, free_pack_molecules);
-    VTR_LOG("Begin packing '%s'.\n", packer_opts->blif_file_name.c_str());
+    VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
 
     /* determine number of models in the architecture */
-    num_models = 0;
+    helper_ctx.num_models = 0;
     cur_model = user_models;
     while (cur_model) {
-        num_models++;
+        helper_ctx.num_models++;
         cur_model = cur_model->next;
     }
     cur_model = library_models;
     while (cur_model) {
-        num_models++;
+        helper_ctx.num_models++;
         cur_model = cur_model->next;
     }
 
     is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
 
     size_t num_p_inputs = 0;
     size_t num_p_outputs = 0;
@@ -95,12 +97,14 @@ bool try_pack(t_packer_opts* packer_opts,
     std::unique_ptr<std::vector<t_pack_patterns>, decltype(list_of_packing_patterns_deleter)> list_of_packing_patterns_cleanup_guard(&list_of_packing_patterns,
                                                                                                                                      list_of_packing_patterns_deleter);
 
-    list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
-                                                               atom_molecules,
-                                                               expected_lowest_cost_pb_gnode,
-                                                               list_of_packing_patterns.size()));
+    atom_mutable_ctx.list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
+                                                                                expected_lowest_cost_pb_gnode,
+                                                                                list_of_packing_patterns.size()));
 
-    AttractionInfo attraction_groups(packer_opts->use_attraction_groups);
+    /* We keep attraction groups off in the first iteration,  and
+     * only turn on in later iterations if some floorplan regions turn out to be overfull.
+     */
+    AttractionInfo attraction_groups(false);
     VTR_LOG("%d attraction groups were created during prepacking.\n", attraction_groups.num_attraction_groups());
     VTR_LOG("Finish prepacking.\n");
 
@@ -130,29 +134,39 @@ bool try_pack(t_packer_opts* packer_opts,
     }
 
     int pack_iteration = 1;
+    bool floorplan_regions_overfull = false;
 
     while (true) {
+        free_clustering_data(*packer_opts, clustering_data);
+
         //Cluster the netlist
-        auto num_type_instances = do_clustering(
+        helper_ctx.num_used_type_instances = do_clustering(
             *packer_opts,
             *analysis_opts,
-            arch, list_of_pack_molecules.get(), num_models,
+            arch, atom_mutable_ctx.list_of_pack_molecules.get(), helper_ctx.num_models,
             is_clock,
-            atom_molecules,
             expected_lowest_cost_pb_gnode,
             allow_unrelated_clustering,
             balance_block_type_util,
             lb_type_rr_graphs,
             target_external_pin_util,
             high_fanout_thresholds,
-            attraction_groups);
+            attraction_groups,
+            floorplan_regions_overfull,
+            clustering_data);
 
         //Try to size/find a device
-        bool fits_on_device = try_size_device_grid(*arch, num_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
+        bool fits_on_device = try_size_device_grid(*arch, helper_ctx.num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
 
-        if (fits_on_device) {
+        /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
+         * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
+         * of the floorplan not fitting, so attraction groups are turned on for later iterations.
+         */
+        bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.mutable_floorplanning().constraints.get_num_partitions() > 0);
+
+        if (fits_on_device && !floorplan_regions_overfull) {
             break; //Done
-        } else if (pack_iteration == 1) {
+        } else if (pack_iteration == 1 && !floorplan_not_fitting) {
             //1st pack attempt was unsucessful (i.e. not dense enough) and we have control of unrelated clustering
             //
             //Turn it on to increase packing density
@@ -167,15 +181,54 @@ bool try_pack(t_packer_opts* packer_opts,
             VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s\n",
                     (allow_unrelated_clustering ? "true" : "false"),
                     (balance_block_type_util ? "true" : "false"));
+            /*
+             * When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
+             * the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
+             * cluster more densely to be able to adhere to the floorplan constraints. However, we do not want to cluster more
+             * densely unnecessarily, as this can negatively impact wirelength. So, we have iterative approach. We check at the end
+             * of every iteration if any floorplan regions are overfull. In the first iteration, we run
+             * with no attraction groups (not packing more densely). If regions are overfull at the end of the first iteration,
+             * we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
+             * until the last iteration, when we create attraction groups for every partition, if needed.
+             */
+        } else if (pack_iteration == 1 && floorplan_not_fitting) {
+            VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
+            attraction_groups.create_att_groups_for_overfull_regions();
+            attraction_groups.set_att_group_pulls(1);
+
+        } else if (pack_iteration >= 2 && pack_iteration < 5 && floorplan_not_fitting) {
+            if (pack_iteration == 2) {
+                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
+                attraction_groups.create_att_groups_for_overfull_regions();
+                VTR_LOG("Pack iteration is %d\n", pack_iteration);
+            } else if (pack_iteration == 3) {
+                attraction_groups.create_att_groups_for_all_regions();
+                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
+                VTR_LOG("Pack iteration is %d\n", pack_iteration);
+            } else if (pack_iteration == 4) {
+                attraction_groups.create_att_groups_for_all_regions();
+                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher target pin utilization. \n");
+                VTR_LOG("Pack iteration is %d\n", pack_iteration);
+                attraction_groups.set_att_group_pulls(4);
+                t_ext_pin_util pin_util(1.0, 1.0);
+                target_external_pin_util.set_block_pin_util("clb", pin_util);
+            }
+
         } else {
             //Unable to pack densely enough: Give Up
+
+            if (floorplan_regions_overfull) {
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Failed to find pack clusters densely enough to fit in the designated floorplan regions.\n"
+                                "The floorplan regions may need to be expanded to run successfully. \n");
+            }
 
             //No suitable device found
             std::string resource_reqs;
             std::string resource_avail;
             auto& grid = g_vpr_ctx.device().grid;
-            for (auto iter = num_type_instances.begin(); iter != num_type_instances.end(); ++iter) {
-                if (iter != num_type_instances.begin()) {
+            for (auto iter = helper_ctx.num_used_type_instances.begin(); iter != helper_ctx.num_used_type_instances.end(); ++iter) {
+                if (iter != helper_ctx.num_used_type_instances.begin()) {
                     resource_reqs += ", ";
                     resource_avail += ", ";
                 }
@@ -201,9 +254,23 @@ bool try_pack(t_packer_opts* packer_opts,
         for (auto net : g_vpr_ctx.atom().nlist.nets()) {
             g_vpr_ctx.mutable_atom().lookup.set_atom_clb_net(net, ClusterNetId::INVALID());
         }
+        g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
+        //attraction_groups.reset_attraction_groups();
 
         ++pack_iteration;
     }
+
+    /* Packing iterative improvement can be done here */
+    /*       Use the re-cluster API to edit it        */
+    /******************* Start *************************/
+
+    /******************** End **************************/
+
+    //check clustering and output it
+    check_and_output_clustering(*packer_opts, is_clock, arch, helper_ctx.total_clb_num, clustering_data.intra_lb_routing);
+
+    // Free Data Structures
+    free_clustering_data(*packer_opts, clustering_data);
 
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");

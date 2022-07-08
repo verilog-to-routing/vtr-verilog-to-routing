@@ -21,15 +21,13 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !defined(CAPNP_HEADER_WARNINGS)
-#pragma GCC system_header
-#endif
-
 #include <capnp/compiler/grammar.capnp.h>
 #include <capnp/compiler/lexer.capnp.h>
 #include <kj/parse/common.h>
 #include <kj/arena.h>
 #include "error-reporter.h"
+
+CAPNP_BEGIN_HEADER
 
 namespace capnp {
 namespace compiler {
@@ -144,5 +142,10 @@ private:
   Parsers parsers;
 };
 
+kj::String expressionString(Expression::Reader name);
+// Stringify the expression as code.
+
 }  // namespace compiler
 }  // namespace capnp
+
+CAPNP_END_HEADER

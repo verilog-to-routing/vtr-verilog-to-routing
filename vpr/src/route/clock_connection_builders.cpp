@@ -91,18 +91,18 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
 
 RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x, int y) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& rr_graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
     auto& rr_graph_builder = device_ctx.rr_graph_builder;
     auto& node_lookup = device_ctx.rr_graph_builder.node_lookup();
-    rr_graph.emplace_back();
-    RRNodeId node_index = RRNodeId(rr_graph.size() - 1);
+    rr_graph_builder.emplace_back();
+    RRNodeId node_index = RRNodeId(rr_graph.num_nodes() - 1);
 
     //Determine the a valid PTC
     std::vector<RRNodeId> nodes_at_loc = node_lookup.find_grid_nodes_at_all_sides(x, y, SINK);
 
     int max_ptc = 0;
     for (RRNodeId inode : nodes_at_loc) {
-        max_ptc = std::max<int>(max_ptc, rr_graph.node_ptc_num(inode));
+        max_ptc = std::max<int>(max_ptc, rr_graph.node_class_num(inode));
     }
     int ptc = max_ptc + 1;
 
@@ -120,7 +120,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int x,
     // However, since the SINK node has the same xhigh/xlow as well as yhigh/ylow, we can probably use a shortcut
     for (int ix = rr_graph.node_xlow(node_index); ix <= rr_graph.node_xhigh(node_index); ++ix) {
         for (int iy = rr_graph.node_ylow(node_index); iy <= rr_graph.node_yhigh(node_index); ++iy) {
-            node_lookup.add_node(node_index, ix, iy, rr_graph.node_type(node_index), rr_graph.node_ptc_num(node_index));
+            node_lookup.add_node(node_index, ix, iy, rr_graph.node_type(node_index), rr_graph.node_class_num(node_index));
         }
     }
 

@@ -430,15 +430,15 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_t
     chan_width.x_max = chan_width.y_max = INT_MIN;
     chan_width.x_min = chan_width.y_min = INT_MAX;
     for (size_t i = 0; i < grid.height(); ++i) {
-        chan_width.max = std::max(chan_width.max, chan_width.x_list[i]);
         chan_width.x_max = std::max(chan_width.x_max, chan_width.x_list[i]);
         chan_width.x_min = std::min(chan_width.x_min, chan_width.x_list[i]);
     }
+    chan_width.max = std::max(chan_width.max, chan_width.x_max);
     for (size_t i = 0; i < grid.width(); ++i) {
-        chan_width.max = std::max(chan_width.max, chan_width.y_list[i]);
         chan_width.y_max = std::max(chan_width.y_max, chan_width.y_list[i]);
         chan_width.y_min = std::min(chan_width.y_min, chan_width.y_list[i]);
     }
+    chan_width.max = std::max(chan_width.max, chan_width.y_max);
 
 #ifdef VERBOSE
     VTR_LOG("\n");

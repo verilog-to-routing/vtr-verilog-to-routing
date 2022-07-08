@@ -67,14 +67,14 @@
         "Latch Drivers": 1,
         "Pi": 35,
         "Po": 100,
-        "logic element": 17995,
+        "logic element": 17863,
         "latch": 532,
-        "Adder": 3476,
+        "Adder": 3351,
         "generic logic size": 4,
-        "Longest Path": 308,
+        "Longest Path": 331,
         "Average Path": 5,
-        "Estimated LUTs": 19387,
-        "Total Node": 22004
+        "Estimated LUTs": 19213,
+        "Total Node": 21747
     },
     "full/bm_base_memory/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/bm_base_memory/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -207,14 +207,14 @@
         "Pi": 417,
         "Po": 37,
         "logic element": 437,
-        "latch": 2116,
+        "latch": 2110,
         "Adder": 838,
         "Multiplier": 25,
         "generic logic size": 4,
         "Longest Path": 99,
         "Average Path": 6,
         "Estimated LUTs": 437,
-        "Total Node": 3417
+        "Total Node": 3411
     },
     "full/cf_fir_3_8_8/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/cf_fir_3_8_8/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -290,7 +290,7 @@
         "Adder": 132,
         "Multiplier": 5,
         "generic logic size": 4,
-        "Longest Path": 87,
+        "Longest Path": 127,
         "Average Path": 5,
         "Estimated LUTs": 657,
         "Total Node": 978
@@ -390,16 +390,16 @@
         "Latch Drivers": 1,
         "Pi": 113,
         "Po": 102,
-        "logic element": 53147,
+        "logic element": 52949,
         "latch": 6468,
-        "Adder": 4749,
+        "Adder": 4682,
         "Multiplier": 8,
         "Memory": 1409,
         "generic logic size": 4,
-        "Longest Path": 4577,
+        "Longest Path": 4541,
         "Average Path": 5,
-        "Estimated LUTs": 56504,
-        "Total Node": 65782
+        "Estimated LUTs": 56243,
+        "Total Node": 65517
     },
     "full/matmul/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/matmul/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -433,16 +433,16 @@
         "Latch Drivers": 1,
         "Pi": 35,
         "Po": 356,
-        "logic element": 184463,
+        "logic element": 184428,
         "latch": 51617,
-        "Adder": 27358,
+        "Adder": 27390,
         "Multiplier": 27,
         "Memory": 348,
         "generic logic size": 4,
-        "Longest Path": 19603,
+        "Longest Path": 19604,
         "Average Path": 5,
-        "Estimated LUTs": 193273,
-        "Total Node": 263814
+        "Estimated LUTs": 193230,
+        "Total Node": 263811
     },
     "full/memory_controller/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/memory_controller/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -519,12 +519,12 @@
         "Po": 35,
         "logic element": 1621,
         "latch": 599,
-        "Adder": 142,
+        "Adder": 118,
         "generic logic size": 4,
         "Longest Path": 91,
         "Average Path": 5,
         "Estimated LUTs": 1668,
-        "Total Node": 2363
+        "Total Node": 2339
     },
     "full/sha/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/sha/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -537,14 +537,14 @@
         "Latch Drivers": 1,
         "Pi": 37,
         "Po": 36,
-        "logic element": 4874,
+        "logic element": 4872,
         "latch": 910,
         "Adder": 309,
         "generic logic size": 4,
-        "Longest Path": 2428,
+        "Longest Path": 2423,
         "Average Path": 5,
-        "Estimated LUTs": 5097,
-        "Total Node": 6094
+        "Estimated LUTs": 5095,
+        "Total Node": 6092
     },
     "full/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -557,15 +557,15 @@
         "Latch Drivers": 1,
         "Pi": 104,
         "Po": 104,
-        "logic element": 11167,
-        "latch": 12272,
-        "Adder": 2815,
+        "logic element": 11131,
+        "latch": 11897,
+        "Adder": 2727,
         "Memory": 1024,
         "generic logic size": 4,
         "Longest Path": 184,
         "Average Path": 5,
-        "Estimated LUTs": 11311,
-        "Total Node": 27279
+        "Estimated LUTs": 11275,
+        "Total Node": 26780
     },
     "full/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -578,15 +578,15 @@
         "Latch Drivers": 1,
         "Pi": 132,
         "Po": 145,
-        "logic element": 11376,
+        "logic element": 11352,
         "latch": 11449,
-        "Adder": 2356,
+        "Adder": 2332,
         "Multiplier": 152,
         "generic logic size": 4,
         "Longest Path": 201,
         "Average Path": 5,
-        "Estimated LUTs": 11403,
-        "Total Node": 25334
+        "Estimated LUTs": 11379,
+        "Total Node": 25286
     },
     "full/stereovision2/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision2/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -599,15 +599,15 @@
         "Latch Drivers": 1,
         "Pi": 148,
         "Po": 182,
-        "logic element": 10429,
-        "latch": 16281,
-        "Adder": 12873,
+        "logic element": 10525,
+        "latch": 15833,
+        "Adder": 12471,
         "Multiplier": 468,
         "generic logic size": 4,
         "Longest Path": 139,
         "Average Path": 5,
-        "Estimated LUTs": 10443,
-        "Total Node": 40052
+        "Estimated LUTs": 10539,
+        "Total Node": 39298
     },
     "full/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -624,7 +624,7 @@
         "latch": 99,
         "Adder": 28,
         "generic logic size": 4,
-        "Longest Path": 77,
+        "Longest Path": 78,
         "Average Path": 5,
         "Estimated LUTs": 1483,
         "Total Node": 1299

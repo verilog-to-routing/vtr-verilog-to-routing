@@ -14,12 +14,13 @@ struct t_options {
     argparse::ArgValue<std::string> NetFile;
     argparse::ArgValue<std::string> PlaceFile;
     argparse::ArgValue<std::string> RouteFile;
-    argparse::ArgValue<std::string> BlifFile;
+    argparse::ArgValue<std::string> CircuitFile;
     argparse::ArgValue<std::string> ActFile;
     argparse::ArgValue<std::string> PowerFile;
     argparse::ArgValue<std::string> CmosTechFile;
     argparse::ArgValue<std::string> SDCFile;
 
+    argparse::ArgValue<e_arch_format> arch_format;
     argparse::ArgValue<e_circuit_format> circuit_format;
 
     argparse::ArgValue<std::string> out_file_prefix;
@@ -34,6 +35,8 @@ struct t_options {
 
     argparse::ArgValue<std::string> write_router_lookahead;
     argparse::ArgValue<std::string> read_router_lookahead;
+
+    argparse::ArgValue<std::string> write_block_usage;
 
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;
@@ -132,6 +135,11 @@ struct t_options {
     argparse::ArgValue<float> place_crit_limit;
     argparse::ArgValue<int> place_constraint_expand;
     argparse::ArgValue<bool> place_constraint_subtile;
+    argparse::ArgValue<int> floorplan_num_horizontal_partitions;
+    argparse::ArgValue<int> floorplan_num_vertical_partitions;
+
+    /*NoC Options*/
+    argparse::ArgValue<bool> noc;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
@@ -203,10 +211,14 @@ struct t_options {
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;
     argparse::ArgValue<bool> Generate_Post_Synthesis_Netlist;
+    argparse::ArgValue<bool> Generate_Post_Implementation_Merged_Netlist;
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;
     argparse::ArgValue<std::string> echo_dot_timing_graph_node;
+    argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_input_handling;
+    argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
+    argparse::ArgValue<std::string> write_timing_summary;
 };
 
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);

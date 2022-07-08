@@ -36,11 +36,11 @@ void log_overused_nodes_status(int max_logged_overused_rr_nodes) {
 
     //Print overuse info body
     int overuse_index = 0;
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        int overuse = route_ctx.rr_node_route_inf[inode].occ() - rr_graph.node_capacity(RRNodeId(inode));
+    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+        int overuse = route_ctx.rr_node_route_inf[(size_t)rr_id].occ() - rr_graph.node_capacity(rr_id);
 
         if (overuse > 0) {
-            log_single_overused_node_status(overuse_index, RRNodeId(inode));
+            log_single_overused_node_status(overuse_index, rr_id);
             ++overuse_index;
 
             //Reached the logging limit
@@ -159,7 +159,7 @@ static void report_overused_ipin_opin(std::ostream& os, RRNodeId node_id) {
         grid_x == rr_graph.node_xhigh(node_id) && grid_y == rr_graph.node_yhigh(node_id),
         "Non-track RR node should not span across multiple grid blocks.");
 
-    os << "Pin number = " << device_ctx.rr_nodes.node_pin_num(node_id) << '\n';
+    os << "Pin number = " << rr_graph.node_pin_num(node_id) << '\n';
     os << "Side = " << rr_graph.node_side_string(node_id) << "\n\n";
 
     //Add block type for IPINs/OPINs in overused rr-node report
@@ -190,7 +190,7 @@ static void report_overused_chanx_chany(std::ostream& os, RRNodeId node_id) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    os << "Track number = " << device_ctx.rr_nodes.node_track_num(node_id) << '\n';
+    os << "Track number = " << rr_graph.node_track_num(node_id) << '\n';
     //Print out associated RC characteristics as they will be non-zero
     os << "Resistance = " << rr_graph.node_R(node_id) << '\n';
     os << "Capacitance = " << rr_graph.node_C(node_id) << '\n';
@@ -210,7 +210,7 @@ static void report_overused_source_sink(std::ostream& os, RRNodeId node_id) {
         grid_x == rr_graph.node_xhigh(node_id) && grid_y == rr_graph.node_yhigh(node_id),
         "Non-track RR node should not span across multiple grid blocks.");
 
-    os << "Class number = " << device_ctx.rr_nodes.node_class_num(node_id) << '\n';
+    os << "Class number = " << rr_graph.node_class_num(node_id) << '\n';
     os << "Grid location: X = " << grid_x << ", Y = " << grid_y << '\n';
 }
 
@@ -286,7 +286,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     }
 
     //PTC number
-    VTR_LOG(" %7d", device_ctx.rr_nodes.node_ptc_num(node_id));
+    VTR_LOG(" %7d", rr_graph.node_ptc_num(node_id));
 
     //X_low
     VTR_LOG(" %7d", rr_graph.node_xlow(node_id));

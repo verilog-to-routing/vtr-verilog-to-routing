@@ -1,6 +1,9 @@
 #include "physical_types.h"
 #include "vtr_math.h"
 #include "vtr_util.h"
+#include "vtr_log.h"
+
+#include "arch_util.h"
 
 static bool switch_type_is_buffered(SwitchType type);
 static bool switch_type_is_configurable(SwitchType type);
@@ -127,6 +130,18 @@ int t_physical_tile_type::get_sub_tile_loc_from_pin(int pin_num) const {
     }
 
     return OPEN;
+}
+
+bool t_physical_tile_type::is_empty() const {
+    return std::string(name) == std::string(EMPTY_BLOCK_NAME);
+}
+
+/*
+ * t_logical_block_type
+ */
+
+bool t_logical_block_type::is_empty() const {
+    return std::string(name) == std::string(EMPTY_BLOCK_NAME);
 }
 
 /**

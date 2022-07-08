@@ -653,6 +653,9 @@ struct t_physical_tile_type {
 
     // Does this t_physical_tile_type contain an outpad?
     bool is_output_type = false;
+
+    // Is this t_physical_tile_type an empty type?
+    bool is_empty() const;
 };
 
 /* Holds the capacity range of a certain sub_tile block within the parent physical tile type.
@@ -792,11 +795,19 @@ struct t_physical_tile_port {
     bool is_clock;
     bool is_non_clock_global;
     int num_pins;
-    PortEquivalence equivalent = PortEquivalence::NONE;
+    PortEquivalence equivalent;
 
     int index;
     int absolute_first_pin_index;
     int port_index_by_type;
+
+    t_physical_tile_port() {
+        is_clock = false;
+        is_non_clock_global = false;
+
+        num_pins = 1;
+        equivalent = PortEquivalence::NONE;
+    }
 };
 
 /* Describes the type for a logical block
@@ -828,6 +839,9 @@ struct t_logical_block_type {
 
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
+
+    // Is this t_logical_block_type empty?
+    bool is_empty() const;
 };
 
 /*************************************************************************************************
@@ -1428,7 +1442,12 @@ enum e_Fc_type {
  * Cmetal: Capacitance of a routing track, per unit logic block length.      *
  * Rmetal: Resistance of a routing track, per unit logic block length.       *
  * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
- *                       the track?                                          *
+ *                       the track?  
+ * seg_index: The index of the segment as stored in the appropriate Segs list*
+ *            Upon loading the architecture, we use this field to keep track *
+ *            the segment's index in the unified segment_inf vector. This is *
+ *            usefull when building the rr_graph for different Y & X channels*
+ *            interms of track distribution and segment type.                *
  * meta: Table storing extra arbitrary metadata attributes.                  */
 struct t_segment_inf {
     std::string name;
@@ -1445,14 +1464,27 @@ struct t_segment_inf {
     enum e_parallel_axis parallel_axis;
     std::vector<bool> cb;
     std::vector<bool> sb;
-
+    int seg_index;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 
 inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
-    return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.cb == b.cb && a.sb == b.sb;
+    return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb && a.sb == b.sb;
 }
 
+/*provide hashing for t_segment_inf to enable the use of many std containers.
+ * Only the most important/varying fields are used (not worth the extra overhead to include all fields)*/
+
+struct t_hash_segment_inf {
+    size_t operator()(const t_segment_inf& seg_inf) const noexcept {
+        size_t result;
+        result = ((((std::hash<std::string>()(seg_inf.name)
+                     ^ std::hash<int>()(seg_inf.frequency) << 10)
+                    ^ std::hash<int>()(seg_inf.length) << 20)
+                   ^ std::hash<int>()((int)seg_inf.arch_opin_switch) << 30));
+        return result;
+    }
+};
 enum class SwitchType {
     MUX = 0,   //A configurable (buffered) mux (single-driver)
     TRISTATE,  //A configurable tristate-able buffer (multi-driver)
@@ -1732,9 +1764,74 @@ struct t_clock_arch_spec {
     std::vector<t_clock_connection_arch> clock_connections_arch;
 };
 
+struct t_lut_cell {
+    std::string name;
+    std::string init_param;
+    std::vector<std::string> inputs;
+};
+
+struct t_lut_bel {
+    std::string name;
+
+    std::vector<std::string> input_pins;
+    std::string output_pin;
+
+    bool operator==(const t_lut_bel& other) const {
+        return name == other.name && input_pins == other.input_pins && output_pin == other.output_pin;
+    }
+};
+
+struct t_lut_element {
+    std::string site_type;
+    int width;
+    std::vector<t_lut_bel> lut_bels;
+
+    bool operator==(const t_lut_element& other) const {
+        return site_type == other.site_type && width == other.width && lut_bels == other.lut_bels;
+    }
+};
+
+/**
+ * Represents a Network-on-chip(NoC) Router data type. It is used
+ * to store individual router information when parsing the arch file.
+ * */
+struct t_router {
+    /** A unique id provided by the user to identify a router. Must be a positive value*/
+    int id = -1;
+
+    /** A value representing the approximate horizontal position on the FPGA device where the router
+     * tile is located*/
+    double device_x_position = -1;
+    /** A value representing the approximate vertical position on the FPGA device where the router
+     * tile is located*/
+    double device_y_position = -1;
+
+    /** A list of router ids that are connected to the current router*/
+    std::vector<int> connection_list;
+};
+
+/**
+ * Network-on-chip(NoC) data type used to store the network properties
+ * when parsing the arh file. This is used when building the dedicated on-chip
+ * network during the device creation.
+ * */
+struct t_noc_inf {
+    double link_bandwidth; /*!< The maximum bandwidth supported in the NoC. This value is the same for all links. units in bps*/
+    double link_latency;   /*!< The worst case latency seen when traversing a link. This value is the same for all links. units in seconds*/
+    double router_latency; /*!< The worst case latency seen when traversing a router. This value is the same for all routers, units in seconds*/
+
+    /** A list of all routers in the NoC*/
+    std::vector<t_router> router_list;
+
+    /** Represents the name of a router tile on the FPGA device. This should match the name used in the arch file when
+     * describing a NoC router tile within the FPGA device*/
+    std::string noc_router_tile_name;
+};
+
 /*   Detailed routing architecture */
 struct t_arch {
     mutable vtr::string_internment strings;
+    std::vector<vtr::interned_string> interned_strings;
 
     char* architecture_id; //Secure hash digest of the architecture file to uniquely identify this architecture
 
@@ -1750,10 +1847,38 @@ struct t_arch {
     int num_switches;
     t_direct_inf* Directs = nullptr;
     int num_directs = 0;
+
     t_model* models = nullptr;
     t_model* model_library = nullptr;
+
     t_power_arch* power = nullptr;
     t_clock_arch* clocks = nullptr;
+
+    // Constants
+    // VCC and GND cells are special virtual cells that are
+    // used to handle the constant network of the device.
+    //
+    // Similarly, the constant nets are defined to identify
+    // the generic name for the constant network.
+    //
+    // Given that usually, the constants have a dedicated network in
+    // real FPGAs, this information becomes relevant to identify which
+    // nets from the circuit netlist are belonging to the constant network,
+    // and assigned to it accordingly.
+    //
+    // NOTE: At the moment, the constant cells and nets are primarly used
+    // for the interchange netlist format, to determine which are the constants
+    // net names and which virtual cell is responsible to generate them.
+    // The information is present in the device database.
+    std::pair<std::string, std::string> gnd_cell;
+    std::pair<std::string, std::string> vcc_cell;
+
+    std::string gnd_net = "$__gnd_net";
+    std::string vcc_net = "$__vcc_net";
+
+    // Luts
+    std::vector<t_lut_cell> lut_cells;
+    std::unordered_map<std::string, std::vector<t_lut_element>> lut_elements;
 
     //The name of the switch used for the input connection block (i.e. to
     //connect routing tracks to block pins).
@@ -1763,6 +1888,9 @@ struct t_arch {
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 
     t_clock_arch_spec clock_arch; // Clock related data types
+
+    // if we have an embedded NoC in the architecture, then we store it here
+    t_noc_inf* noc = nullptr;
 };
 
 #endif

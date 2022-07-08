@@ -66,7 +66,7 @@ static std::pair<float, int> run_dijkstra(RRNodeId start_node,
 
 std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, const t_conn_cost_params& params) const {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
 
     //When estimating costs from a SOURCE/OPIN we look-up to find which wire types (and the
     //cost to reach them) in f_src_opin_delays. Once we know what wire types are
@@ -141,7 +141,7 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
 
 float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_nodes;
+    auto& rr_graph = device_ctx.rr_graph;
 
     e_rr_type to_type = rr_graph.node_type(to_node);
     VTR_ASSERT(to_type == SINK || to_type == IPIN);
@@ -229,7 +229,7 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     float expected_cost = expected_delay_cost + expected_cong_cost;
 
     VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", size_t(from_node), size_t(to_node));
-    const std::string& segment_name = device_ctx.rr_segments[from_seg_index].name;
+    const std::string& segment_name = rr_graph.rr_segments(RRSegmentId(from_seg_index)).name;
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) with distance (%d, %d)\n",
                    segment_name.c_str(), from_seg_index,
                    dx, dy);
@@ -311,8 +311,7 @@ bool ExtendedMapLookahead::add_paths(RRNodeId start_node,
             delta};
 
         if (size_t(this_node) != size_t(start_node)) {
-            auto& parent_node = device_ctx.rr_nodes[size_t(parent)];
-            start_to_here = Entry(this_node, parent_node.edge_switch(paths[*it].edge), &start_to_here);
+            start_to_here = Entry(this_node, rr_graph.edge_switch(RRNodeId(parent), paths[*it].edge), &start_to_here);
             parent = this_node;
         }
 
@@ -400,8 +399,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
             path_count++;
             this->add_paths<Entry>(start_node, current, *paths, routing_costs);
         } else {
-            util::expand_dijkstra_neighbours(device_ctx.rr_nodes,
-                                             current, paths, node_expanded, &pq);
+            util::expand_dijkstra_neighbours(rr_graph, current, paths, node_expanded, &pq);
             (*node_expanded)[size_t(node)] = true;
         }
     }
@@ -440,8 +438,8 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
         util::RoutingCosts delay_costs;
         util::RoutingCosts base_costs;
         int total_path_count = 0;
-        std::vector<bool> node_expanded(device_ctx.rr_nodes.size());
-        std::vector<util::Search_Path> paths(device_ctx.rr_nodes.size());
+        std::vector<bool> node_expanded(device_ctx.rr_graph.num_nodes());
+        std::vector<util::Search_Path> paths(device_ctx.rr_graph.num_nodes());
 
         // Each point in a sample region contains a set of nodes. Each node becomes a starting node
         // for the dijkstra expansions, and different paths are explored to reach different locations.

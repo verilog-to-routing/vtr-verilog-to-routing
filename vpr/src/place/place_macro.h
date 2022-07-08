@@ -162,6 +162,7 @@ struct t_pl_macro {
 /* These are the function declarations. */
 std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs);
 void get_imacro_from_iblk(int* imacro, ClusterBlockId iblk, const std::vector<t_pl_macro>& macros);
+void set_imacro_for_iblk(int* imacro, ClusterBlockId iblk);
 void free_placement_macros_structs();
 
 #endif

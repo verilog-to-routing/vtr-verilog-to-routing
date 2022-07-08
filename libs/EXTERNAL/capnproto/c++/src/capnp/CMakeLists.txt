@@ -10,6 +10,7 @@ set(capnp_sources_lite
   any.c++
   message.c++
   schema.capnp.c++
+  stream.capnp.c++
   serialize.c++
   serialize-packed.c++
 )
@@ -40,6 +41,7 @@ set(capnp_headers
   dynamic.h
   schema.h
   schema.capnp.h
+  stream.capnp.h
   schema-lite.h
   schema-loader.h
   schema-parser.h
@@ -52,9 +54,13 @@ set(capnp_headers
   generated-header-support.h
   raw-schema.h
 )
+set(capnp_compat_headers
+  compat/std-iterator.h
+)
 set(capnp_schemas
   c++.capnp
   schema.capnp
+  stream.capnp
 )
 add_library(capnp ${capnp_sources})
 add_library(CapnProto::capnp ALIAS capnp)
@@ -68,6 +74,7 @@ target_include_directories(capnp INTERFACE
 set_target_properties(capnp PROPERTIES VERSION ${VERSION})
 install(TARGETS capnp ${INSTALL_TARGETS_DEFAULT_ARGS})
 install(FILES ${capnp_headers} ${capnp_schemas} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/capnp")
+install(FILES ${capnp_compat_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/capnp/compat")
 
 set(capnp-rpc_sources
   serialize-async.c++
@@ -128,6 +135,24 @@ if(NOT CAPNP_LITE)
   install(FILES ${capnp-json_headers} ${capnp-json_schemas} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/capnp/compat")
 endif()
 
+# capnp-websocket ========================================================================
+
+set(capnp-websocket_sources
+  compat/websocket-rpc.c++
+)
+set(capnp-websocket_headers
+  compat/websocket-rpc.h
+)
+if(NOT CAPNP_LITE)
+  add_library(capnp-websocket ${capnp-websocket_sources})
+  add_library(CapnProto::capnp-websocket ALIAS capnp-websocket)
+  target_link_libraries(capnp-websocket PUBLIC capnp capnp-rpc kj-http kj-async kj)
+  # Ensure the library has a version set to match autotools build
+  set_target_properties(capnp-websocket PROPERTIES VERSION ${VERSION})
+  install(TARGETS capnp-websocket ${INSTALL_TARGETS_DEFAULT_ARGS})
+  install(FILES ${capnp-websocket_headers} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/capnp/compat")
+endif()
+
 # Tools/Compilers ==============================================================
 
 set(capnpc_sources
@@ -137,6 +162,7 @@ set(capnpc_sources
   compiler/lexer.c++
   compiler/grammar.capnp.c++
   compiler/parser.c++
+  compiler/generics.c++
   compiler/node-translator.c++
   compiler/compiler.c++
   schema-parser.c++
@@ -161,6 +187,10 @@ if(NOT CAPNP_LITE)
   set_target_properties(capnp_tool PROPERTIES CAPNP_INCLUDE_DIRECTORY
     $<JOIN:$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>,$<INSTALL_INTERFACE:${CMAKE_INSTALL_BINDIR}/..>>
   )
+  target_compile_definitions(capnp_tool PRIVATE
+    "CAPNP_INCLUDE_DIR=\"${CMAKE_INSTALL_FULL_INCLUDEDIR}\""
+    "VERSION=\"${VERSION}\""
+  )
 
   add_executable(capnpc_cpp
     compiler/capnpc-c++.c++
@@ -181,8 +211,14 @@ if(NOT CAPNP_LITE)
 
   install(TARGETS capnp_tool capnpc_cpp capnpc_capnp ${INSTALL_TARGETS_DEFAULT_ARGS})
 
-  # Symlink capnpc -> capnp
-  install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink capnp \"\$ENV{DESTDIR}${CMAKE_INSTALL_FULL_BINDIR}/capnpc\")")
+  if(WIN32)
+    # On Windows platforms symlinks are not guranteed to support. Also differnt version of CMake handle create_symlink in a different way.
+    # The most portable way in this case just copy the file.
+    install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy \"\$ENV{DESTDIR}${CMAKE_INSTALL_FULL_BINDIR}/capnp${CMAKE_EXECUTABLE_SUFFIX}\" \"\$ENV{DESTDIR}${CMAKE_INSTALL_FULL_BINDIR}/capnpc${CMAKE_EXECUTABLE_SUFFIX}\")")
+  else()
+    # Symlink capnpc -> capnp
+    install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink capnp${CMAKE_EXECUTABLE_SUFFIX} \"\$ENV{DESTDIR}${CMAKE_INSTALL_FULL_BINDIR}/capnpc${CMAKE_EXECUTABLE_SUFFIX}\")")
+  endif()
 endif()  # NOT CAPNP_LITE
 
 # Tests ========================================================================
@@ -215,7 +251,7 @@ if(BUILD_TESTING)
   if(CAPNP_LITE)
     set(test_libraries capnp kj-test kj)
   else()
-    set(test_libraries capnp-json capnp-rpc capnp capnpc kj-async kj-test kj)
+    set(test_libraries capnp-json capnp-rpc capnp-websocket capnp capnpc kj-http kj-async kj-test kj)
   endif()
 
   add_executable(capnp-tests
@@ -260,6 +296,7 @@ if(BUILD_TESTING)
       compiler/type-id-test.c++
       test-util.c++
       compat/json-test.c++
+      compat/websocket-rpc-test.c++
       ${test_capnp_cpp_files}
       ${test_capnp_h_files}
     )
@@ -280,3 +317,8 @@ if(BUILD_TESTING)
     add_test(NAME capnp-evolution-tests-run COMMAND capnp-evolution-tests)
   endif()  # NOT CAPNP_LITE
 endif()  # BUILD_TESTING
+
+if(DEFINED ENV{LIB_FUZZING_ENGINE})
+  add_executable(capnp_llvm_fuzzer_testcase llvm-fuzzer-testcase.c++ test-util.c++ test-util.h ${test_capnp_cpp_files} ${test_capnp_h_files})
+  target_link_libraries(capnp_llvm_fuzzer_testcase capnp-rpc capnp kj kj-async capnp-json $ENV{LIB_FUZZING_ENGINE})
+endif()

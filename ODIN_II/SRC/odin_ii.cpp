@@ -147,7 +147,7 @@ static void optimization() {
         }
 
         if (block_memories_info.read_only_memory_list || block_memories_info.block_memory_list) {
-            /* Perform a hard block registration and splitting in width */
+            /* Perform a hard block registration and splitting in width for Yosys generated memory blocks */
             iterate_block_memories(syn_netlist);
             free_block_memories();
         }
@@ -203,7 +203,7 @@ static void techmap() {
 
 static void output() {
     /* creating the output file */
-    generic_writer._create_file(configuration.output_file_type);
+    generic_writer._create_file(global_args.output_file.value().c_str(), configuration.output_file_type);
 
     if (syn_netlist) {
         /**
@@ -817,6 +817,7 @@ void set_default_config() {
     configuration.print_parse_tokens = 0;
     configuration.output_preproc_source = 0; // TODO: unused
     configuration.debug_output_path = std::string(DEFAULT_OUTPUT);
+    configuration.dsp_verilog = "arch_dsp.v";
     configuration.arch_file = "";
 
     configuration.fixed_hard_multiplier = 0;

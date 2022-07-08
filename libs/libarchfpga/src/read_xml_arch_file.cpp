@@ -54,13 +54,16 @@
 #include "vtr_token.h"
 #include "vtr_bimap.h"
 
-#include "arch_types.h"
-#include "arch_util.h"
+#include "arch_check.h"
 #include "arch_error.h"
+#include "arch_util.h"
+#include "arch_types.h"
 
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
 #include "parse_switchblocks.h"
+
+#include "physical_types_util.h"
 
 using namespace std::string_literals;
 using pugiutil::ReqOpt;
@@ -104,13 +107,8 @@ struct t_pin_locs {
     }
 };
 
-/* This gives access to the architecture file name to
- * all architecture-parser functions       */
-static const char* arch_file_name = nullptr;
-
 /* Function prototypes */
 /*   Populate data */
-static void SetupPinClasses(t_physical_tile_type* PhysicalTileType);
 
 static void LoadPinLoc(pugi::xml_node Locations,
                        t_physical_tile_type* type,
@@ -253,15 +251,17 @@ static void ProcessPower(pugi::xml_node parent,
 
 static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pugiutil::loc_data& loc_data);
 
+static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc_data& loc_data);
+
+static void processTopology(pugi::xml_node topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref);
+
+static void processMeshTopology(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref);
+
+static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, std::map<int, std::pair<int, int>>& routers_info_in_arch);
+
 static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
 
-bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model);
-void warn_model_missing_timing(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model);
-bool check_model_clocks(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model);
-bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch);
-const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
-const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port);
 std::string inst_port_to_port_name(std::string inst_port);
 
 static bool attribute_to_bool(const pugi::xml_node node,
@@ -271,19 +271,16 @@ int find_switch_by_name(const t_arch& arch, std::string switch_name);
 
 e_side string_to_side(std::string side_str);
 
-static void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                                        std::vector<t_logical_block_type>& LogicalBlockTypes);
-
-static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_tile* sub_tile, t_logical_block_type_ptr logical_block);
-
-static const t_physical_tile_port* get_port_by_name(t_sub_tile* sub_tile, const char* port_name);
-static const t_port* get_port_by_name(t_logical_block_type_ptr type, const char* port_name);
-
-static const t_physical_tile_port* get_port_by_pin(const t_sub_tile* sub_tile, int pin);
-static const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
-
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types);
+
+static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size);
+
+static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info);
+
+static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info);
+
+static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
 /*
  *
@@ -319,7 +316,7 @@ void XmlReadArch(const char* ArchFile,
     try {
         loc_data = pugiutil::load_xml(doc, ArchFile);
 
-        arch_file_name = ArchFile;
+        set_arch_file_name(ArchFile);
 
         /* Root node should be architecture */
         auto architecture = get_single_child(doc, "architecture", loc_data);
@@ -447,8 +444,16 @@ void XmlReadArch(const char* ArchFile,
                 free(clocks_fake);
             }
         }
+
+        // process NoC (optional)
+        Next = get_single_child(architecture, "noc", loc_data, pugiutil::OPTIONAL);
+
+        if (Next) {
+            ProcessNoc(Next, arch, loc_data);
+        }
+
         SyncModelsPbTypes(arch, LogicalBlockTypes);
-        UpdateAndCheckModels(arch);
+        check_models(arch);
 
         MarkIoTypes(PhysicalTileTypes);
     } catch (pugiutil::XmlError& e) {
@@ -464,105 +469,6 @@ void XmlReadArch(const char* ArchFile,
  *
  *
  */
-
-/* Sets up the pin classes for the type. */
-static void SetupPinClasses(t_physical_tile_type* PhysicalTileType) {
-    int i, k;
-    int pin_count;
-    int num_class;
-
-    pugi::xml_node Cur;
-
-    for (i = 0; i < PhysicalTileType->num_pins; i++) {
-        PhysicalTileType->pin_class.push_back(OPEN);
-        PhysicalTileType->is_ignored_pin.push_back(true);
-        PhysicalTileType->is_pin_global.push_back(true);
-    }
-
-    pin_count = 0;
-
-    t_class_range class_range;
-
-    /* Equivalent pins share the same class, non-equivalent pins belong to different pin classes */
-    for (auto& sub_tile : PhysicalTileType->sub_tiles) {
-        int capacity = sub_tile.capacity.total();
-        class_range.low = PhysicalTileType->class_inf.size();
-        class_range.high = class_range.low - 1;
-        for (i = 0; i < capacity; ++i) {
-            for (const auto& port : sub_tile.ports) {
-                if (port.equivalent != PortEquivalence::NONE) {
-                    t_class class_inf;
-                    num_class = (int)PhysicalTileType->class_inf.size();
-                    class_inf.num_pins = port.num_pins;
-                    class_inf.equivalence = port.equivalent;
-
-                    if (port.type == IN_PORT) {
-                        class_inf.type = RECEIVER;
-                    } else {
-                        VTR_ASSERT(port.type == OUT_PORT);
-                        class_inf.type = DRIVER;
-                    }
-
-                    for (k = 0; k < port.num_pins; ++k) {
-                        class_inf.pinlist.push_back(pin_count);
-                        PhysicalTileType->pin_class[pin_count] = num_class;
-                        // clock pins and other specified global ports are initially specified
-                        // as ignored pins (i.e. connections are not created in the rr_graph and
-                        // nets connected to the port are ignored as well).
-                        PhysicalTileType->is_ignored_pin[pin_count] = port.is_clock || port.is_non_clock_global;
-                        // clock pins and other specified global ports are flaged as global
-                        PhysicalTileType->is_pin_global[pin_count] = port.is_clock || port.is_non_clock_global;
-
-                        if (port.is_clock) {
-                            PhysicalTileType->clock_pin_indices.push_back(pin_count);
-                        }
-
-                        pin_count++;
-                    }
-
-                    PhysicalTileType->class_inf.push_back(class_inf);
-                    class_range.high++;
-                } else if (port.equivalent == PortEquivalence::NONE) {
-                    for (k = 0; k < port.num_pins; ++k) {
-                        t_class class_inf;
-                        num_class = (int)PhysicalTileType->class_inf.size();
-                        class_inf.num_pins = 1;
-                        class_inf.pinlist.push_back(pin_count);
-                        class_inf.equivalence = port.equivalent;
-
-                        if (port.type == IN_PORT) {
-                            class_inf.type = RECEIVER;
-                        } else {
-                            VTR_ASSERT(port.type == OUT_PORT);
-                            class_inf.type = DRIVER;
-                        }
-
-                        PhysicalTileType->pin_class[pin_count] = num_class;
-                        // clock pins and other specified global ports are initially specified
-                        // as ignored pins (i.e. connections are not created in the rr_graph and
-                        // nets connected to the port are ignored as well).
-                        PhysicalTileType->is_ignored_pin[pin_count] = port.is_clock || port.is_non_clock_global;
-                        // clock pins and other specified global ports are flaged as global
-                        PhysicalTileType->is_pin_global[pin_count] = port.is_clock || port.is_non_clock_global;
-
-                        if (port.is_clock) {
-                            PhysicalTileType->clock_pin_indices.push_back(pin_count);
-                        }
-
-                        pin_count++;
-
-                        PhysicalTileType->class_inf.push_back(class_inf);
-                        class_range.high++;
-                    }
-                }
-            }
-        }
-
-        PhysicalTileType->sub_tiles[sub_tile.index].class_range = class_range;
-    }
-
-    VTR_ASSERT(pin_count == PhysicalTileType->num_pins);
-}
 
 static void LoadPinLoc(pugi::xml_node Locations,
                        t_physical_tile_type* type,
@@ -2356,9 +2262,9 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
             }
 
             //Sanity check the model
-            check_model_clocks(model, loc_data, temp);
-            check_model_combinational_sinks(model, loc_data, temp);
-            warn_model_missing_timing(model, loc_data, temp);
+            check_model_clocks(temp, loc_data.filename_c_str(), loc_data.line(model));
+            check_model_combinational_sinks(temp, loc_data.filename_c_str(), loc_data.line(model));
+            warn_model_missing_timing(temp, loc_data.filename_c_str(), loc_data.line(model));
         } catch (ArchFpgaError& e) {
             free_arch_model(temp);
             throw;
@@ -2898,7 +2804,7 @@ static void ProcessTiles(pugi::xml_node Node,
     /* Alloc the type list. Need one additional t_type_desctiptors:
      * 1: empty psuedo-type
      */
-    t_physical_tile_type EMPTY_PHYSICAL_TILE_TYPE = SetupEmptyPhysicalType();
+    t_physical_tile_type EMPTY_PHYSICAL_TILE_TYPE = get_empty_physical_type();
     EMPTY_PHYSICAL_TILE_TYPE.index = 0;
     PhysicalTileTypes.push_back(EMPTY_PHYSICAL_TILE_TYPE);
 
@@ -3525,9 +3431,9 @@ static void ProcessSubTiles(pugi::xml_node Node,
         SubTile.num_phy_pins = pin_counts.total() * capacity;
 
         /* Assign pin counts to the Physical Tile Type */
-        PhysicalTileType->num_input_pins += pin_counts.input;
-        PhysicalTileType->num_output_pins += pin_counts.output;
-        PhysicalTileType->num_clock_pins += pin_counts.clock;
+        PhysicalTileType->num_input_pins += capacity * pin_counts.input;
+        PhysicalTileType->num_output_pins += capacity * pin_counts.output;
+        PhysicalTileType->num_clock_pins += capacity * pin_counts.clock;
         PhysicalTileType->num_pins += capacity * pin_counts.total();
         PhysicalTileType->num_inst_pins += pin_counts.total();
 
@@ -3557,7 +3463,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
     int num_pins = PhysicalTileType->num_pins;
     PhysicalTileType->pinloc.resize({width, height, num_sides}, std::vector<bool>(num_pins, false));
 
-    SetupPinClasses(PhysicalTileType);
+    setup_pin_classes(PhysicalTileType);
     LoadPinLoc(Cur, PhysicalTileType, &pin_locs, loc_data);
 }
 
@@ -3571,7 +3477,7 @@ static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node
     /* Alloc the type list. Need one additional t_type_desctiptors:
      * 1: empty psuedo-type
      */
-    t_logical_block_type EMPTY_LOGICAL_BLOCK_TYPE = SetupEmptyLogicalType();
+    t_logical_block_type EMPTY_LOGICAL_BLOCK_TYPE = get_empty_logical_type();
     EMPTY_LOGICAL_BLOCK_TYPE.index = 0;
     LogicalBlockTypes.push_back(EMPTY_LOGICAL_BLOCK_TYPE);
 
@@ -3820,6 +3726,8 @@ static void ProcessSegments(pugi::xml_node Parent,
             ProcessCB_SB(SubElem, Segs[i].sb, loc_data);
         }
 
+        /*Store the index of this segment in Segs vector*/
+        Segs[i].seg_index = i;
         /* Get next Node */
         Node = Node.next_sibling(Node.name());
     }
@@ -4631,393 +4539,230 @@ static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pug
         Node = Node.next_sibling(Node.name());
     }
 }
+/*
+ * Get the NoC design 
+ */
+static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc_data& loc_data) {
+    // a vector representing all the possible attributes within the noc tag
+    std::vector<std::string> expected_noc_attributes = {"link_bandwidth", "link_latency", "router_latency", "noc_router_tile_name"};
 
-/* Used by functions outside read_xml_util.c to gain access to arch filename */
-const char* get_arch_file_name() {
-    return arch_file_name;
+    std::vector<std::string> expected_noc_children_tags = {"mesh", "topology"};
+
+    pugi::xml_node noc_topology;
+    pugi::xml_node noc_mesh_topology;
+
+    // identifier that lets us know when we could not properly convert an attribute value to a integer
+    int attribute_conversion_failure = -1;
+
+    // identifier that lets us know when we could not properly convert a string conversion value
+    std::string attribute_conversion_failure_string = "";
+
+    // if we are here, then the user has a NoC in their architecture, so need to add it
+    arch->noc = new t_noc_inf;
+    t_noc_inf* noc_ref = arch->noc;
+
+    /* process the noc attributes first */
+
+    // quick error check to make sure that we dont have unexpected attributes
+    pugiutil::expect_only_attributes(noc_tag, expected_noc_attributes, loc_data);
+
+    // now go through and parse the required attributes for noc tag
+    noc_ref->link_bandwidth = pugiutil::get_attribute(noc_tag, "link_bandwidth", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+
+    noc_ref->link_latency = pugiutil::get_attribute(noc_tag, "link_latency", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+
+    noc_ref->router_latency = pugiutil::get_attribute(noc_tag, "router_latency", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+
+    noc_ref->noc_router_tile_name = pugiutil::get_attribute(noc_tag, "noc_router_tile_name", loc_data, pugiutil::REQUIRED).as_string();
+
+    // the noc parameters can only be non-zero positive values
+    if ((noc_ref->link_bandwidth < 0) || (noc_ref->link_latency < 0) || (noc_ref->router_latency < 0)) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(noc_tag),
+                       "The link bandwidth, link latency and router latency for the NoC must be a positive non-zero value.");
+    }
+
+    // check that the router tile name was supplied properly
+    if (!(noc_ref->noc_router_tile_name.compare(attribute_conversion_failure_string))) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(noc_tag),
+                       "The noc router tile name must be a string.");
+    }
+
+    /* We processed the NoC node, so now process the topology*/
+
+    // make sure that only the topology tag is found under NoC
+    pugiutil::expect_only_children(noc_tag, expected_noc_children_tags, loc_data);
+
+    noc_mesh_topology = pugiutil::get_single_child(noc_tag, "mesh", loc_data, pugiutil::OPTIONAL);
+
+    // we cannot check for errors related to number of routers and as well as whether a router is out of bounds (this will be done later)
+    // the chip still needs to be sized
+
+    if (noc_mesh_topology) {
+        processMeshTopology(noc_mesh_topology, loc_data, noc_ref);
+
+        for (auto i = noc_ref->router_list.begin(); i != noc_ref->router_list.end(); i++) {
+            std::cout << "router " << i->id << ": ";
+
+            for (auto j = i->connection_list.begin(); j != i->connection_list.end(); j++) {
+                std::cout << *j << ",";
+            }
+
+            std::cout << "\n";
+        }
+    } else {
+        noc_topology = pugiutil::get_single_child(noc_tag, "topology", loc_data, pugiutil::REQUIRED);
+
+        processTopology(noc_topology, loc_data, noc_ref);
+    }
+
+    return;
 }
 
-bool check_model_clocks(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model) {
-    //Collect the ports identified as clocks
-    std::set<std::string> clocks;
-    for (t_model_ports* ports : {model->inputs, model->outputs}) {
-        for (t_model_ports* port = ports; port != nullptr; port = port->next) {
-            if (port->is_clock) {
-                clocks.insert(port->name);
-            }
-        }
+/*
+ * A NoC mesh is created based on the user supplied size and region location.
+ */
+static void processMeshTopology(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref) {
+    // noc mesh topology properties
+    double mesh_region_start_x = 0;
+    double mesh_region_end_x = 0;
+    double mesh_region_start_y = 0;
+    double mesh_region_end_y = 0;
+    int mesh_size = 0;
+
+    // identifier that lets us know when we could not properly convert an attribute value to a integer
+    int attribute_conversion_failure = -1;
+
+    // a list of attrbutes that should be found for the mesh tag
+    std::vector<std::string> expected_router_attributes = {"startx", "endx", "starty", "endy", "size"};
+
+    // verify that only the acceptable attributes were supplied
+    pugiutil::expect_only_attributes(mesh_topology_tag, expected_router_attributes, loc_data);
+
+    // go through the attributes and store their values
+    mesh_region_start_x = pugiutil::get_attribute(mesh_topology_tag, "startx", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+
+    mesh_region_end_x = pugiutil::get_attribute(mesh_topology_tag, "endx", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+
+    mesh_region_start_y = pugiutil::get_attribute(mesh_topology_tag, "starty", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+
+    mesh_region_end_y = pugiutil::get_attribute(mesh_topology_tag, "endy", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+
+    mesh_size = pugiutil::get_attribute(mesh_topology_tag, "size", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+
+    // verify that the attrbiutes provided were legal
+    if ((mesh_region_start_x < 0) || (mesh_region_end_x < 0) || (mesh_region_start_y < 0) || (mesh_region_end_y < 0) || (mesh_size < 0)) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
+                       "The parameters for the mesh topology have to be positive values.");
     }
 
-    //Check that any clock references on the ports are to identified clock ports
-    for (t_model_ports* ports : {model->inputs, model->outputs}) {
-        for (t_model_ports* port = ports; port != nullptr; port = port->next) {
-            if (!port->clock.empty() && !clocks.count(port->clock)) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
-                               "No matching clock port '%s' on model '%s', required for port '%s'",
-                               port->clock.c_str(), model->name, port->name);
-            }
-        }
-    }
-    return true;
+    // now create the mesh topology for the noc
+    // create routers, make connections and detertmine positions
+    generate_noc_mesh(mesh_topology_tag, loc_data, noc_ref, mesh_region_start_x, mesh_region_end_x, mesh_region_start_y, mesh_region_end_y, mesh_size);
+
+    return;
 }
 
-bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model) {
-    //Outputs should have no combinational sinks
-    for (t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
-        if (port->combinational_sink_ports.size() != 0) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
-                           "Model '%s' output port '%s' can not have combinational sink ports",
-                           model->name, port->name);
+/*
+ * Go through each router in the NoC and store the list of routers that connect to it.
+ */
+static void processTopology(pugi::xml_node topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref) {
+    // The topology tag should have no attributes, check that
+    pugiutil::expect_only_attributes(topology_tag, {}, loc_data);
+
+    /**
+     * Stores router information that includes the number of connections a router has within a given topology and also the number of times a router was declared in the arch file using the <router> tag.
+     * In the datastructure below, the router id is the key and the stored data is a pair, where the first element describes the number of router declarations and the second element describes the number of router connections.
+     * This is used only for erro checking.
+     */
+    std::map<int, std::pair<int, int>> routers_in_arch_info;
+
+    /* Now go through the children tags of topology, which is basically
+     * each router found within the NoC 
+     */
+    for (pugi::xml_node router : topology_tag.children()) {
+        // we can only have router tags within the topology
+        if (router.name() != std::string("router")) {
+            bad_tag(router, loc_data, topology_tag, {"router"});
+        } else {
+            // curent tag is a valid router, so process it
+            processRouter(router, loc_data, noc_ref, routers_in_arch_info);
         }
     }
 
-    //Record the output ports
-    std::map<std::string, t_model_ports*> output_ports;
-    for (t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
-        output_ports.insert({port->name, port});
+    // check whether any routers were supplied
+    if (noc_ref->router_list.size() == 0) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(topology_tag),
+                       "No routers were supplied for the NoC.");
     }
 
-    for (t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
-        for (const std::string& sink_port_name : port->combinational_sink_ports) {
-            //Check that the input port combinational sinks are all outputs
-            if (!output_ports.count(sink_port_name)) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
-                               "Model '%s' input port '%s' can not be combinationally connected to '%s' (not an output port of the model)",
-                               model->name, port->name, sink_port_name.c_str());
-            }
+    // check that the topology of the noc was correctly described in the arch file
+    verify_noc_topology(routers_in_arch_info);
 
-            //Check that any output combinational sinks are not clocks
-            t_model_ports* sink_port = output_ports[sink_port_name];
-            VTR_ASSERT(sink_port);
-            if (sink_port->is_clock) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
-                               "Model '%s' output port '%s' can not be both: a clock source (is_clock=\"%d\"),"
-                               " and combinationally connected to input port '%s' (acting as a clock buffer).",
-                               model->name, sink_port->name, sink_port->is_clock, port->name);
-            }
-        }
-    }
-
-    return true;
+    return;
 }
 
-void warn_model_missing_timing(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model) {
-    //Check whether there are missing edges and warn the user
-    std::set<std::string> comb_connected_outputs;
-    for (t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
-        if (port->clock.empty()                       //Not sequential
-            && port->combinational_sink_ports.empty() //Doesn't drive any combinational outputs
-            && !port->is_clock                        //Not an input clock
-        ) {
-            VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(model_tag),
-                          "Model '%s' input port '%s' has no timing specification (no clock specified to create a sequential input port, not combinationally connected to any outputs, not a clock input)\n", model->name, port->name);
+/*
+ * Store the properties of a single router and then store the list of routers that connect to it.
+ */
+static void processRouter(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+    // identifier that lets us know when we could not properly convert an attribute value to a integer
+    int attribute_conversion_failure = -1;
+
+    // an accepted list of attributes for the router tag
+    std::vector<std::string> expected_router_attributes = {"id", "positionx", "positiony", "connections"};
+
+    // variable to store current router info
+    t_router router_info;
+
+    // router connection list attribute information
+    std::string router_connection_list_attribute_value;
+
+    // lets us know if there was an error processing the router connection list
+    bool router_connection_list_result = true;
+
+    // check that only the accepted router attributes are found in the tag
+    pugiutil::expect_only_attributes(router_tag, expected_router_attributes, loc_data);
+
+    // store the router information from the attributes
+    router_info.id = pugiutil::get_attribute(router_tag, "id", loc_data, pugiutil::REQUIRED).as_int(attribute_conversion_failure);
+
+    router_info.device_x_position = pugiutil::get_attribute(router_tag, "positionx", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+
+    router_info.device_y_position = pugiutil::get_attribute(router_tag, "positiony", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+
+    // verify whether the attribute information was legal
+    if ((router_info.id < 0) || (router_info.device_x_position < 0) || (router_info.device_y_position < 0)) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
+                       "The router id, and position (x & y) for the router must be a positive number.");
+    }
+
+    // get the current router connection list
+    router_connection_list_attribute_value.assign(pugiutil::get_attribute(router_tag, "connections", loc_data, pugiutil::REQUIRED).as_string());
+
+    // if the connections attrbiute was not provided or it was empty, then we don't process it and throw a warning
+
+    if (router_connection_list_attribute_value.compare("") != 0) {
+        // process the router connection list
+        router_connection_list_result = parse_noc_router_connection_list(router_tag, loc_data, router_info.id, router_info.connection_list, router_connection_list_attribute_value, routers_in_arch_info);
+
+        // check if the user provided a legal router connection list
+        if (!router_connection_list_result) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
+                           "The 'connections' attribute for the router must be a list of integers seperated by spaces, where each integer represents a router id that the current router is connected to.");
         }
 
-        comb_connected_outputs.insert(port->combinational_sink_ports.begin(), port->combinational_sink_ports.end());
+    } else {
+        VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(router_tag),
+                      "The router with id:%d either has an empty 'connections' attrtibute or does not have any associated connections to other routers in the NoC.\n", router_info.id);
     }
 
-    for (t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
-        if (port->clock.empty()                          //Not sequential
-            && !comb_connected_outputs.count(port->name) //Not combinationally drivven
-            && !port->is_clock                           //Not an output clock
-        ) {
-            VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(model_tag),
-                          "Model '%s' output port '%s' has no timing specification (no clock specified to create a sequential output port, not combinationally connected to any inputs, not a clock output)\n", model->name, port->name);
-        }
-    }
-}
+    // at this point the current router information was completely legal, so we store the newly created router within the noc
+    noc_ref->router_list.push_back(router_info);
 
-bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch) {
-    //Normalize the blif model name to match the model name
-    // by removing the leading '.' (.latch, .inputs, .names etc.)
-    // by removing the leading '.subckt'
-    VTR_ASSERT(pb_type->blif_model);
-    std::string blif_model = pb_type->blif_model;
-    std::string subckt = ".subckt ";
-    auto pos = blif_model.find(subckt);
-    if (pos != std::string::npos) {
-        blif_model = blif_model.substr(pos + subckt.size());
-    }
+    // update the number of declarations info for the current router (since we just finished processing one <router> tag)
+    update_router_info_in_arch(router_info.id, false, routers_in_arch_info);
 
-    //Find the matching model
-    const t_model* model = nullptr;
-
-    for (const t_model* models : {arch.models, arch.model_library}) {
-        for (model = models; model != nullptr; model = model->next) {
-            if (std::string(model->name) == blif_model) {
-                break;
-            }
-        }
-        if (model != nullptr) {
-            break;
-        }
-    }
-    if (model == nullptr) {
-        archfpga_throw(get_arch_file_name(), -1,
-                       "Unable to find model for blif_model '%s' found on pb_type '%s'",
-                       blif_model.c_str(), pb_type->name);
-    }
-
-    //Now that we have the model we can compare the timing annotations
-
-    //Check from the pb_type's delay annotations match the model
-    //
-    //  This ensures that the pb_types' delay annotations are consistent with the model
-    for (int i = 0; i < pb_type->num_annotations; ++i) {
-        const t_pin_to_pin_annotation* annot = &pb_type->annotations[i];
-
-        if (annot->type == E_ANNOT_PIN_TO_PIN_DELAY) {
-            //Check that any combinational delays specified match the 'combinational_sinks_ports' in the model
-
-            if (annot->clock) {
-                //Sequential annotation, check that the clock on the specified port matches the model
-
-                //Annotations always put the pin in the input_pins field
-                VTR_ASSERT(annot->input_pins);
-                for (const std::string& input_pin : vtr::split(annot->input_pins)) {
-                    InstPort annot_port(input_pin);
-                    for (const std::string& clock : vtr::split(annot->clock)) {
-                        InstPort annot_clock(clock);
-
-                        //Find the model port
-                        const t_model_ports* model_port = nullptr;
-                        for (const t_model_ports* ports : {model->inputs, model->outputs}) {
-                            for (const t_model_ports* port = ports; port != nullptr; port = port->next) {
-                                if (port->name == annot_port.port_name()) {
-                                    model_port = port;
-                                    break;
-                                }
-                            }
-                            if (model_port != nullptr) break;
-                        }
-                        if (model_port == nullptr) {
-                            archfpga_throw(get_arch_file_name(), annot->line_num,
-                                           "Failed to find port '%s' on '%s' for sequential delay annotation",
-                                           annot_port.port_name().c_str(), annot_port.instance_name().c_str());
-                        }
-
-                        //Check that the clock matches the model definition
-                        std::string model_clock = model_port->clock;
-                        if (model_clock.empty()) {
-                            archfpga_throw(get_arch_file_name(), annot->line_num,
-                                           "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', model specifies"
-                                           " no clock but timing annotation specifies '%s'",
-                                           annot_port.port_name().c_str(), model->name, annot_clock.port_name().c_str());
-                        }
-                        if (model_port->clock != annot_clock.port_name()) {
-                            archfpga_throw(get_arch_file_name(), annot->line_num,
-                                           "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', model specifies"
-                                           " clock as '%s' but timing annotation specifies '%s'",
-                                           annot_port.port_name().c_str(), model->name, model_clock.c_str(), annot_clock.port_name().c_str());
-                        }
-                    }
-                }
-
-            } else if (annot->input_pins && annot->output_pins) {
-                //Combinational annotation
-                VTR_ASSERT_MSG(!annot->clock, "Combinational annotations should have no clock");
-                for (const std::string& input_pin : vtr::split(annot->input_pins)) {
-                    InstPort annot_in(input_pin);
-                    for (const std::string& output_pin : vtr::split(annot->output_pins)) {
-                        InstPort annot_out(output_pin);
-
-                        //Find the input model port
-                        const t_model_ports* model_port = nullptr;
-                        for (const t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
-                            if (port->name == annot_in.port_name()) {
-                                model_port = port;
-                                break;
-                            }
-                        }
-
-                        if (model_port == nullptr) {
-                            archfpga_throw(get_arch_file_name(), annot->line_num,
-                                           "Failed to find port '%s' on '%s' for combinational delay annotation",
-                                           annot_in.port_name().c_str(), annot_in.instance_name().c_str());
-                        }
-
-                        //Check that the output port is listed in the model's combinational sinks
-                        auto b = model_port->combinational_sink_ports.begin();
-                        auto e = model_port->combinational_sink_ports.end();
-                        auto iter = std::find(b, e, annot_out.port_name());
-                        if (iter == e) {
-                            archfpga_throw(get_arch_file_name(), annot->line_num,
-                                           "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', timing annotation"
-                                           " specifies combinational connection to port '%s' but the connection does not exist in the model",
-                                           model_port->name, model->name, annot_out.port_name().c_str());
-                        }
-                    }
-                }
-            } else {
-                throw ArchFpgaError("Unrecognized delay annotation");
-            }
-        }
-    }
-
-    //Build a list of combinationally connected sinks
-    std::set<std::string> comb_connected_outputs;
-    for (t_model_ports* model_ports : {model->inputs, model->outputs}) {
-        for (t_model_ports* model_port = model_ports; model_port != nullptr; model_port = model_port->next) {
-            comb_connected_outputs.insert(model_port->combinational_sink_ports.begin(), model_port->combinational_sink_ports.end());
-        }
-    }
-
-    //Check from the model to pb_type's delay annotations
-    //
-    //  This ensures that the pb_type has annotations for all delays/values
-    //  required by the model
-    for (t_model_ports* model_ports : {model->inputs, model->outputs}) {
-        for (t_model_ports* model_port = model_ports; model_port != nullptr; model_port = model_port->next) {
-            //If the model port has no timing specification don't check anything (e.g. architectures with no timing info)
-            if (model_port->clock.empty()
-                && model_port->combinational_sink_ports.empty()
-                && !comb_connected_outputs.count(model_port->name)) {
-                continue;
-            }
-
-            if (!model_port->clock.empty()) {
-                //Sequential port
-
-                if (model_port->dir == IN_PORT) {
-                    //Sequential inputs must have a T_setup or T_hold
-                    if (find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) == nullptr
-                        && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_THOLD) == nullptr) {
-                        std::stringstream msg;
-                        msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
-                        msg << " port '" << model_port->name << "' of model '" << model->name << "',";
-                        msg << " port is a sequential input but has neither T_setup nor T_hold specified";
-
-                        if (is_library_model(model)) {
-                            //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                            VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
-                        } else {
-                            archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
-                        }
-                    }
-
-                    if (!model_port->combinational_sink_ports.empty()) {
-                        //Sequential input with internal combinational connectsion it must also have T_clock_to_Q
-                        if (find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) == nullptr
-                            && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN) == nullptr) {
-                            std::stringstream msg;
-                            msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
-                            msg << " port '" << model_port->name << "' of model '" << model->name << "',";
-                            msg << " port is a sequential input with internal combinational connects but has neither";
-                            msg << " min nor max T_clock_to_Q specified";
-
-                            if (is_library_model(model)) {
-                                //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                                VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
-                            } else {
-                                archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
-                            }
-                        }
-                    }
-
-                } else {
-                    VTR_ASSERT(model_port->dir == OUT_PORT);
-                    //Sequential outputs must have T_clock_to_Q
-                    if (find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) == nullptr
-                        && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN) == nullptr) {
-                        std::stringstream msg;
-                        msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
-                        msg << " port '" << model_port->name << "' of model '" << model->name << "',";
-                        msg << " port is a sequential output but has neither min nor max T_clock_to_Q specified";
-
-                        if (is_library_model(model)) {
-                            //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                            VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
-                        } else {
-                            archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
-                        }
-                    }
-
-                    if (comb_connected_outputs.count(model_port->name)) {
-                        //Sequential output with internal combinational connectison must have T_setup/T_hold
-                        if (find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) == nullptr
-                            && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_THOLD) == nullptr) {
-                            std::stringstream msg;
-                            msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
-                            msg << " port '" << model_port->name << "' of model '" << model->name << "',";
-                            msg << " port is a sequential output with internal combinational connections but has";
-                            msg << " neither T_setup nor T_hold specified";
-
-                            if (is_library_model(model)) {
-                                //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                                VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
-                            } else {
-                                archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
-                            }
-                        }
-                    }
-                }
-            }
-
-            //Check that combinationally connected inputs/outputs have combinational delays between them
-            if (model_port->dir == IN_PORT) {
-                for (const auto& sink_port : model_port->combinational_sink_ports) {
-                    if (find_combinational_annotation(pb_type, model_port->name, sink_port) == nullptr) {
-                        std::stringstream msg;
-                        msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
-                        msg << " port '" << model_port->name << "' of model '" << model->name << "',";
-                        msg << " input port '" << model_port->name << "' has combinational connections to";
-                        msg << " port '" << sink_port.c_str() << "'; specified in model, but no combinational delays found on pb_type";
-
-                        if (is_library_model(model)) {
-                            //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
-                            VTR_LOGF_WARN(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
-                        } else {
-                            archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return true;
-}
-
-const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type) {
-    VTR_ASSERT(annot_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
-               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
-               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
-               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN);
-
-    for (int iannot = 0; iannot < pb_type->num_annotations; ++iannot) {
-        const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
-        InstPort annot_in(annot->input_pins);
-        if (annot_in.port_name() == port->name) {
-            for (int iprop = 0; iprop < annot->num_value_prop_pairs; ++iprop) {
-                if (annot->prop[iprop] == annot_type) {
-                    return annot;
-                }
-            }
-        }
-    }
-
-    return nullptr;
-}
-
-const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port) {
-    for (int iannot = 0; iannot < pb_type->num_annotations; ++iannot) {
-        const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
-        for (const auto& annot_in_str : vtr::split(annot->input_pins)) {
-            InstPort in_pins(annot_in_str);
-            for (const auto& annot_out_str : vtr::split(annot->output_pins)) {
-                InstPort out_pins(annot_out_str);
-                if (in_pins.port_name() == in_port && out_pins.port_name() == out_port) {
-                    for (int iprop = 0; iprop < annot->num_value_prop_pairs; ++iprop) {
-                        if (annot->prop[iprop] == E_ANNOT_PIN_TO_PIN_DELAY_MAX
-                            || annot->prop[iprop] == E_ANNOT_PIN_TO_PIN_DELAY_MIN) {
-                            return annot;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return nullptr;
+    return;
 }
 
 std::string inst_port_to_port_name(std::string inst_port) {
@@ -5072,193 +4817,6 @@ e_side string_to_side(std::string side_str) {
     return side;
 }
 
-static void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                                        std::vector<t_logical_block_type>& LogicalBlockTypes) {
-    for (auto& physical_tile : PhysicalTileTypes) {
-        if (physical_tile.index == EMPTY_TYPE_INDEX) continue;
-
-        auto eq_sites_set = get_equivalent_sites_set(&physical_tile);
-        auto equivalent_sites = std::vector<t_logical_block_type_ptr>(eq_sites_set.begin(), eq_sites_set.end());
-
-        auto criteria = [&physical_tile](const t_logical_block_type* lhs, const t_logical_block_type* rhs) {
-            int num_pins = physical_tile.num_inst_pins;
-
-            int lhs_num_logical_pins = lhs->pb_type->num_pins;
-            int rhs_num_logical_pins = rhs->pb_type->num_pins;
-
-            int lhs_diff_num_pins = num_pins - lhs_num_logical_pins;
-            int rhs_diff_num_pins = num_pins - rhs_num_logical_pins;
-
-            return lhs_diff_num_pins < rhs_diff_num_pins;
-        };
-
-        std::sort(equivalent_sites.begin(), equivalent_sites.end(), criteria);
-
-        for (auto& logical_block : LogicalBlockTypes) {
-            for (auto site : equivalent_sites) {
-                if (0 == strcmp(logical_block.name, site->pb_type->name)) {
-                    logical_block.equivalent_tiles.push_back(&physical_tile);
-                    break;
-                }
-            }
-        }
-    }
-
-    for (auto& logical_block : LogicalBlockTypes) {
-        if (logical_block.index == EMPTY_TYPE_INDEX) continue;
-
-        auto& equivalent_tiles = logical_block.equivalent_tiles;
-
-        if ((int)equivalent_tiles.size() <= 0) {
-            archfpga_throw(__FILE__, __LINE__,
-                           "Logical Block %s does not have any equivalent tiles.\n", logical_block.name);
-        }
-
-        std::unordered_map<int, bool> ignored_pins_check_map;
-        std::unordered_map<int, bool> global_pins_check_map;
-
-        auto criteria = [&logical_block](const t_physical_tile_type* lhs, const t_physical_tile_type* rhs) {
-            int num_logical_pins = logical_block.pb_type->num_pins;
-
-            int lhs_num_pins = lhs->num_inst_pins;
-            int rhs_num_pins = rhs->num_inst_pins;
-
-            int lhs_diff_num_pins = lhs_num_pins - num_logical_pins;
-            int rhs_diff_num_pins = rhs_num_pins - num_logical_pins;
-
-            return lhs_diff_num_pins < rhs_diff_num_pins;
-        };
-
-        std::sort(equivalent_tiles.begin(), equivalent_tiles.end(), criteria);
-
-        for (int pin = 0; pin < logical_block.pb_type->num_pins; pin++) {
-            for (auto& tile : equivalent_tiles) {
-                auto direct_maps = tile->tile_block_pin_directs_map.at(logical_block.index);
-
-                for (auto& sub_tile : tile->sub_tiles) {
-                    auto equiv_sites = sub_tile.equivalent_sites;
-                    if (std::find(equiv_sites.begin(), equiv_sites.end(), &logical_block) == equiv_sites.end()) {
-                        continue;
-                    }
-
-                    auto direct_map = direct_maps.at(sub_tile.index);
-
-                    auto result = direct_map.find(t_logical_pin(pin));
-                    if (result == direct_map.end()) {
-                        archfpga_throw(__FILE__, __LINE__,
-                                       "Logical pin %d not present in pin mapping between Tile %s and Block %s.\n",
-                                       pin, tile->name, logical_block.name);
-                    }
-
-                    int sub_tile_pin_index = result->second.pin;
-                    int phy_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
-
-                    bool is_ignored = tile->is_ignored_pin[phy_index];
-                    bool is_global = tile->is_pin_global[phy_index];
-
-                    auto ignored_result = ignored_pins_check_map.insert(std::pair<int, bool>(pin, is_ignored));
-                    if (!ignored_result.second && ignored_result.first->second != is_ignored) {
-                        archfpga_throw(__FILE__, __LINE__,
-                                       "Physical Tile %s has a different value for the ignored pin (physical pin: %d, logical pin: %d) "
-                                       "different from the corresponding pins of the other equivalent site %s\n.",
-                                       tile->name, phy_index, pin, logical_block.name);
-                    }
-
-                    auto global_result = global_pins_check_map.insert(std::pair<int, bool>(pin, is_global));
-                    if (!global_result.second && global_result.first->second != is_global) {
-                        archfpga_throw(__FILE__, __LINE__,
-                                       "Physical Tile %s has a different value for the global pin (physical pin: %d, logical pin: %d) "
-                                       "different from the corresponding pins of the other equivalent sites\n.",
-                                       tile->name, phy_index, pin);
-                    }
-                }
-            }
-        }
-    }
-}
-
-static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_tile* sub_tile, t_logical_block_type_ptr logical_block) {
-    auto pb_type = logical_block->pb_type;
-
-    if (pb_type->num_pins > (sub_tile->num_phy_pins / sub_tile->capacity.total())) {
-        archfpga_throw(__FILE__, __LINE__,
-                       "Logical Block (%s) has more pins than the Sub Tile (%s).\n",
-                       logical_block->name, sub_tile->name);
-    }
-
-    auto& pin_direct_maps = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
-    auto pin_direct_map = pin_direct_maps.at(sub_tile->index);
-
-    if (pb_type->num_pins != (int)pin_direct_map.size()) {
-        archfpga_throw(__FILE__, __LINE__,
-                       "Logical block (%s) and Sub tile (%s) have a different number of ports.\n",
-                       logical_block->name, physical_tile->name);
-    }
-
-    for (auto pin_map : pin_direct_map) {
-        auto block_port = get_port_by_pin(logical_block, pin_map.first.pin);
-
-        auto sub_tile_port = get_port_by_pin(sub_tile, pin_map.second.pin);
-
-        VTR_ASSERT(block_port != nullptr);
-        VTR_ASSERT(sub_tile_port != nullptr);
-
-        if (sub_tile_port->type != block_port->type
-            || sub_tile_port->num_pins != block_port->num_pins
-            || sub_tile_port->equivalent != block_port->equivalent) {
-            archfpga_throw(__FILE__, __LINE__,
-                           "Logical block (%s) and Physical tile (%s) do not have equivalent port specifications. Sub tile port %s, logical block port %s\n",
-                           logical_block->name, sub_tile->name, sub_tile_port->name, block_port->name);
-        }
-    }
-}
-
-static const t_physical_tile_port* get_port_by_name(t_sub_tile* sub_tile, const char* port_name) {
-    for (auto port : sub_tile->ports) {
-        if (0 == strcmp(port.name, port_name)) {
-            return &sub_tile->ports[port.index];
-        }
-    }
-
-    return nullptr;
-}
-
-static const t_port* get_port_by_name(t_logical_block_type_ptr type, const char* port_name) {
-    auto pb_type = type->pb_type;
-
-    for (int i = 0; i < pb_type->num_ports; i++) {
-        auto port = pb_type->ports[i];
-        if (0 == strcmp(port.name, port_name)) {
-            return &pb_type->ports[port.index];
-        }
-    }
-
-    return nullptr;
-}
-
-static const t_physical_tile_port* get_port_by_pin(const t_sub_tile* sub_tile, int pin) {
-    for (auto port : sub_tile->ports) {
-        if (pin >= port.absolute_first_pin_index && pin < port.absolute_first_pin_index + port.num_pins) {
-            return &sub_tile->ports[port.index];
-        }
-    }
-
-    return nullptr;
-}
-
-static const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin) {
-    auto pb_type = type->pb_type;
-
-    for (int i = 0; i < pb_type->num_ports; i++) {
-        auto port = pb_type->ports[i];
-        if (pin >= port.absolute_first_pin_index && pin < port.absolute_first_pin_index + port.num_pins) {
-            return &pb_type->ports[port.index];
-        }
-    }
-
-    return nullptr;
-}
-
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
     for (auto& type : types) {
@@ -5269,4 +4827,211 @@ static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
 
     archfpga_throw(__FILE__, __LINE__,
                    "Could not find type: %s\n", type_name);
+}
+
+/*
+ * Create routers and set their properties so that a mesh grid of routers is created. Then connect the routers together so that a mesh topology is created.
+ */
+static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size) {
+    // check that the mesh size of the router is not 0
+    if (mesh_size == 0) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
+                       "The NoC mesh size cannot be 0.");
+    }
+
+    // calculating the vertical horizontal distances between routers in the supplied region
+    // we decrease the mesh size by 1 when calculating the spacing so that the first and last routers of each row or column are positioned on the mesh boundary
+    /*
+     * For example:
+     * - If we had a mesh size of 3, then using 3 would result in a spacing that would result in one router positions being placed in either the start of the reigion or end of the region. This is because the distance calculation resulted in having 3 spaces between the ends of the region 
+     *
+     * start              end
+     ***   ***   ***   ***
+     *
+     * - if we instead used 2 in the distance calculation, the the resulting positions would result in having 2 routers positioned on the start and end of the region. This is beacuse we now specified 2 spaces between the region and this allows us to place 2 routers on the regions edges and one router in the center.
+     *
+     * start        end
+     ***   ***   ***
+     *
+     * THe reasoning for this is to reduce the number of calculated router positions.
+     */
+    double vertical_router_separation = (mesh_region_end_y - mesh_region_start_y) / (mesh_size - 1);
+    double horizontal_router_separation = (mesh_region_end_x - mesh_region_start_x) / (mesh_size - 1);
+
+    t_router temp_router;
+
+    // improper region check
+    if ((vertical_router_separation <= 0) || (horizontal_router_separation <= 0)) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
+                       "The NoC region is invalid.");
+    }
+
+    // create routers and their connections
+    // start with router id 0 (bottom left of the chip) to the maximum router id (top right of the chip)
+    for (int j = 0; j < mesh_size; j++) {
+        for (int i = 0; i < mesh_size; i++) {
+            // assign router id
+            temp_router.id = (mesh_size * j) + i;
+
+            // calculate router position
+            /* The first and last router of each column or row will be located on the mesh region boundary, the remaining routers will be placed within the region and seperated from other routers using the distance calculated previously.
+             */
+            temp_router.device_x_position = (i * horizontal_router_separation) + mesh_region_start_x;
+            temp_router.device_y_position = (j * vertical_router_separation) + mesh_region_start_y;
+
+            // assign connections
+            // check if there is a router to the left
+            if ((i - 1) >= 0) {
+                // add the left router as a connection
+                temp_router.connection_list.push_back((mesh_size * j) + i - 1);
+            }
+
+            // check if there is a router to the top
+            if ((j + 1) <= (mesh_size - 1)) {
+                // add the top router as a connection
+                temp_router.connection_list.push_back((mesh_size * (j + 1)) + i);
+            }
+
+            // check if there is a router to the right
+            if ((i + 1) <= (mesh_size - 1)) {
+                // add the router located to the right
+                temp_router.connection_list.push_back((mesh_size * j) + i + 1);
+            }
+
+            // check of there is a router below
+            if ((j - 1) >= (0)) {
+                // add the bottom router as a connection
+                temp_router.connection_list.push_back((mesh_size * (j - 1)) + i);
+            }
+
+            // add the router to the list
+            noc_ref->router_list.push_back(temp_router);
+
+            // clear the current router information for the next router
+            temp_router.connection_list.clear();
+        }
+    }
+
+    return;
+}
+
+/*
+ * THe user provides the list of routers any given router is connected to by the router ids seperated by spaces. For example:
+ *
+ * connections= 1 2 3 4 5
+ *
+ * Go through the connections here and store them. Also make sure the list is legal.
+ */
+static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+    // we wil be modifying the string so store it in a temporary variable
+    // additinally, we peocess substrings seperated by spaces, so we add a space at the end of the string to be able to process the last sub-string
+    std::string modified_attribute_value = connection_list_attribute_value + " ";
+    std::string delimiter = " ";
+    std::stringstream single_connection;
+    int converted_connection;
+
+    size_t position = 0;
+
+    bool result = true;
+
+    // find the position of the first space in the connection list string
+    while ((position = modified_attribute_value.find(delimiter)) != std::string::npos) {
+        // the string upto the space represent a single connection, so grab the substring
+        single_connection << modified_attribute_value.substr(0, position);
+
+        // convert the connection to an integer
+        single_connection >> converted_connection;
+
+        /* we expect the connection list to be a string of integers seperated by spaces, where each integer represents a router id that the current router is connected to. So we make sure that the router id was an integer.
+         */
+        if (single_connection.fail()) {
+            // if we are here, then an integer was not supplied
+            result = false;
+            break;
+        }
+
+        // check the case where a duplicate connection was provided
+        if (std::find(connection_list.begin(), connection_list.end(), converted_connection) != connection_list.end()) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
+                           "The router with id:'%d' was included multiple times in the connection list for another router.", converted_connection);
+        }
+
+        // make sure that the current router isn't connected to itself
+        if (router_id == converted_connection) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
+                           "The router with id:%d was added to its own connection list. A router cannot connect to itself.", router_id);
+        }
+
+        // if we are here then a legal router id was supplied, so store it
+        connection_list.push_back(converted_connection);
+        // update the connection information for the current router in the connection list
+        update_router_info_in_arch(converted_connection, true, routers_in_arch_info);
+
+        // before we process the next router connection, we need to delete the substring (current router connection)
+        modified_attribute_value.erase(0, position + delimiter.length());
+        // clear the buffer that stores the router connection in a string format for the next iteration
+        single_connection.clear();
+    }
+
+    return result;
+}
+
+/* Each router needs a sperate <router> tag in the architecture description
+ * to declare it. The number of declarations for each router in the 
+ * architecture file is updated here.
+ *
+ * Additionally, for any given topology, a router can connect to other routers.
+ * THe number of connections for each router is also updated here. 
+ *
+ */
+static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+    // get the corresponding router info for the given router id
+    std::map<int, std::pair<int, int>>::iterator curr_router_info = routers_in_arch_info.find(router_id);
+
+    // check if the router previously existed in the router indo database
+    if (curr_router_info == routers_in_arch_info.end()) {
+        // case where the router did not exist previosuly, so we add it here and also get a reference to it
+        // initially a router has no declarations or connections
+        curr_router_info = routers_in_arch_info.insert(std::pair<int, std::pair<int, int>>(router_id, std::pair<int, int>(0, 0))).first;
+    }
+
+    // case where the current router was provided while parsing the connections of another router
+    if (router_updated_as_a_connection) {
+        // since we are within the case where the current router is being processed as a connection to another router we just increment its number of connections
+        (curr_router_info->second.second)++;
+
+    } else {
+        // since we are within the case where the current router is processed from a <router> tag, we just increment its number of declarations
+        (curr_router_info->second.first)++;
+    }
+
+    return;
+}
+
+/*
+ * Verify each router in the noc by checking whether they satisfy the following conditions:
+ * - The router has only one declaration in the arch file
+ * - The router has atleast one connection to another router
+ * If any of the conditions above are not met, then an error is thrown. 
+ */
+static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+    for (auto router_info = routers_in_arch_info.begin(); router_info != routers_in_arch_info.end(); router_info++) {
+        // case where the router was included in the architecture and had no connections to other routers
+        if ((router_info->second.first == 1) && (router_info->second.second == 0)) {
+            archfpga_throw("", -1,
+                           "The router with id:'%d' is not connected to any other router in the NoC.", router_info->first);
+
+        } // case where a router was found to be connected to another router but not declared using the <router> tag in the arch file (ie. missing)
+        else if ((router_info->second.first == 0) && (router_info->second.second > 0)) {
+            archfpga_throw("", -1,
+                           "The router with id:'%d' was found to be connected to another router but missing in the architecture file. Add the router using the <router> tag.", router_info->first);
+
+        } // case where the router was delcared multiple times in the architecture file (multiple <router> tags for the same router)
+        else if (router_info->second.first > 1) {
+            archfpga_throw("", -1,
+                           "The router with id:'%d' was included more than once in the architecture file. Routers should only be declared once.", router_info->first);
+        }
+    }
+
+    return;
 }

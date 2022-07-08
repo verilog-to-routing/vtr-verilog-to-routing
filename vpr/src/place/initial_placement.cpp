@@ -36,14 +36,6 @@ constexpr int INVALID_X = -1;
 #define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 8
 
 /*
- * Checks that the placement location is legal for each macro member by applying
- * the member's offset to the head position and checking that the resulting
- * spot is free, on the chip, etc.
- * Returns true if the macro can be placed at the given head position, false if not.
- */
-static bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos);
-
-/*
  * Places the macro if the head position passed in is legal, and all the resulting
  * member positions are legal
  * Returns true if macro was placed, false if not.
@@ -97,10 +89,31 @@ void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const
 static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              enum e_pad_loc_type pad_loc_type);
 
-static bool is_loc_on_chip(t_pl_loc& loc) {
-    auto& device_ctx = g_vpr_ctx.device();
+/**
+ * @brief If any blocks are unplaced after initial placement, this routine
+ * prints an error message showing the names, types, and IDs of the unplaced blocks
+ */
+static void print_unplaced_blocks();
 
-    return (loc.x >= 0 && loc.x < int(device_ctx.grid.width()) && loc.y >= 0 && loc.y < int(device_ctx.grid.height()));
+static void print_unplaced_blocks() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    int unplaced_blocks = 0;
+
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        if (place_ctx.block_locs[blk_id].loc.x == INVALID_X) {
+            VTR_LOG("Block %s (# %d) of type %s could not be placed during initial placement\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id, cluster_ctx.clb_nlist.block_type(blk_id)->name);
+            unplaced_blocks++;
+        }
+    }
+
+    if (unplaced_blocks > 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                        "%d blocks could not be placed during initial placement, no spaces were available for them on the grid.\n"
+                        "If VPR was run with floorplan constraints, the constraints may be too tight.\n",
+                        unplaced_blocks);
+    }
 }
 
 static bool is_block_placed(ClusterBlockId blk_id) {
@@ -257,64 +270,6 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
     return placed;
 }
 
-static bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    //Get block type of head member
-    ClusterBlockId blk_id = pl_macro.members[0].blk_index;
-    auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-
-    // Every macro can be placed until proven otherwise
-    bool mac_can_be_placed = true;
-
-    //Check whether macro contains blocks with floorplan constraints
-    bool macro_constrained = is_macro_constrained(pl_macro);
-
-    // Check whether all the members can be placed
-    for (size_t imember = 0; imember < pl_macro.members.size(); imember++) {
-        t_pl_loc member_pos = head_pos + pl_macro.members[imember].offset;
-
-        //Check that the member location is on the grid
-        if (!is_loc_on_chip(member_pos)) {
-            mac_can_be_placed = false;
-            break;
-        }
-
-        /*
-         * If the macro is constrained, check that the head member is in a legal position from
-         * a floorplanning perspective. It is enough to do this check for the head member alone,
-         * because constraints propagation was performed to calculate smallest floorplan region for the head
-         * macro, based on the constraints on all of the blocks in the macro. So, if the head macro is in a
-         * legal floorplan location, all other blocks in the macro will be as well.
-         */
-        if (macro_constrained && imember == 0) {
-            bool member_loc_good = cluster_floorplanning_legal(pl_macro.members[imember].blk_index, member_pos);
-            if (!member_loc_good) {
-                mac_can_be_placed = false;
-                break;
-            }
-        }
-
-        // Check whether the location could accept block of this type
-        // Then check whether the location could still accommodate more blocks
-        // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
-        if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
-            && is_tile_compatible(device_ctx.grid[member_pos.x][member_pos.y].type, block_type)
-            && place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile] == EMPTY_BLOCK_ID) {
-            // Can still accommodate blocks here, check the next position
-            continue;
-        } else {
-            // Cant be placed here - skip to the next try
-            mac_can_be_placed = false;
-            break;
-        }
-    }
-
-    return (mac_can_be_placed);
-}
-
 static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -325,7 +280,7 @@ static bool try_place_macro(t_pl_macro pl_macro, t_pl_loc head_pos) {
         return (macro_placed);
     }
 
-    bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos);
+    bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos, false);
 
     if (mac_can_be_placed) {
         // Place down the macro
@@ -408,13 +363,7 @@ static void place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
                 tried_types.push_back(tile_type->name);
             }
             std::string tried_types_str = "{" + vtr::join(tried_types, ", ") + "}";
-
-            // Error out
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                            "Initial placement failed.\n"
-                            "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type(s) %s.\n"
-                            "Please manually size the FPGA because VPR can't do this yet.\n",
-                            pl_macro.members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), tried_types_str.c_str());
+            break;
         }
     }
 }
@@ -434,7 +383,6 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
 
     //GridTileLookup class provides info needed for calculating number of tiles covered by a region
     GridTileLookup grid_tiles;
-    grid_tiles.initialize_grid_tile_matrices();
 
     /*
      * For the blocks with no floorplan constraints, and the blocks that are not part of macros,
@@ -500,34 +448,38 @@ void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const
 
 static void place_all_blocks(const std::vector<ClusterBlockId>& sorted_blocks,
                              enum e_pad_loc_type pad_loc_type) {
+    for (auto blk_id : sorted_blocks) {
+        place_one_block(blk_id, pad_loc_type);
+    }
+}
+
+void place_one_block(const ClusterBlockId& blk_id,
+                     enum e_pad_loc_type pad_loc_type) {
     auto& place_ctx = g_vpr_ctx.placement();
 
-    for (auto blk_id : sorted_blocks) {
-        //Check if block has already been placed
-        if (is_block_placed(blk_id)) {
-            continue;
-        }
+    //Check if block has already been placed
+    if (is_block_placed(blk_id)) {
+        return;
+    }
 
-        //Lookup to see if the block is part of a macro
-        t_pl_macro pl_macro;
-        int imacro;
-        get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
+    //Lookup to see if the block is part of a macro
+    t_pl_macro pl_macro;
+    int imacro;
+    get_imacro_from_iblk(&imacro, blk_id, place_ctx.pl_macros);
 
-        if (imacro != -1) { //If the block belongs to a macro, pass that macro to the placement routines
-            pl_macro = place_ctx.pl_macros[imacro];
-            place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type);
-        } else {
-            //If it does not belong to a macro, create a macro with the one block and then pass to the placement routines
-            //This is done so that the initial placement flow can be the same whether the block belongs to a macro or not
-            t_pl_macro_member macro_member;
-            t_pl_offset block_offset(0, 0, 0);
+    if (imacro != -1) { //If the block belongs to a macro, pass that macro to the placement routines
+        pl_macro = place_ctx.pl_macros[imacro];
+        place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type);
+    } else {
+        //If it does not belong to a macro, create a macro with the one block and then pass to the placement routines
+        //This is done so that the initial placement flow can be the same whether the block belongs to a macro or not
+        t_pl_macro_member macro_member;
+        t_pl_offset block_offset(0, 0, 0);
 
-            macro_member.blk_index = blk_id;
-            macro_member.offset = block_offset;
-            pl_macro.members.push_back(macro_member);
-
-            place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type);
-        }
+        macro_member.blk_index = blk_id;
+        macro_member.offset = block_offset;
+        pl_macro.members.push_back(macro_member);
+        place_macro(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, pl_macro, pad_loc_type);
     }
 }
 
@@ -583,6 +535,9 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
 
     //Place the blocks in sorted order
     place_all_blocks(sorted_blocks, pad_loc_type);
+
+    //if any blocks remain unplaced, print an error
+    print_unplaced_blocks();
 
 #ifdef VERBOSE
     VTR_LOG("At end of initial_placement.\n");

@@ -333,6 +333,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
     vtr::free(mappings);
     mappings = NULL;
 
+    t_model* hb_model = NULL;
     nnode_t* new_node = allocate_nnode(my_location);
 
     // Name the node subcircuit_name~hard_block_number so that the name is unique.
@@ -349,31 +350,41 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         char* subcircuit_stripped_name = get_stripped_name(subcircuit_name);
         /* check for coarse-grain configuration */
         if (configuration.coarsen) {
-            new_node->type = yosys_subckt_strmap[subcircuit_name];
+            if (yosys_subckt_strmap.find(subcircuit_name) != yosys_subckt_strmap.end())
+                new_node->type = yosys_subckt_strmap[subcircuit_name];
 
-            if (subcircuit_stripped_name && new_node->type == NO_OP)
+            if (new_node->type == NO_OP && yosys_subckt_strmap.find(subcircuit_stripped_name) != yosys_subckt_strmap.end())
                 new_node->type = yosys_subckt_strmap[subcircuit_stripped_name];
 
             if (new_node->type == NO_OP) {
                 char new_name[READ_BLIF_BUFFER];
                 vtr::free(new_node->name);
                 /* in case of weird names, need to add memories manually */
-                if (ports->count == 5) {
+                int sc_spot = -1;
+                char* yosys_subckt_str = NULL;
+                if ((yosys_subckt_str = retrieve_node_type_from_subckt_name(subcircuit_stripped_name)) != NULL) {
                     /* specify node type */
-                    new_node->type = yosys_subckt_strmap[SINGLE_PORT_RAM_string];
+                    new_node->type = yosys_subckt_strmap[yosys_subckt_str];
                     /* specify node name */
-                    odin_sprintf(new_name, "\\%s~%ld", SINGLE_PORT_RAM_string, hard_block_number - 1);
-                    new_node->name = make_full_ref_name(new_name, NULL, NULL, NULL, -1);
-                } else if (ports->count == 9) {
+                    odin_sprintf(new_name, "\\%s~%ld", yosys_subckt_str, hard_block_number - 1);
+                } else if ((sc_spot = sc_lookup_string(hard_block_names, subcircuit_stripped_name)) != -1) {
                     /* specify node type */
-                    new_node->type = yosys_subckt_strmap[DUAL_PORT_RAM_string];
+                    new_node->type = HARD_IP;
                     /* specify node name */
-                    odin_sprintf(new_name, "\\%s~%ld", DUAL_PORT_RAM_string, hard_block_number - 1);
-                    new_node->name = make_full_ref_name(new_name, NULL, NULL, NULL, -1);
+                    odin_sprintf(new_name, "\\%s~%ld", subcircuit_stripped_name, hard_block_number - 1);
+                    /* Detect used hard block for the blif generation */
+                    hb_model = find_hard_block(subcircuit_stripped_name);
+                    if (hb_model) {
+                        hb_model->used = 1;
+                    }
                 } else {
                     error_message(PARSE_BLIF, unknown_location,
-                                  "Unsupported sub-circuit type (%s) in BLIF file.\n", subcircuit_name);
+                                  "Unsupported subcircuit type (%s) in BLIF file.\n", subcircuit_name);
                 }
+                new_node->name = make_full_ref_name(new_name, NULL, NULL, NULL, -1);
+
+                // CLEAN UP
+                vtr::free(yosys_subckt_str);
             }
 
             if (new_node->type == BRAM) {
@@ -410,7 +421,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
 
     if (!model)
         error_message(PARSE_BLIF, unknown_location,
-                      "Failed to retrieve sub-circuit model (%s)\n", subcircuit_name);
+                      "Failed to retrieve subcircuit model (%s)\n", subcircuit_name);
 
     /* Add input and output ports to the new node. */
     else {
@@ -444,7 +455,8 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
                                 || new_node->type == ROM
                                 || new_node->type == SPRAM
                                 || new_node->type == DPRAM
-                                || new_node->type == MEMORY)
+                                || new_node->type == MEMORY
+                                || hb_model != NULL)
                                    ? get_hard_block_port_name(mapping)
                                    : NULL;
 
@@ -465,7 +477,8 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
                                 || new_node->type == ROM
                                 || new_node->type == SPRAM
                                 || new_node->type == DPRAM
-                                || new_node->type == MEMORY)
+                                || new_node->type == MEMORY
+                                || hb_model != NULL)
                                    ? get_hard_block_port_name(mapping)
                                    : NULL;
 
@@ -481,7 +494,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         }
 
         // Create a fake ast node.
-        if (!configuration.coarsen) {
+        if (!configuration.coarsen || new_node->type == HARD_IP) {
             new_node->related_ast_node = create_node_w_type(HARD_BLOCK, my_location);
             new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
             new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
@@ -537,7 +550,7 @@ void BLIF::Reader::create_internal_node_and_driver() {
         }
         /* Check for GENERIC type , change the node by reading the bit map */
         else if (node_type == GENERIC) {
-            new_node->type = (operation_list)read_bit_map_find_unknown_gate(input_count - 1, new_node);
+            new_node->type = (operation_list)read_bit_map_find_unknown_gate(input_count - 1, new_node, names);
             skip_reading_bit_map = true;
         }
 
@@ -1050,12 +1063,10 @@ operation_list BLIF::Reader::assign_node_type_from_node_name(char* output_name) 
  *
  * @param input_count number of inputs
  * @param node pointer to the netlist node
+ * @param names list of node inputs
  * ---------------------------------------------------------------------------------------------
  */
-operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nnode_t* node) {
-    if (configuration.coarsen)
-        return BUF_NODE;
-
+operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nnode_t* node, char** names) {
     operation_list to_return = operation_list_END;
 
     fpos_t pos;
@@ -1128,7 +1139,10 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
 
                     if (i == input_count) {
                         if (!strcmp(output_bit_map, "1")) {
-                            to_return = LOGICAL_AND;
+                            if (input_count == 1)
+                                to_return = BUF_NODE;
+                            else
+                                to_return = LOGICAL_AND;
                         } else if (!strcmp(output_bit_map, "0")) {
                             to_return = LOGICAL_NAND;
                         }
@@ -1162,8 +1176,20 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
                     to_return = LOGICAL_XNOR;
                 }
                 /* SMUX_2 */
-                else if ((strcmp(bit_map[0], "01-") == 0) && (strcmp(bit_map[1], "1-1") == 0)) {
+                else if (((strcmp(bit_map[0], "01-") == 0) && (strcmp(bit_map[1], "1-1") == 0)) || ((strcmp(bit_map[0], "1-0") == 0) && (strcmp(bit_map[1], "-11") == 0))) {
                     to_return = SMUX_2;
+
+                    /** 
+                     * if in some BLIF files the mux selector is considered as 
+                     * the last input instead of the first, here we handle it 
+                     * to move the selector to the first port
+                     */
+                    if (strcmp(bit_map[0], "1-0") == 0) {
+                        char* selector_name = names[2];
+                        names[2] = names[1];
+                        names[1] = names[0];
+                        names[0] = selector_name;
+                    }
                 }
             } else if (line_count_bitmap == 4) {
                 /* ADDER_FUNC */
@@ -1900,6 +1926,11 @@ char* BLIF::Reader::resolve_signal_name_based_on_blif_type(const char* name_pref
         pos = strchr(pos + 1, '[');
         if (!pos) {
             pos = pre_pos;
+
+            const char* pos_colon = strchr(pos + 1, ':');
+            if (pos_colon) {
+                pos = NULL;
+            }
             break;
         }
     }
@@ -2129,8 +2160,11 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
     char* ptr;
     char* buffer = NULL;
     attr_t* attributes = new_node->attributes;
+    operation_list op = (yosys_subckt_strmap.find(subckt_name) != yosys_subckt_strmap.end())
+                            ? yosys_subckt_strmap[subckt_name]
+                            : NO_OP;
 
-    if (need_params(yosys_subckt_strmap[subckt_name])) {
+    if (need_params(op)) {
         while (getbline(buffer, READ_BLIF_BUFFER, file)) {
             my_location.line += 1;
             ptr = vtr::strtok(buffer, TOKENS, file, buffer);

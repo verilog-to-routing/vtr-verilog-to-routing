@@ -104,6 +104,7 @@ ODIN_II/usefull_tools/**/track_completed
 #Python
 #
 *.pyc
+/.venv
 
 #
 #Vim
@@ -131,3 +132,12 @@ tags
 #
 .vscode
 .history
+#eclipse project
+.project
+
+#
+# CLION
+#
+.idea
+cmake-build-debug
+/.metadata/

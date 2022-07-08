@@ -92,7 +92,7 @@ The overall approach is similar, but we call out the differences below.
 
 ## Commit Messages
 
-Commit messages are an important part of understanding the code base and it's history.
+Commit messages are an important part of understanding the code base and its history.
 It is therefore *extremely* important to provide the following information in the commit message:
 
 * What is being changed?
@@ -183,52 +183,57 @@ Python files are automatically checked using `pylint` to ensure they follow esta
 
 VTR has a variety of tests which are used to check for correctness, performance and Quality of Result (QoR).
 
+## Tests
 There are 4 main regression testing suites:
 
-* `vtr_reg_basic`: ~1 minute serial
+### vtr_reg_basic
 
-    **Goal:** Fast functionality check
+~1 minute serial
 
-    **Feature Coverage:** Low
+**Goal:** Fast functionality check
 
-    **Benchmarks:** A few small and simple circuits
+**Feature Coverage:** Low
 
-    **Architectures:** A few simple architectures
+**Benchmarks:** A few small and simple circuits
 
-    This regression test is *not* suitable for evaluating QoR or performance.
-    It's primary purpose is to make sure the various tools do not crash/fail in the basic VTR flow.
+**Architectures:** A few simple architectures
 
-    QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
-    Occasionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
+This regression test is *not* suitable for evaluating QoR or performance.
+Its primary purpose is to make sure the various tools do not crash/fail in the basic VTR flow.
 
-* `vtr_reg_strong`: ~20 minutes serial, ~15 minutes with `-j4`
+QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
+Occasionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
-    **Goal:** Broad functionality check
+### vtr_reg_strong
 
-    **Feature Coverage:** High
+~20 minutes serial, ~15 minutes with `-j4`
 
-    **Benchmarks:** A few small circuits, with some special benchmarks to exercise specific features
+**Goal:** Broad functionality check
 
-    **Architectures:** A variety of architectures, including special architectures to exercise specific features
+**Feature Coverage:** High
 
-    This regression test is *not* suitable for evaluating QoR or performance.
-    It's primary purpose is try and achieve high functionality coverage.
+**Benchmarks:** A few small circuits, with some special benchmarks to exercise specific features
 
-    QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
-    Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
+**Architectures:** A variety of architectures, including special architectures to exercise specific features
+
+This regression test is *not* suitable for evaluating QoR or performance.
+Its primary purpose is try and achieve high functionality coverage.
+
+QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
+Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
     
-* `vtr_reg_nightly_test#, #:1-3`:
+### vtr_reg_nightly_test1-3
 
-    **Goal:** Basic QoR and Performance evaluation 
-  
-    **Feature Coverage:** Medium
-    
-    **Architectures:** A wider variety of architectures
-    
-    **Benchmarks:** Small-medium size, diverse. All include: 
-    
-    * VTR benchmarks
-    * Additional benchmarks for each suite. 
+**Goal:** Basic QoR and Performance evaluation 
+
+**Feature Coverage:** Medium
+
+**Architectures:** A wider variety of architectures
+
+**Benchmarks:** Small-medium size, diverse. All include: 
+
+* VTR benchmarks
+* Additional benchmarks for each suite. 
 
    QoR checks in these regression suites are aimed at evaluating quality and run-time of the VTR flow.
    As a result any QoR failures are a concern and should be investigated and understood.
@@ -237,24 +242,26 @@ There are 4 main regression testing suites:
    
    These suites comproise a single large suite, `vtr_reg_nightly` and should be run together to test nightly level regression. They are mostly similar in benchmark coverage interms of size and diversity however each suite tests some unique benchmarks in addition to the VTR benchmarks.  
     
-	| suite | wall-clock time| Additional benchmarks|
-	|-------|----------------|----------------------|
-	|vtr_reg_nightly_test1|~4.5 hours with `-j8`|ISPD and MCNC20 |
-	|vtr_reg_nightly_test2|~6 hours with `-j8`|Titan23 and Titan `other`|
-	|vtr_reg_nightly_test3|~5.5 hours with `-j8`|none|
-	
-* `vtr_reg_weekly`: ~42 hours with `-j4`
+    | suite | wall-clock time| Additional benchmarks|
+    |-------|----------------|----------------------|
+    |vtr_reg_nightly_test1|~4.5 hours with `-j8`|ISPD and MCNC20 |
+    |vtr_reg_nightly_test2|~6 hours with `-j8`|Titan23 and Titan `other`|
+    |vtr_reg_nightly_test3|~5.5 hours with `-j8`|none|
 
-    **Goal:** Full QoR and Performance evaluation.
+### vtr_reg_weekly
 
-    **Feature Coverage:** Medium
+~42 hours with `-j4`
 
-    **Benchmarks:** Medium-Large size, diverse. Includes:
+**Goal:** Full QoR and Performance evaluation.
 
-    * VTR benchmarks
-    * Titan23 benchmarks
+**Feature Coverage:** Medium
 
-    **Architectures:** A wide variety of architectures
+**Benchmarks:** Medium-Large size, diverse. Includes:
+
+* VTR benchmarks
+* Titan23 benchmarks
+
+**Architectures:** A wide variety of architectures
 
    QoR checks in this regression are aimed at evaluating quality and run-time of the VTR flow.
    As a result any QoR failures are a concern and should be investigated and understood.
@@ -295,6 +302,33 @@ $ ./run_reg_test.py vtr_reg_basic vtr_reg_strong -j4
 For the very large runs, you can submit your runs on a large cluster. A template of submission script to 
 a Slurm-managed cluster can be found under vtr_flow/tasks/slurm/
 
+## Continuous integration (CI)
+For the following tests, you can use remote servers instead of running them locally. Once the changes are pushed into the 
+remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
+will be triggered. The following tests are included in the workflow:
+* [vtr_reg_nightly_test1-3](#vtr_reg_nightly_test1-3)
+* [vtr_reg_strong](#vtr_reg_strong)
+* vtr_reg_yosys
+* vtr_reg_yosys_odin
+* odin_tech_strong
+* odin_reg_strong
+
+instructions on how to gather QoR results of CI runs can be found [here](#example-extracting-qor-data-from-ci-runs).
+
+#### Re-run CI Tests
+In the case that you want to re-run the CI tests, due to certain issues such as infrastructure failure,
+go to the "Action" tab and find your workflow under Test Workflow.
+Select the test which you want to re-run. There is a re-run button on the top-right corner of the newly appeared window.
+![Rerun CI Test](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/re_run_tests.png)
+
+**Attention** If the previous run is not finished, you will not be able to re-run the CI tests. To circumvent this limitation,
+there are two options:
+1. Cancel the workflow. After a few minutes, you would be able to re-run the workflow
+   ![Rerun CI Test](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/cancel_workflow.png)
+2. Wait until the workflow finishes, then re-run the failed jobs
+
+
+
 ## Odin Functionality Tests
 
 Odin has its own set of tests to verify the correctness of its synthesis results:
@@ -317,139 +351,6 @@ VTR also has a limited set of unit tests, which can be run with:
 #From the VTR root directory
 $ make && make test
 ```
-
-## Running tests on Pull Requests (PRs) via Kokoro
-
-Because of the long runtime for nightly and weekly tests, a Kokoro job can be
-used to run these tests once a Pull Request (PR) has been made at
-https://github.com/verilog-to-routing/vtr-verilog-to-routing.
-
-Any pull request made by a contributor of the verilog-to-routing GitHub project
-on https://github.com/verilog-to-routing/ will get a set of jobs immediately.
-Non-contributors can request a contributor on the project add a label
-"kokoro:force-run" to the PR. Kokoro will then detect the tag, remove the tag,
-and then and issue jobs for that PR.  If the tag remains after being added,
-there may not be an available Kokoro runner, so wait.
-
-### Re-running tests on Kokoro
-
-If a job fails due to an intermittent failure or a re-run is desired, a
-contributor can add the label "kokoro:force-run" to re-issue jobs for that PR.
-
-### Checking results from Kokoro tests
-
-Currently there is not a way for an in-flight job to be monitored.
-
-Once a job has been completed, you can follow the "Details" link that appears on the PR status. 
-The Kokoro page will show the job's stdout in the 'Target Log' tab (once the job has completed).
-The full log can be downloading by clicking the 'Download Full Log' button, or from the 'Artifacts' tab.
-
-### Downloading logs from Google Cloud Storage (GCS)
-
-After a Kokoro run is complete a number of useful log files (e.g. for each VPR invocation) are stored to Google Cloud Storage (GCS).
-
-The top level directory containing all VTR Kokoro runs is:
-
-    https://console.cloud.google.com/storage/browser/vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/
-
-PR jobs are under the `presubmit` directory, and continuous jobs (which run on the master branch) are under the `continuous` directory.
-
-Each Kokoro run has a unique build number, which can be found in the log file (available via the Kokoro run webpage).
-For example, if the log file contains:
-```
-export KOKORO_BUILD_NUMBER="450"
-```
-then the Kokoro build number is `450`.
-
-If build 450 corresponded to a PR (`presubmit`) build of the `nightly` regression tests, the resulting output files would be available at:
-
-    https://console.cloud.google.com/storage/browser/vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/450/
-
-where `presubmit/nightly/450/` (the type, test name and build number) have been appended to the base URL.
-Navigating to that URL will allow you to browse and download the collected log files.
-
-To download all the files from that Kokoro run, replace `https://console.cloud.google.com/storage/browser/` in the URL with `gs://` and invoke the [gsutil](https://cloud.google.com/storage/docs/gsutil) command (and it's `cp -R` sub-command), like so:
-
-```
-gsutil -m cp -R gs://vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/450 .
-```
-
-This will download all of the logs to the current directory for inspection.
-
-#### Kokoro runner details
-
-Kokoro runners are a standard
-[`n1-highmem-16`](https://cloud.google.com/compute/docs/machine-types#n1_high-memory_machine_types)
-VM with a 4 TB `pd-standard` disk used to perform the build of VPR and run the
-tests.
-
-#### What to do if Kokoro jobs are not starting?
-
-There are several reasons Kokoro jobs might not be starting.
-Try adding the "kokoro:force-run" label if it is not already added, or remove
-and add it if it already was added.
-
-If adding the label has no affect, check GCS status, as a GCS disruption will
-also disrupt Kokoro.
-
-Another reason jobs may not start is if there is a large backlog of jobs
-running, there may be no runners left to start.  In this case, someone with
-Kokoro management rights may need to terminate stale jobs, or wait for job
-timeouts.
-
-# Debugging Failed Tests
-
-If a test fails you probably want to look at the log files to determine the cause.
-
-Lets assume we have a failure in `vtr_reg_basic`:
-
-```shell
-#In the VTR root directory
-$ ./run_reg_test.py vtr_reg_strong
-#Output trimmed...
-regression_tests/vtr_reg_basic/basic_no_timing
------------------------------------------
-k4_N10_memSize16384_memData64/ch_intrinsics/common   failed: vpr
-k4_N10_memSize16384_memData64/diffeq1/common         failed: vpr
-#Output trimmed...
-regression_tests/vtr_reg_basic/basic_no_timing...[Fail]
- k4_N10_memSize16384_memData64.xml/ch_intrinsics.v vpr_status: golden = success result = exited
-#Output trimmed...
-Error: 10 tests failed!
-```
-
-Here we can see that `vpr` failed, which caused subsequent QoR failures (`[Fail]`), and resulted in 10 total errors.
-
-To see the log files we need to find the run directory.
-We can see from the output that  the specific test which failed was `regression_tests/vtr_reg_basic/basic_no_timing`.
-All the regression tests take place under `vtr_flow/tasks`, so the test directory is `vtr_flow/tasks/regression_tests/vtr_reg_basic/basic_no_timing`.
-Lets move to that directory:
-```shell
-#From the VTR root directory
-$ cd vtr_flow/tasks/regression_tests/vtr_reg_basic/basic_no_timing
-$ ls
-config  run001  run003
-latest  run002  run004  run005
-```
-
-There we see there is a `config` directory (which defines the test), and a set of run-directories.
-Each time a test is run it creates a new `runXXX` directory (where `XXX` is an incrementing number).
-From the above we can tell that our last run was `run005` (the symbolic link `latest` also points to the most recent run directory).
-From the output of `run_reg_test.py` we know that one of the failing architecture/circuit/parameters combinations was `k4_N10_memSize16384_memData64/ch_intrinsics/common`.
-Each architecture/circuit/parameter combination is run in its own sub-folder.
-Lets move to that directory:
-```shell
-$ cd run005/k4_N10_memSize16384_memData64/ch_intrinsics/common
-$ ls
-abc.out                     k4_N10_memSize16384_memData64.xml  qor_results.txt
-ch_intrinsics.net           odin.out                           thread_1.out
-ch_intrinsics.place         output.log                         vpr.out
-ch_intrinsics.pre-vpr.blif  output.txt                         vpr_stdout.log
-ch_intrinsics.route         parse_results.txt
-```
-
-Here we can see the individual log files produced by each tool (e.g. `vpr.out`), which we can use to guide our debugging.
-We could also manually re-run the tools (e.g. with a debugger) using files in this directory.
 
 # Evaluating Quality of Result (QoR) Changes
 VTR uses highly tuned and optimized algorithms and data structures.
@@ -556,6 +457,10 @@ The first step is to collect QoR metrics on your selected benchmark set.
 You need at least two sets of QoR measurements:
 1. The baseline QoR (i.e. unmodified VTR).
 2. The modified QoR (i.e. VTR with your changes).
+
+The following tests can be run locally by running the given commands on the local machine. In addition, since CI tests are run whenever
+changes are pushed to the remote repository, one can use the CI test results to measure the impact
+of his/her changes. The instructions to gather CI tests' results are [here](./README.developers.md#Example:-CI-Tests-QoR-Measurement).
 
 Note that it is important to generate both sets of QoR measurements on the same computing infrastructure to ensure a fair run-time comparison.
 
@@ -667,6 +572,31 @@ k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml clstm_like.medium.v     common  
 k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml clstm_like.large.v      common  101695.32               717.44  6547568 3       94597.42       -1       -1      3590044 -1      -1      25995   293     1161    -1      success v8.0.0-4470-ge625fdfe9  release IPO VTR_ASSERT_LEVEL=2  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64    2021-06-18T14:02:07     jupiter0        /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks    13040176 293     866     1018158 915547  1       263328  29277   248     248     61504   dsp_top auto    1503.62 5185716 1951.96 10.18   8.86387-1.97516e+06     -8.86387        8.86387 46.08   1.71937 1.21506 288.67  213.718 -1      5523775 18      1.98856e+09     1.12933e+09     1.35238e+09     21988.4 224.14  391.303 303.49  -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1     -1       -1      -1      -1      -1
 k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml lstm.v  common  38901.96                35.76   651868  7       30532.88        -1      -1     606240   -1      -1      6626    17      305     -1      success v8.0.0-4470-ge625fdfe9  release IPO VTR_ASSERT_LEVEL=2  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64    2021-06-18T14:02:07     jupiter0        /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks     6036204 17     19       252939  204226  1       121211  7577    200     200     40000   dsp_top auto    4576.24 1453809 1136.46 3.95    8.38544 -386636 -8.385448.38544 54.87   0.944433        0.763732        237.758 176.282 -1      1876011 15      1.28987e+09     3.81683e+08     8.80433e+08     22010.877.53    284.979 214.902 -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1     -1       -1      -1
 ```
+
+### Example: Extracting QoR Data from CI Runs
+
+Instead of running tests/designs locally to generate QoR data, you can also extract the QoR data from any of the standard
+test runs performed automatically by CI on a pull request. To get the QoR results of the above tests, go to the "Action" 
+tab. On the menu on the left, choose "Test" and select your workflow. If running the tests is done, scroll down and click 
+on "artifact". This would download the results for all CI tests.
+
+1. Go to "Action" tab
+![Action Button](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/action_button.png)
+2. Select "Test" and choose your workflow
+![Test Button](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/test.png)
+3. Scroll down and download "artifact"
+![Artifact](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/artifact.png)
+
+Assume that we want to get the QoR results for "vtr_reg_nightly_test3". In the artifact, there is a file named 
+"qor_results_vtr_reg_nightly_test3.tar.gz." Unzip this file, and a new directory named "vtr_flow" is created. Go to 
+"vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3." In this directory, you can find a directory for each benchmark
+contained in this test suite (vtr_reg_nightly_test3.) In the directory for each sub-test, there is another directory
+named *run001*. Two files are here: *qor_results.txt*, and *parse_results.txt*. QoR results for all circuits tested in this
+benchmark are stored in these files.
+Using these parsed results, you can do a detailed QoR comparison using the instructions given [here](#comparing-qor-measurements).
+![Parse File Dir](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/parse_result_dir.png)
+
+
 
 ## Comparing QoR Measurements
 Once you have two (or more) sets of QoR measurements they now need to be compared.
@@ -815,6 +745,9 @@ There may be times when a regression test fails its QoR test because its golden_
     $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_ex_test -check_golden
     ```
 Once the `-check_golden` command passes, the changes to the golden result can be committed so that the reg test will pass in future runs of vtr_reg_nightly_test3.
+
+**Attention** Even though the parsed files are located in different locations, the names of the parsed files 
+should be different.
 
 # Adding Tests
 
@@ -966,7 +899,7 @@ $ make
 this turns on more extensive assertion checking and re-builds VTR.
 
 ## GDB Pretty Printers
-To make it easier to debug some of VTR's data structures with [GDB](www.gnu.org/gdb).
+To make it easier to debug some of VTR's data structures with [GDB](https://www.sourceware.org/gdb/).
 
 ### STL Pretty Printers
 
@@ -1145,7 +1078,7 @@ make CMAKE_PARAMS="-DVTR_IPO_BUILD=off" -j8 vpr
 # External Subtrees
 VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).
 
-To simplify the process of working with subtrees we use the [`dev/external_subtrees.py`](./dev/external_subtrees.py) script.
+To simplify the process of working with subtrees we use the [`dev/external_subtrees.py`](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/dev/external_subtrees.py) script.
 
 For instance, running `./dev/external_subtrees.py --list` from the VTR root it shows the subtrees:
 ```
@@ -1159,7 +1092,7 @@ Component: libtatum        Path: libs/EXTERNAL/libtatum         URL: https://git
 Code included in VTR by subtrees should *not be modified within the VTR source tree*.
 Instead changes should be made in the relevant up-stream repository, and then synced into the VTR tree.
 
-### Updating an existing Subtree
+## Updating an existing Subtree
 1. From the VTR root run: `./dev/external_subtrees.py $SUBTREE_NAME`, where `$SUBTREE_NAME` is the name of an existing subtree.
 
     For example to update the `libtatum` subtree:
@@ -1167,7 +1100,7 @@ Instead changes should be made in the relevant up-stream repository, and then sy
     ./dev/external_subtrees.py --update libtatum
     ```
 
-### Adding a new Subtree
+## Adding a new Subtree
 
 To add a new external subtree to VTR do the following:
 
@@ -1207,7 +1140,7 @@ To add a new external subtree to VTR do the following:
     The first will squash all the upstream changes, the second will merge those changes into the current branch.
 
 
-### Subtree Rational
+## Subtree Rational
 
 VTR uses subtrees to allow easy tracking of upstream dependencies.
 
@@ -1221,7 +1154,7 @@ See [here](https://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git
 # Finding Bugs with Coverity
 [Coverity Scan](https://scan.coverity.com) is a static code analysis service which can be used to detect bugs.
 
-### Browsing Defects
+## Browsing Defects
 To view defects detected do the following:
 
 1. Get a coverity scan account
@@ -1231,7 +1164,7 @@ To view defects detected do the following:
 2. Browse the existing defects through the coverity web interface
 
 
-### Submitting a build
+## Submitting a build
 To submit a build to coverity do the following:
 
 1. [Download](https://scan.coverity.com/download) the coverity build tool
@@ -1264,7 +1197,7 @@ Note that we explicitly asked for gcc and g++, the coverity build tool defaults 
 
 Once the build has been analyzed you can browse the latest results through the coverity web interface
 
-### No files emitted
+## No files emitted
 If you get the following warning from cov-build:
 
     [WARNING] No files were emitted.
@@ -1303,5 +1236,5 @@ The following outlines the procedure to following when making an official VTR re
  * GitHub will automatically create a release based on the tag
  * Add the new change log entry to the [GitHub release description](https://github.com/verilog-to-routing/vtr-verilog-to-routing/releases)
  * Update the [ReadTheDocs configuration](https://readthedocs.org/projects/vtr/versions/) to build and serve documentation for the relevant tag (e.g. `v8.0.0`)
- * Send a release announcement email to the [vtr-announce](vtr-announce@googlegroups.com) mailing list (make sure to thank all contributors!)
+ * Send a release announcement email to the [vtr-announce](mailto:vtr-announce@googlegroups.com) mailing list (make sure to thank all contributors!)
 

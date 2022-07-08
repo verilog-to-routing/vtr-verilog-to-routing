@@ -30,7 +30,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_rr_graph_storage& rr_nodes,
         const RRGraphView* rr_graph,
         const std::vector<t_rr_rc_data>& rr_rc_data,
-        const std::vector<t_rr_switch_inf>& rr_switch_inf,
+        const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
         std::vector<t_rr_node_route_inf>& rr_node_route_inf)
         : grid_(grid)
         , router_lookahead_(router_lookahead)
@@ -269,7 +269,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
     const t_rr_graph_storage& rr_nodes,
     const RRGraphView* rr_graph,
     const std::vector<t_rr_rc_data>& rr_rc_data,
-    const std::vector<t_rr_switch_inf>& rr_switch_inf,
+    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
     std::vector<t_rr_node_route_inf>& rr_node_route_inf);
 
 #endif /* _CONNECTION_ROUTER_H */

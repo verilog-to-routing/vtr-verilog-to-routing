@@ -193,7 +193,7 @@ void get_serial_num() {
             serial_num += (size_t(net_id) + 1)
                           * (rr_graph.node_xlow(RRNodeId(inode)) * (device_ctx.grid.width()) - rr_graph.node_yhigh(RRNodeId(inode)));
 
-            serial_num -= device_ctx.rr_nodes[inode].ptc_num() * (size_t(net_id) + 1) * 10;
+            serial_num -= rr_graph.node_ptc_num(RRNodeId(inode)) * (size_t(net_id) + 1) * 10;
 
             serial_num -= rr_graph.node_type(RRNodeId(inode)) * (size_t(net_id) + 1) * 100;
             serial_num %= 2000000000; /* Prevent overflow */
@@ -334,8 +334,8 @@ bool feasible_routing() {
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        if (route_ctx.rr_node_route_inf[inode].occ() > rr_graph.node_capacity(RRNodeId(inode))) {
+    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+        if (route_ctx.rr_node_route_inf[(size_t)rr_id].occ() > rr_graph.node_capacity(rr_id)) {
             return (false);
         }
     }
@@ -350,14 +350,15 @@ std::vector<int> collect_congested_rr_nodes() {
     auto& route_ctx = g_vpr_ctx.routing();
 
     std::vector<int> congested_rr_nodes;
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        short occ = route_ctx.rr_node_route_inf[inode].occ();
-        short capacity = rr_graph.node_capacity(RRNodeId(inode));
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        short occ = route_ctx.rr_node_route_inf[(size_t)rr_id].occ();
+        short capacity = rr_graph.node_capacity(rr_id);
 
         if (occ > capacity) {
-            congested_rr_nodes.push_back(inode);
+            congested_rr_nodes.push_back((size_t)rr_id);
         }
     }
+
     return congested_rr_nodes;
 }
 
@@ -368,7 +369,7 @@ std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    std::vector<std::set<ClusterNetId>> rr_node_nets(device_ctx.rr_nodes.size());
+    std::vector<std::set<ClusterNetId>> rr_node_nets(device_ctx.rr_graph.num_nodes());
     for (ClusterNetId inet : cluster_ctx.clb_nlist.nets()) {
         t_trace* trace_elem = route_ctx.trace[inet].head;
         while (trace_elem) {
@@ -436,13 +437,13 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     size_t overused_nodes = 0, total_overuse = 0, worst_overuse = 0;
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        int overuse = route_ctx.rr_node_route_inf[inode].occ() - rr_graph.node_capacity(RRNodeId(inode));
+    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+        int overuse = route_ctx.rr_node_route_inf[(size_t)rr_id].occ() - rr_graph.node_capacity(rr_id);
 
         // If overused, update the acc_cost and add this node to the overuse info
         // If not, do nothing
         if (overuse > 0) {
-            route_ctx.rr_node_route_inf[inode].acc_cost += overuse * acc_fac;
+            route_ctx.rr_node_route_inf[(size_t)rr_id].acc_cost += overuse * acc_fac;
 
             ++overused_nodes;
             total_overuse += overuse;
@@ -567,7 +568,8 @@ static t_trace_branch traceback_branch(int node, int target_net_pin_index, std::
         t_trace* prev_ptr = alloc_trace_data();
         prev_ptr->index = inode;
         prev_ptr->net_pin_index = OPEN; //Net pin index is invalid for Non-SINK nodes
-        prev_ptr->iswitch = device_ctx.rr_nodes.edge_switch(iedge);
+        prev_ptr->iswitch = rr_graph.rr_nodes().edge_switch(iedge);
+
         prev_ptr->next = branch_head;
         branch_head = prev_ptr;
 
@@ -627,10 +629,11 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
     //Record the non-configurable out-going edges
     std::vector<t_edge_size> unvisited_non_configurable_edges;
     auto& device_ctx = g_vpr_ctx.device();
-    for (auto iedge : device_ctx.rr_nodes[node].non_configurable_edges()) {
-        VTR_ASSERT_SAFE(!device_ctx.rr_nodes[node].edge_is_configurable(iedge));
+    const auto& rr_graph = device_ctx.rr_graph;
+    for (auto iedge : rr_graph.non_configurable_edges(RRNodeId(node))) {
+        VTR_ASSERT_SAFE(!rr_graph.edge_is_configurable(RRNodeId(node), iedge));
 
-        int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
+        int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(node), iedge));
 
         if (!trace_nodes.count(to_node)) {
             unvisited_non_configurable_edges.push_back(iedge);
@@ -653,8 +656,8 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
     } else {
         //Recursive case: intermediate node with non-configurable edges
         for (auto iedge : unvisited_non_configurable_edges) {
-            int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
-            int iswitch = device_ctx.rr_nodes[node].edge_switch(iedge);
+            int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(node), iedge));
+            int iswitch = rr_graph.edge_switch(RRNodeId(node), iedge);
 
             VTR_ASSERT(!trace_nodes.count(to_node));
             trace_nodes.insert(node);
@@ -939,8 +942,8 @@ void alloc_and_load_rr_node_route_structs() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-    route_ctx.rr_node_route_inf.resize(device_ctx.rr_nodes.size());
-    route_ctx.non_configurable_bitset.resize(device_ctx.rr_nodes.size());
+    route_ctx.rr_node_route_inf.resize(device_ctx.rr_graph.num_nodes());
+    route_ctx.non_configurable_bitset.resize(device_ctx.rr_graph.num_nodes());
     route_ctx.non_configurable_bitset.fill(false);
 
     reset_rr_node_route_structs();
@@ -957,10 +960,10 @@ void reset_rr_node_route_structs() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-    VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_nodes.size()));
+    VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_graph.num_nodes()));
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        auto& node_inf = route_ctx.rr_node_route_inf[inode];
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        auto& node_inf = route_ctx.rr_node_route_inf[(size_t)rr_id];
 
         node_inf.prev_node = NO_PREVIOUS;
         node_inf.prev_edge = RREdgeId::INVALID();
@@ -1279,11 +1282,11 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
                             break;
                     }
 
-                    fprintf(fp, "%d  ", device_ctx.rr_nodes[inode].ptc_num());
+                    fprintf(fp, "%d  ", rr_graph.node_ptc_num(rr_node));
 
                     auto physical_tile = device_ctx.grid[ilow][jlow].type;
                     if (!is_io_type(physical_tile) && (rr_type == IPIN || rr_type == OPIN)) {
-                        int pin_num = device_ctx.rr_nodes[inode].ptc_num();
+                        int pin_num = rr_graph.node_pin_num(rr_node);
                         int xoffset = device_ctx.grid[ilow][jlow].width_offset;
                         int yoffset = device_ctx.grid[ilow][jlow].height_offset;
                         int sub_tile_offset = physical_tile->get_sub_tile_loc_from_pin(pin_num);
@@ -1399,7 +1402,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 /* Always 0 for pads and for RECEIVER (IPIN) classes */
                 for (ipin = 0; ipin < num_local_opin; ipin++) {
                     inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
-                    VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_nodes.size());
+                    VTR_ASSERT(inode >= 0 && inode < (ssize_t)rr_graph.num_nodes());
                     adjust_one_rr_occ_and_acc_cost(inode, -1, acc_fac);
                 }
             }
@@ -1424,9 +1427,9 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
             from_node = route_ctx.rr_blk_source[blk_id][iclass];
-            num_edges = device_ctx.rr_nodes[from_node].num_edges();
+            num_edges = rr_graph.num_edges(RRNodeId(from_node));
             for (iconn = 0; iconn < num_edges; iconn++) {
-                to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iconn);
+                to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iconn));
 
                 VTR_ASSERT(rr_graph.node_type(RRNodeId(to_node)) == OPIN);
 
@@ -1517,7 +1520,7 @@ void print_traceback(const t_trace* trace) {
             VTR_LOG(" !"); //End of branch
         }
 
-        if (prev && prev->iswitch != OPEN && !device_ctx.rr_switch_inf[prev->iswitch].configurable()) {
+        if (prev && prev->iswitch != OPEN && !rr_graph.rr_switch_inf(RRSwitchId(prev->iswitch)).configurable()) {
             VTR_LOG("*"); //Reached non-configurably
         }
 
@@ -1561,16 +1564,16 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
             //Check there is an edge connecting trace and next
 
             auto& device_ctx = g_vpr_ctx.device();
-
+            const auto& rr_graph = device_ctx.rr_graph;
             bool found = false;
-            for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[trace->index].num_edges(); ++iedge) {
-                int to_node = device_ctx.rr_nodes[trace->index].edge_sink_node(iedge);
+            for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(trace->index)); ++iedge) {
+                int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), iedge));
 
                 if (to_node == next->index) {
                     found = true;
 
                     //Verify that the switch matches
-                    int rr_iswitch = device_ctx.rr_nodes[trace->index].edge_switch(iedge);
+                    int rr_iswitch = rr_graph.edge_switch(RRNodeId(trace->index), iedge);
                     if (trace->iswitch != rr_iswitch) {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback mismatched switch type: traceback %d rr_graph %d (RR nodes %d -> %d)\n",
                                         trace->iswitch, rr_iswitch,
@@ -1612,9 +1615,10 @@ void print_invalid_routing_info() {
         }
     }
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)rr_id;
         int occ = route_ctx.rr_node_route_inf[inode].occ();
-        int cap = rr_graph.node_capacity(RRNodeId(inode));
+        int cap = rr_graph.node_capacity(rr_id);
         if (occ > cap) {
             VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode).c_str(), occ, cap);
 
@@ -1630,15 +1634,16 @@ void print_invalid_routing_info() {
 void print_rr_node_route_inf() {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
             RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
-            auto switch_id = device_ctx.rr_nodes.edge_switch(prev_edge);
+            auto switch_id = rr_graph.rr_nodes().edge_switch(prev_edge);
             VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu",
                     inode, prev_node, (size_t)prev_edge);
 
-            if (prev_node != OPEN && bool(prev_edge) && !device_ctx.rr_switch_inf[switch_id].configurable()) {
+            if (prev_node != OPEN && bool(prev_edge) && !rr_graph.rr_switch_inf(RRSwitchId(switch_id)).configurable()) {
                 VTR_LOG("*");
             }
 
@@ -1668,11 +1673,11 @@ void print_rr_node_route_inf_dot() {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
             RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
-            auto switch_id = device_ctx.rr_nodes.edge_switch(prev_edge);
+            auto switch_id = rr_graph.rr_nodes().edge_switch(prev_edge);
 
             if (prev_node != OPEN && bool(prev_edge)) {
                 VTR_LOG("\tnode%d -> node%zu [", prev_node, inode);
-                if (prev_node != OPEN && bool(prev_edge) && !device_ctx.rr_switch_inf[switch_id].configurable()) {
+                if (prev_node != OPEN && bool(prev_edge) && !rr_graph.rr_switch_inf(RRSwitchId(switch_id)).configurable()) {
                     VTR_LOG("label=\"*\"");
                 }
 

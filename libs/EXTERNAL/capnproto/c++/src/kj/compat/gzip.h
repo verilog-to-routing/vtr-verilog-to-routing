@@ -43,7 +43,7 @@ private:
   z_stream ctx = {};
   byte buffer[4096];
 
-  void fail(int result);
+  [[noreturn]] void fail(int result);
 };
 
 }  // namespace _ (private)
@@ -117,6 +117,8 @@ public:
 
   Promise<void> write(const void* buffer, size_t size) override;
   Promise<void> write(ArrayPtr<const ArrayPtr<const byte>> pieces) override;
+
+  Promise<void> whenWriteDisconnected() override { return inner.whenWriteDisconnected(); }
 
   inline Promise<void> flush() {
     return pump(Z_SYNC_FLUSH);

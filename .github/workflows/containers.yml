@@ -1,0 +1,37 @@
+name: Containers
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # weekly
+
+jobs:
+
+  Image:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: 1
+    steps:
+
+      - name: 🧰 Repository Checkout
+        uses: actions/checkout@v2
+
+      - name: 🔧 Generate image name
+        id: generate
+        run: |
+          REPO='${{ github.repository }}'
+          echo "::set-output name=image::ghcr.io/${REPO,,}/ubuntu/focal/build"
+
+      - name: ⛴️ Build container image
+        run: docker build -t ${{ steps.generate.outputs.image }} -f Dockerfile .
+
+      - name: 🛰️ Push container image
+        if: github.event_name != 'pull_request'
+        uses: pyTooling/Actions/with-post-step@r0
+        with:
+          main: |
+            echo '${{ github.token }}' | docker login ghcr.io -u GitHub-Actions --password-stdin
+            docker push ${{ steps.generate.outputs.image }}
+          post: docker logout ghcr.io

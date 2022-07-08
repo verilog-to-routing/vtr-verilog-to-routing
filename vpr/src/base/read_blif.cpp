@@ -20,6 +20,8 @@
 #include <sstream>
 #include <unordered_set>
 #include <cctype> //std::isdigit
+#include <algorithm>
+#include <regex>
 
 #include "blifparse.hpp"
 #include "atom_netlist.h"
@@ -386,6 +388,14 @@ struct BlifAllocCallback : public blifparse::Callback {
             parse_error(lineno_, ".param", "Supported only in extended BLIF format");
         }
 
+        // Validate the parameter value
+        bool is_valid = is_string_param(value) || is_binary_param(value) || is_real_param(value);
+
+        if (!is_valid) {
+            std::string msg = "Incorrect parameter '" + name + "' value specification. Value '" + value + "' is not recognized as string, binary word or real number. Possible causes:\n\t* lack or inconsistency in quotes (string)\n\t* no dot '.' to separate integer and fractional part (real number)\n\t* use of characters other than '1' and '0' (binary word)";
+            parse_error(lineno_, ".param", msg);
+        }
+
         curr_model().set_block_param(curr_block(), name, value);
     }
 
@@ -664,6 +674,67 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
             VTR_ASSERT_OPT_MSG(false, "Unkown logic value");
     }
     return new_val;
+}
+
+bool is_string_param(const std::string& param) {
+    /* Empty param is considered a string */
+    if (param.empty()) {
+        return true;
+    }
+
+    /* There have to be at least 2 characters (the quotes) */
+    if (param.length() < 2) {
+        return false;
+    }
+
+    /* The first and the last characters must be quotes */
+    size_t len = param.length();
+    if (param[0] != '"' || param[len - 1] != '"') {
+        return false;
+    }
+
+    /* There mustn't be any other quotes except for escaped ones */
+    for (size_t i = 1; i < (len - 1); ++i) {
+        if (param[i] == '"' && param[i - 1] != '\\') {
+            return false;
+        }
+    }
+
+    /* This is a string param */
+    return true;
+}
+
+bool is_binary_param(const std::string& param) {
+    /* Must be non-empty */
+    if (param.empty()) {
+        return false;
+    }
+
+    /* The string must contain only '0' and '1' */
+    for (size_t i = 0; i < param.length(); ++i) {
+        if (param[i] != '0' && param[i] != '1') {
+            return false;
+        }
+    }
+
+    /* This is a binary word param */
+    return true;
+}
+
+bool is_real_param(const std::string& param) {
+    /* Must be non-empty */
+    if (param.empty()) {
+        return false;
+    }
+
+    /* The string must match the regular expression */
+    static const std::regex real_number_expr("[+-]?([0-9]*\\.[0-9]+)|([0-9]+\\.[0-9]*)");
+    if (!std::regex_match(param, real_number_expr)) {
+        return false;
+    }
+
+    /* This is a real number param */
+    return true;
 }
 
 AtomNetlist read_blif(e_circuit_format circuit_format,

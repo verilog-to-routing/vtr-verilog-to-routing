@@ -12,7 +12,7 @@ To create a pull request, clone the [vtr-verilog-to-routing repository](https://
 Make changes to the branch that improve Odin II and correct the bug.
 **Important** In addition to correcting the bug, it is required that test cases (benchmarks) are created that reproduce the issue and are included in the regression tests.
 An example of a good test case could be the benchmark found in the "Issue" being addressed.
-The results of these new tests need to be regenerate. See [regression tests](./regression_tests) for further instruction.
+The results of these new tests need to be regenerate. See [regression tests](regression_test.md) for further instruction.
 Push these changes to the cloned repository and create the pull request.
 Add a description of the changes made and reference the "issue" that it corrects. There is a template provided on GitHub.
 
@@ -28,13 +28,17 @@ Make changes to that branch.
 Then, create a pull request with that branch and **include WIP in the title.**
 This will automatically indicate that this PR is not ready to be merged.
 Continue to work on the branch, pushing the commits regularly.
-Like a PR, test cases are also needed to be included through the use of benchmarks.
-See [regression tests](./regression_tests) for further instruction.
+Like a PR, test cases must be included through the use of benchmarks.
+See [regression tests](regression_test.md) for further instruction.
 
 ### Formating
 
 Odin II shares the same contributing philosophy as [VPR](https://docs.verilogtorouting.org/en/latest/dev/contributing/contributing/).
 Most importantly PRs will be rejected if they do not respect the coding standard: see [VPRs coding standard](https://docs.verilogtorouting.org/en/latest/dev/developing/#code-formatting)
+
+To correct any code formatting issues flagged by the CI system, simply run ``make format`` to adapt the newly added code to VPR's coding standard.
+If you have made alterations to python scripts, you would probably need to run ``make format-py`` and ``./dev/pylint_check.py`` from the VTR root directory to correct the python code formatting and check for lint errors. 
+
 
 ## Odin II's Flow
 

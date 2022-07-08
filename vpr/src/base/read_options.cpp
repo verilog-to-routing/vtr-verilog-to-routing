@@ -60,6 +60,38 @@ struct ParseOnOff {
     }
 };
 
+struct ParseArchFormat {
+    ConvertedValue<e_arch_format> from_str(std::string str) {
+        ConvertedValue<e_arch_format> conv_value;
+        if (str == "vtr")
+            conv_value.set_value(e_arch_format::VTR);
+        else if (str == "fpga-interchange")
+            conv_value.set_value(e_arch_format::FPGAInterchange);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_arch_format (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_arch_format val) {
+        ConvertedValue<std::string> conv_value;
+
+        if (val == e_arch_format::VTR)
+            conv_value.set_value("vtr");
+        else {
+            VTR_ASSERT(val == e_arch_format::FPGAInterchange);
+            conv_value.set_value("fpga-interchange");
+        }
+
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"vtr", "fpga-interchange"};
+    }
+};
 struct ParseCircuitFormat {
     ConvertedValue<e_circuit_format> from_str(std::string str) {
         ConvertedValue<e_circuit_format> conv_value;
@@ -69,6 +101,8 @@ struct ParseCircuitFormat {
             conv_value.set_value(e_circuit_format::BLIF);
         else if (str == "eblif")
             conv_value.set_value(e_circuit_format::EBLIF);
+        else if (str == "fpga-interchange")
+            conv_value.set_value(e_circuit_format::FPGA_INTERCHANGE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_circuit_format (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -84,16 +118,18 @@ struct ParseCircuitFormat {
             conv_value.set_value("auto");
         else if (val == e_circuit_format::BLIF)
             conv_value.set_value("blif");
-        else {
-            VTR_ASSERT(val == e_circuit_format::EBLIF);
+        else if (val == e_circuit_format::EBLIF)
             conv_value.set_value("eblif");
+        else {
+            VTR_ASSERT(val == e_circuit_format::FPGA_INTERCHANGE);
+            conv_value.set_value("fpga-interchange");
         }
 
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"auto", "blif", "eblif"};
+        return {"auto", "blif", "eblif", "fpga-interchange"};
     }
 };
 struct ParseRoutePredictor {
@@ -1075,6 +1111,76 @@ struct ParseTimingUpdateType {
     }
 };
 
+struct ParsePostSynthNetlistUnconnInputHandling {
+    ConvertedValue<e_post_synth_netlist_unconn_handling> from_str(std::string str) {
+        ConvertedValue<e_post_synth_netlist_unconn_handling> conv_value;
+        if (str == "unconnected")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::UNCONNECTED);
+        else if (str == "nets")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::NETS);
+        else if (str == "gnd")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::GND);
+        else if (str == "vcc")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::VCC);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_post_synth_netlist_unconn_handling (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_post_synth_netlist_unconn_handling val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_post_synth_netlist_unconn_handling::NETS)
+            conv_value.set_value("nets");
+        else if (val == e_post_synth_netlist_unconn_handling::GND)
+            conv_value.set_value("gnd");
+        else if (val == e_post_synth_netlist_unconn_handling::VCC)
+            conv_value.set_value("vcc");
+        else {
+            VTR_ASSERT(val == e_post_synth_netlist_unconn_handling::UNCONNECTED);
+            conv_value.set_value("unconnected");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"unconnected", "nets", "gnd", "vcc"};
+    }
+};
+
+struct ParsePostSynthNetlistUnconnOutputHandling {
+    ConvertedValue<e_post_synth_netlist_unconn_handling> from_str(std::string str) {
+        ConvertedValue<e_post_synth_netlist_unconn_handling> conv_value;
+        if (str == "unconnected")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::UNCONNECTED);
+        else if (str == "nets")
+            conv_value.set_value(e_post_synth_netlist_unconn_handling::NETS);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_post_synth_netlist_unconn_handling (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_post_synth_netlist_unconn_handling val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_post_synth_netlist_unconn_handling::NETS)
+            conv_value.set_value("nets");
+        else {
+            VTR_ASSERT(val == e_post_synth_netlist_unconn_handling::UNCONNECTED);
+            conv_value.set_value("unconnected");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"unconnected", "nets"};
+    }
+};
+
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description =
         "Implements the specified circuit onto the target FPGA architecture"
@@ -1112,7 +1218,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     auto& pos_grp = parser.add_argument_group("positional arguments");
     pos_grp.add_argument(args.ArchFile, "architecture")
-        .help("FPGA Architecture description file (XML)");
+        .help(
+            "FPGA Architecture description file\n"
+            "   - XML: this is the default frontend format\n"
+            "   - FPGA Interchange: device architecture file in the FPGA Interchange format");
 
     pos_grp.add_argument(args.CircuitName, "circuit")
         .help("Circuit file (or circuit name if --circuit_file specified)");
@@ -1168,7 +1277,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
-            "A set of semi-colon seperated graphics commands.\n"
+            "A set of semi-colon seperated graphics commands. \n"
+            "Commands must be surrounded by quotation marks (e.g. --graphics_commands \"save_graphics place.png\")\n"
             "   Commands:\n"
             "      * save_graphics <file>\n"
             "           Saves graphics to the specified file (.png/.pdf/\n"
@@ -1367,7 +1477,15 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     auto& file_grp = parser.add_argument_group("file options");
 
-    file_grp.add_argument(args.BlifFile, "--circuit_file")
+    file_grp.add_argument<e_arch_format, ParseArchFormat>(args.arch_format, "--arch_format")
+        .help(
+            "File format for the input atom-level circuit/netlist.\n"
+            " * vtr: Architecture expressed in the explicit VTR format"
+            " * fpga-interchage: Architecture expressed in the FPGA Interchange schema format\n")
+        .default_value("vtr")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.CircuitFile, "--circuit_file")
         .help("Path to technology mapped circuit")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -1380,7 +1498,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "           .conn  - Connection between two wires\n"
             "           .cname - Custom name for atom primitive\n"
             "           .param - Parameter on atom primitive\n"
-            "           .attr  - Attribute on atom primitive\n")
+            "           .attr  - Attribute on atom primitive\n"
+            " * fpga-interchage: Logical netlist in FPGA Interchange schema format\n")
         .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -1440,6 +1559,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")
         .help("Prefix for output files")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_block_usage, "--write_block_usage")
+        .help("Writes the cluster-level block types usage summary to the specified JSON, XML or TXT file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& netlist_grp = parser.add_argument_group("netlist options");
@@ -1900,6 +2023,22 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "If it is off, no subtile locations are specified when printing the floorplan constraints."
             "If it is on, the floorplan constraints are printed with the subtiles from current placement.")
         .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.floorplan_num_horizontal_partitions, "--floorplan_num_horizontal_partitions")
+        .help(
+            "An argument used for generating test constraints files. Specifies how many partitions to "
+            "make in the horizontal dimension. Must be used in conjunction with "
+            "--floorplan_num_vertical_partitions")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.floorplan_num_vertical_partitions, "--floorplan_num_vertical_partitions")
+        .help(
+            "An argument used for generating test constraints files. Specifies how many partitions to "
+            "make in the vertical dimension. Must be used in conjunction with "
+            "--floorplan_num_horizontal_partitions")
+        .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     /*
@@ -2394,6 +2533,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument<bool, ParseOnOff>(args.Generate_Post_Implementation_Merged_Netlist, "--gen_post_implementation_merged_netlist")
+        .help(
+            "Generates the post-implementation netlist with merged top module ports"
+            " Used for post-implementation simulation and verification")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     analysis_grp.add_argument(args.timing_report_npaths, "--timing_report_npaths")
         .help("Controls how many timing paths are reported.")
         .default_value("100")
@@ -2424,6 +2570,32 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("-1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument<e_post_synth_netlist_unconn_handling, ParsePostSynthNetlistUnconnInputHandling>(args.post_synth_netlist_unconn_input_handling, "--post_synth_netlist_unconn_inputs")
+        .help(
+            "Controls how unconnected input cell ports are handled in the post-synthesis netlist\n"
+            " * unconnected: leave unconnected\n"
+            " * nets: connect each unconnected input pin to its own separate\n"
+            "         undriven net named: __vpr__unconn<ID>, where <ID> is index\n"
+            "         assigned to this occurrence of unconnected port in design\n"
+            " * gnd: tie all to ground (1'b0)\n"
+            " * vcc: tie all to VCC (1'b1)\n")
+        .default_value("unconnected")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument<e_post_synth_netlist_unconn_handling, ParsePostSynthNetlistUnconnOutputHandling>(args.post_synth_netlist_unconn_output_handling, "--post_synth_netlist_unconn_outputs")
+        .help(
+            "Controls how unconnected output cell ports are handled in the post-synthesis netlist\n"
+            " * unconnected: leave unconnected\n"
+            " * nets: connect each unconnected input pin to its own separate\n"
+            "         undriven net named: __vpr__unconn<ID>, where <ID> is index\n"
+            "         assigned to this occurrence of unconnected port in design\n")
+        .default_value("unconnected")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument(args.write_timing_summary, "--write_timing_summary")
+        .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& power_grp = parser.add_argument_group("power analysis options");
 
     power_grp.add_argument<bool, ParseOnOff>(args.do_power, "--power")
@@ -2438,6 +2610,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     power_grp.add_argument(args.ActFile, "--activity_file")
         .help("Signal activities file for all nets (see documentation).")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    auto& noc_grp = parser.add_argument_group("noc options");
+
+    noc_grp.add_argument<bool, ParseOnOff>(args.noc, "--noc")
+        .help(
+            "Enables a NoC-driven placer that optimizes the placement of routers on the NoC."
+            "Also enables an option in the graphical display that can be used to display the NoC on the FPGA."
+            "This should be on only when the FPGA device contains a NoC and the provided netlist connects to the NoC.")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     return parser;
@@ -2456,7 +2638,7 @@ void set_conditional_defaults(t_options& args) {
     VTR_ASSERT(args.CircuitName.provenance() == Provenance::SPECIFIED);
     auto name_ext = vtr::split_ext(args.CircuitName);
 
-    if (args.BlifFile.provenance() != Provenance::SPECIFIED) {
+    if (args.CircuitFile.provenance() != Provenance::SPECIFIED) {
         //If the blif file wasn't explicitly specified, interpret the circuit name
         //as the blif file, and split off the extension
         args.CircuitName.set(vtr::basename(name_ext[0]), Provenance::SPECIFIED);
@@ -2464,11 +2646,11 @@ void set_conditional_defaults(t_options& args) {
 
     std::string default_output_name = args.CircuitName;
 
-    if (args.BlifFile.provenance() != Provenance::SPECIFIED) {
+    if (args.CircuitFile.provenance() != Provenance::SPECIFIED) {
         //Use the full path specified in the original circuit name,
         //and append the expected .blif extension
         std::string blif_file = name_ext[0] + name_ext[1];
-        args.BlifFile.set(blif_file, Provenance::INFERRED);
+        args.CircuitFile.set(blif_file, Provenance::INFERRED);
     }
 
     if (args.SDCFile.provenance() != Provenance::SPECIFIED) {

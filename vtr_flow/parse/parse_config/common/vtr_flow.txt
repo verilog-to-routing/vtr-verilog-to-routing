@@ -1,3 +1,5 @@
 #Flow Run-time Metrics
-vtr_flow_elapsed_time;vtr_flow.out;.* \(took (.*) seconds\)
+vtr_flow_elapsed_time;vtr_flow.out;.* \(took (.*) seconds, .*\)
+vtr_max_mem_stage;vtr_flow.out;.* \(.* consumed by (.*) run\)
+vtr_max_mem;vtr_flow.out;.* \(.*, overall memory peak (.*) consumed .*\)
 error;output.txt;error=(.*)

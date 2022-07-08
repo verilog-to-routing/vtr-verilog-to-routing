@@ -23,7 +23,8 @@ typedef enum e_graph_type t_graph_type;
 enum {
     RR_GRAPH_NO_WARN = 0x00,
     RR_GRAPH_WARN_FC_CLIPPED = 0x01,
-    RR_GRAPH_WARN_CHAN_WIDTH_CHANGED = 0x02
+    RR_GRAPH_WARN_CHAN_X_WIDTH_CHANGED = 0x02,
+    RR_GRAPH_WARN_CHAN_Y_WIDTH_CHANGED = 0x03
 };
 
 void create_rr_graph(const t_graph_type graph_type,
@@ -43,6 +44,9 @@ void free_rr_graph();
 //Returns a brief one-line summary of an RR node
 std::string describe_rr_node(int inode);
 
+t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
+                                                  const float R_minW_nmos,
+                                                  const float R_minW_pmos);
 // Sets the spec for the rr_switch based on the arch switch
 void load_rr_switch_from_arch_switch(int arch_switch_idx,
                                      int rr_switch_idx,

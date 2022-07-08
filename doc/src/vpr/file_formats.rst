@@ -391,16 +391,35 @@ The ``.param`` statement allows parameters (e.g. primitive modes) to be tagged o
 
 .. note:: ``.param`` statements apply to the previous primitive instantiation.
 
+Parameters can have one of the three available types. Type is inferred from the format in which a parameter is provided.
+
+ * **string**
+    Whenever a parameter value is quoted it is considered to be a string. BLIF parser does not allow escaped characters hence those are illegal and will cause syntax errors.
+
+ * **binary word**
+    Binary words are specified using strings of characters ``0`` and ``1``. No other characters are allowed. Number of characters denotes the word length.
+
+ * **real number**
+    Real numbers are stored as decimals where the dot ``.`` character separates the integer and fractional part. Presence of the dot character implies that the value is to be treated as a real number.
+
 For example:
 
 .. code-block:: none
 
-    .subckt dsp a=a_in b=b_in cin=c_in cout=c_out s=sum_out
-    .param mode adder
+    .subckt pll clk_in=gclk clk_out=pclk
+    .param feedback "internal"
+    .param multiplier 0.50
+    .param power 001101
 
-Would set the parameter ``mode`` of the above ``dsp`` ``.subckt`` to ``adder``.
+Would set the parameters ``feedback``, ``multiplier`` and ``power``  of the above ``pll`` ``.subckt`` to ``"internal"``, ``0.50`` and ``001101`` respectively.
+
+.. warning:: Integers in notation other than binary (e.g. decimal, hexadecimal) are not supported. Occurrence of params with digits other than 1 and 0 for binary words, not quoted (strings) or not separated with dot ``.`` (real numbers) are considered to be illegal.
+
+Interpretation of parameter values is out of scope of the BLIF format extension.
 
 ``.param`` statements propagate to ``<parameter>`` elements in the packed netlist.
+
+Paramerer values propagate also to the post-route Verilog netlist, if it is generated. Strings and real numbers are passed directly while binary words are prepended with the ``<N>'b`` prefix where ``N`` denotes a binary word length.
 
 .attr
 ~~~~~
@@ -1045,4 +1064,160 @@ An example of what a generated routing resource graph file would look like is sh
             <edge src_node="1" sink_node="2" switch_id="0"/>
         </rr_edges>
     </rr_graph>
+.. _end:
+
+Block types usage summary (.txt .xml or .json)
+-----------------------------------------
+
+Block types usage summary is a file written in human or machine readable format.
+It describes types and the amount of cluster-level FPGA resources that are used
+by implemented design. This file is generated after the placement step with
+option: `--write_block_usage <filename>`. It can be saved as a human readable
+text file or in XML or JSON file to provide machine readable output. Format is
+selected based on the extension of the `<filename>`.
+
+The summary consists of 4 parameters:
+
+* `nets number` - the amount of created nets
+* `blocks number` - sum of blocks used to implement the design
+* `input pins` - sum of input pins
+* `output pins` - sum of output pins
+
+and a list of `block types` followed by the number of specific block types that
+are used in the design.
+
+TXT
+~~~
+
+Presents the information in human readable format, the same as in log output:
+
+.. code-block:: none
+    :caption: TXT format of block types usage summary
+    :linenos:
+
+    Netlist num_nets: <int>
+    Netlist num_blocks: <int>
+    Netlist <block_type_name_0> blocks: <int>
+    Netlist <block_type_name_1> blocks: <int>
+    ...
+    Netlist <block_type_name_n> blocks: <int>
+    Netlist inputs pins: <int>
+    Netlist output pins: <int>
+
+.. _end:
+
+JSON
+~~~~
+
+One of two available machine readable formats. The information is written as follows:
+
+.. code-block:: json
+    :caption: JSON format of block types usage summary
+    :linenos:
+
+    {
+      "num_nets": "<int>",
+      "num_blocks": "<int>",
+      "input_pins": "<int>",
+      "output_pins": "<int>",
+      "blocks": {
+        "<block_type_name_0>": <int>,
+        "<block_type_name_1>": <int>,
+        ...
+        "<block_type_name_n>": <int>
+      }
+    }
+
+.. _end:
+
+XML
+~~~
+
+Second machine readable format. The information is written as follows:
+
+.. code-block:: xml
+    :caption: XML format of block types usage summary
+    :linenos:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <block_usage_report>
+      <nets num="<int>"></nets>
+      <blocks num="<int>">
+        <block type="<block_type_name_0>" usage="<int>"></block>
+        <block type="<block_type_name_1>" usage="<int>"></block>
+        ...
+        <block type="<block_type_name_n>" usage="<int>"></block>
+      </blocks>
+      <input_pins num="<int>"></input_pins>
+      <output_pins num="<int>"></output_pins>
+    </block_usage_report>
+
+.. _end:
+
+Timing summary (.txt .xml or .json)
+-----------------------------------------
+
+Timing summary is a file written in human or machine readable format.
+It describes final timing parameters of design implemented for the FPGA device.
+This file is generated after the routing step with option: `--write_timing_summary <filename>`.
+It can be saved as a human readable text file or in XML or JSON file to provide
+machine readable output. Format is selected based on the extension of the `<filename>`.
+
+The summary consists of 4 parameters:
+
+* `Critical Path Delay (cpd) [ns]`
+* `Max Circuit Frequency (Fmax) [MHz]`
+* `setup Worst Negative Slack (sWNS) [ns]`
+* `setup Total Negative Slack (sTNS) [ns]`
+
+TXT
+~~~
+
+Presents the information in human readable format, the same as in log output:
+
+.. code-block:: none
+    :caption: TXT format of timing summary
+    :linenos:
+
+    Final critical path delay (least slack): <double> ns, Fmax: <double> MHz
+    Final setup Worst Negative Slack (sWNS): <double> ns
+    Final setup Total Negative Slack (sTNS): <double> ns
+
+.. _end:
+
+JSON
+~~~~
+
+One of two available machine readable formats. The information is written as follows:
+
+.. code-block:: json
+    :caption: JSON format of timing summary
+    :linenos:
+
+    {
+      "cpd": <double>,
+      "fmax": <double>,
+      "swns": <double>,
+      "stns": <double>
+    }
+
+.. _end:
+
+XML
+~~~
+
+Second machine readable format. The information is written as follows:
+
+.. code-block:: xml
+    :caption: XML format of timing summary
+    :linenos:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <timing_summary_report>
+      <cpd value="<double>" unit="ns" description="Final critical path delay"></nets>
+      <fmax value="<double>" unit="MHz" description="Max circuit frequency"></fmax>
+      <swns value="<double>" unit="ns" description="setup Worst Negative Slack (sWNS)"></swns>
+      <stns value="<double>" unit="ns" description="setup Total Negative Slack (sTNS)"></stns>
+    </block_usage_report>
+
 .. _end:

@@ -664,12 +664,12 @@
         "Latch Drivers": 1,
         "Pi": 67,
         "Po": 65,
-        "logic element": 85048,
+        "logic element": 84264,
         "latch": 6273,
         "Longest Path": 855,
         "Average Path": 7,
-        "Estimated LUTs": 85048,
-        "Total Node": 91322
+        "Estimated LUTs": 84264,
+        "Total Node": 90538
     },
     "syntax/complex_post_for_loop/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/complex_post_for_loop/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -865,7 +865,7 @@
         "Adder": 132,
         "Multiplier": 5,
         "generic logic size": 4,
-        "Longest Path": 87,
+        "Longest Path": 127,
         "Average Path": 5,
         "Estimated LUTs": 657,
         "Total Node": 978
@@ -882,7 +882,7 @@
         "Po": 96,
         "logic element": 5556,
         "latch": 193,
-        "Longest Path": 1365,
+        "Longest Path": 1581,
         "Average Path": 5,
         "Estimated LUTs": 5556,
         "Total Node": 5750
@@ -899,13 +899,13 @@
         "Pi": 8,
         "Po": 16,
         "logic element": 16,
-        "latch": 20,
+        "latch": 17,
         "Adder": 17,
         "generic logic size": 4,
         "Longest Path": 12,
-        "Average Path": 5,
+        "Average Path": 4,
         "Estimated LUTs": 16,
-        "Total Node": 54
+        "Total Node": 51
     },
     "syntax/expression_in_chain_modules/no_arch": {
         "test_name": "syntax/expression_in_chain_modules/no_arch",
@@ -917,12 +917,12 @@
         "Latch Drivers": 1,
         "Pi": 8,
         "Po": 16,
-        "logic element": 53,
-        "latch": 20,
-        "Longest Path": 14,
-        "Average Path": 5,
-        "Estimated LUTs": 53,
-        "Total Node": 74
+        "logic element": 41,
+        "latch": 17,
+        "Longest Path": 11,
+        "Average Path": 4,
+        "Estimated LUTs": 41,
+        "Total Node": 59
     },
     "syntax/flip_flop_enable/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/flip_flop_enable/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1643,11 +1643,11 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 8,
-        "logic element": 22,
-        "Longest Path": 11,
+        "logic element": 16,
+        "Longest Path": 8,
         "Average Path": 4,
-        "Estimated LUTs": 22,
-        "Total Node": 22
+        "Estimated LUTs": 16,
+        "Total Node": 16
     },
     "syntax/mix_expression_in_module_port/no_arch": {
         "test_name": "syntax/mix_expression_in_module_port/no_arch",
@@ -1658,11 +1658,11 @@
         "test_coverage(%)": 100,
         "Pi": 6,
         "Po": 8,
-        "logic element": 27,
-        "Longest Path": 12,
-        "Average Path": 5,
-        "Estimated LUTs": 27,
-        "Total Node": 27
+        "logic element": 21,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 21,
+        "Total Node": 21
     },
     "syntax/multi_assignment/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/multi_assignment/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1670,12 +1670,12 @@
         "generated_blif": "multi_assignment_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 1 mismatch:",
-            "[OUTPUT_BLIF] Vector 3 mismatch:",
-            "[OUTPUT_BLIF] Vector 4 mismatch:"
+            "[SIMULATION] Vector 2 mismatch:",
+            "[SIMULATION] Vector 3 mismatch:",
+            "[SIMULATION] Vector 4 mismatch:"
         ]
     },
     "syntax/multi_assignment/no_arch": {
@@ -1683,12 +1683,12 @@
         "generated_blif": "multi_assignment_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 1 mismatch:",
-            "[OUTPUT_BLIF] Vector 3 mismatch:",
-            "[OUTPUT_BLIF] Vector 4 mismatch:"
+            "[SIMULATION] Vector 2 mismatch:",
+            "[SIMULATION] Vector 3 mismatch:",
+            "[SIMULATION] Vector 4 mismatch:"
         ]
     },
     "syntax/multi_clock_reader_writer/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2005,7 +2005,7 @@
         "Adder": 31,
         "Multiplier": 13,
         "generic logic size": 4,
-        "Longest Path": 1124,
+        "Longest Path": 1130,
         "Average Path": 8,
         "Estimated LUTs": 3523,
         "Total Node": 3978
@@ -2022,7 +2022,7 @@
         "Po": 7,
         "logic element": 3863,
         "latch": 517,
-        "Longest Path": 1327,
+        "Longest Path": 1333,
         "Average Path": 8,
         "Estimated LUTs": 3863,
         "Total Node": 4381
@@ -2043,7 +2043,7 @@
         "Adder": 41,
         "Multiplier": 9,
         "generic logic size": 4,
-        "Longest Path": 1293,
+        "Longest Path": 1295,
         "Average Path": 8,
         "Estimated LUTs": 13022,
         "Total Node": 11749
@@ -2060,7 +2060,7 @@
         "Po": 11,
         "logic element": 12127,
         "latch": 616,
-        "Longest Path": 1670,
+        "Longest Path": 1647,
         "Average Path": 9,
         "Estimated LUTs": 12127,
         "Total Node": 12744
@@ -2401,12 +2401,12 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 4,
-        "logic element": 8,
+        "logic element": 6,
         "generic logic size": 4,
         "Longest Path": 4,
         "Average Path": 4,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "syntax/unordered_ports/no_arch": {
         "test_name": "syntax/unordered_ports/no_arch",
@@ -2417,11 +2417,11 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 4,
-        "logic element": 8,
+        "logic element": 6,
         "Longest Path": 4,
         "Average Path": 4,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "syntax/vector_and/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/vector_and/k6_frac_N10_frac_chain_mem32K_40nm",

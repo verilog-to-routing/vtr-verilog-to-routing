@@ -147,8 +147,13 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
 
         LUT_size = pb_graph_node->num_input_pins[0];
 
-        input_probabilities = (float*)vtr::calloc(LUT_size, sizeof(float));
-        input_densities = (float*)vtr::calloc(LUT_size, sizeof(float));
+        input_probabilities = new float[LUT_size];
+        input_densities = new float[LUT_size];
+
+        for (pin_idx = 0; pin_idx < LUT_size; pin_idx++) {
+            input_probabilities[pin_idx] = 0;
+            input_densities[pin_idx] = 0;
+        }
 
         for (pin_idx = 0; pin_idx < LUT_size; pin_idx++) {
             t_pb_graph_pin* pin = &pb_graph_node->input_pins[0][pin_idx];
@@ -169,8 +174,8 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
                         input_probabilities, input_densities, power_ctx.solution_inf.T_crit);
         power_add_usage(power_usage, &sub_power_usage);
         free(SRAM_values);
-        free(input_probabilities);
-        free(input_densities);
+        delete[](input_probabilities);
+        delete[](input_densities);
     } else if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_LATCH) == 0) {
         /* Flip-Flop */
 
@@ -793,10 +798,10 @@ static void power_usage_routing(t_power_usage* power_usage,
     power_ctx.commonly_used->total_cb_buffer_size = 0.;
 
     /* Reset rr graph net indices */
-    for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
-        rr_node_power[rr_node_idx].net_num = ClusterNetId::INVALID();
-        rr_node_power[rr_node_idx].num_inputs = 0;
-        rr_node_power[rr_node_idx].selected_input = 0;
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        rr_node_power[(size_t)rr_id].net_num = ClusterNetId::INVALID();
+        rr_node_power[(size_t)rr_id].num_inputs = 0;
+        rr_node_power[(size_t)rr_id].selected_input = 0;
     }
 
     /* Populate net indices into rr graph */
@@ -814,16 +819,15 @@ static void power_usage_routing(t_power_usage* power_usage,
         t_trace* trace;
 
         for (trace = route_ctx.trace[net_id].head; trace != nullptr; trace = trace->next) {
-            auto node = device_ctx.rr_nodes[trace->index];
             t_rr_node_power* node_power = &rr_node_power[trace->index];
 
             if (node_power->visited) {
                 continue;
             }
 
-            for (t_edge_size edge_idx = 0; edge_idx < node.num_edges(); edge_idx++) {
-                const auto& next_node_id = node.edge_sink_node(edge_idx);
-                if (next_node_id != OPEN) {
+            for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(RRNodeId(trace->index)); edge_idx++) {
+                const auto& next_node_id = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), edge_idx));
+                if (next_node_id != size_t(OPEN)) {
                     t_rr_node_power* next_node_power = &rr_node_power[next_node_id];
 
                     switch (rr_graph.node_type(RRNodeId(next_node_id))) {
@@ -855,20 +859,18 @@ static void power_usage_routing(t_power_usage* power_usage,
     }
 
     /* Calculate power of all routing entities */
-    for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         t_power_usage sub_power_usage;
-        auto node = device_ctx.rr_nodes[rr_node_idx];
-        RRNodeId rr_node = RRNodeId(rr_node_idx);
-        t_rr_node_power* node_power = &rr_node_power[rr_node_idx];
+        t_rr_node_power* node_power = &rr_node_power[(size_t)rr_id];
         float C_wire;
         float buffer_size;
         int connectionbox_fanout;
         int switchbox_fanout;
         //float C_per_seg_split;
         int wire_length;
-        const t_edge_size node_fan_in = rr_graph.node_fan_in(rr_node);
+        const t_edge_size node_fan_in = rr_graph.node_fan_in(rr_id);
 
-        switch (rr_graph.node_type(rr_node)) {
+        switch (rr_graph.node_type(rr_id)) {
             case SOURCE:
             case SINK:
             case OPIN:
@@ -906,13 +908,13 @@ static void power_usage_routing(t_power_usage* power_usage,
                 VTR_ASSERT(node_power->in_prob);
 
                 wire_length = 0;
-                if (rr_graph.node_type(rr_node) == CHANX) {
-                    wire_length = rr_graph.node_xhigh(rr_node) - rr_graph.node_xlow(rr_node) + 1;
-                } else if (rr_graph.node_type(rr_node) == CHANY) {
-                    wire_length = rr_graph.node_yhigh(rr_node) - rr_graph.node_ylow(rr_node) + 1;
+                if (rr_graph.node_type(rr_id) == CHANX) {
+                    wire_length = rr_graph.node_xhigh(rr_id) - rr_graph.node_xlow(rr_id) + 1;
+                } else if (rr_graph.node_type(rr_id) == CHANY) {
+                    wire_length = rr_graph.node_yhigh(rr_id) - rr_graph.node_ylow(rr_id) + 1;
                 }
-                int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(rr_node)].seg_index;
-                C_wire = wire_length * device_ctx.rr_segments[seg_index].Cmetal;
+                int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(rr_id)].seg_index;
+                C_wire = wire_length * rr_graph.rr_segments(RRSegmentId(seg_index)).Cmetal;
                 //(double)power_ctx.commonly_used->tile_length);
                 VTR_ASSERT(node_power->selected_input < node_fan_in);
 
@@ -927,7 +929,7 @@ static void power_usage_routing(t_power_usage* power_usage,
                                           POWER_COMPONENT_ROUTE_SB);
 
                 /* Buffer Size */
-                switch (device_ctx.rr_switch_inf[node_power->driver_switch_type].power_buffer_type) {
+                switch (rr_graph.rr_switch_inf(RRSwitchId(node_power->driver_switch_type)).power_buffer_type) {
                     case POWER_BUFFER_TYPE_AUTO:
                         /*
                          * C_per_seg_split = ((float) node->num_edges
@@ -937,10 +939,10 @@ static void power_usage_routing(t_power_usage* power_usage,
                          * C_per_seg_split);
                          * buffer_size = std::max(buffer_size, 1.0F);
                          */
-                        buffer_size = power_calc_buffer_size_from_Cout(device_ctx.rr_switch_inf[node_power->driver_switch_type].Cout);
+                        buffer_size = power_calc_buffer_size_from_Cout(rr_graph.rr_switch_inf(RRSwitchId(node_power->driver_switch_type)).Cout);
                         break;
                     case POWER_BUFFER_TYPE_ABSOLUTE_SIZE:
-                        buffer_size = device_ctx.rr_switch_inf[node_power->driver_switch_type].power_buffer_size;
+                        buffer_size = rr_graph.rr_switch_inf(RRSwitchId(node_power->driver_switch_type)).power_buffer_size;
                         buffer_size = std::max(buffer_size, 1.0F);
                         break;
                     case POWER_BUFFER_TYPE_NONE:
@@ -981,10 +983,10 @@ static void power_usage_routing(t_power_usage* power_usage,
                 /* Determine types of switches that this wire drives */
                 connectionbox_fanout = 0;
                 switchbox_fanout = 0;
-                for (t_edge_size iedge = 0; iedge < node.num_edges(); iedge++) {
-                    if (node.edge_switch(iedge) == routing_arch->wire_to_rr_ipin_switch) {
+                for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_id); iedge++) {
+                    if (rr_graph.edge_switch(rr_id, iedge) == routing_arch->wire_to_rr_ipin_switch) {
                         connectionbox_fanout++;
-                    } else if (node.edge_switch(iedge) == routing_arch->delayless_switch) {
+                    } else if (rr_graph.edge_switch(rr_id, iedge) == routing_arch->delayless_switch) {
                         /* Do nothing */
                     } else {
                         switchbox_fanout++;
@@ -1034,7 +1036,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
     t_pb_graph_node* node = pin->parent_node;
     bool found;
 
-    pin->pin_power = (t_pb_graph_pin_power*)vtr::malloc(sizeof(t_pb_graph_pin_power));
+    pin->pin_power = new t_pb_graph_pin_power;
     pin->pin_power->C_wire = 0.;
     pin->pin_power->buffer_size = 0.;
     pin->pin_power->scaled_by_pin = nullptr;
@@ -1082,7 +1084,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
 }
 
 void power_uninit_pb_pin(t_pb_graph_pin* pin) {
-    vtr::free(pin->pin_power);
+    delete (pin->pin_power);
     pin->pin_power = nullptr;
 }
 
@@ -1195,10 +1197,10 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     }
 
     /* Initialize RR Graph Structures */
-    rr_node_power = (t_rr_node_power*)vtr::calloc(device_ctx.rr_nodes.size(),
+    rr_node_power = (t_rr_node_power*)vtr::calloc(rr_graph.num_nodes(),
                                                   sizeof(t_rr_node_power));
-    for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
-        rr_node_power[rr_node_idx].driver_switch_type = OPEN;
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        rr_node_power[(size_t)rr_id].driver_switch_type = OPEN;
     }
 
     /* Initialize Mux Architectures */
@@ -1206,14 +1208,13 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     max_IPIN_fanin = 0;
     max_seg_to_seg_fanout = 0;
     max_seg_to_IPIN_fanout = 0;
-    for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
+    for (const RRNodeId& rr_node_idx : device_ctx.rr_graph.nodes()) {
         t_edge_size fanout_to_IPIN = 0;
         t_edge_size fanout_to_seg = 0;
-        auto node = device_ctx.rr_nodes[rr_node_idx];
-        t_rr_node_power* node_power = &rr_node_power[rr_node_idx];
-        const t_edge_size node_fan_in = rr_graph.node_fan_in(RRNodeId(rr_node_idx));
+        t_rr_node_power* node_power = &rr_node_power[size_t(rr_node_idx)];
+        const t_edge_size node_fan_in = rr_graph.node_fan_in(rr_node_idx);
 
-        switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
+        switch (rr_graph.node_type(rr_node_idx)) {
             case IPIN:
                 max_IPIN_fanin = std::max(max_IPIN_fanin, node_fan_in);
                 max_fanin = std::max(max_fanin, node_fan_in);
@@ -1225,10 +1226,10 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 break;
             case CHANX:
             case CHANY:
-                for (t_edge_size iedge = 0; iedge < node.num_edges(); iedge++) {
-                    if (node.edge_switch(iedge) == routing_arch->wire_to_rr_ipin_switch) {
+                for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_node_idx); iedge++) {
+                    if (rr_graph.edge_switch(rr_node_idx, iedge) == routing_arch->wire_to_rr_ipin_switch) {
                         fanout_to_IPIN++;
-                    } else if (node.edge_switch(iedge) != routing_arch->delayless_switch) {
+                    } else if (rr_graph.edge_switch(rr_node_idx, iedge) != routing_arch->delayless_switch) {
                         fanout_to_seg++;
                     }
                 }
@@ -1257,15 +1258,13 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
 #endif
 
     /* Populate driver switch type */
-    for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
-        auto node = device_ctx.rr_nodes[rr_node_idx];
-
-        for (t_edge_size edge_idx = 0; edge_idx < node.num_edges(); edge_idx++) {
-            if (node.edge_sink_node(edge_idx) != OPEN) {
-                if (rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type == OPEN) {
-                    rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type = node.edge_switch(edge_idx);
+    for (const RRNodeId& rr_node_idx : device_ctx.rr_graph.nodes()) {
+        for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rr_node_idx); edge_idx++) {
+            if (size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))) {
+                if (rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == OPEN) {
+                    rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type = rr_graph.edge_switch(rr_node_idx, edge_idx);
                 } else {
-                    VTR_ASSERT(rr_node_power[node.edge_sink_node(edge_idx)].driver_switch_type == node.edge_switch(edge_idx));
+                    VTR_ASSERT(rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == rr_graph.edge_switch(rr_node_idx, edge_idx));
                 }
             }
         }
@@ -1273,14 +1272,13 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
 
     /* Find Max Fanout of Routing Buffer	 */
     t_edge_size max_seg_fanout = 0;
-    for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
-        auto node = device_ctx.rr_nodes[rr_node_idx];
 
-        switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
+    for (const RRNodeId& rr_node_idx : device_ctx.rr_graph.nodes()) {
+        switch (rr_graph.node_type(rr_node_idx)) {
             case CHANX:
             case CHANY:
-                if (node.num_edges() > max_seg_fanout) {
-                    max_seg_fanout = node.num_edges();
+                if (rr_graph.num_edges(rr_node_idx) > max_seg_fanout) {
+                    max_seg_fanout = rr_graph.num_edges(rr_node_idx);
                 }
                 break;
             default:
@@ -1362,14 +1360,14 @@ bool power_uninit() {
     auto& power_ctx = g_vpr_ctx.power();
     bool error = false;
 
-    for (size_t rr_node_idx = 0; rr_node_idx < device_ctx.rr_nodes.size(); rr_node_idx++) {
-        t_rr_node_power* node_power = &rr_node_power[rr_node_idx];
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        t_rr_node_power* node_power = &rr_node_power[(size_t)rr_id];
 
-        switch (rr_graph.node_type(RRNodeId(rr_node_idx))) {
+        switch (rr_graph.node_type(rr_id)) {
             case CHANX:
             case CHANY:
             case IPIN:
-                if (rr_graph.node_fan_in(RRNodeId(rr_node_idx))) {
+                if (rr_graph.node_fan_in(rr_id)) {
                     free(node_power->in_dens);
                     free(node_power->in_prob);
                 }

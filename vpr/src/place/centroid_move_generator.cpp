@@ -32,7 +32,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     calculate_centroid_loc(b_from, false, centroid, NULL);
 
     /* Find a location near the weighted centroid_loc */
-    if (!find_to_loc_centroid(cluster_from_type, from, centroid, range_limiters, to)) {
+    if (!find_to_loc_centroid(cluster_from_type, from, centroid, range_limiters, to, b_from)) {
         return e_create_move::ABORT;
     }
 

@@ -83,6 +83,7 @@ target_link_libraries(libvpr
                         libtatum
                         libargparse
                         libpugixml
+                        librrgraph
 )
 
 #link graphics library only when graphics set to on

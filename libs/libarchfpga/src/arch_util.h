@@ -5,6 +5,18 @@
 #include <unordered_set>
 #include "physical_types.h"
 
+/**
+ * @brief sets the architecture file name to be retrieved by the various parser functions
+ */
+void set_arch_file_name(const char* arch);
+
+/**
+ * @brief returns the architecture file name, requires that it was previously set
+ */
+const char* get_arch_file_name();
+
+constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
+
 class InstPort {
   public:
     static constexpr int UNSPECIFIED = -1;
@@ -50,8 +62,15 @@ void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors);
 
 t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, int* low_index);
 
-t_physical_tile_type SetupEmptyPhysicalType();
-t_logical_block_type SetupEmptyLogicalType();
+/** @brief Returns and empty physical tile type, assigned with the given name argument.
+ *         The default empty string is assigned if no name is provided
+ */
+t_physical_tile_type get_empty_physical_type(const char* name = EMPTY_BLOCK_NAME);
+
+/** @brief Returns and empty logical block type, assigned with the given name argument.
+ *         The default empty string is assigned if no name is provided
+ */
+t_logical_block_type get_empty_logical_type(const char* name = EMPTY_BLOCK_NAME);
 
 std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical_tile_type_ptr type);
 
@@ -73,8 +92,6 @@ void SyncModelsPbTypes(t_arch* arch,
 void SyncModelsPbTypes_rec(t_arch* arch,
                            t_pb_type* pb_type);
 
-void UpdateAndCheckModels(t_arch* arch);
-
 void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation,
                                        t_pb_type* parent_pb_type);
 
@@ -89,4 +106,20 @@ bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::st
 //Returns true of a pb_type (or it's children) contain the specified blif model name
 bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
 
+const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
+const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port);
+
+/**
+ * @brief Updates the physical and logical types based on the equivalence between one and the other.
+ *
+ * This function is required to check and synchronize all the information to be able to use the logical block
+ * equivalence, and link all the logical block pins to the physical tile ones, given that multiple logical blocks (i.e. pb_types)
+ * can be placed at the same physical location if this is allowed in the architecture description.
+ *
+ * See https://docs.verilogtorouting.org/en/latest/tutorials/arch/equivalent_sites/ for reference
+ */
+void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                                 std::vector<t_logical_block_type>& LogicalBlockTypes);
+
+void setup_pin_classes(t_physical_tile_type* type);
 #endif

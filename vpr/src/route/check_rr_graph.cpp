@@ -50,15 +50,15 @@ void check_rr_graph(const t_graph_type graph_type,
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    auto total_edges_to_node = std::vector<int>(device_ctx.rr_nodes.size());
-    auto switch_types_from_current_to_node = std::vector<unsigned char>(device_ctx.rr_nodes.size());
-    const int num_rr_switches = device_ctx.rr_switch_inf.size();
+    auto total_edges_to_node = std::vector<int>(rr_graph.num_nodes());
+    auto switch_types_from_current_to_node = std::vector<unsigned char>(rr_graph.num_nodes());
+    const int num_rr_switches = rr_graph.num_rr_switches();
 
     std::vector<std::pair<int, int>> edges;
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        device_ctx.rr_nodes[inode].validate();
-        RRNodeId rr_node = RRNodeId(inode);
+    for (const RRNodeId& rr_node : rr_graph.nodes()) {
+        size_t inode = (size_t)rr_node;
+        rr_graph.validate_node(rr_node);
 
         /* Ignore any uninitialized rr_graph nodes */
         if (!rr_graph.node_is_initialized(rr_node)) {
@@ -71,7 +71,7 @@ void check_rr_graph(const t_graph_type graph_type,
         }
 
         t_rr_type rr_type = rr_graph.node_type(rr_node);
-        int num_edges = device_ctx.rr_nodes[inode].num_edges();
+        int num_edges = rr_graph.num_edges(RRNodeId(inode));
 
         check_rr_node(inode, route_type, device_ctx);
 
@@ -80,9 +80,9 @@ void check_rr_graph(const t_graph_type graph_type,
         edges.reserve(num_edges);
 
         for (int iedge = 0; iedge < num_edges; iedge++) {
-            int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+            int to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
 
-            if (to_node < 0 || to_node >= (int)device_ctx.rr_nodes.size()) {
+            if (to_node < 0 || to_node >= (int)rr_graph.num_nodes()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_graph: node %d has an edge %d.\n"
                                 "\tEdge is out of range.\n",
@@ -94,7 +94,7 @@ void check_rr_graph(const t_graph_type graph_type,
             edges.emplace_back(to_node, iedge);
             total_edges_to_node[to_node]++;
 
-            auto switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
+            auto switch_type = rr_graph.edge_switch(rr_node, iedge);
 
             if (switch_type < 0 || switch_type >= num_rr_switches) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -110,7 +110,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
         //Check that multiple edges between the same from/to nodes make sense
         for (int iedge = 0; iedge < num_edges; iedge++) {
-            int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
+            int to_node = size_t(rr_graph.edge_sink_node(rr_node, iedge));
 
             auto range = std::equal_range(edges.begin(), edges.end(),
                                           to_node, node_edge_sorter());
@@ -158,7 +158,7 @@ void check_rr_graph(const t_graph_type graph_type,
             std::map<short, int> switch_counts;
             for (const auto& to_edge : vtr::Range<decltype(edges)::const_iterator>(range.first, range.second)) {
                 auto edge = to_edge.second;
-                auto edge_switch = device_ctx.rr_nodes[inode].edge_switch(edge);
+                auto edge_switch = rr_graph.edge_switch(rr_node, edge);
 
                 switch_counts[edge_switch]++;
             }
@@ -172,7 +172,7 @@ void check_rr_graph(const t_graph_type graph_type,
                  */
                 if ((to_rr_type == CHANX || to_rr_type == CHANY)
                     && (rr_type == CHANX || rr_type == CHANY)) {
-                    auto switch_type = device_ctx.rr_switch_inf[kv.first].type();
+                    auto switch_type = rr_graph.rr_switch_inf(RRSwitchId(kv.first)).type();
 
                     VPR_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
                               inode, kv.second, to_node, kv.first, SWITCH_TYPE_STRINGS[size_t(switch_type)]);
@@ -184,15 +184,15 @@ void check_rr_graph(const t_graph_type graph_type,
         check_unbuffered_edges(inode);
 
         //Check that all config/non-config edges are appropriately organized
-        for (auto edge : device_ctx.rr_nodes[inode].configurable_edges()) {
-            if (!device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
+        for (auto edge : rr_graph.configurable_edges(RRNodeId(inode))) {
+            if (!rr_graph.edge_is_configurable(RRNodeId(inode), edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is non-configurable, but in configurable edges",
                                 inode, edge);
             }
         }
 
-        for (auto edge : device_ctx.rr_nodes[inode].non_configurable_edges()) {
-            if (device_ctx.rr_nodes[inode].edge_is_configurable(edge)) {
+        for (auto edge : rr_graph.non_configurable_edges(RRNodeId(inode))) {
+            if (rr_graph.edge_is_configurable(RRNodeId(inode), edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is configurable, but in non-configurable edges",
                                 inode, edge);
             }
@@ -204,8 +204,8 @@ void check_rr_graph(const t_graph_type graph_type,
      * now I check that everything is reachable.                                */
     bool is_fringe_warning_sent = false;
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        RRNodeId rr_node = RRNodeId(inode);
+    for (const RRNodeId& rr_node : device_ctx.rr_graph.nodes()) {
+        size_t inode = (size_t)rr_node;
         t_rr_type rr_type = rr_graph.node_type(rr_node);
 
         if (rr_type != SOURCE) {
@@ -224,7 +224,7 @@ void check_rr_graph(const t_graph_type graph_type,
                     }
                 }
 
-                const auto& node = device_ctx.rr_nodes[inode];
+                const auto& node = rr_graph.rr_nodes()[inode];
 
                 bool is_fringe = ((rr_graph.node_xlow(rr_node) == 1)
                                   || (rr_graph.node_ylow(rr_node) == 1)
@@ -237,7 +237,7 @@ void check_rr_graph(const t_graph_type graph_type,
                     if (rr_graph.node_type(rr_node) == IPIN || rr_graph.node_type(rr_node) == OPIN) {
                         if (has_adjacent_channel(node, device_ctx.grid)) {
                             auto block_type = device_ctx.grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
-                            std::string pin_name = block_type_pin_index_to_name(block_type, node.pin_num());
+                            std::string pin_name = block_type_pin_index_to_name(block_type, rr_graph.node_pin_num(rr_node));
                             /* Print error messages for all the sides that a node may appear */
                             for (const e_side& node_side : SIDES) {
                                 if (!rr_graph.is_node_on_specific_side(rr_node, node_side)) {
@@ -282,7 +282,7 @@ static bool rr_node_is_global_clb_ipin(RRNodeId inode) {
     if (rr_graph.node_type(inode) != IPIN)
         return (false);
 
-    ipin = device_ctx.rr_nodes[size_t(inode)].ptc_num();
+    ipin = rr_graph.node_pin_num(inode);
 
     return type->is_ignored_pin[ipin];
 }
@@ -306,7 +306,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     xhigh = rr_graph.node_xhigh(rr_node);
     ylow = rr_graph.node_ylow(rr_node);
     yhigh = rr_graph.node_yhigh(rr_node);
-    ptc_num = device_ctx.rr_nodes[inode].ptc_num();
+    ptc_num = rr_graph.node_ptc_num(rr_node);
     capacity = rr_graph.node_capacity(rr_node);
     cost_index = rr_graph.node_cost_index(rr_node);
     type = nullptr;
@@ -483,7 +483,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     }
 
     /* Check that the number of (out) edges is reasonable. */
-    num_edges = device_ctx.rr_nodes[inode].num_edges();
+    num_edges = rr_graph.num_edges(RRNodeId(inode));
 
     if (rr_type != SINK && rr_type != IPIN) {
         if (num_edges <= 0) {
@@ -494,7 +494,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             //Don't worry about disconnect PINs which have no adjacent channels (i.e. on the device perimeter)
             bool check_for_out_edges = true;
             if (rr_type == IPIN || rr_type == OPIN) {
-                if (!has_adjacent_channel(device_ctx.rr_nodes[inode], device_ctx.grid)) {
+                if (!has_adjacent_channel(rr_graph.rr_nodes()[inode], device_ctx.grid)) {
                     check_for_out_edges = false;
                 }
             }
@@ -544,30 +544,30 @@ static void check_unbuffered_edges(int from_node) {
     if (from_rr_type != CHANX && from_rr_type != CHANY)
         return;
 
-    from_num_edges = device_ctx.rr_nodes[from_node].num_edges();
+    from_num_edges = rr_graph.num_edges(RRNodeId(from_node));
 
     for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
-        to_node = device_ctx.rr_nodes[from_node].edge_sink_node(from_edge);
+        to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), from_edge));
         to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
         if (to_rr_type != CHANX && to_rr_type != CHANY)
             continue;
 
-        from_switch_type = device_ctx.rr_nodes[from_node].edge_switch(from_edge);
+        from_switch_type = rr_graph.edge_switch(RRNodeId(from_node), from_edge);
 
-        if (device_ctx.rr_switch_inf[from_switch_type].buffered())
+        if (rr_graph.rr_switch_inf(RRSwitchId(from_switch_type)).buffered())
             continue;
 
         /* We know that we have a pass transistor from from_node to to_node. Now *
          * check that there is a corresponding edge from to_node back to         *
          * from_node.                                                            */
 
-        to_num_edges = device_ctx.rr_nodes[to_node].num_edges();
+        to_num_edges = rr_graph.num_edges(RRNodeId(to_node));
         trans_matched = false;
 
         for (to_edge = 0; to_edge < to_num_edges; to_edge++) {
-            if (device_ctx.rr_nodes[to_node].edge_sink_node(to_edge) == from_node
-                && device_ctx.rr_nodes[to_node].edge_switch(to_edge) == from_switch_type) {
+            if (size_t(rr_graph.edge_sink_node(RRNodeId(to_node), to_edge)) == size_t(from_node)
+                && rr_graph.edge_switch(RRNodeId(to_node), to_edge) == from_switch_type) {
                 trans_matched = true;
                 break;
             }
@@ -578,7 +578,7 @@ static void check_unbuffered_edges(int from_node) {
                       "in check_unbuffered_edges:\n"
                       "connection from node %d to node %d uses an unbuffered switch (switch type %d '%s')\n"
                       "but there is no corresponding unbuffered switch edge in the other direction.\n",
-                      from_node, to_node, from_switch_type, device_ctx.rr_switch_inf[from_switch_type].name);
+                      from_node, to_node, from_switch_type, rr_graph.rr_switch_inf(RRSwitchId(from_switch_type)).name);
         }
 
     } /* End for all from_node edges */
@@ -606,8 +606,8 @@ static void check_rr_edge(int from_node, int iedge, int to_node) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     //Check that to to_node's fan-in is correct, given the switch type
-    int iswitch = device_ctx.rr_nodes[from_node].edge_switch(iedge);
-    auto switch_type = device_ctx.rr_switch_inf[iswitch].type();
+    int iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
+    auto switch_type = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).type();
 
     int to_fanin = rr_graph.node_fan_in(RRNodeId(to_node));
     switch (switch_type) {

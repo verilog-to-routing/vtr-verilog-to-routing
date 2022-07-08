@@ -1761,6 +1761,54 @@ bool is_ast_multiplier(ast_node_t* node) {
 
     return is_mult;
 }
+/**
+ * -------------------------------------------------------------------------
+ * (function: check_multiplier_port_size)
+ *
+ * If output size is less than the sum of input sizes, 
+ * we need to expand output pins with pad pins
+ * 
+ * @param node pointer to the multiplication node
+ * -----------------------------------------------------------------------
+ */
+void check_multiplier_port_size(nnode_t* node) {
+    /* Can only perform the optimisation if hard multipliers exist! */
+    if (hard_multipliers == NULL)
+        return;
+
+    int mula = node->input_port_sizes[0];
+    int mulb = node->input_port_sizes[1];
+    int sizeout = node->num_output_pins;
+    int limit = mula + mulb;
+
+    /* check the output port size */
+    if (node->num_output_pins < limit) {
+        // Set the limit value as the number of output pins
+        node->num_output_pins = limit;
+        node->output_port_sizes[0] = limit;
+        // Keep record of old output pins pointer for cleaning up later
+        npin_t** old_output_pins = node->output_pins;
+        node->output_pins = (npin_t**)calloc(node->num_output_pins, sizeof(npin_t*));
+
+        // Move output pins to new array and adding pad pins in extra spots
+        for (int i = 0; i < node->num_output_pins; i++) {
+            if (i < sizeout)
+                node->output_pins[i] = old_output_pins[i];
+            else {
+                npin_t* new_pin = allocate_npin();
+                new_pin->name = append_string("", "%s~dummy_output~%d", node->name, 0);
+                nnet_t* new_net = allocate_nnet();
+
+                // hook the output pin into the node
+                add_output_pin_to_node(node, new_pin, i);
+                // hook up new pin 1 into the new net
+                add_driver_pin_to_net(new_net, new_pin);
+            }
+        }
+        // CLEAN UP
+        vtr::free(old_output_pins);
+    }
+}
 /*-------------------------------------------------------------------------
  * (function: clean_multipliers)
  *

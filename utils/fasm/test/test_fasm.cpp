@@ -193,7 +193,7 @@ static std::string get_pin_feature (size_t inode) {
     int ilow = rr_graph.node_xlow(RRNodeId(inode));
     int jlow = rr_graph.node_ylow(RRNodeId(inode));
     auto physical_tile = device_ctx.grid[ilow][jlow].type;
-    int pin_num = device_ctx.rr_nodes[inode].ptc_num();
+    int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
 
     // Get the sub tile (type, not instance) and index of its pin that matches
     // the node index.
@@ -254,12 +254,12 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
         auto &device_ctx = g_vpr_ctx.mutable_device();
         const auto& rr_graph = device_ctx.rr_graph;
-        for(size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-            for(t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
-                auto sink_inode = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
-                auto switch_id = device_ctx.rr_nodes[inode].edge_switch(iedge);
+        for (const RRNodeId& inode : rr_graph.nodes()){
+            for(t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); ++iedge) {
+                auto sink_inode = size_t(rr_graph.edge_sink_node(inode, iedge));
+                auto switch_id = rr_graph.edge_switch(inode, iedge);
                 auto value = vtr::string_fmt("%d_%d_%zu",
-                            inode, sink_inode, switch_id);
+                            (size_t)inode, sink_inode, switch_id);
 
                 // Add additional features to edges that go to CLB.I[11:0] pins
                 // to correlate them with features of CLB input mux later.
@@ -269,7 +269,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                     value = value + "\n" + pin_feature;
                 }
 
-                vpr::add_rr_edge_metadata(inode, sink_inode, switch_id,
+                vpr::add_rr_edge_metadata((size_t)inode, sink_inode, switch_id,
                         vtr::string_view("fasm_features"), vtr::string_view(value.data(), value.size()));
             }
         }

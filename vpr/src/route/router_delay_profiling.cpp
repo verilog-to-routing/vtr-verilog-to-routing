@@ -16,10 +16,10 @@ RouterDelayProfiler::RouterDelayProfiler(
     : router_(
           g_vpr_ctx.device().grid,
           *lookahead,
-          g_vpr_ctx.device().rr_nodes,
+          g_vpr_ctx.device().rr_graph.rr_nodes(),
           &g_vpr_ctx.device().rr_graph,
           g_vpr_ctx.device().rr_rc_data,
-          g_vpr_ctx.device().rr_switch_inf,
+          g_vpr_ctx.device().rr_graph.rr_switch(),
           g_vpr_ctx.mutable_routing().rr_node_route_inf) {}
 
 bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
@@ -100,7 +100,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
     auto& device_ctx = g_vpr_ctx.device();
     auto& routing_ctx = g_vpr_ctx.mutable_routing();
 
-    std::vector<float> path_delays_to(device_ctx.rr_nodes.size(), std::numeric_limits<float>::quiet_NaN());
+    std::vector<float> path_delays_to(device_ctx.rr_graph.num_nodes(), std::numeric_limits<float>::quiet_NaN());
 
     t_rt_node* rt_root = setup_routing_resources_no_net(src_rr_node);
 
@@ -121,10 +121,10 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
     ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,
         *router_lookahead,
-        device_ctx.rr_nodes,
+        device_ctx.rr_graph.rr_nodes(),
         &g_vpr_ctx.device().rr_graph,
         device_ctx.rr_rc_data,
-        device_ctx.rr_switch_inf,
+        device_ctx.rr_graph.rr_switch(),
         routing_ctx.rr_node_route_inf);
     RouterStats router_stats;
 
@@ -135,8 +135,8 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
 
     free_route_tree(rt_root);
 
-    VTR_ASSERT(shortest_paths.size() == device_ctx.rr_nodes.size());
-    for (int sink_rr_node = 0; sink_rr_node < (int)device_ctx.rr_nodes.size(); ++sink_rr_node) {
+    VTR_ASSERT(shortest_paths.size() == device_ctx.rr_graph.num_nodes());
+    for (int sink_rr_node = 0; sink_rr_node < (int)device_ctx.rr_graph.num_nodes(); ++sink_rr_node) {
         if (sink_rr_node == src_rr_node) {
             path_delays_to[sink_rr_node] = 0.;
         } else {

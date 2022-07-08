@@ -6,6 +6,7 @@
 #include "vpr_types.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_util.h"
+#include "rr_graph2.h"
 #include "echo_files.h"
 
 /* Switch box:                                                             *
@@ -31,22 +32,25 @@
 /* Allocates and loads the switch_block_conn data structure.  This structure *
  * lists which tracks connect to which at each switch block. This is for
  * bidir. */
-vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(const size_t nodes_per_chan,
+vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width* nodes_per_chan,
                                                                     const e_switch_block_type switch_block_type,
                                                                     const int Fs) {
     /* Currently Fs must be 3 since each track maps once to each other side */
     VTR_ASSERT(3 == Fs);
 
-    vtr::NdMatrix<std::vector<int>, 3> switch_block_conn({4, 4, nodes_per_chan});
+    vtr::NdMatrix<std::vector<int>, 3> switch_block_conn({4, 4, (size_t)nodes_per_chan->max});
 
     for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
         for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-            for (size_t from_track = 0; from_track < nodes_per_chan; from_track++) {
+            int from_chan_width = (from_side == TOP || from_side == BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
+            int to_chan_width = (to_side == TOP || to_side == BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
+            for (int from_track = 0; from_track < from_chan_width; from_track++) {
                 if (from_side != to_side) {
                     switch_block_conn[from_side][to_side][from_track].resize(1);
 
                     switch_block_conn[from_side][to_side][from_track][0] = get_simple_switch_block_track(from_side, to_side,
-                                                                                                         from_track, switch_block_type, nodes_per_chan);
+                                                                                                         from_track, switch_block_type,
+                                                                                                         from_chan_width, to_chan_width);
                 } else { /* from_side == to_side -> no connection. */
                     switch_block_conn[from_side][to_side][from_track].clear();
                 }
@@ -56,11 +60,14 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(const size_t
 
     if (getEchoEnabled()) {
         FILE* out = vtr::fopen("switch_block_conn.echo", "w");
+        fprintf(out, "Y-CHANNEL WIDTH: %d \n X-CHANNEL WIDTH: %d", nodes_per_chan->y_max,
+                nodes_per_chan->x_max);
         for (int l = 0; l < 4; ++l) {
             for (int k = 0; k < 4; ++k) {
                 fprintf(out, "Side %d to %d\n", l, k);
-                for (size_t j = 0; j < nodes_per_chan; ++j) {
-                    fprintf(out, "%zu: ", j);
+                int chan_width = (l == 0 || l == 2) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
+                for (int j = 0; j < chan_width; ++j) {
+                    fprintf(out, "%d: ", j);
                     for (unsigned i = 0; i < switch_block_conn[l][k][j].size(); ++i) {
                         fprintf(out, "%d ", switch_block_conn[l][k][j][i]);
                     }
@@ -79,12 +86,15 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(const size_t
 /* This routine permutes the track number to connect for topologies
  * SUBSET, UNIVERSAL, and WILTON. I added FULL (for fully flexible topology)
  * but the returned value is simply a dummy, since we don't need to permute
- * what connections to make for FULL (connect to EVERYTHING) */
+ * what connections to make for FULL (connect to EVERYTHING) 
+ * */
+
 int get_simple_switch_block_track(const enum e_side from_side,
                                   const enum e_side to_side,
                                   const int from_track,
                                   const enum e_switch_block_type switch_block_type,
-                                  const int nodes_per_chan) {
+                                  const int from_chan_width,
+                                  const int to_chan_width) {
     /* This routine returns the track number to which the from_track should     *
      * connect.  It supports three simple, Fs = 3, switch blocks.               */
 
@@ -101,9 +111,9 @@ int get_simple_switch_block_track(const enum e_side from_side,
             if (to_side == RIGHT) { /* CHANX to CHANX */
                 to_track = from_track;
             } else if (to_side == TOP) { /* from CHANX to CHANY */
-                to_track = (nodes_per_chan - (from_track % nodes_per_chan)) % nodes_per_chan;
+                to_track = (from_chan_width - (from_track % from_chan_width)) % to_chan_width;
             } else if (to_side == BOTTOM) {
-                to_track = (nodes_per_chan + from_track - 1) % nodes_per_chan;
+                to_track = (from_chan_width + from_track - 1) % to_chan_width;
             }
         }
 
@@ -111,9 +121,9 @@ int get_simple_switch_block_track(const enum e_side from_side,
             if (to_side == LEFT) { /* CHANX to CHANX */
                 to_track = from_track;
             } else if (to_side == TOP) { /* from CHANX to CHANY */
-                to_track = (nodes_per_chan + from_track - 1) % nodes_per_chan;
+                to_track = (from_chan_width + from_track - 1) % to_chan_width;
             } else if (to_side == BOTTOM) {
-                to_track = (2 * nodes_per_chan - 2 - from_track) % nodes_per_chan;
+                to_track = (2 * from_chan_width - 2 - from_track) % to_chan_width;
             }
         }
 
@@ -121,9 +131,9 @@ int get_simple_switch_block_track(const enum e_side from_side,
             if (to_side == TOP) { /* CHANY to CHANY */
                 to_track = from_track;
             } else if (to_side == LEFT) { /* from CHANY to CHANX */
-                to_track = (from_track + 1) % nodes_per_chan;
+                to_track = (from_track + 1) % to_chan_width;
             } else if (to_side == RIGHT) {
-                to_track = (2 * nodes_per_chan - 2 - from_track) % nodes_per_chan;
+                to_track = (2 * from_chan_width - 2 - from_track) % to_chan_width;
             }
         }
 
@@ -131,14 +141,14 @@ int get_simple_switch_block_track(const enum e_side from_side,
             if (to_side == BOTTOM) { /* CHANY to CHANY */
                 to_track = from_track;
             } else if (to_side == LEFT) { /* from CHANY to CHANX */
-                to_track = (nodes_per_chan - (from_track % nodes_per_chan)) % nodes_per_chan;
+                to_track = (from_chan_width - (from_track % from_chan_width)) % to_chan_width;
             } else if (to_side == RIGHT) {
-                to_track = (from_track + 1) % nodes_per_chan;
+                to_track = (from_track + 1) % to_chan_width;
             }
         }
 
         /* Force to_track to UN_SET if it falls outside the min/max channel width range */
-        if (to_track < 0 || to_track >= nodes_per_chan) {
+        if (to_track < 0 || to_track >= to_chan_width) {
             to_track = -1;
         }
     }
@@ -148,7 +158,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             if (to_side == RIGHT) { /* CHANX to CHANX */
                 to_track = from_track;
             } else if (to_side == TOP) { /* from CHANX to CHANY */
-                to_track = nodes_per_chan - 1 - from_track;
+                to_track = to_chan_width - 1 - from_track;
             } else if (to_side == BOTTOM) {
                 to_track = from_track;
             }
@@ -160,7 +170,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             } else if (to_side == TOP) { /* from CHANX to CHANY */
                 to_track = from_track;
             } else if (to_side == BOTTOM) {
-                to_track = nodes_per_chan - 1 - from_track;
+                to_track = to_chan_width - 1 - from_track;
             }
         }
 
@@ -170,7 +180,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             } else if (to_side == LEFT) { /* from CHANY to CHANX */
                 to_track = from_track;
             } else if (to_side == RIGHT) {
-                to_track = nodes_per_chan - 1 - from_track;
+                to_track = to_chan_width - 1 - from_track;
             }
         }
 
@@ -178,7 +188,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
             if (to_side == BOTTOM) { /* CHANY to CHANY */
                 to_track = from_track;
             } else if (to_side == LEFT) { /* from CHANY to CHANX */
-                to_track = nodes_per_chan - 1 - from_track;
+                to_track = to_chan_width - 1 - from_track;
             } else if (to_side == RIGHT) {
                 to_track = from_track;
             }

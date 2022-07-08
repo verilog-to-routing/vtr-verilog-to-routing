@@ -301,6 +301,7 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case PAD_NODE:     //fallthrough
         case INPUT_NODE:   //fallthrough
         case OUTPUT_NODE:  //fallthrough
+        case HARD_IP:      //fallthrough
         case BUF_NODE:     //fallthrough
         case BITWISE_NOT:  //fallthrough
         case BITWISE_AND:  //fallthrough
@@ -312,7 +313,6 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             /* some are already resolved for this phase */
             break;
         }
-        case HARD_IP:
         case ADDER_FUNC:
         case CARRY_FUNC:
         case CLOCK_NODE:
@@ -484,6 +484,8 @@ static void resolve_arithmetic_nodes(nnode_t* node, uintptr_t traverse_mark_numb
              */
             if (!hard_multipliers)
                 check_constant_multipication(node, traverse_mark_number, netlist);
+            else
+                check_multiplier_port_size(node);
 
             /* Adding to mult_list for future checking on hard blocks */
             mult_list = insert_in_vptr_list(mult_list, node);
@@ -553,12 +555,12 @@ static void resolve_mux_nodes(nnode_t* node, uintptr_t traverse_mark_number, net
             resolve_pmux_node(node, traverse_mark_number, netlist);
             break;
         }
+        case SMUX_2: //fallthrough
         case MULTI_BIT_MUX_2: {
             /* postpone to partial mapping phase */
             break;
         }
-        case MUX_2:  //fallthrough
-        case SMUX_2: //fallthrough
+        case MUX_2: //fallthrough
         case MULTI_PORT_MUX: {
             error_message(BLIF_ELABORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
             break;

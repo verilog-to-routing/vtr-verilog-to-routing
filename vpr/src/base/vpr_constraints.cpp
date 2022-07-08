@@ -2,13 +2,12 @@
 #include "partition.h"
 
 void VprConstraints::add_constrained_atom(const AtomBlockId blk_id, const PartitionId part_id) {
-    constrained_atoms.insert({blk_id, part_id});
-
     auto got = constrained_atoms.find(blk_id);
 
     /**
-     * Each atom can only be in one partition. If the atoms already has a partition id assigned to it,
-     * the id will be switched to the new part_id being passed in instead
+     * Each atom can only be in one partition. If the atom is not found in constrained_atoms, it
+     * will be added with its partition id.
+     * If the atom is already in constrained_atoms, the partition id will be updated.
      */
     if (got == constrained_atoms.end()) {
         constrained_atoms.insert({blk_id, part_id});

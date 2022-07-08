@@ -56,7 +56,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    const int num_switches = device_ctx.rr_switch_inf.size();
+    const int num_switches = rr_graph.num_rr_switches();
 
     VTR_LOG("\n");
     VTR_LOG("Checking to ensure routing is legal...\n");
@@ -74,8 +74,8 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
 
     check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type);
 
-    auto connected_to_route = std::make_unique<bool[]>(device_ctx.rr_nodes.size());
-    std::fill_n(connected_to_route.get(), device_ctx.rr_nodes.size(), false);
+    auto connected_to_route = std::make_unique<bool[]>(rr_graph.num_nodes());
+    std::fill_n(connected_to_route.get(), rr_graph.num_nodes(), false);
 
     max_pins = 0;
     for (auto net_id : cluster_ctx.clb_nlist.nets())
@@ -214,7 +214,7 @@ static void check_source(RRNodeId inode, ClusterNetId net_id) {
     int i = rr_graph.node_xlow(inode);
     int j = rr_graph.node_ylow(inode);
     /* for sinks and sources, ptc_num is class */
-    int ptc_num = device_ctx.rr_nodes[size_t(inode)].ptc_num();
+    int ptc_num = rr_graph.node_class_num(inode);
     /* First node_block for net is the source */
     ClusterBlockId blk_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
     auto type = device_ctx.grid[i][j].type;
@@ -309,8 +309,8 @@ static bool check_adjacent(int from_node, int to_node) {
 
     reached = false;
 
-    for (t_edge_size iconn = 0; iconn < device_ctx.rr_nodes[from_node].num_edges(); iconn++) {
-        if (device_ctx.rr_nodes[from_node].edge_sink_node(iconn) == to_node) {
+    for (t_edge_size iconn = 0; iconn < rr_graph.num_edges(RRNodeId(from_node)); iconn++) {
+        if (size_t(rr_graph.edge_sink_node(RRNodeId(from_node), iconn)) == size_t(to_node)) {
             reached = true;
             break;
         }
@@ -325,18 +325,20 @@ static bool check_adjacent(int from_node, int to_node) {
 
     num_adj = 0;
 
-    from_type = rr_graph.node_type(RRNodeId(from_node));
-    from_xlow = rr_graph.node_xlow(RRNodeId(from_node));
-    from_ylow = rr_graph.node_ylow(RRNodeId(from_node));
-    from_xhigh = rr_graph.node_xhigh(RRNodeId(from_node));
-    from_yhigh = rr_graph.node_yhigh(RRNodeId(from_node));
-    from_ptc = device_ctx.rr_nodes[from_node].ptc_num();
-    to_type = rr_graph.node_type(RRNodeId(to_node));
-    to_xlow = rr_graph.node_xlow(RRNodeId(to_node));
-    to_ylow = rr_graph.node_ylow(RRNodeId(to_node));
-    to_xhigh = rr_graph.node_xhigh(RRNodeId(to_node));
-    to_yhigh = rr_graph.node_yhigh(RRNodeId(to_node));
-    to_ptc = device_ctx.rr_nodes[to_node].ptc_num();
+    auto from_rr = RRNodeId(from_node);
+    auto to_rr = RRNodeId(to_node);
+    from_type = rr_graph.node_type(from_rr);
+    from_xlow = rr_graph.node_xlow(from_rr);
+    from_ylow = rr_graph.node_ylow(from_rr);
+    from_xhigh = rr_graph.node_xhigh(from_rr);
+    from_yhigh = rr_graph.node_yhigh(from_rr);
+    from_ptc = rr_graph.node_ptc_num(from_rr);
+    to_type = rr_graph.node_type(to_rr);
+    to_xlow = rr_graph.node_xlow(to_rr);
+    to_ylow = rr_graph.node_ylow(to_rr);
+    to_xhigh = rr_graph.node_xhigh(to_rr);
+    to_yhigh = rr_graph.node_yhigh(to_rr);
+    to_ptc = rr_graph.node_ptc_num(to_rr);
 
     switch (from_type) {
         case SOURCE:
@@ -393,8 +395,8 @@ static bool check_adjacent(int from_node, int to_node) {
             if (to_type == IPIN) {
                 num_adj += 1; //adjacent
             } else if (to_type == CHANX) {
-                from_xhigh = rr_graph.node_xhigh(RRNodeId(from_node));
-                to_xhigh = rr_graph.node_xhigh(RRNodeId(to_node));
+                from_xhigh = rr_graph.node_xhigh(from_rr);
+                to_xhigh = rr_graph.node_xhigh(to_rr);
                 if (from_ylow == to_ylow) {
                     /* UDSD Modification by WMF Begin */
                     /*For Fs > 3, can connect to overlapping wire segment */
@@ -426,8 +428,8 @@ static bool check_adjacent(int from_node, int to_node) {
             if (to_type == IPIN) {
                 num_adj += 1; //adjacent
             } else if (to_type == CHANY) {
-                from_yhigh = rr_graph.node_yhigh(RRNodeId(from_node));
-                to_yhigh = rr_graph.node_yhigh(RRNodeId(to_node));
+                from_yhigh = rr_graph.node_yhigh(from_rr);
+                to_yhigh = rr_graph.node_yhigh(to_rr);
                 if (from_xlow == to_xlow) {
                     /* UDSD Modification by WMF Begin */
                     if (to_yhigh == from_ylow - 1 || from_yhigh == to_ylow - 1) {
@@ -497,9 +499,9 @@ void recompute_occupancy_from_scratch() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* First set the occupancy of everything to zero. */
-
-    for (size_t inode_idx = 0; inode_idx < device_ctx.rr_nodes.size(); inode_idx++)
-        route_ctx.rr_node_route_inf[inode_idx].set_occ(0);
+    /*FIXME: the type cast should be eliminated by making rr_node_route_inf adapt RRNodeId */
+    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes())
+        route_ctx.rr_node_route_inf[(size_t)rr_id].set_occ(0);
 
     /* Now go through each net and count the tracks and pins used everywhere */
 
@@ -534,7 +536,7 @@ void recompute_occupancy_from_scratch() {
             /* Will always be 0 for pads or SINK classes. */
             for (ipin = 0; ipin < num_local_opins; ipin++) {
                 inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
-                VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_nodes.size());
+                VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_graph.num_nodes());
                 route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
             }
         }
@@ -572,7 +574,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                     size_t(blk_id), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass, inode, rr_type);
                 }
 
-                ipin = device_ctx.rr_nodes[inode].ptc_num();
+                ipin = rr_graph.node_pin_num(RRNodeId(inode));
                 if (physical_tile_type(blk_id)->pin_class[ipin] != iclass) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                     "in check_locally_used_opins: block #%lu (%s):\n"
@@ -590,9 +592,9 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (inode < 0 || inode >= (int)device_ctx.rr_nodes.size()) {
+    if (inode < 0 || inode >= (int)device_ctx.rr_graph.num_nodes()) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_nodes.size() - 1);
+                        "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_graph.num_nodes() - 1);
     }
     check_rr_node(inode, route_type, device_ctx);
 }
@@ -830,7 +832,7 @@ bool StubFinder::RecurseTree(t_rt_node* rt_root) {
     } else {
         bool is_stub = true;
         for (t_linked_rt_edge* edge = rt_root->u.child_list; edge != nullptr; edge = edge->next) {
-            bool driver_switch_configurable = device_ctx.rr_switch_inf[edge->iswitch].configurable();
+            bool driver_switch_configurable = rr_graph.rr_switch_inf(RRSwitchId(edge->iswitch)).configurable();
 
             bool child_is_stub = RecurseTree(edge->child);
             if (!child_is_stub) {

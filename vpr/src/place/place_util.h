@@ -10,6 +10,7 @@
 #include "vpr_types.h"
 #include "vtr_util.h"
 #include "vtr_vector_map.h"
+#include "globals.h"
 
 /**
  * @brief Data structure that stores different cost values in the placer.
@@ -221,4 +222,36 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
 
 ///@brief Performs error checking to see if location is legal for block type, and sets the location and grid usage of the block if it is legal.
 void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location);
+
+/// @brief check if a specified location is within the device grid
+inline bool is_loc_on_chip(int x, int y) {
+    auto& device_ctx = g_vpr_ctx.device();
+    //return false if the location is not within the chip
+    return (x >= 0 && x < int(device_ctx.grid.width()) && y >= 0 && y < int(device_ctx.grid.height()));
+}
+
+/**
+ * @brief  Checks that each macro member location is legal based on the head position and its offset
+ *   
+ * If the function is called from initial placement or simulated annealing placer,
+ * it should ensure that the macro placement is entirely legal. Each macro member 
+ * should be placed in a location with the right type that can accommodate more
+ * blocks, and floorplanning constraint should also be checked.
+ * If the function is called from analytical placement, it should only ensure 
+ * that all macro members are placed within the chip. The overused blocks will
+ * be spread by the strict_legalizer function. Floorplanning constraint is also not supported
+ * by analytical placer.
+ *  
+ * @param pl_macro
+ *        macro's member can be accessible from pl_macro parameter. 
+ * @param head_pos
+ *        head_pos is the macro's head location.
+ * @param check_all_legality
+ *        determines whether the routine should check all legality constraint 
+ *        Analytic placer does not require to check block's capacity or
+ *        floorplanning constraints. However, initial placement or SA-based approach
+ *        require to check for all legality constraints.
+ */
+bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality);
+
 #endif

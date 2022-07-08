@@ -8,7 +8,7 @@ add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
 
-#VPR_USE_EZGL is initialized in the root CMakeLists. 
+#VPR_USE_EZGL is initialized in the root CMakeLists.
 #compile libezgl only if the user asks for or has its dependencies installed.
 if(VPR_USE_EZGL STREQUAL "on")
     add_subdirectory(libezgl)
@@ -49,3 +49,12 @@ if(${VTR_ENABLE_CAPNPROTO})
       $<INSTALL_INTERFACE:include>
     )
 endif()
+
+# Some catch2 headers generate warnings, so treat them as system headers to suppress warnings
+target_include_directories(Catch2
+  SYSTEM
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libcatch2/src>
+    $<INSTALL_INTERFACE:include>
+)
+

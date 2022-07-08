@@ -19,10 +19,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#if _WIN32
+#include <kj/win32-api-version.h>
+#endif
+
 #include "parser.h"
 #include "type-id.h"
 #include <capnp/dynamic.h>
 #include <kj/debug.h>
+#include <kj/encoding.h>
 #if !_MSC_VER
 #include <unistd.h>
 #endif
@@ -31,10 +36,10 @@
 #include <fcntl.h>
 
 #if _WIN32
-#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <wincrypt.h>
-#undef VOID
+#undef CONST
+#include <kj/windows-sanity.h>
 #endif
 
 namespace capnp {
@@ -216,6 +221,27 @@ constexpr auto keyword(const char* expected)
 constexpr auto op(const char* expected)
     -> decltype(p::transformOrReject(operatorToken, ExactString(expected))) {
   return p::transformOrReject(operatorToken, ExactString(expected));
+}
+
+class LocatedExactString {
+public:
+  constexpr LocatedExactString(const char* expected): expected(expected) {}
+
+  kj::Maybe<Located<Text::Reader>> operator()(Located<Text::Reader>&& text) const {
+    if (text.value == expected) {
+      return kj::mv(text);
+    } else {
+      return nullptr;
+    }
+  }
+
+private:
+  const char* expected;
+};
+
+constexpr auto locatedKeyword(const char* expected)
+    -> decltype(p::transformOrReject(identifier, LocatedExactString(expected))) {
+  return p::transformOrReject(identifier, LocatedExactString(expected));
 }
 
 // =======================================================================================
@@ -856,6 +882,14 @@ CapnpParser::CapnpParser(Orphanage orphanageParam, ErrorReporter& errorReporterP
             }
             return decl;
           }),
+      p::transform(locatedKeyword("stream"),
+          [this](Located<Text::Reader>&& kw) -> Orphan<Declaration::ParamList> {
+            auto decl = orphanage.newOrphan<Declaration::ParamList>();
+            auto builder = decl.get();
+            kw.copyLocationTo(builder);
+            builder.setStream();
+            return decl;
+          }),
       p::transform(parsers.expression,
           [this](Orphan<Expression>&& name) -> Orphan<Declaration::ParamList> {
             auto decl = orphanage.newOrphan<Declaration::ParamList>();
@@ -1057,6 +1091,96 @@ kj::Maybe<Orphan<Declaration>> CapnpParser::parseStatement(
     errorReporter.addError(bestByte, bestByte, "Parse error.");
     return nullptr;
   }
+}
+
+// =======================================================================================
+
+static const char HEXDIGITS[] = "0123456789abcdef";
+
+static kj::StringTree stringLiteralStringTree(kj::StringPtr chars) {
+  return kj::strTree('"', kj::encodeCEscape(chars), '"');
+}
+
+static kj::StringTree binaryLiteralStringTree(Data::Reader data) {
+  kj::Vector<char> escaped(data.size() * 3);
+
+  for (byte b: data) {
+    escaped.add(HEXDIGITS[b % 16]);
+    escaped.add(HEXDIGITS[b / 16]);
+    escaped.add(' ');
+  }
+
+  escaped.removeLast();
+  return kj::strTree("0x\"", escaped, '"');
+}
+
+static kj::StringTree expressionStringTree(Expression::Reader exp);
+
+static kj::StringTree tupleLiteral(List<Expression::Param>::Reader params) {
+  auto parts = kj::heapArrayBuilder<kj::StringTree>(params.size());
+  for (auto param: params) {
+    auto part = expressionStringTree(param.getValue());
+    if (param.isNamed()) {
+      part = kj::strTree(param.getNamed().getValue(), " = ", kj::mv(part));
+    }
+    parts.add(kj::mv(part));
+  }
+  return kj::strTree("( ", kj::StringTree(parts.finish(), ", "), " )");
+}
+
+static kj::StringTree expressionStringTree(Expression::Reader exp) {
+  switch (exp.which()) {
+    case Expression::UNKNOWN:
+      return kj::strTree("<parse error>");
+    case Expression::POSITIVE_INT:
+      return kj::strTree(exp.getPositiveInt());
+    case Expression::NEGATIVE_INT:
+      return kj::strTree('-', exp.getNegativeInt());
+    case Expression::FLOAT:
+      return kj::strTree(exp.getFloat());
+    case Expression::STRING:
+      return stringLiteralStringTree(exp.getString());
+    case Expression::BINARY:
+      return binaryLiteralStringTree(exp.getBinary());
+    case Expression::RELATIVE_NAME:
+      return kj::strTree(exp.getRelativeName().getValue());
+    case Expression::ABSOLUTE_NAME:
+      return kj::strTree('.', exp.getAbsoluteName().getValue());
+    case Expression::IMPORT:
+      return kj::strTree("import ", stringLiteralStringTree(exp.getImport().getValue()));
+    case Expression::EMBED:
+      return kj::strTree("embed ", stringLiteralStringTree(exp.getEmbed().getValue()));
+
+    case Expression::LIST: {
+      auto list = exp.getList();
+      auto parts = kj::heapArrayBuilder<kj::StringTree>(list.size());
+      for (auto element: list) {
+        parts.add(expressionStringTree(element));
+      }
+      return kj::strTree("[ ", kj::StringTree(parts.finish(), ", "), " ]");
+    }
+
+    case Expression::TUPLE:
+      return tupleLiteral(exp.getTuple());
+
+    case Expression::APPLICATION: {
+      auto app = exp.getApplication();
+      return kj::strTree(expressionStringTree(app.getFunction()),
+                         '(', tupleLiteral(app.getParams()), ')');
+    }
+
+    case Expression::MEMBER: {
+      auto member = exp.getMember();
+      return kj::strTree(expressionStringTree(member.getParent()), '.',
+                         member.getName().getValue());
+    }
+  }
+
+  KJ_UNREACHABLE;
+}
+
+kj::String expressionString(Expression::Reader name) {
+  return expressionStringTree(name).flatten();
 }
 
 }  // namespace compiler

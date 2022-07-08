@@ -33,6 +33,7 @@
 #    include "vpr_utils.h"
 #    include "draw_global.h"
 #    include "draw.h"
+#    include "draw_triangle.h"
 #    include "draw_color.h"
 
 /************************* Subroutines local to this file. *******************************/
@@ -377,22 +378,19 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             // If this pb is at the lowest displayed level, or has no more children, then
             // label it in the center with its type and name
 
-            int type_len = strlen(pb_type->name);
-            int name_len = strlen(pb->name);
-            int tot_len = type_len + name_len;
-            char* blk_tag = (char*)vtr::malloc((tot_len + 8) * sizeof(char));
+            std::string pb_type_name(pb_type->name);
+            std::string pb_name(pb->name);
 
-            sprintf(blk_tag, "%s (%s)", pb_type->name, pb->name);
+            std::string blk_tag = pb_type_name + pb_name;
 
             if (draw_state->draw_block_text) {
                 g->draw_text(
                     abs_bbox.center(),
-                    blk_tag,
+                    blk_tag.c_str(),
                     abs_bbox.width(),
                     abs_bbox.height());
             }
 
-            free(blk_tag);
         } else {
             // else (ie. has chilren, and isn't at the lowest displayed level)
             // just label its type, and put it up at the top so we can see it
