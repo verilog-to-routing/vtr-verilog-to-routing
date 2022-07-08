@@ -1303,6 +1303,7 @@ bool power_init(const char* power_out_filepath,
     power_ctx.arch = arch->power;
     power_ctx.commonly_used = new t_power_commonly_used;
     power_ctx.tech = (t_power_tech*)vtr::malloc(sizeof(t_power_tech));
+//    power_ctx.tech = new t_power_tech;
     power_ctx.output = new t_power_output;
 
     /* Set up Logs */
@@ -1354,8 +1355,6 @@ bool power_init(const char* power_out_filepath,
  */
 bool power_uninit() {
     int mux_size;
-    int log_idx;
-    int msg_idx;
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& power_ctx = g_vpr_ctx.power();
@@ -1387,7 +1386,7 @@ bool power_uninit() {
         for (mux_size = 1; mux_size <= mux_info->mux_arch_max_size; mux_size++) {
             dealloc_mux_graph(mux_info->mux_arch[mux_size].mux_graph_head);
         }
-//        free(mux_info->mux_arch);
+
         delete mux_info;
     }
     /* Free components */
@@ -1402,9 +1401,7 @@ bool power_uninit() {
     if (power_ctx.output->out) {
         fclose(power_ctx.output->out);
     }
-//    for (log_idx = 0; log_idx < power_ctx.output->num_logs; log_idx++) {
-//        free(power_ctx.output->logs[log_idx].name);
-//    }
+
     delete[](power_ctx.output->logs);
     delete(power_ctx.output);
 
