@@ -337,6 +337,13 @@ t_src_opin_delays compute_router_src_opin_lookahead() {
                 for (RRNodeId node_id : rr_nodes_at_loc) {
                     int ptc = rr_graph.node_ptc_num(node_id);
 
+                    if(!is_node_on_tile(rr_type,
+                                        rr_graph.node_xlow(node_id),
+                                        rr_graph.node_ylow(node_id),
+                                        ptc)) {
+                        continue;
+                    }
+
                     if (ptc >= int(src_opin_delays[itile].size())) {
                         src_opin_delays[itile].resize(ptc + 1); //Inefficient but functional...
                     }

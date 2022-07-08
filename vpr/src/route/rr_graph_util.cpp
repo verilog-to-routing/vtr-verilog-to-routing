@@ -83,6 +83,26 @@ int seg_index_of_sblock(int from_node, int to_node) {
     }
 }
 
+bool is_node_on_tile(t_rr_type node_type,
+                     int root_x,
+                     int root_y,
+                     int node_ptc) {
+    if(node_type == CHANX || node_type == CHANY) {
+        return true;
+    } else {
+        VTR_ASSERT(node_type == IPIN || node_type == SINK || node_type == OPIN || node_type == SOURCE);
+        auto& device_ctx = g_vpr_ctx.device();
+        t_physical_tile_type_ptr tile_type = device_ctx.grid[root_x][root_y].type;
+        if (node_type == IPIN || node_type == OPIN) {
+            return is_pin_on_tile(tile_type, node_ptc);
+        } else {
+            VTR_ASSERT(node_type == SINK || node_type == SOURCE);
+            return is_class_on_tile(tile_type, node_ptc);
+        }
+    }
+
+}
+
 vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list() {
     auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
