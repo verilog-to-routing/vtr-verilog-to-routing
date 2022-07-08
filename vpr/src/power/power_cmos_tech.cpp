@@ -159,8 +159,9 @@ static void power_tech_xml_load_component(pugi::xml_node parent, const pugiutil:
 static void power_tech_xml_load_components(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
     auto& power_ctx = g_vpr_ctx.power();
 
-    power_ctx.commonly_used->component_callibration = (PowerSpicedComponent**)vtr::calloc(POWER_CALLIB_COMPONENT_MAX,
-                                                                                          sizeof(PowerSpicedComponent*));
+    power_ctx.commonly_used->component_callibration = new PowerSpicedComponent*[POWER_CALLIB_COMPONENT_MAX];
+    for (int i  =0; i < POWER_CALLIB_COMPONENT_MAX; i++)
+    	power_ctx.commonly_used->component_callibration[i] = nullptr;
 
     power_tech_xml_load_component(parent, loc_data,
                                   &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER],

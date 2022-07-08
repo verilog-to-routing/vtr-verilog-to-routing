@@ -209,7 +209,8 @@ struct t_power_output {
 
 struct t_log {
     char* name;
-    char** messages;
+//    char ** messages;
+    std::vector<std::string> messages;
     int num_messages;
 };
 
