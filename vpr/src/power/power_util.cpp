@@ -313,7 +313,7 @@ void output_log(t_log* log_ptr, FILE* fp) {
     int msg_idx;
 
     for (msg_idx = 0; msg_idx < log_ptr->num_messages; msg_idx++) {
-        fprintf(fp, "%s\n", log_ptr->messages[msg_idx]);
+        fprintf(fp, "%s\n", log_ptr->messages[msg_idx].c_str());
     }
 }
 
