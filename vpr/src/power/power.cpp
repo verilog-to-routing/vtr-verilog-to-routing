@@ -173,7 +173,7 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
                         power_ctx.arch->LUT_transistor_size, SRAM_values,
                         input_probabilities, input_densities, power_ctx.solution_inf.T_crit);
         power_add_usage(power_usage, &sub_power_usage);
-        free(SRAM_values);
+        delete[](SRAM_values);
         delete[](input_probabilities);
         delete[](input_densities);
     } else if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_LATCH) == 0) {
@@ -1310,8 +1310,8 @@ bool power_init(const char* power_out_filepath,
     power_ctx.output->logs = new t_log[power_ctx.output->num_logs];
     for (int i = 0 ; i < power_ctx.output->num_logs; i++)
     	power_ctx.output->logs[i] = t_log();
-    power_ctx.output->logs[POWER_LOG_ERROR].name = vtr::strdup("Errors");
-    power_ctx.output->logs[POWER_LOG_WARNING].name = vtr::strdup("Warnings");
+    power_ctx.output->logs[POWER_LOG_ERROR].name = "Errors";
+    power_ctx.output->logs[POWER_LOG_WARNING].name = "Warnings";
 
     /* Initialize output file */
     if (!error) {
@@ -1387,7 +1387,7 @@ bool power_uninit() {
         for (mux_size = 1; mux_size <= mux_info->mux_arch_max_size; mux_size++) {
             dealloc_mux_graph(mux_info->mux_arch[mux_size].mux_graph_head);
         }
-        free(mux_info->mux_arch);
+//        free(mux_info->mux_arch);
         delete mux_info;
     }
     /* Free components */
@@ -1402,14 +1402,9 @@ bool power_uninit() {
     if (power_ctx.output->out) {
         fclose(power_ctx.output->out);
     }
-    for (log_idx = 0; log_idx < power_ctx.output->num_logs; log_idx++) {
-//        for (msg_idx = 0; msg_idx < power_ctx.output->logs[log_idx].num_messages;
-//             msg_idx++) {
-//            free(power_ctx.output->logs[log_idx].messages[msg_idx]);
-//        }
-//        free(power_ctx.output->logs[log_idx].messages);
-        free(power_ctx.output->logs[log_idx].name);
-    }
+//    for (log_idx = 0; log_idx < power_ctx.output->num_logs; log_idx++) {
+//        free(power_ctx.output->logs[log_idx].name);
+//    }
     delete[](power_ctx.output->logs);
     delete(power_ctx.output);
 
