@@ -670,6 +670,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNode
 
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
+        // For the time being, we decide to not let the lookahead explore the node inside the clusters
         if(!is_node_on_tile(rr_graph.node_type(child_node),
                             rr_graph.node_xlow(child_node),
                             rr_graph.node_ylow(child_node),
