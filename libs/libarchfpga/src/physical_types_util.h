@@ -363,9 +363,6 @@ int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, 
 
 bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num);
 
-/** **/
-std::vector<int> get_tile_internal_pins_num(t_physical_tile_type_ptr physical_type);
-
 std::vector<int> get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
                                         const t_sub_tile* sub_tile,
                                         t_logical_block_type_ptr logical_block,

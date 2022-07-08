@@ -51,13 +51,17 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster);
 
-static void set_logical_block_all_pins_indices(t_logical_block_type* logical_block);
+/* Assign a unique id to each IPIN/OPIN pin at logical block level (i.e. fill pb_pin_num_map in logical_block)*/
+static void set_pins_logical_num(t_logical_block_type* logical_block);
 
-static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(const t_pb_graph_node* pb_graph_node);
+/* Return all pb_graph_nodes, in all modes and sub-blocks, contained in the given logical_block */
+static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(t_logical_block_type_ptr logical_block);
 
+/* Add SRC/SINK pins for all the ports of the blocks in the logical block */
 static void add_logical_classes(t_logical_block_type* logical_block);
 
-void static add_port_logical_classes(t_logical_block_type* logical_block,
+/* Add SRC/SINK pins for the given ports */
+static void add_port_logical_classes(t_logical_block_type* logical_block,
                                            t_pb_graph_pin** pb_graph_pins,
                                            int num_ports,
                                            int* num_pins);
@@ -143,7 +147,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
                                     type.pb_type, 0, load_power_structures, pin_count_in_cluster);
             type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
-            set_logical_block_all_pins_indices(&type);
+            set_pins_logical_num(&type);
             add_logical_classes(&type);
         } else {
             type.pb_graph_head = nullptr;
@@ -354,7 +358,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 }
 
 
-static void set_logical_block_all_pins_indices(t_logical_block_type* logical_block) {
+static void set_pins_logical_num(t_logical_block_type* logical_block) {
 
     /* Index of the pins located on the root-level block starts from 0 -
      * For other pins it starts from the roo_level pb_type.num_pins */
@@ -371,19 +375,25 @@ static void set_logical_block_all_pins_indices(t_logical_block_type* logical_blo
         pb_graph_node_to_set_pin_index_q.pop();
         auto curr_pb_type = curr_pb_graph_node->pb_type;
 
+        /* There are three types of ports which can be defined for each block : Input - Output - Clock
+         * In this for loop, we first iterate over the ports of the same type
+        */
         for (int port_type = 0; port_type < 3; port_type++) {
             int num_ports;
             int* num_pins;
             t_pb_graph_pin** pins;
             if (port_type == 0) {
+                /* Port type = Input */
                 num_ports = curr_pb_graph_node->num_input_ports;
                 num_pins = curr_pb_graph_node->num_input_pins;
                 pins = curr_pb_graph_node->input_pins;
             } else if (port_type == 1) {
+                /* Port type = Output */
                 num_ports = curr_pb_graph_node->num_output_ports;
                 num_pins = curr_pb_graph_node->num_output_pins;
                 pins = curr_pb_graph_node->output_pins;
             } else {
+                /* Port type = Clock */
                 num_ports = curr_pb_graph_node->num_clock_ports;
                 num_pins = curr_pb_graph_node->num_clock_pins;
                 pins = curr_pb_graph_node->clock_pins;
@@ -417,34 +427,53 @@ static void set_logical_block_all_pins_indices(t_logical_block_type* logical_blo
 
 }
 
-static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(const t_pb_graph_node* pb_graph_node) {
+static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(t_logical_block_type_ptr logical_block) {
     std::vector<const t_pb_graph_node*> pb_graph_nodes;
-    pb_graph_nodes.push_back(pb_graph_node);
-    if(pb_graph_node->is_primitive()) {
-        return pb_graph_nodes;
-    }
 
-    auto pb_type = pb_graph_node->pb_type;
-    for(int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++) {
-        for(int pb_type_idx = 0; pb_type_idx < (pb_type->modes[mode_idx]).num_pb_type_children; pb_type_idx++) {
-            int num_pb = pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb;
-            for(int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
-                const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
-                auto sub_pb_graph_nodes = get_all_logical_block_pb_graph_nodes(child_pb_graph_node);
-                pb_graph_nodes.insert(std::end(pb_graph_nodes), std::begin(sub_pb_graph_nodes), std::end(sub_pb_graph_nodes));
 
+    std::list<const t_pb_graph_node*> pb_graph_node_q;
+    pb_graph_node_q.push_back(logical_block->pb_graph_head);
+
+    while(!pb_graph_node_q.empty()) {
+        auto pb_graph_node = pb_graph_node_q.front();
+        pb_graph_node_q.pop_front();
+        pb_graph_nodes.push_back(pb_graph_node);
+
+        auto pb_type = pb_graph_node->pb_type;
+        /* Iterating over different modes of the block */
+        for(int mode_idx = 0; mode_idx < pb_graph_node->pb_type->num_modes; mode_idx++) {
+            /* Iterating over different block types in the given mode */
+            for(int pb_type_idx = 0; pb_type_idx < (pb_type->modes[mode_idx]).num_pb_type_children; pb_type_idx++) {
+                int num_pb = pb_type->modes[mode_idx].pb_type_children[pb_type_idx].num_pb;
+                /* Iterating over blocks of the given type and mode */
+                for(int pb_idx = 0; pb_idx < num_pb; pb_idx++) {
+                    const t_pb_graph_node* child_pb_graph_node = &(pb_graph_node->child_pb_graph_nodes[mode_idx][pb_type_idx][pb_idx]);
+                    /* Add the child pb_pb_graph_node to the queue, so that this block and its children get added pb_graph_nodes later */
+                    pb_graph_node_q.push_back(child_pb_graph_node);
+
+
+                }
             }
         }
+
     }
+
+
     return pb_graph_nodes;
 }
 
 static void add_logical_classes(t_logical_block_type* logical_block) {
-
+    /* Since logical blocks are allocated using "alloc" command, data structures are not initialized properly.
+     * This is why we need to assign a new object to it. This won't be needed when logical blocks are allocated
+     * using "new" operator.
+    */
     logical_block->pb_pin_class_map = std::unordered_map<const t_pb_graph_pin*, int>();
 
-    auto pb_graph_nodes = get_all_logical_block_pb_graph_nodes(logical_block->pb_graph_head);
+    auto pb_graph_nodes = get_all_logical_block_pb_graph_nodes(logical_block);
     for(auto pb_graph_node : pb_graph_nodes) {
+        /* There are three types of ports which can be defined for each block : Input - Output - Clock
+         * In this for loop, we first iterate over the ports of the same type
+        */
         for(int port_type = 0; port_type < 3; port_type++) {
             int num_ports;
             int* num_pins;

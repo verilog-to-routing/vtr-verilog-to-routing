@@ -41,18 +41,6 @@ void create_rr_graph(const t_graph_type graph_type,
                      int* Warnings,
                      bool is_flat = false);
 
-//void add_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
-//                                const t_graph_type graph_type,
-//                                const std::vector<t_physical_tile_type>& block_types,
-//                                const DeviceGrid& grid,
-//                                const int num_arch_switches,
-//                                const int wire_to_arch_ipin_switch,
-//                                const int delayless_switch,
-//                                const float R_minW_nmos,
-//                                const float R_minW_pmos,
-//                                int* wire_to_rr_ipin_switch,
-//                                int index);
-
 
 
 void free_rr_graph();

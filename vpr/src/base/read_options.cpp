@@ -2297,7 +2297,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.flat_routing, "--flat_routing")
-        .help("Cause the VPR Router to route the nets from/to primitives")
+        .help("Enable VPR's flat routing (routing the nets from the source primitive to the destination primitive)")
         .default_value("false")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
