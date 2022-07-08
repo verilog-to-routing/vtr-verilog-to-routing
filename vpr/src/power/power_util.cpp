@@ -149,28 +149,30 @@ static void log_msg(t_log* log_ptr, const char* msg) {
 
     /* Check if this message is already in the log */
     for (msg_idx = 0; msg_idx < log_ptr->num_messages; msg_idx++) {
-        if (strcmp(log_ptr->messages[msg_idx], msg) == 0) {
+        if (strcmp((log_ptr->messages[msg_idx]).c_str(), msg) == 0) {
             return;
         }
     }
 
     if (log_ptr->num_messages <= MAX_LOGS) {
         log_ptr->num_messages++;
-        log_ptr->messages = (char**)vtr::realloc(log_ptr->messages,
-                                                 log_ptr->num_messages * sizeof(char*));
+//        log_ptr->messages = (char**)vtr::realloc(log_ptr->messages, log_ptr->num_messages * sizeof(char*));
+        log_ptr->messages.resize(log_ptr->num_messages);
     } else {
         /* Can't add any more messages */
         return;
     }
 
     if (log_ptr->num_messages == (MAX_LOGS + 1)) {
-        const char* full_msg = "\n***LOG IS FULL***\n";
-        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(strlen(full_msg) + 1, sizeof(char));
-        strncpy(log_ptr->messages[log_ptr->num_messages - 1], full_msg, strlen(full_msg) + 1);
+//        const char* full_msg = "\n***LOG IS FULL***\n";
+//        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(strlen(full_msg) + 1, sizeof(char));
+//        strncpy(log_ptr->messages[log_ptr->num_messages - 1], full_msg, strlen(full_msg) + 1);
+        log_ptr->messages[log_ptr->num_messages - 1] = "\n***LOG IS FULL***\n";
     } else {
-        size_t len = strlen(msg) + 1;
-        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(len, sizeof(char));
-        strncpy(log_ptr->messages[log_ptr->num_messages - 1], msg, len);
+//        size_t len = strlen(msg) + 1;
+//        log_ptr->messages[log_ptr->num_messages - 1] = (char*)vtr::calloc(len, sizeof(char));
+//        strncpy(log_ptr->messages[log_ptr->num_messages - 1], msg, len);
+    	log_ptr->messages[log_ptr->num_messages - 1] = msg;
     }
 }
 

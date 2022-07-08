@@ -1394,7 +1394,7 @@ bool power_uninit() {
     for (int i = 0; i < POWER_CALLIB_COMPONENT_MAX; ++i) {
         delete power_ctx.commonly_used->component_callibration[i];
     }
-    free(power_ctx.commonly_used->component_callibration);
+    delete[] power_ctx.commonly_used->component_callibration;
 
     delete power_ctx.commonly_used;
 
@@ -1403,11 +1403,11 @@ bool power_uninit() {
         fclose(power_ctx.output->out);
     }
     for (log_idx = 0; log_idx < power_ctx.output->num_logs; log_idx++) {
-        for (msg_idx = 0; msg_idx < power_ctx.output->logs[log_idx].num_messages;
-             msg_idx++) {
-            free(power_ctx.output->logs[log_idx].messages[msg_idx]);
-        }
-        free(power_ctx.output->logs[log_idx].messages);
+//        for (msg_idx = 0; msg_idx < power_ctx.output->logs[log_idx].num_messages;
+//             msg_idx++) {
+//            free(power_ctx.output->logs[log_idx].messages[msg_idx]);
+//        }
+//        free(power_ctx.output->logs[log_idx].messages);
         free(power_ctx.output->logs[log_idx].name);
     }
     delete[](power_ctx.output->logs);
