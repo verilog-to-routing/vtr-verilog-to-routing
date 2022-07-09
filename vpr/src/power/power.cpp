@@ -1219,10 +1219,19 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 max_IPIN_fanin = std::max(max_IPIN_fanin, node_fan_in);
                 max_fanin = std::max(max_fanin, node_fan_in);
 
-                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
-                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
+//                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
+//                                                          sizeof(float));
+//                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
+//                                                          sizeof(float));
+
+                node_power->in_dens = new float[node_fan_in];
+                node_power->in_prob = new float[node_fan_in];
+                for (int i = 0 ; i < node_fan_in ; i++){
+                	node_power->in_dens[i] = 0;
+                	node_power->in_prob[i] = 0;
+                }
+
+
                 break;
             case CHANX:
             case CHANY:
@@ -1238,10 +1247,16 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 max_seg_to_seg_fanout = std::max(max_seg_to_seg_fanout, fanout_to_seg);
                 max_fanin = std::max(max_fanin, node_fan_in);
 
-                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
-                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
-                                                          sizeof(float));
+//                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
+//                                                          sizeof(float));
+//                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
+//                                                          sizeof(float));
+                node_power->in_dens = new float[node_fan_in];
+                node_power->in_prob = new float[node_fan_in];
+                for (int i = 0 ; i < node_fan_in ; i++){
+                	node_power->in_dens[i] = 0;
+                	node_power->in_prob[i] = 0;
+                }
                 break;
             default:
                 /* Do nothing */
@@ -1367,10 +1382,12 @@ bool power_uninit() {
             case CHANX:
             case CHANY:
             case IPIN:
-                if (rr_graph.node_fan_in(rr_id)) {
-                    free(node_power->in_dens);
-                    free(node_power->in_prob);
-                }
+//                if (rr_graph.node_fan_in(rr_id)) {
+//                    free(node_power->in_dens);
+//                    free(node_power->in_prob);
+                    delete[] node_power->in_dens;
+                    delete[] node_power->in_prob;
+//                }
                 break;
             default:
                 /* Do nothing */
