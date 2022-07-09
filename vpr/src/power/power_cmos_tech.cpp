@@ -279,8 +279,13 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
             num_voltages = count_children(child, "voltages", loc_data);
 
             nmos_inf->mux_voltage_inf[i].num_voltage_pairs = num_voltages;
-            nmos_inf->mux_voltage_inf[i].mux_voltage_pairs = (t_power_mux_volt_pair*)vtr::calloc(num_voltages,
-                                                                                                 sizeof(t_power_mux_volt_pair));
+//            nmos_inf->mux_voltage_inf[i].mux_voltage_pairs = (t_power_mux_volt_pair*)vtr::calloc(num_voltages,
+//                                                                                                 sizeof(t_power_mux_volt_pair));
+
+            nmos_inf->mux_voltage_inf[i].mux_voltage_pairs = new t_power_mux_volt_pair[num_voltages];
+            for (int k = 0 ; k < num_voltages; k ++)
+            	nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[k] = t_power_mux_volt_pair();
+
 
             auto gc = get_first_child(child, "voltages", loc_data);
             j = 0;
@@ -328,7 +333,9 @@ static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const p
     }
 
     /* Get long transistor information (W=1,L=2) */
-    trans_inf->long_trans_inf = (t_transistor_size_inf*)vtr::malloc(sizeof(t_transistor_size_inf));
+//    trans_inf->long_trans_inf = (t_transistor_size_inf*)vtr::malloc(sizeof(t_transistor_size_inf));
+    trans_inf->long_trans_inf = new t_transistor_size_inf;
+
 
     auto child = get_single_child(parent, "long_size", loc_data);
     VTR_ASSERT(get_attribute(child, "L", loc_data).as_int(0) == 2);
@@ -344,7 +351,10 @@ static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const p
 
     /* Process all transistor sizes */
     trans_inf->num_size_entries = count_children(parent, "size", loc_data);
-    trans_inf->size_inf = (t_transistor_size_inf*)vtr::calloc(trans_inf->num_size_entries, sizeof(t_transistor_size_inf));
+//    trans_inf->size_inf = (t_transistor_size_inf*)vtr::calloc(trans_inf->num_size_entries, sizeof(t_transistor_size_inf));
+    trans_inf->size_inf = new t_transistor_size_inf[trans_inf->num_size_entries];
+    for (i = 0 ; i < trans_inf->num_size_entries; i ++)
+    	trans_inf->size_inf[i] = t_transistor_size_inf();
 
     child = get_first_child(parent, "size", loc_data);
     i = 0;
