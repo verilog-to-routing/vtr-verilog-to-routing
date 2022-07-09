@@ -1420,7 +1420,7 @@ std::vector<int> get_cluster_internal_ipin_opin(ClusterBlockId cluster_blk_id) {
     t_logical_block_type_ptr logical_block;
 
     std::tie(physical_tile, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk_id);
-    internal_pins.reserve(logical_block->pb_pin_num_map.size());
+    internal_pins.reserve(logical_block->pin_logical_num_to_pb_pin_mapping.size());
 
 
 

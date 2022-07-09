@@ -303,19 +303,6 @@ bool try_route(const Netlist<>& net_list,
                     num_directs,
                     &warning_count,
                     is_flat);
-//    if(router_opts.flat_routing) {
-//        add_intra_cluster_rr_graph(device_ctx.rr_graph_builder,
-//                                   graph_type,
-//                                   device_ctx.physical_tile_types,
-//                                   device_ctx.grid,
-//                                   device_ctx.num_arch_switches,
-//                                   device_ctx.num_arch_switches,
-//                                   det_routing_arch->delayless_switch,
-//                                   det_routing_arch->R_minW_nmos,
-//                                   det_routing_arch->R_minW_pmos,
-//                                   &det_routing_arch->wire_to_rr_ipin_switch,
-//                                   device_ctx.rr_graph.num_nodes());
-//    }
 
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(width_fac);

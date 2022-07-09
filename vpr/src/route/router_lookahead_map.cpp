@@ -245,6 +245,17 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     const auto& rr_graph = device_ctx.rr_graph;
 
     t_rr_type rr_type = rr_graph.node_type(current_node);
+    //  TODO: These two assertions is only added for debugging flat-routing - it needs to be removed
+    VTR_ASSERT(is_node_on_tile(rr_graph.node_type(current_node),
+                                rr_graph.node_xlow(current_node),
+                                rr_graph.node_ylow(current_node),
+                                rr_graph.node_ptc_num(current_node)));
+
+    VTR_ASSERT(is_node_on_tile(rr_graph.node_type(target_node),
+                                rr_graph.node_xlow(target_node),
+                                rr_graph.node_ylow(target_node),
+                                rr_graph.node_ptc_num(target_node)));
+
 
     if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         float delay_cost, cong_cost;
@@ -679,6 +690,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
         if(is_flat) {
+            // For the time being, we decide to not let the lookahead explore the node inside the clusters
             if(!is_node_on_tile(rr_graph.node_type(child_node),
                                  rr_graph.node_xlow(child_node),
                                  rr_graph.node_ylow(child_node),

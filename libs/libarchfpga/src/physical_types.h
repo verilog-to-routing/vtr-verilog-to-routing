@@ -450,8 +450,8 @@ struct t_class {
 struct t_class_range {
     int low = 0;
     int high = 0;
-
-    int total() const {
+    // Returns the total number of classes
+    int total_num() const {
         return high - low + 1;
     }
 };
@@ -822,11 +822,11 @@ struct t_physical_tile_port {
  * index: Keep track of type in array for easy access
  * physical_tile_index: index of the corresponding physical tile type
  *
- * pb_pin_num_map: Contains all the pins, including pins on the root-level block and internal pins, in
+ * pin_logical_num_to_pb_pin_mapping: Contains all the pins, including pins on the root-level block and internal pins, in
  * the logical block. The key of this map is the logical number of the pin, and the value is a pointer to the
  * corresponding pb_graph_pin
  *
- * pb_pin_class_map: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
+ * pb_pin_to_class_logical_num_mapping: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
  * index to logical_class_inf.
  *
  * logical_class_inf: Contains all the classes inside the logical block. The index of each class is the logical number associate with the class.
@@ -853,8 +853,8 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
-    std::unordered_map<int, const t_pb_graph_pin*> pb_pin_num_map; /* pb_pin_num_map[pin logical number] -> pb_graph_pin ptr} */
-    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_class_map; /* pb_pin_class_map[pb_graph_pin ptr] -> class logical number */
+    std::unordered_map<int, const t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping; /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_to_class_logical_num_mapping; /* pb_pin_to_class_logical_num_mapping[pb_graph_pin ptr] -> class logical number */
     std::vector<t_class> logical_class_inf; /* logical_class_inf[class_logical_number] -> class */
 
     // Is this t_logical_block_type empty?
