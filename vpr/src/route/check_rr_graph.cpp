@@ -436,7 +436,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                 auto pb_pin = get_pb_pin_from_pin_physical_num(type, ptc_num);
                 if(pb_pin->is_primitive_pin()) {
                     auto logical_block = get_logical_block_from_pin_physical_num(type, ptc_num);
-                    if (logical_block->logical_class_inf[logical_block->pb_pin_class_map.at(pb_pin)].type != pin_type) {
+                    if (logical_block->logical_class_inf[logical_block->pb_pin_to_class_logical_num_mapping.at(pb_pin)].type != pin_type) {
                         VPR_ERROR(VPR_ERROR_ROUTE,
                                   "in check_rr_node: inode %d (type %d) type is not equal to DRIVER.\n", inode, rr_type, ptc_num);
                     }

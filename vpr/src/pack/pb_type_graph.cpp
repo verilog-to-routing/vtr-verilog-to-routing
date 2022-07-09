@@ -51,7 +51,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster);
 
-/* Assign a unique id to each IPIN/OPIN pin at logical block level (i.e. fill pb_pin_num_map in logical_block)*/
+/* Assign a unique id to each IPIN/OPIN pin at logical block level (i.e. fill pin_logical_num_to_pb_pin_mapping in logical_block)*/
 static void set_pins_logical_num(t_logical_block_type* logical_block);
 
 /* Return all pb_graph_nodes, in all modes and sub-blocks, contained in the given logical_block */
@@ -365,7 +365,7 @@ static void set_pins_logical_num(t_logical_block_type* logical_block) {
     auto root_pb_graph_node = logical_block->pb_graph_head;
     std::queue<t_pb_graph_node*> pb_graph_node_to_set_pin_index_q;
 
-    std::unordered_map<int, const t_pb_graph_pin*>& pb_pin_idx_map = logical_block->pb_pin_num_map;
+    std::unordered_map<int, const t_pb_graph_pin*>& pb_pin_idx_map = logical_block->pin_logical_num_to_pb_pin_mapping;
     int offset = 0;
 
     pb_graph_node_to_set_pin_index_q.push(root_pb_graph_node);
@@ -467,7 +467,7 @@ static void add_logical_classes(t_logical_block_type* logical_block) {
      * This is why we need to assign a new object to it. This won't be needed when logical blocks are allocated
      * using "new" operator.
     */
-    logical_block->pb_pin_class_map = std::unordered_map<const t_pb_graph_pin*, int>();
+    logical_block->pb_pin_to_class_logical_num_mapping = std::unordered_map<const t_pb_graph_pin*, int>();
 
     auto pb_graph_nodes = get_all_logical_block_pb_graph_nodes(logical_block);
     for(auto pb_graph_node : pb_graph_nodes) {
@@ -526,7 +526,7 @@ void static add_port_logical_classes(t_logical_block_type* logical_block,
             for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
                 auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
                 class_inf.pinlist.push_back(pb_graph_pin->pin_count_in_cluster);
-                logical_block->pb_pin_class_map.insert(std::make_pair(pb_graph_pin, class_num));
+                logical_block->pb_pin_to_class_logical_num_mapping.insert(std::make_pair(pb_graph_pin, class_num));
             }
             logical_class_inf.push_back(class_inf);
         } else {
@@ -545,7 +545,7 @@ void static add_port_logical_classes(t_logical_block_type* logical_block,
 
                 auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
                 class_inf.pinlist.push_back(pb_graph_pin->pin_count_in_cluster);
-                logical_block->pb_pin_class_map.insert(std::make_pair(pb_graph_pin, class_num));
+                logical_block->pb_pin_to_class_logical_num_mapping.insert(std::make_pair(pb_graph_pin, class_num));
                 logical_class_inf.push_back(class_inf);
             }
         }

@@ -1368,8 +1368,8 @@ static void add_intra_ipin_opin_spatial_lookup(RRGraphBuilder& rr_graph_builder,
     auto logical_block = cluster_net_list.block_type(cluster_blk_id);
 
     // Reserve
-    rr_graph_builder.node_lookup().reserve_nodes(x, y, OPIN, logical_block->pb_pin_num_map.size(), e_side::TOP);
-    rr_graph_builder.node_lookup().reserve_nodes(x, y, IPIN, logical_block->pb_pin_num_map.size(), e_side::TOP);
+    rr_graph_builder.node_lookup().reserve_nodes(x, y, OPIN, logical_block->pin_logical_num_to_pb_pin_mapping.size(), e_side::TOP);
+    rr_graph_builder.node_lookup().reserve_nodes(x, y, IPIN, logical_block->pin_logical_num_to_pb_pin_mapping.size(), e_side::TOP);
 
     auto internal_pins = get_cluster_internal_ipin_opin(cluster_blk_id);
     for (auto pin_num : internal_pins) {
