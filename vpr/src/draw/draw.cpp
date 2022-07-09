@@ -561,8 +561,7 @@ void alloc_draw_structs(const t_arch* arch) {
 
     /* Space is allocated for draw_rr_node but not initialized because we do *
      * not yet know information about the routing resources.				  */
-    draw_state->draw_rr_node = (t_draw_rr_node*)vtr::malloc(
-        device_ctx.rr_graph.num_nodes() * sizeof(t_draw_rr_node));
+    draw_state->draw_rr_node.resize(device_ctx.rr_graph.num_nodes());
 
     draw_state->arch_info = arch;
 
@@ -589,10 +588,6 @@ void free_draw_structs() {
         draw_coords->tile_y = nullptr;
     }
 
-    if (draw_state != nullptr) {
-        free(draw_state->draw_rr_node);
-        draw_state->draw_rr_node = nullptr;
-    }
 #else
     ;
 #endif /* NO_GRAPHICS */
@@ -614,9 +609,7 @@ void init_draw_coords(float width_val) {
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
     if (rr_graph.num_nodes() != 0) {
-        draw_state->draw_rr_node = (t_draw_rr_node*)vtr::realloc(
-            draw_state->draw_rr_node,
-            (rr_graph.num_nodes()) * sizeof(t_draw_rr_node));
+        draw_state->draw_rr_node.resize(rr_graph.num_nodes());
         /*FIXME: the type cast should be eliminated by making draw_rr_node adapt RRNodeId */
         for (const RRNodeId& rr_id : rr_graph.nodes()) {
             draw_state->draw_rr_node[(size_t)rr_id].color = DEFAULT_RR_NODE_COLOR;
