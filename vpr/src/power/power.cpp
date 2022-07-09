@@ -763,7 +763,7 @@ static void power_usage_clock_single(t_power_usage* power_usage,
 /* Frees a multiplexer graph */
 static void dealloc_mux_graph(t_mux_node* node) {
     dealloc_mux_graph_rec(node);
-    delete(node);
+    delete (node);
 }
 
 static void dealloc_mux_graph_rec(t_mux_node* node) {
@@ -1199,7 +1199,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     /* Initialize RR Graph Structures */
     rr_node_power = new t_rr_node_power[rr_graph.num_nodes()];
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-    	rr_node_power[(size_t)rr_id] = t_rr_node_power();
+        rr_node_power[(size_t)rr_id] = t_rr_node_power();
         rr_node_power[(size_t)rr_id].driver_switch_type = OPEN;
     }
 
@@ -1219,18 +1219,12 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 max_IPIN_fanin = std::max(max_IPIN_fanin, node_fan_in);
                 max_fanin = std::max(max_fanin, node_fan_in);
 
-//                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
-//                                                          sizeof(float));
-//                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
-//                                                          sizeof(float));
-
                 node_power->in_dens = new float[node_fan_in];
                 node_power->in_prob = new float[node_fan_in];
-                for (int i = 0 ; i < node_fan_in ; i++){
-                	node_power->in_dens[i] = 0;
-                	node_power->in_prob[i] = 0;
+                for (int i = 0; i < node_fan_in; i++) {
+                    node_power->in_dens[i] = 0;
+                    node_power->in_prob[i] = 0;
                 }
-
 
                 break;
             case CHANX:
@@ -1247,15 +1241,11 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 max_seg_to_seg_fanout = std::max(max_seg_to_seg_fanout, fanout_to_seg);
                 max_fanin = std::max(max_fanin, node_fan_in);
 
-//                node_power->in_dens = (float*)vtr::calloc(node_fan_in,
-//                                                          sizeof(float));
-//                node_power->in_prob = (float*)vtr::calloc(node_fan_in,
-//                                                          sizeof(float));
                 node_power->in_dens = new float[node_fan_in];
                 node_power->in_prob = new float[node_fan_in];
-                for (int i = 0 ; i < node_fan_in ; i++){
-                	node_power->in_dens[i] = 0;
-                	node_power->in_prob[i] = 0;
+                for (int i = 0; i < node_fan_in; i++) {
+                    node_power->in_dens[i] = 0;
+                    node_power->in_prob[i] = 0;
                 }
                 break;
             default:
@@ -1317,15 +1307,15 @@ bool power_init(const char* power_out_filepath,
     /* Set global power architecture & options */
     power_ctx.arch = arch->power;
     power_ctx.commonly_used = new t_power_commonly_used;
-//    power_ctx.tech = (t_power_tech*)vtr::malloc(sizeof(t_power_tech));
+    //    power_ctx.tech = (t_power_tech*)vtr::malloc(sizeof(t_power_tech));
     power_ctx.tech = new t_power_tech;
     power_ctx.output = new t_power_output;
 
     /* Set up Logs */
     power_ctx.output->num_logs = POWER_LOG_NUM_TYPES;
     power_ctx.output->logs = new t_log[power_ctx.output->num_logs];
-    for (int i = 0 ; i < power_ctx.output->num_logs; i++)
-    	power_ctx.output->logs[i] = t_log();
+    for (int i = 0; i < power_ctx.output->num_logs; i++)
+        power_ctx.output->logs[i] = t_log();
     power_ctx.output->logs[POWER_LOG_ERROR].name = "Errors";
     power_ctx.output->logs[POWER_LOG_WARNING].name = "Warnings";
 
@@ -1382,12 +1372,8 @@ bool power_uninit() {
             case CHANX:
             case CHANY:
             case IPIN:
-//                if (rr_graph.node_fan_in(rr_id)) {
-//                    free(node_power->in_dens);
-//                    free(node_power->in_prob);
-                    delete[] node_power->in_dens;
-                    delete[] node_power->in_prob;
-//                }
+                delete[] node_power->in_dens;
+                delete[] node_power->in_prob;
                 break;
             default:
                 /* Do nothing */
@@ -1420,7 +1406,7 @@ bool power_uninit() {
     }
 
     delete[](power_ctx.output->logs);
-    delete(power_ctx.output);
+    delete (power_ctx.output);
 
     power_pb_pins_uninit();
 

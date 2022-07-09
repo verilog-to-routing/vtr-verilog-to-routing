@@ -216,7 +216,7 @@ struct t_log {
 struct t_power_mux_info {
     /* Mux architecture information for 0..mux_arch_max_size */
     int mux_arch_max_size;
-//    t_mux_arch* mux_arch;
+    //    t_mux_arch* mux_arch;
     std::vector<t_mux_arch> mux_arch;
 };
 
