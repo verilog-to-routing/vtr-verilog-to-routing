@@ -621,7 +621,8 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     float expected_cong;
 
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
-
+    // TODO: flat_routing is not tested for when is_flat is enabled
+    VTR_ASSERT(is_flat_ != true);
     std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(RRNodeId(to_node), RRNodeId(target_node), cost_params, R_upstream);
 
     float expected_total_delay_cost;

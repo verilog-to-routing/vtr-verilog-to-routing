@@ -2,6 +2,7 @@
 #define RR_GRAPH_UTIL_H
 
 #include "vpr_types.h"
+#include "rr_graph_view.h"
 
 int seg_index_of_cblock(t_rr_type from_rr_type, int to_node);
 
@@ -11,6 +12,10 @@ bool is_node_on_tile(t_rr_type node_type,
                      int root_x,
                      int root_y,
                      int node_ptc);
+
+int get_rr_node_max_ptc (const RRGraphView& rr_graph_view,
+                        RRNodeId node_id,
+                        bool is_flat);
 
 // This function generates and returns a vector indexed by RRNodeId
 // containing a list of fan-in edges for each node.

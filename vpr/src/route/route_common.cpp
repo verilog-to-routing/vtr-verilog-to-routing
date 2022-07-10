@@ -1859,7 +1859,7 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
         bool to_node_on_tile = is_node_on_tile(to_node_type, to_node_low_x, to_node_low_y, to_ptc);
 
         if(from_node_low_x == to_node_low_x && from_node_low_y == to_node_low_y) {
-            if(!from_node_on_tile && to_node_on_tile)
+            if(!from_node_on_tile && !to_node_on_tile)
                 return 0.0;
         }
 
@@ -1871,14 +1871,22 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
             on_tile_from_node = from_node;
         } else {
             int node_ptc = 0;
-            while(on_tile_from_node == RRNodeId::INVALID()) {
+            int max_ptc = get_rr_node_max_ptc(rr_graph_view,
+                                              from_node,
+                                              is_flat);
+            while(node_ptc < max_ptc)
+            {
                 for(auto side : SIDES) {
                     on_tile_from_node =  device_ctx.rr_graph.node_lookup().find_node(to_node_low_x, to_node_low_y, to_node_type, node_ptc, side);
                     if(on_tile_from_node != RRNodeId::INVALID())
                         break;
                 }
+                if(on_tile_from_node != RRNodeId::INVALID()) {
+                    break;
+                }
                 node_ptc++;
             }
+            VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
         }
         // to_node should be only SINK/IPIN, and in the case of flat routing it should be inside cluster - Anyway, this
         // if statement is added for the sake of completeness
@@ -1888,14 +1896,22 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
             on_tile_to_node = to_node;
         } else {
             int node_ptc = 0;
-            while(on_tile_to_node == RRNodeId::INVALID()) {
+            int max_ptc = get_rr_node_max_ptc(rr_graph_view,
+                                              to_node,
+                                              is_flat);
+
+            while(node_ptc < max_ptc) {
                 for(auto side : SIDES) {
                     on_tile_to_node =  device_ctx.rr_graph.node_lookup().find_node(to_node_low_x, to_node_low_y, to_node_type, node_ptc, side);
                     if(on_tile_to_node != RRNodeId::INVALID())
                         break;
                 }
+                if(on_tile_to_node != RRNodeId::INVALID()) {
+                    break;
+                }
                 node_ptc++;
             }
+            VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
         }
         expected_delay_cost = router_lookahead.get_expected_cost(on_tile_from_node, on_tile_to_node, cost_params, R_upstream);
         VTR_ASSERT(std::isfinite(expected_delay_cost));

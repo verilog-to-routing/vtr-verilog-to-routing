@@ -103,6 +103,25 @@ bool is_node_on_tile(t_rr_type node_type,
 
 }
 
+int get_rr_node_max_ptc (const RRGraphView& rr_graph_view,
+                        RRNodeId node_id,
+                        bool is_flat) {
+    auto node_type = rr_graph_view.node_type(node_id);
+
+    VTR_ASSERT(node_type == IPIN || node_type == OPIN ||
+               node_type == SINK || node_type == SOURCE);
+
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    auto physical_type=
+        device_ctx.grid[rr_graph_view.node_xlow(node_id)][rr_graph_view.node_ylow(node_id)].type;
+    
+    if(node_type == SINK || node_type == SOURCE) {
+        return get_tile_class_max_ptc(physical_type, is_flat);
+    } else {
+        return get_tile_ipin_opin_max_ptc(physical_type, is_flat);
+    }
+}
+
 vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list() {
     auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
