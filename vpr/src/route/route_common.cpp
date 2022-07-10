@@ -316,7 +316,7 @@ bool try_route(const Netlist<>& net_list,
                        router_opts.bb_factor,
                        is_flat);
 
-    if (cluster_ctx.clb_nlist.nets().empty()) {
+    if (net_list.nets().empty()) {
         VTR_LOG_WARN("No nets to route\n");
     }
 
