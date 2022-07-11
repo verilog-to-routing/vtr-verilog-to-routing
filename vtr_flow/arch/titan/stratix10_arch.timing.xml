@@ -238,6 +238,8 @@
         <port name="coefselb" clock="clk" combinational_sink_ports="resultb"/>
         <port name="scanin" clock="clk" combinational_sink_ports="resulta resultb scanout"/>
         <port name="ena" clock="clk"/>
+        <port name="sub" clock="clk"/>
+        <port name="negate" clock="clk"/>
         <port name="dfxlfsrena" clock="clk"/>
         <port name="dfxmisrena" clock="clk"/>
       </input_ports>
@@ -263,6 +265,8 @@
         <port name="coefselb" combinational_sink_ports="resultb"/>
         <port name="scanin" combinational_sink_ports="resulta resultb scanout"/>
         <port name="ena" clock="clk"/>
+        <port name="sub" clock="clk"/>
+        <port name="negate" clock="clk"/>
         <port name="dfxlfsrena" clock="clk"/>
         <port name="dfxmisrena" clock="clk"/>
       </input_ports>
@@ -287,6 +291,8 @@
         <port name="coefselb" combinational_sink_ports="resultb dftout"/>
         <port name="scanin" combinational_sink_ports="resulta resultb scanout dftout"/>
         <port name="ena" combinational_sink_ports="resulta resultb dftout"/>
+        <port name="sub" combinational_sink_ports="resulta resultb dftout"/>
+        <port name="negate" combinational_sink_ports="resulta resultb dftout"/>
         <port name="dfxlfsrena" combinational_sink_ports="resulta resultb dftout"/>
         <port name="dfxmisrena" combinational_sink_ports="resulta resultb dftout"/>
       </input_ports>
@@ -312,6 +318,8 @@
         <port name="coefselb" clock="clk" combinational_sink_ports="resultb"/>
         <port name="scanin" clock="clk" combinational_sink_ports="resulta resultb"/>
         <port name="ena" clock="clk"/>
+        <port name="sub" clock="clk"/>
+        <port name="negate" clock="clk"/>
         <port name="dfxlfsrena" clock="clk"/>
         <port name="dfxmisrena" clock="clk"/>
       </input_ports>
@@ -676,6 +684,7 @@
         <port name="negate" clock="clk"/>
         <port name="scanin" clock="clk" combinational_sink_ports="resulta chainout scanout"/>
         <port name="ena" clock="clk"/>
+        <port name="sub" clock="clk"/>
         <port name="dfxlfsrena" clock="clk"/>
         <port name="dfxmisrena" clock="clk"/>
       </input_ports> 
@@ -699,6 +708,7 @@
         <port name="loadconst" combinational_sink_ports="resulta chainout"/>
         <port name="negate" clock="clk"/>
         <port name="scanin" combinational_sink_ports="resulta chainout scanout"/>
+        <port name="sub" clock="clk"/>
         <port name="ena" clock="clk"/>
         <port name="dfxlfsrena" clock="clk"/>
         <port name="dfxmisrena" clock="clk"/>
@@ -724,6 +734,7 @@
         <port name="negate" combinational_sink_ports="resulta chainout scanout dftout"/>
         <port name="scanin" combinational_sink_ports="resulta chainout scanout dftout"/>
         <port name="ena" combinational_sink_ports="resulta chainout scanout dftout"/>
+        <port name="sub" combinational_sink_ports="resulta chainout scanout dftout"/>
         <port name="dfxlfsrena" combinational_sink_ports="resulta chainout scanout dftout"/>
         <port name="dfxmisrena" combinational_sink_ports="resulta chainout scanout dftout"/>
       </input_ports> 
@@ -748,6 +759,7 @@
         <port name="negate" clock="clk"/>
         <port name="scanin" clock="clk" combinational_sink_ports="resulta chainout scanout"/>
         <port name="ena" clock="clk"/>
+        <port name="sub" clock="clk"/>
         <port name="dfxlfsrena" clock="clk"/>
         <port name="dfxmisrena" clock="clk"/>
       </input_ports> 
@@ -770,6 +782,8 @@
         <port name="coefsela" clock="clk" combinational_sink_ports="resulta"/>
         <port name="scanin" clock="clk" combinational_sink_ports="resulta scanout"/>
         <port name="ena" clock="clk"/>
+        <port name="sub" clock="clk"/>
+        <port name="negate" clock="clk"/>
         <port name="dfxlfsrena" clock="clk"/>
         <port name="dfxmisrena" clock="clk"/>
       </input_ports> 
@@ -790,6 +804,8 @@
         <port name="coefsela" combinational_sink_ports="resulta"/>
         <port name="scanin" combinational_sink_ports="resulta scanout"/>
         <port name="ena" clock="clk"/>
+        <port name="sub" clock="clk"/>
+        <port name="negate" clock="clk"/>
         <port name="dfxlfsrena" clock="clk"/>
         <port name="dfxmisrena" clock="clk"/>
       </input_ports> 
@@ -809,6 +825,8 @@
         <port name="coefsela" combinational_sink_ports="resulta scanout dftout"/>
         <port name="scanin" combinational_sink_ports="resulta scanout dftout"/>
         <port name="ena" combinational_sink_ports="resulta scanout dftout"/>
+        <port name="sub" combinational_sink_ports="resulta scanout dftout"/>
+        <port name="negate" combinational_sink_ports="resulta scanout dftout"/>
         <port name="dfxlfsrena" combinational_sink_ports="resulta scanout dftout"/>
         <port name="dfxmisrena" combinational_sink_ports="resulta scanout dftout"/>
       </input_ports> 
@@ -829,6 +847,8 @@
         <port name="coefsela" clock="clk" combinational_sink_ports="resulta"/>
         <port name="scanin" clock="clk" combinational_sink_ports="resulta scanout"/>
         <port name="ena" clock="clk"/>
+        <port name="sub" clock="clk"/>
+        <port name="negate" clock="clk"/>
         <port name="dfxlfsrena" clock="clk"/>
         <port name="dfxmisrena" clock="clk"/>
       </input_ports> 
@@ -2444,6 +2464,8 @@
                 <input name="coefselb" num_pins="3"/>
                 <input name="scanin" num_pins="19"/>
                 <input name="ena" num_pins="3"/>
+                <input name="sub" num_pins="1"/>
+                <input name="negate" num_pins="1"/>
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
@@ -2469,7 +2491,8 @@
                 <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
                 <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
 
-                
+                <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_full.negate"/>
+                <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_full.sub"/>
                 <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_full.clr"/>
                 <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_full.coefsela"/>
                 <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_full.coefselb"/>
@@ -2496,6 +2519,8 @@
                 <input name="coefselb" num_pins="3"/>
                 <input name="scanin" num_pins="19"/>
                 <input name="ena" num_pins="3"/>
+                <input name="sub" num_pins="1"/>
+                <input name="negate" num_pins="1"/>
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
@@ -2521,7 +2546,8 @@
                 <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
                 <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
 
-                
+                <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_full.negate"/>
+                <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_full.sub"/>
                 <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_full.clr"/>
                 <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_full.coefsela"/>
                 <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_full.coefselb"/>
@@ -2547,6 +2573,8 @@
                 <input name="coefselb" num_pins="3"/>
                 <input name="scanin" num_pins="19"/>
                 <input name="ena" num_pins="3"/>
+                <input name="sub" num_pins="1"/>
+                <input name="negate" num_pins="1"/>
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
@@ -2572,7 +2600,8 @@
                 <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
                 <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
 
-                
+                <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_full.negate"/>
+                <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_full.sub"/>
                 <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_full.clr"/>
                 <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_full.coefsela"/>
                 <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_full.coefselb"/>
@@ -2597,6 +2626,8 @@
                 <input name="coefselb" num_pins="3"/>
                 <input name="scanin" num_pins="19"/>
                 <input name="ena" num_pins="3"/>
+                <input name="sub" num_pins="1"/>
+                <input name="negate" num_pins="1"/>
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
@@ -2622,7 +2653,8 @@
                 <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
                 <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
 
-                
+                <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_full.negate"/>
+                <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_full.sub"/>
                 <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_full.clr"/>
                 <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_full.coefsela"/>
                 <direct name="coefselb_in" input="DSP.controlin[7:5]" output="mac18x18_full.coefselb"/>
@@ -3331,6 +3363,7 @@
                 <input name="negate" num_pins="1"/>
                 <input name="scanin" num_pins="27"/>
                 <input name="ena" num_pins="3"/>
+                <input name="sub" num_pins="1"/>
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
@@ -3354,7 +3387,7 @@
 
                 <direct name="resulta_out" input="mac27x27.resulta" output="DSP.result[63:0]"/>
 
-                
+                <direct name="sub_in" input="DSP.controlin[16]" output="mac27x27.sub"/>                
                 <direct name="clr_in" input="DSP.controlin[1:0]" output="mac27x27.clr"/>
                 <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac27x27.coefsela"/>
                 <direct name="ena_in" input="DSP.controlin[10:8]" output="mac27x27.ena"/>
@@ -3383,6 +3416,7 @@
                 <input name="negate" num_pins="1"/>
                 <input name="scanin" num_pins="27"/>
                 <input name="ena" num_pins="3"/>
+                <input name="sub" num_pins="1"/>
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
@@ -3406,7 +3440,7 @@
 
                 <direct name="resulta_out" input="mac27x27.resulta" output="DSP.result[63:0]"/>
 
-                
+                <direct name="sub_in" input="DSP.controlin[16]" output="mac27x27.sub"/>  
                 <direct name="clr_in" input="DSP.controlin[1:0]" output="mac27x27.clr"/>
                 <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac27x27.coefsela"/>
                 <direct name="ena_in" input="DSP.controlin[10:8]" output="mac27x27.ena"/>
@@ -3434,6 +3468,7 @@
                 <input name="negate" num_pins="1"/>
                 <input name="scanin" num_pins="27"/>
                 <input name="ena" num_pins="3"/>
+                <input name="sub" num_pins="1"/>
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
@@ -3457,7 +3492,7 @@
 
                 <direct name="resulta_out" input="mac27x27.resulta" output="DSP.result[63:0]"/>
 
-                
+                <direct name="sub_in" input="DSP.controlin[16]" output="mac27x27.sub"/> 
                 <direct name="clr_in" input="DSP.controlin[1:0]" output="mac27x27.clr"/>
                 <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac27x27.coefsela"/>
                 <direct name="ena_in" input="DSP.controlin[10:8]" output="mac27x27.ena"/>
@@ -3485,6 +3520,7 @@
                 <input name="negate" num_pins="1"/>
                 <input name="scanin" num_pins="27"/>
                 <input name="ena" num_pins="3"/>
+                <input name="sub" num_pins="1"/>
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
@@ -3508,7 +3544,8 @@
 
                 <direct name="resulta_out" input="mac27x27.resulta" output="DSP.result[63:0]"/>
 
-                
+                <direct name="negate_in" input="DSP.controlin[15]" output="mac27x27.negate"/>
+                <direct name="sub_in" input="DSP.controlin[16]" output="mac27x27.sub"/> 
                 <direct name="clr_in" input="DSP.controlin[1:0]" output="mac27x27.clr"/>
                 <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac27x27.coefsela"/>
                 <direct name="ena_in" input="DSP.controlin[10:8]" output="mac27x27.ena"/>
@@ -3516,7 +3553,6 @@
                 <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="mac27x27.dfxmisrena"/>
                 <direct name="accumulate_in" input="DSP.controlin[13]" output="mac27x27.accumulate"/>
                 <direct name="loadconst_in" input="DSP.controlin[14]" output="mac27x27.loadconst"/>
-                <direct name="negate_in" input="DSP.controlin[15]" output="mac27x27.negate"/>
 
                 <complete name="clk_in" input="DSP.clk" output="mac27x27.clk"/>
 
@@ -3534,6 +3570,8 @@
               <input name="coefsela" num_pins="3"/>
               <input name="scanin" num_pins="19"/>
               <input name="ena" num_pins="3"/>
+              <input name="sub" num_pins="1"/>
+              <input name="negate" num_pins="1"/>
               <input name="dfxlfsrena" num_pins="1"/>
               <input name="dfxmisrena" num_pins="1"/>
 
@@ -3554,6 +3592,8 @@
 
               <direct name="resulta_out" input="mac18x18_top.resulta" output="DSP.result[36:0]"/>
               
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_top.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_top.sub"/> 
               <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_top.clr"/>
               <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_top.coefsela"/>
               <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_top.ena"/>
@@ -3575,6 +3615,8 @@
               <input name="coefsela" num_pins="3"/>
               <input name="scanin" num_pins="19"/>
               <input name="ena" num_pins="3"/>
+              <input name="sub" num_pins="1"/>
+              <input name="negate" num_pins="1"/>
               <input name="dfxlfsrena" num_pins="1"/>
               <input name="dfxmisrena" num_pins="1"/>
 
@@ -3595,6 +3637,8 @@
 
               <direct name="resulta_out" input="mac18x18_top.resulta" output="DSP.result[36:0]"/>
               
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_top.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_top.sub"/>
               <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_top.clr"/>
               <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_top.coefsela"/>
               <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_top.ena"/>
@@ -3615,6 +3659,8 @@
               <input name="coefsela" num_pins="3"/>
               <input name="scanin" num_pins="19"/>
               <input name="ena" num_pins="3"/>
+              <input name="sub" num_pins="1"/>
+              <input name="negate" num_pins="1"/>
               <input name="dfxlfsrena" num_pins="1"/>
               <input name="dfxmisrena" num_pins="1"/>
 
@@ -3635,6 +3681,8 @@
 
               <direct name="resulta_out" input="mac18x18_top.resulta" output="DSP.result[36:0]"/>
               
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_top.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_top.sub"/>
               <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_top.clr"/>
               <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_top.coefsela"/>
               <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_top.ena"/>
@@ -3654,6 +3702,8 @@
               <input name="coefsela" num_pins="3"/>
               <input name="scanin" num_pins="19"/>
               <input name="ena" num_pins="3"/>
+              <input name="sub" num_pins="1"/>
+              <input name="negate" num_pins="1"/>
               <input name="dfxlfsrena" num_pins="1"/>
               <input name="dfxmisrena" num_pins="1"/>
 
@@ -3674,6 +3724,8 @@
 
               <direct name="resulta_out" input="mac18x18_top.resulta" output="DSP.result[36:0]"/>
               
+              <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_top.negate"/>
+              <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_top.sub"/>
               <direct name="clr_in" input="DSP.controlin[1:0]" output="mac18x18_top.clr"/>
               <direct name="coefsela_in" input="DSP.controlin[4:2]" output="mac18x18_top.coefsela"/>
               <direct name="ena_in" input="DSP.controlin[10:8]" output="mac18x18_top.ena"/>
