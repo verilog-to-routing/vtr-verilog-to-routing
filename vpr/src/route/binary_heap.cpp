@@ -24,21 +24,16 @@ void BinaryHeap::free(t_heap* hptr) {
     storage_.free(hptr);
 }
 
-// Note: malloc()/free() must be used for the heap,
-//       or realloc() must be eliminated from add_to_heap()
-//       because there is no C++ equivalent.
 void BinaryHeap::init_heap(const DeviceGrid& grid) {
     size_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
     if (heap_ == nullptr || heap_size_ < target_heap_size) {
         if (heap_ != nullptr) {
             // coverity[offset_free : Intentional]
-//            vtr::free(heap_ + 1);
         	heap_++;
         	delete[] heap_ ;
             heap_ = nullptr;
         }
         heap_size_ = (grid.width() - 1) * (grid.height() - 1);
-//        heap_ = (t_heap**)vtr::malloc(heap_size_ * sizeof(t_heap*));
         heap_ = new t_heap*[heap_size_];
         heap_--; /* heap stores from [1..heap_size] */
     }
@@ -160,9 +155,6 @@ void BinaryHeap::expand_heap_if_full() {
     		heap_--;
     	    for (int i = 0; i < old_heap_size_; i++)
     	    	heap_[i + 1] = temp[i];
-
-//        heap_ = (t_heap**)vtr::realloc((void*)(heap_ + 1),
-//                                       heap_size_ * sizeof(t_heap*));
     }
 }
 
