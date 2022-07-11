@@ -1,9 +1,11 @@
 
 #include <vector>
 
-#include "XYRouting.h"
+#include "xy_routing.h"
 #include "globals.h"
 #include "vpr_error.h"
+
+XYRouting::~XYRouting(){}
 
 void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, const NocStorage& noc_model){
 
@@ -50,7 +52,7 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
 
         // if we didn't find a legal router to move to then throw an error that there is no path between the source and destination routers
         if (!route_exists){
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from router '%d' and router '%d' using the XY-Routing algorithm.",src_router.get_router_user_id(), sink_router.get_router_user_id());
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from starting router with ID:'%d' and the destination router with ID:'%d' using the XY-Routing algorithm.",src_router.get_router_user_id(), sink_router.get_router_user_id());
         }
     }
 
@@ -159,6 +161,7 @@ bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router
         }
         else{
             found_next_router = false;
+            visited_next_router = false;
         }
     }
 

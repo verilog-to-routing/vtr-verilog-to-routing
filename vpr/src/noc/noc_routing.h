@@ -51,6 +51,10 @@ class NocRouting {
     // protected pure virtual functions that should be implemendted in derived classes.
     protected:
 
+
+        // destructor
+        virtual ~NocRouting();
+
         /**
          * @brief Finds a route that goes from the starting router in a 
          * traffic flow to the destination router. Derived classes will
@@ -95,6 +99,8 @@ class NocRouting {
          */
         void add_link_to_routed_path(NocLinkId link_in_route);
 
+    // functions that should be accessible by outside users
+    public:
         /**
          * @brief Get the routed_path variable, which stores the
          * route between the starting and destination routers of

@@ -79,14 +79,14 @@
  * 
  */
 
-#include "NocRouting.h"
+#include "noc_routing.h"
 
 /**
  * @brief This enum describes the all the possible
  * directions the XY routing algorithm can choose
  * to travel.
  */
-enum RouteDirection {
+enum class RouteDirection {
     LEFT, /*!< Moving towards the negative X-axis*/ 
     RIGHT,/*!< Moving towards the positive X-axis*/
     UP, /*!< Moving towards the positive Y-axis*/
@@ -108,6 +108,9 @@ class XYRouting : public NocRouting {
     std::unordered_set<NocRouterId> visited_routers;
 
   public:
+
+    ~XYRouting() override;
+
     /**
      * @brief Finds a route that goes from the starting router in a 
      * traffic flow to the destination router. Uses the XY-routing
