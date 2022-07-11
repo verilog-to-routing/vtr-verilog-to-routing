@@ -25,6 +25,12 @@ def create_circuits_list(main_circuit, include_files):
     if include_files:
         # Verify that files are Paths or convert them to Paths + check that they exist
         for include in include_files:
+            file_extension = os.path.splitext(include)[-1]
+            # if the include file is not in the supported HDLs, we drop it
+            # NOTE: the include file is already copied to the temp folder
+            if file_extension not in FILE_TYPES:
+                continue
+
             include_file = vtr.verify_file(include, "Circuit")
             circuit_list.append(include_file.name)
 
