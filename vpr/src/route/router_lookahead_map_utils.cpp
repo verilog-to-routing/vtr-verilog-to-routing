@@ -337,25 +337,12 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                 for (RRNodeId node_id : rr_nodes_at_loc) {
                     int ptc = rr_graph.node_ptc_num(node_id);
                     // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                    if(!is_node_on_tile(rr_type,
-                                        rr_graph.node_xlow(node_id),
-                                        rr_graph.node_ylow(node_id),
-                                        ptc)) {
-                        continue;
-                    }
-
-                    /* If flat_routing is enabled, rr_nodes_at_loc contains nodes which are inside the tiles. For the time being,
-                     * we don't want to adapt lookahead to flat_routing. As a result, we just ignore internal nodes in this function.
-                     * In the compute function, we assume that only the nodes on the tile are given as input.
-                     * */
                     if(is_flat) {
-                        if(rr_type == SOURCE) {
-                            if(!is_class_on_tile(&device_ctx.physical_tile_types[itile], ptc))
-                                continue;
-                        } else {
-                            VTR_ASSERT(rr_type == OPIN);
-                            if(!is_pin_on_tile(&device_ctx.physical_tile_types[itile], ptc))
-                                continue;
+                        if(!is_node_on_tile(rr_type,
+                                             rr_graph.node_xlow(node_id),
+                                             rr_graph.node_ylow(node_id),
+                                             ptc)) {
+                            continue;
                         }
                     }
 

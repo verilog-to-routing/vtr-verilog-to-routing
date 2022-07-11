@@ -41,7 +41,8 @@ class node_edge_sorter {
 
 void check_rr_graph(const t_graph_type graph_type,
                     const DeviceGrid& grid,
-                    const std::vector<t_physical_tile_type>& types, bool is_flat) {
+                    const std::vector<t_physical_tile_type>& types,
+                    bool is_flat) {
     e_route_type route_type = DETAILED;
     if (graph_type == GRAPH_GLOBAL) {
         route_type = GLOBAL;

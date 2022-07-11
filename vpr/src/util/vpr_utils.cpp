@@ -1447,7 +1447,7 @@ std::vector<int> get_cluster_internal_ipin_opin(ClusterBlockId cluster_blk_id) {
 
         add_child_to_list(internal_pbs, pb);
     }
-
+    VTR_ASSERT(internal_pins.size() <= logical_block->pin_logical_num_to_pb_pin_mapping.size());
     return internal_pins;
 }
 
@@ -1459,18 +1459,17 @@ std::vector<int> get_pb_pins(t_physical_tile_type_ptr physical_type,
     /* If pb is the root block, pins on the tile is returned */
     VTR_ASSERT(pb->pb_graph_node != nullptr);
     if(pb->pb_graph_node->is_root()) {
-        int pin_num_offset = 0;
-        int curr_sub_tile_idx = sub_tile->index;
-        VTR_ASSERT(curr_sub_tile_idx >= 0);
-        for(int sub_tile_idx = 0; sub_tile_idx < curr_sub_tile_idx; sub_tile_idx++) {
-            pin_num_offset += physical_type->sub_tiles[sub_tile_idx].num_phy_pins;
+        int physical_pin_offset = (sub_tile->num_phy_pins/sub_tile->capacity.total())*rel_cap;
+        std::vector<int> physical_pin_arr(logical_block->pb_type->num_pins);
+        auto& pin_direct_maps = physical_type->tile_block_pin_directs_map.at(logical_block->index);
+        auto pin_direct_map = pin_direct_maps.at(sub_tile->index);
+        for(int logical_pin_num = 0; logical_pin_num < logical_block->pb_type->num_pins; logical_pin_num++) {
+            auto res = pin_direct_map.find(t_logical_pin(logical_pin_num));
+            VTR_ASSERT(res != pin_direct_map.end());
+            physical_pin_arr[logical_pin_num] = res->second.pin + physical_pin_offset;
         }
-        int inst_num_pin = sub_tile->num_phy_pins / sub_tile->capacity.total();
-        pin_num_offset += (inst_num_pin * rel_cap);
 
-        std::vector<int> pin_nums(inst_num_pin);
-        std::iota(pin_nums.begin(), pin_nums.end(), pin_num_offset);
-        return pin_nums;
+        return physical_pin_arr;
 
     } else {
         return get_pb_graph_node_pins(physical_type,

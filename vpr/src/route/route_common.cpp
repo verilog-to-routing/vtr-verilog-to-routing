@@ -108,6 +108,8 @@ static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& t
 
 static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
                                                             bool is_flat);
+
+static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat);
 /************************** Subroutine definitions ***************************/
 
 void save_routing(const Netlist<>& net_list,
@@ -1836,9 +1838,11 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               const t_conn_cost_params cost_params,
                               bool is_flat) {
     if(is_flat) {
-        auto& device_ctx = g_vpr_ctx.device();
+        RRNodeId on_tile_from_node = RRNodeId::INVALID();
 
-        float expected_delay_cost = std::numeric_limits<float>::infinity();
+        RRNodeId on_tile_to_node = RRNodeId::INVALID();
+
+        auto& device_ctx = g_vpr_ctx.device();
 
         auto from_node_type = rr_graph_view.node_type(from_node);
 
@@ -1858,65 +1862,67 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
 
         bool to_node_on_tile = is_node_on_tile(to_node_type, to_node_low_x, to_node_low_y, to_ptc);
 
-        if(from_node_low_x == to_node_low_x && from_node_low_y == to_node_low_y) {
-            if(!from_node_on_tile && !to_node_on_tile)
-                return 0.0;
-        }
-
-        RRNodeId on_tile_from_node = RRNodeId::INVALID();
-        RRNodeId on_tile_to_node = RRNodeId::INVALID();
-        if(from_node_on_tile
-            || from_node_type == t_rr_type::CHANY
-            || from_node_type == t_rr_type::CHANX) {
+        if(from_node_on_tile && to_node_on_tile) {
             on_tile_from_node = from_node;
-        } else {
-            int node_ptc = 0;
-            int max_ptc = get_rr_node_max_ptc(rr_graph_view,
-                                              from_node,
-                                              is_flat);
-            while(node_ptc < max_ptc)
-            {
-                for(auto side : SIDES) {
-                    on_tile_from_node =  device_ctx.rr_graph.node_lookup().find_node(to_node_low_x, to_node_low_y, to_node_type, node_ptc, side);
-                    if(on_tile_from_node != RRNodeId::INVALID())
-                        break;
-                }
-                if(on_tile_from_node != RRNodeId::INVALID()) {
-                    break;
-                }
-                node_ptc++;
-            }
-            VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
-        }
-        // to_node should be only SINK/IPIN, and in the case of flat routing it should be inside cluster - Anyway, this
-        // if statement is added for the sake of completeness
-        if(to_node_on_tile
-            || to_node_type == t_rr_type::CHANY
-            || to_node_type == t_rr_type::CHANX) {
             on_tile_to_node = to_node;
         } else {
-            int node_ptc = 0;
-            int max_ptc = get_rr_node_max_ptc(rr_graph_view,
-                                              to_node,
-                                              is_flat);
+            if(from_node_type == t_rr_type::CHANX || from_node_type == t_rr_type::CHANY ||
+                to_node_type == t_rr_type::CHANX || to_node_type == t_rr_type::CHANY) {
+                on_tile_from_node = get_connected_on_tile_node(rr_graph_view, from_node, is_flat);
+                VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
+                on_tile_to_node = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
+                VTR_ASSERT(on_tile_to_node != RRNodeId::INVALID());
+            } else {
+                int from_root_x = from_node_low_x - device_ctx.grid[from_node_low_x][from_node_low_y].width_offset;
+                int from_root_y = from_node_low_y - device_ctx.grid[from_node_low_x][from_node_low_y].height_offset;
 
-            while(node_ptc < max_ptc) {
-                for(auto side : SIDES) {
-                    on_tile_to_node =  device_ctx.rr_graph.node_lookup().find_node(to_node_low_x, to_node_low_y, to_node_type, node_ptc, side);
-                    if(on_tile_to_node != RRNodeId::INVALID())
-                        break;
+                int to_root_x = to_node_low_x - device_ctx.grid[to_node_low_x][to_node_low_y].width_offset;
+                int to_root_y = to_node_low_y - device_ctx.grid[to_node_low_x][to_node_low_y].height_offset;
+
+                if(from_root_x == to_root_x && from_root_y == to_root_y) {
+                    return 0.0;
+                } else {
+                    on_tile_from_node = get_connected_on_tile_node(rr_graph_view, from_node, is_flat);
+                    VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
+                    on_tile_to_node = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
+                    VTR_ASSERT(on_tile_to_node != RRNodeId::INVALID());
                 }
-                if(on_tile_to_node != RRNodeId::INVALID()) {
-                    break;
-                }
-                node_ptc++;
             }
-            VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
         }
-        expected_delay_cost = router_lookahead.get_expected_cost(on_tile_from_node, on_tile_to_node, cost_params, R_upstream);
-        VTR_ASSERT(std::isfinite(expected_delay_cost));
-        return expected_delay_cost;
+        return router_lookahead.get_expected_cost(on_tile_from_node, on_tile_to_node, cost_params, R_upstream);
     } else {
         return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
     }
+}
+
+static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat) {
+    auto& device_ctx = g_vpr_ctx.device();
+    int x_low = rr_graph_view.node_xlow(node_id);
+    int y_low = rr_graph_view.node_ylow(node_id);
+    int node_ptc = rr_graph_view.node_ptc_num(node_id);
+    auto node_type = rr_graph_view.node_type(node_id);
+
+    if(is_node_on_tile(node_type, x_low, y_low, node_ptc)) {
+        return node_id;
+    } else {
+        int max_ptc = get_rr_node_max_ptc(rr_graph_view,
+                                          node_id,
+                                          is_flat);
+        RRNodeId on_tile_node = RRNodeId::INVALID();
+        int on_tile_ptc = 0;
+        while(node_ptc < max_ptc) {
+            for(auto side : SIDES) {
+                on_tile_node =  device_ctx.rr_graph.node_lookup().find_node(x_low, y_low, node_type, on_tile_ptc, side);
+                if(on_tile_node != RRNodeId::INVALID())
+                    break;
+            }
+            if(on_tile_node != RRNodeId::INVALID()) {
+                break;
+            }
+            on_tile_ptc++;
+        }
+        return on_tile_node;
+    }
+
+
 }
