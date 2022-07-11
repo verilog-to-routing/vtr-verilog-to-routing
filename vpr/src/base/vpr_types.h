@@ -277,16 +277,6 @@ class t_pb {
 
     // Member functions
 
-    /**
-     * @brief Deep copy function for t_pb class
-     * 
-     * This funcion deeply copies some data members of
-     * t_pb class to be used to retrieve pb.
-     * 
-     * This function is currently used in re-clustering API.
-     */
-    void pb_deep_copy(const t_pb* rhs);
-
     ///@brief Returns true if this block has not parent pb block
     bool is_root() const { return parent_pb == nullptr; }
 

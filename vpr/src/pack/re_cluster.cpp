@@ -37,7 +37,7 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
 
     //remove the molecule from its current cluster
     std::vector<AtomBlockId> old_clb_atoms = cluster_to_atoms(old_clb);
-    if(old_clb_atoms.size() == 1) {
+    if (old_clb_atoms.size() == 1) {
         VTR_LOGV(verbosity > 4, "Atom: %zu move failed. This is the last atom in its cluster.\n");
         return false;
     }
@@ -109,7 +109,7 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
 
     //remove the molecule from its current cluster
     std::vector<AtomBlockId> old_clb_atoms = cluster_to_atoms(old_clb);
-    if(old_clb_atoms.size() == 1) {
+    if (old_clb_atoms.size() == 1) {
         VTR_LOGV(verbosity > 4, "Atom: %zu move failed. This is the last atom in its cluster.\n");
         return false;
     }
@@ -128,7 +128,7 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
 
     //Add the atom to the new cluster
     t_lb_router_data* new_router_data = nullptr;
-    is_added = pack_mol_in_existing_cluster(molecule, new_clb, new_clb_atoms, during_packing, clustering_data, false, new_router_data);
+    is_added = pack_mol_in_existing_cluster(molecule, new_clb, new_clb_atoms, during_packing, false, clustering_data, new_router_data);
 
     //Commit or revert the move
     if (is_added) {
@@ -184,7 +184,7 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     std::vector<AtomBlockId> clb_1_atoms = cluster_to_atoms(clb_1);
     std::vector<AtomBlockId> clb_2_atoms = cluster_to_atoms(clb_2);
 
-    if(clb_1_atoms.size() == 1 || clb_2_atoms.size() == 1) {
+    if (clb_1_atoms.size() == 1 || clb_2_atoms.size() == 1) {
         VTR_LOGV(verbosity > 4, "Atom: %zu, %zu swap failed. This is the last atom in its cluster.\n", molecule_1->atom_block_ids[molecule_1->root], molecule_2->atom_block_ids[molecule_2->root]);
         return false;
     }
@@ -192,15 +192,13 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     //remove the molecule from its current cluster
     remove_mol_from_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, old_1_router_data);
     commit_mol_removal(molecule_1, molecule_1_size, clb_1, during_packing, old_1_router_data, clustering_data);
-    
+
     remove_mol_from_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, old_2_router_data);
-    commit_mol_removal(molecule_2, molecule_2_size, clb_2, during_packing, old_2_router_data, clustering_data); 
-    
+    commit_mol_removal(molecule_2, molecule_2_size, clb_2, during_packing, old_2_router_data, clustering_data);
 
     //Add the atom to the new cluster
-    mol_1_success = pack_mol_in_existing_cluster(molecule_1, clb_2, clb_2_atoms, during_packing, clustering_data, true, old_2_router_data);
-    mol_2_success = pack_mol_in_existing_cluster(molecule_2, clb_1, clb_1_atoms, during_packing, clustering_data, true, old_1_router_data);
-    
+    mol_1_success = pack_mol_in_existing_cluster(molecule_1, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data);
+    mol_2_success = pack_mol_in_existing_cluster(molecule_2, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data);
 
     //commit the move if succeeded or revert if failed
     if (mol_1_success && mol_2_success) {
@@ -210,7 +208,6 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         revert_mol_move(clb_2, molecule_2, old_2_router_data, during_packing, clustering_data);
         VTR_LOGV(verbosity > 4, "Molecules swap failed\n");
     }
-
 
     //If the move is done after packing not during it, some fixes need to be done on the clustered netlist
     if (mol_1_success && mol_2_success && !during_packing) {

@@ -15,12 +15,13 @@
 #include "cluster_util.h"
 
 /**
- * @brief This function moves a molecule out of its cluster and create a new cluster for it
+ * @brief This function moves a molecule out of its cluster and creates a new cluster for it
  * 
  * This function can be called from 2 spots in the vpr flow. 
  *   - First, during packing to optimize the initial clustered netlist 
  *             (during_packing variable should be true.)
- *   - Second, during placement (during_packing variable should be false)
+ *   - Second, during placement (during_packing variable should be false). In this case, the clustered
+ *              netlist is updated.
  */
 bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                              bool during_packing,
@@ -33,7 +34,8 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
  * This function can be called from 2 spots in the vpr flow. 
  *   - First, during packing to optimize the initial clustered netlist 
  *             (during_packing variable should be true.)
- *   - Second, during placement (during_packing variable should be false)
+ *   - Second, during placement (during_packing variable should be false). In this case, the clustered
+ *              netlist is updated.
  */
 bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
                                   const ClusterBlockId& new_clb,
@@ -47,7 +49,8 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
  * This function can be called from 2 spots in the vpr flow. 
  *   - First, during packing to optimize the initial clustered netlist 
  *             (during_packing variable should be true.)
- *   - Second, during placement (during_packing variable should be false)
+ *   - Second, during placement (during_packing variable should be false). In this case, the clustered
+ *              netlist is updated.
  */
 bool swap_two_molecules(t_pack_molecule* molecule_1,
                         t_pack_molecule* molecule_2,

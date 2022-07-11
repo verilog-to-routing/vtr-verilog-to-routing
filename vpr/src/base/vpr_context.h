@@ -289,9 +289,9 @@ struct ClusteringContext : public Context {
 };
 
 /**
- * @brief State relating to helper data structure using in clustering
+ * @brief State relating to helper data structure using in the clustering stage
  * 
- * This should contain helper data structures that is useful in clustering/packing.
+ * This should contain helper data structures that are useful in the clustering/packing stage.
  * They are encapsulated here as they are useful in clustering and reclustering algorithms that may be used
  * in packing or placement stages.
  */
@@ -314,10 +314,10 @@ struct ClusteringHelperContext : public Context {
     // total number of CLBs
     int total_clb_num;
 
-    // A vector of routing resource nodes within each of logic cluster_ctx.blocks types
+    // A vector of routing resource nodes within each of logic cluster_ctx.blocks types [0 .. num_logical_block_type-1]
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs;
 
-    // the utilization of external input/output pins during packing
+    // the utilization of external input/output pins during packing (between 0 and 1)
     t_ext_pin_util_targets target_external_pin_util;
 
     ~ClusteringHelperContext() {
