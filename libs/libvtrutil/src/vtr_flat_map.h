@@ -1,6 +1,7 @@
 #ifndef VTR_FLAT_MAP
 #define VTR_FLAT_MAP
 #include <functional>
+#include <iterator>
 #include <vector>
 #include <algorithm>
 #include <stdexcept>

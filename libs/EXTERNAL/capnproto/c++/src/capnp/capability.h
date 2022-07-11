@@ -21,10 +21,6 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !defined(CAPNP_HEADER_WARNINGS)
-#pragma GCC system_header
-#endif
-
 #if CAPNP_LITE
 #error "RPC APIs, including this header, are not available in lite mode."
 #endif
@@ -34,6 +30,8 @@
 #include "raw-schema.h"
 #include "any.h"
 #include "pointer-helpers.h"
+
+CAPNP_BEGIN_HEADER
 
 namespace capnp {
 
@@ -61,6 +59,11 @@ public:
   RemotePromise(RemotePromise&& other) = default;
   RemotePromise& operator=(RemotePromise&& other) = default;
 
+  kj::Promise<Response<T>> dropPipeline() {
+    // Convenience method to convert this into a plain promise.
+    return kj::mv(*this);
+  }
+
   static RemotePromise<T> reducePromise(kj::Promise<RemotePromise>&& promise);
   // Hook for KJ so that Promise<RemotePromise<T>> automatically reduces to RemotePromise<T>.
 };
@@ -69,6 +72,7 @@ class LocalClient;
 namespace _ { // private
 extern const RawSchema NULL_INTERFACE_SCHEMA;  // defined in schema.c++
 class CapabilityServerSetBase;
+struct PipelineBuilderPair;
 }  // namespace _ (private)
 
 struct Capability {
@@ -114,6 +118,27 @@ public:
 
   RemotePromise<Results> send() KJ_WARN_UNUSED_RESULT;
   // Send the call and return a promise for the results.
+
+private:
+  kj::Own<RequestHook> hook;
+
+  friend class Capability::Client;
+  friend struct DynamicCapability;
+  template <typename, typename>
+  friend class CallContext;
+  friend class RequestHook;
+};
+
+template <typename Params>
+class StreamingRequest: public Params::Builder {
+  // Like `Request` but for streaming requests.
+
+public:
+  inline StreamingRequest(typename Params::Builder builder, kj::Own<RequestHook>&& hook)
+      : Params::Builder(builder), hook(kj::mv(hook)) {}
+  inline StreamingRequest(decltype(nullptr)): Params::Builder(nullptr) {}
+
+  kj::Promise<void> send() KJ_WARN_UNUSED_RESULT;
 
 private:
   kj::Own<RequestHook> hook;
@@ -206,6 +231,19 @@ public:
   // Make a request without knowing the types of the params or results. You specify the type ID
   // and method number manually.
 
+  kj::Promise<kj::Maybe<int>> getFd();
+  // If the capability's server implemented Capability::Server::getFd() returning non-null, and all
+  // RPC links between the client and server support FD passing, returns a file descriptor pointing
+  // to the same underlying file description as the server did. Returns null if the server provided
+  // no FD or if FD passing was unavailable at some intervening link.
+  //
+  // This returns a Promise to handle the case of an unresolved promise capability, e.g. a
+  // pipelined capability. The promise resolves no later than when the capability settles, i.e.
+  // the same time `whenResolved()` would complete.
+  //
+  // The file descriptor will remain open at least as long as the Capability::Client remains alive.
+  // If you need it to last longer, you will need to `dup()` it.
+
   // TODO(someday):  method(s) for Join
 
 protected:
@@ -214,6 +252,9 @@ protected:
   template <typename Params, typename Results>
   Request<Params, Results> newCall(uint64_t interfaceId, uint16_t methodId,
                                    kj::Maybe<MessageSize> sizeHint);
+  template <typename Params>
+  StreamingRequest<Params> newStreamingCall(uint64_t interfaceId, uint16_t methodId,
+                                            kj::Maybe<MessageSize> sizeHint);
 
 private:
   kj::Own<ClientHook> hook;
@@ -275,6 +316,57 @@ public:
   // should not be included in the size.  So, if you are simply going to copy some existing message
   // directly into the results, just call `.totalSize()` and pass that in.
 
+  void setPipeline(typename Results::Pipeline&& pipeline);
+  void setPipeline(typename Results::Pipeline& pipeline);
+  // Tells the system where the capabilities in the response will eventually resolve to. This
+  // allows requests that are promise-pipelined on this call's results to continue their journey
+  // to the final destination before this call itself has completed.
+  //
+  // This is particularly useful when forwarding RPC calls to other remote servers, but where a
+  // tail call can't be used. For example, imagine Alice calls `foo()` on Bob. In `foo()`'s
+  // implementation, Bob calls `bar()` on Charlie. `bar()` returns a capability to Bob, and then
+  // `foo()` returns the same capability on to Alice. Now imagine Alice is actually using promise
+  // pipelining in a chain like `foo().getCap().baz()`. The `baz()` call will travel to Bob as a
+  // pipelined call without waiting for `foo()` to return first. But once it gets to Bob, the
+  // message has to patiently wait until `foo()` has completed there, before it can then be
+  // forwarded on to Charlie. It would be better if immediately upon Bob calling `bar()` on
+  // Charlie, then Alice's call to `baz()` could be forwarded to Charlie as a pipelined call,
+  // without waiting for `bar()` to return. This would avoid a network round trip of latency
+  // between Bob and Charlie.
+  //
+  // To solve this problem, Bob takes the pipeline object from the `bar()` call, transforms it into
+  // an appropriate pipeline for a `foo()` call, and passes that to `setPipeline()`. This allows
+  // Alice's pipelined `baz()` call to flow through immediately. The code looks like:
+  //
+  //     kj::Promise<void> foo(FooContext context) {
+  //       auto barPromise = charlie.barRequest().send();
+  //
+  //       // Set up the final pipeline using pipelined capabilities from `barPromise`.
+  //       capnp::PipelineBuilder<FooResults> pipeline;
+  //       pipeline.setResultCap(barPromise.getSomeCap());
+  //       context.setPipeline(pipeline.build());
+  //
+  //       // Now actually wait for the results and process them.
+  //       return barPromise
+  //           .then([context](capnp::Response<BarResults> response) mutable {
+  //         auto results = context.initResults();
+  //
+  //         // Make sure to set up the capabilities exactly as we did in the pipeline.
+  //         results.setResultCap(response.getSomeCap());
+  //
+  //         // ... do other stuff with the real response ...
+  //       });
+  //     }
+  //
+  // Of course, if `foo()` and `bar()` return exactly the same type, and Bob doesn't intend
+  // to do anything with `bar()`'s response except pass it through, then `tailCall()` is a better
+  // choice here. `setPipeline()` is useful when some transformation is needed on the response,
+  // or the middleman needs to inspect the response for some reason.
+  //
+  // Note: This method has an overload that takes an lvalue reference for convenience. This
+  //   overload increments the refcount on the underlying PipelineHook -- it does not keep the
+  //   reference.
+
   template <typename SubParams>
   kj::Promise<void> tailCall(Request<SubParams, Results>&& tailRequest);
   // Resolve the call by making a tail call.  `tailRequest` is a request that has been filled in
@@ -317,6 +409,30 @@ private:
   friend struct DynamicCapability;
 };
 
+template <typename Params>
+class StreamingCallContext: public kj::DisallowConstCopy {
+  // Like CallContext but for streaming calls.
+
+public:
+  explicit StreamingCallContext(CallContextHook& hook);
+
+  typename Params::Reader getParams();
+  void releaseParams();
+
+  // Note: tailCall() is not supported because:
+  // - It would significantly complicate the implementation of streaming.
+  // - It wouldn't be particularly useful since streaming calls don't return anything, and they
+  //   already compensate for latency.
+
+  void allowCancellation();
+
+private:
+  CallContextHook* hook;
+
+  friend class Capability::Server;
+  friend struct DynamicCapability;
+};
+
 class Capability::Server {
   // Objects implementing a Cap'n Proto interface must subclass this.  Typically, such objects
   // will instead subclass a typed Server interface which will take care of implementing
@@ -325,11 +441,43 @@ class Capability::Server {
 public:
   typedef Capability Serves;
 
-  virtual kj::Promise<void> dispatchCall(uint64_t interfaceId, uint16_t methodId,
-                                         CallContext<AnyPointer, AnyPointer> context) = 0;
+  struct DispatchCallResult {
+    kj::Promise<void> promise;
+    // Promise for completion of the call.
+
+    bool isStreaming;
+    // If true, this method was declared as `-> stream;`. No other calls should be permitted until
+    // this call finishes, and if this call throws an exception, all future calls will throw the
+    // same exception.
+  };
+
+  virtual DispatchCallResult dispatchCall(uint64_t interfaceId, uint16_t methodId,
+                                          CallContext<AnyPointer, AnyPointer> context) = 0;
   // Call the given method.  `params` is the input struct, and should be released as soon as it
   // is no longer needed.  `context` may be used to allocate the output struct and deal with
   // cancellation.
+
+  virtual kj::Maybe<int> getFd() { return nullptr; }
+  // If this capability is backed by a file descriptor that is safe to directly expose to clients,
+  // returns that FD. When FD passing has been enabled in the RPC layer, this FD may be sent to
+  // other processes along with the capability.
+
+  virtual kj::Maybe<kj::Promise<Capability::Client>> shortenPath();
+  // If this returns non-null, then it is a promise which, when resolved, points to a new
+  // capability to which future calls can be sent. Use this in cases where an object implementation
+  // might discover a more-optimized path some time after it starts.
+  //
+  // Implementing this (and returning non-null) will cause the capability to be advertised as a
+  // promise at the RPC protocol level. Once the promise returned by shortenPath() resolves, the
+  // remote client will receive a `Resolve` message updating it to point at the new destination.
+  //
+  // `shortenPath()` can also be used as a hack to shut up the client. If shortenPath() returns
+  // a promise that resolves to an exception, then the client will be notified that the capability
+  // is now broken. Assuming the client is using a correct RPC implemnetation, this should cause
+  // all further calls initiated by the client to this capability to immediately fail client-side,
+  // sparing the server's bandwidth.
+  //
+  // The default implementation always returns nullptr.
 
   // TODO(someday):  Method which can optionally be overridden to implement Join when the object is
   //   a proxy.
@@ -349,16 +497,47 @@ protected:
   template <typename Params, typename Results>
   CallContext<Params, Results> internalGetTypedContext(
       CallContext<AnyPointer, AnyPointer> typeless);
-  kj::Promise<void> internalUnimplemented(const char* actualInterfaceName,
-                                          uint64_t requestedTypeId);
-  kj::Promise<void> internalUnimplemented(const char* interfaceName,
-                                          uint64_t typeId, uint16_t methodId);
+  template <typename Params>
+  StreamingCallContext<Params> internalGetTypedStreamingContext(
+      CallContext<AnyPointer, AnyPointer> typeless);
+  DispatchCallResult internalUnimplemented(const char* actualInterfaceName,
+                                           uint64_t requestedTypeId);
+  DispatchCallResult internalUnimplemented(const char* interfaceName,
+                                           uint64_t typeId, uint16_t methodId);
   kj::Promise<void> internalUnimplemented(const char* interfaceName, const char* methodName,
                                           uint64_t typeId, uint16_t methodId);
 
 private:
   ClientHook* thisHook = nullptr;
   friend class LocalClient;
+};
+
+// =======================================================================================
+
+template <typename T>
+class PipelineBuilder: public T::Builder {
+  // Convenience class to build a Pipeline object for use with CallContext::setPipeline().
+  //
+  // Building a pipeline object is like building an RPC result message, except that you only need
+  // to fill in the capabilities, since the purpose is only to allow pipelined RPC requests to
+  // flow through.
+  //
+  // See the docs for `CallContext::setPipeline()` for an example.
+
+public:
+  PipelineBuilder(uint firstSegmentWords = 64);
+  // Construct a builder, allocating the given number of words for the first segment of the backing
+  // message. Since `PipelineBuilder` is typically used with small RPC messages, the default size
+  // here is considerably smaller than with MallocMessageBuilder.
+
+  typename T::Pipeline build();
+  // Constructs a `Pipeline` object backed by the current content of this builder. Calling this
+  // consumes the `PipelineBuilder`; no further methods can be invoked.
+
+private:
+  kj::Own<PipelineHook> hook;
+
+  PipelineBuilder(_::PipelineBuilderPair pair);
 };
 
 // =======================================================================================
@@ -469,6 +648,9 @@ public:
   virtual RemotePromise<AnyPointer> send() = 0;
   // Send the call and return a promise for the result.
 
+  virtual kj::Promise<void> sendStreaming() = 0;
+  // Send a streaming call.
+
   virtual const void* getBrand() = 0;
   // Returns a void* that identifies who made this request.  This can be used by an RPC adapter to
   // discover when tail call is going to be sent over its own connection and therefore can be
@@ -552,16 +734,19 @@ public:
   // therefore it can transfer the capability without proxying.
 
   static const uint NULL_CAPABILITY_BRAND;
-  // Value is irrelevant; used for pointer.
+  static const uint BROKEN_CAPABILITY_BRAND;
+  // Values are irrelevant; used for pointers.
 
   inline bool isNull() { return getBrand() == &NULL_CAPABILITY_BRAND; }
   // Returns true if the capability was created as a result of assigning a Client to null or by
   // reading a null pointer out of a Cap'n Proto message.
 
-  virtual void* getLocalServer(_::CapabilityServerSetBase& capServerSet);
-  // If this is a local capability created through `capServerSet`, return the underlying Server.
-  // Otherwise, return nullptr. Default implementation (which everyone except LocalClient should
-  // use) always returns nullptr.
+  inline bool isError() { return getBrand() == &BROKEN_CAPABILITY_BRAND; }
+  // Returns true if the capability was created by newBrokenCap().
+
+  virtual kj::Maybe<int> getFd() = 0;
+  // Implements Capability::Client::getFd(). If this returns null but whenMoreResolved() returns
+  // non-null, then Capability::Client::getFd() waits for resolution and tries again.
 
   static kj::Own<ClientHook> from(Capability::Client client) { return kj::mv(client.hook); }
 };
@@ -576,6 +761,8 @@ public:
   virtual AnyPointer::Builder getResults(kj::Maybe<MessageSize> sizeHint) = 0;
   virtual kj::Promise<void> tailCall(kj::Own<RequestHook>&& request) = 0;
   virtual void allowCancellation() = 0;
+
+  virtual void setPipeline(kj::Own<PipelineHook>&& pipeline) = 0;
 
   virtual kj::Promise<AnyPointer::Pipeline> onTailCall() = 0;
   // If `tailCall()` is called, resolves to the PipelineHook from the tail call.  An
@@ -777,6 +964,13 @@ RemotePromise<Results> Request<Params, Results>::send() {
   return RemotePromise<Results>(kj::mv(typedPromise), kj::mv(typedPipeline));
 }
 
+template <typename Params>
+kj::Promise<void> StreamingRequest<Params>::send() {
+  auto promise = hook->sendStreaming();
+  hook = nullptr;  // prevent reuse
+  return promise;
+}
+
 inline Capability::Client::Client(kj::Own<ClientHook>&& hook): hook(kj::mv(hook)) {}
 template <typename T, typename>
 inline Capability::Client::Client(kj::Own<T>&& server)
@@ -793,9 +987,6 @@ template <typename T>
 inline typename T::Client Capability::Client::castAs() {
   return typename T::Client(hook->addRef());
 }
-inline kj::Promise<void> Capability::Client::whenResolved() {
-  return hook->whenResolved();
-}
 inline Request<AnyPointer, AnyPointer> Capability::Client::typelessRequest(
     uint64_t interfaceId, uint16_t methodId,
     kj::Maybe<MessageSize> sizeHint) {
@@ -807,15 +998,31 @@ inline Request<Params, Results> Capability::Client::newCall(
   auto typeless = hook->newCall(interfaceId, methodId, sizeHint);
   return Request<Params, Results>(typeless.template getAs<Params>(), kj::mv(typeless.hook));
 }
+template <typename Params>
+inline StreamingRequest<Params> Capability::Client::newStreamingCall(
+    uint64_t interfaceId, uint16_t methodId, kj::Maybe<MessageSize> sizeHint) {
+  auto typeless = hook->newCall(interfaceId, methodId, sizeHint);
+  return StreamingRequest<Params>(typeless.template getAs<Params>(), kj::mv(typeless.hook));
+}
 
 template <typename Params, typename Results>
 inline CallContext<Params, Results>::CallContext(CallContextHook& hook): hook(&hook) {}
+template <typename Params>
+inline StreamingCallContext<Params>::StreamingCallContext(CallContextHook& hook): hook(&hook) {}
 template <typename Params, typename Results>
 inline typename Params::Reader CallContext<Params, Results>::getParams() {
   return hook->getParams().template getAs<Params>();
 }
+template <typename Params>
+inline typename Params::Reader StreamingCallContext<Params>::getParams() {
+  return hook->getParams().template getAs<Params>();
+}
 template <typename Params, typename Results>
 inline void CallContext<Params, Results>::releaseParams() {
+  hook->releaseParams();
+}
+template <typename Params>
+inline void StreamingCallContext<Params>::releaseParams() {
   hook->releaseParams();
 }
 template <typename Params, typename Results>
@@ -844,6 +1051,14 @@ inline Orphanage CallContext<Params, Results>::getResultsOrphanage(
   return Orphanage::getForMessageContaining(hook->getResults(sizeHint));
 }
 template <typename Params, typename Results>
+void CallContext<Params, Results>::setPipeline(typename Results::Pipeline&& pipeline) {
+  hook->setPipeline(PipelineHook::from(kj::mv(pipeline)));
+}
+template <typename Params, typename Results>
+void CallContext<Params, Results>::setPipeline(typename Results::Pipeline& pipeline) {
+  hook->setPipeline(PipelineHook::from(pipeline).addRef());
+}
+template <typename Params, typename Results>
 template <typename SubParams>
 inline kj::Promise<void> CallContext<Params, Results>::tailCall(
     Request<SubParams, Results>&& tailRequest) {
@@ -853,6 +1068,10 @@ template <typename Params, typename Results>
 inline void CallContext<Params, Results>::allowCancellation() {
   hook->allowCancellation();
 }
+template <typename Params>
+inline void StreamingCallContext<Params>::allowCancellation() {
+  hook->allowCancellation();
+}
 
 template <typename Params, typename Results>
 CallContext<Params, Results> Capability::Server::internalGetTypedContext(
@@ -860,8 +1079,43 @@ CallContext<Params, Results> Capability::Server::internalGetTypedContext(
   return CallContext<Params, Results>(*typeless.hook);
 }
 
+template <typename Params>
+StreamingCallContext<Params> Capability::Server::internalGetTypedStreamingContext(
+    CallContext<AnyPointer, AnyPointer> typeless) {
+  return StreamingCallContext<Params>(*typeless.hook);
+}
+
 Capability::Client Capability::Server::thisCap() {
   return Client(thisHook->addRef());
+}
+
+namespace _ { // private
+
+struct PipelineBuilderPair {
+  AnyPointer::Builder root;
+  kj::Own<PipelineHook> hook;
+};
+
+PipelineBuilderPair newPipelineBuilder(uint firstSegmentWords);
+
+}  // namespace _ (private)
+
+template <typename T>
+PipelineBuilder<T>::PipelineBuilder(uint firstSegmentWords)
+    : PipelineBuilder(_::newPipelineBuilder(firstSegmentWords)) {}
+
+template <typename T>
+PipelineBuilder<T>::PipelineBuilder(_::PipelineBuilderPair pair)
+    : T::Builder(pair.root.initAs<T>()),
+      hook(kj::mv(pair.hook)) {}
+
+template <typename T>
+typename T::Pipeline PipelineBuilder<T>::build() {
+  // Prevent subsequent accidental modification. A good compiler should be able to optimize this
+  // assignment away assuming the PipelineBuilder is not accessed again after this point.
+  static_cast<typename T::Builder&>(*this) = nullptr;
+
+  return typename T::Pipeline(AnyPointer::Pipeline(kj::mv(hook)));
 }
 
 template <typename T>
@@ -905,3 +1159,5 @@ struct Orphanage::GetInnerReader<T, Kind::INTERFACE> {
 #define CAPNP_CAPABILITY_H_INCLUDED  // for testing includes in unit test
 
 }  // namespace capnp
+
+CAPNP_END_HEADER

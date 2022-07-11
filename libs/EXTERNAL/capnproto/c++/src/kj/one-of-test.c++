@@ -71,10 +71,10 @@ TEST(OneOf, Basic) {
   EXPECT_EQ("foo", var.get<String>());
   EXPECT_EQ("", var2.get<String>());
 
-  if (false) {
+  auto canCompile KJ_UNUSED = [&]() {
     var.allHandled<3>();
     // var.allHandled<2>();  // doesn't compile
-  }
+  };
 }
 
 TEST(OneOf, Copy) {
@@ -167,6 +167,46 @@ TEST(OneOf, Maybe) {
         KJ_FAIL_ASSERT("expected int, got float", n);
       }
     }
+  }
+}
+
+KJ_TEST("OneOf copy/move from alternative variants") {
+  {
+    // Test const copy.
+    const OneOf<int, float> src = 23.5f;
+    OneOf<int, bool, float> dst = src;
+    KJ_ASSERT(dst.is<float>());
+    KJ_EXPECT(dst.get<float>() == 23.5);
+  }
+
+  {
+    // Test case that requires non-const copy.
+    int arr[3] = {1, 2, 3};
+    OneOf<int, ArrayPtr<int>> src = ArrayPtr<int>(arr);
+    OneOf<int, bool, ArrayPtr<int>> dst = src;
+    KJ_ASSERT(dst.is<ArrayPtr<int>>());
+    KJ_EXPECT(dst.get<ArrayPtr<int>>().begin() == arr);
+    KJ_EXPECT(dst.get<ArrayPtr<int>>().size() == kj::size(arr));
+  }
+
+  {
+    // Test move.
+    OneOf<int, String> src = kj::str("foo");
+    OneOf<int, bool, String> dst = kj::mv(src);
+    KJ_ASSERT(dst.is<String>());
+    KJ_EXPECT(dst.get<String>() == "foo");
+
+    String s = kj::mv(dst).get<String>();
+    KJ_EXPECT(s == "foo");
+  }
+
+  {
+    // We can still have nested OneOfs.
+    OneOf<int, float> src = 23.5f;
+    OneOf<bool, OneOf<int, float>> dst = src;
+    KJ_ASSERT((dst.is<OneOf<int, float>>()));
+    KJ_ASSERT((dst.get<OneOf<int, float>>().is<float>()));
+    KJ_EXPECT((dst.get<OneOf<int, float>>().get<float>() == 23.5));
   }
 }
 

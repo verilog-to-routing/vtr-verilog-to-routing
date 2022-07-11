@@ -1277,7 +1277,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
-            "A set of semi-colon seperated graphics commands.\n"
+            "A set of semi-colon seperated graphics commands. \n"
+            "Commands must be surrounded by quotation marks (e.g. --graphics_commands \"save_graphics place.png\")\n"
             "   Commands:\n"
             "      * save_graphics <file>\n"
             "           Saves graphics to the specified file (.png/.pdf/\n"
@@ -2609,6 +2610,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     power_grp.add_argument(args.ActFile, "--activity_file")
         .help("Signal activities file for all nets (see documentation).")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    auto& noc_grp = parser.add_argument_group("noc options");
+
+    noc_grp.add_argument<bool, ParseOnOff>(args.noc, "--noc")
+        .help(
+            "Enables a NoC-driven placer that optimizes the placement of routers on the NoC."
+            "Also enables an option in the graphical display that can be used to display the NoC on the FPGA."
+            "This should be on only when the FPGA device contains a NoC and the provided netlist connects to the NoC.")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     return parser;

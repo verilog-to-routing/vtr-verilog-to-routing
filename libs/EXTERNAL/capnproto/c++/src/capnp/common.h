@@ -25,10 +25,6 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !defined(CAPNP_HEADER_WARNINGS)
-#pragma GCC system_header
-#endif
-
 #include <inttypes.h>
 #include <kj/string.h>
 #include <kj/memory.h>
@@ -38,11 +34,21 @@
 #include <kj/units.h>
 #endif
 
+#if !defined(CAPNP_HEADER_WARNINGS) || !CAPNP_HEADER_WARNINGS
+#define CAPNP_BEGIN_HEADER KJ_BEGIN_SYSTEM_HEADER
+#define CAPNP_END_HEADER KJ_END_SYSTEM_HEADER
+#else
+#define CAPNP_BEGIN_HEADER
+#define CAPNP_END_HEADER
+#endif
+
+CAPNP_BEGIN_HEADER
+
 namespace capnp {
 
 #define CAPNP_VERSION_MAJOR 0
-#define CAPNP_VERSION_MINOR 7
-#define CAPNP_VERSION_MICRO 0
+#define CAPNP_VERSION_MINOR 9
+#define CAPNP_VERSION_MICRO 1
 
 #define CAPNP_VERSION \
   (CAPNP_VERSION_MAJOR * 1000000 + CAPNP_VERSION_MINOR * 1000 + CAPNP_VERSION_MICRO)
@@ -167,7 +173,7 @@ inline constexpr Kind kind() {
   return k;
 }
 
-#if _MSC_VER
+#if _MSC_VER && !defined(__clang__)
 
 #define CAPNP_KIND(T) ::capnp::_::Kind_<T>::kind
 // Avoid constexpr methods in MSVC (it remains buggy in many situations).
@@ -193,7 +199,7 @@ inline constexpr Style style() {
 template <typename T, Kind k = CAPNP_KIND(T)>
 struct List;
 
-#if _MSC_VER
+#if _MSC_VER && !defined(__clang__)
 
 template <typename T, Kind k>
 struct List {};
@@ -308,7 +314,7 @@ namespace _ {  // private
 template <typename T, Kind k = CAPNP_KIND(T)>
 struct PointerHelpers;
 
-#if _MSC_VER
+#if _MSC_VER && !defined(__clang__)
 
 template <typename T, Kind k>
 struct PointerHelpers {};
@@ -352,7 +358,7 @@ private:
   uint64_t content KJ_UNUSED_MEMBER;
 #if __GNUC__ < 8 || __clang__
   // GCC 8's -Wclass-memaccess complains whenever we try to memcpy() a `word` if we've disallowed
-  // the copy constructor. We don't want to disable the warning becaues it's a useful warning and
+  // the copy constructor. We don't want to disable the warning because it's a useful warning and
   // we'd have to disable it for all applications that include this header. Instead we allow `word`
   // to be copyable on GCC.
   KJ_DISALLOW_COPY(word);
@@ -741,3 +747,5 @@ inline constexpr kj::ArrayPtr<U> arrayPtr(U* ptr, T size) {
 #endif
 
 }  // namespace capnp
+
+CAPNP_END_HEADER

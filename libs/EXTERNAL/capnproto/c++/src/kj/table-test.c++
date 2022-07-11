@@ -267,6 +267,32 @@ KJ_TEST("hash tables when hash is always same") {
   KJ_EXPECT_THROW_MESSAGE("inserted row already exists in table", table.insert("bar"));
 }
 
+class IntHasher {
+  // Dumb integer hasher that just returns the integer itself.
+public:
+  uint keyForRow(uint i) const { return i; }
+
+  bool matches(uint a, uint b) const {
+    return a == b;
+  }
+  uint hashCode(uint i) const {
+    return i;
+  }
+};
+
+KJ_TEST("HashIndex with many erasures doesn't keep growing") {
+  HashIndex<IntHasher> index;
+
+  kj::ArrayPtr<uint> rows = nullptr;
+
+  for (uint i: kj::zeroTo(1000000)) {
+    KJ_ASSERT(index.insert(rows, 0, i) == nullptr);
+    index.erase(rows, 0, i);
+  }
+
+  KJ_ASSERT(index.capacity() < 10);
+}
+
 struct SiPair {
   kj::StringPtr str;
   uint i;
@@ -739,6 +765,21 @@ KJ_TEST("simple tree table") {
     KJ_EXPECT(iter == range.end());
   }
 
+  {
+    auto iter = table.seek("garply");
+    KJ_EXPECT(*iter++ == "garply");
+    KJ_EXPECT(*iter++ == "grault");
+    KJ_EXPECT(*iter++ == "qux");
+    KJ_EXPECT(iter == table.ordered().end());
+  }
+
+  {
+    auto iter = table.seek("gorply");
+    KJ_EXPECT(*iter++ == "grault");
+    KJ_EXPECT(*iter++ == "qux");
+    KJ_EXPECT(iter == table.ordered().end());
+  }
+
   auto& graultRow = table.begin()[1];
   kj::StringPtr origGrault = graultRow;
 
@@ -769,6 +810,35 @@ KJ_TEST("simple tree table") {
     KJ_EXPECT(*iter++ == "waldo");
     KJ_EXPECT(iter == table.end());
   }
+
+  // Verify that move constructor/assignment work.
+  Table<StringPtr, TreeIndex<StringCompare>> other(kj::mv(table));
+  KJ_EXPECT(other.size() == 5);
+  KJ_EXPECT(table.size() == 0);
+  KJ_EXPECT(table.begin() == table.end());
+  {
+    auto iter = other.begin();
+    KJ_EXPECT(*iter++ == "garply");
+    KJ_EXPECT(*iter++ == "grault");
+    KJ_EXPECT(*iter++ == "qux");
+    KJ_EXPECT(*iter++ == "corge");
+    KJ_EXPECT(*iter++ == "waldo");
+    KJ_EXPECT(iter == other.end());
+  }
+
+  table = kj::mv(other);
+  KJ_EXPECT(other.size() == 0);
+  KJ_EXPECT(table.size() == 5);
+  {
+    auto iter = table.begin();
+    KJ_EXPECT(*iter++ == "garply");
+    KJ_EXPECT(*iter++ == "grault");
+    KJ_EXPECT(*iter++ == "qux");
+    KJ_EXPECT(*iter++ == "corge");
+    KJ_EXPECT(*iter++ == "waldo");
+    KJ_EXPECT(iter == table.end());
+  }
+  KJ_EXPECT(other.begin() == other.end());
 }
 
 class UintCompare {
@@ -1099,6 +1169,66 @@ KJ_TEST("insertion order index") {
     auto range = table.ordered();
     KJ_EXPECT(range.begin() == range.end());
   }
+}
+
+KJ_TEST("insertion order index is movable") {
+  using UintTable = Table<uint, InsertionOrderIndex>;
+
+  kj::Maybe<UintTable> myTable;
+
+  {
+    UintTable yourTable;
+
+    yourTable.insert(12);
+    yourTable.insert(34);
+    yourTable.insert(56);
+    yourTable.insert(78);
+    yourTable.insert(111);
+    yourTable.insert(222);
+    yourTable.insert(333);
+    yourTable.insert(444);
+    yourTable.insert(555);
+    yourTable.insert(666);
+    yourTable.insert(777);
+    yourTable.insert(888);
+    yourTable.insert(999);
+
+    myTable = kj::mv(yourTable);
+  }
+
+  auto& table = KJ_ASSERT_NONNULL(myTable);
+
+  // At one time the following induced a segfault/double-free, due to incorrect memory management in
+  // InsertionOrderIndex's move ctor and dtor.
+  auto range = table.ordered();
+  auto iter = range.begin();
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 12);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 34);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 56);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 78);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 111);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 222);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 333);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 444);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 555);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 666);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 777);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 888);
+  KJ_ASSERT(iter != range.end());
+  KJ_EXPECT(*iter++ == 999);
+  KJ_EXPECT(iter == range.end());
 }
 
 }  // namespace

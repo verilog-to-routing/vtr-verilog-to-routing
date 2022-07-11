@@ -33,6 +33,7 @@
 #    include "vpr_utils.h"
 #    include "draw_global.h"
 #    include "draw.h"
+#    include "draw_triangle.h"
 #    include "draw_color.h"
 
 /************************* Subroutines local to this file. *******************************/

@@ -4,10 +4,10 @@
         "generated_blif": "initial_delays_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Simulation produced fewer than 6 vectors."
+            "[SIMULATION] Simulation produced fewer than 6 vectors."
         ]
     },
     "initial/initial_multiple_blocks/no_arch": {
@@ -15,10 +15,10 @@
         "generated_blif": "initial_multiple_blocks_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Simulation produced fewer than 8 vectors."
+            "[SIMULATION] Simulation produced fewer than 8 vectors."
         ]
     },
     "initial/initial_multiple_statements/no_arch": {
@@ -26,10 +26,10 @@
         "generated_blif": "initial_multiple_statements_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Simulation produced fewer than 2 vectors."
+            "[SIMULATION] Simulation produced fewer than 2 vectors."
         ]
     },
     "DEFAULT": {

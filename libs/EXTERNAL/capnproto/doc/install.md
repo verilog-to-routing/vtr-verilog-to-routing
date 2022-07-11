@@ -18,16 +18,16 @@ This package is licensed under the [MIT License](http://opensource.org/licenses/
 
 ### Supported Compilers
 
-Cap'n Proto makes extensive use of C++11 language features. As a result, it requires a relatively
+Cap'n Proto makes extensive use of C++14 language features. As a result, it requires a relatively
 new version of a well-supported compiler. The minimum versions are:
 
-* GCC 4.8
-* Clang 3.5
-* Visual C++ 2015
+* GCC 5.0
+* Clang 5.0
+* Visual C++ 2017
 
 If your system's default compiler is older that the above, you will need to install a newer
 compiler and set the `CXX` environment variable before trying to build Cap'n Proto. For example,
-after installing GCC 4.8, you could set `CXX=g++-4.8` to use this compiler.
+after installing GCC 5, you could set `CXX=g++-5` to use this compiler.
 
 ### Supported Operating Systems
 
@@ -41,7 +41,7 @@ as well as on Windows. We test every Cap'n Proto release on the following platfo
 * Windows - MinGW-w64
 * Windows - Visual C++
 
-**Windows users:** Cap'n Proto requires Visual Studio 2015 Update 3 or newer. All features
+**Windows users:** Cap'n Proto requires Visual Studio 2017 or newer. All features
 of Cap'n Proto -- including serialization, dynamic API, RPC, and schema parser -- are now supported.
 
 **Mac OS X users:** You should use the latest Xcode with the Xcode command-line
@@ -56,9 +56,9 @@ package from [Apple](https://developer.apple.com/downloads/) or compiler builds 
 
 You may download and install the release version of Cap'n Proto like so:
 
-<pre><code>curl -O <a href="https://capnproto.org/capnproto-c++-0.7.0.tar.gz">https://capnproto.org/capnproto-c++-0.7.0.tar.gz</a>
-tar zxf capnproto-c++-0.7.0.tar.gz
-cd capnproto-c++-0.7.0
+<pre><code>curl -O <a href="https://capnproto.org/capnproto-c++-0.9.1.tar.gz">https://capnproto.org/capnproto-c++-0.9.1.tar.gz</a>
+tar zxf capnproto-c++-0.9.1.tar.gz
+cd capnproto-c++-0.9.1
 ./configure
 make -j6 check
 sudo make install</code></pre>
@@ -74,6 +74,7 @@ Some package managers include Cap'n Proto packages.
 Note: These packages are not maintained by us and are sometimes not up to date with the latest Cap'n Proto release.
 
 * Debian / Ubuntu: `apt-get install capnproto`
+* Arch Linux: `sudo pacman -S capnproto`
 * Homebrew (OSX): `brew install capnp`
 
 **From Git**
@@ -96,28 +97,32 @@ If you download directly from Git, you will need to have the GNU autotools --
 
 1. Download Cap'n Proto Win32 build:
 
-   <pre><a href="https://capnproto.org/capnproto-c++-win32-0.7.0.zip">https://capnproto.org/capnproto-c++-win32-0.7.0.zip</a></pre>
+   <pre><a href="https://capnproto.org/capnproto-c++-win32-0.9.1.zip">https://capnproto.org/capnproto-c++-win32-0.9.1.zip</a></pre>
 
-2. Find `capnp.exe`, `capnpc-c++.exe`, and `capnpc-capnp.exe` under `capnproto-tools-win32-0.7.0` in
+2. Find `capnp.exe`, `capnpc-c++.exe`, and `capnpc-capnp.exe` under `capnproto-tools-win32-0.9.1` in
    the zip and copy them somewhere.
+
+3. If your `.capnp` files will import any of the `.capnp` files provided by the core project, or
+   if you use the `stream` keyword (which implicitly imports `capnp/stream.capnp`), then you need
+   to put those files somewhere where the capnp compiler can find them. To do this, copy the
+   directory `capnproto-c++-0.9.1/src` to the location of your choice, then make sure to pass the
+   flag `-I <that location>` to `capnp` when you run it.
 
 If you don't care about C++ support, you can stop here. The compiler exe can be used with plugins
 provided by projects implementing Cap'n Proto in other languages.
 
 If you want to use Cap'n Proto in C++ with Visual Studio, do the following:
 
-1. Make sure that you are using Visual Studio 2015 or newer, with all updates installed. Cap'n
-   Proto uses C++11 language features that did not work in previous versions of Visual Studio,
+1. Make sure that you are using Visual Studio 2017 or newer, with all updates installed. Cap'n
+   Proto uses C++14 language features that did not work in previous versions of Visual Studio,
    and the updates include many bug fixes that Cap'n Proto requires.
 
 2. Install [CMake](http://www.cmake.org/) version 3.1 or later.
 
-3. Use CMake to generate Visual Studio project files under `capnproto-c++-0.7.0` in the zip file.
+3. Use CMake to generate Visual Studio project files under `capnproto-c++-0.9.1` in the zip file.
    You can use the CMake UI for this or run this shell command:
 
-       cmake -G "Visual Studio 14 2015"
-
-    (For VS2017, you can use "Visual Studio 15 2017" as the generator name.)
+       cmake -G "Visual Studio 15 2017"
 
 3. Open the "Cap'n Proto" solution in Visual Studio.
 

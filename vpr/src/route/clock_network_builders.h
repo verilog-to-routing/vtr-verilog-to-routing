@@ -113,9 +113,10 @@ class ClockNetwork {
                                                                      t_rr_graph_storage* rr_nodes,
                                                                      RRGraphBuilder& rr_graph_builder,
                                                                      t_rr_edge_info_set* rr_edges_to_create,
-                                                                     int num_segments)
+                                                                     int num_segments_x)
         = 0;
     virtual size_t estimate_additional_nodes(const DeviceGrid& grid) = 0;
+    virtual void map_relative_seg_indices(const t_unified_to_parallel_seg_index& index_map) = 0;
 };
 
 class ClockRib : public ClockNetwork {
@@ -169,8 +170,11 @@ class ClockRib : public ClockNetwork {
                                                              t_rr_graph_storage* rr_nodes,
                                                              RRGraphBuilder& rr_graph_builder,
                                                              t_rr_edge_info_set* rr_edges_to_create,
-                                                             int num_segments) override;
+                                                             int num_segments_x) override;
     size_t estimate_additional_nodes(const DeviceGrid& grid) override;
+
+    void map_relative_seg_indices(const t_unified_to_parallel_seg_index& index_map) override;
+
     int create_chanx_wire(int x_start,
                           int x_end,
                           int y,
@@ -199,6 +203,11 @@ class ClockSpine : public ClockNetwork {
     SpineTaps tap;
 
     // segment indices
+    /* AA:Initially, after loading up these values in device setup, the indices will be relative to the **unified** segment_inf vector which
+     * is carried in the device.Arch; The sole purpose of these indices is for calculating the cost index when allocating the drive, left, and 
+     * right nodes for the network. We now use segment indices realtive to the **parallel** vector of segments to setup the cost index, so these
+     * will be remapped later in the map_relative_seg_indices.  */
+
     int right_seg_idx = OPEN;
     int left_seg_idx = OPEN;
     int drive_seg_idx = OPEN;
@@ -230,8 +239,9 @@ class ClockSpine : public ClockNetwork {
                                                              t_rr_graph_storage* rr_nodes,
                                                              RRGraphBuilder& rr_graph_builder,
                                                              t_rr_edge_info_set* rr_edges_to_create,
-                                                             int num_segments) override;
+                                                             int num_segments_x) override;
     size_t estimate_additional_nodes(const DeviceGrid& grid) override;
+    void map_relative_seg_indices(const t_unified_to_parallel_seg_index& index_map) override;
     int create_chany_wire(int y_start,
                           int y_end,
                           int x,
@@ -267,7 +277,7 @@ class ClockHTree : private ClockNetwork {
                                                              t_rr_graph_storage* rr_nodes,
                                                              RRGraphBuilder& rr_graph_builder,
                                                              t_rr_edge_info_set* rr_edges_to_create,
-                                                             int num_segments) override;
+                                                             int num_segments_x) override;
     size_t estimate_additional_nodes(const DeviceGrid& grid) override;
 };
 

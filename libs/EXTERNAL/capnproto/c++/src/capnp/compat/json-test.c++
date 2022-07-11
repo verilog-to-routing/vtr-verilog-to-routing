@@ -647,6 +647,23 @@ KJ_TEST("maximum nesting depth") {
   }
 }
 
+KJ_TEST("unknown fields") {
+  JsonCodec json;
+  MallocMessageBuilder message;
+  auto root = message.initRoot<TestJsonAnnotations2>();
+  auto valid = R"({"foo": "a"})"_kj;
+  auto unknown = R"({"foo": "a", "unknown-field": "b"})"_kj;
+  json.decode(valid, root);
+  json.decode(unknown, root);
+  json.setRejectUnknownFields(true);
+  json.decode(valid, root);
+  KJ_EXPECT_THROW_MESSAGE("Unknown field", json.decode(unknown, root));
+
+  // Verify unknown field rejection still works when handling by annotation.
+  json.handleByAnnotation<TestJsonAnnotations2>();
+  KJ_EXPECT_THROW_MESSAGE("Unknown field", json.decode(unknown, root));
+}
+
 class TestCallHandler: public JsonCodec::Handler<Text> {
 public:
   void encode(const JsonCodec& codec, Text::Reader input,
@@ -973,6 +990,21 @@ KJ_TEST("rename fields") {
 
     KJ_EXPECT(kj::str(root) == goldenText, root, goldenText);
   }
+}
+
+KJ_TEST("base64 union encoded correctly") {
+  // At one point field handlers were not correctly applied when the field was a member of a union
+  // in a type that was handled by annotation.
+
+  JsonCodec json;
+  json.handleByAnnotation<TestBase64Union>();
+  json.setPrettyPrint(true);
+
+  MallocMessageBuilder message;
+  auto root = message.getRoot<TestBase64Union>();
+  root.initFoo(5);
+
+  KJ_EXPECT(json.encode(root) == "{\"foo\": \"AAAAAAA=\"}", json.encode(root));
 }
 
 }  // namespace

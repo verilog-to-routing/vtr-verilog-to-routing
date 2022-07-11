@@ -302,6 +302,33 @@ $ ./run_reg_test.py vtr_reg_basic vtr_reg_strong -j4
 For the very large runs, you can submit your runs on a large cluster. A template of submission script to 
 a Slurm-managed cluster can be found under vtr_flow/tasks/slurm/
 
+## Continuous integration (CI)
+For the following tests, you can use remote servers instead of running them locally. Once the changes are pushed into the 
+remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
+will be triggered. The following tests are included in the workflow:
+* [vtr_reg_nightly_test1-3](#vtr_reg_nightly_test1-3)
+* [vtr_reg_strong](#vtr_reg_strong)
+* vtr_reg_yosys
+* vtr_reg_yosys_odin
+* odin_tech_strong
+* odin_reg_strong
+
+instructions on how to gather QoR results of CI runs can be found [here](#example-extracting-qor-data-from-ci-runs).
+
+#### Re-run CI Tests
+In the case that you want to re-run the CI tests, due to certain issues such as infrastructure failure,
+go to the "Action" tab and find your workflow under Test Workflow.
+Select the test which you want to re-run. There is a re-run button on the top-right corner of the newly appeared window.
+![Rerun CI Test](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/re_run_tests.png)
+
+**Attention** If the previous run is not finished, you will not be able to re-run the CI tests. To circumvent this limitation,
+there are two options:
+1. Cancel the workflow. After a few minutes, you would be able to re-run the workflow
+   ![Rerun CI Test](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/cancel_workflow.png)
+2. Wait until the workflow finishes, then re-run the failed jobs
+
+
+
 ## Odin Functionality Tests
 
 Odin has its own set of tests to verify the correctness of its synthesis results:
@@ -546,47 +573,28 @@ k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml clstm_like.large.v      common  
 k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml lstm.v  common  38901.96                35.76   651868  7       30532.88        -1      -1     606240   -1      -1      6626    17      305     -1      success v8.0.0-4470-ge625fdfe9  release IPO VTR_ASSERT_LEVEL=2  GNU 7.5.0 on Linux-4.15.0-124-generic x86_64    2021-06-18T14:02:07     jupiter0        /export/aman/vtr_aman/vtr-verilog-to-routing/vtr_flow/tasks     6036204 17     19       252939  204226  1       121211  7577    200     200     40000   dsp_top auto    4576.24 1453809 1136.46 3.95    8.38544 -386636 -8.385448.38544 54.87   0.944433        0.763732        237.758 176.282 -1      1876011 15      1.28987e+09     3.81683e+08     8.80433e+08     22010.877.53    284.979 214.902 -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1      -1     -1       -1      -1
 ```
 
-### Example: CI Tests QoR Measurement
-Once the changes are pushed into the remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
-will be triggered. The following tests are included in the workflow:
-* [vtr_reg_nightly_test1-3](./README.developers.md#vtr_reg_nightly_test1-3)
-* [vtr_reg_strong](./README.developers.md#vtr_reg_strong)
-* vtr_reg_yosys
-* vtr_reg_yosys_odin
-* odin_tech_strong
-* odin_reg_strong
+### Example: Extracting QoR Data from CI Runs
 
-To get the QoR results of the above tests, go to the "Action" tab. On the menu on the left,
-choose "Test" and select your workflow. If running the tests is done, scroll down and click on "artifact".
-This would download the results for all CI tests.
+Instead of running tests/designs locally to generate QoR data, you can also extract the QoR data from any of the standard
+test runs performed automatically by CI on a pull request. To get the QoR results of the above tests, go to the "Action" 
+tab. On the menu on the left, choose "Test" and select your workflow. If running the tests is done, scroll down and click 
+on "artifact". This would download the results for all CI tests.
 
 1. Go to "Action" tab
-![Action Button](./doc/src/dev/eval_qor/action_button.png)
+![Action Button](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/action_button.png)
 2. Select "Test" and choose your workflow
-![Test Button](./doc/src/dev/eval_qor/test.png)
+![Test Button](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/test.png)
 3. Scroll down and download "artifact"
-![Artifact](./doc/src/dev/eval_qor/artifact.png)
+![Artifact](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/artifact.png)
 
 Assume that we want to get the QoR results for "vtr_reg_nightly_test3". In the artifact, there is a file named 
 "qor_results_vtr_reg_nightly_test3.tar.gz." Unzip this file, and a new directory named "vtr_flow" is created. Go to 
-"vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3." In this directory, you can find a directory for each test circuit
-containing in this test suit(vtr_reg_nightly_test3.) For instance, results related to *vtr_reg_qor* are located in
-"vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3/vtr_reg_qor." In this directory, results for each run are stored separately.
-For example, if you want to get the results for the first run, there is a file in *run001* directory named *parse_results.txt*.
-Using these parsed results, you can do a detailed QoR comparison using the instructions given [here](./README.developers.md#Comparing QoR Measurements).
-![Parse File Dir](./doc/src/dev/eval_qor/parse_result_dir.png)
-
-#### Re-run CI Tests
-In the case that you want to re-run the CI tests, due to certain issues such as infrastructure failure, 
-go to the "Action" tab and find your workflow under Test Workflow.
-Select the test which you want to re-run. There is a re-run button on the top-right corner of the newly appeared window.
-![Rerun CI Test](./doc/src/dev/eval_qor/re_run_tests.png)
-
-** **Attention** ** If the previous run is not finished, you will not be able to re-run the CI tests. To circumvent this limitation,
-there are two options:
-1. Cancel the workflow. After a few minutes, you would be able to re-run the workflow
-   ![Rerun CI Test](./doc/src/dev/eval_qor/cancel_workflow.png)
-2. Wait until the workflow finishes, then re-run the failed jobs
+"vtr_flow/tasks/regression_tests/vtr_reg_nightly_test3." In this directory, you can find a directory for each benchmark
+contained in this test suite (vtr_reg_nightly_test3.) In the directory for each sub-test, there is another directory
+named *run001*. Two files are here: *qor_results.txt*, and *parse_results.txt*. QoR results for all circuits tested in this
+benchmark are stored in these files.
+Using these parsed results, you can do a detailed QoR comparison using the instructions given [here](#comparing-qor-measurements).
+![Parse File Dir](https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/eval_qor/parse_result_dir.png)
 
 
 
@@ -737,6 +745,9 @@ There may be times when a regression test fails its QoR test because its golden_
     $ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test3/vtr_ex_test -check_golden
     ```
 Once the `-check_golden` command passes, the changes to the golden result can be committed so that the reg test will pass in future runs of vtr_reg_nightly_test3.
+
+**Attention** Even though the parsed files are located in different locations, the names of the parsed files 
+should be different.
 
 # Adding Tests
 
