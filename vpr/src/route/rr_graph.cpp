@@ -1889,19 +1889,13 @@ static void add_internal_rr_class(const t_class* class_inf,
     // Iterate over the pins connected to the given SINK/SRC pin to add the edge between them and
     // the SINK/SRC pin
     for (int ipin = 0; ipin < class_inf->num_pins; ++ipin) {
-        int pin_logical_num = class_inf->pinlist[ipin];
-        t_pin_spec pin_spec;
-        pin_spec = get_pin_spec_from_class(rr_graph_builder,
-                                           physical_tile,
-                                           i,
-                                           j,
-                                           pin_logical_num,
-                                           class_id);
-        VTR_ASSERT(pin_spec.pin_type == IPIN || pin_spec.pin_type == OPIN);
+        int pin_physiacl_num = class_inf->pinlist[ipin];
+        node_type = (class_type == DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
+        RRNodeId node_id = rr_graph_builder.node_lookup().find_node(i, j, node_type, pin_physiacl_num, e_side::TOP);
         if(class_type == DRIVER)
-            rr_edges_to_create.emplace_back(class_inode, pin_spec.pin_rr_node_id, delayless_switch);
+            rr_edges_to_create.emplace_back(class_inode, node_id, delayless_switch);
         else
-            rr_edges_to_create.emplace_back(pin_spec.pin_rr_node_id, class_inode, delayless_switch);
+            rr_edges_to_create.emplace_back(node_id, class_inode, delayless_switch);
     }
 
     if(class_type == DRIVER){

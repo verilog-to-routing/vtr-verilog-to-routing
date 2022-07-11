@@ -323,17 +323,6 @@ bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_physical
 /** **/
 
 /** get classes under different blocks **/
-std::unordered_map<int, const t_class*> get_flat_tile_classes_map(t_physical_tile_type_ptr physical_tile);
-
-std::unordered_map<int, const t_class*> get_sub_tile_inst_classes_map(t_physical_tile_type_ptr physical_tile,
-                                                                           const t_sub_tile* sub_tile,
-                                                                           int relative_cap);
-
-std::unordered_map<int, const t_class*> get_logical_block_classes_map(t_physical_tile_type_ptr physical_tile,
-                                                                                const t_sub_tile* sub_tile,
-                                                                                t_logical_block_type_ptr logical_block,
-                                                                                int relative_cap);
-
 std::unordered_map<int, const t_class*>  get_pb_graph_node_num_class_pairs(t_physical_tile_type_ptr physical_tile,
                                             const t_sub_tile* sub_tile,
                                             t_logical_block_type_ptr logical_block,
