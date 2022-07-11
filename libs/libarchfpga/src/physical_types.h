@@ -617,9 +617,12 @@ struct t_physical_tile_type {
 
     std::vector<t_class> class_inf; /* [0..num_class-1] */
 
+    std::unordered_map<int, t_class> internal_class_inf;
+
     std::vector<int> pin_width_offset;  // [0..num_pins-1]
     std::vector<int> pin_height_offset; // [0..num_pins-1]
     std::vector<int> pin_class;         // [0..num_pins-1]
+    std::unordered_map<int, int> internal_pin_class;
     std::vector<bool> is_ignored_pin;   // [0..num_pins-1]
     std::vector<bool> is_pin_global;    // [0..num_pins-1]
 
@@ -728,6 +731,9 @@ struct t_sub_tile {
                                ///>      at a physical location, and compatible netlist blocks can be placed at sub_tile
                                ///>      indices ranging from 4 to 7.
     t_class_range class_range;
+
+    std::vector<std::unordered_map<t_logical_block_type_ptr, int>> starting_internal_class_idx;
+    std::vector<std::unordered_map<t_logical_block_type_ptr, int>> starting_internal_pin_idx;
 
     int num_phy_pins = 0;
 
