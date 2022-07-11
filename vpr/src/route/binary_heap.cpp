@@ -29,8 +29,7 @@ void BinaryHeap::init_heap(const DeviceGrid& grid) {
     if (heap_ == nullptr || heap_size_ < target_heap_size) {
         if (heap_ != nullptr) {
             // coverity[offset_free : Intentional]
-            heap_++;
-            delete[] heap_;
+            delete[](heap_ + 1);
             heap_ = nullptr;
         }
         heap_size_ = (grid.width() - 1) * (grid.height() - 1);
@@ -153,7 +152,7 @@ void BinaryHeap::expand_heap_if_full() {
         heap_size_ *= 2; //setting new heap size
         heap_ = new t_heap*[heap_size_];
         heap_--;
-        for (int i = 0; i < old_heap_size_; i++)
+        for (size_t i = 0; i < old_heap_size_; i++)
             heap_[i + 1] = temp[i];
     }
 }
@@ -204,9 +203,8 @@ void BinaryHeap::free_all_memory() {
         empty_heap();
 
         // coverity[offset_free : Intentional]
-        //        vtr::free(heap_ + 1);
-        heap_++;
-        delete[] heap_;
+
+        delete[](heap_ + 1);
     }
 
     heap_ = nullptr; /* Defensive coding:  crash hard if I use these. */

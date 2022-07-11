@@ -362,7 +362,6 @@ t_mux_arch* power_get_mux_arch(int num_mux_inputs, float transistor_size) {
 
     if (it == power_ctx.commonly_used->mux_info.end()) {
         mux_info = new t_power_mux_info;
-        //        mux_info->mux_arch = nullptr;
         mux_info->mux_arch_max_size = 0;
         VTR_ASSERT(power_ctx.commonly_used->mux_info[transistor_size] == nullptr);
         power_ctx.commonly_used->mux_info[transistor_size] = mux_info;
