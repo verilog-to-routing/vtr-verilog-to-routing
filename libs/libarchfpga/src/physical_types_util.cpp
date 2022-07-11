@@ -1190,28 +1190,22 @@ t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile
     VTR_ASSERT(physical_num >= physical_tile->num_pins);
     const t_sub_tile* sub_tile;
     int sub_tile_cap;
+    t_logical_block_type_ptr logical_block = nullptr;
 
     std::tie(sub_tile, sub_tile_cap)  = get_sub_tile_from_pin_physical_num(physical_tile, physical_num);
-    VTR_ASSERT(sub_tile_cap != -1);
-    int pin_num_offset = get_sub_tile_inst_physical_pin_num_offset(physical_tile, sub_tile, sub_tile_cap);
-    VTR_ASSERT(physical_num >= pin_num_offset);
+    VTR_ASSERT(sub_tile_cap != OPEN);
 
-
-    for(auto tmp_logical_block : sub_tile->equivalent_sites) {
-        if(physical_num < (pin_num_offset + (int)tmp_logical_block->pin_logical_num_to_pb_pin_mapping.size()) ) {
-            return tmp_logical_block;
-
-        } else {
-            pin_num_offset += (int)tmp_logical_block->pin_logical_num_to_pb_pin_mapping.size();
+    for(auto starting_idx : sub_tile->starting_internal_pin_idx[sub_tile_cap]) {
+        if(physical_num >= starting_idx.second) {
+            logical_block = starting_idx.first;
         }
     }
 
-    return nullptr;
+    return logical_block;
 }
 
 const t_pb_graph_pin* get_pb_pin_from_pin_physical_num (t_physical_tile_type_ptr physical_tile, int physical_num) {
     VTR_ASSERT(physical_num >= physical_tile->num_pins);
-
     auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, physical_num);
     VTR_ASSERT(logical_block != nullptr);
     int logical_num = get_pin_logical_num_from_pin_physical_num(physical_tile, physical_num);
@@ -1240,18 +1234,7 @@ int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, 
     if(is_pin_on_tile(physical_tile, pin_physical_num)) {
         return physical_tile->pin_class[pin_physical_num];
     } else {
-        const t_sub_tile* sub_tile;
-        int sub_tile_rel_cap;
-        std::tie(sub_tile, sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_tile, pin_physical_num);
-        auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, pin_physical_num);
-        auto pin_logical_num = get_pin_logical_num_from_pin_physical_num(physical_tile, pin_physical_num);
-        auto pb_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
-        auto class_logical_num = logical_block->pb_pin_to_class_logical_num_mapping.at(pb_pin);
-        return get_class_physical_num_from_class_logical_num(physical_tile,
-                                                             sub_tile,
-                                                             logical_block,
-                                                             sub_tile_rel_cap,
-                                                             class_logical_num);
+        return physical_tile->internal_pin_class.at(pin_physical_num);
     }
 
 }
@@ -1325,13 +1308,9 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                             t_logical_block_type_ptr logical_block,
                             int relative_cap,
                             const t_pb_graph_pin* pin) {
-    int pin_ptc;
-    int logical_pin_num = pin->pin_count_in_cluster;
-    int offset = get_logical_block_physical_pin_num_offset(physical_tile,
-                                                           sub_tile,
-                                                           logical_block,
-                                                           relative_cap);
-    pin_ptc = logical_pin_num + offset;
+    int pin_ptc = OPEN;
+    int offset = sub_tile->starting_internal_pin_idx[relative_cap].at(logical_block);
+    pin_ptc = pin->pin_count_in_cluster + offset;
 
     return pin_ptc;
 }

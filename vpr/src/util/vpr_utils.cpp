@@ -679,6 +679,7 @@ std::tuple<int, int> get_block_loc(const ParentBlockId& block_id, bool is_flat) 
         AtomBlockId atom_block_id = convert_to_atom_block_id(block_id);
         auto& atom_look_up = g_vpr_ctx.atom().lookup;
         ClusterBlockId cluster_block_id = atom_look_up.atom_clb(atom_block_id);
+        VTR_ASSERT(cluster_block_id != ClusterBlockId::INVALID());
         i = place_ctx.block_locs[cluster_block_id].loc.x;
         j = place_ctx.block_locs[cluster_block_id].loc.y;
     } else {
@@ -2210,7 +2211,7 @@ int tile_pin_index(const ClusterPinId pin) {
 }
 
 int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
-    auto atom_look_up = g_vpr_ctx.atom().lookup;
+    auto& atom_look_up = g_vpr_ctx.atom().lookup;
     auto& atom_net_list = g_vpr_ctx.atom().nlist;
 
     auto atom_blk_id = atom_net_list.pin_block(atom_pin_id);
