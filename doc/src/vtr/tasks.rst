@@ -150,7 +150,9 @@ Optional Fields
     
     Multiple `include_list_add` can be provided.
 
-    `include` files could act as the top module complementary, like definitions, macros or sub-modules.
+    `include` files could act as the top module complementary, like definitions, memory initialization files, macros or sub-modules.
+
+    Note: Only `include` files, written in supported HDLs by each frontend, are synthesized. The others are only copied to the destination folder.
     
     Note: `include` files will be shared among all benchmark circuits in the task config file. 
 
