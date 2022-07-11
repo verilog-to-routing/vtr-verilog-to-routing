@@ -32,11 +32,14 @@ void BinaryHeap::init_heap(const DeviceGrid& grid) {
     if (heap_ == nullptr || heap_size_ < target_heap_size) {
         if (heap_ != nullptr) {
             // coverity[offset_free : Intentional]
-            vtr::free(heap_ + 1);
+//            vtr::free(heap_ + 1);
+        	heap_++;
+        	delete[] heap_ ;
             heap_ = nullptr;
         }
         heap_size_ = (grid.width() - 1) * (grid.height() - 1);
-        heap_ = (t_heap**)vtr::malloc(heap_size_ * sizeof(t_heap*));
+//        heap_ = (t_heap**)vtr::malloc(heap_size_ * sizeof(t_heap*));
+        heap_ = new t_heap*[heap_size_];
         heap_--; /* heap stores from [1..heap_size] */
     }
     heap_tail_ = 1;
@@ -143,12 +146,23 @@ void BinaryHeap::sift_up(size_t leaf, t_heap* const node) {
     heap_[leaf] = node;
 }
 
+//expands heap by "realloc"
 void BinaryHeap::expand_heap_if_full() {
     if (heap_tail_ > heap_size_) { /* Heap is full */
-        heap_size_ *= 2;
-        heap_ = (t_heap**)vtr::realloc((void*)(heap_ + 1),
-                                       heap_size_ * sizeof(t_heap*));
-        heap_--; /* heap goes from [1..heap_size] */
+
+    		// copy elements from heap [1 ... heap_size_] to temp [0 ... heap_size_ -1]
+    		std::vector<t_heap*> temp(heap_ + 1, heap_ + 1 + heap_size_);
+    		heap_++;
+    		delete[] heap_;
+    		size_t old_heap_size_ = heap_size_;
+    		heap_size_ *= 2; //setting new heap size
+    		heap_ = new t_heap*[heap_size_];
+    		heap_--;
+    	    for (int i = 0; i < old_heap_size_; i++)
+    	    	heap_[i + 1] = temp[i];
+
+//        heap_ = (t_heap**)vtr::realloc((void*)(heap_ + 1),
+//                                       heap_size_ * sizeof(t_heap*));
     }
 }
 
@@ -198,7 +212,9 @@ void BinaryHeap::free_all_memory() {
         empty_heap();
 
         // coverity[offset_free : Intentional]
-        vtr::free(heap_ + 1);
+//        vtr::free(heap_ + 1);
+        heap_++;
+        delete[] heap_;
     }
 
     heap_ = nullptr; /* Defensive coding:  crash hard if I use these. */
