@@ -93,6 +93,50 @@ void NocStorage::set_noc_router_latency(double router_latency) {
     return;
 }
 
+bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_id) {
+
+    // get all the outgoing links of the provided sourcer router
+    std::vector<NocLinkId>* source_router_outgoing_links = &router_link_list[src_router_id];
+
+    // keeps track of the position of each link in the vector of outgoing links for the source router
+    int outgoing_link_index = 0;
+
+    // keeps track of whether the link was removed or not. This status variable is used to report externally whether the link was removed or not
+    bool link_removed_status = false;
+
+    // go through each outgoing link and compare the sink router
+    for (auto outgoing_link = source_router_outgoing_links->begin(); outgoing_link != source_router_outgoing_links->end(); outgoing_link++){
+
+        // compare the sink router of this link and check if it is the link to remove
+        if (link_storage[*outgoing_link].get_sink_router() == sink_router_id){
+            // found the link we need to remove so we delete it here
+
+            // first get the index of the link (this is just the link id, since the link is also the index)
+            int index_of_link_to_remove = (size_t)*outgoing_link;
+
+            // deleting link here
+            link_storage.erase(link_storage.begin() + index_of_link_to_remove);
+
+            // removing this link as an outgoing link from the source router
+            source_router_outgoing_links->erase(source_router_outgoing_links->begin() + outgoing_link_index);
+
+            // update the status variable to indicate that the link was removed
+            link_removed_status = true;
+
+            break;
+        }
+
+    }
+
+    // if a link was removed then throw warning message
+    if (!link_removed_status){
+        VTR_LOG_WARN("No link could be found that has a source router with id: '%d' and sink router with id:'%d'.\n", (size_t)src_router_id, (size_t)sink_router_id);
+    }
+
+    return link_removed_status;
+
+}
+
 void NocStorage::finished_building_noc(void) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     built_noc = true;
