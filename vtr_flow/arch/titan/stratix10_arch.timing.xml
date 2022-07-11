@@ -2469,8 +2469,8 @@
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
-                <output name="resulta" num_pins="37"/>
-                <output name="resultb" num_pins="37"/>
+                <output name="resulta" num_pins="64"/>
+                <output name="resultb" num_pins="64"/>
                 <output name="scanout" num_pins="19"/>
                 <output name="dftout" num_pins="1"/>
             </pb_type>
@@ -2524,8 +2524,8 @@
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
-                <output name="resulta" num_pins="37"/>
-                <output name="resultb" num_pins="37"/>
+                <output name="resulta" num_pins="64"/>
+                <output name="resultb" num_pins="64"/>
                 <output name="scanout" num_pins="19"/>
                 <output name="dftout" num_pins="1"/>
             </pb_type>
@@ -2578,8 +2578,8 @@
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
-                <output name="resulta" num_pins="37"/>
-                <output name="resultb" num_pins="37"/>
+                <output name="resulta" num_pins="64"/>
+                <output name="resultb" num_pins="64"/>
                 <output name="scanout" num_pins="19"/>
                 <output name="dftout" num_pins="1"/>
             </pb_type>
@@ -2631,8 +2631,8 @@
                 <input name="dfxlfsrena" num_pins="1"/>
                 <input name="dfxmisrena" num_pins="1"/>
 
-                <output name="resulta" num_pins="37"/>
-                <output name="resultb" num_pins="37"/>
+                <output name="resulta" num_pins="64"/>
+                <output name="resultb" num_pins="64"/>
                 <output name="scanout" num_pins="19"/>
                 <output name="dftout" num_pins="1"/>
             </pb_type>
