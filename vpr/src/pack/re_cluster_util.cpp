@@ -188,7 +188,9 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   const ClusterBlockId new_clb,
                                   const std::vector<AtomBlockId>& new_clb_atoms,
                                   bool during_packing,
-                                  t_clustering_data& clustering_data) {
+                                  t_clustering_data& clustering_data,
+                                  bool is_swap,
+                                  t_lb_router_data*& router_data) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
@@ -202,7 +204,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
     rebuild_cluster_placemet_stats(new_clb, new_clb_atoms, cluster_ctx.clb_nlist.block_type(new_clb)->index, cluster_ctx.clb_nlist.block_pb(new_clb)->mode);
 
     //re-build router_data structure for this cluster
-    t_lb_router_data* router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb, new_clb_atoms);
+    if(!is_swap)
+        router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb, new_clb_atoms);
 
     pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[block_type->index]),
                                     molecule,
@@ -232,10 +235,12 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
         }
     }
 
-    //Free failed clustering
-    free_router_data(router_data);
-    router_data = nullptr;
-
+    if(pack_result == BLK_PASSED || !is_swap ) {
+        //Free clustering router data
+        free_router_data(router_data);
+        router_data = nullptr;
+    }
+    
     return (pack_result == BLK_PASSED);
 }
 
@@ -280,6 +285,9 @@ void revert_mol_move(const ClusterBlockId& old_clb,
         cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route.clear();
         cluster_ctx.clb_nlist.block_pb(old_clb)->pb_route = alloc_and_load_pb_route(old_router_data->saved_lb_nets, cluster_ctx.clb_nlist.block_pb(old_clb)->pb_graph_node);
     }
+
+    free_router_data(old_router_data);
+    old_router_data = nullptr;
 }
 /*******************************************/
 /************ static functions *************/

@@ -105,7 +105,9 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
                                   const ClusterBlockId clb_index,
                                   const std::vector<AtomBlockId>& clb_atoms,
                                   bool during_packing,
-                                  t_clustering_data& clustering_data);
+                                  t_clustering_data& clustering_data,
+                                  bool is_swap,
+                                  t_lb_router_data*& router_data);
 
 bool is_cluster_legal(t_lb_router_data*& router_data);
 
