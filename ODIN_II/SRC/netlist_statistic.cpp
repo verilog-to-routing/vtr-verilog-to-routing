@@ -478,51 +478,43 @@ void compute_statistics(netlist_t* netlist, bool display) {
         get_upward_stat(&netlist->output_node_stat, netlist->top_output_nodes, netlist->num_top_output_nodes, netlist, travelsal_id + 1);
 
         if (display) {
+            std::string hdr = "";
             printf("\n\t==== Stats ====\n");
-            for (long long op = 0; op < operation_list_END; op += 1) {
+            for (auto op = 0; op < operation_list_END; op += 1) {
                 switch (op) {
                     // For top IO nodes generate detailed info since the design might have unconnected input nodes
-                    case CLOCK_NODE: {
-                        std::string hdr = std::string("Number of <")
-                                          + operation_list_STR[op][ODIN_LONG_STRING]
-                                          + "> node(s): ";
-                        printf("%-42s%lld\n", hdr.c_str(), netlist->num_of_type[op]);
-                        break;
-                    }
                     case INPUT_NODE: {
-                        std::string hdr = std::string("Number of used <")
-                                          + operation_list_STR[op][ODIN_LONG_STRING]
-                                          + "> node(s): ";
-                        printf("%-42s%lld\n", hdr.c_str(), netlist->num_of_type[op]);
-                        hdr = std::string("Number of unused <")
-                              + operation_list_STR[op][ODIN_LONG_STRING]
-                              + "> node(s): ";
-                        printf("%-42s%lld\n", hdr.c_str(), netlist->num_top_input_nodes - netlist->num_of_type[op] - netlist->num_of_type[CLOCK_NODE]);
-                        break;
+                        auto unused_pi = netlist->num_top_input_nodes - netlist->num_of_type[op] - netlist->num_of_type[CLOCK_NODE];
+                        if (unused_pi > 0) {
+                            hdr = std::string("Number of unused <")
+                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                                  + "> node: ";
+                            printf("%-42s%lld\n", hdr.c_str(), unused_pi);
+                        }
+                        [[fallthrough]];
                     }
                     case OUTPUT_NODE: {
-                        std::string hdr = std::string("Number of used <")
-                                          + operation_list_STR[op][ODIN_LONG_STRING]
-                                          + "> node(s): ";
-                        printf("%-42s%lld\n", hdr.c_str(), netlist->num_of_type[op]);
-                        hdr = std::string("Number of unused <")
-                              + operation_list_STR[op][ODIN_LONG_STRING]
-                              + "> node(s): ";
-                        printf("%-42s%lld\n\n", hdr.c_str(), netlist->num_top_output_nodes - netlist->num_of_type[op]);
-                        break;
+                        auto unused_po = netlist->num_top_output_nodes - netlist->num_of_type[op];
+                        if (unused_po > 0) {
+                            hdr = std::string("Number of unused <")
+                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                                  + "> node: ";
+                            printf("%-42s%lld\n", hdr.c_str(), unused_po);
+                        }
+                        [[fallthrough]];
                     }
                     default: {
                         if (netlist->num_of_type[op] > UNUSED_NODE_TYPE) {
-                            std::string hdr = std::string("Number of <")
-                                              + operation_list_STR[op][ODIN_LONG_STRING]
-                                              + "> node(s): ";
+                            hdr = std::string("Number of <")
+                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                                  + "> node: ";
                             printf("%-42s%lld\n", hdr.c_str(), netlist->num_of_type[op]);
                         }
                     }
                 }
             }
-            printf("%-42s%lld\n", "Total estimated number of lut(s): ", netlist->num_logic_element);
-            printf("%-42s%lld\n", "Total number of node(s): ", netlist->num_of_node);
+            printf("%-42s%lld\n", "Total estimated number of lut: ", netlist->num_logic_element);
+            printf("%-42s%lld\n", "Total number of node: ", netlist->num_of_node);
             printf("%-42s%0.0f\n", "Longest path: ", netlist->output_node_stat.max_depth);
             printf("%-42s%0.0f\n", "Average path: ", netlist->output_node_stat.avg_depth);
             printf("\n");
