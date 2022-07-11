@@ -533,7 +533,6 @@ void free_draw_structs() {
      *
      * For safety, set all the array pointers to NULL in case any data
      * structure gets freed twice.													 */
-    t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     if (draw_coords != nullptr) {
