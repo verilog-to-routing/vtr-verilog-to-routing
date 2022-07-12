@@ -87,6 +87,10 @@ static std::vector<int> get_pb_pin_driving_pins(t_physical_tile_type_ptr physica
                                                  int relative_cap,
                                                  const t_pb_graph_pin* pin);
 
+static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physical_type,
+                                                 t_logical_block_type_ptr logical_block,
+                                                 int pin_physical_num);
+
 //static std::vector<const t_pb_graph_node*> get_child_pb_graph_node_mode(const t_pb_graph_node* parent_node, int mode_num);
 
 static std::tuple<int, int, int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_index, bool is_flat) {
@@ -403,6 +407,29 @@ static std::vector<int> get_pb_pin_driving_pins(t_physical_tile_type_ptr physica
     }
 
     return driving_pins;
+}
+
+static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physical_type,
+                                                 t_logical_block_type_ptr logical_block,
+                                                 int pin_physical_num) {
+    VTR_ASSERT(is_pin_on_tile(physical_type, pin_physical_num));
+    const t_sub_tile* sub_tile;
+    int rel_cap;
+    std::tie(sub_tile, rel_cap) = get_sub_tile_from_pin_physical_num(physical_type, pin_physical_num);
+    VTR_ASSERT(sub_tile != nullptr);
+    auto direct_map = (physical_type->tile_block_pin_directs_map).at(logical_block->index).at(sub_tile->index);
+    int sub_tile_inst_num_pins = sub_tile->num_phy_pins/sub_tile->capacity.total();
+    pin_physical_num -= (sub_tile_inst_num_pins*rel_cap);
+    auto result = direct_map.find(t_physical_pin(pin_physical_num));
+    if (result == direct_map.inverse_end()) {
+        archfpga_throw(__FILE__, __LINE__,
+                       "Couldn't find the corresponding logical sub tile pin of the physical block pin %d."
+                       "Physical Tile Type: %s, Logical Block Type: %s.\n",
+                       pin_physical_num, physical_type->name, logical_block->name);
+    }
+    int pin_logical_num = result->second.pin;
+    return logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
+
 }
 
 //static std::vector<const t_pb_graph_node*> get_child_pb_graph_node_mode(const t_pb_graph_node* parent_node, int mode_num) {
@@ -1012,7 +1039,7 @@ std::unordered_map<int, const t_class*>  get_pb_graph_node_num_class_pairs(t_phy
     std::unordered_set<int> seen_logical_class_num;
     std::unordered_map<int, const t_class*> classes_map;
     const std::unordered_map<const t_pb_graph_pin*, int>& pb_pin_class_map = logical_block->pb_pin_to_class_logical_num_mapping;
-    auto& logical_block_classes = logical_block->logical_class_inf;
+
 
 
     std::vector<const t_pb_graph_pin*> pb_pins = get_pb_graph_node_pins(pb_graph_node);
@@ -1209,19 +1236,7 @@ std::vector<int> get_physical_pin_driving_pins(t_physical_tile_type_ptr physical
                                                                           pin_physical_num);
 
     if(is_pin_on_tile(physical_type, pin_physical_num)) {
-
-        auto direct_map = (physical_type->tile_block_pin_directs_map).at(logical_block->index).at(sub_tile->index);
-        int sub_tile_inst_num_pins = sub_tile->num_phy_pins/sub_tile->capacity.total();
-        pin_physical_num -= (sub_tile_inst_num_pins*sub_tile_cap);
-        auto result = direct_map.find(t_physical_pin(pin_physical_num));
-        if (result == direct_map.inverse_end()) {
-            archfpga_throw(__FILE__, __LINE__,
-                           "Couldn't find the corresponding logical sub tile pin of the physical block pin %d."
-                           "Physical Tile Type: %s, Logical Block Type: %s.\n",
-                           pin_physical_num, physical_type->name, logical_block->name);
-        }
-        int pin_logical_num = result->second.pin;
-        auto pb_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
+        auto pb_pin = get_tile_pin_pb_pin(physical_type, logical_block, pin_physical_num);
         return get_pb_pin_driving_pins(physical_type,
                                         sub_tile,
                                         logical_block,
@@ -1251,6 +1266,45 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
     pin_ptc = pin->pin_count_in_cluster + offset;
 
     return pin_ptc;
+}
+
+float get_max_edge_delay(t_physical_tile_type_ptr physical_tile,
+                         t_logical_block_type_ptr logical_block,
+                         int from_pin_physical_num,
+                         int to_pin_physical_num) {
+    bool find_edge = false;
+    float max_delay = -1.0;
+    const t_pb_graph_pin* from_pb_pin;
+    const t_pb_graph_pin* to_pb_pin;
+    if(is_pin_on_tile(physical_tile, from_pin_physical_num)) {
+        from_pb_pin = get_tile_pin_pb_pin(physical_tile, logical_block, from_pin_physical_num);
+    } else {
+        from_pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, from_pin_physical_num);
+    }
+
+    if(is_pin_on_tile(physical_tile, to_pin_physical_num)) {
+        to_pb_pin = get_tile_pin_pb_pin(physical_tile, logical_block, to_pin_physical_num);
+    } else {
+        to_pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, to_pin_physical_num);
+    }
+
+    for(int out_edge_id = 0; out_edge_id < from_pb_pin->num_output_edges; out_edge_id++) {
+        auto pb_edge = from_pb_pin->output_edges[out_edge_id];
+        auto conn_pins = pb_edge->output_pins;
+        for(int conn_pin_idx = 0; conn_pin_idx < pb_edge->num_output_pins; conn_pin_idx++) {
+            if(to_pb_pin == conn_pins[conn_pin_idx]) {
+                max_delay = pb_edge->delay_max;
+                find_edge = true;
+                break;
+            }
+        }
+        if(find_edge) {
+            break;
+        }
+    }
+    VTR_ASSERT(find_edge);
+    return max_delay;
+
 }
 
 int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile) {

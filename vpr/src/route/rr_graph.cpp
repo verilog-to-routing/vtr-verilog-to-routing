@@ -305,13 +305,6 @@ static RRNodeId get_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
                                    const int j,
                                    int pin_physical_num);
 
-static t_pin_spec get_pin_spec_from_class (RRGraphBuilder& rr_graph_builder,
-                                                                    t_physical_tile_type_ptr physical_tile,
-                                                                    int i,
-                                                                    int j,
-                                                                    int pin_logical_num,
-                                                                    int class_id);
-
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int i,
                           const int j,
@@ -2066,8 +2059,11 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
             if(driving_pin_node_id == RRNodeId::INVALID()) {
                 continue;
             }
-
-            rr_edges_to_create.emplace_back(driving_pin_node_id, parent_pin_node_id, delayless_switch);
+            float max_edge_delay = get_max_edge_delay(physical_type,
+                                                      logical_block,
+                                                      driving_pin,
+                                                      pin);
+            rr_edges_to_create.emplace_back(driving_pin_node_id, parent_pin_node_id, max_edge_delay);
         }
     }
 
@@ -2102,41 +2098,6 @@ static RRNodeId get_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
     }
 
     return RRNodeId::INVALID();
-}
-
-static t_pin_spec get_pin_spec_from_class (RRGraphBuilder& rr_graph_builder,
-                                          t_physical_tile_type_ptr physical_tile,
-                                          int i,
-                                          int j,
-                                          int pin_logical_num,
-                                          int class_id) {
-
-    t_pin_spec pin_spec;
-    t_rr_type node_type = NUM_RR_TYPES;
-    int pin_ptc;
-    RRNodeId node_id = RRNodeId::INVALID();
-    pin_ptc = get_pin_physical_num_from_class_physical_num(physical_tile, class_id, pin_logical_num);
-    VTR_ASSERT(pin_ptc != -1);
-
-    // get node type
-    auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_ptc);
-    VTR_ASSERT(pin_type == DRIVER || pin_type == RECEIVER);
-    node_type = (pin_type == e_pin_type::DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
-
-
-    // get node id
-    node_id = get_pin_rr_node_id(rr_graph_builder,
-                                              physical_tile,
-                                              i,
-                                              j,
-                                              pin_ptc);
-
-    VTR_ASSERT(node_id != RRNodeId::INVALID());
-
-    pin_spec.pin_type = node_type;
-    pin_spec.pin_rr_node_id = node_id;
-    pin_spec.pin_ptc = pin_ptc;
-    return pin_spec;
 }
 
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
