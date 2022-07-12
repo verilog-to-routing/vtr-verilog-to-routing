@@ -2488,8 +2488,8 @@
                 <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_full.by"/>
                 <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_full.bz"/>
 
-                <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
-                <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
+                <direct name="resulta_out" input="mac18x18_full.resulta[36:0]" output="DSP.result[36:0]"/>
+                <direct name="resultb_out" input="mac18x18_full.resultb[36:0]" output="DSP.result[73:37]"/>
 
                 <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_full.negate"/>
                 <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_full.sub"/>
@@ -2543,8 +2543,8 @@
                 <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_full.by"/>
                 <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_full.bz"/>
 
-                <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
-                <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
+                <direct name="resulta_out" input="mac18x18_full.resulta[36:0]" output="DSP.result[36:0]"/>
+                <direct name="resultb_out" input="mac18x18_full.resultb[36:0]" output="DSP.result[73:37]"/>
 
                 <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_full.negate"/>
                 <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_full.sub"/>
@@ -2597,8 +2597,8 @@
                 <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_full.by"/>
                 <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_full.bz"/>
 
-                <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
-                <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
+                <direct name="resulta_out" input="mac18x18_full.resulta[36:0]" output="DSP.result[36:0]"/>
+                <direct name="resultb_out" input="mac18x18_full.resultb[36:0]" output="DSP.result[73:37]"/>
 
                 <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_full.negate"/>
                 <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_full.sub"/>
@@ -2650,8 +2650,8 @@
                 <direct name="by_in" input="DSP.datain[91:73]" output="mac18x18_full.by"/>
                 <direct name="bz_in" input="DSP.datain[109:92]" output="mac18x18_full.bz"/>
 
-                <direct name="resulta_out" input="mac18x18_full.resulta" output="DSP.result[36:0]"/>
-                <direct name="resultb_out" input="mac18x18_full.resultb" output="DSP.result[73:37]"/>
+                <direct name="resulta_out" input="mac18x18_full.resulta[36:0]" output="DSP.result[36:0]"/>
+                <direct name="resultb_out" input="mac18x18_full.resultb[36:0]" output="DSP.result[73:37]"/>
 
                 <direct name="negate_in" input="DSP.controlin[15]" output="mac18x18_full.negate"/>
                 <direct name="sub_in" input="DSP.controlin[16]" output="mac18x18_full.sub"/>
