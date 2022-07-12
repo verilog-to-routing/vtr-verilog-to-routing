@@ -103,6 +103,7 @@ void pip_types(std::set<std::tuple<int, bool>>& seen,
     }
 }
 
+// This function is using templates for first argument
 void fill_switch(t_arch_switch_inf* switch_,
                  float R,
                  float Cin,

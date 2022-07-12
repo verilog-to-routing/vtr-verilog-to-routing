@@ -361,6 +361,11 @@ struct InterchangeRRGraphBuilder {
         switches.resize(seen.size() + 2);
 
         std::vector<std::tuple<std::tuple<int, bool>, int>> temp_;
+
+        /*
+         * This nuction is template function defined in
+         * libs/libarchfpga/src/fpga_interchange_arch_utils.impl.h
+         */
         process_switches_array<std::vector<t_rr_switch_inf>&, int>(ar_, seen, switches, temp_);
 
         auto& rr_switches = device_ctx_.rr_graph_builder.rr_switch();

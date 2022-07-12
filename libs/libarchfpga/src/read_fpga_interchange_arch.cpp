@@ -2288,6 +2288,12 @@ struct ArchReader {
         std::set<std::tuple<int, bool>> seen;
         pip_types(seen, ar_);
 
+        /*
+         * Number of different switch types in architecture is equal to number
+         * of different and RR special switches: SHORT and MUX type ones.
+         * Process_switches_array() filles out arch->Switches array with
+         * RR specific switches alongside FPGA interchange defined ones.
+         */
         arch_->num_switches = seen.size() + 2;
 
         if (arch_->num_switches > 0) {
@@ -2295,6 +2301,10 @@ struct ArchReader {
         }
 
         std::vector<std::tuple<std::tuple<int, bool>, int>> pips_models_;
+        /*
+         * This nuction is template function defined in
+         * libs/libarchfpga/src/fpga_interchange_arch_utils.impl.h
+         */
         process_switches_array<t_arch_switch_inf*, int>(ar_, seen, arch_->Switches, pips_models_);
 
         for (int i = 0; i < arch_->num_switches; ++i) {
