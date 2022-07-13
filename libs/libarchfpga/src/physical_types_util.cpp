@@ -391,18 +391,11 @@ static std::vector<int> get_pb_pin_driving_pins(t_physical_tile_type_ptr physica
 
         for(int pin_idx = 0; pin_idx < num_pins; pin_idx++) {
             auto conn_pin = connected_pins_ptr[pin_idx];
-            if(conn_pin->is_root_block_pin()) {
-                driving_pins.push_back(get_physical_pin_at_sub_tile_location(physical_type,
-                                                                             logical_block,
-                                                                             sub_tile->capacity.low+relative_cap,
-                                                                             conn_pin->pin_count_in_cluster));
-            } else {
-                driving_pins.push_back(get_pb_pin_physical_num(physical_type,
-                                                               sub_tile,
-                                                               logical_block,
-                                                               relative_cap,
-                                                               conn_pin));
-            }
+            driving_pins.push_back(get_pb_pin_physical_num(physical_type,
+                                                           sub_tile,
+                                                           logical_block,
+                                                           relative_cap,
+                                                           conn_pin));
         }
     }
 
@@ -771,25 +764,20 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
 }
 
 std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_type_ptr type,
-                                                             int class_index,
+                                                             int class_physical_num,
                                                              bool is_flat) {
     t_class class_inf;
-    bool is_inside_cluster_class = is_flat && !is_class_on_tile(type, class_index);
+    bool is_inside_cluster_class = is_class_on_tile(type, class_physical_num);
     if(is_inside_cluster_class) {
-        auto logical_block = get_logical_block_from_class_physical_num(type, class_index);
-        int class_loigcal_num = get_class_logical_num_from_class_physical_num(type, class_index);
-        class_inf = logical_block->logical_class_inf[class_loigcal_num];
+        class_inf = type->internal_class_inf.at(class_physical_num);
     } else {
-        class_inf = type->class_inf[class_index];
+        class_inf = type->class_inf[class_physical_num];
     }
 
     std::vector<t_pin_inst_port> pin_info;
     for (int ipin = 0; ipin < class_inf.num_pins; ++ipin) {
-        int pin_index = class_inf.pinlist[ipin];
-        if(is_inside_cluster_class) {
-            pin_index = get_pin_physical_num_from_class_physical_num(type, class_index, pin_index);
-        }
-        pin_info.push_back(block_type_pin_index_to_pin_inst(type, pin_index, is_inside_cluster_class));
+        int pin_physical_num = class_inf.pinlist[ipin];
+        pin_info.push_back(block_type_pin_index_to_pin_inst(type, pin_physical_num, is_inside_cluster_class));
     }
 
     auto cmp = [](const t_pin_inst_port& lhs, const t_pin_inst_port& rhs) {
@@ -999,31 +987,6 @@ int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical
     }
 
     return num_pins;
-}
-
-
-int get_pin_physical_num_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num, int pin_logical_num) {
-    bool is_on_tile = is_class_on_tile(physical_tile, physical_class_num);
-    const t_sub_tile* sub_tile;
-    int sub_tile_cap;
-    int pin_physical_num = -1;
-
-    if(is_on_tile) {
-        pin_physical_num = pin_logical_num;
-
-    } else {
-        std::tie(sub_tile, sub_tile_cap) = get_sub_tile_from_class_physical_num(physical_tile, physical_class_num);
-        VTR_ASSERT(sub_tile_cap != -1);
-        auto logical_block = get_logical_block_from_class_physical_num(physical_tile, physical_class_num);
-        auto pb_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
-        pin_physical_num = get_pb_pin_physical_num(physical_tile,
-                                       sub_tile,
-                                       logical_block,
-                                       sub_tile_cap,
-                                       pb_pin);
-    }
-
-    return pin_physical_num;
 }
 
 bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
@@ -1261,11 +1224,19 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                             t_logical_block_type_ptr logical_block,
                             int relative_cap,
                             const t_pb_graph_pin* pin) {
-    int pin_ptc = OPEN;
-    int offset = sub_tile->starting_internal_pin_idx[relative_cap].at(logical_block);
-    pin_ptc = pin->pin_count_in_cluster + offset;
+    int pin_physical_num = OPEN;
+    if(pin->is_root_block_pin()) {
+        pin_physical_num = get_physical_pin_at_sub_tile_location(physical_tile,
+                                                                 logical_block,
+                                                                 sub_tile->capacity.low+relative_cap,
+                                                                 pin->pin_count_in_cluster);
+    } else {
+        int offset = sub_tile->starting_internal_pin_idx[relative_cap].at(logical_block);
+        pin_physical_num = pin->pin_count_in_cluster + offset;
+    }
 
-    return pin_ptc;
+
+    return pin_physical_num;
 }
 
 float get_max_edge_delay(t_physical_tile_type_ptr physical_tile,

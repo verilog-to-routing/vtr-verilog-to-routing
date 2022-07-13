@@ -3671,37 +3671,19 @@ bool pins_connected(t_block_loc cluster_loc,
     VTR_ASSERT(rel_cap >= 0);
 
     auto from_pb_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(from_pin_logical_num);
-    int from_pin_physical_num = OPEN;
-    if(from_pb_pin->is_root_block_pin()) {
-        from_pin_physical_num = get_physical_pin_at_sub_tile_location(physical_type,
-                                                                      logical_block,
-                                                                      abs_cap,
-                                                                      from_pb_pin->pin_count_in_cluster);
-    } else {
-        from_pin_physical_num = get_pb_pin_physical_num(physical_type,
+    int from_pin_physical_num = get_pb_pin_physical_num(physical_type,
                                                         sub_tile,
                                                         logical_block,
                                                         rel_cap,
                                                         from_pb_pin);
-    }
-
     VTR_ASSERT(from_pin_physical_num != OPEN);
 
     auto to_pb_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(to_pin_logical_num);
-    int to_pin_physical_num = OPEN;
-    if(to_pb_pin->is_root_block_pin()) {
-        to_pin_physical_num = get_physical_pin_at_sub_tile_location(physical_type,
-                                                                    logical_block,
-                                                                    abs_cap,
-                                                                    to_pb_pin->pin_count_in_cluster);
-    } else {
-        to_pin_physical_num = get_pb_pin_physical_num(physical_type,
+    int to_pin_physical_num = get_pb_pin_physical_num(physical_type,
                                                       sub_tile,
                                                       logical_block,
                                                       rel_cap,
-                                                      to_pb_pin);
-    }
-
+                                                      to_pb_pin);;
     VTR_ASSERT(to_pin_physical_num != OPEN);
 
 

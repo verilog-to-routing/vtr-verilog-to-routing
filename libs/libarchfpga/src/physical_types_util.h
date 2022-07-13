@@ -164,7 +164,7 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
 
 ///@brief Returns the name of the class_index'th pin class on the specified block type
 std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_type_ptr type,
-                                                             int class_index,
+                                                             int class_physical_num,
                                                              bool is_flat);
 
 ///@brief Returns the physical tile type matching a given physical tile type name, or nullptr (if not found)
@@ -317,8 +317,6 @@ t_logical_block_type_ptr get_logical_block_from_class_physical_num(t_physical_ti
 e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
 
 int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
-
-int get_pin_physical_num_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num, int pin_logical_num);
 
 bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_physical_num);
 /** **/
