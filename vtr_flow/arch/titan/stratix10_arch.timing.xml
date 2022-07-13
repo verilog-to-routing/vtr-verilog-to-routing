@@ -2250,6 +2250,7 @@
     <pb_type name="iolane">
       <input name="core_in" num_pins="55"/>
       <output name="core_out" num_pins="24"/>
+      <clock name="clk" num_pins="1"/>
 
       <pb_type name="io_cell" num_pb="4">
         <input name="data_in" num_pins="36"/>
@@ -2410,6 +2411,7 @@
       <interconnect>
         <complete input="iolane.core_in" name="core_to_io" output="io_cell.data_in"/>
         <complete input="iocell.data_out" name="io_to_core" output="io_lane.core_out"/>
+        <direct input="iocell.clk" name="clk_connection" output="io_lane.clk"/>
       </interconnect>
     </pb_type>
 
