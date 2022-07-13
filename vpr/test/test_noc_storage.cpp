@@ -320,7 +320,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
 
 
         // run the test function, which is to delete a link with the source and sink router found above
-        REQUIRE_NOTHROW(test_noc.remove_link(link_to_remove_src_router, link_to_remove_src_router) == true);
+        REQUIRE_NOTHROW(test_noc.remove_link(link_to_remove_src_router, link_to_remove_sink_router) == true);
 
         /* now verify whether the link was removed correctly */
 
