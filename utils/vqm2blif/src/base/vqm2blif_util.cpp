@@ -1028,12 +1028,12 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
             clk1_output_clock_enable = temp_param;
             continue;
         }
-        if (strcmp (temp_param->name, "port_a_dataout_clear") == 0){
+        if (strcmp (temp_param->name, "port_a_data_out_clear") == 0){
             VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
             port_a_dataout_clear = temp_param;
             continue;
         }
-        if (strcmp (temp_param->name, "port_b_dataout_clear") == 0){
+        if (strcmp (temp_param->name, "port_b_data_out_clear") == 0){
             VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
             port_b_dataout_clear = temp_param;
             continue;
@@ -1264,11 +1264,11 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
             }
         }
         if (port_b_dataout_clear) {
-            if (port_b_dataout_clear->value.string_value == std::string("aclr")){
+            if (port_b_dataout_clear->value.string_value == std::string("aclear")){
                 VTR_ASSERT(aclr_port);
                 ram_info.port_b_dataout_aclr = aclr_port;
                 ram_info.port_b_dataout_sclr = nullptr;
-            } else if (port_b_dataout_clear->value.string_value == std::string("sclr")) {
+            } else if (port_b_dataout_clear->value.string_value == std::string("sclear")) {
                 VTR_ASSERT(sclr_port);
                 ram_info.port_b_dataout_aclr = nullptr;
                 ram_info.port_b_dataout_sclr = sclr_port;
