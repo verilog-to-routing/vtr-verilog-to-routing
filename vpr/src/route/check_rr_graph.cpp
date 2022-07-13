@@ -18,6 +18,8 @@ static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid);
 
 static void check_rr_edge(int from_node, int from_edge, int to_node, bool is_flat);
 
+static void check_intra_cluster_routing();
+
 /************************ Subroutine definitions ****************************/
 
 class node_edge_sorter {
@@ -283,6 +285,10 @@ void check_rr_graph(const t_graph_type graph_type,
                               inode, total_edges_to_node[inode]);
             }
         }
+    }
+
+    if(is_flat) {
+        check_intra_cluster_routing();
     }
 }
 
@@ -643,5 +649,37 @@ static void check_rr_edge(int from_node, int iedge, int to_node, bool is_flat) {
             break;                  //pass
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid switch type %d", switch_type);
+    }
+}
+
+static void check_intra_cluster_routing() {
+    const auto& atom_net_list = g_vpr_ctx.atom().nlist;
+    const auto& atom_look_up = g_vpr_ctx.atom().lookup;
+    const auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
+    const auto& placement_ctx = g_vpr_ctx.placement();
+
+    for(auto pin : atom_net_list.pins()) {
+        auto atom_blk_id = atom_net_list.pin_block(pin);
+        auto cluster_blk_id = atom_look_up.atom_clb(atom_blk_id);
+        auto cluster_loc = placement_ctx.block_locs[cluster_blk_id];
+        auto physical_type = physical_tile_type(cluster_blk_id);
+        auto logical_block = cluster_net_list.block_type(cluster_blk_id);
+        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID());
+        auto clb_pb = cluster_net_list.block_pb(cluster_blk_id);
+        auto pb_routes = clb_pb->pb_route;
+        auto pb_pin = atom_look_up.atom_pin_pb_graph_pin(pin);
+
+        int connected_pin = pb_pin->pin_count_in_cluster;
+        int driving_pin = pb_routes[connected_pin].driver_pb_pin_id;
+        while(driving_pin != OPEN) {
+            VTR_ASSERT(pins_connected(cluster_loc,
+                                      physical_type,
+                                      logical_block,
+                                      driving_pin,
+                                      connected_pin));
+            connected_pin = driving_pin;
+            driving_pin = pb_routes[connected_pin].driver_pb_pin_id;
+
+        }
     }
 }

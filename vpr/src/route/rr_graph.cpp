@@ -299,7 +299,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          int j,
                          const int delayless_switch);
 
-static RRNodeId get_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
+static RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                                    t_physical_tile_type_ptr physical_tile,
                                    const int i,
                                    const int j,
@@ -2030,14 +2030,13 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          int i,
                          int j,
                          const int delayless_switch) {
-
     auto pin_nums = get_pb_pins(physical_type,
                                  sub_tile,
                                  logical_block,
                                  pb,
                                  rel_cap);
     for(auto pin : pin_nums) {
-        auto parent_pin_node_id = get_pin_rr_node_id(rr_graph_builder,
+        auto parent_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                      physical_type,
                                                      i,
                                                      j,
@@ -2049,7 +2048,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                                                           pin);
 
         for(auto driving_pin : driving_pins) {
-            auto driving_pin_node_id = get_pin_rr_node_id(rr_graph_builder,
+            auto driving_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                        physical_type,
                                                        i,
                                                        j,
@@ -2069,7 +2068,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
 
 }
 
-static RRNodeId get_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
+static RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                                    t_physical_tile_type_ptr physical_tile,
                                    const int i,
                                    const int j,
@@ -2084,7 +2083,7 @@ static RRNodeId get_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
             for (int height = 0; height < physical_tile->height; ++height) {
                 for (e_side side : SIDES) {
                     if (physical_tile->pinloc[width][height][side][pin_physical_num]) {
-                        node_id = rr_graph_builder.node_lookup().find_node(i+width, j+height, node_type, pin_physical_num, side);
+                        node_id = rr_spatial_lookup.find_node(i+width, j+height, node_type, pin_physical_num, side);
                         if(node_id != RRNodeId::INVALID())
                             return node_id;
                     }
@@ -2093,7 +2092,7 @@ static RRNodeId get_pin_rr_node_id(RRGraphBuilder& rr_graph_builder,
 
         }
     } else {
-        node_id = rr_graph_builder.node_lookup().find_node(i, j, node_type, pin_physical_num, e_side::TOP);
+        node_id = rr_spatial_lookup.find_node(i, j, node_type, pin_physical_num, e_side::TOP);
         return node_id;
     }
 
@@ -3646,6 +3645,82 @@ t_non_configurable_rr_sets identify_non_configurable_rr_sets() {
     create_edge_groups(&groups);
 
     return groups.output_sets();
+}
+
+bool pins_connected(t_block_loc cluster_loc,
+                    t_physical_tile_type_ptr physical_type,
+                    t_logical_block_type_ptr logical_block,
+                    int from_pin_logical_num,
+                    int to_pin_logical_num) {
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    const auto& rr_spatial_look_up = rr_graph.node_lookup();
+
+    int x = cluster_loc.loc.x;
+    int y = cluster_loc.loc.y;
+    int abs_cap = cluster_loc.loc.sub_tile;
+    const t_sub_tile* sub_tile = nullptr;
+
+    for(const auto& sub_tile_ : physical_type->sub_tiles) {
+        if(sub_tile_.capacity.is_in_range(abs_cap)) {
+            sub_tile = &sub_tile_;
+            break;
+        }
+    }
+    VTR_ASSERT(sub_tile != nullptr);
+    int rel_cap = abs_cap - sub_tile->capacity.low;
+    VTR_ASSERT(rel_cap >= 0);
+
+    auto from_pb_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(from_pin_logical_num);
+    int from_pin_physical_num = OPEN;
+    if(from_pb_pin->is_root_block_pin()) {
+        from_pin_physical_num = get_physical_pin_at_sub_tile_location(physical_type,
+                                                                      logical_block,
+                                                                      abs_cap,
+                                                                      from_pb_pin->pin_count_in_cluster);
+    } else {
+        from_pin_physical_num = get_pb_pin_physical_num(physical_type,
+                                                        sub_tile,
+                                                        logical_block,
+                                                        rel_cap,
+                                                        from_pb_pin);
+    }
+
+    VTR_ASSERT(from_pin_physical_num != OPEN);
+
+    auto to_pb_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(to_pin_logical_num);
+    int to_pin_physical_num = OPEN;
+    if(to_pb_pin->is_root_block_pin()) {
+        to_pin_physical_num = get_physical_pin_at_sub_tile_location(physical_type,
+                                                                    logical_block,
+                                                                    abs_cap,
+                                                                    to_pb_pin->pin_count_in_cluster);
+    } else {
+        to_pin_physical_num = get_pb_pin_physical_num(physical_type,
+                                                      sub_tile,
+                                                      logical_block,
+                                                      rel_cap,
+                                                      to_pb_pin);
+    }
+
+    VTR_ASSERT(to_pin_physical_num != OPEN);
+
+
+    RRNodeId from_node = get_pin_rr_node_id(rr_spatial_look_up, physical_type, x, y, from_pin_physical_num);
+    VTR_ASSERT(from_node != RRNodeId::INVALID());
+
+    RRNodeId to_node = get_pin_rr_node_id(rr_spatial_look_up, physical_type, x, y, to_pin_physical_num);
+    VTR_ASSERT(to_node != RRNodeId::INVALID());
+
+    int num_edges = rr_graph.num_edges(from_node);
+
+    for(int iedge = 0; iedge < num_edges; iedge++) {
+        RRNodeId sink_node = rr_graph.edge_sink_node(from_node, iedge);
+        if(sink_node == to_node){
+            return true;
+        }
+    }
+    return false;
+
 }
 
 static void process_non_config_sets() {
