@@ -89,7 +89,7 @@
     <!-- PLL Primitive -->
     <model name="fourteennm_iopll">
       <input_ports>
-        <port name="clkena" clock="refclk"/>
+        <port name="clken" clock="refclk"/>
         <port name="cnt_sel" clock="refclk"/> 
         <port name="core_refclk" clock="refclk"/> 
         <port name="dps_rst_n" clock="refclk"/> 
@@ -104,10 +104,26 @@
         <port name="pll_cascade_in" clock="refclk"/> 
         <port name="scan_mode_n" clock="refclk"/> 
         <port name="scan_shift_n" clock="refclk"/>
-        <port name="uc_cal_writedata" clock="refclk"/>
+        <port name="csr_clk" clock="refclk"/>
+        <port name="csr_en" clock="refclk"/>
+        <port name="phase_en" clock="refclk"/>
+        <port name="csr_in" clock="refclk"/>
+        <port name="uc_cal_addr" clock="refclk"/>
+        <port name="uc_cal_clk" clock="refclk"/>
+        <port name="uc_cal_read" clock="refclk"/>
+        <port name="uc_cal_write" clock="refclk"/>
+        <port name="uc_cal_writedata" clock="refclk"/>  
         <port name="up_dn" clock="refclk"/> 
         <port name="user_mode" clock="refclk"/> 
         <port name="zdb_in" clock="refclk"/> 
+        <port name="dprio_address" clock="refclk"/>                                 
+        <port name="dprio_clk" clock="refclk"/>                                 
+        <port name="read" clock="refclk"/>   
+        <port name="write" clock="refclk"/> 
+        <port name="writedata" clock="refclk"/> 
+        <port name="dprio_rst_n" clock="refclk"/>                                 
+        <port name="pipeline_global_en_n" clock="refclk"/>
+        <port name="pma_csr_test_dis" clock="refclk"/>
       </input_ports>
       <output_ports>
         <port name="block_select" clock="refclk"/>
@@ -1635,18 +1651,19 @@
       <clock name="clk" num_pins="2"/>
 
       <pb_type blif_model=".subckt fourteennm_iopll" name="iopll" num_pb="1">
-        <input name="clkena" num_pins="2"/>
+        <input name="clken" num_pins="2"/>
         <input name="cnt_sel" num_pins="4"/> <!-- counter selector for dynamic phase shift -->
-        <!--<input name="dprio_address" num_pins="9"/>  --><!--  Avalon-MM Interface - address of the databus for dynamic partial reconfiguration -->
-        <!--<input name="dprio_clk" num_pins="1"/> --> <!--  Avalon-MM Interface - clock port for dynamic partial reconfiguration -->
-        <!--<input name="read" num_pins="1"/>  --><!--  Avalon-MM Interface - indicate a read operation during dynamic partial reconfiguration -->
-        <!--<input name="write" num_pins="1"/>  --><!--  Avalon-MM Interface - indicate a write operation during dynamic partial reconfiguration -->
-        <!--<input name="writedata" num_pins="8"/> --> <!--  Avalon-MM Interface - data to be written to the given address during dynamic partial reconfiguration -->
+        <input name="dprio_address" num_pins="9"/>  <!--  Avalon-MM Interface - address of the databus for dynamic partial reconfiguration -->
+        <input name="dprio_clk" num_pins="1"/>  <!--  Avalon-MM Interface - clock port for dynamic partial reconfiguration -->
+        <input name="read" num_pins="1"/>  <!--  Avalon-MM Interface - indicate a read operation during dynamic partial reconfiguration -->
+        <input name="write" num_pins="1"/>  <!--  Avalon-MM Interface - indicate a write operation during dynamic partial reconfiguration -->
+        <input name="writedata" num_pins="8"/>  <!--  Avalon-MM Interface - data to be written to the given address during dynamic partial reconfiguration -->
         <input name="core_refclk" num_pins="1"/> <!-- use core clock as an input reference clock -->
-        <!--<input name="csr_clk" num_pins="1"/>--> <!--Avalon-MM control-and-status register (CSR) agent interface - clock signal-->
-        <!--<input name="csr_en" num_pins="1"/>--> <!--Avalon-MM control-and-status register (CSR) agent interface - enable signal-->
-        <!--<input name="csr_in" num_pins="1"/>--> <!--Avalon-MM control-and-status register (CSR) agent interface -->
-        <!--<<input name="dprio_rst_n" num_pins="1"/>>--> <!--  Avalon-MM Interface - reset port for dynamic partial reconfiguration -->
+        <input name="csr_clk" num_pins="1"/> <!--Avalon-MM control-and-status register (CSR) agent interface - clock signal-->
+        <input name="csr_en" num_pins="1"/> <!--Avalon-MM control-and-status register (CSR) agent interface - enable signal-->
+        <input name="phase_en" num_pins="1"/> 
+        <input name="csr_in" num_pins="1"/> <!--Avalon-MM control-and-status register (CSR) agent interface -->
+        <input name="dprio_rst_n" num_pins="1"/> <!--  Avalon-MM Interface - reset port for dynamic partial reconfiguration -->
         <input name="dps_rst_n" num_pins="1"/> <!--  dynamic phase shift reset -->
         <input name="extswitch" num_pins="1"/> <!--  controlling clock switchover -->
         <input name="fbclk_in" num_pins="1"/> <!--  feedback clock used for external feedback compensation -->
@@ -1656,16 +1673,16 @@
         <input name="rst_n" num_pins="1"/>
         <input name="num_phase_shifts" num_pins="3"/> <!--  number of phase shifts per dynamic phase shift operation -->
         <input name="pfden" num_pins="1"/> <!--  enabling dynamic phase shift operation -->
-        <!--<input name="pipeline_global_en_n" num_pins="1"/>-->
-        <!--  <input name="pma_csr_test_dis" num_pins="1"/> --> <!-- disable PMA CSR test  -->
+        <input name="pipeline_global_en_n" num_pins="1"/>
+        <input name="pma_csr_test_dis" num_pins="1"/>  <!-- disable PMA CSR test  -->
         <input name="pll_cascade_in" num_pins="1"/> <!-- cascade input from IO PLL in the same IO column  -->
         <input name="scan_mode_n" num_pins="1"/> <!-- dynamic phase shift clock -->
         <input name="scan_shift_n" num_pins="1"/>
-        <!-- <input name="uc_cal_addr" num_pins="20"/>
+        <input name="uc_cal_addr" num_pins="20"/>
         <input name="uc_cal_clk" num_pins="1"/>
         <input name="uc_cal_read" num_pins="1"/>
         <input name="uc_cal_write" num_pins="1"/>
-        <input name="uc_cal_writedata" num_pins="8"/>  -->
+        <input name="uc_cal_writedata" num_pins="8"/>  
         <input name="up_dn" num_pins="1"/> <!-- direction of phase shift -->
         <input name="user_mode" num_pins="1"/> <!-- enable user mode  -->
         <input name="zdb_in" num_pins="1"/> <!-- zero delay buffer compensation feedback -->
@@ -1704,8 +1721,12 @@
         <output name="iopll_out_sig2" num_pins="1"/>
       </pb_type>
       <interconnect>
-        <complete input="PLL.core_in" name="core_to_pll" output="iopll.clkena iopll.cnt_sel iopll.core_refclk iopll.dps_rst_n iopll.extswitch iopll.fbclk_in iopll.fblvds_in
-            iopll.mdio_dis iopll.rst_n iopll.num_phase_shifts iopll.pfden iopll.pll_cascade_in iopll.scan_mode_n iopll.scan_shift_n iopll.up_dn iopll.user_mode iopll.zdb_in"/>
+        <complete input="PLL.core_in" name="core_to_pll" output="iopll.clken iopll.cnt_sel iopll.dprio_address iopll.dprio_clk iopll.read iopll.write 
+                                                                 iopll.writedata iopll.core_refclk iopll.csr_clk iopll.csr_en iopll.csr_in iopll.dprio_rst_n
+                                                                 iopll.dps_rst_n iopll.extswitch iopll.fbclk_in iopll.fblvds_in iopll.mdio_dis iopll.rst_n  iopll.phase_en 
+                                                                 iopll.num_phase_shifts iopll.pfden iopll.pipeline_global_en_n iopll.pma_csr_test_dis iopll.pll_cascade_in 
+                                                                 iopll.scan_mode_n iopll.scan_shift_n iopll.uc_cal_addr iopll.uc_cal_clk iopll.uc_cal_read 
+                                                                 iopll.uc_cal_readdata iopll.uc_cal_write iopll.uc_cal_writedata iopll.up_dn iopll.user_mode iopll.zdb_in "/>
 
         <complete input="PLL.clk" name="pll_clock" output="iopll.refclk"/>
 
