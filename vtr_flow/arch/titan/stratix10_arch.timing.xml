@@ -4782,31 +4782,31 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="sp_vector2.chainin"/>
-                <direct name="chain_out" input="sp_vector2.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="sp_vector2.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_vect2.chainin"/>
+                <direct name="chain_out" input="fp_mac_vect2.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_vect2.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="sp_vector2.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="sp_vector2.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="sp_vector2.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect2.az"/>
 
-                <direct name="resulta_out" input="sp_vector2.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="sp_vector2.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="sp_vector2.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="sp_vector2.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="sp_vector2.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="sp_vector2.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="sp_vector2.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="sp_vector2.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="sp_vector2.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="fp_mac_vect2.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_vect2.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_vect2.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_vect2.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_vect2.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac_vect2.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac_vect2.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac_vect2.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac_vect2.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="sp_vector2.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="sp_vector2.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="sp_vector2.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="sp_vector2.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_vect2.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_vect2.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_vect2.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_vect2.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="sp_vector2.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="fp_mac_vect2.clk"/>
 
             </interconnect> 
         </mode>
@@ -4838,31 +4838,31 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="sp_vector2.chainin"/>
-                <direct name="chain_out" input="sp_vector2.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="sp_vector2.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_vect2.chainin"/>
+                <direct name="chain_out" input="fp_mac_vect2.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_vect2.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="sp_vector2.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="sp_vector2.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="sp_vector2.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect2.az"/>
 
-                <direct name="resulta_out" input="sp_vector2.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="sp_vector2.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="sp_vector2.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="sp_vector2.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="sp_vector2.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="sp_vector2.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="sp_vector2.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="sp_vector2.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="sp_vector2.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="fp_mac_vect2.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_vect2.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_vect2.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_vect2.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_vect2.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac_vect2.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac_vect2.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac_vect2.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac_vect2.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="sp_vector2.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="sp_vector2.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="sp_vector2.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="sp_vector2.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_vect2.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_vect2.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_vect2.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_vect2.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="sp_vector2.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="fp_mac_vect2.clk"/>
 
             </interconnect> 
         </mode>
@@ -4893,29 +4893,29 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="sp_vector2.chainin"/>
-                <direct name="chain_out" input="sp_vector2.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="sp_vector2.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_vect2.chainin"/>
+                <direct name="chain_out" input="fp_mac_vect2.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_vect2.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="sp_vector2.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="sp_vector2.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="sp_vector2.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect2.az"/>
 
-                <direct name="resulta_out" input="sp_vector2.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="sp_vector2.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="sp_vector2.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="sp_vector2.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="sp_vector2.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="sp_vector2.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="sp_vector2.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="sp_vector2.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="sp_vector2.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="fp_mac_vect2.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_vect2.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_vect2.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_vect2.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_vect2.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac_vect2.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac_vect2.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac_vect2.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac_vect2.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="sp_vector2.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="sp_vector2.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="sp_vector2.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="sp_vector2.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_vect2.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_vect2.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_vect2.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_vect2.dfxmisrena"/>
 
 
             </interconnect> 
@@ -4948,31 +4948,31 @@
 
             <interconnect>
 
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="sp_vector2.chainin"/>
-                <direct name="chain_out" input="sp_vector2.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="sp_vector2.dftout" output="DSP.dftout"/>
+                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_vect2.chainin"/>
+                <direct name="chain_out" input="fp_mac_vect2.chainout[31:0]" output="DSP.chainout[31:0]"/>
+                <direct name="dft_out" input="fp_mac_vect2.dftout" output="DSP.dftout"/>
 
-                <direct name="ax_in" input="DSP.datain[31:0]" output="sp_vector2.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="sp_vector2.ax"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="sp_vector2.az"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ax"/>
+                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect2.az"/>
 
-                <direct name="resulta_out" input="sp_vector2.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="sp_vector2.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="sp_vector2.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="sp_vector2.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="sp_vector2.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="sp_vector2.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="sp_vector2.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="sp_vector2.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="sp_vector2.mult_underflow" output="DSP.result[39]" />
+                <direct name="resulta_out" input="fp_mac_vect2.resulta" output="DSP.result[31:0]"/>
+                <direct name="adder_inexact_out" input="fp_mac_vect2.adder_inexact" output="DSP.result[32]" />
+                <direct name="adder_invalid_out" input="fp_mac_vect2.adder_invalid" output="DSP.result[33]" />
+                <direct name="adder_overflow_out" input="fp_mac_vect2.adder_overflow" output="DSP.result[34]" />
+                <direct name="adder_underflow_out" input="fp_mac_vect2.adder_underflow" output="DSP.result[35]" />
+                <direct name="mult_inexact_out" input="fp_mac_vect2.mult_inexact" output="DSP.result[36]" />
+                <direct name="mult_invlid_out" input="fp_mac_vect2.mult_invalid" output="DSP.result[37]" />
+                <direct name="mult_overflow_out" input="fp_mac_vect2.mult_overflow" output="DSP.result[38]" />
+                <direct name="mult_underflow_out" input="fp_mac_vect2.mult_underflow" output="DSP.result[39]" />
 
                 
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="sp_vector2.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="sp_vector2.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="sp_vector2.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="sp_vector2.dfxmisrena"/>
+                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_vect2.clr"/>
+                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_vect2.ena"/>
+                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_vect2.dfxlfsrena"/>
+                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_vect2.dfxmisrena"/>
 
-                <complete name="clk_in" input="DSP.clk" output="sp_vector2.clk"/>
+                <complete name="clk_in" input="DSP.clk" output="fp_mac_vect2.clk"/>
 
             </interconnect> 
         </mode>
