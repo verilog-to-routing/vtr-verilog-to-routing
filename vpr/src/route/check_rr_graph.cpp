@@ -671,7 +671,7 @@ static void check_intra_cluster_routing() {
 
         int connected_pin = pb_pin->pin_count_in_cluster;
         int driving_pin = pb_routes[connected_pin].driver_pb_pin_id;
-        while(driving_pin != OPEN) {
+        while(driving_pin >= 0) {
             VTR_ASSERT(pins_connected(cluster_loc,
                                       physical_type,
                                       logical_block,

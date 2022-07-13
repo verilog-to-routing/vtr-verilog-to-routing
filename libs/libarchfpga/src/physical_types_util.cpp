@@ -1290,17 +1290,14 @@ float get_max_edge_delay(t_physical_tile_type_ptr physical_tile,
 
     for(int out_edge_id = 0; out_edge_id < from_pb_pin->num_output_edges; out_edge_id++) {
         auto pb_edge = from_pb_pin->output_edges[out_edge_id];
-        auto conn_pins = pb_edge->output_pins;
-        for(int conn_pin_idx = 0; conn_pin_idx < pb_edge->num_output_pins; conn_pin_idx++) {
-            if(to_pb_pin == conn_pins[conn_pin_idx]) {
+        VTR_ASSERT(pb_edge->num_output_pins == 1);
+        auto conn_pins = pb_edge->output_pins[0];
+            if(to_pb_pin == conn_pins) {
                 max_delay = pb_edge->delay_max;
                 find_edge = true;
                 break;
+
             }
-        }
-        if(find_edge) {
-            break;
-        }
     }
     VTR_ASSERT(find_edge);
     return max_delay;
