@@ -1467,6 +1467,26 @@
 
   </models>
   <tiles>
+
+    <tile name="iolane">
+      <sub_tile name="iolane" >
+        <equivalent_sites>
+          <site pb_type="iolane" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="core_in" num_pins="55" equivalent="none"/>
+        <output name="core_out" num_pins="24" equivalent="none"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.0275" out_type="frac" out_val="0.0375"/>
+        <pinlocations pattern="custom">
+          
+          <loc side="left">  iolane.core_in[0:26]  iolane.core_out[0:11]  iolane.clk</loc>
+          <loc side="right"> iolane.core_in[27:54] iolane.core_out[12:23] iolane.clk</loc>
+          <loc side="top">   iolane.core_in[0:26]  iolane.core_out[0:11]  iolane.clk</loc>
+          <loc side="bottom">iolane.core_in[27:54] iolane.core_out[12:23] iolane.clk</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+
     <tile name="LAB">
       <sub_tile name="LAB">
         <equivalent_sites>
@@ -1577,10 +1597,10 @@
 
       <!--Column of 'IO' declared with 'EMPTY' blocks of length 1 wherever an IO block of length 4 does not fit. Vertical offset by 1 for perimeter.-->
       <col type="EMPTY" startx="W/5" priority="1000"/>
-      <col type="io" startx="W/5" priority="1001"/>
+      <col type="iolane" startx="W/5" priority="1001"/>
       <!-- Left column -->
       <col type="EMPTY" startx="4*W/5" priority="1000"/>
-      <col type="io" startx="4*W/5" priority="1001"/>
+      <col type="iolane" startx="4*W/5" priority="1001"/>
       <!-- Right column -->
 
 
