@@ -240,14 +240,14 @@ enum init_value_e {
  */
 enum operation_list {
     NO_OP,
+    CLOCK_NODE,
+    INPUT_NODE,
+    OUTPUT_NODE,
     MULTI_PORT_MUX, // port 1 = control, port 2+ = mux options
     FF_NODE,
     BUF_NODE,
-    INPUT_NODE,
-    OUTPUT_NODE,
     GND_NODE,
     VCC_NODE,
-    CLOCK_NODE,
     ADD,            // +
     MINUS,          // -
     BITWISE_NOT,    // ~
