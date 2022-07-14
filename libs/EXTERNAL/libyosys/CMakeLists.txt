@@ -44,7 +44,7 @@ add_dependencies(libyosys yosys)
 # specify where the library is and where to find the headers
 set_target_properties(libyosys
     PROPERTIES PREFIX "" #Avoid extra 'lib' prefix
-    IMPORTED_LOCATION ${LIB_FILE}
+    IMPORTED_LOCATION ${BINARY_LIB_FILE}
     INTERFACE_INCLUDE_DIRECTORIES ${YOSYS_INCLUDE_DIRS})
 
 

@@ -155,7 +155,7 @@ jobs:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DODIN_USE_YOSYS=ON',
             suite: 'vtr_reg_basic'
           },
           {

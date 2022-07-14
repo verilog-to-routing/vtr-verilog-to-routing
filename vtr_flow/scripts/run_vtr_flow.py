@@ -146,6 +146,14 @@ def vtr_command_argparser(prog=None):
         dest="verbose",
         help="Verbosity of the script.",
     )
+    parser.add_argument(
+        "-include",
+        nargs="*",
+        default=None,
+        dest="include_list_file",
+        help="List of include files to a benchmark circuit (pass to VTR"
+        + " frontends as a benchmark design set)",
+    )
 
     #
     # Power arguments
@@ -330,13 +338,6 @@ def vtr_command_argparser(prog=None):
         default="odin",
         dest="elaborator",
         help="Specify the elaborator of the synthesis flow for Odin-II",
-    )
-    odin.add_argument(
-        "-include",
-        nargs="*",
-        default=None,
-        dest="include_list_file",
-        help="List of include files to a benchmark circuit(pass to Odin as a benchmark design set)",
     )
     odin.add_argument(
         "-top_module",
