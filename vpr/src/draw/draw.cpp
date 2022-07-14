@@ -369,12 +369,6 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     GtkEntryCompletion* wildcardComp = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
     gtk_entry_completion_set_match_func(wildcardComp, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
 
-    //Hiding Match length Selecters
-    GtkSpinButton* completionKeyLength = GTK_SPIN_BUTTON(app->get_object("KeyLength"));
-    g_signal_connect(completionKeyLength, "value-changed", G_CALLBACK(key_length_val_changed), app);
-    gtk_widget_hide(GTK_WIDGET(completionKeyLength));
-    GtkWidget* keyLengthLabel = GTK_WIDGET(app->get_object("KeyLengthLabel"));
-    gtk_widget_hide(keyLengthLabel);
     button_for_toggle_nets();
     button_for_net_max_fanout();
     button_for_net_alpha();
@@ -468,9 +462,6 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     gtk_entry_completion_set_match_func(completion, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
 
     //Hiding Match length Selecters
-    GtkSpinButton* completionKeyLength = GTK_SPIN_BUTTON(app->get_object("KeyLength"));
-    g_signal_connect(completionKeyLength, "value-changed", G_CALLBACK(key_length_val_changed), app);
-    gtk_widget_hide(GTK_WIDGET(completionKeyLength));
     GtkWidget* keyLengthLabel = GTK_WIDGET(app->get_object("KeyLengthLabel"));
     gtk_widget_hide(keyLengthLabel);
 
@@ -2894,11 +2885,8 @@ static bool highlight_rr_nodes(float x, float y) {
 void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
     std::string key(key_name);
-    std::cout << "Pressed " << key << std::endl;
     if(gtk_widget_is_focus(GTK_WIDGET(app->get_object("TextInput")))){
-        std::cout << "Typing" << std::endl;
         if(key == "Return"){
-            std::cout << "Loading autocomplete results" << std::endl;
             enable_autocomplete(app);
         }
     }
@@ -2906,15 +2894,15 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
 #    else
 void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
     std::string key(key_name);
-    std::cout << "Pressed " << key << std::endl;
     GtkWidget* searchBar = GTK_WIDGET(app->get_object("TextInput"));
     if(gtk_widget_is_focus(searchBar)){
-        std::cout << "Typing" << std::endl;
-        std::string oldText(gtk_entry_get_text(GTK_ENTRY(searchBar)));
         if(key == "Return"){
-            std::cout << "Loading autocomplete results" << std::endl;
             enable_autocomplete(app);
         }
+    }
+    else if(key == "Escape"){
+        get_selected_sub_block_info().clear();
+        app->refresh_drawing();
     }
 }
 #    endif

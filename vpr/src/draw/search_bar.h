@@ -34,7 +34,6 @@ void search_type_changed(GtkComboBox* /*self*/, ezgl::application* app);
 /*function below pops up a dialog box with no button, showing the input warning message*/
 void warning_dialog_box(const char* message);
 
-void key_length_val_changed(GtkSpinButton* self, ezgl::application* app);
 
 t_pb* find_atom_block_in_pb(std::string name, t_pb* pb);
 

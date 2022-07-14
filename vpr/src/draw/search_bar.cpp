@@ -488,15 +488,6 @@ gboolean customMatchingFunction(
     return (cppText.find(key, 0) != std::string::npos);
 }
 
-/**
- * @brief Updates min. key length when the value in spin button changes
- */
-void key_length_val_changed(GtkSpinButton* self, ezgl::application* app) {
-    auto newLength = gtk_spin_button_get_value(self);
-    GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
-    gtk_entry_completion_set_minimum_key_length(completion, newLength);
-}
-
 void enable_autocomplete(ezgl::application* app){
     std::cout << "enabling autocomplete" << std::endl;
     GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
