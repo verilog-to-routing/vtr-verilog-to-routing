@@ -122,6 +122,50 @@ int get_rr_node_max_ptc (const RRGraphView& rr_graph_view,
     }
 }
 
+RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
+                                   t_physical_tile_type_ptr physical_tile,
+                                   const int i,
+                                   const int j,
+                                   int pin_physical_num) {
+    RRNodeId node_id = RRNodeId::INVALID();
+
+    e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
+    VTR_ASSERT(pin_type == DRIVER || pin_type == RECEIVER);
+    t_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
+    if(is_pin_on_tile(physical_tile, pin_physical_num)){
+        for (int width = 0; width < physical_tile->width; ++width) {
+            for (int height = 0; height < physical_tile->height; ++height) {
+                for (e_side side : SIDES) {
+                    if (physical_tile->pinloc[width][height][side][pin_physical_num]) {
+                        node_id = rr_spatial_lookup.find_node(i+width, j+height, node_type, pin_physical_num, side);
+                        if(node_id != RRNodeId::INVALID())
+                            return node_id;
+                    }
+                }
+            }
+
+        }
+    } else {
+        node_id = rr_spatial_lookup.find_node(i, j, node_type, pin_physical_num, e_side::TOP);
+        return node_id;
+    }
+
+    return RRNodeId::INVALID();
+}
+
+RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
+                              t_physical_tile_type_ptr physical_tile,
+                              const int i,
+                              const int j,
+                              int class_physical_num) {
+
+
+    auto class_type = get_class_type_from_class_physical_num(physical_tile, class_physical_num);
+    VTR_ASSERT(class_type == DRIVER || class_type == RECEIVER);
+    t_rr_type node_type = (class_type == e_pin_type::DRIVER) ? t_rr_type::SOURCE : t_rr_type::SINK;
+    return rr_spatial_lookup.find_node(i, j, node_type, class_physical_num);
+}
+
 vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list() {
     auto& rr_graph = g_vpr_ctx.device().rr_graph;
 

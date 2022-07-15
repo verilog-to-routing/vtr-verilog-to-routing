@@ -299,11 +299,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          int j,
                          const int delayless_switch);
 
-static RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
-                                   t_physical_tile_type_ptr physical_tile,
-                                   const int i,
-                                   const int j,
-                                   int pin_physical_num);
+
 
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int i,
@@ -2066,37 +2062,6 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
         }
     }
 
-}
-
-static RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
-                                   t_physical_tile_type_ptr physical_tile,
-                                   const int i,
-                                   const int j,
-                                   int pin_physical_num) {
-    RRNodeId node_id = RRNodeId::INVALID();
-
-    e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
-    VTR_ASSERT(pin_type == DRIVER || pin_type == RECEIVER);
-    t_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
-    if(is_pin_on_tile(physical_tile, pin_physical_num)){
-        for (int width = 0; width < physical_tile->width; ++width) {
-            for (int height = 0; height < physical_tile->height; ++height) {
-                for (e_side side : SIDES) {
-                    if (physical_tile->pinloc[width][height][side][pin_physical_num]) {
-                        node_id = rr_spatial_lookup.find_node(i+width, j+height, node_type, pin_physical_num, side);
-                        if(node_id != RRNodeId::INVALID())
-                            return node_id;
-                    }
-                }
-            }
-
-        }
-    } else {
-        node_id = rr_spatial_lookup.find_node(i, j, node_type, pin_physical_num, e_side::TOP);
-        return node_id;
-    }
-
-    return RRNodeId::INVALID();
 }
 
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes

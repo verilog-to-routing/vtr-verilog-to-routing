@@ -110,6 +110,9 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
                                                             bool is_flat);
 
 static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat);
+
+static std::unordered_map<RRNodeId, RRNodeId> load_neighbouring_node_on_tile(const RRGraphView& rr_graph,
+                                                                             bool is_flat);
 /************************** Subroutine definitions ***************************/
 
 void save_routing(const Netlist<>& net_list,
