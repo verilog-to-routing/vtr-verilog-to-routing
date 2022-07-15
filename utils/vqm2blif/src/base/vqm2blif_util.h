@@ -116,6 +116,33 @@ struct RamInfo {
     t_node_port_association* port_b_dataout_aclr = nullptr;
     t_node_port_association* port_b_dataout_sclr = nullptr;
 };
+
+
+
+struct DSPInfo {
+
+    t_node_port_association* port_ax_clock = nullptr;
+    t_node_port_association* port_ay_clock = nullptr;
+    t_node_port_association* port_az_clock = nullptr;
+    t_node_port_association* port_bx_clock = nullptr;
+    t_node_port_association* port_by_clock = nullptr;
+    t_node_port_association* port_bz_clock = nullptr;
+  
+    t_node_port_association* port_coef_sel_a_clock = nullptr;
+    t_node_port_association* port_coef_sel_b_clock = nullptr;
+
+    t_node_port_association* port_ay_scan_in_clock = nullptr;
+    t_node_port_association* port_accumulate_clock = nullptr;
+    t_node_port_association* port_load_const_clock = nullptr;
+    t_node_port_association* port_negate_clock = nullptr;
+    t_node_port_association* port_sub_clock = nullptr;
+
+    t_node_port_association* port_chainout_clock = nullptr;
+    t_node_port_association* port_output_clock = nullptr;
+
+
+};
+
 // stores relevant information for a given FPGA device
 // currently, just storing the strings used to idenitify luts and dff primitives and their ports within the vqm netlist
 // add additional parameters as needed
