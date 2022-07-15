@@ -669,17 +669,38 @@ static void check_intra_cluster_routing() {
         auto pb_routes = clb_pb->pb_route;
         auto pb_pin = atom_look_up.atom_pin_pb_graph_pin(pin);
 
-        int connected_pin = pb_pin->pin_count_in_cluster;
-        int driving_pin = pb_routes[connected_pin].driver_pb_pin_id;
-        while(driving_pin >= 0) {
-            VTR_ASSERT(pins_connected(cluster_loc,
-                                      physical_type,
-                                      logical_block,
-                                      driving_pin,
-                                      connected_pin));
-            connected_pin = driving_pin;
-            driving_pin = pb_routes[connected_pin].driver_pb_pin_id;
+        if(pb_pin->port->type== PORTS::IN_PORT) {
+            int connected_pin = pb_pin->pin_count_in_cluster;
+            int driving_pin = pb_routes[connected_pin].driver_pb_pin_id;
+            VTR_ASSERT(pb_routes[connected_pin].sink_pb_pin_ids.size() == 0);
+            while(driving_pin >= 0) {
+                VTR_ASSERT(pins_connected(cluster_loc,
+                                          physical_type,
+                                          logical_block,
+                                          driving_pin,
+                                          connected_pin));
+                connected_pin = driving_pin;
+                driving_pin = pb_routes[connected_pin].driver_pb_pin_id;
 
+            }
+        } else {
+            std::list<int> pins;
+            int driving_pin = pb_pin->pin_count_in_cluster;
+            VTR_ASSERT(pb_routes[driving_pin].driver_pb_pin_id == OPEN);
+            pins.emplace_back(driving_pin);
+            do {
+                driving_pin = pins.front();
+                for(auto tmp_conn_pin : pb_routes[driving_pin].sink_pb_pin_ids) {
+                    VTR_ASSERT(pins_connected(cluster_loc,
+                                              physical_type,
+                                              logical_block,
+                                              driving_pin,
+                                              tmp_conn_pin));
+                    pins.emplace_back(tmp_conn_pin);
+                }
+                pins.pop_front();
+            } while(!pins.empty());
         }
+
     }
 }
