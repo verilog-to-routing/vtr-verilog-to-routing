@@ -719,9 +719,20 @@ bool draw_if_net_highlighted(ClusterNetId inet) {
 void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name) {
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
     std::string key(key_name);
+    if (key == "Escape") {
+        get_selected_sub_block_info().clear();
+        deselect_all();
+        app->refresh_drawing();
+    }
 }
 #    else
-void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* /*key_name*/) {
+void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
+    std::string key(key_name);
+    if (key == "Escape") {
+        get_selected_sub_block_info().clear();
+        deselect_all();
+        app->refresh_drawing();
+    }
 }
 #    endif
 
