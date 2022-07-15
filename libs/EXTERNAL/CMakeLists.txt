@@ -20,7 +20,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
     add_subdirectory(libyosys)
 
     # In addition to libyosys in the build folder, we copy the libyosys directory
-    # into a temporary folder in the VTR root, name Yosys, to have access to Yosys 
+    # into a temporary folder in the VTR root, named Yosys, to have access to Yosys 
     # execs for using in VTR scripts (similar to VPR/vpr or ODIN_II/odin_II)
     add_custom_target(vtr-yosys ALL 
                       DEPENDS yosys

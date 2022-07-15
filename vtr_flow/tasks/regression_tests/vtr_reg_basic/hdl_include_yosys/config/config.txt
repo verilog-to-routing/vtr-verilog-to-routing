@@ -2,13 +2,14 @@
 # Configuration file for running experiments                    #
 #                                                               #
 # This config file is testing the ability to specify include    #
-# files that should pass to the VTR frontend with the top       #
-# module of the benchmark (ch_intrinsic_top.v). This is done    #
-# by specifying two Verilog header files that provide essential # 
-# definitions, and memory_controller design that provides the   #
-# design of an internal component for ch_intrinsic_top. If the  #
-# include files are not properly included during compilation    #
-# the benchmark is incomplete and the flow will error out.      #
+# files that should be passed to the VTR Yosys frontend with    #
+# the top module of the benchmark (ch_intrinsic_modified.v).    #
+# This is done by specifying two Verilog header files that      #
+# provide essential definitions, and memory_controller design   #
+# that provides the design of an internal component for         #
+# "ch_intrinsic_modified.v". If the include files are not       #
+# properly included during compilation the benchmark is         #
+# incomplete and the flow will error out.                       #
 #################################################################
 
 # Path to directory of circuits to use

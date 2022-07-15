@@ -113,6 +113,7 @@ struct global_args_t {
     argparse::ArgValue<bool> fflegalize;     // makes flip-flops rising edge sensitive
     argparse::ArgValue<bool> coarsen;        // tells Odin-II that the input blif is coarse-grain
     argparse::ArgValue<bool> show_yosys_log; // Show Yosys output logs into the standard output stream
+    argparse::ArgValue<bool> decode_names;   // Extracting hierarchical information from Yosys coarse-grained BLIF file for signal naming
 
     argparse::ArgValue<std::string> adder_def; //DEPRECATED
 
