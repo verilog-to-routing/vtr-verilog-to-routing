@@ -111,8 +111,6 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
 
 static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat);
 
-static std::unordered_map<RRNodeId, RRNodeId> load_neighbouring_node_on_tile(const RRGraphView& rr_graph,
-                                                                             bool is_flat);
 /************************** Subroutine definitions ***************************/
 
 void save_routing(const Netlist<>& net_list,
@@ -1706,6 +1704,9 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
     }
 
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+        int node_x, node_y;
+        node_x = rr_graph.node_xlow(rr_id);
+        node_y = rr_graph.node_ylow(rr_id);
         size_t inode = (size_t)rr_id;
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int cap = rr_graph.node_capacity(rr_id);
@@ -1716,7 +1717,16 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
             for (auto itr = range.first; itr != range.second; ++itr) {
                 auto net_id = itr->second;
                 VTR_LOG("    Used by net %s (%zu)\n", net_list.net_name(net_id).c_str(), size_t(net_id));
+                for(auto pin : net_list.net_pins(net_id)) {
+                    int x, y;
+                    auto blk = net_list.pin_block(pin);
+                    std::tie(x, y) = get_block_loc(blk, is_flat);
+                    if(x == node_x && y == node_y) {
+                        VTR_LOG("      Is in the same cluster: %s \n",  describe_rr_node(itr->first, is_flat).c_str());
+                    }
+                }
             }
+
         }
     }
 }
