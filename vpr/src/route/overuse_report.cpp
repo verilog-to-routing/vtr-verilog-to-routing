@@ -240,15 +240,6 @@ static void report_congested_nets(std::ostream& os, const std::set<ClusterNetId>
     os << '\n';
 }
 
-///@brief Print out the header of the overused rr node info in the logfile
-static void log_overused_nodes_header() {
-    VTR_LOG("Routing Failure Diagnostics: Printing Overused Nodes Information\n");
-    VTR_LOG("------ ------- ---------- --------- -------- ------------ ------- ------- ------- ------- ------- -------\n");
-    VTR_LOG("   No.  NodeId  Occupancy  Capacity  RR Node    Direction    Side     PTC    Xlow    Ylow   Xhigh   Yhigh\n");
-    VTR_LOG("                                        type                          NUM                                \n");
-    VTR_LOG("------ ------- ---------- --------- -------- ------------ ------- ------- ------- ------- ------- -------\n");
-}
-
 ///@brief Print out a single-line info that corresponds to a single overused rr node in the logfile
 static void log_overused_nodes_header() {
     VTR_LOG("Routing Failure Diagnostics: Printing Overused Nodes Information\n");
