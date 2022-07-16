@@ -250,10 +250,22 @@ static void log_overused_nodes_header() {
 }
 
 ///@brief Print out a single-line info that corresponds to a single overused rr node in the logfile
+static void log_overused_nodes_header() {
+    VTR_LOG("Routing Failure Diagnostics: Printing Overused Nodes Information\n");
+    VTR_LOG("------ ------- ---------- --------- -------- ------------ ------- ------- ------- ------- ------- ------- -------\n");
+    VTR_LOG("   No.  NodeId  Occupancy  Capacity  RR Node    Direction    Side     PTC   Block    Xlow    Ylow   Xhigh   Yhigh\n");
+    VTR_LOG("                                        type                          NUM    Name                                 \n");
+    VTR_LOG("------ ------- ---------- --------- -------- ------------ ------- ------- ------- ------- ------- ------- -------\n");
+}
+
+///@brief Print out a single-line info that corresponds to a single overused rr node in the logfile
 static void log_single_overused_node_status(int overuse_index, RRNodeId node_id) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& route_ctx = g_vpr_ctx.routing();
+    int x = rr_graph.node_xlow(node_id);
+    int y = rr_graph.node_ylow(node_id);
+    auto physical_blk = device_ctx.grid[x][y].type;
 
     //Determines if direction or side is available for printing
     auto node_type = rr_graph.node_type(node_id);
@@ -290,11 +302,14 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     //PTC number
     VTR_LOG(" %7d", rr_graph.node_ptc_num(node_id));
 
+    // Block Name
+    VTR_LOG(" %7s", physical_blk->name);
+
     //X_low
-    VTR_LOG(" %7d", rr_graph.node_xlow(node_id));
+    VTR_LOG(" %7d", x);
 
     //Y_low
-    VTR_LOG(" %7d", rr_graph.node_ylow(node_id));
+    VTR_LOG(" %7d",y);
 
     //X_high
     VTR_LOG(" %7d", rr_graph.node_xhigh(node_id));
