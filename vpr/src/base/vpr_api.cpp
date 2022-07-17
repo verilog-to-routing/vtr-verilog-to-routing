@@ -839,7 +839,16 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             //Otherwise, remind the user of this possible report option
             if (router_opts.generate_rr_node_overuse_report) {
                 VTR_LOG("See report_overused_nodes.rpt for a detailed report on the RR node overuse information.\n");
-                report_overused_nodes(rr_graph, router_opts.flat_routing);
+                if(router_opts.flat_routing) {
+                    report_overused_nodes((const Netlist<>&)g_vpr_ctx.atom().nlist,
+                                          rr_graph,
+                                          router_opts.flat_routing);
+                } else {
+                    report_overused_nodes((const Netlist<>&)cluster_ctx.clb_nlist,
+                                          rr_graph,
+                                          router_opts.flat_routing);
+                }
+
             } else {
                 VTR_LOG("For a detailed report on the RR node overuse information (report_overused_nodes.rpt), specify --generate_rr_node_overuse_report on.\n");
             }
