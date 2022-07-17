@@ -378,6 +378,9 @@ float get_max_edge_delay(t_physical_tile_type_ptr physical_tile,
                          int from_pin_physical_num,
                          int to_pin_physical_num);
 
+const t_pb_graph_node* get_pb_graph_node_form_pin_physical_pin(t_physical_tile_type_ptr physical_type,
+                                                               int pin_physical_num);
+
 int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile);
 
 int get_total_num_tile_internal_pins(t_physical_tile_type_ptr tile);

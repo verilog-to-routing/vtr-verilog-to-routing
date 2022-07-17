@@ -71,9 +71,6 @@ static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physic
                                                  t_logical_block_type_ptr logical_block,
                                                  int pin_physical_num);
 
-static const t_pb_graph_node* get_pb_graph_node_form_pin_physical_pin(t_physical_tile_type_ptr physical_type,
-                                                                     int pin_physical_num);
-
 static std::tuple<int, int, int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_index, bool is_flat) {
     int max_ptc = get_tile_ipin_opin_max_ptc(type, is_flat);
     VTR_ASSERT(pin_index < max_ptc);
@@ -325,30 +322,6 @@ static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physic
     }
     int pin_logical_num = result->second.pin;
     return logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
-
-}
-
-static const t_pb_graph_node* get_pb_graph_node_form_pin_physical_pin(t_physical_tile_type_ptr physical_type,
-                                                                     int pin_physical_num) {
-    VTR_ASSERT(!is_pin_on_tile(physical_type, pin_physical_num));
-    t_logical_block_type_ptr logical_block = nullptr;
-    const t_sub_tile* sub_tile = nullptr;
-    int rel_cap = -1;
-    std::tie(sub_tile, rel_cap) = get_sub_tile_from_pin_physical_num(physical_type, pin_physical_num);
-    VTR_ASSERT(sub_tile != nullptr);
-
-    for(auto logical_block_start_pin_num_pair : sub_tile->starting_internal_pin_idx[rel_cap]) {
-        if(pin_physical_num >= logical_block_start_pin_num_pair.second) {
-            logical_block = logical_block_start_pin_num_pair.first;
-        }
-    }
-    VTR_ASSERT(logical_block != nullptr);
-
-    int pin_logical_num = get_pin_logical_num_from_pin_physical_num(physical_type, pin_physical_num);
-    auto pb_graph_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
-
-    return pb_graph_pin->parent_node;
-
 
 }
 
@@ -1154,6 +1127,30 @@ float get_max_edge_delay(t_physical_tile_type_ptr physical_tile,
     }
     VTR_ASSERT(find_edge);
     return max_delay;
+
+}
+
+const t_pb_graph_node* get_pb_graph_node_form_pin_physical_pin(t_physical_tile_type_ptr physical_type,
+                                                               int pin_physical_num) {
+    VTR_ASSERT(!is_pin_on_tile(physical_type, pin_physical_num));
+    t_logical_block_type_ptr logical_block = nullptr;
+    const t_sub_tile* sub_tile = nullptr;
+    int rel_cap = -1;
+    std::tie(sub_tile, rel_cap) = get_sub_tile_from_pin_physical_num(physical_type, pin_physical_num);
+    VTR_ASSERT(sub_tile != nullptr);
+
+    for(auto logical_block_start_pin_num_pair : sub_tile->starting_internal_pin_idx[rel_cap]) {
+        if(pin_physical_num >= logical_block_start_pin_num_pair.second) {
+            logical_block = logical_block_start_pin_num_pair.first;
+        }
+    }
+    VTR_ASSERT(logical_block != nullptr);
+
+    int pin_logical_num = get_pin_logical_num_from_pin_physical_num(physical_type, pin_physical_num);
+    auto pb_graph_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
+
+    return pb_graph_pin->parent_node;
+
 
 }
 

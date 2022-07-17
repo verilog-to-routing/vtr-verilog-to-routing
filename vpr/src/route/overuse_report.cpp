@@ -162,6 +162,13 @@ static void report_overused_ipin_opin(std::ostream& os, RRNodeId node_id) {
         "Non-track RR node should not span across multiple grid blocks.");
 
     os << "Pin number = " << rr_graph.node_pin_num(node_id) << '\n';
+    if(is_node_on_tile(rr_graph.node_type(node_id), grid_x, grid_y, rr_graph.node_ptc_num(node_id))) {
+        os << "On Tile Pin" << "\n";
+    } else {
+        auto pb_type_name =
+            get_pb_graph_node_form_pin_physical_pin(device_ctx.grid[grid_x][grid_y].type, rr_graph.node_ptc_num(node_id))->pb_type->name;
+        os << "Intra-Tile Pin - PB Type : " << std::string(pb_type_name) << "\n";
+    }
     os << "Side = " << rr_graph.node_side_string(node_id) << "\n\n";
 
     //Add block type for IPINs/OPINs in overused rr-node report
