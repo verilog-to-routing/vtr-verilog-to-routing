@@ -144,6 +144,9 @@ alloc_rt_node() {
     return (rt_node);
 }
 
+/* After putting the rt_node to the free list, rt_node pointer would be set to
+ * nullptr to make sure that it does not get double frees if a caller tries to
+ * free the routing tree twice */
 static void free_rt_node(t_rt_node** rt_node) {
     /* Adds rt_node to the proper free list.          */
 
@@ -659,8 +662,6 @@ bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes) {
 }
 
 void free_route_tree(t_rt_node* rt_node) {
-    /* Puts the rt_nodes and edges in the tree rooted at rt_node back on the
-     * free lists.  Recursive, depth-first post-order traversal.                */
     if(rt_node == nullptr) {
         return;
     }
