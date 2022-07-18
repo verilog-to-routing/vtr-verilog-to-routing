@@ -9,6 +9,8 @@
 #include "rr_graph_builder.h"
 #include "rr_types.h"
 #include "device_grid.h"
+#include "unified_to_parallel_seg_index.h"
+#include "get_parallel_segs.h"
 
 /******************* Types shared by rr_graph2 functions *********************/
 
@@ -20,7 +22,7 @@ typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 /* This map is used to get indices w.r.t segment_inf_x or segment_inf_y based on parallel_axis of a segment, 
  * from indices w.r.t the **unified** segment vector, segment_inf in devices context which stores all segments 
  * regardless of their axis. (see get_parallel_segs for more details)*/
-typedef std::unordered_multimap<size_t, std::pair<size_t, e_parallel_axis>> t_unified_to_parallel_seg_index;
+//typedef std::unordered_multimap<size_t, std::pair<size_t, e_parallel_axis>> t_unified_to_parallel_seg_index;
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
@@ -184,9 +186,9 @@ void load_sblock_pattern_lookup(const int i,
                                 const enum e_switch_block_type switch_block_type,
                                 t_sblock_pattern& sblock_pattern);
 
-std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& segment_inf,
-                                             t_unified_to_parallel_seg_index& seg_index_map,
-                                             enum e_parallel_axis parallel_axis);
+// std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& segment_inf,
+//                                              t_unified_to_parallel_seg_index& seg_index_map,
+//                                              enum e_parallel_axis parallel_axis);
 
 int get_parallel_seg_index(const int abs,
                            const t_unified_to_parallel_seg_index& index_map,
