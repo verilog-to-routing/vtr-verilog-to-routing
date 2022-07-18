@@ -415,21 +415,26 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
 
 
             //An IPIN should be contained within the bounding box of it's connected sink
-            if (from_xlow >= to_xlow
-                && from_ylow >= to_ylow
-                && from_xhigh <= to_xhigh
-                && from_yhigh <= to_yhigh) {
-                from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
-                to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
-                VTR_ASSERT(from_grid_type == to_grid_type);
-                if(to_type == SINK) {
+            if(to_type == SINK) {
+                if (from_xlow >= to_xlow
+                    && from_ylow >= to_ylow
+                    && from_xhigh <= to_xhigh
+                    && from_yhigh <= to_yhigh) {
+                    from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
+                    to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
+                    VTR_ASSERT(from_grid_type == to_grid_type);
                     iclass = get_class_num_from_pin_physical_num(from_grid_type, from_ptc);
                     if (iclass == to_ptc)
                         num_adj++;
-                } else {
-                    num_adj++;
-                }
 
+                }
+            } else {
+                from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
+                to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
+                VTR_ASSERT(from_grid_type == to_grid_type);
+                VTR_ASSERT(from_xlow-from_grid_type->width == to_xlow-to_grid_type->width);
+                VTR_ASSERT(from_ylow-from_grid_type->height == to_ylow-to_grid_type->height);
+                num_adj++;
             }
             break;
 
