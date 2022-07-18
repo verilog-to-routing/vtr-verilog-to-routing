@@ -18,7 +18,7 @@ Structure of Yosys Synthesis Files and the Yosys External Library Library
     	│			├── multiply.v
     	│			├── single_port_ram.v
     	│			├── spram_rename.v
-    	│			├── synthesis.ys
+    	│			├── synthesis.tcl
     	│			└── yosys_models.v
     	└── libs
     	    └── EXTERNAL
