@@ -11,7 +11,7 @@ t_linked_vptr* insert_in_vptr_list(t_linked_vptr* head, void* vptr_to_add) {
 
     t_linked_vptr* linked_vptr;
 
-    linked_vptr = (t_linked_vptr*)vtr::malloc(sizeof(t_linked_vptr));
+    linked_vptr = new t_linked_vptr;
 
     linked_vptr->data_vptr = vptr_to_add;
     linked_vptr->next = head;
