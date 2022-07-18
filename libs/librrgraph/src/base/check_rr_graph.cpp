@@ -44,12 +44,12 @@ class node_edge_sorter {
     }
 };
 
-void check_rr_graph(const t_graph_type graph_type,
-                    const DeviceGrid& grid,
+void check_rr_graph(const RRGraphView& rr_graph,
                     const std::vector<t_physical_tile_type>& types,
-                    const RRGraphView& rr_graph,
                     const vtr::vector<RRIndexedDataId, t_rr_indexed_data> rr_indexed_data,
+                    const DeviceGrid& grid,
                     const t_chan_width& chan_width,
+                    const t_graph_type graph_type,
                     int virtual_clock_network_root_idx) {
     e_route_type route_type = DETAILED;
     if (graph_type == GRAPH_GLOBAL) {
@@ -82,7 +82,7 @@ void check_rr_graph(const t_graph_type graph_type,
         t_rr_type rr_type = rr_graph.node_type(rr_node);
         int num_edges = rr_graph.num_edges(RRNodeId(inode));
 
-        check_rr_node(inode, route_type, rr_graph, grid, rr_indexed_data, chan_width);
+        check_rr_node(rr_graph, rr_indexed_data, grid, chan_width, route_type, inode);
 
         /* Check all the connectivity (edges, etc.) information.                    */
         edges.resize(0);
@@ -296,12 +296,12 @@ static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const Device
     return type->is_ignored_pin[ipin];
 }
 
-void check_rr_node(int inode, 
-                   enum e_route_type route_type, 
-                   const RRGraphView& rr_graph,
-                   const DeviceGrid& grid,
+void check_rr_node(const RRGraphView& rr_graph,
                    const vtr::vector<RRIndexedDataId, t_rr_indexed_data> rr_indexed_data,
-                   const t_chan_width& chan_width) {
+                   const DeviceGrid& grid,
+                   const t_chan_width& chan_width,
+                   enum e_route_type route_type, 
+                   int inode) {
     /* This routine checks that the rr_node is inside the grid and has a valid
      * pin number, etc.
      */

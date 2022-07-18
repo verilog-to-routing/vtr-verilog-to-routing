@@ -596,7 +596,12 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_graph.num_nodes() - 1);
     }
-    check_rr_node(inode, route_type, device_ctx);
+    check_rr_node(device_ctx.rr_graph,
+                  device_ctx.rr_indexed_data,
+                  device_ctx.grid,
+                  device_ctx.chan_width,
+                  route_type,
+                  inode);
 }
 
 //Checks that all non-configurable edges are in a legal configuration

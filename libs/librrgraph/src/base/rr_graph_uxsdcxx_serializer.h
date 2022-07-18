@@ -1613,7 +1613,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         read_rr_graph_filename_->assign(read_rr_graph_name_);
 
         if (do_check_rr_graph_) {
-            check_rr_graph(graph_type_, grid_, physical_tile_types_, *rr_graph_, *rr_indexed_data_, *chan_width_, virtual_clock_network_root_idx_);
+            check_rr_graph(*rr_graph_, physical_tile_types_, *rr_indexed_data_, grid_, *chan_width_, graph_type_, virtual_clock_network_root_idx_);
         }
     }
 
