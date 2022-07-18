@@ -10,8 +10,11 @@
  * The helper routines that are called by the global routine should stay local to this file.
  * They provide subroutine hierarchy to allow easier customization of the logfile/report format.
  */
-
-static void report_overused_ipin_opin(std::ostream& os, RRNodeId node_id);
+static void generate_node_to_net_lookup(const Netlist<>& net_list,
+                                        std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
+static void report_overused_ipin_opin(std::ostream& os,
+                                      RRNodeId node_id,
+                                      const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
 static void report_overused_chanx_chany(std::ostream& os, RRNodeId node_id);
 static void report_overused_source_sink(std::ostream& os, RRNodeId node_id);
 static void report_congested_nets(const Netlist<>& net_list,
@@ -25,7 +28,12 @@ static void report_congested_nets(const Netlist<>& net_list,
 
 static void log_overused_nodes_header();
 static void log_single_overused_node_status(int overuse_index, RRNodeId inode);
-
+void print_block_pins_nets(std::ostream& os,
+                           t_physical_tile_type_ptr physical_type,
+                           int root_x,
+                           int root_y,
+                           int pin_physical_num,
+                           const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
 /**
  * @brief Print out RR node overuse info in the VPR logfile.
  *
@@ -71,18 +79,20 @@ void report_overused_nodes(const Netlist<>& net_list,
     const auto& route_ctx = g_vpr_ctx.routing();
 
     /* Generate overuse info lookup table */
-    std::map<RRNodeId, std::set<ParentNetId>> nodes_to_nets_lookup;
+    std::map<RRNodeId, std::set<ParentNetId>> over_used_nodes_to_nets_lookup;
+    std::map<RRNodeId, std::set<ParentNetId>> rr_node_to_net_map;
     generate_overused_nodes_to_congested_net_lookup(net_list,
-                                                    nodes_to_nets_lookup);
+                                                    over_used_nodes_to_nets_lookup);
+    generate_node_to_net_lookup(net_list, rr_node_to_net_map);
 
     /* Open the report file and print header info */
     std::ofstream os("report_overused_nodes.rpt");
     os << "Overused nodes information report on the final failed routing attempt" << '\n';
-    os << "Total number of overused nodes = " << nodes_to_nets_lookup.size() << '\n';
+    os << "Total number of overused nodes = " << over_used_nodes_to_nets_lookup.size() << '\n';
 
     /* Go through each rr node and the nets that pass through it */
     size_t inode = 0;
-    for (const auto& lookup_pair : nodes_to_nets_lookup) {
+    for (const auto& lookup_pair : over_used_nodes_to_nets_lookup) {
         const RRNodeId node_id = lookup_pair.first;
         const auto& congested_nets = lookup_pair.second;
 
@@ -103,7 +113,9 @@ void report_overused_nodes(const Netlist<>& net_list,
         switch (node_type) {
             case IPIN:
             case OPIN:
-                report_overused_ipin_opin(os, node_id);
+                report_overused_ipin_opin(os,
+                                          node_id,
+                                          rr_node_to_net_map);
                 report_sinks = true;
                 x -= g_vpr_ctx.device().grid[x][y].type->width;
                 y -= g_vpr_ctx.device().grid[x][y].type->width;
@@ -169,8 +181,25 @@ void generate_overused_nodes_to_congested_net_lookup(const Netlist<>& net_list,
     }
 }
 
+static void generate_node_to_net_lookup(const Netlist<>& net_list,
+                                        std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
+    const auto& route_ctx = g_vpr_ctx.routing();
+
+    //Create overused nodes to congested nets look up by
+    //traversing through the net trace backs linked lists
+    for (ParentNetId net_id : net_list.nets()) {
+        for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
+            int inode = tptr->index;
+            rr_node_to_net_map[RRNodeId(inode)].insert(net_id);
+        }
+    }
+
+}
+
 ///@brief Print out information specific to IPIN/OPIN type rr nodes
-static void report_overused_ipin_opin(std::ostream& os, RRNodeId node_id) {
+static void report_overused_ipin_opin(std::ostream& os,
+                                      RRNodeId node_id,
+                                      const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -181,7 +210,7 @@ static void report_overused_ipin_opin(std::ostream& os, RRNodeId node_id) {
         grid_x == rr_graph.node_xhigh(node_id) && grid_y == rr_graph.node_yhigh(node_id),
         "Non-track RR node should not span across multiple grid blocks.");
 
-    os << "Pin number = " << rr_graph.node_pin_num(node_id) << '\n';
+    os << "Pin physical number = " << rr_graph.node_pin_num(node_id) << '\n';
     if(is_node_on_tile(rr_graph.node_type(node_id), grid_x, grid_y, rr_graph.node_ptc_num(node_id))) {
         os << "On Tile Pin" << "\n";
     } else {
@@ -190,6 +219,12 @@ static void report_overused_ipin_opin(std::ostream& os, RRNodeId node_id) {
         auto pb_pin = get_pb_pin_from_pin_physical_num(device_ctx.grid[grid_x][grid_y].type, rr_graph.node_ptc_num(node_id));
         os << "Intra-Tile Pin - Port : " << pb_pin->port->name << " - PB Type : " << std::string(pb_type_name) << "\n";
     }
+    print_block_pins_nets(os,
+                          device_ctx.grid[grid_x][grid_y].type,
+                          grid_x - device_ctx.grid[grid_x][grid_y].width_offset,
+                          grid_y - device_ctx.grid[grid_x][grid_y].height_offset,
+                          rr_graph.node_ptc_num(node_id),
+                          rr_node_to_net_map);
     os << "Side = " << rr_graph.node_side_string(node_id) << "\n\n";
 
     //Add block type for IPINs/OPINs in overused rr-node report
@@ -384,4 +419,60 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     VTR_LOG("\n");
 
     fflush(stdout);
+}
+
+void print_block_pins_nets(std::ostream& os,
+                           t_physical_tile_type_ptr physical_type,
+                           int root_x,
+                           int root_y,
+                           int pin_physical_num,
+                           const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+
+    std::vector<int> physical_pins;
+    if(is_pin_on_tile(physical_type, pin_physical_num)) {
+        physical_pins.resize(physical_type->num_pins);
+        std::iota(physical_pins.begin(), physical_pins.end(), 0);
+    } else {
+        const t_sub_tile* sub_tile = nullptr;
+        int rel_cap = -1;
+        std::tie(sub_tile, rel_cap) = get_sub_tile_from_pin_physical_num(physical_type, pin_physical_num);
+        VTR_ASSERT(rel_cap != -1);
+        auto logical_block = get_logical_block_from_pin_physical_num(physical_type, pin_physical_num);
+        VTR_ASSERT(logical_block != nullptr);
+        auto pb_graph_node = get_pb_pin_from_pin_physical_num(physical_type, pin_physical_num);
+        VTR_ASSERT(pb_graph_node != nullptr);
+        physical_pins = get_pb_graph_node_pins(physical_type,
+                                              sub_tile,
+                                              logical_block,
+                                              rel_cap,
+                                              pb_graph_node->parent_node);
+    }
+
+    for(auto pin : physical_pins) {
+        t_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
+        RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, root_x, root_y, pin);
+        VTR_ASSERT(node_id != RRNodeId::INVALID());
+        auto search_result = rr_node_to_net_map.find(node_id);
+        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_type, pin);
+        if(rr_type == t_rr_type::OPIN) {
+            os << "  OPIN - ";
+        } else {
+            VTR_ASSERT(rr_type == t_rr_type::IPIN);
+            os << "  IPIN - ";
+        }
+        os << "RRNodeId: " << size_t(node_id) <<
+            " - Physical Num: " << pin << " - Logical Num : " << pb_pin->pin_count_in_cluster << "\n";
+        if(search_result != rr_node_to_net_map.end()) {
+            auto nets = search_result->second;
+            for(auto net : nets) {
+                os << "  " << size_t(net);
+            }
+        } else {
+            os << "  -1";
+        }
+        os << "\n";
+    }
+
+
 }

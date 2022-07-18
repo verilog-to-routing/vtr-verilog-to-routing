@@ -128,7 +128,8 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                                    const int j,
                                    int pin_physical_num) {
     RRNodeId node_id = RRNodeId::INVALID();
-
+    VTR_ASSERT(g_vpr_ctx.device().grid[i][j].height_offset == 0);
+    VTR_ASSERT(g_vpr_ctx.device().grid[i][j].width_offset == 0);
     e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
     VTR_ASSERT(pin_type == DRIVER || pin_type == RECEIVER);
     t_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;

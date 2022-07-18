@@ -432,9 +432,14 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
                 from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
                 to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
                 VTR_ASSERT(from_grid_type == to_grid_type);
-                VTR_ASSERT(from_xlow-from_grid_type->width == to_xlow-to_grid_type->width);
-                VTR_ASSERT(from_ylow-from_grid_type->height == to_ylow-to_grid_type->height);
-                num_adj++;
+                int from_root_x = from_xlow - device_ctx.grid[from_xlow][from_ylow].width_offset;
+                int from_root_y = from_ylow - device_ctx.grid[from_xlow][from_ylow].height_offset;
+                int to_root_x = to_xlow - device_ctx.grid[to_xlow][to_ylow].width_offset;
+                int to_root_y = to_ylow - device_ctx.grid[to_xlow][to_ylow].height_offset;
+
+                if(from_root_x == to_root_x && from_root_y == to_root_y) {
+                    num_adj++;
+                }
             }
             break;
 
