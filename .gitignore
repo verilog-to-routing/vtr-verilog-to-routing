@@ -102,6 +102,11 @@ ODIN_II/usefull_tools/**/track_completed
 *.a
 
 #
+#Yosys exec dir
+#
+Yosys
+
+#
 #Python
 #
 *.pyc
