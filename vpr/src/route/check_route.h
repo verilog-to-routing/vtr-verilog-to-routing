@@ -9,6 +9,6 @@ void check_route(const Netlist<>& net_list,
                  e_check_route_option check_route_option,
                  bool is_flat);
 
-void recompute_occupancy_from_scratch(const AtomLookup& atom_look_up, bool is_flat);
+void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat);
 
 #endif

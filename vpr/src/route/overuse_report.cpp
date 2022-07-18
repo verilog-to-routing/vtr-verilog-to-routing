@@ -190,7 +190,8 @@ static void report_overused_ipin_opin(std::ostream& os, RRNodeId node_id) {
     } else {
         auto pb_type_name =
             get_pb_graph_node_form_pin_physical_pin(device_ctx.grid[grid_x][grid_y].type, rr_graph.node_ptc_num(node_id))->pb_type->name;
-        os << "Intra-Tile Pin - PB Type : " << std::string(pb_type_name) << "\n";
+        auto pb_pin = get_pb_pin_from_pin_physical_num(device_ctx.grid[grid_x][grid_y].type, rr_graph.node_ptc_num(node_id));
+        os << "Intra-Tile Pin - Port : " << pb_pin->port->name << " - PB Type : " << std::string(pb_type_name) << "\n";
     }
     os << "Side = " << rr_graph.node_side_string(node_id) << "\n\n";
 

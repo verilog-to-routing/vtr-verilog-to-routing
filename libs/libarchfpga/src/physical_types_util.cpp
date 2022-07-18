@@ -650,17 +650,18 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
                                                              int class_physical_num,
                                                              bool is_flat) {
     t_class class_inf;
-    bool is_inside_cluster_class = is_class_on_tile(type, class_physical_num);
-    if(is_inside_cluster_class) {
-        class_inf = type->internal_class_inf.at(class_physical_num);
-    } else {
+    bool class_on_tile = is_class_on_tile(type, class_physical_num);
+    VTR_ASSERT(class_on_tile || is_flat);
+    if(class_on_tile) {
         class_inf = type->class_inf[class_physical_num];
+    } else {
+        class_inf = type->internal_class_inf.at(class_physical_num);
     }
 
     std::vector<t_pin_inst_port> pin_info;
     for (int ipin = 0; ipin < class_inf.num_pins; ++ipin) {
         int pin_physical_num = class_inf.pinlist[ipin];
-        pin_info.push_back(block_type_pin_index_to_pin_inst(type, pin_physical_num, is_inside_cluster_class));
+        pin_info.push_back(block_type_pin_index_to_pin_inst(type, pin_physical_num, is_flat));
     }
 
     auto cmp = [](const t_pin_inst_port& lhs, const t_pin_inst_port& rhs) {

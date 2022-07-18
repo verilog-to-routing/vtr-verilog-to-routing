@@ -100,9 +100,15 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
 
     /*Allocate necessary routing structures*/
     alloc_and_load_rr_node_route_structs();
-    init_route_structs((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
-                       router_opts.bb_factor,
-                       router_opts.flat_routing);
+    if(router_opts.flat_routing) {
+        init_route_structs((const Netlist<>&)g_vpr_ctx.atom().nlist,
+                           router_opts.bb_factor,
+                           router_opts.flat_routing);
+    } else {
+        init_route_structs((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                           router_opts.bb_factor,
+                           router_opts.flat_routing);
+    }
 
     /*Check dimensions*/
     std::getline(fp, header_str);
@@ -127,7 +133,14 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
         reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
                                    router_opts.acc_fac, false, router_opts.flat_routing);
     }
-    recompute_occupancy_from_scratch(g_vpr_ctx.atom().lookup, router_opts.flat_routing);
+    if(router_opts.flat_routing) {
+        recompute_occupancy_from_scratch((const Netlist<>&)g_vpr_ctx.atom().nlist,
+                                         router_opts.flat_routing);
+    } else {
+        recompute_occupancy_from_scratch((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                                         router_opts.flat_routing);
+    }
+
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
     OveruseInfo overuse_info(device_ctx.rr_graph.num_nodes());
@@ -138,7 +151,13 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     }
 
     /* Finished loading in the routing, now check it*/
-    recompute_occupancy_from_scratch(g_vpr_ctx.atom().lookup, router_opts.flat_routing);
+    if(router_opts.flat_routing) {
+        recompute_occupancy_from_scratch((const Netlist<>&)g_vpr_ctx.atom().nlist,
+                                         router_opts.flat_routing);
+    } else {
+        recompute_occupancy_from_scratch((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                                         router_opts.flat_routing);
+    }
     bool is_feasible = feasible_routing();
 
     VTR_LOG("Finished loading route file\n");

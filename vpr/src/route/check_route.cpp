@@ -38,8 +38,8 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                          enum e_route_type route_type,
                                          bool is_flat);
 
-static void check_all_non_configurable_edges(bool is_flat);
-static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets, bool is_flat);
+static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_flat);
+static bool check_non_configurable_edges(const Netlist<>& net_list, ParentNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets, bool is_flat);
 static void check_net_for_stubs(const Netlist<>& net_list,
                                 ParentNetId net,
                                 bool is_flat);
@@ -79,16 +79,18 @@ void check_route(const Netlist<>& net_list,
      * resources.  This was already checked in order to determine that this  *
      * is a successful routing, but I want to double check it here.          */
 
-    recompute_occupancy_from_scratch(g_vpr_ctx.atom().lookup, is_flat);
+    recompute_occupancy_from_scratch(net_list, is_flat);
     valid = feasible_routing();
     if (valid == false) {
         VPR_ERROR(VPR_ERROR_ROUTE,
                   "Error in check_route -- routing resources are overused.\n");
     }
 
-    check_locally_used_clb_opins(route_ctx.clb_opins_used_locally,
-                                 route_type,
-                                 is_flat);
+    if(!is_flat) {
+        check_locally_used_clb_opins(route_ctx.clb_opins_used_locally,
+                                     route_type,
+                                     is_flat);
+    }
 
     auto connected_to_route = std::make_unique<bool[]>(rr_graph.num_nodes());
     std::fill_n(connected_to_route.get(), rr_graph.num_nodes(), false);
@@ -190,7 +192,7 @@ void check_route(const Netlist<>& net_list,
     } /* End for each net */
 
     if (check_route_option == e_check_route_option::FULL) {
-        check_all_non_configurable_edges(is_flat);
+        check_all_non_configurable_edges(net_list, is_flat);
     } else {
         VTR_ASSERT(check_route_option == e_check_route_option::QUICK);
     }
@@ -524,7 +526,7 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
     }
 }
 
-void recompute_occupancy_from_scratch(const AtomLookup& atom_look_up, bool is_flat) {
+void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
     /*
      * This routine updates the occ field in the route_ctx.rr_node_route_inf structure
      * according to the resource usage of the current routing.  It does a
@@ -536,7 +538,6 @@ void recompute_occupancy_from_scratch(const AtomLookup& atom_look_up, bool is_fl
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* First set the occupancy of everything to zero. */
     /*FIXME: the type cast should be eliminated by making rr_node_route_inf adapt RRNodeId */
@@ -545,12 +546,11 @@ void recompute_occupancy_from_scratch(const AtomLookup& atom_look_up, bool is_fl
 
     /* Now go through each net and count the tracks and pins used everywhere */
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        auto par_net_id = get_cluster_net_parent_id(atom_look_up, net_id, is_flat);
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Skip ignored nets. */
+    for (auto net_id : net_list.nets()) {
+        if (net_list.net_is_ignored(net_id)) /* Skip ignored nets. */
             continue;
 
-        tptr = route_ctx.trace[par_net_id].head;
+        tptr = route_ctx.trace[net_id].head;
         if (tptr == nullptr)
             continue;
 
@@ -568,17 +568,21 @@ void recompute_occupancy_from_scratch(const AtomLookup& atom_look_up, bool is_fl
         }
     }
 
-    /* Now update the occupancy of each of the "locally used" OPINs on each CLB *
+    /* We only need to reserve output pins if flat routing is not enabled */
+    if(!is_flat) {
+        /* Now update the occupancy of each of the "locally used" OPINs on each CLB *
      * (CLB outputs used up by being directly wired to subblocks used only      *
      * locally).                                                                */
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        for (iclass = 0; iclass < (int)physical_tile_type(blk_id)->class_inf.size(); iclass++) {
-            num_local_opins = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
-            /* Will always be 0 for pads or SINK classes. */
-            for (ipin = 0; ipin < num_local_opins; ipin++) {
-                inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
-                VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_graph.num_nodes());
-                route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
+        for (auto blk_id : net_list.blocks()) {
+            auto cluster_blk_id = convert_to_cluster_block_id(blk_id);
+            for (iclass = 0; iclass < (int)physical_tile_type(cluster_blk_id)->class_inf.size(); iclass++) {
+                num_local_opins = route_ctx.clb_opins_used_locally[cluster_blk_id][iclass].size();
+                /* Will always be 0 for pads or SINK classes. */
+                for (ipin = 0; ipin < num_local_opins; ipin++) {
+                    inode = route_ctx.clb_opins_used_locally[cluster_blk_id][iclass][ipin];
+                    VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_graph.num_nodes());
+                    route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
+                }
             }
         }
     }
@@ -648,13 +652,12 @@ static void check_node_and_range(int inode,
 
 //Checks that all non-configurable edges are in a legal configuration
 //This check is slow, so it has been moved out of check_route()
-static void check_all_non_configurable_edges(bool is_flat) {
+static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Checking to ensure non-configurable edges are legal");
     auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        check_non_configurable_edges(net_id, non_configurable_rr_sets, is_flat);
+    for (auto net_id : net_list.nets()) {
+        check_non_configurable_edges(net_list, net_id, non_configurable_rr_sets, is_flat);
     }
 }
 
@@ -662,11 +665,12 @@ static void check_all_non_configurable_edges(bool is_flat) {
 //
 //For routing to be legal if *any* non-configurable edge is used, so must *all*
 //other non-configurable edges in the same set
-static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets, bool is_flat) {
+static bool check_non_configurable_edges(const Netlist<>& net_list,
+                                         ParentNetId net,
+                                         const t_non_configurable_rr_sets& non_configurable_rr_sets,
+                                         bool is_flat) {
     auto& route_ctx = g_vpr_ctx.routing();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net, is_flat);
-    t_trace* head = route_ctx.trace[par_net_id].head;
+    t_trace* head = route_ctx.trace[net].head;
 
     //Collect all the edges used by this net's routing
     std::set<t_node_edge> routing_edges;
@@ -725,7 +729,7 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                 std::string msg = vtr::string_fmt(
                     "Illegal routing for net '%s' (#%zu) some "
                     "required non-configurably connected nodes are missing:\n",
-                    cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
+                    net_list.net_name(net).c_str(), size_t(net));
 
                 for (auto inode : difference) {
                     msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(inode, is_flat).c_str());
@@ -791,7 +795,7 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
             //At this point only valid missing node pairs are in the set
             if (!dedupped_difference.empty()) {
                 std::string msg = vtr::string_fmt("Illegal routing for net '%s' (#%zu) some required non-configurable edges are missing:\n",
-                                                  cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
+                                                  net_list.net_name(net).c_str(), size_t(net));
 
                 for (t_node_edge missing_edge : dedupped_difference) {
                     msg += vtr::string_fmt("  Expected RR Node: %d and RR Node: %d to be non-configurably connected, but edge missing from routing:\n",
