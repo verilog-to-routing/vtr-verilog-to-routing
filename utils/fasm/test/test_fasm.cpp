@@ -269,12 +269,28 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                     value = value + "\n" + pin_feature;
                 }
 
-                vpr::add_rr_edge_metadata((size_t)inode, sink_inode, switch_id,
-                        vtr::string_view("fasm_features"), vtr::string_view(value.data(), value.size()));
+                vpr::add_rr_edge_metadata(device_ctx.rr_graph_builder.rr_edge_metadata(),
+                                          (size_t)inode,
+                                          sink_inode, 
+                                          switch_id,
+                                          vtr::string_view("fasm_features"), 
+                                          vtr::string_view(value.data(), value.size()),
+                                          device_ctx.arch);
             }
         }
 
-        write_rr_graph(kRrGraphFile);
+        write_rr_graph(&device_ctx.rr_graph_builder,
+                       &device_ctx.rr_graph,
+                       device_ctx.physical_tile_types,
+                       &device_ctx.rr_indexed_data,
+                       device_ctx.rr_rc_data,
+                       device_ctx.grid,
+                       device_ctx.arch_switch_inf,
+                       device_ctx.arch,
+                       &device_ctx.chan_width,
+                       device_ctx.num_arch_switches,
+                       kRrGraphFile,
+                       device_ctx.virtual_clock_network_root_idx);
         vpr_free_all(arch, vpr_setup);
     }
 
