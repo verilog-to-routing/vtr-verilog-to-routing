@@ -73,8 +73,7 @@ void report_overused_nodes(const Netlist<>& net_list,
     /* Generate overuse info lookup table */
     std::map<RRNodeId, std::set<ParentNetId>> nodes_to_nets_lookup;
     generate_overused_nodes_to_congested_net_lookup(net_list,
-                                                    nodes_to_nets_lookup,
-                                                    is_flat);
+                                                    nodes_to_nets_lookup);
 
     /* Open the report file and print header info */
     std::ofstream os("report_overused_nodes.rpt");
@@ -151,12 +150,10 @@ void report_overused_nodes(const Netlist<>& net_list,
  * This routine goes through the trace back linked list of each net.
  */
 void generate_overused_nodes_to_congested_net_lookup(const Netlist<>& net_list,
-                                                     std::map<RRNodeId, std::set<ParentNetId>>& nodes_to_nets_lookup,
-                                                     bool is_flat) {
+                                                     std::map<RRNodeId, std::set<ParentNetId>>& nodes_to_nets_lookup) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& route_ctx = g_vpr_ctx.routing();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //Create overused nodes to congested nets look up by
     //traversing through the net trace backs linked lists

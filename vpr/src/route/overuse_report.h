@@ -30,5 +30,4 @@ void report_overused_nodes(const Netlist<>& net_list,
 
 ///@brief Generate a overused RR nodes to congested nets lookup table.
 void generate_overused_nodes_to_congested_net_lookup(const Netlist<>& net_list,
-                                                     std::map<RRNodeId, std::set<ParentNetId>>& nodes_to_nets_lookup,
-                                                     bool is_flat);
+                                                     std::map<RRNodeId, std::set<ParentNetId>>& nodes_to_nets_lookup);
