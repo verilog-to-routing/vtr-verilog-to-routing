@@ -322,14 +322,26 @@ void create_rr_graph(const t_graph_type graph_type,
         if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
             free_rr_graph();
 
-            load_rr_file(graph_type,
-                         grid,
+            load_rr_file(&mutable_device_ctx.rr_graph_builder,
+                         &mutable_device_ctx.rr_graph,
+                         device_ctx.physical_tile_types,
                          segment_inf,
+                         &mutable_device_ctx.rr_indexed_data,
+                         mutable_device_ctx.rr_rc_data,
+                         grid,
+                         device_ctx.arch_switch_inf,
+                         graph_type,
+                         device_ctx.arch,
+                         &mutable_device_ctx.chan_width,
                          router_opts.base_cost_type,
+                         num_arch_switches,
+                         device_ctx.virtual_clock_network_root_idx,
                          &det_routing_arch->wire_to_rr_ipin_switch,
                          det_routing_arch->read_rr_graph_filename.c_str(),
+                         &det_routing_arch->read_rr_graph_filename,
                          router_opts.read_rr_edge_metadata,
                          router_opts.do_check_rr_graph);
+                         
             if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
                 mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
                                                                   router_opts.reorder_rr_graph_nodes_threshold,
@@ -378,7 +390,18 @@ void create_rr_graph(const t_graph_type graph_type,
 
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
-        write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str());
+        write_rr_graph(&mutable_device_ctx.rr_graph_builder,
+                       &mutable_device_ctx.rr_graph,
+                       device_ctx.physical_tile_types,
+                       &mutable_device_ctx.rr_indexed_data,
+                       mutable_device_ctx.rr_rc_data,
+                       grid,
+                       device_ctx.arch_switch_inf,
+                       device_ctx.arch,
+                       &mutable_device_ctx.chan_width,
+                       num_arch_switches,
+                       det_routing_arch->write_rr_graph_filename.c_str(),
+                       device_ctx.virtual_clock_network_root_idx);
     }
 }
 
@@ -832,7 +855,13 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, *wire_to_rr_ipin_switch, base_cost_type);
 
-    check_rr_graph(graph_type, grid, types);
+    check_rr_graph(device_ctx.rr_graph,
+                   types,
+                   device_ctx.rr_indexed_data,
+                   grid,
+                   device_ctx.chan_width,
+                   graph_type,
+                   device_ctx.virtual_clock_network_root_idx);
 
     /* Free all temp structs */
     delete[] seg_details_x;
