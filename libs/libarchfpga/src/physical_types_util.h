@@ -334,10 +334,6 @@ t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr ph
                                                      int sub_tile_relative_cap,
                                                      const t_pb_graph_node* pb_graph_node);
 /** **/
-int get_total_num_sub_tile_internal_classes(const t_sub_tile* sub_tile);
-
-int get_total_num_tile_internal_classes(t_physical_tile_type_ptr physical_tile);
-
 int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 
 /*  */

@@ -916,30 +916,10 @@ t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr ph
 }
 
 /** **/
-
-int get_total_num_sub_tile_internal_classes(const t_sub_tile* sub_tile) {
-    int num_classes = 0;
-    for(auto eq_site : sub_tile->equivalent_sites) {
-        num_classes += (int)eq_site->logical_class_inf.size();
-    }
-    num_classes *= sub_tile->capacity.total();
-    return num_classes;
-}
-
-int get_total_num_tile_internal_classes(t_physical_tile_type_ptr physical_tile) {
-
-    int num_classes = 0;
-    for(const t_sub_tile& sub_tile : physical_tile->sub_tiles) {
-        num_classes += get_total_num_sub_tile_internal_classes(&sub_tile);
-    }
-
-    return num_classes;
-}
-
 int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
 
     if(is_flat) {
-        return (int)tile->class_inf.size() + get_total_num_tile_internal_classes(tile);
+        return (int)tile->class_inf.size() + (int) tile->internal_class_inf.size();
     } else {
         VTR_ASSERT(is_flat == false);
         return (int)tile->class_inf.size();

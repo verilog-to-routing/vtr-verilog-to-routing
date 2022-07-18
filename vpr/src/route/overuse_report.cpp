@@ -295,8 +295,12 @@ static void report_congested_nets(const Netlist<>& net_list,
                     os << "Sink in the same location = " << "\n";
                     if(is_flat) {
                         auto pb_pin = atom_lookup.atom_pin_pb_graph_pin(convert_to_atom_pin_id(sink_id));
+                        auto pb_net_list = atom_lookup.atom_pb(convert_to_atom_block_id(net_list.pin_block(sink_id)));
                         os << "  " << "Pin Logical Num: " << pb_pin->pin_count_in_cluster << "  PB Type: " <<
-                            pb_pin->parent_node->pb_type->name <<  "\n";
+                            pb_pin->parent_node->pb_type->name <<  " Netlist PB: "<< pb_net_list->name <<
+                            " Parent PB Type: " << pb_net_list->parent_pb->pb_graph_node->pb_type->name <<
+                            "Parent Netlist PB : " << pb_net_list->parent_pb->name << "\n";
+                        os << "  " << "Hierarchical Type Name : " << pb_pin->parent_node->hierarchical_type_name() << "\n";
                     } else {
                         os << "  " << g_vpr_ctx.placement().physical_pins[convert_to_cluster_pin_id(sink_id)] <<  "\n";
                     }
