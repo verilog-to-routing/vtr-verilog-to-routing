@@ -38,6 +38,9 @@ TEST_CASE("test_find_block_with_matching_name", "[vpr_clustered_netlist]") {
     char io_port_three[] = "io_port_three";
     char io_port_four[] = "io_port_four";
 
+    // datastructure to store all the cluster block IDs of the noc router logical block type clusters
+    std::vector<ClusterBlockId> noc_router_logical_type_clusters;
+
     // add the io blocks to the netlist
     block_id_from_name.emplace(io_port_one, test_netlist.create_block(io_port_one, &i_o_pb, i_o_ref));
     block_id_from_name.emplace(io_port_two, test_netlist.create_block(io_port_two, &i_o_pb, i_o_ref));
@@ -57,12 +60,18 @@ TEST_CASE("test_find_block_with_matching_name", "[vpr_clustered_netlist]") {
         block_id_from_name.emplace(router_three, test_netlist.create_block(router_three, &router_pb, router_ref));
         block_id_from_name.emplace(router_four, test_netlist.create_block(router_four, &router_pb, router_ref));
 
+        // get the added router cluster block ids and store them
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_one)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_two)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_three)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_four)->second);
+
         // now find a block just knowing its instance name
         // the test names will have an arbritary number of characters in front and then the name of the instance and then maybe some characters after
         std::string test_router_module_name = "(.*)(noc_router_one)(.*)";
 
         //get the block id
-        ClusterBlockId test_router_id = test_netlist.find_block_with_matching_name(test_router_module_name, router_ref);
+        ClusterBlockId test_router_id = test_netlist.find_block_with_matching_name(test_router_module_name, noc_router_logical_type_clusters);
 
         // now check the block id with what we expect to be
         REQUIRE((size_t)(block_id_from_name.find("router:noc_router_one")->second) == (size_t)test_router_id);
@@ -82,12 +91,18 @@ TEST_CASE("test_find_block_with_matching_name", "[vpr_clustered_netlist]") {
         block_id_from_name.emplace(router_three, test_netlist.create_block(router_three, &router_pb, router_ref));
         block_id_from_name.emplace(router_four, test_netlist.create_block(router_four, &router_pb, router_ref));
 
+        // get the added router cluster block ids and store them
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_one)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_two)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_three)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_four)->second);
+
         // now find a block just knowing its unique identifier
         // the test names will have an arbritary number of characters in front of them and the unique identifier at the end
         std::string test_router_module_name = "(.*)(q_a\\[2\\])(.*)";
 
         //get the block id
-        ClusterBlockId test_router_id = test_netlist.find_block_with_matching_name(test_router_module_name, router_ref);
+        ClusterBlockId test_router_id = test_netlist.find_block_with_matching_name(test_router_module_name, noc_router_logical_type_clusters);
 
         // now check the block id with what we expect to be
         REQUIRE((size_t)(block_id_from_name.find("router:new_router|q_a[2]")->second) == (size_t)test_router_id);
@@ -113,12 +128,18 @@ TEST_CASE("test_find_block_with_matching_name", "[vpr_clustered_netlist]") {
         block_id_from_name.emplace(router_three, test_netlist.create_block(router_three, &router_pb, router_ref));
         block_id_from_name.emplace(router_four, test_netlist.create_block(router_four, &router_pb, router_ref));
 
+        // get the added router cluster block ids and store them
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_one)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_two)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_three)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_four)->second);
+
         // now find a block just knowing its unique identifier
         // THe identifier we use will match with multiple blocks in this test case
         std::string test_router_module_name = "(.*)(noc_router_four\\|flit_out_two\\[0\\]~reg0)$";
 
         //get the block id
-        ClusterBlockId test_router_id = test_netlist.find_block_with_matching_name(test_router_module_name, router_ref);
+        ClusterBlockId test_router_id = test_netlist.find_block_with_matching_name(test_router_module_name, noc_router_logical_type_clusters);
 
         // since we passed in the router logical type, we expect the router block to be the returned id
 
