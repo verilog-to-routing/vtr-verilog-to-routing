@@ -117,9 +117,6 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
     // add the subtile to the physical noc router type
     noc_router.sub_tiles.push_back(router_tile);
 
-    // create a reference to the physical type
-    t_physical_tile_type_ptr noc_router_ref = &noc_router;
-
     /* finished creating noc router physical type */
 
     // creating an IO logical type
@@ -143,6 +140,9 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
     block_id_from_name.emplace(io_port_three, test_netlist->create_block(io_port_three, nullptr, i_o_ref));
     block_id_from_name.emplace(io_port_four, test_netlist->create_block(io_port_four, nullptr, i_o_ref));
 
+    // datastructure to store all the cluster block IDs of the noc router logical block type clusters
+    std::vector<ClusterBlockId> noc_router_logical_type_clusters;
+
     SECTION("Test case where the block is found in the clustered netlist") {
         // create names for some router blocks
         char router_one[] = "router:noc_router_one|flit_out_two[0]~reg0";
@@ -156,6 +156,12 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
         block_id_from_name.emplace(router_three, test_netlist->create_block(router_three, nullptr, router_ref));
         block_id_from_name.emplace(router_four, test_netlist->create_block(router_four, nullptr, router_ref));
 
+        // get the added router cluster block ids and store them
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_one)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_two)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_three)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_four)->second);
+
         // create additional router blocks
         char router_five[] = "router:noc_router_five|flit_out_two[0]~reg0";
         char router_six[] = "router:noc_router_six|flit_out_two[0]~reg0";
@@ -163,12 +169,16 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
         block_id_from_name.emplace(router_five, test_netlist->create_block(router_five, nullptr, router_ref_2));
         block_id_from_name.emplace(router_six, test_netlist->create_block(router_six, nullptr, router_ref_2));
 
+        // get the added router cluster block ids and store them
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_five)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_six)->second);
+
         // now find a block just knowing its instance name
         std::string test_router_module_name = ".*noc_router_five.*";
 
         // now get the cluster id of the block with the test router name using the function we are testing
         ClusterBlockId test_router_block_id;
-        REQUIRE_NOTHROW(test_router_block_id = get_router_module_cluster_id(test_router_module_name, cluster_ctx, test, test_location, noc_router_ref));
+        REQUIRE_NOTHROW(test_router_block_id = get_router_module_cluster_id(test_router_module_name, cluster_ctx, test, test_location, noc_router_logical_type_clusters));
 
         REQUIRE((size_t)(block_id_from_name.find("router:noc_router_five|flit_out_two[0]~reg0")->second) == (size_t)test_router_block_id);
 
@@ -188,6 +198,12 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
         block_id_from_name.emplace(router_three, test_netlist->create_block(router_three, nullptr, router_ref));
         block_id_from_name.emplace(router_four, test_netlist->create_block(router_four, nullptr, router_ref));
 
+        // get the added router cluster block ids and store them
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_one)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_two)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_three)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_four)->second);
+
         // create additional router blocks
         char router_five[] = "router:noc_router_five|flit_out_two[0]~reg0";
         char router_six[] = "router:noc_router_six|flit_out_two[0]~reg0";
@@ -195,12 +211,16 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
         block_id_from_name.emplace(router_five, test_netlist->create_block(router_five, nullptr, router_ref_2));
         block_id_from_name.emplace(router_six, test_netlist->create_block(router_six, nullptr, router_ref_2));
 
+        // get the added router cluster block ids and store them
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_five)->second);
+        noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_six)->second);
+
         // now find a block just knowing its name. Choosing a block name that doesn't exist
         std::string test_router_module_name = "^router:noc_router_seven|flit_out_two[0]~reg0$";
 
         // now get the cluster id of the block with the test router name using the function we are testing
         // This should fail, so check that it does
-        REQUIRE_THROWS_WITH(get_router_module_cluster_id(test_router_module_name, cluster_ctx, test, test_location, noc_router_ref), "The router module '^router:noc_router_seven|flit_out_two[0]~reg0$' does not exist in the design.");
+        REQUIRE_THROWS_WITH(get_router_module_cluster_id(test_router_module_name, cluster_ctx, test, test_location, noc_router_logical_type_clusters), "The router module '^router:noc_router_seven|flit_out_two[0]~reg0$' does not exist in the design.");
 
         // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
@@ -430,6 +450,133 @@ TEST_CASE("test_check_for_duplicate_traffic_flow", "[vpr_noc_traffic_flows_parse
         // now run the test function with the situation where another traffic flow is being added with sink router than what was used above
         // we expect the function to pass and no error to be thrown
         REQUIRE_NOTHROW(check_for_duplicate_traffic_flow(router_block_zero_id, router_block_two_id, test, test_location, noc_ctx.noc_traffic_flows_storage));
+    }
+}
+TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_traffic_flows_parser]") {
+
+    // get the global netlist
+    ClusteringContext& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    ClusteredNetlist* test_netlist = &cluster_ctx.clb_nlist;
+
+    // create a new clustered netlist
+    *test_netlist = ClusteredNetlist("test_netlist", "77");
+
+    // create the logical type of a noc router
+    // there is a single logical type that is compatible with this subtile and it is a router
+    t_logical_block_type router_block;
+    char router[] = "router";
+    router_block.name = router;
+    t_logical_block_type_ptr router_ref = &router_block;
+
+    //need to create the noc router physical type
+    t_physical_tile_type noc_router;
+
+    // indicate that the noc_router physical tile is not an input/output
+    noc_router.is_input_type = false;
+    noc_router.is_output_type = false;
+
+    // create a reference to the physical type
+    t_physical_tile_type_ptr noc_router_ref = &noc_router;
+    // need to add the physical type of the router to the list of physical tiles that match to the router logical block
+    router_block.equivalent_tiles.push_back(noc_router_ref);
+
+    // create a second tupe of router logical block
+    t_logical_block_type router_block_type_two;
+    char router_two_name[] = "router_2";
+    router_block_type_two.name = router_two_name;
+    t_logical_block_type_ptr router_ref_two = &router_block_type_two;
+
+    // set the router blocks physical type as a noc router
+    router_block_type_two.equivalent_tiles.push_back(noc_router_ref);
+
+    // creating an IO logical type
+    t_logical_block_type i_o_block;
+    char i_o[] = "IO";
+    i_o_block.name = i_o;
+    t_logical_block_type_ptr i_o_ref = &i_o_block;
+
+    // create a physical tile for I/O blocks
+    t_physical_tile_type i_o_block_tile;
+
+    // indicate that the io physical tile is not an input/output. Just for this test 
+    i_o_block_tile.is_input_type = false;
+    i_o_block_tile.is_output_type = false;
+
+    // create a reference to the physical type
+    t_physical_tile_type_ptr i_o_block_ref = &i_o_block_tile;
+    // need to add the physical type of the io block to the list of physical tiles that match to the io logical block
+    router_block.equivalent_tiles.push_back(i_o_block_ref);
+
+    // stores all router cluster blocks within the netlist
+    // this is a golden set that the output of this test will be compared to
+    std::vector<ClusterBlockId> golden_set_of_router_cluster_blocks_in_netlist;
+
+
+    SECTION("Test case where all router cluster blocks are correctly identified within the netlist and stored."){
+
+        // create some sample router blocks and add them to the clustered netlsit
+        
+        // create names for some router blocks
+        char router_one[] = "noc_router_one";
+        char router_two[] = "noc_router_two";
+        char router_three[] = "noc_router_three";
+        char router_four[] = "noc_router_four";
+
+        // add the router blocks
+        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(test_netlist->create_block(router_one, nullptr, router_ref));
+        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(test_netlist->create_block(router_two, nullptr, router_ref));
+        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(test_netlist->create_block(router_three, nullptr, router_ref_two));
+        golden_set_of_router_cluster_blocks_in_netlist.emplace_back(test_netlist->create_block(router_four, nullptr, router_ref_two));
+
+        // stores the found cluster blocks in the netlist that are router blocks which are compatible with a NoC router tile
+        std::vector<ClusterBlockId> found_cluster_blocks_that_are_noc_router_compatible;
+
+        // execute the test function
+        get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_ref, found_cluster_blocks_that_are_noc_router_compatible);
+
+        // check that the correct number of router blocks were found
+        REQUIRE(golden_set_of_router_cluster_blocks_in_netlist.size() == found_cluster_blocks_that_are_noc_router_compatible.size());
+
+        // now go through the golden set and check that the router blocks in the golden set were correctly found by the test function
+        for (auto golden_set_router_block_id = golden_set_of_router_cluster_blocks_in_netlist.begin(); golden_set_router_block_id != golden_set_of_router_cluster_blocks_in_netlist.end(); golden_set_router_block_id++){
+
+            // no check that the current router block in the golden set was also found by the test and recognized as being a router logical block
+            REQUIRE(std::find(found_cluster_blocks_that_are_noc_router_compatible.begin(), found_cluster_blocks_that_are_noc_router_compatible.end(), *golden_set_router_block_id) != found_cluster_blocks_that_are_noc_router_compatible.end());
+
+        }
+
+        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        free_clustered_netlist();
+
+    }
+    SECTION("Test case where non router blocks are correctly identified within the netlist and ignored."){
+
+        // add some I/O blocks which are not compatible with a physical noc router tile
+
+        // create names for some io blocks
+        char io_one[] = "io_one";
+        char io_two[] = "io_two";
+        char io_three[] = "io_three";
+        char io_four[] = "io_four";
+
+        // add the io blocks
+        // Note: we do not add these cluster blocks to the golden set since they are not router blocks and incompatible with physical noc router tiles
+        test_netlist->create_block(io_one, nullptr, i_o_ref);
+        test_netlist->create_block(io_two, nullptr, i_o_ref);
+        test_netlist->create_block(io_three, nullptr, i_o_ref);
+        test_netlist->create_block(io_four, nullptr, i_o_ref);
+
+        // stores the found cluster blocks in the netlist that are router blocks which are compatible with a NoC router tile
+        std::vector<ClusterBlockId> found_cluster_blocks_that_are_noc_router_compatible;
+
+        // execute the test function
+        get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_ref, found_cluster_blocks_that_are_noc_router_compatible);
+
+        // since there were no router blocks in this netlist, check that the test found function 0 blocks that were compatible with a noc router tile
+        REQUIRE(found_cluster_blocks_that_are_noc_router_compatible.size() == 0);
+
+        // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
+        free_clustered_netlist();
     }
 }
 } // namespace

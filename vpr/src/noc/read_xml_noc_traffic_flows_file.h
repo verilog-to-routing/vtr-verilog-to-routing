@@ -67,8 +67,11 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file);
  *                 the NocTrafficFlows class and store current flow.
  * @param noc_router_tile_type The physical type of a Noc router tile in the
  *                             FPGA.
+ * @param cluster_blocks_compatible_with_noc_router_tiles A vector of cluster 
+ *                                            blocks in the netlist that are
+ *                                            compatible with a noc router tile.
  */
-void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type);
+void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles);
 
 /**
  * @brief Checks to see that the two router module names provided in the 
@@ -110,10 +113,13 @@ void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_tr
  *                    a cluster block id.
  * @param single_flow_tag A xml tag that contains the traffic flow information
  * @param loc_data Contains location data about the current line in the xml file
+ * @param cluster_blocks_compatible_with_noc_router_tiles A vector of cluster 
+ *                                            blocks in the netlist that are
+ *                                            compatible with a noc router tile.
  * @return ClusterBlockId The corresponding router block id of the provided
  *         router module name.
  */
-ClusterBlockId get_router_module_cluster_id(std::string router_module_name, const ClusteringContext& cluster_ctx, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, t_physical_tile_type_ptr noc_router_tile_type);
+ClusterBlockId get_router_module_cluster_id(std::string router_module_name, const ClusteringContext& cluster_ctx, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles);
 
 /**
  * @brief Checks to see whether a given router block is compatible with a NoC
@@ -186,5 +192,27 @@ bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& no
  *                                 traffic flow information.
  */
 void check_for_duplicate_traffic_flow(ClusterBlockId source_router_id, ClusterBlockId sink_router_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const NocTrafficFlows& noc_traffic_flow_storage);
+
+/**
+ * @brief Goes through the blocks within the clustered netlist and indetifies
+ *        all blocks that are compatible with a NoC router tile. BY compatible
+ *        it means that we can place the cluster block on a NoC router tile.
+ *        The run time for this function is O(N) where N is the number of
+ *        cluster blocks in the netlist.
+ * 
+ * @param cluster_ctx Global variable that contains clustering information.
+ *                    Contains the clustered netlist, which is used here
+ *                    to retrieve the logical block type of every cluster block.
+ * @param noc_router_tile_type The physical type of a Noc router tile in the
+ *                             FPGA. Used to check if the router block is
+ *                             compatible with a router tile.
+ * @param cluster_blocks_compatible_with_noc_router_tiles A vector of cluster 
+ *                                            blocks in the netlist that are
+ *                                            compatible with a noc router tile.
+ *                                            The cluster blocks in the netlist
+ *                                            are added to this vector in this
+ *                                            function.
+ */
+void get_cluster_blocks_compatible_with_noc_router_tiles(const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles);
 
 #endif

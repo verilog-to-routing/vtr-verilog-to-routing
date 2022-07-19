@@ -19,6 +19,21 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
     // get the physical type of a noc router
     t_physical_tile_type_ptr noc_router_tile_type = get_physical_type_of_noc_router_tile(device_ctx, noc_ctx);
 
+    /* Get the cluster blocks that are compatible with a physical NoC router
+     * tile. These blocks are essentially the "logical routers" that the user
+     * instantiated in the HDL design. 
+     *
+     * This is done so that while parsing the traffic flows file, the cluster
+     * identification can be sped up. The traffic flows file provides a string
+     * which represents the name of the router modules in the HDL design. Each
+     * time the cluster id is needed, the name of the block needs to be 
+     * compared to every block in the clustered netlist. This can be very
+     * time consuming, so instead we can compare to only blocks that are 
+     * compatible to physical NoC router tiles. 
+     */
+    std::vector<ClusterBlockId> cluster_blocks_compatible_with_noc_router_tiles;
+    get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_tile_type, cluster_blocks_compatible_with_noc_router_tiles);
+
     /* variabled used when parsing the file */
     pugi::xml_document doc;
     pugiutil::loc_data loc_data;
@@ -37,7 +52,7 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
         // process the individual traffic flows below
         for (pugi::xml_node single_flow : traffic_flows_tag.children()) {
             // current tag is a valid "flow" so process it
-            process_single_flow(single_flow, loc_data, cluster_ctx, noc_ctx, noc_router_tile_type);
+            process_single_flow(single_flow, loc_data, cluster_ctx, noc_ctx, noc_router_tile_type, cluster_blocks_compatible_with_noc_router_tiles);
         }
 
     } catch (pugiutil::XmlError& e) { // used for identifying any of the xml parsing library errors
@@ -58,7 +73,7 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
     return;
 }
 
-void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type) {
+void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles) {
     // contains all traffic flows
     NocTrafficFlows* noc_traffic_flow_storage = &noc_ctx.noc_traffic_flows_storage;
 
@@ -77,8 +92,8 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     verify_traffic_flow_router_modules(source_router_module_name, sink_router_module_name, single_flow_tag, loc_data);
 
     // assign the unique block ids of the two router modules after clustering
-    ClusterBlockId source_router_id = get_router_module_cluster_id(source_router_module_name, cluster_ctx, single_flow_tag, loc_data, noc_router_tile_type);
-    ClusterBlockId sink_router_id = get_router_module_cluster_id(sink_router_module_name, cluster_ctx, single_flow_tag, loc_data, noc_router_tile_type);
+    ClusterBlockId source_router_id = get_router_module_cluster_id(source_router_module_name, cluster_ctx, single_flow_tag, loc_data, cluster_blocks_compatible_with_noc_router_tiles);
+    ClusterBlockId sink_router_id = get_router_module_cluster_id(sink_router_module_name, cluster_ctx, single_flow_tag, loc_data, cluster_blocks_compatible_with_noc_router_tiles);
 
     // verify that the source and sink modules are actually noc routers
     check_traffic_flow_router_module_type(source_router_module_name, source_router_id, single_flow_tag, loc_data, cluster_ctx, noc_router_tile_type);
@@ -122,41 +137,16 @@ void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_tr
     return;
 }
 
-ClusterBlockId get_router_module_cluster_id(std::string router_module_name, const ClusteringContext& cluster_ctx, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, t_physical_tile_type_ptr noc_router_tile_type) {
+ClusterBlockId get_router_module_cluster_id(std::string router_module_name, const ClusteringContext& cluster_ctx, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles) {
     ClusterBlockId router_module_id = ClusterBlockId::INVALID();
 
-    // get the subtiles of the noc router physical type
-    const std::vector<t_sub_tile>* noc_router_subtiles = &noc_router_tile_type->sub_tiles;
-
-    /*
-     * iterate through all the logical block types that can be placed on the
-     * NoC router tile. Check if the there is a cluster block that matches
-     * the input router module name and is one of the supported logical
-     * block types.
-     */
-    for (auto sub_tile = noc_router_subtiles->begin(); sub_tile != noc_router_subtiles->end(); sub_tile++) {
-        //get the logical types the current tile supports
-        const std::vector<t_logical_block_type_ptr>* supported_noc_logical_types = &sub_tile->equivalent_sites;
-
-        // go through each logical type and check if there is a cluster block
-        // of that type that also matches the input module name
-        for (auto logical_type = supported_noc_logical_types->begin(); logical_type != supported_noc_logical_types->end(); logical_type++) {
-            try {
-                router_module_id = cluster_ctx.clb_nlist.find_block_with_matching_name(router_module_name, *logical_type);
-            } catch (const std::regex_error& error) {
-                // if there was an error with matching the regex string,report it to the user here
-                vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), error.what());
-            }
-
-            // found a block for the current logical type, so exit
-            if (router_module_id != ClusterBlockId::INVALID()) {
-                break;
-            }
-        }
-        // found a block for the current sub tile, so exit
-        if (router_module_id != ClusterBlockId::INVALID()) {
-            break;
-        }
+    // find the cluster block whos name matches to the provided router module name provided by the user
+    // Then get the corresponding cluster block id if a valid block was found
+    try {
+        router_module_id = cluster_ctx.clb_nlist.find_block_with_matching_name(router_module_name, cluster_blocks_compatible_with_noc_router_tiles);
+    } catch (const std::regex_error& error) {
+        // if there was an error with matching the regex string,report it to the user here
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), error.what());
     }
 
     // check if a valid block id was found
@@ -241,6 +231,24 @@ void check_for_duplicate_traffic_flow(ClusterBlockId source_router_id, ClusterBl
                 // the routers are the same, so this is a duplicate traffic flow. thrown an error
                 vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The supplied traffic flow is a duplicate of another traffic flow (contain the same source and sink routers). Duplicate traffic flows are not allowed.");
             }
+        }
+    }
+
+    return;
+}
+
+void get_cluster_blocks_compatible_with_noc_router_tiles(const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles) {
+    // get the ids of all cluster blocks in the netlist
+    auto cluster_netlist_blocks = cluster_ctx.clb_nlist.blocks();
+
+    for (auto cluster_block_id = cluster_netlist_blocks.begin(); cluster_block_id != cluster_netlist_blocks.end(); cluster_block_id++) {
+        // get the logical type of the block
+        t_logical_block_type_ptr cluster_block_type = cluster_ctx.clb_nlist.block_type(*cluster_block_id);
+
+        // check if the current block is compatible with a NoC router tile
+        // if it is, then this block is a NoC outer instantiated by the user in the design, so add it to the vector compatible blocks
+        if (is_tile_compatible(noc_router_tile_type, cluster_block_type)) {
+            cluster_blocks_compatible_with_noc_router_tiles.push_back(*cluster_block_id);
         }
     }
 
