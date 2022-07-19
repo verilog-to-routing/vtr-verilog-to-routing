@@ -53,7 +53,7 @@ namespace fasm {
 class FasmWriterVisitor : public NetlistVisitor {
 
   public:
-      FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f);
+      FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f, bool is_flat);
 
   private:
       void visit_top_impl(const char* top_level_name) override;
@@ -109,6 +109,7 @@ class FasmWriterVisitor : public NetlistVisitor {
       vtr::interned_string fasm_placeholders;
       vtr::interned_string fasm_type;
       vtr::interned_string fasm_mux;
+      bool is_flat_;
 };
 
 } // namespace fasm

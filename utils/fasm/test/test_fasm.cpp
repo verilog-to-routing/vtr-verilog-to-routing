@@ -319,7 +319,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     }
 
     std::stringstream fasm_string;
-    fasm::FasmWriterVisitor visitor(&arch.strings, fasm_string);
+    fasm::FasmWriterVisitor visitor(&arch.strings, fasm_string, false);
     NetlistWalker nl_walker(visitor);
     nl_walker.walk();
 

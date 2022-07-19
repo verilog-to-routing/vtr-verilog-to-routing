@@ -53,9 +53,13 @@ static void free_linked_rt_edge(t_linked_rt_edge* rt_edge);
 
 static t_rt_node* add_subtree_to_route_tree(t_heap* hptr,
                                             int target_net_pin_index,
-                                            t_rt_node** sink_rt_node_ptr);
+                                            t_rt_node** sink_rt_node_ptr,
+                                            bool is_flat);
 
-static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited);
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node,
+                                                     const bool reached_by_non_configurable_edge,
+                                                     std::unordered_set<int>& visited,
+                                                     bool is_flat);
 
 static t_rt_node* update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_subtree_rt_node);
 
@@ -66,7 +70,9 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node,
                                           bool force_prune,
                                           std::vector<int>* non_config_node_set_usage);
 
-static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt, std::vector<int>* non_config_node_set_usage);
+static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt,
+                                               std::vector<int>* non_config_node_set_usage,
+                                               bool is_flat);
 
 static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node);
 
@@ -214,7 +220,9 @@ t_rt_node* init_route_tree_to_source(const ParentNetId& inet) {
  * is the heap pointer of the SINK that was reached, and target_net_pin_index
  * is the net pin index corresponding to the SINK that was reached. This routine
  * returns a pointer to the rt_node of the SINK that it adds to the routing.        */
-t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup) {
+t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index,
+                             SpatialRouteTreeLookup* spatial_rt_lookup,
+                             bool is_flat) {
     t_rt_node *start_of_new_subtree_rt_node, *sink_rt_node;
     t_rt_node *unbuffered_subtree_rt_root, *subtree_parent_rt_node;
     float Tdel_start;
@@ -223,7 +231,10 @@ t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRout
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     //Create a new subtree from the target in hptr to existing routing
-    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, target_net_pin_index, &sink_rt_node);
+    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr,
+                                                             target_net_pin_index,
+                                                             &sink_rt_node,
+                                                             is_flat);
 
     //Propagate R_upstream down into the new subtree
     load_new_subtree_R_upstream(start_of_new_subtree_rt_node);
@@ -291,7 +302,10 @@ void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
  * to the SINK indicated by hptr. Returns the first (most upstream) new rt_node,
  * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
 static t_rt_node*
-add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** sink_rt_node_ptr) {
+add_subtree_to_route_tree(t_heap* hptr,
+                          int target_net_pin_index,
+                          t_rt_node** sink_rt_node_ptr,
+                          bool is_flat) {
     t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
     t_linked_rt_edge* linked_rt_edge;
 
@@ -313,7 +327,7 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
     sink_rt_node->net_pin_index = target_net_pin_index; //hptr is the heap pointer of the SINK that was reached, which corresponds to the target pin
     rr_node_to_rt_node[inode] = sink_rt_node;
 
-    /* In the code below I'm marking SINKs and IPINs as not to be re-expanded.
+    /* In the code below I'm marking SINKs and IPINs(If flat routing is not enabled) as not to be re-expanded.
      * It makes the code more efficient (though not vastly) to prune this way
      * when there aren't route-throughs or ipin doglegs.                        */
 
@@ -356,8 +370,8 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
         rt_node->net_pin_index = OPEN; //net pin index is invalid for non-SINK nodes
 
         rr_node_to_rt_node[inode] = rt_node;
-
-        if (rr_graph.node_type(RRNodeId(inode)) == IPIN) {
+        // If is_flat is enabled, IPINs should be added, since they are used for intra-cluster routing
+        if (rr_graph.node_type(RRNodeId(inode)) == IPIN && !is_flat) {
             rt_node->re_expand = false;
         } else {
             rt_node->re_expand = true;
@@ -387,14 +401,17 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
     //non-configurably connected nodes
     //Sink is not included, so no need to pass in the node's ipin value.
     for (int rr_node : main_branch_visited) {
-        add_non_configurable_to_route_tree(rr_node, false, all_visited);
+        add_non_configurable_to_route_tree(rr_node, false, all_visited, is_flat);
     }
 
     *sink_rt_node_ptr = sink_rt_node;
     return (downstream_rt_node);
 }
 
-static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited) {
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node,
+                                                     const bool reached_by_non_configurable_edge,
+                                                     std::unordered_set<int>& visited,
+                                                     bool is_flat) {
     t_rt_node* rt_node = nullptr;
 
     if (!visited.count(rr_node) || !reached_by_non_configurable_edge) {
@@ -416,7 +433,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
                 rt_node->inode = rr_node;
                 rt_node->net_pin_index = OPEN;
 
-                if (rr_graph.node_type(RRNodeId(rr_node)) == IPIN) {
+                if (rr_graph.node_type(RRNodeId(rr_node)) == IPIN && !is_flat) {
                     rt_node->re_expand = false;
                 } else {
                     rt_node->re_expand = true;
@@ -431,7 +448,10 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
             int to_rr_node = size_t(rr_graph.edge_sink_node(RRNodeId(rr_node), iedge));
 
             //Recurse
-            t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node, true, visited);
+            t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node,
+                                                                          true,
+                                                                          visited,
+                                                                          is_flat);
 
             if (!child_rt_node) continue;
             int iswitch = rr_graph.edge_switch(RRNodeId(rr_node), iedge);
@@ -752,11 +772,15 @@ t_rt_node* traceback_to_route_tree(ParentNetId inet) {
     return traceback_to_route_tree(inet, nullptr);
 }
 
-t_rt_node* traceback_to_route_tree(t_trace* head) {
-    return traceback_to_route_tree(head, nullptr);
+t_rt_node* traceback_to_route_tree(t_trace* head, bool is_flat) {
+    return traceback_to_route_tree(head,
+                                   nullptr,
+                                   is_flat);
 }
 
-t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_node_set_usage) {
+t_rt_node* traceback_to_route_tree(t_trace* head,
+                                   std::vector<int>* non_config_node_set_usage,
+                                   bool is_flat) {
     /* Builds a skeleton route tree from a traceback
      * does not calculate R_upstream, C_downstream, or Tdel at all (left uninitialized)
      * returns the root of the converted route tree
@@ -772,7 +796,7 @@ t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_n
 
     t_trace* trace = head;
     while (trace) { //Each branch
-        trace = traceback_to_route_tree_branch(trace, rr_node_to_rt, non_config_node_set_usage);
+        trace = traceback_to_route_tree_branch(trace, rr_node_to_rt, non_config_node_set_usage, is_flat);
     }
     // Due to the recursive nature of traceback_to_route_tree_branch,
     // the source node is not properly configured.
@@ -791,7 +815,8 @@ t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_n
 //Returns the t_trace defining the start of the next branch
 static t_trace* traceback_to_route_tree_branch(t_trace* trace,
                                                std::map<int, t_rt_node*>& rr_node_to_rt,
-                                               std::vector<int>* non_config_node_set_usage) {
+                                               std::vector<int>* non_config_node_set_usage,
+                                               bool is_flat) {
     t_trace* next = nullptr;
 
     if (trace) {
@@ -822,7 +847,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             node->Tdel = std::numeric_limits<float>::quiet_NaN();
 
             auto node_type = rr_graph.node_type(RRNodeId(inode));
-            if (node_type == IPIN || node_type == SINK)
+            if ((node_type == IPIN && !is_flat) || node_type == SINK)
                 node->re_expand = false;
             else
                 node->re_expand = true;
@@ -861,7 +886,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             }
 
             //Recursively construct the remaining branch
-            next = traceback_to_route_tree_branch(next, rr_node_to_rt, non_config_node_set_usage);
+            next = traceback_to_route_tree_branch(next, rr_node_to_rt, non_config_node_set_usage, is_flat);
 
             //Get the created child
             itr = rr_node_to_rt.find(trace->next->index);

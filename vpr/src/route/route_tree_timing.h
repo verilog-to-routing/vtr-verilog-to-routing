@@ -19,7 +19,9 @@ void free_route_tree(t_rt_node* rt_node);
 void print_route_tree(const t_rt_node* rt_node);
 void print_route_tree(const t_rt_node* rt_node, int depth);
 
-t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup);
+t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index,
+                             SpatialRouteTreeLookup* spatial_rt_lookup,
+                             bool is_flat);
 
 void update_net_delays_from_route_tree(float* net_delay,
                                        const Netlist<>& net_list,
@@ -53,8 +55,10 @@ void print_route_tree_congestion(const t_rt_node* rt_root);
 t_rt_node* traceback_to_route_tree(ParentNetId inet);
 
 t_rt_node* traceback_to_route_tree(ParentNetId inet, std::vector<int>* non_config_node_set_usage);
-t_rt_node* traceback_to_route_tree(t_trace* head);
-t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_node_set_usage);
+t_rt_node* traceback_to_route_tree(t_trace* head, bool is_flat);
+t_rt_node* traceback_to_route_tree(t_trace* head,
+                                   std::vector<int>* non_config_node_set_usage,
+                                   bool is_flat);
 
 t_trace* traceback_from_route_tree(ParentNetId inet,
                                    const t_rt_node* root,

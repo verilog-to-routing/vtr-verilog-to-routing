@@ -69,7 +69,7 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
         REQUIRE(cheapest.index == sink_node);
 
         // Get the delay
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr);
+        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr, router_opts.flat_routing);
         delay = rt_node_of_sink->Tdel;
 
         // Clean up

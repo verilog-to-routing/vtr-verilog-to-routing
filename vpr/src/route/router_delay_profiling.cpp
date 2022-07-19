@@ -78,7 +78,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr);
+        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr, is_flat_);
 
         //find delay
         *net_delay = rt_node_of_sink->Tdel;
@@ -150,7 +150,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
 
             //Build the routing tree to get the delay
             rt_root = setup_routing_resources_no_net(src_rr_node);
-            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], OPEN, nullptr);
+            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], OPEN, nullptr, router_opts.flat_routing);
 
             VTR_ASSERT(rt_node_of_sink->inode == sink_rr_node);
 

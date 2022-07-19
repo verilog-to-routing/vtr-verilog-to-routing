@@ -1375,8 +1375,13 @@ void print_route(const Netlist<>& net_list,
 
                         ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[sub_tile_offset];
                         VTR_ASSERT(iblock);
-                        t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
-                        t_pb_type* pb_type = pb_pin->parent_node->pb_type;
+                        const t_pb_graph_pin* pb_pin;
+                        if(is_pin_on_tile(physical_tile, pin_num)) {
+                            pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
+                        } else {
+                            pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_num);
+                        }
+                        const t_pb_type* pb_type = pb_pin->parent_node->pb_type;
                         fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
                     }
 

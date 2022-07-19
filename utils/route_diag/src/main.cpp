@@ -117,7 +117,7 @@ static void do_one_route(const Netlist<>& net_list,
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr);
+        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr, router_opts.flat_routing);
 
         //find delay
         float net_delay = rt_node_of_sink->Tdel;

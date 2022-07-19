@@ -454,7 +454,6 @@ void print_block_pins_nets(std::ostream& os,
         RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, root_x, root_y, pin);
         VTR_ASSERT(node_id != RRNodeId::INVALID());
         auto search_result = rr_node_to_net_map.find(node_id);
-        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_type, pin);
         if(rr_type == t_rr_type::OPIN) {
             os << "  OPIN - ";
         } else {
@@ -462,7 +461,8 @@ void print_block_pins_nets(std::ostream& os,
             os << "  IPIN - ";
         }
         os << "RRNodeId: " << size_t(node_id) <<
-            " - Physical Num: " << pin << " - Logical Num : " << pb_pin->pin_count_in_cluster << "\n";
+            " - Physical Num: " << pin << "\n";
+        os << "  ";
         if(search_result != rr_node_to_net_map.end()) {
             auto nets = search_result->second;
             for(auto net : nets) {
