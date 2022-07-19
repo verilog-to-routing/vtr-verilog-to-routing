@@ -26,7 +26,7 @@ t_linked_vptr* delete_in_vptr_list(t_linked_vptr* head) {
     if (head == nullptr)
         return nullptr;
     linked_vptr = head->next;
-    free(head);
+    delete head;
     return linked_vptr; /* New head of the list */
 }
 
