@@ -693,7 +693,9 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
     GtkWidget* searchBar = GTK_WIDGET(app->get_object("TextInput"));
     if(gtk_widget_is_focus(searchBar)){
         if(key == "Return"){
+            std::string oldText(gtk_entry_get_text(GTK_ENTRY(searchBar)));
             enable_autocomplete(app);
+            gtk_editable_set_position(GTK_EDITABLE(searchBar), oldText.length());
         }
     }
 }

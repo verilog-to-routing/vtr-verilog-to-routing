@@ -457,29 +457,33 @@ void enable_autocomplete(ezgl::application* app){
         std::cout << "NO MODEL SELECTED" << std::endl;
         return;
     }
-    gtk_entry_set_completion(searchBar, completion);
-    gtk_entry_completion_set_minimum_key_length(completion, 1);
-    gtk_entry_completion_complete(completion);
     std::string oldText(gtk_entry_get_text(searchBar));
+    gtk_entry_set_completion(searchBar, completion);
+    gtk_entry_completion_set_minimum_key_length(completion, std::max(0, (int)(oldText.length()-1)));
+    gtk_entry_completion_complete(completion);
+
     if(oldText.length() == 0) return;
 
-    //gtk_entry_set_text(searchBar, "");
-    
-    for(int i = 0; i < oldText.length(); ++i){
-        gtk_widget_grab_focus(GTK_WIDGET(searchBar));
+
+    std::cout << "Added text" << std::endl;
+    gtk_widget_grab_focus(GTK_WIDGET(searchBar));
+    std::string newText = (oldText.length() > 1)? oldText.substr(0, oldText.length()-1) : "";
+    gtk_entry_set_text(searchBar, newText.c_str());
+    // for(int i = 0; i < oldText.length(); ++i){
+
         GdkEvent new_event;
         new_event.key.type = GDK_KEY_PRESS;
         new_event.key.window = gtk_widget_get_parent_window(GTK_WIDGET(searchBar));
         new_event.key.send_event = TRUE;
         new_event.key.time = GDK_CURRENT_TIME;
-        new_event.key.keyval = gdk_unicode_to_keyval((int)oldText[i]);
+        new_event.key.keyval = gdk_unicode_to_keyval((int)oldText[oldText.length()-1]);
         new_event.key.state = GDK_KEY_PRESS_MASK;
         new_event.key.length = 0;
         new_event.key.string = 0;
         new_event.key.hardware_keycode = 0;
         new_event.key.group = 0;
         gdk_event_put(&new_event);
-    }
+    //}
 }
 
 
