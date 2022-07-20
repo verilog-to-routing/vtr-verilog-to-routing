@@ -106,9 +106,6 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
 
     verify_traffic_flow_properties(traffic_flow_bandwidth, max_traffic_flow_latency, single_flow_tag, loc_data);
 
-    // make sure that the current traffic flow was not added previously
-    check_for_duplicate_traffic_flow(source_router_id, sink_router_id, single_flow_tag, loc_data, *noc_traffic_flow_storage);
-
     // The current flow information is legal, so store it
     noc_traffic_flow_storage->create_noc_traffic_flow(source_router_module_name, sink_router_module_name, source_router_id, sink_router_id, traffic_flow_bandwidth, max_traffic_flow_latency);
 
@@ -212,29 +209,6 @@ bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& no
     }
 
     return result;
-}
-
-void check_for_duplicate_traffic_flow(ClusterBlockId source_router_id, ClusterBlockId sink_router_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const NocTrafficFlows& noc_traffic_flow_storage) {
-    const std::vector<NocTrafficFlowId>* associated_traffic_flows_to_source_router = noc_traffic_flow_storage.get_traffic_flows_associated_to_source_router(source_router_id);
-
-    // make sure the router is associated to atleast one traffic flow
-    if (associated_traffic_flows_to_source_router != nullptr) {
-        /*
-         * Go through all the traffic flows that exist with the current source router and check to see if any of those traffic flows have a sink router
-         * that matches current sink router. When this happens then the two traffic flows are duplicates and an error should be thrown.
-         */
-        for (auto traffic_flow_id = associated_traffic_flows_to_source_router->begin(); traffic_flow_id != associated_traffic_flows_to_source_router->end(); traffic_flow_id++) {
-            ClusterBlockId curr_sink_router_id = noc_traffic_flow_storage.get_single_noc_traffic_flow(*traffic_flow_id).sink_router_cluster_id;
-
-            // compare the current traffic flows sink router with the new traffic flows sink router
-            if (curr_sink_router_id == sink_router_id) {
-                // the routers are the same, so this is a duplicate traffic flow. thrown an error
-                vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The supplied traffic flow is a duplicate of another traffic flow (contain the same source and sink routers). Duplicate traffic flows are not allowed.");
-            }
-        }
-    }
-
-    return;
 }
 
 void get_cluster_blocks_compatible_with_noc_router_tiles(const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles) {

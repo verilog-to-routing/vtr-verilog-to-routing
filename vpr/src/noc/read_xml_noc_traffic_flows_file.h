@@ -176,24 +176,6 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
 bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::string noc_flows_file);
 
 /**
- * @brief Given a traffic flow source and sink router, check to see if there
- *        already exists another traffic flow with the same source and sink
- *        routers. If there already exsists a traffic flow with the same routers
- *        then this is a duplicate and an error is thrown, otherwise no
- *        duplicate traffic flow exists.
- * 
- * @param source_router_id The cluster block id of the source router in 
- *                         the traffic flow to be added.
- * @param sink_router_id The cluster block id of the sink router in the
- *                       the traffic flow to be added.
- * @param single_flow_tag A xml tag that contains the traffic flow information
- * @param loc_data Contains location data about the current line in the xml file
- * @param noc_traffic_flow_storage Used to get the previously added traffic 
- *                                 traffic flow information.
- */
-void check_for_duplicate_traffic_flow(ClusterBlockId source_router_id, ClusterBlockId sink_router_id, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const NocTrafficFlows& noc_traffic_flow_storage);
-
-/**
  * @brief Goes through the blocks within the clustered netlist and indetifies
  *        all blocks that are compatible with a NoC router tile. BY compatible
  *        it means that we can place the cluster block on a NoC router tile.
