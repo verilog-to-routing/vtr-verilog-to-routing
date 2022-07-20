@@ -19,8 +19,6 @@
 #    include "rr_graph_uxsdcxx_capnp.h"
 #endif
 
-//#include "globals.h"
-
 /************************ Subroutine definitions ****************************/
 
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
@@ -41,7 +39,7 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     const size_t num_arch_switches,
                     const char* file_name,
                     const int virtual_clock_network_root_idx) {
-    //auto& device_ctx = g_vpr_ctx.mutable_device();
+
     RrGraphSerializer reader(
         /*graph_type=*/t_graph_type(),
         /*base_cost_type=*/e_base_cost_type(),

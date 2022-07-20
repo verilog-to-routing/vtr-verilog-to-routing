@@ -4,18 +4,16 @@
 #include <cstring>
 #include <algorithm>
 
-#include "rr_node.h"
-#include "rr_metadata.h"
 #include "rr_graph_uxsdcxx_interface.h"
+
+#include "rr_node.h"
+#include "rr_rc_data.h"
+#include "rr_metadata.h"
+#include "rr_graph_view.h"
+#include "rr_graph_builder.h"
 
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
-
-#include "vtr_log.h"
-#include "vtr_version.h"
-
-#include "vpr_error.h"
-//#include "vpr_utils.h"
 
 #include "device_grid.h"
 #include "chan_width.h"
@@ -26,14 +24,12 @@
 #include "alloc_and_load_rr_indexed_data.h"
 #include "get_parallel_segs.h"
 
-#include "rr_graph_view.h"
-#include "rr_graph_builder.h"
-#include "rr_rc_data.h"
-
+#include "vpr_error.h"
+#include "vtr_log.h"
+#include "vtr_version.h"
 #include "vtr_util.h"
 #include "arch_util.h"
 #include "physical_types_util.h"
-
 
 class MetadataBind {
   public:
@@ -1910,8 +1906,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
     t_rr_node_indices* rr_node_indices_;
     std::string* read_rr_graph_filename_;
-
-    //Newly Added
     std::vector<t_rr_rc_data>& rr_rc_data_;
     const int virtual_clock_network_root_idx_;
 

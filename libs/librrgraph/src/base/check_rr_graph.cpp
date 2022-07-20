@@ -3,9 +3,6 @@
 #include "vtr_util.h"
 
 #include "vpr_error.h"
-
-//#include "globals.h"
-//#include "rr_graph.h"
 #include "check_rr_graph.h"
 
 #include "rr_node.h"
@@ -55,9 +52,6 @@ void check_rr_graph(const RRGraphView& rr_graph,
     if (graph_type == GRAPH_GLOBAL) {
         route_type = GLOBAL;
     }
-
-    //auto& device_ctx = g_vpr_ctx.device();
-    //const auto& rr_graph = device_ctx.rr_graph;
 
     auto total_edges_to_node = std::vector<int>(rr_graph.num_nodes());
     auto switch_types_from_current_to_node = std::vector<unsigned char>(rr_graph.num_nodes());
@@ -283,9 +277,6 @@ static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const Device
     int ipin;
     t_physical_tile_type_ptr type;
 
-    // auto& device_ctx = g_vpr_ctx.device();
-    // const auto& rr_graph = device_ctx.rr_graph;
-
     type = grid[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)].type;
 
     if (rr_graph.node_type(inode) != IPIN)
@@ -312,7 +303,6 @@ void check_rr_node(const RRGraphView& rr_graph,
     int nodes_per_chan, tracks_per_node, num_edges;
     RRIndexedDataId cost_index;
     float C, R;
-    //const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = RRNodeId(inode);
 
     rr_type = rr_graph.node_type(rr_node);
@@ -325,7 +315,6 @@ void check_rr_node(const RRGraphView& rr_graph,
     cost_index = rr_graph.node_cost_index(rr_node);
     type = nullptr;
 
-    //const auto& grid = device_ctx.grid;
     if (xlow > xhigh || ylow > yhigh) {
         VPR_ERROR(VPR_ERROR_ROUTE,
                   "in check_rr_node: rr endpoints are (%d,%d) and (%d,%d).\n", xlow, ylow, xhigh, yhigh);
@@ -347,7 +336,6 @@ void check_rr_node(const RRGraphView& rr_graph,
     }
 
     /* Check that the segment is within the array and such. */
-    // type = device_ctx.grid[xlow][ylow].type;
     type = grid[xlow][ylow].type;
 
     switch (rr_type) {
@@ -552,9 +540,6 @@ static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node) {
     short from_switch_type;
     bool trans_matched;
 
-    // auto& device_ctx = g_vpr_ctx.device();
-    // const auto& rr_graph = device_ctx.rr_graph;
-
     from_rr_type = rr_graph.node_type(RRNodeId(from_node));
     if (from_rr_type != CHANX && from_rr_type != CHANY)
         return;
@@ -603,7 +588,6 @@ static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& 
     /* TODO: this function should be reworked later to adapt RRGraphView interface 
      *       once xlow(), ylow(), side() APIs are implemented
      */
-    //const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     VTR_ASSERT(rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN);
 
     if ((rr_graph.node_xlow(node.id()) == 0 && !rr_graph.is_node_on_specific_side(node.id(), RIGHT))                          //left device edge connects only along block's right side
@@ -617,8 +601,6 @@ static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& 
 }
 
 static void check_rr_edge(const RRGraphView& rr_graph, int from_node, int iedge, int to_node) {
-    // auto& device_ctx = g_vpr_ctx.device();
-    // const auto& rr_graph = device_ctx.rr_graph;
 
     //Check that to to_node's fan-in is correct, given the switch type
     int iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);

@@ -1,12 +1,10 @@
 #include "rr_rc_data.h"
-//#include "globals.h"
 
 t_rr_rc_data::t_rr_rc_data(float Rval, float Cval) noexcept
     : R(Rval)
     , C(Cval) {}
 
 short find_create_rr_rc_data(const float R, const float C, std::vector<t_rr_rc_data>& rr_rc_data) {
-    //auto& device_ctx = g_vpr_ctx.mutable_device();
 
     auto match = [&](const t_rr_rc_data& val) {
         return val.R == R
