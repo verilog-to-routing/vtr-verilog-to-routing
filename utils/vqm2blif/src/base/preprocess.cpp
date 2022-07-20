@@ -34,7 +34,7 @@ int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* new_input_pin,
                                             t_port_vec* pin_node_sinks           );
 
 void expand_ram_clocks(t_module* module, string device);
-void expand_dsp_clocks(t_module* module, string device);
+void expand_dsp_clocks(t_module* module);
 
 //Functions to remove global constants
 void remove_constant_nets(t_module *module);
@@ -152,7 +152,7 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* ar
         }
     }
     cout << endl;
-    expand_dsp_clocks(module, device);
+    expand_dsp_clocks(module);
     if(single_clock_primitives) {
         cout << "\t>> Preprocessing Netlist to remove false clock nets" << endl;
         //VPR may falsely identify nets connected to clock pins, but not driven by clock
@@ -1315,7 +1315,7 @@ void expand_ram_clocks(t_module* module, string device) {
 
 }
 
-void expand_dsp_clocks(t_module* module, string device) {
+void expand_dsp_clocks(t_module* module) {
     int num_ram_blocks_processed = 0;
     int num_clocks_added = 0;
     for (int i = 0; i < module->number_of_nodes; ++i) {
@@ -1323,7 +1323,7 @@ void expand_dsp_clocks(t_module* module, string device) {
 
         if (strcmp(node->type, "fourteennm_mac") == 0) {
             ++num_ram_blocks_processed;
-            DSPInfo dsp_info = get_dsp_info(node, device);
+            DSPInfo dsp_info = get_dsp_info(node);
 
             //Stratix  10 dsp blocks use a 3-bit wide clock port to specify the clocks, and use params
             //to define which clock controls what port
@@ -1357,63 +1357,63 @@ void expand_dsp_clocks(t_module* module, string device) {
   
 
             if (dsp_info.port_ax_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ax_clock, "port_ax_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ax_clock, "ax_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_ay_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ay_clock, "port_ay_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ay_clock, "ay_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_az_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_az_clock, "port_az_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_az_clock, "az_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_bx_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_bx_clock, "port_bx_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_bx_clock, "bx_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_by_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_by_clock, "port_by_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_by_clock, "by_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_bz_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_bz_clock, "port_bz_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_bz_clock, "bz_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_coef_sel_a_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_coef_sel_a_clock, "port_coef_sel_a_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_coef_sel_a_clock, "coef_sel_a_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_coef_sel_b_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_coef_sel_b_clock, "port_coef_sel_b_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_coef_sel_b_clock, "coef_sel_b_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_ay_scan_in_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ay_scan_in_clock, "port_ay_scan_in_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ay_scan_in_clock, "ay_scan_in_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_accumulate_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_accumulate_clock, "port_accumulate_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_accumulate_clock, "accumulate_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_load_const_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_load_const_clock, "port_load_const_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_load_const_clock, "load_const_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_negate_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_negate_clock, "port_negate_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_negate_clock, "negate_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_sub_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_sub_clock, "port_sub_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_sub_clock, "sub_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_chainout_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_chainout_clock, "port_chainout_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_chainout_clock, "chainout_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_output_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_output_clock, "port_output_clock");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_output_clock, "output_clk");
                 ++num_clocks_added;
             }
 

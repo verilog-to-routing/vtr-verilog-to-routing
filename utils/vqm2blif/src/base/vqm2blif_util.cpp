@@ -1294,62 +1294,61 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
 //============================================================================================
 //============================================================================================
 
-void set_dsp_clock(DSPInfo& dsp_info, t_node_port_association source_clk, std::string clock_name){
-    switch(clock_name){   
-        case "ax_clock": 
-            dsp_info.ax_clock = source_clk;
-            break;        
-        case "ay_clock": 
-            dsp_info.ay_clock = source_clk;
-            break;        
-        case "az_clock": 
-            dsp_info.az_clock = source_clk;
-            break;        
-        case "bx_clock": 
-            dsp_info.bx_clock = source_clk;
-            break;        
-        case "by_clock": 
-            dsp_info.by_clock = source_clk;
-            break;        
-        case "bz_clock": 
-            dsp_info.bz_clock = source_clk;
-            break;        
-        case "coef_sel_a_clock": 
-            dsp_info.coef_sel_a_clock = source_clk;
-            break;        
-        case "coef_sel_b_clock": 
-            dsp_info.coef_sel_b_clock = source_clk;
-            break;        
-        case "ay_scan_in_clock": 
-            dsp_info.ay_scan_in_clock = source_clk;
-            break;        
-        case "accumulate_clock":
-            dsp_info.accumulate_clock = source_clk;
-            break;        
-        case "load_const_clock":
-            dsp_info.load_const_clock = source_clk;
-            break;        
-        case "negate_clock":
-            dsp_info.negate_clock = source_clk;
-            break;        
-        case "sub_clock":
-            dsp_info.sub_clock = source_clk;
-            break;        
-        case "chainout_clock":
-            dsp_info.chainout_clock = source_clk;
-            break;        
-        case "output_clock":
-            dsp_info.output_clock = source_clk;
-            break; 
+void set_dsp_clk(DSPInfo& dsp_info, t_node_port_association* source_clk, std::string clock_name){
+   
+        if(clock_name.compare("ax_clock")){ 
+            dsp_info.port_ax_clock = source_clk;
+        }        
+        if(clock_name.compare("ay_clock")){ 
+            dsp_info.port_ay_clock = source_clk;
+        }        
+        if(clock_name.compare("az_clock")){ 
+            dsp_info.port_az_clock = source_clk;
+        }        
+        if(clock_name.compare("bx_clock")){ 
+            dsp_info.port_bx_clock = source_clk;
+        }        
+        if(clock_name.compare("by_clock")){ 
+            dsp_info.port_by_clock = source_clk;
+        }        
+        if(clock_name.compare("bz_clock")){ 
+            dsp_info.port_bz_clock = source_clk;
+        }        
+        if(clock_name.compare("coef_sel_a_clock")){ 
+            dsp_info.port_coef_sel_a_clock = source_clk;
+        }        
+        if(clock_name.compare("coef_sel_b_clock")){ 
+            dsp_info.port_coef_sel_b_clock = source_clk;
+        }        
+        if(clock_name.compare("ay_scan_in_clock")){ 
+            dsp_info.port_ay_scan_in_clock = source_clk;
+        }        
+        if(clock_name.compare("accumulate_clock")){
+            dsp_info.port_accumulate_clock = source_clk;
+        }        
+        if(clock_name.compare("load_const_clock")){
+            dsp_info.port_load_const_clock = source_clk;
+        }        
+        if(clock_name.compare("negate_clock")){
+            dsp_info.port_negate_clock = source_clk;
+        }        
+        if(clock_name.compare("sub_clock")){
+            dsp_info.port_sub_clock = source_clk;
+        }        
+        if(clock_name.compare("chainout_clock")){
+            dsp_info.port_chainout_clock = source_clk;
+        }        
+        if(clock_name.compare("output_clock")){
+            dsp_info.port_output_clock = source_clk; 
         }
 }
 
 
-DSPInfo get_dsp_info(const t_node* vqm_node, string device) {
+DSPInfo get_dsp_info(const t_node* vqm_node) {
 
     VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_mac") == 0);
 
-    std::string clock_param_name[dsp_clock_count] = { 
+    const char* clock_param_name[dsp_clock_count] = { 
         "ax_clock", 
         "ay_clock", 
         "az_clock", 
@@ -1403,13 +1402,13 @@ DSPInfo get_dsp_info(const t_node* vqm_node, string device) {
 
     //         set the new register-based clock ports to one of the three clock signals based on the corrosponding parameters 
             if (param.second) {
-                if (param.second->value.string_value == std::string("clock0")){
+                if (param.second->value.string_value == std::string("0")){
                     VTR_ASSERT(clk_port[0]);
                     set_dsp_clk(dsp_info, clk_port[0], param.first);
-                } else if (param.second->value.string_value == std::string("clock1")) {
+                } else if (param.second->value.string_value == std::string("1")) {
                     VTR_ASSERT(clk_port[1]);
                     set_dsp_clk(dsp_info, clk_port[1], param.first);
-                } else if (param.second->value.string_value == std::string("clock2")) {
+                } else if (param.second->value.string_value == std::string("2")) {
                     VTR_ASSERT(clk_port[2]);
                     set_dsp_clk(dsp_info, clk_port[2], param.first);
                 } else {
