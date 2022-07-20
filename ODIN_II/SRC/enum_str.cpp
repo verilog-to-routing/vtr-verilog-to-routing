@@ -212,6 +212,7 @@ extern const strbimap<file_type_e> file_extension_strmap({{".ilang", file_type_e
                                                           {".v", file_type_e::_VERILOG},
                                                           {".vh", file_type_e::_VERILOG_HEADER},
                                                           {".sv", file_type_e::_SYSTEM_VERILOG},
+                                                          {".svh", file_type_e::_SYSTEM_VERILOG_HEADER},
                                                           {".uhdm", file_type_e::_UHDM},
                                                           {".blif", file_type_e::_BLIF},
                                                           {".eblif", file_type_e::_EBLIF}});
@@ -221,6 +222,7 @@ extern const strbimap<file_type_e> file_type_strmap({{"ilang", file_type_e::_ILA
                                                      {"verilog", file_type_e::_VERILOG},
                                                      {"verilog_header", file_type_e::_VERILOG_HEADER},
                                                      {"systemverilog", file_type_e::_SYSTEM_VERILOG},
+                                                     {"systemverilog_header", file_type_e::_SYSTEM_VERILOG_HEADER},
                                                      {"uhdm", file_type_e::_UHDM},
                                                      {"blif", file_type_e::_BLIF},
                                                      {"eblif", file_type_e::_EBLIF}});

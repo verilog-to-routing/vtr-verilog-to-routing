@@ -6,13 +6,13 @@ import shutil
 from collections import OrderedDict
 from pathlib import Path
 import vtr
-from vtr.error import VtrError
 
 # supported input file type by Yosys
 FILE_TYPES = {
     ".v": "Verilog",
     ".vh": "Verilog",
     ".sv": "SystemVerilog",
+    ".svh": "SystemVerilog",
     ".uhdm": "UHDM",
     ".blif": "BLIF",
     ".aig": "aiger",
@@ -38,8 +38,11 @@ def get_input_file_type(circuit_list):
     # Check the extensions of input files
     for circuit in circuit_list:
         local_file_type = FILE_TYPES[os.path.splitext(circuit)[1].lower()]
-        if local_file_type != file_type:
-            raise VtrError(
+        if local_file_type != file_type and local_file_type not in [
+            FILE_TYPES[".v"],
+            FILE_TYPES[".sv"],
+        ]:
+            raise vtr.VtrError(
                 "File ({circuit}) has different type than other input file, \
                             all input files should have share a common type.".format(
                     circuit=circuit
@@ -79,7 +82,6 @@ def init_script_file(
     yosys_dpram_full_path,
     yosys_spram_rename_full_path,
     yosys_dpram_rename_full_path,
-    temp_dir,
     circuit_list,
     output_netlist,
     memory_addr_width,
@@ -97,11 +99,7 @@ def init_script_file(
     vtr.file_replace(
         yosys_script_full_path,
         {
-<<<<<<< HEAD
             "XXX": "{}".format(" ".join(str(s) for s in circuit_list)),
-=======
-            "XXX": str(vtr.paths.scripts_path / temp_dir / circuit_list[0]),
->>>>>>> [Infra]: install Yosys and its plugins in VTR_ROOT/Yosys, in addition
             "YYY": yosys_models_full_path,
             "SSS": yosys_spram_full_path,
             "DDD": yosys_dpram_full_path,
@@ -238,7 +236,6 @@ def run(
         yosys_dpram_full_path,
         yosys_spram_rename_full_path,
         yosys_dpram_rename_full_path,
-        temp_dir,
         circuit_list,
         output_netlist.name,
         vtr.determine_memory_addr_width(str(architecture_file)),
@@ -260,7 +257,7 @@ def run(
             os.environ["PARSER"] = yosys_args["parser"]
             del yosys_args["parser"]
         else:
-            raise VtrError(
+            raise vtr.VtrError(
                 "Invalid parser is specified for Yosys, available parsers are [{}]".format(
                     " ".join(str(x) for x in YOSYS_PARSERS)
                 )
@@ -276,10 +273,15 @@ def run(
             FILE_TYPES[".uhdm"]: "surelog",
         }[input_file_type]
     else:
-        if input_file_type in [FILE_TYPES[".v"], FILE_TYPES[".vh"], FILE_TYPES[".sv"]]:
+        if input_file_type in [
+            FILE_TYPES[".v"],
+            FILE_TYPES[".vh"],
+            FILE_TYPES[".sv"],
+            FILE_TYPES[".svh"],
+        ]:
             os.environ["PARSER"] = "yosys"
         else:
-            raise VtrError(
+            raise vtr.VtrError(
                 "The VTR-Yosys parser has full support for Verilog and partial support \
                 for SystemVerilog. Please install Yosys-plugins to utilize other parsers."
             )
@@ -301,4 +303,4 @@ def run(
     )
 
 
-# pylint: enable=too-many-arguments, too-many-locals
+# pylint: enable=too-many-arguments, too-many-locals, too-many-statements, too-many-branches

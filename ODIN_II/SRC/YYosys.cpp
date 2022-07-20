@@ -276,11 +276,11 @@ void YYosys::execute() {
                     break;
                 }
                 case (file_type_e::_SYSTEM_VERILOG): {
-                    run_pass(std::string("read_systemverilog " + circuit));
+                    run_pass(std::string("read_systemverilog -debug" + circuit));
                     break;
                 }
                 case (file_type_e::_UHDM): {
-                    run_pass(std::string("read_uhdm " + circuit));
+                    run_pass(std::string("read_uhdm -debug" + circuit));
                     break;
                 }
                 default: {

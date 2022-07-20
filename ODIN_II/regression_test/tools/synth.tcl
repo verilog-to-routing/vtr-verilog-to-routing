@@ -13,12 +13,12 @@ if {$env(PARSER) == "surelog" } {
 	puts "Using Yosys read_uhdm command"
     plugin -i systemverilog;
     yosys -import
-	read_uhdm $env(TCL_CIRCUIT);
+	read_uhdm -debug $env(TCL_CIRCUIT);
 } elseif {$env(PARSER) == "yosys-plugin" } {
 	puts "Using Yosys read_systemverilog command"
     plugin -i systemverilog;
     yosys -import
-	read_systemverilog $env(TCL_CIRCUIT)
+	read_systemverilog -debug $env(TCL_CIRCUIT)
 } elseif {$env(PARSER) == "yosys" } {
 	puts "Using Yosys read_verilog command"
 	read_verilog -sv -nomem2reg -nolatches $env(TCL_CIRCUIT);

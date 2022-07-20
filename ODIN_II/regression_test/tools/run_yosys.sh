@@ -166,9 +166,9 @@ function validate_input_file() {
 	extension=$(echo ${basename##*.} | tr '[:upper:]' '[:lower:]')  
     case $1 in
         -v|--verilog)
-            if [ "_${extension}" == "_v" ]; then return; fi
+            if [ "_${extension}" == "_v" ] || [ "_${extension}" == "_vh" ]; then return; fi
         ;;&-s|--systemverilog)
-            if [ "_${extension}" == "_sv" ]; then return; fi
+            if [ "_${extension}" == "_sv" ] || [ "_${extension}" == "_svh" ]; then return; fi
         ;;&-u|--uhdm)
             if [ "_${extension}" == "_uhdm" ]; then return; fi
         ;;*)
@@ -412,7 +412,7 @@ function run_single_hdl() {
         case ${extension} in
             v|vh)
                 export PARSER="yosys";
-            ;;sv)
+            ;;sv|svh)
                 if [ -f "${_SURELOG_EXEC}" ] \
                 && [ -f "${_UHDM_DUMP_EXEC}" ] \
                 && [ -f "${_UHDM_HIER_EXEC}" ]
