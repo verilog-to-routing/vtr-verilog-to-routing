@@ -662,7 +662,7 @@ bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes) {
 }
 
 void free_route_tree(t_rt_node* rt_node) {
-    if(rt_node == nullptr) {
+    if (rt_node == nullptr) {
         return;
     }
     t_linked_rt_edge *rt_edge, *next_edge;
