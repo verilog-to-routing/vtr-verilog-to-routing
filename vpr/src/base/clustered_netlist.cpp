@@ -308,18 +308,31 @@ bool ClusteredNetlist::validate_net_sizes_impl(size_t num_nets) const {
 }
 
 /**
- * @brief Finds a block where the blocks name contains within it the
- *        provided input name. The intented use is to find the block id of a 
- *        hard block when provided with the its module name in the HDL design.
- *        
- *        For example, suppose a RAM block was instantiated in the design and it
- *        was named "test_ram". The generated netlist would not have the block
- *        named as "test_ram", instead it would be something different but the
- *        name should contain "test_ram" inside it since it represents that  
- *        block. If "test_ram" is provided to find_block() above, then an 
- *        invalid block ID would be returned. The find_block_with_matching_name
- *        () can instead be used and it should find the ram block that has 
- *        "test_ram" within its name.
+ * @brief Finds a block where the block's name matches to the provided
+ *        input string pattern. 
+ *        The intented use is to find the block id of a 
+ *        hard block without knowing its name in the netlist. Instead
+ *        a pattern can be created that we know the block's name will
+ *        match to. Generally, we expect the pattern to be constructed
+ *        using the block's module name in the HDL design, since we can
+ *        expect the netlist name of the block to include the module
+ *        name within it.
+ * 
+ *        For example, suppose a RAM block was named in the netlist as
+ *        "top|alu|test_ram|out". The user instantiated the ram module
+ *        in the HDL design as "test_ram". So instead of going through 
+ *        the netlist and finding the ram block's full name, this
+ *        function can be used by just providing the string pattern as
+ *        ".*test_ram.*". We know that the module name should be somewhere
+ *        within the string, so the pattern we provide says that the netlist
+ *        name of the block contains arbritary characters then the module name
+ *        and then some other arbritary characters after. This pattern will
+ *        then be used to match to the block in the netlist. 
+ * 
+ *        This function runs in linear time (O(N)) as it goes over all the 
+ *        cluster blocks in the netlist. Additionally, if there are multiple
+ *        blocks that match to the provided input pattern, then the
+ *        first block found is returned.
  * 
  *        There is a similiar function in the Netlist Class. This function 
  *        additionally requires the logical type of the block as well. Since
@@ -333,7 +346,7 @@ bool ClusteredNetlist::validate_net_sizes_impl(size_t num_nets) const {
  *        and this should help improve run time.
  * 
  */
-ClusterBlockId ClusteredNetlist::find_block_with_matching_name(const std::string& name, const std::vector<ClusterBlockId>& cluster_block_candidates) const {
+ClusterBlockId ClusteredNetlist::find_block_by_name_fragment(const std::string& name, const std::vector<ClusterBlockId>& cluster_block_candidates) const {
     ClusterBlockId blk_id = ClusterBlockId::INVALID();
     std::regex name_to_match(name);
 

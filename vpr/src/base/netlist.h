@@ -728,11 +728,11 @@ class Netlist {
     BlockId find_block(const std::string& name) const;
 
     /**
-     * @brief Returns the BlockId of the specified block or BlockId::INVALID() if not found. The name of the block returned contains the provided input name in it.
+     * @brief Returns the BlockId of the specified block or BlockId::INVALID() if not found. The name of the block ID returned contains the provided input as a substring.
      *
-     *   @param name   The name of the block
+     *   @param name   A substring of a block name for which an ID needs to be found. 
      */
-    BlockId find_block_with_matching_name(const std::string& name) const;
+    BlockId find_block_by_name_fragment(const std::string& name) const;
 
     /**
      * @brief Returns the PortId of the specifed port if it exists or PortId::INVALID() if not

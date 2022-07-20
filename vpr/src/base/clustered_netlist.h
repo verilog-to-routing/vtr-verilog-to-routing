@@ -232,10 +232,16 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      * @brief Given a name of a block and vector of possible cluster blocks
      *        that are candidates to match the block name, go through 
      *        the vector of cluster blocks and return the id of the block
-     *        where the block name matches the provided name. 
+     *        where the block name matches the provided name.
+     * 
+     *        Given a string pattern representing a block name and a vector of
+     *        poissble cluster blocks that are candidates to match to the block
+     *        name pattern, go through the vector of cluster blocks and return 
+     *        the id of the block where the block name matches to the provided
+     *        input pattern.
      * 
      */
-    ClusterBlockId find_block_with_matching_name(const std::string& name, const std::vector<ClusterBlockId>& cluster_block_candidates) const;
+    ClusterBlockId find_block_by_name_fragment(const std::string& name, const std::vector<ClusterBlockId>& cluster_block_candidates) const;
 
   private: //Private Members
     /*

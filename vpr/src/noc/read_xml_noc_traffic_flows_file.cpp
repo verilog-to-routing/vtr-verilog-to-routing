@@ -143,7 +143,7 @@ ClusterBlockId get_router_module_cluster_id(std::string router_module_name, cons
     // find the cluster block whos name matches to the provided router module name provided by the user
     // Then get the corresponding cluster block id if a valid block was found
     try {
-        router_module_id = cluster_ctx.clb_nlist.find_block_with_matching_name(router_module_name, cluster_blocks_compatible_with_noc_router_tiles);
+        router_module_id = cluster_ctx.clb_nlist.find_block_by_name_fragment(router_module_name, cluster_blocks_compatible_with_noc_router_tiles);
     } catch (const std::regex_error& error) {
         // if there was an error with matching the regex string,report it to the user here
         vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), error.what());
