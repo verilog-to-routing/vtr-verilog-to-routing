@@ -34,6 +34,7 @@ int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* new_input_pin,
                                             t_port_vec* pin_node_sinks           );
 
 void expand_ram_clocks(t_module* module, string device);
+void expand_dsp_clocks(t_module* module, string device);
 
 //Functions to remove global constants
 void remove_constant_nets(t_module *module);
@@ -101,6 +102,7 @@ t_node* add_buffer(t_module* module, t_buffer_type buffer_type, int num_buffers_
 void print_map(t_global_ports global_ports);
 
 int find_vqm_port_index(const t_node* node, std::string name);
+vector<int> find_vqm_port_indices(const t_node* node, std::string name);
 void add_port(int idx, t_node* node, const t_node_port_association* base_port, const std::string new_name);
 int get_next_port_idx(const t_node* node, std::set<int>& existing_idxs);
 
@@ -150,7 +152,7 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* ar
         }
     }
     cout << endl;
-
+    expand_dsp_clocks(module, device);
     if(single_clock_primitives) {
         cout << "\t>> Preprocessing Netlist to remove false clock nets" << endl;
         //VPR may falsely identify nets connected to clock pins, but not driven by clock
@@ -1093,6 +1095,17 @@ void remove_extra_primitive_clocks(t_module *module) {
 
 }
 
+vector<int> find_vqm_port_indices(const t_node* node, std::string name) {
+    vector<int> index;
+    for (int i = 0; i < node->number_of_ports; ++i) {
+        if (node->array_of_ports[i]->port_name == name) {
+            index.push_back(i);
+        }
+    }
+
+    return index;
+}
+
 int find_vqm_port_index(const t_node* node, std::string name) {
     for (int i = 0; i < node->number_of_ports; ++i) {
         if (node->array_of_ports[i]->port_name == name) {
@@ -1293,6 +1306,126 @@ void expand_ram_clocks(t_module* module, string device) {
                 VTR_ASSERT(find_vqm_port_index(node, "sclr") < 0);
                 VTR_ASSERT(find_vqm_port_index(node, "aclr") < 0);
             }
+        }
+
+
+    }
+
+    cout << "\t>> Elaborated " << num_clocks_added << " clocks accross " << num_ram_blocks_processed << " ram blocks" << endl;
+
+}
+
+void expand_dsp_clocks(t_module* module, string device) {
+    int num_ram_blocks_processed = 0;
+    int num_clocks_added = 0;
+    for (int i = 0; i < module->number_of_nodes; ++i) {
+        t_node* node = module->array_of_nodes[i];
+
+        if (strcmp(node->type, "fourteennm_mac") == 0) {
+            ++num_ram_blocks_processed;
+            DSPInfo dsp_info = get_dsp_info(node, device);
+
+            //Stratix  10 dsp blocks use a 3-bit wide clock port to specify the clocks, and use params
+            //to define which clock controls what port
+            //
+            //To simplify things in down stream tools (since BLIF doesn't support params) we replace the 
+            //VQM clocks with the following ports:
+            //   
+            //   * clock_ax     //Clock capturing input data to port ax
+            //   * clock_ay     //Clock capturing input data to port ay
+            //   * clock_az     //Clock capturing input data to port az
+            //   * clock_bx     //Clock capturing input data to port bx
+            //   * clock_by     //Clock capturing input data to port by
+            //   * clock_bz     //Clock capturing input data to port bz
+            //   * clock_coef_sel_a     //Clock capturing input data to port coef_sel_a
+            //   * clock_coef_sel_b     //Clock capturing input data to port coef_sel_b
+            //   * clock_ay_scan_in     //Clock capturing input data to port ay_scan_in
+            //   * clock_accumulate     //Clock capturing input data to port accumulate
+            //   * clock_load_const     //Clock capturing input data to port load_const
+            //   * clock_negate     //Clock capturing input data to port negate
+            //   * clock_sub     //Clock capturing input data to port sub
+            //   * clock_chainout     //Clock capturing input data to port chainout
+            //   * clock_output     //Clock capturing input data to port output
+            //
+            //We set these to the appropriate net based on the data set in VQM params
+
+            //Find and record the existing clk ports
+            // We do this so we can overwrite them
+            vector<int> existing_clk_idxs_vec = find_vqm_port_indices(node, "clk");
+            
+            std::set<int> existing_clk_idxs(existing_clk_idxs_vec.begin(), existing_clk_idxs_vec.end());
+  
+
+            if (dsp_info.port_ax_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ax_clock, "port_ax_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_ay_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ay_clock, "port_ay_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_az_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_az_clock, "port_az_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_bx_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_bx_clock, "port_bx_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_by_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_by_clock, "port_by_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_bz_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_bz_clock, "port_bz_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_coef_sel_a_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_coef_sel_a_clock, "port_coef_sel_a_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_coef_sel_b_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_coef_sel_b_clock, "port_coef_sel_b_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_ay_scan_in_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_ay_scan_in_clock, "port_ay_scan_in_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_accumulate_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_accumulate_clock, "port_accumulate_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_load_const_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_load_const_clock, "port_load_const_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_negate_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_negate_clock, "port_negate_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_sub_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_sub_clock, "port_sub_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_chainout_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_chainout_clock, "port_chainout_clock");
+                ++num_clocks_added;
+            }
+            if (dsp_info.port_output_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_output_clock, "port_output_clock");
+                ++num_clocks_added;
+            }
+
+            set<int>::iterator itr;
+   
+            for (itr = existing_clk_idxs.begin(); itr != existing_clk_idxs.end(); itr++){
+                remove_node_port(node, *itr);
+            }
+
+            VTR_ASSERT(find_vqm_port_index(node, "clk") < 0);
+
+ 
         }
 
 
