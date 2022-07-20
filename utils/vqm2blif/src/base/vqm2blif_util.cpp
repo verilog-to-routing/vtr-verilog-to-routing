@@ -3,6 +3,7 @@
 #include "vtr_memory.h"
 #include "vtr_assert.h"
 
+#define dsp_clock_count 15
 //============================================================================================
 //============================================================================================
 
@@ -1289,6 +1290,137 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
         ram_info.port_b_output_clock = clk_portbout;
     }
     return ram_info;
+}
+//============================================================================================
+//============================================================================================
+
+void set_dsp_clock(DSPInfo& dsp_info, t_node_port_association source_clk, std::string clock_name){
+    switch(clock_name){   
+        case "ax_clock": 
+            dsp_info.ax_clock = source_clk;
+            break;        
+        case "ay_clock": 
+            dsp_info.ay_clock = source_clk;
+            break;        
+        case "az_clock": 
+            dsp_info.az_clock = source_clk;
+            break;        
+        case "bx_clock": 
+            dsp_info.bx_clock = source_clk;
+            break;        
+        case "by_clock": 
+            dsp_info.by_clock = source_clk;
+            break;        
+        case "bz_clock": 
+            dsp_info.bz_clock = source_clk;
+            break;        
+        case "coef_sel_a_clock": 
+            dsp_info.coef_sel_a_clock = source_clk;
+            break;        
+        case "coef_sel_b_clock": 
+            dsp_info.coef_sel_b_clock = source_clk;
+            break;        
+        case "ay_scan_in_clock": 
+            dsp_info.ay_scan_in_clock = source_clk;
+            break;        
+        case "accumulate_clock":
+            dsp_info.accumulate_clock = source_clk;
+            break;        
+        case "load_const_clock":
+            dsp_info.load_const_clock = source_clk;
+            break;        
+        case "negate_clock":
+            dsp_info.negate_clock = source_clk;
+            break;        
+        case "sub_clock":
+            dsp_info.sub_clock = source_clk;
+            break;        
+        case "chainout_clock":
+            dsp_info.chainout_clock = source_clk;
+            break;        
+        case "output_clock":
+            dsp_info.output_clock = source_clk;
+            break; 
+        }
+}
+
+
+DSPInfo get_dsp_info(const t_node* vqm_node, string device) {
+
+    VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_mac") == 0);
+
+    std::string clock_param_name[dsp_clock_count] = { 
+        "ax_clock", 
+        "ay_clock", 
+        "az_clock", 
+        "bx_clock", 
+        "by_clock", 
+        "bz_clock", 
+        "coef_sel_a_clock", 
+        "coef_sel_b_clock", 
+        "ay_scan_in_clock", 
+        "accumulate_clock",
+        "load_const_clock",
+        "negate_clock",
+        "sub_clock",
+        "chainout_clock",
+        "output_clock"
+    };
+    //We need to save clock-related parameters of a dsp block to determine which clock signal is driving which register
+    map<std::string, t_node_parameter*> clock_param;
+
+
+	for (int i = 0; i < vqm_node->number_of_params; i++){
+
+		t_node_parameter* temp_param = vqm_node->array_of_params[i];
+
+        for (int j = 0; j < dsp_clock_count; j++){
+
+            if (strcmp (temp_param->name, clock_param_name[j]) == 0){
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+                clock_param.insert({clock_param_name[j],temp_param});
+                continue;
+            }
+
+        }
+    }
+
+    //There are three distinct clock signals at most
+    t_node_port_association* clk_port [] = {nullptr, nullptr, nullptr};
+    // find the three bit clock port in the vqm_node
+    for(int i = 0; i < vqm_node->number_of_ports; ++i) {
+        t_node_port_association* check_port = vqm_node->array_of_ports[i];
+        if(check_port->port_name == std::string("clk")) {
+            clk_port[check_port->port_index] = check_port;
+        }
+    }
+
+    DSPInfo dsp_info;
+
+    if(clk_port[0] || clk_port[1] || clk_port[2]) {
+
+        for (auto const& param : clock_param){
+
+    //         set the new register-based clock ports to one of the three clock signals based on the corrosponding parameters 
+            if (param.second) {
+                if (param.second->value.string_value == std::string("clock0")){
+                    VTR_ASSERT(clk_port[0]);
+                    set_dsp_clk(dsp_info, clk_port[0], param.first);
+                } else if (param.second->value.string_value == std::string("clock1")) {
+                    VTR_ASSERT(clk_port[1]);
+                    set_dsp_clk(dsp_info, clk_port[1], param.first);
+                } else if (param.second->value.string_value == std::string("clock2")) {
+                    VTR_ASSERT(clk_port[2]);
+                    set_dsp_clk(dsp_info, clk_port[2], param.first);
+                } else {
+                    VTR_ASSERT(param.second->value.string_value == std::string("none"));
+                    set_dsp_clk(dsp_info, nullptr, param.first);
+                }
+            }
+        }
+    }
+
+    return dsp_info;
 }
 //============================================================================================
 //============================================================================================

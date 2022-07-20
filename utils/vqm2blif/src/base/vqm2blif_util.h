@@ -196,6 +196,10 @@ string append_index_to_str (string busname, int index);	//appends an integer ind
 
 RamInfo get_ram_info(const t_node* vqm_node, string device);
 
+DSPInfo get_dsp_info(const t_node* vqm_node, string device);
+
+void set_dsp_clock(DSPInfo& dsp_info, t_node_port_association source_clk, std::string clock_name);
+
 //Other
 
 void print_usage (t_boolean terminate);
