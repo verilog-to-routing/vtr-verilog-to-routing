@@ -52,9 +52,9 @@ void print_route_tree_node(const t_rt_node* rt_root);
 void print_route_tree_inf(const t_rt_node* rt_root);
 void print_route_tree_congestion(const t_rt_node* rt_root);
 
-t_rt_node* traceback_to_route_tree(ParentNetId inet);
+t_rt_node* traceback_to_route_tree(ParentNetId inet, bool is_flat);
 
-t_rt_node* traceback_to_route_tree(ParentNetId inet, std::vector<int>* non_config_node_set_usage);
+t_rt_node* traceback_to_route_tree(ParentNetId inet, std::vector<int>* non_config_node_set_usage, bool is_flat);
 t_rt_node* traceback_to_route_tree(t_trace* head, bool is_flat);
 t_rt_node* traceback_to_route_tree(t_trace* head,
                                    std::vector<int>* non_config_node_set_usage,

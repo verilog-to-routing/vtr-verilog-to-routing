@@ -101,7 +101,8 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& arch,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             NetPinsMatrix<float>& net_delay);
+                             NetPinsMatrix<float>& net_delay,
+                             bool is_flat);
 
 /* Analysis */
 

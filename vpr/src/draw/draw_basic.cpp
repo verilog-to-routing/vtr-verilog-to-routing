@@ -1152,11 +1152,13 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
                 cluster_ctx.clb_nlist.net_driver_block(net_id)
                 == clb_src_block);
 
+            t_draw_state* draw_state = get_draw_state_vars();
+
             std::vector<int> routed_rr_nodes = trace_routed_connection_rr_nodes(
-                net_id, 0, sink_net_pin_index);
+                net_id, 0, sink_net_pin_index, draw_state->is_flat);
 
             //Mark all the nodes highlighted
-            t_draw_state* draw_state = get_draw_state_vars();
+
             for (int inode : routed_rr_nodes) {
                 draw_state->draw_rr_node[inode].color = color;
             }

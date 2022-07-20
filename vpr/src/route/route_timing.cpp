@@ -122,9 +122,12 @@ static t_rt_node* setup_routing_resources(int itry,
                                           CBRR& connections_inf,
                                           t_rt_node** rt_node_of_sink,
                                           const t_router_opts& router_opts,
-                                          bool ripup_high_fanout_nets);
+                                          bool ripup_high_fanout_nets,
+                                          bool is_flat);
 
-static bool timing_driven_check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay);
+static bool timing_driven_check_net_delays(const Netlist<>& net_list,
+                                           NetPinsMatrix<float>& net_delay,
+                                           bool is_flat);
 
 static bool should_route_net(ParentNetId net_id,
                              const vtr::vector<ParentNetId, t_traceback>& net_trace,
@@ -189,7 +192,8 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
                                           bool is_flat);
 
 static void prune_unused_non_configurable_nets(CBRR& connections_inf,
-                                               const Netlist<>& net_list);
+                                               const Netlist<>& net_list,
+                                               bool is_flat);
 
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           const Netlist<>& net_list,
@@ -539,7 +543,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
             critical_path = timing_info->least_slack_critical_path();
 
-            VTR_ASSERT_SAFE(timing_driven_check_net_delays(net_list, net_delay));
+            VTR_ASSERT_SAFE(timing_driven_check_net_delays(net_list, net_delay, is_flat));
 
             if (itry == 1) {
                 generate_route_timing_reports(router_opts, analysis_opts, *timing_info, *delay_calc, is_flat);
@@ -587,7 +591,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
                 //Update best metrics
                 if (timing_info) {
-                    timing_driven_check_net_delays(net_list, net_delay);
+                    timing_driven_check_net_delays(net_list, net_delay, is_flat);
 
                     best_routing_metrics.sTNS = timing_info->setup_total_negative_slack();
                     best_routing_metrics.sWNS = timing_info->setup_worst_negative_slack();
@@ -819,7 +823,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         router_ctx.trace = best_routing;
         router_ctx.clb_opins_used_locally = best_clb_opins_used_locally;
 
-        prune_unused_non_configurable_nets(connections_inf, net_list);
+        prune_unused_non_configurable_nets(connections_inf, net_list, is_flat);
 
         if (timing_info) {
             VTR_LOG("Critical path: %g ns\n", 1e9 * best_routing_metrics.critical_path.delay());
@@ -1033,7 +1037,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       connections_inf,
                                       rt_node_of_sink,
                                       router_opts,
-                                      check_hold(router_opts, worst_neg_slack));
+                                      check_hold(router_opts, worst_neg_slack),
+                                      is_flat);
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
 
@@ -1426,7 +1431,8 @@ static t_rt_node* setup_routing_resources(int itry,
                                           CBRR& connections_inf,
                                           t_rt_node** rt_node_of_sink,
                                           const t_router_opts& router_opts,
-                                          bool ripup_high_fanout_nets) {
+                                          bool ripup_high_fanout_nets,
+                                          bool is_flat) {
     /* Build and return a partial route tree from the legal connections from last iteration.
      * along the way do:
      * 	update pathfinder costs to be accurate to the partial route tree
@@ -1466,7 +1472,7 @@ static t_rt_node* setup_routing_resources(int itry,
         profiling::net_rebuild_start();
 
         // convert the previous iteration's traceback into a route tree
-        rt_root = traceback_to_route_tree(net_id);
+        rt_root = traceback_to_route_tree(net_id, is_flat);
 
         //Sanity check that route tree and traceback are equivalent before pruning
         VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
@@ -1600,7 +1606,7 @@ void update_rr_base_costs(int fanout) {
     }
 }
 
-static bool timing_driven_check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
+static bool timing_driven_check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay, bool is_flat) {
     constexpr float ERROR_TOL = 0.0001;
 
     /* Checks that the net delays computed incrementally during timing driven    *
@@ -1609,7 +1615,7 @@ static bool timing_driven_check_net_delays(const Netlist<>& net_list, NetPinsMat
     unsigned int ipin;
     auto net_delay_check = make_net_pins_matrix<float>(net_list);
 
-    load_net_delay_from_routing(net_list, net_delay_check);
+    load_net_delay_from_routing(net_list, net_delay_check, is_flat);
 
     for (auto net_id : net_list.nets()) {
         for (ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
@@ -2141,7 +2147,9 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
 // behind.  As a result, the final routing may have stubs at
 // non-configurable sets.  This function tracks non-configurable set usage,
 // and if the sets are unused, prunes them.
-static void prune_unused_non_configurable_nets(CBRR& connections_inf, const Netlist<>& net_list) {
+static void prune_unused_non_configurable_nets(CBRR& connections_inf,
+                                               const Netlist<>& net_list,
+                                               bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -2152,7 +2160,7 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf, const Netl
         connections_inf.clear_force_reroute_for_net();
 
         std::fill(non_config_node_set_usage.begin(), non_config_node_set_usage.end(), 0);
-        t_rt_node* rt_root = traceback_to_route_tree(net_id, &non_config_node_set_usage);
+        t_rt_node* rt_root = traceback_to_route_tree(net_id, &non_config_node_set_usage, is_flat);
         if (rt_root == nullptr) {
             continue;
         }

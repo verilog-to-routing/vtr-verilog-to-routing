@@ -37,7 +37,8 @@ static std::unordered_map<int, float> ipin_to_Tdel_map;
 
 static void load_one_net_delay(const Netlist<>& net_list,
                                NetPinsMatrix<float>& net_delay,
-                               ParentNetId net_id);
+                               ParentNetId net_id,
+                               bool is_flat);
 
 static void load_one_net_delay_recurr(t_rt_node* node, ParentNetId net_id);
 
@@ -47,7 +48,7 @@ static void load_one_constant_net_delay(const Netlist<>& net_list,
                                         float delay_value);
 
 /*************************** Subroutine definitions **************************/
-void load_net_delay_from_routing(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
+void load_net_delay_from_routing(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay, bool is_flat) {
     /* This routine loads net_delay[0..nets.size()-1][1..num_pins-1].  Each entry   *
      * is the Elmore delay from the net source to the appropriate sink. Both       *
      * the rr_graph and the routing traceback must be completely constructed        *
@@ -58,14 +59,15 @@ void load_net_delay_from_routing(const Netlist<>& net_list, NetPinsMatrix<float>
         if (net_list.net_is_ignored(net_id)) {
             load_one_constant_net_delay(net_list, net_delay, net_id, 0.);
         } else {
-            load_one_net_delay(net_list, net_delay, net_id);
+            load_one_net_delay(net_list, net_delay, net_id, is_flat);
         }
     }
 }
 
 static void load_one_net_delay(const Netlist<>& net_list,
                                NetPinsMatrix<float>& net_delay,
-                               ParentNetId net_id) {
+                               ParentNetId net_id,
+                               bool is_flat) {
     /* This routine loads delay values for one net in                            *
      * net_delay[net_id][1..num_pins-1]. First, from the traceback, it           *
      * constructs the route tree and computes its values for R, C, and Tdel.     *
@@ -82,7 +84,7 @@ static void load_one_net_delay(const Netlist<>& net_list,
                         "in load_one_net_delay: Traceback for net %lu does not exist.\n", size_t(net_id));
     }
 
-    t_rt_node* rt_root = traceback_to_route_tree(net_id); // obtain the root of the tree constructed from the traceback
+    t_rt_node* rt_root = traceback_to_route_tree(net_id, is_flat); // obtain the root of the tree constructed from the traceback
     load_new_subtree_R_upstream(rt_root);                 // load in the resistance values for the route tree
     load_new_subtree_C_downstream(rt_root);               // load in the capacitance values for the route tree
     load_route_tree_Tdel(rt_root, 0.);                    // load the time delay values for the route tree

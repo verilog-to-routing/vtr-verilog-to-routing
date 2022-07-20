@@ -764,12 +764,12 @@ void update_net_delays_from_route_tree(float* net_delay,
 }
 
 /***************  Conversion between traceback and route tree *******************/
-t_rt_node* traceback_to_route_tree(ParentNetId inet, std::vector<int>* non_config_node_set_usage) {
-    return traceback_to_route_tree(g_vpr_ctx.routing().trace[inet].head, non_config_node_set_usage);
+t_rt_node* traceback_to_route_tree(ParentNetId inet, std::vector<int>* non_config_node_set_usage, bool is_flat) {
+    return traceback_to_route_tree(g_vpr_ctx.routing().trace[inet].head, non_config_node_set_usage, is_flat);
 }
 
-t_rt_node* traceback_to_route_tree(ParentNetId inet) {
-    return traceback_to_route_tree(inet, nullptr);
+t_rt_node* traceback_to_route_tree(ParentNetId inet, bool is_flat) {
+    return traceback_to_route_tree(inet, nullptr, is_flat);
 }
 
 t_rt_node* traceback_to_route_tree(t_trace* head, bool is_flat) {

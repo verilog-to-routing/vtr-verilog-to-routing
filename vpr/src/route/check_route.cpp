@@ -828,7 +828,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
 // are children of a configurable node have at least one sink.
 class StubFinder {
   public:
-    StubFinder(const Netlist<>& net_list) : net_list_(net_list) {}
+    StubFinder(const Netlist<>& net_list, bool is_flat) : net_list_(net_list), is_flat_(is_flat) {}
 
     // Checks specified net for stubs, return true if at least one stub is
     // found.
@@ -847,6 +847,7 @@ class StubFinder {
     // id.
     std::set<int> stub_nodes_;
     const Netlist<>& net_list_;
+    bool is_flat_;
 };
 
 //Cheks for stubs in a net's routing.
@@ -858,7 +859,7 @@ class StubFinder {
 void check_net_for_stubs(const Netlist<>& net_list,
                          ParentNetId net,
                          bool is_flat) {
-    StubFinder stub_finder(net_list);
+    StubFinder stub_finder(net_list, is_flat);
 
     bool any_stubs = stub_finder.CheckNet(net);
     if (any_stubs) {
@@ -875,7 +876,7 @@ void check_net_for_stubs(const Netlist<>& net_list,
 bool StubFinder::CheckNet(ParentNetId net) {
     stub_nodes_.clear();
 
-    t_rt_node* rt_root = traceback_to_route_tree(net);
+    t_rt_node* rt_root = traceback_to_route_tree(net, is_flat_);
     RecurseTree(rt_root);
     free_route_tree(rt_root);
 

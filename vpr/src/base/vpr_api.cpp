@@ -805,7 +805,12 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
             //Load a previous routing
             // TODO: flat routing is not implemented for this part
-            route_status = vpr_load_routing(vpr_setup, arch, chan_width, timing_info, net_delay);
+            route_status = vpr_load_routing(vpr_setup,
+                                            arch,
+                                            chan_width,
+                                            timing_info,
+                                            net_delay,
+                                            router_opts.flat_routing);
         }
 
         //Post-implementation
@@ -975,7 +980,8 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& /*arch*/,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             NetPinsMatrix<float>& net_delay) {
+                             NetPinsMatrix<float>& net_delay,
+                             bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
@@ -988,7 +994,9 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
 
     if (vpr_setup.Timing.timing_analysis_enabled) {
         //Update timing info
-        load_net_delay_from_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, net_delay);
+        load_net_delay_from_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                                    net_delay,
+                                    is_flat);
 
         timing_info->update();
     }
@@ -1393,7 +1401,9 @@ void vpr_analysis(const Netlist<>& net_list,
         //Load the net delays
 
         NetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(net_list);
-        load_net_delay_from_routing(net_list, net_delay);
+        load_net_delay_from_routing(net_list,
+                                    net_delay,
+                                    vpr_setup.RouterOpts.flat_routing);
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, vpr_setup.RouterOpts.flat_routing);

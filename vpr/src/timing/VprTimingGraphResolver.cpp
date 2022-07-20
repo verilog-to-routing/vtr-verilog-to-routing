@@ -286,7 +286,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<ta
      * which walks the route tree from the sink to the source. Along the way, we process each node 
      * and construct net_components that are added to the vector of components. */
 
-    t_rt_node* rt_root = traceback_to_route_tree(net_id);              //obtain the route tree from the traceback
+    t_rt_node* rt_root = traceback_to_route_tree(net_id, is_flat_);              //obtain the route tree from the traceback
     load_new_subtree_R_upstream(rt_root);                              //load in the resistance values for the route
     load_new_subtree_C_downstream(rt_root);                            //load in the capacitance values for the route tree
     load_route_tree_Tdel(rt_root, 0.);                                 //load the time delay values for the route tree
