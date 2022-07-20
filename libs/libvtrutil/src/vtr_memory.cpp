@@ -167,7 +167,7 @@ void free_chunk_memory(t_chunk* chunk_info) {
         delete[]((char*)curr_ptr->data_vptr); /* Free memory "chunk". */
         prev_ptr = curr_ptr;
         curr_ptr = curr_ptr->next;
-        delete((t_linked_vptr*)prev_ptr); /* Free memory used to track "chunk". */
+        delete (t_linked_vptr*)prev_ptr; /* Free memory used to track "chunk". */
     }
 
     chunk_info->chunk_ptr_head = nullptr;
