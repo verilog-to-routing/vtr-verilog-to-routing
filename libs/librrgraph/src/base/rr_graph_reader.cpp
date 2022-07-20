@@ -21,8 +21,6 @@
 #include <fstream>
 
 #include "vtr_time.h"
-//#include "vpr_types.h"
-//#include "globals.h"
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
@@ -60,8 +58,6 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   bool read_edge_metadata,
                   bool do_check_rr_graph) {
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
-
-    // auto& device_ctx = g_vpr_ctx.mutable_device();
 
     size_t num_segments = segment_inf.size();
     rr_graph_builder->reserve_segments(num_segments);

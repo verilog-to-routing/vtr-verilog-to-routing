@@ -1,7 +1,5 @@
 #include "rr_metadata.h"
 
-//#include "globals.h"
-
 namespace vpr {
 
 const t_metadata_value* rr_node_metadata(const RRGraphBuilder& rr_graph_builder, int src_node, vtr::interned_string key) {
