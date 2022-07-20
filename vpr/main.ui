@@ -104,6 +104,35 @@
           </packing>
         </child>
         <child>
+          <object class="GtkLabel" id="NocLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Toggle NoC Display</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">6</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="ToggleNocBox">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="active">0</property>
+            <items>
+              <item translatable="yes">None</item>
+              <item translatable="yes">NoC Links</item>
+              <item translatable="yes">NoC Link Usage</item>
+            </items>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">7</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkCheckButton" id="blockOutline">
             <property name="label" translatable="yes">Block Outline</property>
             <property name="visible">True</property>
@@ -116,7 +145,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">6</property>
+            <property name="position">8</property>
           </packing>
         </child>
         <child>
@@ -132,7 +161,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">7</property>
+            <property name="position">9</property>
           </packing>
         </child>
       </object>

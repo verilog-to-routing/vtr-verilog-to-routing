@@ -1,3 +1,18 @@
+/**
+ * @file search_bar.cpp
+ * @author Sebastian Lievano
+ * @brief Contains search/auto-complete related functions
+ * @version 0.1
+ * @date 2022-07-20
+ * 
+ * This file essentially follows the whole search process, from searching, finding the match,
+ * and finally highlighting the searched for item. Additionally, auto-complete related stuff is found
+ * here.
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #ifndef NO_GRAPHICS
 #    include <cstdio>
 #    include <sstream>
@@ -94,20 +109,25 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     }
 
     else if (search_type == "Block Name") {
+        /* If the block exists in atom netlist, proceeding with highlighting process. 
+         * if highlight atom block fn returns false, that means that the block can't be highlighted
+         * We've already confirmed the block exists in the netlist, so that means that at this zoom lvl,
+         * the subblock is not shown. Therefore highlight the clb mapping.
+         * 
+         * If the block does not exist in the atom netlist, we will check the CLB netlist to see if
+         * they searched for a cluster block*/
         std::string block_name = "";
         ss >> block_name;
 
-        AtomBlockId atom_blk_id = AtomBlockId::INVALID();
-        atom_blk_id = atom_ctx.nlist.find_block(block_name);
-        //If block is found, the CLB containing it is highlighted
+        AtomBlockId atom_blk_id = atom_ctx.nlist.find_block(block_name);
         if (atom_blk_id != AtomBlockId::INVALID()) {
             ClusterBlockId block_id = atom_ctx.lookup.atom_clb(atom_blk_id);
-            //Highlighting atom block. IF function returns false, highlighting clb that contains
             if (!highlight_atom_block(atom_blk_id, block_id, app)) {
                 highlight_cluster_block(block_id);
             }
             return;
         }
+
         //Continues if atom block not found (Checking if user searched a clb)
         ClusterBlockId block_id = ClusterBlockId::INVALID();
         block_id = cluster_ctx.clb_nlist.find_block(block_name);
@@ -134,10 +154,11 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     }
 
     else if (search_type == "Net Name") {
+        //in this case, all nets (clb and non-clb) are contained in the atom netlist
+        //So we only need to search this one
         std::string net_name = "";
         ss >> net_name;
-        AtomNetId atom_net_id = AtomNetId::INVALID();
-        atom_net_id = atom_ctx.nlist.find_net(net_name);
+        AtomNetId atom_net_id = atom_ctx.nlist.find_net(net_name);
 
         if (atom_net_id == AtomNetId::INVALID()) {
             warning_dialog_box("Invalid Net Name");
@@ -314,7 +335,7 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
  * 
  * @param name name of block being searched for
  * @param pb current node to be examined
- * @return t_pb* t_pb ptr of block w. name "name"
+ * @return t_pb* t_pb ptr of block w. name "name". Returns nullptr if nothing found
  */
 t_pb* find_atom_block_in_pb(std::string name, t_pb* pb) {
     //Checking if block is one being searched for
@@ -350,6 +371,7 @@ void highlight_nets(ClusterNetId net_id) {
 
     t_draw_state* draw_state = get_draw_state_vars();
 
+    //If routing does not exist return
     if (int(route_ctx.trace.size()) == 0) return;
 
     for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
@@ -422,8 +444,8 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
 }
 
 /**
- * @brief A new matching function used for the wildcard search options
- * Will be slower
+ * @brief A non-default matching function. As opposed to simply searching for a prefix(default),
+ * searches string for presence of a substring. Ignores cases.
  * 
  * @param completer the GtkEntryCompletion being used
  * @param key a normalized and case-folded key representing the text
@@ -448,46 +470,76 @@ gboolean customMatchingFunction(
     return (cppText.find(key, 0) != std::string::npos);
 }
 
-void enable_autocomplete(ezgl::application* app){
+/**
+ * @brief Creates a GdkEvent that simulates user pressing key "key"
+ * 
+ * @param key character value
+ * @param window GdkWindow
+ * @return GdkEvent Keypress event
+ */
+GdkEvent simulate_keypress(char key, GdkWindow* window) {
+    int charVal = (int)key;
+    //Creating event and adding properties
+    GdkEvent new_event;
+    new_event.key.type = GDK_KEY_PRESS;
+    new_event.key.window = window;
+    new_event.key.send_event = TRUE;
+    new_event.key.time = GDK_CURRENT_TIME;
+    new_event.key.keyval = gdk_unicode_to_keyval(charVal);
+    new_event.key.state = GDK_KEY_PRESS_MASK;
+    new_event.key.length = 0;
+    new_event.key.string = 0;
+    new_event.key.hardware_keycode = 0;
+    new_event.key.group = 0;
+    return new_event;
+}
+
+/**
+ * @brief Turns on autocomplete
+ * 
+ * This function enables the auto-complete fuctionality for the search bar. 
+ * Normally, this is pretty simple, but the idea is to have auto-complete appear as soon
+ * as the user hits the "Enter" key. To accomplish this, a fake Gdk event is created
+ * to simulate the user hitting a key.
+ * 
+ * @param app ezgl app
+ */
+void enable_autocomplete(ezgl::application* app) {
     std::cout << "enabling autocomplete" << std::endl;
     GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
     GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
+
     std::string searchType = get_search_type(app);
-    if(gtk_entry_completion_get_model(completion) == NULL){
+    //Checking to make sure that we are on a mode that uses auto-complete
+    if (gtk_entry_completion_get_model(completion) == NULL) {
         std::cout << "NO MODEL SELECTED" << std::endl;
         return;
     }
+
+    //Getting input text
     std::string oldText(gtk_entry_get_text(searchBar));
+
+    //Turning on completion
     gtk_entry_set_completion(searchBar, completion);
-    gtk_entry_completion_set_minimum_key_length(completion, std::max(0, (int)(oldText.length()-1)));
     gtk_entry_completion_complete(completion);
 
-    if(oldText.length() == 0) return;
+    //Setting min key length to either 0 or 1 less than key length (max option)
+    gtk_entry_completion_set_minimum_key_length(completion, std::max(0, (int)(oldText.length() - 1)));
 
+    //If string len is 0, reutrning
+    if (oldText.length() == 0) return;
 
-    std::cout << "Added text" << std::endl;
     gtk_widget_grab_focus(GTK_WIDGET(searchBar));
-    std::string newText = (oldText.length() > 1)? oldText.substr(0, oldText.length()-1) : "";
+    std::string newText = (oldText.length() > 1) ? oldText.substr(0, oldText.length() - 1) : "";
     gtk_entry_set_text(searchBar, newText.c_str());
-    // for(int i = 0; i < oldText.length(); ++i){
 
-        GdkEvent new_event;
-        new_event.key.type = GDK_KEY_PRESS;
-        new_event.key.window = gtk_widget_get_parent_window(GTK_WIDGET(searchBar));
-        new_event.key.send_event = TRUE;
-        new_event.key.time = GDK_CURRENT_TIME;
-        new_event.key.keyval = gdk_unicode_to_keyval((int)oldText[oldText.length()-1]);
-        new_event.key.state = GDK_KEY_PRESS_MASK;
-        new_event.key.length = 0;
-        new_event.key.string = 0;
-        new_event.key.hardware_keycode = 0;
-        new_event.key.group = 0;
-        gdk_event_put(&new_event);
-    //}
+    //Creating a false event to insert the last character into the string
+    auto window = gtk_widget_get_parent_window(GTK_WIDGET(searchBar));
+    GdkEvent new_event = simulate_keypress(oldText.back(), window);
+    gdk_event_put(&new_event);
 }
 
-
-std::string get_search_type(ezgl::application* app){
+std::string get_search_type(ezgl::application* app) {
     GObject* combo_box = (GObject*)app->get_object("SearchType");
     gchar* type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box));
     //Checking that a type is selected

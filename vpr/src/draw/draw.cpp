@@ -302,7 +302,6 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     //Hiding unused functionality
     hide_widget("RoutingMenuButton", app);
     hide_crit_path_button(app);
-    button_for_displaying_noc();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -357,7 +356,6 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     default_setup(app);
     routing_button_setup(app);
     hide_crit_path_button(app);
-    button_for_displaying_noc();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -680,8 +678,8 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
     std::string key(key_name);
     std::cout << "Pressed key" << std::endl;
-    if(gtk_widget_is_focus(GTK_WIDGET(app->get_object("TextInput")))){
-        if(key == "Return"){
+    if (gtk_widget_is_focus(GTK_WIDGET(app->get_object("TextInput")))) {
+        if (key == "Return") {
             enable_autocomplete(app);
         }
     }
@@ -691,8 +689,8 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
     std::cout << "Pressed key" << std::endl;
     std::string key(key_name);
     GtkWidget* searchBar = GTK_WIDGET(app->get_object("TextInput"));
-    if(gtk_widget_is_focus(searchBar)){
-        if(key == "Return"){
+    if (gtk_widget_is_focus(searchBar)) {
+        if (key == "Return") {
             std::string oldText(gtk_entry_get_text(GTK_ENTRY(searchBar)));
             enable_autocomplete(app);
             gtk_editable_set_position(GTK_EDITABLE(searchBar), oldText.length());
