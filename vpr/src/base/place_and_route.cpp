@@ -66,9 +66,13 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
     bool using_minw_hint = false;
+    bool is_flat = router_opts.flat_routing;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&) g_vpr_ctx.atom().nlist :
+                                               (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
 
     t_clb_opins_used saved_clb_opins_used_locally;
 
@@ -95,7 +99,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
-    best_routing = alloc_saved_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist);
+    best_routing = alloc_saved_routing(router_net_list);
 
     VTR_ASSERT(net_delay.size());
 
@@ -180,33 +184,18 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                       arch->Chans, det_routing_arch, segment_inf,
                       arch->Directs, arch->num_directs);
         }
-        if(router_opts.flat_routing) {
-            success = try_route((const Netlist<>&)g_vpr_ctx.atom().nlist,
-                                current,
-                                router_opts,
-                                analysis_opts,
-                                det_routing_arch, segment_inf,
-                                net_delay,
-                                timing_info,
-                                delay_calc,
-                                arch->Chans,
-                                arch->Directs, arch->num_directs,
-                                (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
-                                true);
-        } else {
-            success = try_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
-                                current,
-                                router_opts,
-                                analysis_opts,
-                                det_routing_arch, segment_inf,
-                                net_delay,
-                                timing_info,
-                                delay_calc,
-                                arch->Chans,
-                                arch->Directs, arch->num_directs,
-                                (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
-                                false);
-        }
+        success = try_route(router_net_list,
+                            current,
+                            router_opts,
+                            analysis_opts,
+                            det_routing_arch, segment_inf,
+                            net_delay,
+                            timing_info,
+                            delay_calc,
+                            arch->Chans,
+                            arch->Directs, arch->num_directs,
+                            (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
+                            is_flat);
 
         attempt_count++;
         fflush(stdout);
@@ -226,7 +215,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
             }
 
             /* Save routing in case it is best. */
-            save_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+            save_routing(router_net_list,
                          best_routing,
                          route_ctx.clb_opins_used_locally,
                          saved_clb_opins_used_locally);
@@ -334,43 +323,29 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                           arch->Directs, arch->num_directs);
             }
 
-            if(router_opts.flat_routing) {
-                success = try_route((const Netlist<>&)g_vpr_ctx.atom().nlist,
-                                    current,
-                                    router_opts,
-                                    analysis_opts,
-                                    det_routing_arch, segment_inf,
-                                    net_delay,
-                                    timing_info,
-                                    delay_calc,
-                                    arch->Chans,
-                                    arch->Directs, arch->num_directs,
-                                    ScreenUpdatePriority::MINOR,
-                                    true);
-            } else {
-                success = try_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
-                                    current,
-                                    router_opts,
-                                    analysis_opts,
-                                    det_routing_arch, segment_inf,
-                                    net_delay,
-                                    timing_info,
-                                    delay_calc,
-                                    arch->Chans,
-                                    arch->Directs, arch->num_directs,
-                                    (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
-                                    false);
-            }
+            success = try_route(router_net_list,
+                                current,
+                                router_opts,
+                                analysis_opts,
+                                det_routing_arch, segment_inf,
+                                net_delay,
+                                timing_info,
+                                delay_calc,
+                                arch->Chans,
+                                arch->Directs, arch->num_directs,
+                                ScreenUpdatePriority::MINOR,
+                                is_flat);
 
             if (success && Fc_clipped == false) {
                 final = current;
-                save_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+                save_routing(router_net_list,
                              best_routing,
                              route_ctx.clb_opins_used_locally,
                              saved_clb_opins_used_locally);
 
                 if (placer_opts.place_freq == PLACE_ALWAYS) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
+                    // Cluster-based net_list is used for placement
                     print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
                                 filename_opts.PlaceFile.c_str());
                 }
@@ -402,18 +377,18 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                     router_opts,
                     arch->Directs, arch->num_directs,
                     &warnings,
-                    router_opts.flat_routing);
+                    is_flat);
 
     init_draw_coords(final);
 
     /* Allocate and load additional rr_graph information needed only by the router. */
     alloc_and_load_rr_node_route_structs();
 
-    init_route_structs((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+    init_route_structs(router_net_list,
                        router_opts.bb_factor,
-                       router_opts.flat_routing);
+                       is_flat);
 
-    restore_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+    restore_routing(router_net_list,
                     best_routing,
                     route_ctx.clb_opins_used_locally,
                     saved_clb_opins_used_locally);
@@ -423,12 +398,12 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
     }
     VTR_LOG("Best routing used a channel width factor of %d.\n", final);
 
-    print_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+    print_route(router_net_list,
                 filename_opts.PlaceFile.c_str(),
                 filename_opts.RouteFile.c_str(),
-                false);
+                is_flat);
 
-    free_saved_routing((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, best_routing);
+    free_saved_routing(router_net_list, best_routing);
     fflush(stdout);
 
     return (final);
@@ -594,6 +569,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
 void post_place_sync() {
     /* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    // Cluster-based netlist is used for placement
     for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
         place_sync_external_block_connections(block_id);
     }
