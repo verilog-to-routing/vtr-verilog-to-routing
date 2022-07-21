@@ -29,10 +29,6 @@ const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associat
     return associated_traffic_flows_ref;
 }
 
-bool NocTrafficFlows::get_traffic_flow_processed_status(NocTrafficFlowId traffic_flow_id) {
-    return processed_traffic_flows[traffic_flow_id];
-}
-
 int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void) {
     return noc_router_blocks.size();
 }
@@ -57,37 +53,15 @@ void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_n
     return;
 }
 
-// given a traffic flow and its status, update it
-void NocTrafficFlows::set_traffic_flow_status(NocTrafficFlowId traffic_flow_id, bool status) {
-    // status is initialized to false, change it to true to reflect that the specified flow has been processed
-    processed_traffic_flows[traffic_flow_id] = status;
-
-    return;
-}
-
 // utility functions for the noc traffic flows
 
 void NocTrafficFlows::finshed_noc_traffic_flows_setup(void) {
-    // get the total number of traffic flows and create a vector of the same size to hold the "processed status" of each traffic flow
-    int num_of_traffic_flows = noc_traffic_flows.size();
-    // initialize the status to not processed yet
-    processed_traffic_flows.resize(num_of_traffic_flows, NOT_PROCESSED);
-
-    return;
-}
-
-void NocTrafficFlows::reset_traffic_flows_processed_status(void) {
-    for (auto traffic_flow = processed_traffic_flows.begin(); traffic_flow != processed_traffic_flows.end(); traffic_flow++) {
-        *traffic_flow = NOT_PROCESSED;
-    }
-
     return;
 }
 
 void NocTrafficFlows::clear_traffic_flows(void) {
     // delete any information from internal datastructures
     noc_traffic_flows.clear();
-    processed_traffic_flows.clear();
     noc_router_blocks.clear();
 
     return;

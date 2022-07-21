@@ -39,14 +39,6 @@
 #include "echo_files.h"
 #include "vtr_util.h"
 
-/*
- * Whenever a traffic flow is processed (routed a connection between
- * 2 routers and updated the relevant information) we need to
- * some way to track it, so that we don't process it again. The flags below indicate whether a traffic flow was processed or not.
- */
-constexpr bool PROCESSED = true;
-constexpr bool NOT_PROCESSED = false;
-
 /**
  * @brief Describes a traffic flow within the NoC, which is the communication
  * between two routers. THe NocTrafficFlows contains a number of this structure
@@ -100,19 +92,6 @@ class NocTrafficFlows {
      * 
      */
     std::unordered_map<ClusterBlockId, std::vector<NocTrafficFlowId>> traffic_flows_associated_to_router_blocks;
-
-    /** keeps track of which traffic flows have already been processed.
-     * By processed, it tracks whether a traffic flow has been routed or
-     * not. During placement, two routers can be swapped, if the
-     * two routers share a traffic flow, then the shared traffic flow
-     * will be routed twice, where it will routed when processing the
-     * flows associated to the source router and then again when 
-     * processing the flows associated to the sink router. By using the
-     * datastructure below, if whether a traffic flow is processed or not
-     * is tracked, then we can ensure that no traffic flows are routed
-     * more than once by referring to this datastructure.
-     */
-    vtr::vector<NocTrafficFlowId, bool> processed_traffic_flows;
 
     /** contains the cluster ID of all unique router modules in the design.
      * and can quickly determine whether a given cluster in the netlist
@@ -182,21 +161,6 @@ class NocTrafficFlows {
     const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id);
 
     /**
-     * @brief Given a traffic flow, determine whether it has been processed
-     * or not. By processed, it checks to see whether the traffic flow has
-     * been routed. This function should be used before routing a traffic
-     * flow.
-     * 
-     * @param traffic_flow_id A unique identifier that represents a traffic
-     * flow
-     * @return true Represents the case where the traffic flow has been
-     * processed
-     * @return false Represents the case where the traffic flow has not
-     * been processed 
-     */
-    bool get_traffic_flow_processed_status(NocTrafficFlowId traffic_flow_id);
-
-    /**
      * @brief Gets the number of unique router blocks in the
      * clustered netlist that were used within the user provided
      * traffic flows description. 
@@ -235,18 +199,6 @@ class NocTrafficFlows {
      */
     void create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency);
 
-    /**
-     * @brief Set the status of a given traffic flow. The status indicates
-     * whether the traffic flow has been routed or not.
-     * 
-     * @param traffic_flow_id A unique identifier that represents a traffic
-     * flow.
-     * @param status THe updated status of the traffic flow. True indicating
-     * that the traffic flow has been router and False indicating that
-     * the traffic flow has not been routed.
-     */
-    void set_traffic_flow_status(NocTrafficFlowId traffic_flow_id, bool status);
-
     //utility functions
 
     /**
@@ -258,14 +210,6 @@ class NocTrafficFlows {
      * 
      */
     void finshed_noc_traffic_flows_setup(void);
-
-    /**
-     * @brief Goes through the status of all traffic flows
-     * and sets them to being not processed. This should be
-     * used before each iteraition of placement.
-     * 
-     */
-    void reset_traffic_flows_processed_status(void);
 
     /**
      * @brief Resets the class by clearning internal
