@@ -2,6 +2,7 @@
 #define ALLOC_AND_LOAD_RR_INDEXED_DATA_H
 
 #include "physical_types.h"
+
 void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_inf,
                                     const std::vector<t_segment_inf>& segment_inf_x,
                                     const std::vector<t_segment_inf>& segment_inf_y,
