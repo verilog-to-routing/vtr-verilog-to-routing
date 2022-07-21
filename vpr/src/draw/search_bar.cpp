@@ -505,7 +505,6 @@ GdkEvent simulate_keypress(char key, GdkWindow* window) {
  * @param app ezgl app
  */
 void enable_autocomplete(ezgl::application* app) {
-    std::cout << "enabling autocomplete" << std::endl;
     GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
     GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
 

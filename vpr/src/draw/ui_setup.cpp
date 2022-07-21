@@ -80,7 +80,7 @@ void net_button_setup(ezgl::application* app) {
  * @brief sets up block related buttons, connects their signals
  * 
  * Connects signals and sets init. values for blk internals spin button,
- * blk pin util combo box, and placement macros combo box created in
+ * blk pin util combo box,placement macros combo box, and noc combo bx created in
  * main.ui. Found in Block Settings dropdown
  * @param app 
  */
@@ -100,6 +100,15 @@ void block_button_setup(ezgl::application* app) {
     //Toggle Placement Macros
     GtkComboBoxText* placement_macros = GTK_COMBO_BOX_TEXT(app->get_object("TogglePlacementMacros"));
     g_signal_connect(placement_macros, "changed", G_CALLBACK(placement_macros_cbk), app);
+
+    //Toggle NoC Display (based on startup cmd --noc on)
+    if (!draw_state->show_noc_button) {
+        hide_widget("NocLabel", app);
+        hide_widget("ToggleNocBox", app);
+    } else {
+        GtkComboBoxText* toggleNocBox = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNocBox"));
+        g_signal_connect(toggleNocBox, "changed", G_CALLBACK(toggle_noc_cbk), app);
+    }
 }
 
 /**
@@ -143,7 +152,7 @@ void routing_button_setup(ezgl::application* app) {
  * 
  * @param app ezgl app
  */
-void search_setup(ezgl::application* app){
+void search_setup(ezgl::application* app) {
     load_block_names(app);
     load_net_names(app);
     //Setting custom matching function for entry completion (searches whole string instead of start)

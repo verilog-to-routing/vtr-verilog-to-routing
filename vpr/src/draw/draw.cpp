@@ -677,7 +677,6 @@ bool draw_if_net_highlighted(ClusterNetId inet) {
 void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
     //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
     std::string key(key_name);
-    std::cout << "Pressed key" << std::endl;
     if (gtk_widget_is_focus(GTK_WIDGET(app->get_object("TextInput")))) {
         if (key == "Return") {
             enable_autocomplete(app);
@@ -686,7 +685,6 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
 }
 #    else
 void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
-    std::cout << "Pressed key" << std::endl;
     std::string key(key_name);
     GtkWidget* searchBar = GTK_WIDGET(app->get_object("TextInput"));
     if (gtk_widget_is_focus(searchBar)) {
