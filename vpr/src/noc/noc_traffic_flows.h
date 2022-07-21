@@ -38,10 +38,11 @@
 #include "vtr_vector.h"
 #include "echo_files.h"
 #include "vtr_util.h"
+#include "vtr_assert.h"
 
 /**
  * @brief Describes a traffic flow within the NoC, which is the communication
- * between two routers. THe NocTrafficFlows contains a number of this structure
+ * between two routers. The NocTrafficFlows contains a number of this structure
  * to describe all the communication happening within the NoC.
  * 
  */
@@ -102,6 +103,17 @@ class NocTrafficFlows {
      * cluster that was swapped furing palcement is a router block or not.*/
     std::unordered_set<ClusterBlockId> noc_router_blocks;
 
+    /**
+     * Indicates whether the the NocTrafficFlows class has been fully
+     * constructed. The expectation is that all the traffic flows will
+     * be added in one spot and will not be added later on. So this variable
+     * can be used to check whether all the traffic flows have been added or
+     * or not. The variable should be used to ensure that this class is not
+     * modified once all the traffic flows have been added.
+     * 
+     */
+    bool built_traffic_flows;
+    
     // private functions
 
     /**
@@ -202,11 +214,10 @@ class NocTrafficFlows {
     //utility functions
 
     /**
-     * @brief Determines the total number of traffic flows in
-     * the design and creates a vector to keep track of the traffic
-     * flows processed status. This function should be called after
-     * all the traffic flows have been created. The traffic flows are
-     * all initialized to being not processed.
+     * @brief Indicates that the class has been fully constructed, meaning
+     * that all the traffic flows have been added and cannot be added anymore.
+     * This function should be called only after adding all the traffic flows
+     * provided by the user.
      * 
      */
     void finshed_noc_traffic_flows_setup(void);
