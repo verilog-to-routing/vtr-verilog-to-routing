@@ -58,6 +58,8 @@
 #include "draw_noc.h"
 
 #include "move_utils.h"
+#include "ui_setup.h"
+#include "buttons.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
@@ -104,6 +106,7 @@ static float get_router_expansion_cost(const t_rr_node_route_inf node_inf,
 static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_main_canvas(ezgl::renderer* g);
+static void default_setup(ezgl::application* app);
 static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
                                                   bool is_new_window);
 static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
@@ -118,8 +121,6 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
 static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
     ezgl::application* app,
     bool is_new_window);
-static void toggle_window_mode(GtkWidget* /*widget*/,
-                               ezgl::application* /*app*/);
 static void setup_default_ezgl_callbacks(ezgl::application* app);
 static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
@@ -269,6 +270,20 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 }
 
+/**
+ * @brief Default setup function, connects signals/sets up ui created in main.ui file
+ * 
+ * To minimize code repetition, this function sets up all buttons that ALWAYS get set up.
+ * If you want to add to the initial setup functions, and your new setup function will always be called, 
+ * please put it here instead of writing it 5 independent times. Thanks!
+ * @param app ezgl application
+ */
+static void default_setup(ezgl::application* app) {
+    basic_button_setup(app);
+    net_button_setup(app);
+    block_button_setup(app);
+}
+
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_PLACEMENT */
@@ -277,40 +292,15 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     if (!is_new_window)
         return;
 
-    //button to enter window_mode, created in main.ui
-    GtkButton* window = (GtkButton*)app->get_object("Window");
-    gtk_button_set_label(window, "Window");
-    g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
+    //Configuring visible buttons
+    default_setup(app);
 
-    //button to search, created in main.ui
-    GtkButton* search = (GtkButton*)app->get_object("Search");
-    gtk_button_set_label(search, "Search");
-    g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
-
-    //button for save graphcis, created in main.ui
-    GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
-    g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box),
-                     app);
-
-    //combo box for search type, created in main.ui
-    GObject* search_type = (GObject*)app->get_object("SearchType");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID"); // index 0
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "Block Name");                                // index 1
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");   // index 2
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name"); // index 3
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "RR Node ID"); // index 4
-    //Important to have default option set, or else user can search w. no selected type which can cause crash
-    gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
-    g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
+    //THIS WILL BE CHANGED SOON IGNORE
     load_block_names(app);
-    button_for_toggle_nets();
-    button_for_net_max_fanout();
-    button_for_net_alpha();
-    button_for_toggle_blk_internal();
-    button_for_toggle_block_pin_util();
-    button_for_toggle_placement_macros();
+
+    //Hiding unused functionality
+    hide_widget("RoutingMenuButton", app);
+    hide_crit_path_button(app);
     button_for_displaying_noc();
 }
 
@@ -320,8 +310,13 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
 static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
     ezgl::application* app,
     bool is_new_window) {
-    initial_setup_NO_PICTURE_to_PLACEMENT(app, is_new_window);
-    button_for_toggle_crit_path();
+    if (!is_new_window)
+        return;
+    default_setup(app);
+    crit_path_button_setup(app);
+
+    //Hiding unused routing menu
+    hide_widget("RoutingMenuButton", app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -329,13 +324,12 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
  * PLACEMENT_to_ROUTING */
 static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
                                                bool is_new_window) {
-    initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(app, is_new_window);
-    button_for_toggle_rr();
-    button_for_toggle_congestion();
-    button_for_toggle_congestion_cost();
-    button_for_toggle_routing_bounding_box();
-    button_for_toggle_routing_util();
-    button_for_toggle_router_expansion_costs();
+    if (!is_new_window)
+        return;
+    default_setup(app);
+    routing_button_setup(app);
+
+    hide_crit_path_button(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -343,20 +337,13 @@ static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
  * ROUTING_to_PLACEMENT */
 static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
                                                bool is_new_window) {
-    initial_setup_PLACEMENT_to_ROUTING(app, is_new_window);
-    std::string toggle_rr = "toggle_rr";
-    std::string toggle_congestion = "toggle_congestion";
-    std::string toggle_routing_congestion_cost = "toggle_routing_congestion_cost";
-    std::string toggle_routing_bounding_box = "toggle_routing_bounding_box";
-    std::string toggle_routing_util = "toggle_rr";
-    std::string toggle_router_expansion_costs = "toggle_router_expansion_costs";
+    if (!is_new_window)
+        return;
+    default_setup(app);
 
-    delete_button(toggle_rr.c_str());
-    delete_button(toggle_congestion.c_str());
-    delete_button(toggle_routing_congestion_cost.c_str());
-    delete_button(toggle_routing_bounding_box.c_str());
-    delete_button(toggle_routing_util.c_str());
-    delete_button(toggle_router_expansion_costs.c_str());
+    //Hiding unused functionality
+    hide_widget("RoutingMenuButton", app);
+    hide_crit_path_button(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -366,44 +353,9 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
                                                 bool is_new_window) {
     if (!is_new_window)
         return;
-
-    GtkButton* window = (GtkButton*)app->get_object("Window");
-    gtk_button_set_label(window, "Window");
-    g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
-
-    GtkButton* search = (GtkButton*)app->get_object("Search");
-    gtk_button_set_label(search, "Search");
-    g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
-
-    GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
-    g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box),
-                     app);
-
-    GObject* search_type = (GObject*)app->get_object("SearchType");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "Block Name");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "RR Node ID");
-    //Important to have default option set, or else user can search w. no selected type which can cause crash
-    gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
-    g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
-    load_block_names(app);
-
-    button_for_toggle_nets();
-    button_for_net_max_fanout();
-    button_for_net_alpha();
-    button_for_toggle_blk_internal();
-    button_for_toggle_block_pin_util();
-    button_for_toggle_placement_macros();
-    button_for_toggle_rr();
-    button_for_toggle_congestion();
-    button_for_toggle_congestion_cost();
-    button_for_toggle_routing_bounding_box();
-    button_for_toggle_routing_util();
-    button_for_toggle_router_expansion_costs();
+    default_setup(app);
+    routing_button_setup(app);
+    hide_crit_path_button(app);
     button_for_displaying_noc();
 }
 
@@ -413,8 +365,11 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
 static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
     ezgl::application* app,
     bool is_new_window) {
-    initial_setup_NO_PICTURE_to_ROUTING(app, is_new_window);
-    button_for_toggle_crit_path();
+    if (!is_new_window)
+        return;
+    default_setup(app);
+    routing_button_setup(app);
+    crit_path_button_setup(app);
 }
 #endif //NO_GRAPHICS
 
@@ -531,8 +486,8 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 }
 
 #ifndef NO_GRAPHICS
-static void toggle_window_mode(GtkWidget* /*widget*/,
-                               ezgl::application* /*app*/) {
+void toggle_window_mode(GtkWidget* /*widget*/,
+                        ezgl::application* /*app*/) {
     window_mode = true;
 }
 
@@ -1374,6 +1329,28 @@ ezgl::color lighten_color(ezgl::color color, float amount) {
     hsl.l = std::max(0., std::min(MAX_LUMINANCE, hsl.l + amount));
 
     return hsl2color(hsl);
+}
+/**
+ * @brief Returns the max fanout
+ * 
+ * @return size_t 
+ */
+size_t get_max_fanout() {
+    //find maximum fanout
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+    size_t max_fanout = 0;
+    for (ClusterNetId net_id : clb_nlist.nets())
+        max_fanout = std::max(max_fanout, clb_nlist.net_sinks(net_id).size());
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& atom_nlist = atom_ctx.nlist;
+    size_t max_fanout2 = 0;
+    for (AtomNetId net_id : atom_nlist.nets())
+        max_fanout2 = std::max(max_fanout2, atom_nlist.net_sinks(net_id).size());
+
+    size_t max = std::max(max_fanout2, max_fanout);
+    return max;
 }
 
 #endif /* NO_GRAPHICS */

@@ -14,6 +14,11 @@
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
+/**
+ * @file
+ * @brief This file includes useful structs and functions for building and modifying clustering
+ */
+
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 40  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
 
@@ -74,7 +79,7 @@ struct t_cluster_progress_stats {
     int num_unrelated_clustering_attempts = 0;
 };
 
-/* Useful data structures for packing */
+/* Useful data structures for creating or modifying clusters */
 struct t_clustering_data {
     vtr::vector<ClusterBlockId, std::vector<t_intra_lb_net>*> intra_lb_routing;
     int* hill_climbing_inputs_avail;
@@ -85,6 +90,7 @@ struct t_clustering_data {
      * list of blocks with i inputs to be hooked up via external interconnect. */
     t_molecule_link* unclustered_list_head = nullptr;
 
+    //Maintaining a linked list of free molecule data for speed
     t_molecule_link* memory_pool = nullptr;
 
     /* Does the atom block that drives the output of this atom net also appear as a   *
