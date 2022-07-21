@@ -32,11 +32,10 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
     // total traffic flows will be NUM_OF_ROUTERS * (NUM_OF_ROUTERS - 1)
     // create the traffic flows
     std::vector<t_noc_traffic_flow> golden_traffic_flow_list;
-    vtr::vector<ClusterBlockId, std::vector<NocTrafficFlowId>> golden_list_of_associated_links_source_router;
-    golden_list_of_associated_links_source_router.resize(NUM_OF_ROUTERS);
 
-    vtr::vector<ClusterBlockId, std::vector<NocTrafficFlowId>> golden_list_of_associated_links_sink_router;
-    golden_list_of_associated_links_sink_router.resize(NUM_OF_ROUTERS);
+    vtr::vector<ClusterBlockId, std::vector<NocTrafficFlowId>> golden_list_of_associated_traffic_flows_to_routers;
+
+    golden_list_of_associated_traffic_flows_to_routers.resize(NUM_OF_ROUTERS);
 
     for (int router = 0; router < NUM_OF_ROUTERS; router++) {
         for (int second_router = 0; second_router < NUM_OF_ROUTERS; second_router++) {
@@ -53,9 +52,10 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
 
             curr_flow_id = (NocTrafficFlowId)(golden_traffic_flow_list.size() - 1);
 
-            // add the traffic flows to the source and sink routers
-            golden_list_of_associated_links_source_router[source_router_id].emplace_back(curr_flow_id);
-            golden_list_of_associated_links_sink_router[sink_router_id].emplace_back(curr_flow_id);
+            // add the current traffic flow as an associated flow to its source and sink routers
+            golden_list_of_associated_traffic_flows_to_routers[source_router_id].emplace_back(curr_flow_id);
+            golden_list_of_associated_traffic_flows_to_routers[sink_router_id].emplace_back(curr_flow_id);
+
         }
     }
 
@@ -97,33 +97,33 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
             REQUIRE(curr_traffic_flow.sink_router_cluster_id == golden_traffic_flow_list[traffic_flow].sink_router_cluster_id);
         }
 
-        int size_of_associated_flows_for_source_routers = golden_list_of_associated_links_source_router.size();
-        // make sure that the correct traffic flows are added to each router when it is a source
-        for (int source_router = 0; source_router < size_of_associated_flows_for_source_routers; source_router++) {
-            source_router_id = (ClusterBlockId)source_router;
+        // now check that the associated traffic flows for each router is also stored correctly
+        for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++){
 
-            int size_of_current_source_router_associated_traffic_flows = golden_list_of_associated_links_source_router[source_router_id].size();
+            ClusterBlockId router_id = (ClusterBlockId)router_number;
 
-            const std::vector<NocTrafficFlowId>* associated_traffic_flows_to_source_router = traffic_flow_storage.get_traffic_flows_associated_to_source_router(source_router_id);
+            int number_of_traffic_flows_associated_with_current_router = golden_list_of_associated_traffic_flows_to_routers[router_id].size();
 
-            for (int source_router_traffic_flow = 0; source_router_traffic_flow < size_of_current_source_router_associated_traffic_flows; source_router_traffic_flow++) {
-                REQUIRE((size_t)golden_list_of_associated_links_source_router[source_router_id][source_router_traffic_flow] == (size_t)(*associated_traffic_flows_to_source_router)[source_router_traffic_flow]);
+            // get the traffic flows associated to the current router from the test datastructure
+            const std::vector<NocTrafficFlowId>* associated_traffic_flows_to_router = traffic_flow_storage.get_traffic_flows_associated_to_router_block(router_id);
+
+            // make sure that the number of traffic flows associated to each router within the Noctrafficflows datastrcuture matches the golden set
+            REQUIRE((int)associated_traffic_flows_to_router->size() == number_of_traffic_flows_associated_with_current_router);
+
+            // now go through the associated traffic flows and make sure the correct ones were added to the current router
+            for (int router_traffic_flow = 0; router_traffic_flow < number_of_traffic_flows_associated_with_current_router; router_traffic_flow++) {
+                REQUIRE((size_t)golden_list_of_associated_traffic_flows_to_routers[router_id][router_traffic_flow] == (size_t)(*associated_traffic_flows_to_router)[router_traffic_flow]);
             }
+        
         }
 
-        int size_of_associated_flows_for_sink_routers = golden_list_of_associated_links_sink_router.size();
-        // make sure that the correct traffic flows are added to each router when it is a sink
-        for (int sink_router = 0; sink_router < size_of_associated_flows_for_sink_routers; sink_router++) {
-            sink_router_id = (ClusterBlockId)sink_router;
-
-            int size_of_current_sink_router_associated_traffic_flows = golden_list_of_associated_links_sink_router[sink_router_id].size();
-
-            const std::vector<NocTrafficFlowId>* associated_traffic_flows_to_sink_router = traffic_flow_storage.get_traffic_flows_associated_to_sink_router(sink_router_id);
-
-            for (int sink_router_traffic_flow = 0; sink_router_traffic_flow < size_of_current_sink_router_associated_traffic_flows; sink_router_traffic_flow++) {
-                REQUIRE((size_t)golden_list_of_associated_links_sink_router[sink_router_id][sink_router_traffic_flow] == (size_t)(*associated_traffic_flows_to_sink_router)[sink_router_traffic_flow]);
-            }
-        }
+        /*  Performing a quick check that when trying to get the associated
+            traffic flows for invalid router clusters or router clusters
+            without any associated traffic flows a null value is returned.
+            Which implies that no traffic flows are associated to the router
+            cluster.
+        */
+        REQUIRE(traffic_flow_storage.get_traffic_flows_associated_to_router_block((ClusterBlockId)(NUM_OF_ROUTERS + 1)) == nullptr);     
     }
     SECTION("Checking to see if invalid blocks that are not routers exist in NocTrafficFlows.") {
         // create a invalid block id
@@ -132,19 +132,12 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
         // check that this block doesnt exist in the traffic flow datastructure
         REQUIRE(traffic_flow_storage.check_if_cluster_block_is_a_noc_router(invalid_block) == false);
     }
-    SECTION("Checking that when there are no traffics flows where a given router is a source there exists no traffic flows associated with said source router.") {
+    SECTION("Checking that when a router has no traffic flows associated to it, then the associated traffic flows vector retrieved from the NocTrafficFlows class for this router should be null.") {
         // create a invalid block id (mimics the effect where a router has no traffic flows associated with it)
         ClusterBlockId invalid_block = (ClusterBlockId)(NUM_OF_ROUTERS + 1);
 
         // check that this router has no traffic flows associated with it
-        REQUIRE(traffic_flow_storage.get_traffic_flows_associated_to_source_router(invalid_block) == nullptr);
-    }
-    SECTION("Checking that when there are no traffics flows where a given router is a sink there exists no traffic flows associated with said sink router.") {
-        // create a invalid block id (mimics the effect where a router has no traffic flows associated with it)
-        ClusterBlockId invalid_block = (ClusterBlockId)(NUM_OF_ROUTERS + 1);
-
-        // check that this router has no traffic flows associated with it
-        REQUIRE(traffic_flow_storage.get_traffic_flows_associated_to_sink_router(invalid_block) == nullptr);
+        REQUIRE(traffic_flow_storage.get_traffic_flows_associated_to_router_block(invalid_block) == nullptr);
     }
 }
 } // namespace

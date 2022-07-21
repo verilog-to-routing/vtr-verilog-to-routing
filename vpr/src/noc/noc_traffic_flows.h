@@ -83,17 +83,23 @@ class NocTrafficFlows {
     /** contains all the traffic flows provided by the user and their information*/
     vtr::vector<NocTrafficFlowId, t_noc_traffic_flow> noc_traffic_flows;
 
+
     /**
-     * A traffic flow has a source and destination router associated to it. So when either the source or destination router for a given flow is moved, we need to find a new route between them. 
-     *
-     * Therefore, during placement if two router blocks are swapped, then the only traffic flows we need to re-route are the flows where the two routers are either the source or destination routers of those flows. 
-     *
-     * The datastructures below store all traffic flows for each router where the router is a source for the traffic flow. Similarily, there is a another datastructure where all traffic flows are stored for each router where the router is a sink for the traffic flow. The routers are indexed by their ClusterBlockId.
-     *
-     * This is done so that the traffic that need to be re-routed during placement can be quickly found. 
+     * @brief Each traffic flow is composed of a source and destination 
+     * router. If the source/destination routers are moved, then the traffic
+     * flow needs tp be re-routed. 
+     * 
+     * This datastructure stores a vector of traffic flows that are associated
+     * to each router cbluster block. A traffic flow is associated to a router
+     * cluster block if the router block is either the source or destination
+     * router within the traffic flow.
+     * 
+     * This is done so that during placement when a router cluster block is 
+     * moved then the traffic flows that need to be re-routed due to the moved
+     * block can quickly be found. 
+     * 
      */
-    std::unordered_map<ClusterBlockId, std::vector<NocTrafficFlowId>> source_router_associated_traffic_flows;
-    std::unordered_map<ClusterBlockId, std::vector<NocTrafficFlowId>> sink_router_associated_traffic_flows;
+    std::unordered_map<ClusterBlockId, std::vector<NocTrafficFlowId>> traffic_flows_associated_to_router_blocks;
 
     /** keeps track of which traffic flows have already been processed.
      * By processed, it tracks whether a traffic flow has been routed or
@@ -132,7 +138,7 @@ class NocTrafficFlows {
      * flows have the router as a source or sink within the flow.
      *                                        
      */
-    void add_traffic_flow_to_associated_routers(NocTrafficFlowId traffic_flow_id, ClusterBlockId associated_router_id, std::unordered_map<ClusterBlockId, std::vector<NocTrafficFlowId>>& router_associated_traffic_flows);
+    void add_traffic_flow_to_associated_routers(NocTrafficFlowId traffic_flow_id, ClusterBlockId associated_router_id);
 
     /**
      * @brief Given a router block in the clustered netlist, store it
@@ -162,31 +168,18 @@ class NocTrafficFlows {
 
     /**
      * @brief Get a vector of all traffic flows that have a given router
-     * block in the clustered netlist as the source (starting point) in the 
-     * flow.
+     * block in the clustered netlist as the source (starting point) or sink
+     * (destination point) in the flow. If the router block does not have
+     * any traffic flows associated to it then NULL is returned. 
      * 
-     * @param source_router_id A unique identifier that represents the
+     * @param router_block_id A unique identifier that represents the
      * a router block in the clustered netlist. This router block will
-     * be the source router in the retrieved traffic flow.
+     * be the source or sink router in the retrieved traffic flows.
      * @return const std::vector<NocTrafficFlowId>* A vector of traffic 
-     * flows that have the input router block parameter as the source in the
-     * flow.
+     * flows that have the input router block parameter as the source or sink
+     * in the flow.
      */
-    const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_source_router(ClusterBlockId source_router_id) const;
-
-    /**
-     * @brief Get a vector of all traffic flows that have a given router
-     * block in the clustered netlist as the sink (end point) in the 
-     * flow.
-     * 
-     * @param sink_router_id A unique identifier that represents the
-     * a router block in the clustered netlist. This router block will
-     * be the sink router in the retrieved traffic flow.
-     * @return const std::vector<NocTrafficFlowId>* A vector of traffic 
-     * flows that have the input router block parameter as the sink in the
-     * flow.
-     */
-    const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_sink_router(ClusterBlockId sink_router_id) const;
+    const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id);
 
     /**
      * @brief Given a traffic flow, determine whether it has been processed
