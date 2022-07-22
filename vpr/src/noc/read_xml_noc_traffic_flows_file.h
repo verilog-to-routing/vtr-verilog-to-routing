@@ -59,8 +59,10 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file);
  *        is verified and if it is legal then this traffic flow is added
  *        to the NocTrafficFlows class.
  * 
- * @param single_flow_tag A xml tag that contains the traffic flow information
- * @param loc_data Contains location data about the current line in the xml file
+ * @param single_flow_tag A xml tag that contains the traffic flow information. 
+ *                        Passed in for error logging.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file. Passed in for error logging.
  * @param cluster_ctx Global variable that contains clustering information. Used
  *                    to get information about the router blocks int he design.
  * @param noc_ctx  Global variable that contains NoC information. Used to access
@@ -76,14 +78,17 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
 /**
  * @brief Checks to see that the two router module names provided in the 
  *        traffic flow description are not empty and they dont have the
- *        same names. THe two routers cant be the exact same since a router
- *        cannot communicate with itself.
+ *        same names. The two routers cant be the exact same since a router
+ *        cannot communicate with itself. These names can be partial and not the
+ *        exact name of the router blocks.
  * 
  * @param source_router_name A string value of the source router module name
  * @param sink_router_name A string value of the sink router
  *                                module name
- * @param single_flow_tag A xml tag that contains the traffic flow information
- * @param loc_data Contains location data about the current line in the xml file
+ * @param single_flow_tag A xml tag that contains the traffic flow information. 
+ *                        Passed in for error logging.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file. Passed in for error logging.
  */
 void verify_traffic_flow_router_modules(std::string source_router_name, std::string sink_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
 
@@ -96,8 +101,10 @@ void verify_traffic_flow_router_modules(std::string source_router_name, std::str
  * @param max_traffic_flow_latency The allowable latency for the data
  *                                 transmission between the two routers in the
  *                                 traffic flow.
- * @param single_flow_tag A xml tag that contains the traffic flow information
- * @param loc_data Contains location data about the current line in the xml file
+ * @param single_flow_tag A xml tag that contains the traffic flow information. 
+ *                        Passed in for error logging.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file. Passed in for error logging.
  */
 void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
 
@@ -111,8 +118,10 @@ void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_tr
  * @param cluster_ctx Global variable that contains clustering information.
  *                    Contains a datastructure to convert a module name to
  *                    a cluster block id.
- * @param single_flow_tag A xml tag that contains the traffic flow information
- * @param loc_data Contains location data about the current line in the xml file
+ * @param single_flow_tag A xml tag that contains the traffic flow information. 
+ *                        Passed in for error logging.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file. Passed in for error logging.
  * @param cluster_blocks_compatible_with_noc_router_tiles A vector of cluster 
  *                                            blocks in the netlist that are
  *                                            compatible with a noc router tile.
@@ -131,8 +140,10 @@ ClusterBlockId get_router_module_cluster_id(std::string router_module_name, cons
  *                           check whether it is of type router.
  * @param router_module_id The ClusterBlockId of the router block we are trying
  *                         to check if its of type router. 
- * @param single_flow_tag A xml tag that contains the traffic flow information
- * @param loc_data Contains location data about the current line in the xml file
+ * @param single_flow_tag A xml tag that contains the traffic flow information. 
+ *                        Passed in for error logging.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file. Passed in for error logging.
  * @param cluster_ctx Global variable that contains clustering information.
  *                    Contains a datastructure to get the logical type of a 
  *                    router cluster block.
