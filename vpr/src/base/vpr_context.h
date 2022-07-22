@@ -430,9 +430,9 @@ struct NocContext : public Context {
     NocStorage noc_model;
 
     /**
-     * @brief Stores all the communication happening betwee routers in the NoC 
+     * @brief Stores all the communication happening between routers in the NoC 
      *
-     * Contains all of the traffic flows that describe which two routers are communication with each other and also some metrics and constraints on the data transfer between the two routers. 
+     * Contains all of the traffic flows that ddescribe which pairs of logical routers are communicating and also some metrics and constraints on the data transfer between the two routers. 
      * 
      *
      * This is created from a user supplied .flows file.
