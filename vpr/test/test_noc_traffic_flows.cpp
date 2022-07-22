@@ -82,7 +82,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
         // check the set of routers first to see that they were all added properly
         for (int router = 0; router < size_of_router_block_list; router++) {
             // every router in the golden list needs to exist in the traffic flow datastructure (this also tests cases where a router was added multiple times, this shouldnt affect it)
-            REQUIRE(traffic_flow_storage.check_if_cluster_block_is_a_noc_router(golden_router_blocks_list[router]) == true);
+            REQUIRE(traffic_flow_storage.check_if_cluster_block_has_traffic_flows(golden_router_blocks_list[router]) == true);
         }
 
         int size_of_traffic_flow_list = golden_traffic_flow_list.size();
@@ -115,22 +115,17 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
                 REQUIRE((size_t)golden_list_of_associated_traffic_flows_to_routers[router_id][router_traffic_flow] == (size_t)(*associated_traffic_flows_to_router)[router_traffic_flow]);
             }
         
-        }
+        }  
 
-        /*  Performing a quick check that when trying to get the associated
-            traffic flows for invalid router clusters or router clusters
-            without any associated traffic flows a null value is returned.
-            Which implies that no traffic flows are associated to the router
-            cluster.
-        */
-        REQUIRE(traffic_flow_storage.get_traffic_flows_associated_to_router_block((ClusterBlockId)(NUM_OF_ROUTERS + 1)) == nullptr);     
+        // make sure that the number of unique routers stored inside the NocTrafficFlows class is what we expect it should be
+        REQUIRE(NUM_OF_ROUTERS == traffic_flow_storage.get_number_of_routers_used_in_traffic_flows());   
     }
     SECTION("Checking to see if invalid blocks that are not routers exist in NocTrafficFlows.") {
         // create a invalid block id
         ClusterBlockId invalid_block = (ClusterBlockId)(NUM_OF_ROUTERS + 1);
 
         // check that this block doesnt exist in the traffic flow datastructure
-        REQUIRE(traffic_flow_storage.check_if_cluster_block_is_a_noc_router(invalid_block) == false);
+        REQUIRE(traffic_flow_storage.check_if_cluster_block_has_traffic_flows(invalid_block) == false);
     }
     SECTION("Checking that when a router has no traffic flows associated to it, then the associated traffic flows vector retrieved from the NocTrafficFlows class for this router should be null.") {
         // create a invalid block id (mimics the effect where a router has no traffic flows associated with it)

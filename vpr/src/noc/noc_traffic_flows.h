@@ -94,15 +94,6 @@ class NocTrafficFlows {
      */
     std::unordered_map<ClusterBlockId, std::vector<NocTrafficFlowId>> traffic_flows_associated_to_router_blocks;
 
-    /** contains the cluster ID of all unique router modules in the design.
-     * and can quickly determine whether a given cluster in the netlist
-     * is a router block or not. whenever placement swaps two clusters, we
-     * need to check if the clusters a router blocks or not, this is needed
-     * so that we can deterimine if we need to re-route traffic flows. The
-     * datastructure below can be used to quickly identify whether a given
-     * cluster that was swapped furing palcement is a router block or not.*/
-    std::unordered_set<ClusterBlockId> noc_router_blocks;
-
     /**
      * Indicates whether the the NocTrafficFlows class has been fully
      * constructed. The expectation is that all the traffic flows will
@@ -130,14 +121,6 @@ class NocTrafficFlows {
      *                                        
      */
     void add_traffic_flow_to_associated_routers(NocTrafficFlowId traffic_flow_id, ClusterBlockId associated_router_id);
-
-    /**
-     * @brief Given a router block in the clustered netlist, store it
-     * internally.
-     * 
-     * @param router_block_id A unique identifier that rerpesents a router block in the clustered netlist. This id will be stored.
-     */
-    void add_router_to_block_set(ClusterBlockId router_block_id);
 
   public:
     NocTrafficFlows();
@@ -231,16 +214,23 @@ class NocTrafficFlows {
 
     /**
      * @brief Given a block from the clustered netlist, determine
-     * if the block is a router. This function should be used during
-     * each iteration of placement to check whether two swapped clusters
-     * are routers or not.
+     * if the block has traffic flows that it is a part of. There are
+     * three posssible cases seen by this function. Case 1 is when the
+     * block is not a router. Case 2 is when the block is a router and
+     * has not traffic flows it is a part of. And finally case three is
+     * when the block is a router and has traffic flows it is a part of.
+     * This function should be used during placement when clusters are
+     * moved or placed. This function can indicate if the moved cluster
+     * needs traffic flows to be re-routed. If a cluster is a part of a 
+     * traffic flow, then this means that the cluster is either the
+     * source or sink router of the traffic flow.
      * 
      * @param block_id A unique identifier that represents a cluster
      * block in the clustered netlist
-     * @return true The block is a router
-     * @return false THe block is not a router
+     * @return true The block has traffic flows that it is a part of
+     * @return false The block has no traffic flows it is a prt of
      */
-    bool check_if_cluster_block_is_a_noc_router(ClusterBlockId block_id);
+    bool check_if_cluster_block_has_traffic_flows(ClusterBlockId block_id);
 
     /**
      * @brief Writes out the NocTrafficFlows class information to a file.

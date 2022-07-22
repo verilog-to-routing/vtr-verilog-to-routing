@@ -2,9 +2,8 @@
 #include "noc_traffic_flows.h"
 #include "vpr_error.h"
 
-// constructor clears all the traffic flow datastructures and indicates that the class has not been constructed yet
+// constructor indicates that the class has not been constructed yet
 NocTrafficFlows::NocTrafficFlows(void) {
-    clear_traffic_flows();
     built_traffic_flows = false;
 }
 
@@ -31,7 +30,7 @@ const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associat
 }
 
 int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void) {
-    return noc_router_blocks.size();
+    return traffic_flows_associated_to_router_blocks.size();
 }
 
 // setters for the traffic flows
@@ -45,10 +44,6 @@ void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_n
 
     //since the new traffic flow was added to the back of the vector, its id will be the index of the last element
     NocTrafficFlowId curr_traffic_flow_id = (NocTrafficFlowId)(noc_traffic_flows.size() - 1);
-
-    // add the source and sink routers to the set of unique router blocks in the design
-    add_router_to_block_set(source_router_cluster_id);
-    add_router_to_block_set(sink_router_cluster_id);
 
     // now add the new traffic flow to flows associated with the current source and sink router
     add_traffic_flow_to_associated_routers(curr_traffic_flow_id, source_router_cluster_id);
@@ -69,18 +64,22 @@ void NocTrafficFlows::finshed_noc_traffic_flows_setup(void) {
 void NocTrafficFlows::clear_traffic_flows(void) {
     // delete any information from internal datastructures
     noc_traffic_flows.clear();
-    noc_router_blocks.clear();
+    traffic_flows_associated_to_router_blocks.clear();
+
+    // indicate that traffic flows need to be added again after clear
+    built_traffic_flows = false;
 
     return;
 }
 
-bool NocTrafficFlows::check_if_cluster_block_is_a_noc_router(ClusterBlockId block_id) {
-    auto router_block = noc_router_blocks.find(block_id);
+bool NocTrafficFlows::check_if_cluster_block_has_traffic_flows(ClusterBlockId block_id) {
+    auto traffic_flows = get_traffic_flows_associated_to_router_block(block_id);
 
     bool result = false;
 
-    // Check if the given cluster block was found inside the set of all router blocks in the design, then this was a router block so return true. Otherwise return false.
-    if (router_block != noc_router_blocks.end()) {
+    // Check to see if any traffic flows were found that are associated to the current cluster block
+    if (traffic_flows != nullptr) {
+        // current cluster is a router block that has traffic flows it is a part of. So indicate this to the user.
         result = true;
     }
 
@@ -101,12 +100,6 @@ void NocTrafficFlows::add_traffic_flow_to_associated_routers(NocTrafficFlowId tr
         // there already is a vector associated of traffic flows for the current router, so add it
         router_traffic_flows->second.emplace_back(traffic_flow_id);
     }
-
-    return;
-}
-
-void NocTrafficFlows::add_router_to_block_set(ClusterBlockId router_block_id) {
-    noc_router_blocks.insert(router_block_id);
 
     return;
 }
@@ -146,9 +139,9 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
         traffic_flow_id++;
     }
 
-    // now print the associated traffic flow information for router cluster blocks
+    // now print the router cluster ids and their associated traffic flow information for router cluster blocks
     // The associated traffic flows represent flows where the router block is either a source or destination router
-    fprintf(fp, "List of traffic flows where the router block cluster is a source router:\n");
+    fprintf(fp, "List of all unique router cluster blocks and their corresponding traffic flows where the router block is either a source or destination of the traffic flow:\n");
     fprintf(fp, "--------------------------------------------------------------\n");
     fprintf(fp, "\n");
 
@@ -168,16 +161,6 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
 
         // seperate to the next cluster associated traffic flows information
         fprintf(fp, "\n\n");
-    }
-
-    // now print all the unique router block cluster ids in the netlist
-    fprintf(fp, "List of all router block cluster IDs in the netlist:\n");
-    fprintf(fp, "--------------------------------------------------------------\n");
-    fprintf(fp, "\n");
-
-    // print all the unique router block cluster ids
-    for (auto single_router_block = noc_router_blocks.begin(); single_router_block != noc_router_blocks.end(); single_router_block++) {
-        fprintf(fp, "Router cluster block ID: %lu\n", (size_t)*single_router_block);
     }
 
     vtr::fclose(fp);
