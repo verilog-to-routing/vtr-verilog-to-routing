@@ -33,7 +33,7 @@
         name="capnproto"
         internal_path="libs/EXTERNAL/capnproto"
         external_url="https://github.com/capnproto/capnproto.git"
-        default_external_ref="v0.7.0"/>
+        default_external_ref="v0.9.1"/>
     <subtree
         name="libyosys"
         internal_path="libs/EXTERNAL/libyosys"

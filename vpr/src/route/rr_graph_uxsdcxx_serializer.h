@@ -1564,8 +1564,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             temp_rr_segs.push_back(rr_seg);
         }
 
+        t_unified_to_parallel_seg_index seg_index_map;
+        auto segment_inf_x_ = get_parallel_segs(temp_rr_segs, seg_index_map, X_AXIS);
+        auto segment_inf_y_ = get_parallel_segs(temp_rr_segs, seg_index_map, Y_AXIS);
+
         alloc_and_load_rr_indexed_data(
             temp_rr_segs,
+            segment_inf_x_,
+            segment_inf_y_,
             *wire_to_rr_ipin_switch_,
             base_cost_type_);
 
@@ -1886,6 +1892,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     const size_t num_arch_switches_;
     const t_arch_switch_inf* arch_switch_inf_;
+    /*AA: The serializer does not support non-uniform Y & X directed channels yet. Will need to modify
+     * the methods following routines:rr_graph_rr_nodes and init_node_segment according to the changes in 
+     * rr_graph_indexed_data.cpp */
     const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf_;
     const std::vector<t_physical_tile_type>& physical_tile_types_;
     const DeviceGrid& grid_;

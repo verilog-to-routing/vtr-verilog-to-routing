@@ -1670,12 +1670,12 @@
         "generated_blif": "multi_assignment_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 2 mismatch:",
-            "[OUTPUT_BLIF] Vector 3 mismatch:",
-            "[OUTPUT_BLIF] Vector 4 mismatch:"
+            "[SIMULATION] Vector 2 mismatch:",
+            "[SIMULATION] Vector 3 mismatch:",
+            "[SIMULATION] Vector 4 mismatch:"
         ]
     },
     "syntax/multi_assignment/no_arch": {
@@ -1683,12 +1683,12 @@
         "generated_blif": "multi_assignment_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 2 mismatch:",
-            "[OUTPUT_BLIF] Vector 3 mismatch:",
-            "[OUTPUT_BLIF] Vector 4 mismatch:"
+            "[SIMULATION] Vector 2 mismatch:",
+            "[SIMULATION] Vector 3 mismatch:",
+            "[SIMULATION] Vector 4 mismatch:"
         ]
     },
     "syntax/multi_clock_reader_writer/k6_frac_N10_frac_chain_mem32K_40nm": {

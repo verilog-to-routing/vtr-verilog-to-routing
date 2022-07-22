@@ -38,6 +38,7 @@
 #include "place.h"
 #include "SetupGrid.h"
 #include "setup_clocks.h"
+#include "setup_noc.h"
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -288,6 +289,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->AnnealSched,
              &vpr_setup->RouterOpts,
              &vpr_setup->AnalysisOpts,
+             &vpr_setup->NocOpts,
              &vpr_setup->RoutingArch,
              &vpr_setup->PackerRRGraph,
              vpr_setup->Segments,
@@ -349,8 +351,10 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     fflush(stdout);
 
-    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
     helper_ctx.lb_type_rr_graphs = vpr_setup->PackerRRGraph;
+    device_ctx.pad_loc_type = vpr_setup->PlacerOpts.pad_loc_type;
 }
 
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
@@ -388,7 +392,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     //clean packing-placement data
     if (vpr_setup.PackerOpts.doPacking == STAGE_DO) {
-        auto& helper_ctx = g_vpr_ctx.mutable_helper();
+        auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
         free_cluster_placement_stats(helper_ctx.cluster_placement_stats);
     }
 
@@ -403,6 +407,8 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
     vpr_create_device_grid(vpr_setup, arch);
 
     vpr_setup_clock_networks(vpr_setup, arch);
+
+    vpr_setup_noc(vpr_setup, arch);
 
     if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
         vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width);
@@ -495,6 +501,33 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     if (vpr_setup.clock_modeling == DEDICATED_NETWORK) {
         setup_clock_networks(Arch, vpr_setup.Segments);
+    }
+}
+
+/**
+ * @brief If the user provided the "--noc on" option then the noc is
+ *        setup by creating an internal model and storing the NoC
+ *        constraints. Additionally, the graphics state is updated
+ *        to include a NoC button to display it.
+ * 
+ * @param vpr_setup A datastructure that stores all the user provided option
+ *                  to vpr.
+ * @param arch Contains the parsed information from the architecture
+ *             description file.
+ */
+void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
+    // check if the user provided the option to model the noc
+    if (vpr_setup.NocOpts.noc == true) {
+        // create the NoC model based on the user description from the arch file
+        setup_noc(arch);
+
+#ifndef NO_GRAPHICS
+        // setup the graphics
+        // if the user turned on "noc" in the command line, then we also want them to have the option to display the noc, so set that option here to be able to display it.
+        // if the "noc" was not turned on, then we don't need to provide the user with the option to display it
+        t_draw_state* draw_state = get_draw_state_vars();
+        draw_state->show_noc_button = true;
+#endif
     }
 }
 
@@ -1141,6 +1174,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_annealing_sched* AnnealSched,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
+                   t_noc_opts* NocOpts,
                    t_det_routing_arch* RoutingArch,
                    std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
@@ -1164,6 +1198,7 @@ void vpr_setup_vpr(t_options* Options,
              AnnealSched,
              RouterOpts,
              AnalysisOpts,
+             NocOpts,
              RoutingArch,
              PackerRRGraph,
              Segments,

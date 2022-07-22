@@ -17,7 +17,6 @@
 #include "rr_types.h"
 
 constexpr short UN_SET = -1;
-
 /************************** Subroutines local to this module ****************/
 
 static void get_switch_type(bool is_from_sb,
@@ -204,12 +203,75 @@ std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
     /* This must be freed by caller */
     return result;
 }
+/*Gets t_segment_inf for parallel segments as defined by the user. 
+ *Segments that have BOTH_AXIS attribute value are always included in the returned vector.*/
+std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& segment_inf,
+                                             t_unified_to_parallel_seg_index& seg_index_map,
+                                             enum e_parallel_axis parallel_axis) {
+    std::vector<t_segment_inf> result;
+    for (size_t i = 0; i < segment_inf.size(); ++i) {
+        if (segment_inf[i].parallel_axis == parallel_axis || segment_inf[i].parallel_axis == BOTH_AXIS) {
+            result.push_back(segment_inf[i]);
+            result[result.size() - 1].seg_index = i;
+            seg_index_map.insert(std::make_pair(i, std::make_pair(result.size() - 1, parallel_axis)));
+        }
+    }
+    return result;
+}
+
+int get_parallel_seg_index(const int abs_index,
+                           const t_unified_to_parallel_seg_index& index_map,
+                           const e_parallel_axis parallel_axis) {
+    int index = -1;
+    auto itr_pair = index_map.equal_range(abs_index);
+
+    for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
+        if (itr->second.second == parallel_axis) {
+            index = itr->second.first;
+        }
+    }
+
+    return index;
+}
+
+/*  Returns an array of tracks per segment, with matching indices to segment_inf by combining               *
+ * sets per segment for each direction. This is a helper function to avoid having to refactor              *
+ * alot of the functions inside rr_graph.cpp & rr_graph2.cpp to model different horizontal and vertical    *
+ * channel widths.                                                                                          */
+std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
+                                                    const std::vector<t_segment_inf>& segment_inf_y,
+                                                    const std::vector<t_segment_inf>& segment_inf,
+                                                    const std::unique_ptr<int[]>& segment_sets_x,
+                                                    const std::unique_ptr<int[]>& segment_sets_y) {
+    std::unordered_map<t_segment_inf, int, t_hash_segment_inf> all_segs_index;
+    std::unique_ptr<int[]> ordered_seg_track_counts;
+    ordered_seg_track_counts = std::make_unique<int[]>(segment_inf.size());
+
+    for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+        all_segs_index.insert(std::make_pair(segment_inf[iseg], iseg));
+    }
+    for (size_t iseg_x = 0; iseg_x < segment_inf_x.size(); ++iseg_x) {
+        VTR_ASSERT_MSG(all_segs_index.find(segment_inf_x[iseg_x]) != all_segs_index.end(),
+                       "Segment in the x-direction must be a part of all segments.");
+
+        ordered_seg_track_counts[all_segs_index.find(segment_inf_x[iseg_x])->second] = segment_sets_x[iseg_x];
+    }
+    for (size_t iseg_y = 0; iseg_y < segment_inf_y.size(); ++iseg_y) {
+        if (segment_inf_y[iseg_y].parallel_axis == BOTH_AXIS) { /*Avoid counting segments in both horizontal and vertical direction twice*/
+            continue;
+        }
+        VTR_ASSERT_MSG(all_segs_index.find(segment_inf_x[iseg_y]) != all_segs_index.end(),
+                       "Segment in the y-direction must be a part of all segments.");
+        ordered_seg_track_counts[all_segs_index.find(segment_inf_y[iseg_y])->second] = segment_sets_y[iseg_y];
+    }
+
+    return ordered_seg_track_counts;
+}
 
 t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                                           const int max_len,
                                           const std::vector<t_segment_inf>& segment_inf,
                                           const bool use_full_seg_groups,
-                                          const bool is_global_graph,
                                           const enum e_directionality directionality,
                                           int* num_seg_details) {
     /* Allocates and loads the seg_details data structure.  Max_len gives the   *
@@ -314,7 +376,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             seg_details[cur_track].cb = std::make_unique<bool[]>(length);
             seg_details[cur_track].sb = std::make_unique<bool[]>(length + 1);
             for (j = 0; j < length; ++j) {
-                if (is_global_graph || seg_details[cur_track].longline) {
+                if (seg_details[cur_track].longline) {
                     seg_details[cur_track].cb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
@@ -323,7 +385,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                 }
             }
             for (j = 0; j < (length + 1); ++j) {
-                if (is_global_graph || seg_details[cur_track].longline) {
+                if (seg_details[cur_track].longline) {
                     seg_details[cur_track].sb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
@@ -347,6 +409,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             }
 
             seg_details[cur_track].index = i;
+            seg_details[cur_track].abs_index = segment_inf[i].seg_index;
 
             ++cur_track;
         }
@@ -364,14 +427,16 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
 
 void alloc_and_load_chan_details(const DeviceGrid& grid,
                                  const t_chan_width* nodes_per_chan,
-                                 const int num_seg_details,
-                                 const t_seg_details* seg_details,
+                                 const int num_seg_details_x,
+                                 const int num_seg_details_y,
+                                 const t_seg_details* seg_details_x,
+                                 const t_seg_details* seg_details_y,
                                  t_chan_details& chan_details_x,
                                  t_chan_details& chan_details_y) {
     chan_details_x = init_chan_details(grid, nodes_per_chan,
-                                       num_seg_details, seg_details, X_AXIS);
+                                       num_seg_details_x, seg_details_x, X_AXIS);
     chan_details_y = init_chan_details(grid, nodes_per_chan,
-                                       num_seg_details, seg_details, Y_AXIS);
+                                       num_seg_details_y, seg_details_y, Y_AXIS);
 
     /* Adjust segment start/end based on obstructed channels, if any */
     adjust_chan_details(grid, nodes_per_chan,
@@ -383,7 +448,11 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                                  const int num_seg_details,
                                  const t_seg_details* seg_details,
                                  const enum e_parallel_axis seg_parallel_axis) {
-    VTR_ASSERT(num_seg_details <= nodes_per_chan->max);
+    if (seg_parallel_axis == X_AXIS) {
+        VTR_ASSERT(num_seg_details <= nodes_per_chan->x_max);
+    } else if (seg_parallel_axis == Y_AXIS) {
+        VTR_ASSERT(num_seg_details <= nodes_per_chan->y_max);
+    }
 
     t_chan_details chan_details({grid.width(), grid.height(), size_t(num_seg_details)});
 
@@ -399,8 +468,7 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                 if (seg_parallel_axis == X_AXIS) {
                     seg_start = get_seg_start(p_seg_details, i, y, x);
                     seg_end = get_seg_end(p_seg_details, i, seg_start, y, grid.width() - 2); //-2 for no perim channels
-                }
-                if (seg_parallel_axis == Y_AXIS) {
+                } else if (seg_parallel_axis == Y_AXIS) {
                     seg_start = get_seg_start(p_seg_details, i, x, y);
                     seg_end = get_seg_end(p_seg_details, i, seg_start, x, grid.height() - 2); //-2 for no perim channels
                 }
@@ -412,8 +480,7 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                     if (i >= nodes_per_chan->x_list[y]) {
                         p_seg_details[i].set_length(0);
                     }
-                }
-                if (seg_parallel_axis == Y_AXIS) {
+                } else if (seg_parallel_axis == Y_AXIS) {
                     if (i >= nodes_per_chan->y_list[x]) {
                         p_seg_details[i].set_length(0);
                     }
@@ -460,8 +527,17 @@ void adjust_seg_details(const int x,
                         t_chan_details& chan_details,
                         const enum e_parallel_axis seg_parallel_axis) {
     int seg_index = (seg_parallel_axis == X_AXIS ? x : y);
+    int max_chan_width = 0;
+    if (seg_parallel_axis == X_AXIS) {
+        max_chan_width = nodes_per_chan->x_max;
+    } else if (seg_parallel_axis == Y_AXIS) {
+        max_chan_width = nodes_per_chan->y_max;
+    } else {
+        VTR_ASSERT(seg_parallel_axis == BOTH_AXIS);
+        max_chan_width = nodes_per_chan->max;
+    }
 
-    for (int track = 0; track < nodes_per_chan->max; ++track) {
+    for (int track = 0; track < max_chan_width; ++track) {
         int lx = (seg_parallel_axis == X_AXIS ? x - 1 : x);
         int ly = (seg_parallel_axis == X_AXIS ? y : y - 1);
         if (lx < 0 || ly < 0 || chan_details[lx][ly][track].length() == 0)
@@ -476,7 +552,7 @@ void adjust_seg_details(const int x,
         }
     }
 
-    for (int track = 0; track < nodes_per_chan->max; ++track) {
+    for (int track = 0; track < max_chan_width; ++track) {
         size_t lx = (seg_parallel_axis == X_AXIS ? x + 1 : x);
         size_t ly = (seg_parallel_axis == X_AXIS ? y : y + 1);
         if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length() == 0) //-2 for no perim channels
@@ -653,6 +729,14 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     return num_conn;
 }
 
+/* AA: Actually builds the edges from the OPIN nodes already allocated to their correct tracks for segment seg_Inf[seg_type_index]. 
+ * Note that this seg_inf vector is NOT the segment_info vectored as stored in the device variable. This index is w.r.t to seg_inf_x
+ * or seg_inf_y for x-adjacent and y-adjacent segments respectively. This index is assigned in get_seg_details earlier 
+ * in the rr_graph_builder routine. This t_seg_detail is then used to build t_chan_seg_details which is passed in to label_wire mux
+ * routine used in this function. 
+ *
+ * 
+ */
 int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 const int chan,
                                 const int seg,
@@ -664,7 +748,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 t_rr_edge_info_set& rr_edges_to_create,
                                 vtr::NdMatrix<int, 3>& Fc_ofs,
                                 const int max_len,
-                                const int max_chan_width,
+                                const t_chan_width& nodes_per_chan,
                                 bool* Fc_clipped) {
     /* Gets a linked list of Fc nodes of specified seg_type_index to connect
      * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
@@ -688,6 +772,8 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     int dummy;
     std::vector<int> inc_muxes;
     std::vector<int> dec_muxes;
+    /* AA: Determine the channel width instead of using max channels to not create hanging nodes*/
+    int max_chan_width = (CHANX == chan_type) ? nodes_per_chan.x_list[y] : nodes_per_chan.y_list[x];
 
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
                      Direction::INC, max_chan_width, true, inc_muxes, &num_inc_muxes, &dummy);
@@ -805,20 +891,24 @@ void dump_seg_details(const t_chan_seg_details* seg_details,
  * only for debugging.                                                      */
 void dump_chan_details(const t_chan_details& chan_details_x,
                        const t_chan_details& chan_details_y,
-                       int max_chan_width,
+                       const t_chan_width* nodes_per_chan,
                        const DeviceGrid& grid,
                        const char* fname) {
     FILE* fp = vtr::fopen(fname, "w");
     if (fp) {
+        fprintf(fp, "************************\n");
+        fprintf(fp, "max_chan_width= %d | max_chan_width_y= %d | max_chan_width_x= %d", nodes_per_chan->max, nodes_per_chan->y_max, nodes_per_chan->x_max);
+        fprintf(fp, "************************\n");
         for (size_t y = 0; y <= grid.height() - 2; ++y) {    //-2 for no perim channels
             for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
 
                 fprintf(fp, "========================\n");
                 fprintf(fp, "chan_details_x: [%zu][%zu]\n", x, y);
+                fprintf(fp, "channel_width: %d\n", nodes_per_chan->x_list[y]);
                 fprintf(fp, "========================\n");
 
                 const t_chan_seg_details* seg_details = chan_details_x[x][y].data();
-                dump_seg_details(seg_details, max_chan_width, fp);
+                dump_seg_details(seg_details, nodes_per_chan->x_max, fp);
             }
         }
         for (size_t x = 0; x <= grid.width() - 2; ++x) {      //-2 for no perim channels
@@ -826,10 +916,11 @@ void dump_chan_details(const t_chan_details& chan_details_x,
 
                 fprintf(fp, "========================\n");
                 fprintf(fp, "chan_details_y: [%zu][%zu]\n", x, y);
+                fprintf(fp, "channel_width: %d\n", nodes_per_chan->y_list[x]);
                 fprintf(fp, "========================\n");
 
                 const t_chan_seg_details* seg_details = chan_details_y[x][y].data();
-                dump_seg_details(seg_details, max_chan_width, fp);
+                dump_seg_details(seg_details, nodes_per_chan->y_max, fp);
             }
         }
     }
@@ -919,6 +1010,31 @@ void dump_sblock_pattern(const t_sblock_pattern& sblock_pattern,
     fclose(fp);
 }
 
+void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
+                           const std::vector<t_physical_tile_type>& types,
+                           int max_chan_width,
+                           FILE* fp) {
+    if (fp) {
+        for (unsigned int i = 0; i < types.size(); i++) {
+            if (!track_to_pin_map[i].empty()) {
+                for (int track = 0; track < max_chan_width; ++track) {
+                    for (int width = 0; width < types[i].width; ++width) {
+                        for (int height = 0; height < types[i].height; ++height) {
+                            for (int side = 0; side < 4; ++side) {
+                                fprintf(fp, "\nTYPE:%s width:%d height:%d\n", types[i].name, width, height);
+                                fprintf(fp, "\nSIDE:%d TRACK:%d \n", side, track);
+                                for (size_t con = 0; con < track_to_pin_map[i][track][width][height][side].size(); con++) {
+                                    fprintf(fp, "%d ", track_to_pin_map[i][track][width][height][side][con]);
+                                }
+                                fprintf(fp, "=====================\n");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 static void load_chan_rr_indices(const int max_chan_width,
                                  const int chan_len,
                                  const int num_chans,
@@ -1135,7 +1251,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
  *         of this function
  */
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                    const int max_chan_width,
+                                    const t_chan_width* nodes_per_chan,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,
@@ -1157,9 +1273,9 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     load_block_rr_indices(rr_graph_builder, grid, index);
 
     /* Load the data for x and y channels */
-    load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
+    load_chan_rr_indices(nodes_per_chan->x_max, grid.width(), grid.height(),
                          CHANX, chan_details_x, rr_graph_builder, index);
-    load_chan_rr_indices(max_chan_width, grid.height(), grid.width(),
+    load_chan_rr_indices(nodes_per_chan->y_max, grid.height(), grid.width(),
                          CHANY, chan_details_y, rr_graph_builder, index);
 }
 
@@ -2024,7 +2140,7 @@ static int vpr_to_phy_track(const int itrack,
 }
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
-                                             const int max_chan_width) {
+                                             t_chan_width* nodes_per_chan) {
     /* loading up the sblock connection pattern matrix. It's a huge matrix because
      * for nonquantized W, it's impossible to make simple permutations to figure out
      * where muxes are and how to connect to them such that their sizes are balanced */
@@ -2038,14 +2154,15 @@ t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
 
     VTR_ASSERT(grid.width() > 0);
     VTR_ASSERT(grid.height() > 0);
-    VTR_ASSERT(max_chan_width >= 0);
+    //CHANGE THIS
+    VTR_ASSERT(nodes_per_chan->max >= 0);
 
     t_sblock_pattern sblock_pattern({{
                                         grid.width() - 1,
                                         grid.height() - 1,
                                         4, //From side
                                         4, //To side
-                                        size_t(max_chan_width),
+                                        size_t(nodes_per_chan->max),
                                         4 //to_mux, to_trac, alt_mux, alt_track
                                     }},
                                     UN_SET);
@@ -2163,7 +2280,7 @@ void load_sblock_pattern_lookup(const int i,
         int chan = (vert ? i : j);
         int sb_seg = (vert ? j : i);
         int seg = (pos_dir ? (sb_seg + 1) : sb_seg);
-
+        int chan_width = get_chan_width(side, nodes_per_chan);
         const t_chan_seg_details* seg_details = (vert ? chan_details_y[chan][seg] : chan_details_x[seg][chan]).data();
         if (seg_details[0].length() <= 0)
             continue;
@@ -2171,8 +2288,13 @@ void load_sblock_pattern_lookup(const int i,
         /* Figure out all the tracks on a side that are ending and the
          * ones that are passing through and have a SB. */
         enum Direction end_dir = (pos_dir ? Direction::DEC : Direction::INC);
+
+        /*
+         * AA: Different channel widths have different seg_details 
+         * warranting modified calls to static routines in this file. 
+         */
         label_incoming_wires(chan, seg, sb_seg,
-                             seg_details, chan_len, end_dir, nodes_per_chan->max,
+                             seg_details, chan_len, end_dir, chan_width,
                              incoming_wire_label[side],
                              &num_incoming_wires[side],
                              &num_ending_wires[side]);
@@ -2181,7 +2303,7 @@ void load_sblock_pattern_lookup(const int i,
         int dummy;
         enum Direction start_dir = (pos_dir ? Direction::INC : Direction::DEC);
         label_wire_muxes(chan, seg,
-                         seg_details, UNDEFINED, chan_len, start_dir, nodes_per_chan->max,
+                         seg_details, UNDEFINED, chan_len, start_dir, chan_width,
                          false, wire_mux_on_track[side], &num_wire_muxes[side], &dummy);
     }
 
@@ -2208,7 +2330,7 @@ void load_sblock_pattern_lookup(const int i,
          * if you replace "passing" by "incoming" */
 
         if (!incoming_wire_label[side_cw].empty()) {
-            for (int ichan = 0; ichan < nodes_per_chan->max; ichan++) {
+            for (int ichan = 0; ichan < get_chan_width((e_side)side_cw, nodes_per_chan); ichan++) {
                 int itrack = ichan;
                 if (side_cw == TOP || side_cw == BOTTOM) {
                     itrack = ichan % nodes_per_chan->y_list[i];
@@ -2221,6 +2343,7 @@ void load_sblock_pattern_lookup(const int i,
                                                             (enum e_side)to_side,
                                                             incoming_wire_label[side_cw][ichan],
                                                             switch_block_type,
+                                                            num_wire_muxes[to_side],
                                                             num_wire_muxes[to_side]);
 
                     if (sblock_pattern[i][j][side_cw][to_side][itrack][0] == UN_SET) {
@@ -2233,7 +2356,7 @@ void load_sblock_pattern_lookup(const int i,
         }
 
         if (!incoming_wire_label[side_ccw].empty()) {
-            for (int ichan = 0; ichan < nodes_per_chan->max; ichan++) {
+            for (int ichan = 0; ichan < get_chan_width((e_side)side_ccw, nodes_per_chan); ichan++) {
                 int itrack = ichan;
                 if (side_ccw == TOP || side_ccw == BOTTOM) {
                     itrack = ichan % nodes_per_chan->y_list[i];
@@ -2245,7 +2368,9 @@ void load_sblock_pattern_lookup(const int i,
                     int mux = get_simple_switch_block_track((enum e_side)side_ccw,
                                                             (enum e_side)to_side,
                                                             incoming_wire_label[side_ccw][ichan],
-                                                            switch_block_type, num_wire_muxes[to_side]);
+                                                            switch_block_type,
+                                                            num_wire_muxes[to_side],
+                                                            num_wire_muxes[to_side]);
 
                     if (sblock_pattern[i][j][side_ccw][to_side][itrack][0] == UN_SET) {
                         sblock_pattern[i][j][side_ccw][to_side][itrack][0] = mux;
@@ -2257,7 +2382,7 @@ void load_sblock_pattern_lookup(const int i,
         }
 
         if (!incoming_wire_label[side_opp].empty()) {
-            for (int itrack = 0; itrack < nodes_per_chan->max; itrack++) {
+            for (int itrack = 0; itrack < get_chan_width((e_side)side_opp, nodes_per_chan); itrack++) {
                 /* not ending wire nor passing wire with sblock */
                 if (incoming_wire_label[side_opp][itrack] != UN_SET) {
                     /* corner sblocks for sure have no opposite channel segments so don't care about them */
@@ -2285,6 +2410,12 @@ void load_sblock_pattern_lookup(const int i,
     }
 }
 
+/* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
+ * maps a label to the actual track #: array[0] = <the track number of the first/lowest mux>
+ * This routine orders wire muxes by their natural order, i.e. track #
+ * If seg_type_index == UNDEFINED, all segments in the channel are considered. Otherwise this routine
+ * only looks at segments that belong to the specified segment type. */
+
 static void label_wire_muxes(const int chan_num,
                              const int seg_num,
                              const t_chan_seg_details* seg_details,
@@ -2296,11 +2427,6 @@ static void label_wire_muxes(const int chan_num,
                              std::vector<int>& labels,
                              int* num_wire_muxes,
                              int* num_wire_muxes_cb_restricted) {
-    /* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
-     * maps a label to the actual track #: array[0] = <the track number of the first/lowest mux>
-     * This routine orders wire muxes by their natural order, i.e. track #
-     * If seg_type_index == UNDEFINED, all segments in the channel are considered. Otherwise this routine
-     * only looks at segments that belong to the specified segment type. */
     int itrack, start, end, num_labels, num_labels_restricted, pass;
     bool is_endpoint;
 
@@ -2502,4 +2628,8 @@ static bool should_apply_switch_override(int switch_override) {
         return true;
     }
     return false;
+}
+
+inline int get_chan_width(enum e_side side, const t_chan_width* nodes_per_chan) {
+    return (side == TOP || side == BOTTOM ? nodes_per_chan->y_max : nodes_per_chan->x_max);
 }

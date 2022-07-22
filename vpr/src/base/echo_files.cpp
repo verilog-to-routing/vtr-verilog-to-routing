@@ -71,7 +71,6 @@ void alloc_and_load_echo_file_info() {
     }
 
     setAllEchoFileEnabled(getEchoEnabled());
-
     //User input nelist
     setEchoFileName(E_ECHO_ATOM_NETLIST_ORIG, "atom_netlist.orig.echo.blif");
     setEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED, "atom_netlist.cleaned.echo.blif");
@@ -86,6 +85,7 @@ void alloc_and_load_echo_file_info() {
     setEchoFileName(E_ECHO_INTRA_LB_FAILED_ROUTE, "intra_lb_failed_route.echo");
 
     //Timing Graphs
+    setEchoFileName(E_ECHO_TRACK_TO_PIN_MAP, "track_to_pin_map.echo");
     setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "timing_graph.pre_pack.echo");
     setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_initial.echo");
     setEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_final.echo");
@@ -124,10 +124,14 @@ void alloc_and_load_echo_file_info() {
     setEchoFileName(E_ECHO_SEG_DETAILS, "seg_details.txt");
     setEchoFileName(E_ECHO_CHAN_DETAILS, "chan_details.txt");
     setEchoFileName(E_ECHO_SBLOCK_PATTERN, "sblock_pattern.txt");
+    setEchoFileName(E_ECHO_TRACK_TO_PIN_MAP, "track_to_pin_map.echo");
     setEchoFileName(E_ECHO_ENDPOINT_TIMING, "endpoint_timing.echo.json");
     setEchoFileName(E_ECHO_LOOKAHEAD_MAP, "lookahead_map.echo");
     setEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA, "rr_indexed_data.echo");
     setEchoFileName(E_ECHO_COMPRESSED_GRIDS, "compressed_grids.echo");
+
+    //NoC
+    setEchoFileName(E_ECHO_NOC_MODEL, "noc_model.echo");
 }
 
 void free_echo_file_info() {

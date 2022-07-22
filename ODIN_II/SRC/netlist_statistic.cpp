@@ -12,14 +12,6 @@
 #include "odin_util.h"
 #include "vtr_memory.h"
 
-/**
- * The cutoff for the number of netlist nodes. 
- * Technically, Odin-II prints statistics for 
- * netlist nodes that the total number of them
- * is greater than this value. 
- */
-#define UNUSED_NODE_TYPE 0
-
 static void init(metric_t* m);
 static void print_stats(metric_t* m);
 static void copy(metric_t* dest, metric_t* src);
@@ -486,14 +478,39 @@ void compute_statistics(netlist_t* netlist, bool display) {
         get_upward_stat(&netlist->output_node_stat, netlist->top_output_nodes, netlist->num_top_output_nodes, netlist, travelsal_id + 1);
 
         if (display) {
+            std::string hdr = "";
             printf("\n\t==== Stats ====\n");
-            for (long long op = 0; op < operation_list_END; op += 1) {
-                if (netlist->num_of_type[op] > UNUSED_NODE_TYPE) {
-                    std::string hdr = std::string("Number of <")
-                                      + operation_list_STR[op][ODIN_LONG_STRING]
-                                      + "> node: ";
-
-                    printf("%-42s%lld\n", hdr.c_str(), netlist->num_of_type[op]);
+            for (auto op = 0; op < operation_list_END; op += 1) {
+                switch (op) {
+                    // For top IO nodes generate detailed info since the design might have unconnected input nodes
+                    case INPUT_NODE: {
+                        auto unused_pi = netlist->num_top_input_nodes - netlist->num_of_type[op] - netlist->num_of_type[CLOCK_NODE];
+                        if (unused_pi > 0) {
+                            hdr = std::string("Number of unused <")
+                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                                  + "> node: ";
+                            printf("%-42s%lld\n", hdr.c_str(), unused_pi);
+                        }
+                        [[fallthrough]];
+                    }
+                    case OUTPUT_NODE: {
+                        auto unused_po = netlist->num_top_output_nodes - netlist->num_of_type[op];
+                        if (unused_po > 0) {
+                            hdr = std::string("Number of unused <")
+                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                                  + "> node: ";
+                            printf("%-42s%lld\n", hdr.c_str(), unused_po);
+                        }
+                        [[fallthrough]];
+                    }
+                    default: {
+                        if (netlist->num_of_type[op] > UNUSED_NODE_TYPE) {
+                            hdr = std::string("Number of <")
+                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                                  + "> node: ";
+                            printf("%-42s%lld\n", hdr.c_str(), netlist->num_of_type[op]);
+                        }
+                    }
                 }
             }
             printf("%-42s%lld\n", "Total estimated number of lut: ", netlist->num_logic_element);

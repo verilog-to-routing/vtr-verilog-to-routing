@@ -146,6 +146,14 @@ def vtr_command_argparser(prog=None):
         dest="verbose",
         help="Verbosity of the script.",
     )
+    parser.add_argument(
+        "-include",
+        nargs="*",
+        default=None,
+        dest="include_list_file",
+        help="List of include files to a benchmark circuit (pass to VTR"
+        + " frontends as a benchmark design set)",
+    )
 
     #
     # Power arguments
@@ -332,13 +340,6 @@ def vtr_command_argparser(prog=None):
         help="Specify the elaborator of the synthesis flow for Odin-II",
     )
     odin.add_argument(
-        "-include",
-        nargs="*",
-        default=None,
-        dest="include_list_file",
-        help="List of include files to a benchmark circuit(pass to Odin as a benchmark design set)",
-    )
-    odin.add_argument(
         "-top_module",
         default=None,
         dest="top_module",
@@ -358,6 +359,14 @@ def vtr_command_argparser(prog=None):
         dest="fflegalize",
         help="Make flip-flops rising edge for coarse-grain input BLIFs in the techmap"
         + "(Odin-II synthesis flow generates rising edge FFs by default)",
+    )
+    odin.add_argument(
+        "-encode_names",
+        default=False,
+        action="store_true",
+        dest="encode_names",
+        help="Enable Odin-II utilization of operation-type-encoded naming style for Yosys"
+        + " coarse-grained RTLIL nodes",
     )
     #
     # YOSYS arguments
@@ -672,6 +681,7 @@ def process_odin_args(args):
     odin_args["adder_type"] = args.adder_type
     odin_args["top_module"] = args.top_module
     odin_args["elaborator"] = args.elaborator
+    odin_args["encode_names"] = args.encode_names
 
     if args.adder_cin_global:
         odin_args["adder_cin_global"] = True

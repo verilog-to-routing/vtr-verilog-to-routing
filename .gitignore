@@ -101,6 +101,11 @@ ODIN_II/usefull_tools/**/track_completed
 *.a
 
 #
+#Yosys exec dir
+#
+Yosys
+
+#
 #Python
 #
 *.pyc
@@ -140,3 +145,4 @@ tags
 #
 .idea
 cmake-build-debug
+/.metadata/
