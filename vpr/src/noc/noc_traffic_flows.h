@@ -13,18 +13,17 @@
  * Each traffic flow is indexed by a unique id that can be used to
  * retrieve information about them.  
  * 
- * The class also associates traffic flows to their source routers (start point)
- * and sink routers (end point). This is useful if one wants to find traffic
- * flows based on just the source or sink router.
- * 
+ * The class also associates traffic flows to their logical source routers 
+ * (start point) and logical sink routers (end point). This is useful if one wants to find traffic flows based on just the source or sink logical router.
  * The routes for the traffic flows are expected to change throughout placement
- * as routers will be moved throughout the chip. Therefore this class provides
+ * as routers will be moved within the chip. Therefore this class provides
  * a datastructure to keep track of which flows have been updated (re-routed).
  * 
- * Finally, this class also stores all router blocks in the design.
+ * Finally, this class also stores all router blocks (logical routers) in the 
+ * design.
  * 
  * This class will be primarily used during 
- * placement to identify which routers inside the NoC(NocStorage) need to
+ * placement to identify which routers inside the NoC(NocStorage) need to be
  * routed to each other.This is important since the router modules can be moved
  * around to different tiles on the FPGA device.
  * 
@@ -42,23 +41,23 @@
 
 /**
  * @brief Describes a traffic flow within the NoC, which is the communication
- * between two routers. The NocTrafficFlows contains a number of this structure
- * to describe all the communication happening within the NoC.
+ * between two logical routers. The NocTrafficFlows contains a number of this 
+ * structure to describe all the communication happening within the NoC.
  * 
  */
 struct t_noc_traffic_flow {
-    /** stores the names of the router blocks communicating within this traffic flow*/
+    /** stores the partial names of the router blocks communicating within this traffic flow. Names must uniquely identify router blocks in the netlist.*/
     std::string source_router_module_name;
     std::string sink_router_module_name;
 
-    /** stores the block id of the two routers blocks communicating within this traffic flow. This can be used to retrieve the block information from the clustered netlist*/
+    /** stores the block id of the two router blocks communicating within this traffic flow. This can be used to retrieve the block information from the clustered netlist*/
     ClusterBlockId source_router_cluster_id;
     ClusterBlockId sink_router_cluster_id;
 
-    /** The bandwidth of the information transferred between the two routers. Units in bps. This parameters will be used to update the link usage in the noc model after routing the traffic flow.*/
+    /** The bandwidth of the information transferred between the two routers. Units in bytes per second. This parameters will be used to update the link usage in the noc model after routing the traffic flow.*/
     double traffic_flow_bandwidth;
 
-    /** The maximum allowable time to transmit data between thw two routers. This parameter will be used to evaluate a router traffic flow.*/
+    /** The maximum allowable time to transmit data between thw two routers, in seconds. This parameter will be used to evaluate a router traffic flow.*/
     double max_traffic_flow_latency;
 
     /** Constructor initializes all variables*/
@@ -168,13 +167,13 @@ class NocTrafficFlows {
     // setters
 
     /**
-     * @brief Given a set of parameters that describe a traffic
-     * flow, create it an add it to the vector of traffic flows in the
-     * design. Additionally, the two router blocks involved have their
-     * ids stored to to keep track of all router blocks that are used
-     * in traffic flows. Finally, the newly created traffic flow is
-     * also added to a vector of traffic flows that are associated to both 
-     * the source and sink routers of the flow.
+     * @brief Given a set of parameters that specify a traffic
+     * flow, create and add the specified traffic flow it to the vector of
+     * flows in the design. 
+     * 
+     * Finally, the newly created traffic flow is
+     * also added to internal datastructures that can be used to quickly
+     * look up which traffic flows contain a specific router cluster block.
      * 
      * @param source_router_module_name A string that represents the
      * name of the source router block in the traffic flow. THis is
