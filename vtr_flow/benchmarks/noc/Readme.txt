@@ -18,7 +18,7 @@ test_benchmark_circuit:
 # Test Benchmark Designs
 
 The benchmark designs found under the "Test_Designs" folder are relatively
-simple designs that are mainly used to verify components NoC flow in the VPR software.
+simple designs that are mainly used to verify components NoC CAD flow in the VPR software.
 Whenever a new or existing feature needs to be tested, the benchmark designs found here
 should be used.
 
@@ -27,14 +27,16 @@ should be used.
 
 The benchmark designs found under the "Synthetic_Designs" folder are small to medium
 sized designs that are used verify the correctness of the VPR software. These designs
-are manually created to guarantee and optimal reference solution. By running these designs
-through VPR, we can determine the correctness of the NoC flow based on the reference solution.
+are manually created to have understandable structures. For example, a mesh with traffic 
+flows to nearest neighbours where we know the optimal solution for NoC traffic minimization. 
+By running these designs through VPR, we can determine the correctness of the NoC CAD flow
+based on the reference solution.
 
 # Large Benchmark Designs
 
 The benchmark designs found under the "Large Designs" folder and medium to large complex
 designs to determine the performance of the NoC flow within the VPR software. Changes made
-to the NoC flow in VPR can be evaluated by running these benchmark designs and comparing 
+to the NoC CAD flow in VPR can be evaluated by running these benchmark designs and comparing 
 the results with previous versions.
 
 # Adding New Benchmark Designs
