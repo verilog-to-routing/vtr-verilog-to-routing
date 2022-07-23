@@ -353,6 +353,10 @@ int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, 
 
 bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num);
 
+std::vector<const t_pb_graph_pin*> get_pb_graph_node_pb_pins(const t_pb_graph_node* pb_graph_node);
+
+std::vector<t_pb_graph_pin*> get_mutable_pb_graph_node_pb_pins(t_pb_graph_node* pb_graph_node);
+
 std::vector<int> get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
                                         const t_sub_tile* sub_tile,
                                         t_logical_block_type_ptr logical_block,
@@ -369,7 +373,7 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                             int relative_cap,
                             const t_pb_graph_pin* pin);
 
-float get_max_edge_delay(t_physical_tile_type_ptr physical_tile,
+int get_edge_sw_idx(t_physical_tile_type_ptr physical_tile,
                          t_logical_block_type_ptr logical_block,
                          int from_pin_physical_num,
                          int to_pin_physical_num);

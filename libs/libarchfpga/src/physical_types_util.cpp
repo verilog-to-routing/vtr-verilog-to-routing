@@ -59,8 +59,6 @@ static int get_logical_block_physical_pin_num_offset(t_physical_tile_type_ptr ph
 
 static int get_pin_logical_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
-static std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node* pb_graph_node);
-
 static std::vector<int> get_pb_pin_driving_pins(t_physical_tile_type_ptr physical_type,
                                                  const t_sub_tile* sub_tile,
                                                  t_logical_block_type_ptr logical_block,
@@ -228,42 +226,6 @@ static int get_pin_logical_num_from_pin_physical_num(t_physical_tile_type_ptr ph
     pin_logical_num = physical_num - offset;
 
     return pin_logical_num;
-}
-
-static std::vector<const t_pb_graph_pin*> get_pb_graph_node_pins(const t_pb_graph_node* pb_graph_node) {
-    std::vector<const t_pb_graph_pin*> pins(pb_graph_node->num_pins());
-    int num_added_pins = 0;
-    for (int port_type_idx = 0; port_type_idx < 3; port_type_idx++) {
-        t_pb_graph_pin** pb_pins;
-        int num_ports;
-        int* num_pins;
-
-        if (port_type_idx == 0) {
-            pb_pins = pb_graph_node->input_pins;
-            num_ports = pb_graph_node->num_input_ports;
-            num_pins = pb_graph_node->num_input_pins;
-
-        } else if (port_type_idx == 1) {
-            pb_pins = pb_graph_node->output_pins;
-            num_ports = pb_graph_node->num_output_ports;
-            num_pins = pb_graph_node->num_output_pins;
-        } else {
-            VTR_ASSERT(port_type_idx == 2);
-            pb_pins = pb_graph_node->clock_pins;
-            num_ports = pb_graph_node->num_clock_ports;
-            num_pins = pb_graph_node->num_clock_pins;
-        }
-
-        for (int port_idx = 0; port_idx < num_ports; port_idx++) {
-            for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
-                const t_pb_graph_pin* pin = &(pb_pins[port_idx][pin_idx]);
-                pins[num_added_pins] = pin;
-                num_added_pins++;
-            }
-        }
-    }
-    VTR_ASSERT(num_added_pins == pb_graph_node->num_pins());
-    return pins;
 }
 
 static std::vector<int> get_pb_pin_driving_pins(t_physical_tile_type_ptr physical_type,
@@ -861,7 +823,7 @@ std::unordered_map<int, const t_class*>  get_pb_graph_node_num_class_pairs(t_phy
 
 
 
-    std::vector<const t_pb_graph_pin*> pb_pins = get_pb_graph_node_pins(pb_graph_node);
+    std::vector<const t_pb_graph_pin*> pb_pins = get_pb_graph_node_pb_pins(pb_graph_node);
 
     for(auto pin: pb_pins) {
         int class_logical_num = pb_pin_class_map.at(pin);
@@ -1007,13 +969,85 @@ bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num) {
     return(physical_num < physical_tile->num_pins);
 }
 
+std::vector<const t_pb_graph_pin*> get_pb_graph_node_pb_pins(const t_pb_graph_node* pb_graph_node) {
+    std::vector<const t_pb_graph_pin*> pins(pb_graph_node->num_pins());
+    int num_added_pins = 0;
+    for (int port_type_idx = 0; port_type_idx < 3; port_type_idx++) {
+        t_pb_graph_pin** pb_pins;
+        int num_ports;
+        int* num_pins;
+
+        if (port_type_idx == 0) {
+            pb_pins = pb_graph_node->input_pins;
+            num_ports = pb_graph_node->num_input_ports;
+            num_pins = pb_graph_node->num_input_pins;
+
+        } else if (port_type_idx == 1) {
+            pb_pins = pb_graph_node->output_pins;
+            num_ports = pb_graph_node->num_output_ports;
+            num_pins = pb_graph_node->num_output_pins;
+        } else {
+            VTR_ASSERT(port_type_idx == 2);
+            pb_pins = pb_graph_node->clock_pins;
+            num_ports = pb_graph_node->num_clock_ports;
+            num_pins = pb_graph_node->num_clock_pins;
+        }
+
+        for (int port_idx = 0; port_idx < num_ports; port_idx++) {
+            for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
+                const t_pb_graph_pin* pin = &(pb_pins[port_idx][pin_idx]);
+                pins[num_added_pins] = pin;
+                num_added_pins++;
+            }
+        }
+    }
+    VTR_ASSERT(num_added_pins == pb_graph_node->num_pins());
+    return pins;
+}
+
+std::vector<t_pb_graph_pin*> get_mutable_pb_graph_node_pb_pins(t_pb_graph_node* pb_graph_node) {
+    std::vector<t_pb_graph_pin*> pins(pb_graph_node->num_pins());
+    int num_added_pins = 0;
+    for (int port_type_idx = 0; port_type_idx < 3; port_type_idx++) {
+        t_pb_graph_pin** pb_pins;
+        int num_ports;
+        int* num_pins;
+
+        if (port_type_idx == 0) {
+            pb_pins = pb_graph_node->input_pins;
+            num_ports = pb_graph_node->num_input_ports;
+            num_pins = pb_graph_node->num_input_pins;
+
+        } else if (port_type_idx == 1) {
+            pb_pins = pb_graph_node->output_pins;
+            num_ports = pb_graph_node->num_output_ports;
+            num_pins = pb_graph_node->num_output_pins;
+        } else {
+            VTR_ASSERT(port_type_idx == 2);
+            pb_pins = pb_graph_node->clock_pins;
+            num_ports = pb_graph_node->num_clock_ports;
+            num_pins = pb_graph_node->num_clock_pins;
+        }
+
+        for (int port_idx = 0; port_idx < num_ports; port_idx++) {
+            for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
+                t_pb_graph_pin* pin = &(pb_pins[port_idx][pin_idx]);
+                pins[num_added_pins] = pin;
+                num_added_pins++;
+            }
+        }
+    }
+    VTR_ASSERT(num_added_pins == pb_graph_node->num_pins());
+    return pins;
+}
+
 std::vector<int> get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
                                         const t_sub_tile* sub_tile,
                                         t_logical_block_type_ptr logical_block,
                                         int relative_cap,
                                         const t_pb_graph_node* pb_graph_node) {
     std::vector<int> pins_num;
-    auto pins = get_pb_graph_node_pins(pb_graph_node);
+    auto pins = get_pb_graph_node_pb_pins(pb_graph_node);
     for (auto pin : pins) {
         int pin_num = get_pb_pin_physical_num(physical_tile,
                                               sub_tile,
@@ -1075,12 +1109,12 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
     return pin_physical_num;
 }
 
-float get_max_edge_delay(t_physical_tile_type_ptr physical_tile,
+int get_edge_sw_idx(t_physical_tile_type_ptr physical_tile,
                          t_logical_block_type_ptr logical_block,
                          int from_pin_physical_num,
                          int to_pin_physical_num) {
     bool find_edge = false;
-    float max_delay = -1.0;
+    int sw_idx = -1;
     const t_pb_graph_pin* from_pb_pin;
     const t_pb_graph_pin* to_pb_pin;
     if(is_pin_on_tile(physical_tile, from_pin_physical_num)) {
@@ -1100,14 +1134,14 @@ float get_max_edge_delay(t_physical_tile_type_ptr physical_tile,
         VTR_ASSERT(pb_edge->num_output_pins == 1);
         auto conn_pins = pb_edge->output_pins[0];
             if(to_pb_pin == conn_pins) {
-                max_delay = pb_edge->delay_max;
+                sw_idx = pb_edge->switch_type_idx;
                 find_edge = true;
                 break;
 
             }
     }
     VTR_ASSERT(find_edge);
-    return max_delay;
+    return sw_idx;
 
 }
 

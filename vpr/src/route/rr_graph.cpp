@@ -157,6 +157,11 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        const int num_directs,
                                        const t_clb_to_clb_directs* clb_to_clb_directs);
 
+static void add_logical_block_rr_switch_types(DeviceContext& device_ctx,
+                                              t_logical_block_type& logical_block,
+                                              const float R_minW_nmos,
+                                              const float R_minW_pmos);
+
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                                   t_rr_graph_storage& L_rr_node,
                                                                   const RRGraphView& rr_graph,
@@ -899,9 +904,16 @@ static void build_rr_graph(const t_graph_type graph_type,
     device_ctx.rr_graph_builder.reserve_switches(device_ctx.num_arch_switches);
     // Create the switches
     for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; ++iswitch) {
+        device_ctx.pb_edge_sw_inf.insert(std::make_pair(iswitch, device_ctx.arch_switch_inf[iswitch]));
         const t_rr_switch_inf& temp_rr_switch = create_rr_switch_from_arch_switch(iswitch, R_minW_nmos, R_minW_pmos);
         device_ctx.rr_graph_builder.add_rr_switch(temp_rr_switch);
     }
+
+    for(auto& logical_block : device_ctx.logical_block_types) {
+        if(!logical_block.is_empty())
+            add_logical_block_rr_switch_types(device_ctx, logical_block, R_minW_nmos, R_minW_pmos);
+    }
+
 
     auto update_chan_width = alloc_and_load_rr_graph(
         device_ctx.rr_graph_builder,
@@ -953,7 +965,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
-    alloc_and_load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
+    alloc_and_load_rr_switch_inf(device_ctx.pb_edge_sw_inf.size(), R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
 
     //Partition the rr graph edges for efficient access to configurable/non-configurable
     //edge subsets. Must be done after RR switches have been allocated
@@ -1051,9 +1063,14 @@ static void alloc_and_load_rr_switch_inf(const int num_arch_switches, const floa
 static void alloc_rr_switch_inf(t_arch_switch_fanin& arch_switch_fanins) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     /* allocate space for the rr_switch_inf array */
+    t_arch_switch_inf* all_switches = new t_arch_switch_inf[device_ctx.pb_edge_sw_inf.size()];
+    for(auto sw_inf : device_ctx.pb_edge_sw_inf) {
+        VTR_ASSERT(sw_inf.first < (int)device_ctx.pb_edge_sw_inf.size());
+        all_switches[sw_inf.first] = sw_inf.second;
+    }
     size_t num_rr_switches = device_ctx.rr_graph_builder.count_rr_switches(
-        device_ctx.num_arch_switches,
-        device_ctx.arch_switch_inf,
+        device_ctx.pb_edge_sw_inf.size(),
+        all_switches,
         arch_switch_fanins);
     device_ctx.rr_graph_builder.resize_switches(num_rr_switches);
 }
@@ -1099,27 +1116,27 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
 
     /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
      * rr switch should be */
-    double rr_switch_Tdel = device_ctx.arch_switch_inf[arch_switch_idx].Tdel(0);
+    double rr_switch_Tdel = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).Tdel(0);
 
     /* copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value */
-    rr_switch_inf.set_type(device_ctx.arch_switch_inf[arch_switch_idx].type());
-    rr_switch_inf.R = device_ctx.arch_switch_inf[arch_switch_idx].R;
-    rr_switch_inf.Cin = device_ctx.arch_switch_inf[arch_switch_idx].Cin;
-    rr_switch_inf.Cinternal = device_ctx.arch_switch_inf[arch_switch_idx].Cinternal;
-    rr_switch_inf.Cout = device_ctx.arch_switch_inf[arch_switch_idx].Cout;
+    rr_switch_inf.set_type(device_ctx.pb_edge_sw_inf.at(arch_switch_idx).type());
+    rr_switch_inf.R = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).R;
+    rr_switch_inf.Cin = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).Cin;
+    rr_switch_inf.Cinternal = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).Cinternal;
+    rr_switch_inf.Cout = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).Cout;
     rr_switch_inf.Tdel = rr_switch_Tdel;
-    rr_switch_inf.mux_trans_size = device_ctx.arch_switch_inf[arch_switch_idx].mux_trans_size;
-    if (device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
+    rr_switch_inf.mux_trans_size = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).mux_trans_size;
+    if (device_ctx.pb_edge_sw_inf.at(arch_switch_idx).buf_size_type == BufferSize::AUTO) {
         //Size based on resistance
-        rr_switch_inf.buf_size = trans_per_buf(device_ctx.arch_switch_inf[arch_switch_idx].R, R_minW_nmos, R_minW_pmos);
+        rr_switch_inf.buf_size = trans_per_buf(device_ctx.pb_edge_sw_inf.at(arch_switch_idx).R, R_minW_nmos, R_minW_pmos);
     } else {
-        VTR_ASSERT(device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::ABSOLUTE);
+        VTR_ASSERT(device_ctx.pb_edge_sw_inf.at(arch_switch_idx).buf_size_type == BufferSize::ABSOLUTE);
         //Use the specified size
-        rr_switch_inf.buf_size = device_ctx.arch_switch_inf[arch_switch_idx].buf_size;
+        rr_switch_inf.buf_size = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).buf_size;
     }
-    rr_switch_inf.name = device_ctx.arch_switch_inf[arch_switch_idx].name;
-    rr_switch_inf.power_buffer_type = device_ctx.arch_switch_inf[arch_switch_idx].power_buffer_type;
-    rr_switch_inf.power_buffer_size = device_ctx.arch_switch_inf[arch_switch_idx].power_buffer_size;
+    rr_switch_inf.name = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).name;
+    rr_switch_inf.power_buffer_type = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).power_buffer_type;
+    rr_switch_inf.power_buffer_size = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).power_buffer_size;
 
     return rr_switch_inf;
 }
@@ -1133,27 +1150,27 @@ void load_rr_switch_from_arch_switch(int arch_switch_idx,
 
     /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
      * rr switch should be */
-    double rr_switch_Tdel = device_ctx.arch_switch_inf[arch_switch_idx].Tdel(fanin);
+    double rr_switch_Tdel = device_ctx.pb_edge_sw_inf[arch_switch_idx].Tdel(fanin);
 
     /* copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value */
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].set_type(device_ctx.arch_switch_inf[arch_switch_idx].type());
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].R = device_ctx.arch_switch_inf[arch_switch_idx].R;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cin = device_ctx.arch_switch_inf[arch_switch_idx].Cin;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cinternal = device_ctx.arch_switch_inf[arch_switch_idx].Cinternal;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cout = device_ctx.arch_switch_inf[arch_switch_idx].Cout;
+    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].set_type(device_ctx.pb_edge_sw_inf.at(arch_switch_idx).type());
+    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].R = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).R;
+    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cin = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).Cin;
+    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cinternal = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).Cinternal;
+    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cout = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).Cout;
     device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Tdel = rr_switch_Tdel;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].mux_trans_size = device_ctx.arch_switch_inf[arch_switch_idx].mux_trans_size;
-    if (device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
+    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].mux_trans_size = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).mux_trans_size;
+    if (device_ctx.pb_edge_sw_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
         //Size based on resistance
-        device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = trans_per_buf(device_ctx.arch_switch_inf[arch_switch_idx].R, R_minW_nmos, R_minW_pmos);
+        device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = trans_per_buf(device_ctx.pb_edge_sw_inf.at(arch_switch_idx).R, R_minW_nmos, R_minW_pmos);
     } else {
-        VTR_ASSERT(device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::ABSOLUTE);
+        VTR_ASSERT(device_ctx.pb_edge_sw_inf[arch_switch_idx].buf_size_type == BufferSize::ABSOLUTE);
         //Use the specified size
-        device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = device_ctx.arch_switch_inf[arch_switch_idx].buf_size;
+        device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).buf_size;
     }
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].name = device_ctx.arch_switch_inf[arch_switch_idx].name;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_type = device_ctx.arch_switch_inf[arch_switch_idx].power_buffer_type;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_size = device_ctx.arch_switch_inf[arch_switch_idx].power_buffer_size;
+    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].name = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).name;
+    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_type = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).power_buffer_type;
+    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_size = device_ctx.pb_edge_sw_inf.at(arch_switch_idx).power_buffer_size;
 }
 
 /* switch indices of each rr_node original point into the global device_ctx.arch_switch_inf array.
@@ -2054,11 +2071,12 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
             if(driving_pin_node_id == RRNodeId::INVALID()) {
                 continue;
             }
-            float max_edge_delay = get_max_edge_delay(physical_type,
+            int sw_idx = get_edge_sw_idx(physical_type,
                                                       logical_block,
                                                       driving_pin,
                                                       pin);
-            rr_edges_to_create.emplace_back(driving_pin_node_id, parent_pin_node_id, max_edge_delay);
+            VTR_ASSERT(sw_idx != -1);
+            rr_edges_to_create.emplace_back(driving_pin_node_id, parent_pin_node_id, sw_idx);
         }
     }
 
@@ -3426,6 +3444,61 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
     return num_pins;
 }
 
+static void add_logical_block_rr_switch_types(DeviceContext& device_ctx,
+                                              t_logical_block_type& logical_block ,
+                                              const float R_minW_nmos,
+                                              const float R_minW_pmos) {
+    t_pb_graph_node* pb_graph_node = logical_block.pb_graph_head;
+
+    std::list<t_pb_graph_node*> pb_graph_node_q;
+
+    pb_graph_node_q.push_back(pb_graph_node);
+    while(!pb_graph_node_q.empty()) {
+        pb_graph_node = pb_graph_node_q.front();
+        pb_graph_node_q.pop_front();
+        auto pb_pins = get_mutable_pb_graph_node_pb_pins(pb_graph_node);
+
+        for(t_pb_graph_pin* pb_pin : pb_pins) {
+            for(int out_edge_idx = 0; out_edge_idx < pb_pin->num_output_edges; out_edge_idx++) {
+                t_pb_graph_edge* pb_graph_edge = pb_pin->output_edges[out_edge_idx];
+                t_arch_switch_inf arch_switch_inf;
+                arch_switch_inf.set_type(SwitchType::MUX);
+                arch_switch_inf.name = vtr::strdup("Internal Switch");
+                arch_switch_inf.R = 0.;
+                arch_switch_inf.Cin = 0.;
+                arch_switch_inf.Cout = 0.;
+                arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, pb_graph_edge->delay_max);
+                arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
+                arch_switch_inf.mux_trans_size = 0.;
+                arch_switch_inf.buf_size_type = BufferSize::ABSOLUTE;
+                arch_switch_inf.buf_size = 0.;
+                VTR_ASSERT_MSG(arch_switch_inf.buffered(), "Delayless switch expected to be buffered (isolating)");
+                VTR_ASSERT_MSG(arch_switch_inf.configurable(), "Delayless switch expected to be configurable");
+
+                int switch_type_idx = (int)device_ctx.pb_edge_sw_inf.size();
+
+                device_ctx.pb_edge_sw_inf.insert(std::make_pair(switch_type_idx, arch_switch_inf));
+
+                pb_graph_edge->switch_type_idx = switch_type_idx;
+
+                t_rr_switch_inf rr_sw_inf = create_rr_switch_from_arch_switch(switch_type_idx, R_minW_nmos, R_minW_pmos);
+                device_ctx.rr_graph_builder.add_rr_switch(rr_sw_inf);
+            }
+        }
+
+        t_pb_type* pb_type = pb_graph_node->pb_type;
+        for(int mode_num = 0; mode_num < pb_type->num_modes; mode_num++) {
+            t_mode* modes = pb_type->modes;
+            for(int pb_type_idx = 0; pb_type_idx < modes[mode_num].num_pb_type_children; pb_type_idx++) {
+                t_pb_type* child_pb_type = &modes[mode_num].pb_type_children[pb_type_idx];
+                for(int pb_num = 0; pb_num < child_pb_type->num_pb; pb_num++) {
+                    t_pb_graph_node* child_pb_graph_node = &pb_graph_node->child_pb_graph_nodes[mode_num][pb_type_idx][pb_num];
+                    pb_graph_node_q.push_back(child_pb_graph_node);
+                }
+            }
+        }
+    }
+}
 /* Determines whether the output pins of the specified block type should be perturbed.	*
  *  This is to prevent pathological cases where the output pin connections are		*
  *  spaced such that the connection pattern always skips some types of wire (w.r.t.	*
