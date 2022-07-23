@@ -19,7 +19,7 @@
 #include "chan_width.h"
 #include "base_cost_type.h"
 #include "unified_to_parallel_seg_index.h"
-#include "graph_type.h"
+#include "rr_graph_type.h"
 #include "cost_indices.h"
 #include "alloc_and_load_rr_indexed_data.h"
 #include "get_parallel_segs.h"

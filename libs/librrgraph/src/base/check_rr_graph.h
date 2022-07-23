@@ -2,7 +2,7 @@
 #define CHECK_RR_GRAPH_H
 
 #include "physical_types.h"
-#include "graph_type.h"
+#include "rr_graph_type.h"
 #include "device_grid.h"
 #include "route_type.h"
 #include "rr_graph_view.h"

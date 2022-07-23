@@ -3,7 +3,7 @@
 #ifndef RR_GRAPH_READER_H
 #define RR_GRAPH_READER_H
 
-#include "graph_type.h"
+#include "rr_graph_type.h"
 #include "device_grid.h"
 #include "physical_types.h"
 #include "base_cost_type.h"
