@@ -283,7 +283,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                        &device_ctx.rr_graph,
                        device_ctx.physical_tile_types,
                        &device_ctx.rr_indexed_data,
-                       device_ctx.rr_rc_data,
+                       &device_ctx.rr_rc_data,
                        device_ctx.grid,
                        device_ctx.arch_switch_inf,
                        device_ctx.arch,
