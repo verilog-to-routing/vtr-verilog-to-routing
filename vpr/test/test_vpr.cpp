@@ -156,7 +156,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        &mutable_device_ctx.rr_graph,
                        device_ctx.physical_tile_types,
                        &mutable_device_ctx.rr_indexed_data,
-                       mutable_device_ctx.rr_rc_data,
+                       &mutable_device_ctx.rr_rc_data,
                        device_ctx.grid,
                        device_ctx.arch_switch_inf,
                        device_ctx.arch,

@@ -43,7 +43,7 @@ class node_edge_sorter {
 
 void check_rr_graph(const RRGraphView& rr_graph,
                     const std::vector<t_physical_tile_type>& types,
-                    const vtr::vector<RRIndexedDataId, t_rr_indexed_data> rr_indexed_data,
+                    const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                     const DeviceGrid& grid,
                     const t_chan_width& chan_width,
                     const t_graph_type graph_type,
@@ -288,7 +288,7 @@ static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const Device
 }
 
 void check_rr_node(const RRGraphView& rr_graph,
-                   const vtr::vector<RRIndexedDataId, t_rr_indexed_data> rr_indexed_data,
+                   const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                    const DeviceGrid& grid,
                    const t_chan_width& chan_width,
                    enum e_route_type route_type, 

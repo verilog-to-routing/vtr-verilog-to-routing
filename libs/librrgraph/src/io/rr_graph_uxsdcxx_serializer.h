@@ -285,7 +285,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         RRGraphView* rr_graph,
         vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf,
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
-        std::vector<t_rr_rc_data>& rr_rc_data,
+        std::vector<t_rr_rc_data>* rr_rc_data,
         const int virtual_clock_network_root_idx,
         const size_t num_arch_switches,
         const t_arch_switch_inf* arch_switch_inf,
@@ -699,7 +699,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int init_node_timing(int& inode, float C, float R) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
-        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(R, C, rr_rc_data_)));
+        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(R, C, *rr_rc_data_)));
         return inode;
     }
     inline void finish_node_timing(int& /*inode*/) final {}
@@ -819,7 +819,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     type);
         }
 
-        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0, 0, rr_rc_data_)));
+        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0, 0, *rr_rc_data_)));
 
         return id;
     }
@@ -1906,7 +1906,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
     t_rr_node_indices* rr_node_indices_;
     std::string* read_rr_graph_filename_;
-    std::vector<t_rr_rc_data>& rr_rc_data_;
+    std::vector<t_rr_rc_data>* rr_rc_data_;
     const int virtual_clock_network_root_idx_;
 
     // Constant data for loads and writes.
