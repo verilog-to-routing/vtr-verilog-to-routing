@@ -2034,8 +2034,8 @@ void print_switch_usage() {
     }
     std::map<int, int>* switch_fanin_count;
     std::map<int, float>* switch_fanin_delay;
-    switch_fanin_count = new std::map<int, int>[device_ctx.num_arch_switches];
-    switch_fanin_delay = new std::map<int, float>[device_ctx.num_arch_switches];
+    switch_fanin_count = new std::map<int, int>[device_ctx.pb_edge_sw_inf.size()];
+    switch_fanin_delay = new std::map<int, float>[device_ctx.pb_edge_sw_inf.size()];
     // a node can have multiple inward switches, so
     // map key: switch index; map value: count (fanin)
     std::map<int, int>* inward_switch_inf = new std::map<int, int>[rr_graph.num_nodes()];
@@ -2074,9 +2074,9 @@ void print_switch_usage() {
         }
     }
     VTR_LOG("\n=============== switch usage stats ===============\n");
-    for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; iswitch++) {
-        char* s_name = device_ctx.arch_switch_inf[iswitch].name;
-        float s_area = device_ctx.arch_switch_inf[iswitch].mux_trans_size;
+    for (int iswitch = 0; iswitch < device_ctx.pb_edge_sw_inf.size(); iswitch++) {
+        char* s_name = device_ctx.pb_edge_sw_inf.at(iswitch).name;
+        float s_area = device_ctx.pb_edge_sw_inf.at(iswitch).mux_trans_size;
         VTR_LOG(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name, s_area);
 
         std::map<int, int>::iterator itr;

@@ -91,11 +91,6 @@ void check_rr_graph(const t_graph_type graph_type,
                                 "\tEdge is out of range.\n",
                                 inode, to_node);
             }
-            RRNodeId to_node_id = RRNodeId(to_node);
-            bool to_node_on_tile = is_node_on_tile(rr_graph.node_type(to_node_id),
-                                                   rr_graph.node_xlow(to_node_id),
-                                                   rr_graph.node_ylow(to_node_id),
-                                                   rr_graph.node_ptc_num(to_node_id));
             check_rr_edge(inode, iedge, to_node, is_flat);
 
             edges.emplace_back(to_node, iedge);

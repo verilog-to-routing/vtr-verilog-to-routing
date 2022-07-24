@@ -159,6 +159,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
 
 static void add_logical_block_rr_switch_types(DeviceContext& device_ctx,
                                               t_logical_block_type& logical_block,
+                                              std::unordered_map<float, int>& pb_edge_delays,
                                               const float R_minW_nmos,
                                               const float R_minW_pmos);
 
@@ -902,16 +903,19 @@ static void build_rr_graph(const t_graph_type graph_type,
      *   alloc_and_load_rr_switch_inf()
      */
     device_ctx.rr_graph_builder.reserve_switches(device_ctx.num_arch_switches);
+    device_ctx.pb_edge_sw_inf.clear();
     // Create the switches
     for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; ++iswitch) {
         device_ctx.pb_edge_sw_inf.insert(std::make_pair(iswitch, device_ctx.arch_switch_inf[iswitch]));
         const t_rr_switch_inf& temp_rr_switch = create_rr_switch_from_arch_switch(iswitch, R_minW_nmos, R_minW_pmos);
         device_ctx.rr_graph_builder.add_rr_switch(temp_rr_switch);
     }
-
-    for(auto& logical_block : device_ctx.logical_block_types) {
-        if(!logical_block.is_empty())
-            add_logical_block_rr_switch_types(device_ctx, logical_block, R_minW_nmos, R_minW_pmos);
+    if(is_flat) {
+        std::unordered_map<float, int> pb_edge_delay;
+        for(auto& logical_block : device_ctx.logical_block_types) {
+            if(!logical_block.is_empty())
+                add_logical_block_rr_switch_types(device_ctx, logical_block, pb_edge_delay, R_minW_nmos, R_minW_pmos);
+        }
     }
 
 
@@ -3446,9 +3450,12 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
 
 static void add_logical_block_rr_switch_types(DeviceContext& device_ctx,
                                               t_logical_block_type& logical_block ,
+                                              std::unordered_map<float, int>& pb_edge_delays,
                                               const float R_minW_nmos,
                                               const float R_minW_pmos) {
     t_pb_graph_node* pb_graph_node = logical_block.pb_graph_head;
+
+    int switch_type_id = -1;
 
     std::list<t_pb_graph_node*> pb_graph_node_q;
 
@@ -3461,28 +3468,35 @@ static void add_logical_block_rr_switch_types(DeviceContext& device_ctx,
         for(t_pb_graph_pin* pb_pin : pb_pins) {
             for(int out_edge_idx = 0; out_edge_idx < pb_pin->num_output_edges; out_edge_idx++) {
                 t_pb_graph_edge* pb_graph_edge = pb_pin->output_edges[out_edge_idx];
-                t_arch_switch_inf arch_switch_inf;
-                arch_switch_inf.set_type(SwitchType::MUX);
-                arch_switch_inf.name = vtr::strdup("Internal Switch");
-                arch_switch_inf.R = 0.;
-                arch_switch_inf.Cin = 0.;
-                arch_switch_inf.Cout = 0.;
-                arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, pb_graph_edge->delay_max);
-                arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
-                arch_switch_inf.mux_trans_size = 0.;
-                arch_switch_inf.buf_size_type = BufferSize::ABSOLUTE;
-                arch_switch_inf.buf_size = 0.;
-                VTR_ASSERT_MSG(arch_switch_inf.buffered(), "Delayless switch expected to be buffered (isolating)");
-                VTR_ASSERT_MSG(arch_switch_inf.configurable(), "Delayless switch expected to be configurable");
+                float max_delay = pb_graph_edge->delay_max;
 
-                int switch_type_idx = (int)device_ctx.pb_edge_sw_inf.size();
+                if(pb_edge_delays.find(max_delay) == pb_edge_delays.end()) {
+                    switch_type_id = (int)device_ctx.pb_edge_sw_inf.size();
+                    pb_edge_delays.insert(std::make_pair(max_delay, switch_type_id));
+                    t_arch_switch_inf arch_switch_inf;
+                    arch_switch_inf.set_type(SwitchType::MUX);
+                    arch_switch_inf.name = vtr::strdup(("Internal Switch/" + std::to_string(max_delay)).c_str());
+                    arch_switch_inf.R = 0.;
+                    arch_switch_inf.Cin = 0.;
+                    arch_switch_inf.Cout = 0;
+                    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, max_delay);
+                    arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
+                    arch_switch_inf.mux_trans_size = 0.;
+                    arch_switch_inf.buf_size_type = BufferSize::ABSOLUTE;
+                    arch_switch_inf.buf_size = 0.;
+                    VTR_ASSERT_MSG(arch_switch_inf.buffered(), "Delayless switch expected to be buffered (isolating)");
+                    VTR_ASSERT_MSG(arch_switch_inf.configurable(), "Delayless switch expected to be configurable");
 
-                device_ctx.pb_edge_sw_inf.insert(std::make_pair(switch_type_idx, arch_switch_inf));
+                    device_ctx.pb_edge_sw_inf.insert(std::make_pair(switch_type_id, arch_switch_inf));
+                    t_rr_switch_inf rr_sw_inf = create_rr_switch_from_arch_switch(switch_type_id, R_minW_nmos, R_minW_pmos);
+                    device_ctx.rr_graph_builder.add_rr_switch(rr_sw_inf);
+                } else {
+                    switch_type_id = pb_edge_delays.at(max_delay);
+                }
 
-                pb_graph_edge->switch_type_idx = switch_type_idx;
-
-                t_rr_switch_inf rr_sw_inf = create_rr_switch_from_arch_switch(switch_type_idx, R_minW_nmos, R_minW_pmos);
-                device_ctx.rr_graph_builder.add_rr_switch(rr_sw_inf);
+                // The data type of the number of switches is short - We add this assertion to make sure that overflow doesn't happen
+                VTR_ASSERT(switch_type_id <= std::numeric_limits<short>::max());
+                pb_graph_edge->switch_type_idx = switch_type_id;
             }
         }
 

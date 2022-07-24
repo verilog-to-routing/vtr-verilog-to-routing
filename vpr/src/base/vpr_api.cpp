@@ -1167,6 +1167,9 @@ void free_device(const t_det_routing_arch& routing_arch) {
     }
     delete[] device_ctx.arch_switch_inf;
     device_ctx.arch_switch_inf = nullptr;
+
+    device_ctx.pb_edge_sw_inf.clear();
+
     free_complex_block_types();
     free_chunk_memory_trace();
 }
