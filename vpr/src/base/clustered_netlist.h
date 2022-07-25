@@ -257,9 +257,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ///@brief Shrinks internal data structures to required size to reduce memory consumption
     void shrink_to_fit_impl() override;
 
-    ///@brief Group the block to its corresponding logical type
-    void add_block_to_logical_type(ClusterBlockId blk_id, t_logical_block_type_ptr type);
-
     /*
      * Component removal
      */
