@@ -30,6 +30,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
 bool verify_rr_node_indices(const DeviceGrid& grid,
                             const RRGraphView& rr_graph,
+                            const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                             const t_rr_graph_storage& rr_nodes);
 
 //Returns all x-channel or y-channel wires at the specified location
