@@ -145,7 +145,7 @@ def main():
             sep = "\t  "
         else:
             sep = ","
-        df = pd.read_csv(csv, sep=sep, engine='python')
+        df = pd.read_csv(csv, sep=sep, engine="python")
 
         avail_metrics.update(df.columns)  # Record available metrics
 
