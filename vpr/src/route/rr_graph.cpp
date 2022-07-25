@@ -37,6 +37,7 @@
 #include "rr_graph_builder.h"
 
 #include "rr_types.h"
+#include "echo_files.h"
 
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
@@ -318,6 +319,8 @@ void create_rr_graph(const t_graph_type graph_type,
                      int* Warnings) {
     const auto& device_ctx = g_vpr_ctx.device();
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
+    bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
+    const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     if (!det_routing_arch->read_rr_graph_filename.empty()) {
         if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
             free_rr_graph();
@@ -340,7 +343,9 @@ void create_rr_graph(const t_graph_type graph_type,
                          det_routing_arch->read_rr_graph_filename.c_str(),
                          &det_routing_arch->read_rr_graph_filename,
                          router_opts.read_rr_edge_metadata,
-                         router_opts.do_check_rr_graph);
+                         router_opts.do_check_rr_graph,
+                         echo_enabled,
+                         echo_file_name);
             if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
                 mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
                                                                   router_opts.reorder_rr_graph_nodes_threshold,
@@ -400,7 +405,9 @@ void create_rr_graph(const t_graph_type graph_type,
                        &mutable_device_ctx.chan_width,
                        num_arch_switches,
                        det_routing_arch->write_rr_graph_filename.c_str(),
-                       device_ctx.virtual_clock_network_root_idx);
+                       device_ctx.virtual_clock_network_root_idx,
+                       echo_enabled,
+                       echo_file_name);
     }
 }
 
@@ -1068,9 +1075,14 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                                enum e_base_cost_type base_cost_type) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    const auto& grid = device_ctx.grid;
+    auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
+    auto& rr_indexed_data = mutable_device_ctx.rr_indexed_data;
+    bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
+    const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     add_rr_graph_C_from_switches(rr_graph.rr_switch_inf(RRSwitchId(wire_to_rr_ipin_switch)).Cin);
-    alloc_and_load_rr_indexed_data(segment_inf, segment_inf_x,
-                                   segment_inf_y, wire_to_rr_ipin_switch, base_cost_type);
+    alloc_and_load_rr_indexed_data(rr_graph, device_ctx.grid, segment_inf, segment_inf_x,
+                                   segment_inf_y, rr_indexed_data, wire_to_rr_ipin_switch, base_cost_type, echo_enabled, echo_file_name);
     //load_rr_index_segments(segment_inf.size());
 }
 

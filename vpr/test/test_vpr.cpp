@@ -6,6 +6,7 @@
 #include "rr_graph_writer.h"
 #include "arch_util.h"
 #include "vpr_api.h"
+#include "echo_files.h"
 #include <cstring>
 #include <vector>
 
@@ -137,6 +138,8 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
         const auto& rr_graph = device_ctx.rr_graph;
         auto& rr_graph_builder = mutable_device_ctx.rr_graph_builder;
+        bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
+        const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
 
         for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
             if ((rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY) && rr_graph.num_edges(inode) > 0) {
@@ -163,7 +166,9 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        &mutable_device_ctx.chan_width,
                        device_ctx.num_arch_switches,
                        kRrGraphFile,
-                       device_ctx.virtual_clock_network_root_idx);
+                       device_ctx.virtual_clock_network_root_idx,
+                       echo_enabled,
+                       echo_file_name);
         vpr_free_all(arch, vpr_setup);
 
         auto& atom_ctx = g_vpr_ctx.mutable_atom();

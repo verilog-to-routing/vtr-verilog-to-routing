@@ -56,7 +56,9 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   const char* read_rr_graph_name,
                   std::string* read_rr_graph_filename,
                   bool read_edge_metadata,
-                  bool do_check_rr_graph) {
+                  bool do_check_rr_graph,
+                  bool echo_enabled,
+                  const char* echo_file_name) {
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
     size_t num_segments = segment_inf.size();
@@ -73,6 +75,8 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         read_rr_graph_name,
         read_rr_graph_filename,
         read_edge_metadata,
+        echo_enabled,
+        echo_file_name,
         chan_width,
         &rr_graph_builder->rr_nodes(),
         rr_graph_builder,

@@ -32,6 +32,8 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   const char* read_rr_graph_name,
                   std::string* read_rr_graph_filename,
                   bool read_edge_metadata,
-                  bool do_check_rr_graph);
+                  bool do_check_rr_graph,
+                  bool echo_enabled,
+                  const char* echo_file_name);
 
 #endif /* RR_GRAPH_READER_H */
