@@ -38,7 +38,9 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     t_chan_width* chan_width,
                     const size_t num_arch_switches,
                     const char* file_name,
-                    const int virtual_clock_network_root_idx) {
+                    const int virtual_clock_network_root_idx,
+                    bool echo_enabled,
+                    const char* echo__file_name) {
 
     RrGraphSerializer reader(
         /*graph_type=*/t_graph_type(),
@@ -48,6 +50,8 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
         /*read_rr_graph_name=*/nullptr,
         /*read_rr_graph_filename=*/nullptr,
         /*read_edge_metadata=*/false,
+        echo_enabled,
+        echo__file_name,
         chan_width,
         &rr_graph_builder->rr_nodes(),
         rr_graph_builder,

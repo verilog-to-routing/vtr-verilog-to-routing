@@ -98,7 +98,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                              * be added now since each edge is actually a driver */
                             rr_node_C[to_node] += Cout;
                         }
-                        isblock = seg_index_of_sblock(inode, to_node);
+                        isblock = seg_index_of_sblock(rr_graph, inode, to_node);
                         buffer_Cin[isblock] = std::max(buffer_Cin[isblock], Cin);
                     }
 
@@ -109,7 +109,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                         /* Implements sharing of the track to connection box buffer.
                          * Such a buffer exists at every segment of the wire at which
                          * at least one logic block input connects. */
-                        icblock = seg_index_of_cblock(from_rr_type, to_node);
+                        icblock = seg_index_of_cblock(rr_graph, from_rr_type, to_node);
                         if (cblock_counted[icblock] == false) {
                             rr_node_C[inode] += C_ipin_cblock;
                             cblock_counted[icblock] = true;
@@ -129,7 +129,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
             /*   for (iedge=0;iedge<device_ctx.rr_nodes[inode].num_edges();iedge++) {
              * to_node = device_ctx.rr_nodes[inode].edges[iedge];
              * if (rr_graph.node_type(RRNodeId(to_node)) == IPIN) {
-             * icblock = seg_index_of_cblock (from_rr_type, to_node);
+             * icblock = seg_index_of_cblock (rr_graph, from_rr_type, to_node);
              * cblock_counted[icblock] = false;
              * }
              * }     */

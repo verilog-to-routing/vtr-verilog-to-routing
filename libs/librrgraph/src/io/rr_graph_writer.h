@@ -26,6 +26,8 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     t_chan_width* chan_width,
                     const size_t num_arch_switches,
                     const char* file_name,
-                    const int virtual_clock_network_root_idx);
+                    const int virtual_clock_network_root_idx,
+                    bool echo_enabled,
+                    const char* echo__file_name);
 
 #endif

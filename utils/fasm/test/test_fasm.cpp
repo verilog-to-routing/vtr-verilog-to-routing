@@ -254,6 +254,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
         auto &device_ctx = g_vpr_ctx.mutable_device();
         const auto& rr_graph = device_ctx.rr_graph;
+        bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
+        const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
         for (const RRNodeId& inode : rr_graph.nodes()){
             for(t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); ++iedge) {
                 auto sink_inode = size_t(rr_graph.edge_sink_node(inode, iedge));
@@ -290,7 +292,9 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                        &device_ctx.chan_width,
                        device_ctx.num_arch_switches,
                        kRrGraphFile,
-                       device_ctx.virtual_clock_network_root_idx);
+                       device_ctx.virtual_clock_network_root_idx,
+                       echo_enabled,
+                       echo_file_name);
         vpr_free_all(arch, vpr_setup);
     }
 

@@ -279,6 +279,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const char* read_rr_graph_name,
         std::string* read_rr_graph_filename,
         bool read_edge_metadata,
+        bool echo_enabled,
+        const char* echo_file_name,
         t_chan_width* chan_width,
         t_rr_graph_storage* rr_nodes,
         RRGraphBuilder* rr_graph_builder,
@@ -310,6 +312,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , do_check_rr_graph_(do_check_rr_graph)
         , read_rr_graph_name_(read_rr_graph_name)
         , read_edge_metadata_(read_edge_metadata)
+        , echo_enabled_ (echo_enabled)
+        , echo_file_name_ (echo_file_name)
         , num_arch_switches_(num_arch_switches)
         , arch_switch_inf_(arch_switch_inf)
         , segment_inf_(segment_inf)
@@ -1593,11 +1597,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto segment_inf_y_ = get_parallel_segs(temp_rr_segs, seg_index_map, Y_AXIS);
 
         alloc_and_load_rr_indexed_data(
+            *rr_graph_,
+            grid_,
             temp_rr_segs,
             segment_inf_x_,
             segment_inf_y_,
+            *rr_indexed_data_,
             *wire_to_rr_ipin_switch_,
-            base_cost_type_);
+            base_cost_type_,
+            echo_enabled_,
+            echo_file_name_);
 
         VTR_ASSERT(rr_indexed_data_->size() == seg_index_.size());
         for (size_t i = 0; i < seg_index_.size(); ++i) {
@@ -1915,6 +1924,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     const bool do_check_rr_graph_;
     const char* read_rr_graph_name_;
     const bool read_edge_metadata_;
+    const bool echo_enabled_;
+    const char* echo_file_name_;
 
     const size_t num_arch_switches_;
     const t_arch_switch_inf* arch_switch_inf_;
