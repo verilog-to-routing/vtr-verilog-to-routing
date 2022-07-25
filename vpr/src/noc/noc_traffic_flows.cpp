@@ -72,15 +72,8 @@ void NocTrafficFlows::clear_traffic_flows(void) {
 bool NocTrafficFlows::check_if_cluster_block_has_traffic_flows(ClusterBlockId block_id) {
     auto traffic_flows = get_traffic_flows_associated_to_router_block(block_id);
 
-    bool result = false;
-
-    // Check to see if any traffic flows were found that are associated to the current cluster block
-    if (traffic_flows != nullptr) {
-        // current cluster is a router block that has traffic flows it is a part of. So indicate this to the user.
-        result = true;
-    }
-
-    return result;
+    // indicate whether a vector of traffic flows were found that are associated to the curre cluster block
+    return (traffic_flows != nullptr);
 }
 
 // private functions used internally
