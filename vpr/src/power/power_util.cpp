@@ -422,8 +422,6 @@ static void alloc_and_load_mux_graph_recursive(t_mux_node* node,
 
     if (level != 0) {
         node->children = new t_mux_node[node->num_inputs];
-        for (int i = 0; i < node->num_inputs; i++)
-            node->children[i] = t_mux_node();
         for (child_idx = 0; child_idx < node->num_inputs; child_idx++) {
             int num_child_pi = num_primary_inputs / node->num_inputs;
             if (child_idx < (num_primary_inputs % node->num_inputs)) {
