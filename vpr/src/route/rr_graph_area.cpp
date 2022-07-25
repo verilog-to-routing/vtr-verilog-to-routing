@@ -411,7 +411,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                                             "Uni-directional RR node driven by non-configurable "
                                             "BUFFER has fan in %d (expected 1)\n",
                                             fan_in);
-                                        msg += "  " + describe_rr_node(size_t(to_node));
+                                        msg += "  " + describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, size_t(to_node));
                                         VPR_FATAL_ERROR(VPR_ERROR_OTHER, msg.c_str());
                                     }
 

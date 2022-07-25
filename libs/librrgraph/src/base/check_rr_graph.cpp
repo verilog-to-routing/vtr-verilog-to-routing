@@ -18,7 +18,7 @@ static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node);
 
 static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& grid, const t_rr_node& node);
 
-static void check_rr_edge(const RRGraphView& rr_graph, int from_node, int from_edge, int to_node);
+static void check_rr_edge(const RRGraphView& rr_graph, const DeviceGrid& grid, const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, int from_node, int from_edge, int to_node);
 
 /************************ Subroutine definitions ****************************/
 
@@ -92,7 +92,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                                 inode, to_node);
             }
 
-            check_rr_edge(rr_graph, inode, iedge, to_node);
+            check_rr_edge(rr_graph, grid, rr_indexed_data, inode, iedge, to_node);
 
             edges.emplace_back(to_node, iedge);
             total_edges_to_node[to_node]++;
@@ -503,7 +503,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
 
             if (check_for_out_edges) {
-                std::string info = describe_rr_node(inode);
+                std::string info = describe_rr_node(rr_graph, grid, rr_indexed_data, inode);
                 VTR_LOG_WARN("in check_rr_node: %s has no out-going edges.\n", info.c_str());
             }
         }
@@ -600,7 +600,7 @@ static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& 
     return true; //All other blocks will be surrounded on all sides by channels
 }
 
-static void check_rr_edge(const RRGraphView& rr_graph, int from_node, int iedge, int to_node) {
+static void check_rr_edge(const RRGraphView& rr_graph, const DeviceGrid& grid, const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, int from_node, int iedge, int to_node) {
 
     //Check that to to_node's fan-in is correct, given the switch type
     int iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
@@ -614,7 +614,7 @@ static void check_rr_edge(const RRGraphView& rr_graph, int from_node, int iedge,
                 std::string msg = "Non-configurable BUFFER type switch must have only one driver. ";
                 msg += vtr::string_fmt(" Actual fan-in was %d (expected 1).\n", to_fanin);
                 msg += "  Possible cause is complex block output pins connecting to:\n";
-                msg += "    " + describe_rr_node(to_node);
+                msg += "    " + describe_rr_node(rr_graph, grid, rr_indexed_data, to_node);
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }

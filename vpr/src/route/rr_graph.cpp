@@ -388,7 +388,7 @@ void create_rr_graph(const t_graph_type graph_type,
 
     process_non_config_sets();
 
-    verify_rr_node_indices(grid, device_ctx.rr_graph, device_ctx.rr_graph.rr_nodes());
+    verify_rr_node_indices(grid, device_ctx.rr_graph, device_ctx.rr_indexed_data, device_ctx.rr_graph.rr_nodes());
 
     print_rr_graph_stats();
 
@@ -1081,7 +1081,7 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
     bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     add_rr_graph_C_from_switches(rr_graph.rr_switch_inf(RRSwitchId(wire_to_rr_ipin_switch)).Cin);
-    alloc_and_load_rr_indexed_data(rr_graph, device_ctx.grid, segment_inf, segment_inf_x,
+    alloc_and_load_rr_indexed_data(rr_graph, grid, segment_inf, segment_inf_x,
                                    segment_inf_y, rr_indexed_data, wire_to_rr_ipin_switch, base_cost_type, echo_enabled, echo_file_name);
     //load_rr_index_segments(segment_inf.size());
 }
@@ -2632,50 +2632,6 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
     }
 
     return track_to_pin_lookup;
-}
-
-/* TODO: This function should adapt RRNodeId */
-std::string describe_rr_node(int inode) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    std::string msg = vtr::string_fmt("RR node: %d", inode);
-
-    if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) {
-        auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
-
-        int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
-        std::string rr_node_direction_string = rr_graph.node_direction_string(RRNodeId(inode));
-
-        if (seg_index < (int)rr_graph.num_rr_segments()) {
-            msg += vtr::string_fmt(" track: %d longline: %d",
-                                   rr_graph.node_track_num(RRNodeId(inode)),
-                                   rr_graph.rr_segments(RRSegmentId(seg_index)).longline);
-        } else {
-            msg += vtr::string_fmt(" track: %d seg_type: ILLEGAL_SEG_INDEX %d",
-                                   rr_graph.node_track_num(RRNodeId(inode)),
-                                   seg_index);
-        }
-    } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
-        auto type = device_ctx.grid[rr_graph.node_xlow(RRNodeId(inode))][rr_graph.node_ylow(RRNodeId(inode))].type;
-        std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(RRNodeId(inode)));
-
-        msg += vtr::string_fmt(" pin: %d pin_name: %s",
-                               rr_graph.node_pin_num(RRNodeId(inode)),
-                               pin_name.c_str());
-    } else {
-        VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK);
-
-        msg += vtr::string_fmt(" class: %d", rr_graph.node_class_num(RRNodeId(inode)));
-    }
-
-    msg += vtr::string_fmt(" capacity: %d", rr_graph.node_capacity(RRNodeId(inode)));
-    msg += vtr::string_fmt(" fan-in: %d", rr_graph.node_fan_in(RRNodeId(inode)));
-    msg += vtr::string_fmt(" fan-out: %d", rr_graph.num_edges(RRNodeId(inode)));
-
-    msg += " " + rr_graph.node_coordinate_to_string(RRNodeId(inode));
-
-    return msg;
 }
 
 /*AA: 

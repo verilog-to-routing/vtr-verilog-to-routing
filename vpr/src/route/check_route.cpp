@@ -130,8 +130,8 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
                               "  %s\n"
                               "  %s\n",
                               size_t(net_id),
-                              describe_rr_node(prev_node).c_str(),
-                              describe_rr_node(inode).c_str());
+                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, prev_node).c_str(),
+                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode).c_str());
                 }
 
                 connected_to_route[inode] = true; /* Mark as in path. */
@@ -621,6 +621,7 @@ static void check_all_non_configurable_edges() {
 //For routing to be legal if *any* non-configurable edge is used, so must *all*
 //other non-configurable edges in the same set
 static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets) {
+    const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -686,7 +687,7 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                     cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
 
                 for (auto inode : difference) {
-                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(inode).c_str());
+                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode).c_str());
                 }
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
@@ -754,8 +755,8 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                 for (t_node_edge missing_edge : dedupped_difference) {
                     msg += vtr::string_fmt("  Expected RR Node: %d and RR Node: %d to be non-configurably connected, but edge missing from routing:\n",
                                            missing_edge.from_node, missing_edge.to_node);
-                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.from_node).c_str());
-                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.to_node).c_str());
+                    msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, missing_edge.from_node).c_str());
+                    msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, missing_edge.to_node).c_str());
                 }
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
@@ -801,11 +802,12 @@ void check_net_for_stubs(ClusterNetId net) {
 
     bool any_stubs = stub_finder.CheckNet(net);
     if (any_stubs) {
+        const auto& device_ctx = g_vpr_ctx.device();
         auto& cluster_ctx = g_vpr_ctx.clustering();
         std::string msg = vtr::string_fmt("Route tree for net '%s' (#%zu) contains stub branches rooted at:\n",
                                           cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
         for (int inode : stub_finder.stub_nodes()) {
-            msg += vtr::string_fmt("    %s\n", describe_rr_node(inode).c_str());
+            msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode).c_str());
         }
 
         VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
