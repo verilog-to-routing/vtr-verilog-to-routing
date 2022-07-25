@@ -458,34 +458,6 @@ BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block(const std::string& na
     }
 }
 
-/**
- * @brief Finds a block where the block's name contains the
- *        provided input name as a substring. 
- *        The intented use is to find the block id of a 
- *        hard block without knowing its name in the netlist. Instead
- *        the block's module name in the HDL design can be used as it will
- *        be a substring within its full name in the netlist.
- * 
- *        For example, suppose a RAM block was named in the netlist as
- *        "top|alu|test_ram|out". The user instantiated the ram module
- *        in the HDL design as "test_ram". So instead of going through 
- *        the netlist and finding the ram block's full name, this
- *        function can be used by just providing the module name "test_ram"
- *        and using this substring to match the blocks name in the netlist
- *        and retrieving its block id.
- * 
- *        This function runs in linear time (O(N)) as it goes over all the 
- *        cluster blocks in the netlist. Additionally, if there are multiple
- *        blocks that contain the provided input as a substring, then the
- *        first block found is returned.
- * 
- *        NOTE: This function tries to find blocks by checking for substrings.
- *              The clustered netlist class defines another version of this
- *              function that find blocks by checking for a pattern match,
- *              meaning that the input is a pattern string and the pattern
- *              is looked for ine each block name.
- *        
- */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block_by_name_fragment(const std::string& name) const {
     BlockId matching_blk_id = BlockId::INVALID();

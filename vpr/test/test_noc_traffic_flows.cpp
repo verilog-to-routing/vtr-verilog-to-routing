@@ -55,7 +55,6 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
             // add the current traffic flow as an associated flow to its source and sink routers
             golden_list_of_associated_traffic_flows_to_routers[source_router_id].emplace_back(curr_flow_id);
             golden_list_of_associated_traffic_flows_to_routers[sink_router_id].emplace_back(curr_flow_id);
-
         }
     }
 
@@ -98,8 +97,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
         }
 
         // now check that the associated traffic flows for each router is also stored correctly
-        for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++){
-
+        for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++) {
             ClusterBlockId router_id = (ClusterBlockId)router_number;
 
             int number_of_traffic_flows_associated_with_current_router = golden_list_of_associated_traffic_flows_to_routers[router_id].size();
@@ -114,11 +112,10 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
             for (int router_traffic_flow = 0; router_traffic_flow < number_of_traffic_flows_associated_with_current_router; router_traffic_flow++) {
                 REQUIRE((size_t)golden_list_of_associated_traffic_flows_to_routers[router_id][router_traffic_flow] == (size_t)(*associated_traffic_flows_to_router)[router_traffic_flow]);
             }
-        
-        }  
+        }
 
         // make sure that the number of unique routers stored inside the NocTrafficFlows class is what we expect it should be
-        REQUIRE(NUM_OF_ROUTERS == traffic_flow_storage.get_number_of_routers_used_in_traffic_flows());   
+        REQUIRE(NUM_OF_ROUTERS == traffic_flow_storage.get_number_of_routers_used_in_traffic_flows());
     }
     SECTION("Checking to see if invalid blocks that are not routers exist in NocTrafficFlows.") {
         // create a invalid block id

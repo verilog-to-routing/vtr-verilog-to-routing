@@ -307,45 +307,6 @@ bool ClusteredNetlist::validate_net_sizes_impl(size_t num_nets) const {
     return true;
 }
 
-/**
- * @brief Finds a block where the block's name matches to the provided
- *        input string pattern. 
- *        The intented use is to find the block id of a 
- *        hard block without knowing its name in the netlist. Instead
- *        a pattern can be created that we know the block's name will
- *        match to. Generally, we expect the pattern to be constructed
- *        using the block's module name in the HDL design, since we can
- *        expect the netlist name of the block to include the module
- *        name within it.
- * 
- *        For example, suppose a RAM block was named in the netlist as
- *        "top|alu|test_ram|out". The user instantiated the ram module
- *        in the HDL design as "test_ram". So instead of going through 
- *        the netlist and finding the ram block's full name, this
- *        function can be used by just providing the string pattern as
- *        ".*test_ram.*". We know that the module name should be somewhere
- *        within the string, so the pattern we provide says that the netlist
- *        name of the block contains arbritary characters then the module name
- *        and then some other arbritary characters after. This pattern will
- *        then be used to match to the block in the netlist. 
- * 
- *        This function runs in linear time (O(N)) as it goes over all the 
- *        cluster blocks in the netlist. Additionally, if there are multiple
- *        blocks that match to the provided input pattern, then the
- *        first block found is returned.
- * 
- *        There is a similiar function in the Netlist Class. This function 
- *        additionally requires the logical type of the block as well. Since
- *        the inteded use is to find hard blocks, it is quite inefficient to 
- *        to go through all the blocks to find a matching one. Instead, an
- *        additional datastructure is created that groups clusters by their
- *        logical type. This function filters the clusters and only searches
- *        for the matching block within a list of blocks that are the same 
- *        logical type. The idea here is that the filtered list should be
- *        considereably smaller that a list of every block in the netlist
- *        and this should help improve run time.
- * 
- */
 ClusterBlockId ClusteredNetlist::find_block_by_name_fragment(const std::string& name, const std::vector<ClusterBlockId>& cluster_block_candidates) const {
     ClusterBlockId blk_id = ClusterBlockId::INVALID();
     std::regex name_to_match(name);

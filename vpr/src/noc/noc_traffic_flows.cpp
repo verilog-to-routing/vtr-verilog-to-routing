@@ -2,8 +2,8 @@
 #include "noc_traffic_flows.h"
 #include "vpr_error.h"
 
-// constructor indicates that the class has not been constructed yet
-NocTrafficFlows::NocTrafficFlows(void) {
+// constructor indicates that the class has not been properly initialized yet as the user supplied traffic flows have not been added.
+NocTrafficFlows::NocTrafficFlows() {
     built_traffic_flows = false;
 }
 
@@ -13,8 +13,7 @@ const t_noc_traffic_flow& NocTrafficFlows::get_single_noc_traffic_flow(NocTraffi
     return noc_traffic_flows[traffic_flow_id];
 }
 
-const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id){
-
+const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) {
     const std::vector<NocTrafficFlowId>* associated_traffic_flows_ref = nullptr;
 
     // get a reference to the traffic flows that have the current router as a source or sink
@@ -22,7 +21,7 @@ const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associat
 
     // check if there are any traffic flows associated with the current router
     if (associated_traffic_flows != traffic_flows_associated_to_router_blocks.end()) {
-        // if we are here then there exists atleast 1 traffic flow that includes the current router as a source or sink
+        // if we are here then there exists at least 1 traffic flow that includes the current router as a source or sink
         associated_traffic_flows_ref = &(associated_traffic_flows->second);
     }
 
@@ -36,9 +35,8 @@ int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void) {
 // setters for the traffic flows
 
 void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency) {
-    
     VTR_ASSERT_MSG(!built_traffic_flows, "NoC traffic flows have already been added, cannot modify further.");
-    
+
     // create and add the new traffic flow to the vector
     noc_traffic_flows.emplace_back(source_router_module_name, sink_router_module_name, source_router_cluster_id, sink_router_cluster_id, traffic_flow_bandwidth, traffic_flow_latency);
 
@@ -55,7 +53,6 @@ void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_n
 // utility functions for the noc traffic flows
 
 void NocTrafficFlows::finshed_noc_traffic_flows_setup(void) {
-    
     // all the traffic flows have been added, so indicate that the class has been constructed and cannot be modified anymore
     built_traffic_flows = true;
     return;

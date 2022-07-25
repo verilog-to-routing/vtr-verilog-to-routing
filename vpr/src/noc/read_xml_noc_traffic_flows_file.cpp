@@ -7,16 +7,13 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "NoC traffic flows file '%s' has an unknown extension. Expecting .flows for NoC traffic flow files.", noc_flows_file);
     }
 
-    // cluster information
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
-    // noc information
+    // get the modifiable NoC as we will be adding traffic flows to it here
     NocContext& noc_ctx = g_vpr_ctx.mutable_noc();
 
-    // device information
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    // get the physical type of a noc router
     t_physical_tile_type_ptr noc_router_tile_type = get_physical_type_of_noc_router_tile(device_ctx, noc_ctx);
 
     /* Get the cluster blocks that are compatible with a physical NoC router
@@ -34,7 +31,11 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
     std::vector<ClusterBlockId> cluster_blocks_compatible_with_noc_router_tiles;
     get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_tile_type, cluster_blocks_compatible_with_noc_router_tiles);
 
-    /* variabled used when parsing the file */
+    /* variabled used when parsing the file.
+     * Stores xml related information while parsing the file, such as current 
+     * line number, current tag and etc. These variables will be used to 
+     * provide additional information to the user when reporting an error. 
+     */
     pugi::xml_document doc;
     pugiutil::loc_data loc_data;
 
@@ -84,11 +85,12 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     pugiutil::expect_only_attributes(single_flow_tag, expected_single_flow_attributes, loc_data);
 
     // store the names of the routers part of this traffic flow
+    // These names should regex match to a logical router within the clustered netlist
     std::string source_router_module_name = pugiutil::get_attribute(single_flow_tag, "src", loc_data, pugiutil::REQUIRED).as_string();
 
     std::string sink_router_module_name = pugiutil::get_attribute(single_flow_tag, "dst", loc_data, pugiutil::REQUIRED).as_string();
 
-    //verify whether the router module names are legal
+    //verify whether the router module names are valid non-empty strings
     verify_traffic_flow_router_modules(source_router_module_name, sink_router_module_name, single_flow_tag, loc_data);
 
     // assign the unique block ids of the two router modules after clustering
@@ -137,8 +139,7 @@ void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_tr
 ClusterBlockId get_router_module_cluster_id(std::string router_module_name, const ClusteringContext& cluster_ctx, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles) {
     ClusterBlockId router_module_id = ClusterBlockId::INVALID();
 
-    // find the cluster block whos name matches to the provided router module name provided by the user
-    // Then get the corresponding cluster block id if a valid block was found
+    // Given a regex pattern, use it to match a name of a cluster router block within the clustered netlist. If a matching cluster block is found, then return its cluster block id.
     try {
         router_module_id = cluster_ctx.clb_nlist.find_block_by_name_fragment(router_module_name, cluster_blocks_compatible_with_noc_router_tiles);
     } catch (const std::regex_error& error) {
@@ -160,9 +161,10 @@ void check_traffic_flow_router_module_type(std::string router_module_name, Clust
     t_logical_block_type_ptr router_module_logical_type = cluster_ctx.clb_nlist.block_type(router_module_id);
 
     /*
-     * Check whether the current router modules logical type is compatible
+     * Check whether the current router module logical type is compatible
      * with the physical type of a noc router (can the module be placed on a 
-     * noc router tile on the FPGA device). If not then this module is not a router so throw an error.
+     * noc router tile on the FPGA device). If not then this module is not a
+     * router so throw an error.
      */
     if (!is_tile_compatible(noc_router_tile_type, router_module_logical_type)) {
         vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The supplied module name '%s' is not a NoC router.", router_module_name.c_str());
@@ -173,6 +175,7 @@ void check_traffic_flow_router_module_type(std::string router_module_name, Clust
 
 t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContext& device_ctx, NocContext& noc_ctx) {
     // get a reference to a single physical noc router
+    // assuming that all routers have the same physical type, so we are just using the physical type of the first router stored within the NoC
     auto physical_noc_router = noc_ctx.noc_model.get_noc_routers().begin();
 
     //Using the routers grid position go to the device and identify the physical type of the tile located there.
@@ -198,8 +201,11 @@ bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& no
         }
     }
 
-    /*
-     * Every router block in the design needs to be part of a traffic flow. There can never be a router that isnt part of a traffic flow, other wise the router is doing nothing. So check that the number of unique routers in all traffic flows equals the number of router blocks in the design, otherwise throw an warning to let the user know. If there aren't
+    /* Every router block in the design needs to be part of a traffic flow.
+     * There can never be a router that isn't part of a traffic flow, otherwise
+     * the router is doing nothing. So check that the number of unique routers 
+     * in all traffic flows equals the number of router blocks in the design,
+     * otherwise throw a warning to let the user know. If there aren't
      * any traffic flows for any routers then the NoC is not being used.
      */
     if (noc_ctx.noc_traffic_flows_storage.get_number_of_routers_used_in_traffic_flows() != number_of_router_blocks_in_design) {

@@ -75,7 +75,6 @@ class NocTrafficFlows {
     /** contains all the traffic flows provided by the user and their information*/
     vtr::vector<NocTrafficFlowId, t_noc_traffic_flow> noc_traffic_flows;
 
-
     /**
      * @brief Each traffic flow is composed of a source and destination 
      * router. If the source/destination routers are moved, then the traffic
@@ -103,7 +102,7 @@ class NocTrafficFlows {
      * 
      */
     bool built_traffic_flows;
-    
+
     // private functions
 
     /**

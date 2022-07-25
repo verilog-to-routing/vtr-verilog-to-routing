@@ -728,9 +728,39 @@ class Netlist {
     BlockId find_block(const std::string& name) const;
 
     /**
-     * @brief Returns the BlockId of the specified block or BlockId::INVALID() if not found. The name of the block ID returned contains the provided input as a substring.
-     *
-     *   @param name   A substring of a block name for which an ID needs to be found. 
+     * @brief Finds a block where the block's name contains the
+     *        provided input name as a substring. 
+     *        The intented use is to find the block id of a 
+     *        hard block without knowing its name in the netlist. Instead
+     *        the block's module name in the HDL design can be used as it will
+     *        be a substring within its full name in the netlist.
+     * 
+     *        For example, suppose a RAM block was named in the netlist as
+     *        "top|alu|test_ram|out". The user instantiated the ram module
+     *        in the HDL design as "test_ram". So instead of going through 
+     *        the netlist and finding the ram block's full name, this
+     *        function can be used by just providing the module name "test_ram"
+     *        and using this substring to match the blocks name in the netlist
+     *        and retrieving its block id. If no blocks matched to input pattern
+     *        then an invalid block id is returned.
+     * 
+     *        This function runs in linear time (O(N)) as it goes over all the 
+     *        cluster blocks in the netlist. Additionally, if there are multiple
+     *        blocks that contain the provided input as a substring, then the
+     *        first block found is returned.
+     * 
+     *        NOTE: This function tries to find blocks by checking for 
+     *              substrings.
+     *              The clustered netlist class defines another version of this
+     *              function that find blocks by checking for a pattern match,
+     *              meaning that the input is a pattern string and the pattern
+     *              is looked for ine each block name.
+     * 
+     * @param name A substring of a block name for which an ID needs to be 
+     *             found.
+     * @return A cluster block id representing a unique cluster block that 
+     *         matched to the input string pattern.
+     *        
      */
     BlockId find_block_by_name_fragment(const std::string& name) const;
 

@@ -404,7 +404,6 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
     }
 }
 TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_traffic_flows_parser]") {
-
     // get the global netlist
     ClusteringContext& cluster_ctx = g_vpr_ctx.mutable_clustering();
     ClusteredNetlist* test_netlist = &cluster_ctx.clb_nlist;
@@ -449,7 +448,7 @@ TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_
     // create a physical tile for I/O blocks
     t_physical_tile_type i_o_block_tile;
 
-    // indicate that the io physical tile is not an input/output. Just for this test 
+    // indicate that the io physical tile is not an input/output. Just for this test
     i_o_block_tile.is_input_type = false;
     i_o_block_tile.is_output_type = false;
 
@@ -462,11 +461,9 @@ TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_
     // this is a golden set that the output of this test will be compared to
     std::vector<ClusterBlockId> golden_set_of_router_cluster_blocks_in_netlist;
 
-
-    SECTION("Test case where all router cluster blocks are correctly identified within the netlist and stored."){
-
+    SECTION("Test case where all router cluster blocks are correctly identified within the netlist and stored.") {
         // create some sample router blocks and add them to the clustered netlsit
-        
+
         // create names for some router blocks
         char router_one[] = "noc_router_one";
         char router_two[] = "noc_router_two";
@@ -489,19 +486,15 @@ TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_
         REQUIRE(golden_set_of_router_cluster_blocks_in_netlist.size() == found_cluster_blocks_that_are_noc_router_compatible.size());
 
         // now go through the golden set and check that the router blocks in the golden set were correctly found by the test function
-        for (auto golden_set_router_block_id = golden_set_of_router_cluster_blocks_in_netlist.begin(); golden_set_router_block_id != golden_set_of_router_cluster_blocks_in_netlist.end(); golden_set_router_block_id++){
-
+        for (auto golden_set_router_block_id = golden_set_of_router_cluster_blocks_in_netlist.begin(); golden_set_router_block_id != golden_set_of_router_cluster_blocks_in_netlist.end(); golden_set_router_block_id++) {
             // no check that the current router block in the golden set was also found by the test and recognized as being a router logical block
             REQUIRE(std::find(found_cluster_blocks_that_are_noc_router_compatible.begin(), found_cluster_blocks_that_are_noc_router_compatible.end(), *golden_set_router_block_id) != found_cluster_blocks_that_are_noc_router_compatible.end());
-
         }
 
         // clear the global netlist datastructure so other unit tests that rely on dont use a corrupted netlist
         free_clustered_netlist();
-
     }
-    SECTION("Test case where non router blocks are correctly identified within the netlist and ignored."){
-
+    SECTION("Test case where non router blocks are correctly identified within the netlist and ignored.") {
         // add some I/O blocks which are not compatible with a physical noc router tile
 
         // create names for some io blocks
