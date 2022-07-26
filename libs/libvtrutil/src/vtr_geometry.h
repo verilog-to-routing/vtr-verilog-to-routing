@@ -61,6 +61,9 @@ bool operator!=(const RectUnion<T>& lhs, const RectUnion<T>& rhs);
 template<class T>
 class Point {
   public: //Constructors
+    // below is to create a no argument constructor for libopenfpga/libopenfpgautil/src/openfpga_pb_parser.cpp
+    // need to figure out a better solution to avoid change this in libs from vtr
+    Point();
     Point(T x_val, T y_val) noexcept;
 
   public: //Accessors
