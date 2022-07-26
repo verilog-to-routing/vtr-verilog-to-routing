@@ -144,13 +144,11 @@ void Bucket::expand(size_t required_number_of_buckets) {
     heap_size_ = required_number_of_buckets * 2;
     int i;
 
-    std::vector<BucketItem*> temp(heap_, heap_ + old_size);
+    BucketItem** temp = new BucketItem*[old_size];
+    memcpy(temp, heap_, old_size);
     delete[] heap_;
     heap_ = new BucketItem*[heap_size_];
-    for (i = 0; i < (int)old_size; i++)
-        heap_[i] = temp[i];
-    for (i = temp.size(); i < (int)heap_size_; i++)
-        heap_[i] = nullptr;
+    heap_ = temp;
 }
 
 void Bucket::verify() {
