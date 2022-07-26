@@ -3,7 +3,7 @@
 
 #include "rr_graph_view.h"
 #include "rr_node.h"
-#include "base_cost_type.h"
+#include "rr_graph_cost.h"
 #include "device_grid.h"
 
 void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,

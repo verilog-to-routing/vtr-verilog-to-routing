@@ -1,13 +1,9 @@
 #ifndef CHECK_RR_GRAPH_H
 #define CHECK_RR_GRAPH_H
 
-#include "physical_types.h"
-#include "rr_graph_type.h"
 #include "device_grid.h"
-#include "route_type.h"
 #include "rr_graph_view.h"
-#include "chan_width.h"
-
+#include "rr_graph_type.h"
 
 void check_rr_graph(const RRGraphView& rr_graph,
                     const std::vector<t_physical_tile_type>& types,

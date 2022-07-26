@@ -3,13 +3,13 @@
 #include <vector>
 
 #include "build_switchblocks.h"
+#include "rr_graph_type.h"
 #include "rr_graph_fwd.h"
-#include "rr_graph_util.h"
+#include "rr_graph_utils.h"
 #include "rr_graph_view.h"
 #include "rr_graph_builder.h"
 #include "rr_types.h"
 #include "device_grid.h"
-#include "unified_to_parallel_seg_index.h"
 #include "get_parallel_segs.h"
 
 /******************* Types shared by rr_graph2 functions *********************/

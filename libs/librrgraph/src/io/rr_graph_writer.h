@@ -6,14 +6,13 @@
 #ifndef RR_GRAPH_WRITER_H
 #define RR_GRAPH_WRITER_H
 
-#include "physical_types.h"
-#include "chan_width.h"
 #include "rr_node.h"
+#include "rr_graph_type.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_view.h"
 #include "rr_graph_fwd.h"
-#include "chan_width.h"
 #include "device_grid.h"
+#include "physical_types.h"
 
 void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     RRGraphView* rr_graph,

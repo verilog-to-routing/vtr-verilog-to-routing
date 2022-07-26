@@ -1,3 +1,4 @@
+
 /****************************************************************************
  * This file include most-utilized functions that manipulate on the
  * RRGraph object
@@ -6,7 +7,7 @@
 #include <random>
 #include <algorithm>
 
-#include "rr_graph_util.h"
+#include "rr_graph_utils.h"
 
 #include "vtr_memory.h"
 #include "vtr_time.h"
@@ -119,4 +120,3 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
 
     return node_fan_in_list;
 }
-

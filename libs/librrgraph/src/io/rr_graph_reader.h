@@ -4,14 +4,13 @@
 #define RR_GRAPH_READER_H
 
 #include "rr_graph_type.h"
-#include "device_grid.h"
-#include "physical_types.h"
-#include "base_cost_type.h"
-#include "chan_width.h"
-#include "rr_node.h"
+#include "rr_graph_cost.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_view.h"
 #include "rr_graph_fwd.h"
+#include "rr_node.h"
+#include "device_grid.h"
+#include "physical_types.h"
 
 
 void load_rr_file(RRGraphBuilder* rr_graph_builder,
