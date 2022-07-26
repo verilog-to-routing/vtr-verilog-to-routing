@@ -115,11 +115,16 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
 }
 
 void verify_traffic_flow_router_modules(std::string source_router_name, std::string sink_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
-    // check that the router module names were legal
-    if ((source_router_name == "") || (sink_router_name == "")) {
-        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Invalid names for the source and sink NoC router modules.");
-    } // check if the source and sink routers have the same name
-    else if (source_router_name == sink_router_name) {
+    // check that the source router module name is not empty
+    if (source_router_name == "") {
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Invalid name for the source NoC router module.");
+    } 
+    // check that the sink router module name is not empty
+    if (sink_router_name == "") {
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Invalid name for the sink NoC router module.");
+    }  
+    // check if the source and sink routers have the same name
+    if (source_router_name == sink_router_name) {
         // Cannot have the source and sink routers have the same name (they need to be different). A flow cant go to a single router.
         vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Source and sink NoC routers cannot be the same modules.");
     }
