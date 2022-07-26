@@ -517,7 +517,7 @@ TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_
         // stores the found cluster blocks in the netlist that are router blocks which are compatible with a NoC router tile
         // execute the test function
         std::vector<ClusterBlockId> found_cluster_blocks_that_are_noc_router_compatible = get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_ref);
-        
+
         // since there were no router blocks in this netlist, check that the test found function 0 blocks that were compatible with a noc router tile
         REQUIRE(found_cluster_blocks_that_are_noc_router_compatible.size() == 0);
 
