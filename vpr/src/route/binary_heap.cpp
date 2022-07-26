@@ -7,7 +7,7 @@ static size_t left(size_t i) { return i << 1; }
 static size_t right(size_t i) { return (i << 1) + 1; }
 
 BinaryHeap::BinaryHeap()
-    : heap_(nullptr)
+    : heap_()
     , heap_size_(0)
     , heap_tail_(0)
     , max_index_(std::numeric_limits<size_t>::max())
@@ -26,15 +26,13 @@ void BinaryHeap::free(t_heap* hptr) {
 
 void BinaryHeap::init_heap(const DeviceGrid& grid) {
     size_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
-    if (heap_ == nullptr || heap_size_ < target_heap_size) {
-        if (heap_ != nullptr) {
+    if (heap_ .empty() || heap_size_ < target_heap_size) {
+        if (!heap_.empty()) {
             // coverity[offset_free : Intentional]
-            delete[](heap_ + 1);
-            heap_ = nullptr;
+            heap_.clear();
         }
         heap_size_ = (grid.width() - 1) * (grid.height() - 1);
-        heap_ = new t_heap*[heap_size_];
-        heap_--; /* heap stores from [1..heap_size] */
+        heap_.resize(heap_size_ + 1); /* heap_size_ + 1 because heap stores from [1..heap_size] */
     }
     heap_tail_ = 1;
 }
@@ -143,16 +141,9 @@ void BinaryHeap::sift_up(size_t leaf, t_heap* const node) {
 //expands heap by "realloc"
 void BinaryHeap::expand_heap_if_full() {
     if (heap_tail_ > heap_size_) { /* Heap is full */
+    	heap_size_ *=2;
+        heap_.resize(heap_size_+1);
 
-        size_t old_size = heap_size_;
-        heap_size *= 2;
-        heap_++;
-        t_heap** temp = new t_heap*[old_size];
-        memcpy(temp, heap_, old_size);
-        delete[] heap_;
-        heap_ = new t_heap*[heap_size_];
-        heap_ = temp;
-        heap_--;
     }
 }
 
@@ -166,7 +157,7 @@ void BinaryHeap::push_back(t_heap* const hptr) {
 }
 
 bool BinaryHeap::is_valid() const {
-    if (heap_ == nullptr) {
+    if (heap_.empty()) {
         return false;
     }
 
@@ -198,15 +189,14 @@ void BinaryHeap::invalidate_heap_entries(int sink_node, int ipin_node) {
 }
 
 void BinaryHeap::free_all_memory() {
-    if (heap_ != nullptr) {
+    if (!heap_.empty()) {
         empty_heap();
 
         // coverity[offset_free : Intentional]
-
-        delete[](heap_ + 1);
+        heap_.clear();
     }
 
-    heap_ = nullptr; /* Defensive coding:  crash hard if I use these. */
+  //  heap_ = nullptr; /* Defensive coding:  crash hard if I use these. */
 
     storage_.free_all_memory();
 }
