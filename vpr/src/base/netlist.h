@@ -756,13 +756,13 @@ class Netlist {
      *              meaning that the input is a pattern string and the pattern
      *              is looked for ine each block name.
      * 
-     * @param name A substring of a block name for which an ID needs to be 
-     *             found.
+     * @param name_substring A substring of a block name for which an ID needs  
+     *             to be found.
      * @return A cluster block id representing a unique cluster block that 
      *         matched to the input string pattern.
      *        
      */
-    BlockId find_block_by_name_fragment(const std::string& name) const;
+    BlockId find_block_by_name_fragment(const std::string& name_substring) const;
 
     /**
      * @brief Returns the PortId of the specifed port if it exists or PortId::INVALID() if not

@@ -286,8 +286,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      *        first block found is returned.
      * 
      * 
-     * @param name A regex string pattern that can be used to match to a 
-     *             clustered block name within the netlist.
+     * @param name_pattern A regex string pattern that can be used to match to  
+     *             a clustered block name within the netlist.
      * @param cluster_block_candidates A vector of clustered block ids that
      *                                 represent a subset of the clustered
      *                                 netlist. The blocks in this vector
@@ -297,7 +297,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      *         matched to the input string pattern.
      *         
      */
-    ClusterBlockId find_block_by_name_fragment(const std::string& name, const std::vector<ClusterBlockId>& cluster_block_candidates) const;
+    ClusterBlockId find_block_by_name_fragment(const std::string& name_pattern, const std::vector<ClusterBlockId>& cluster_block_candidates) const;
 
   private: //Private Members
     /*
