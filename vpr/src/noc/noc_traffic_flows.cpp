@@ -99,14 +99,14 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
     fp = vtr::fopen(file_name, "w");
 
     // file header
-    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "----------------------------------------------------------------------------\n");
     fprintf(fp, "NoC Traffic Flows\n");
-    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "----------------------------------------------------------------------------\n");
     fprintf(fp, "\n");
 
     // print all the routers and their properties
     fprintf(fp, "List of NoC Traffic Flows:\n");
-    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "----------------------------------------------------------------------------\n");
     fprintf(fp, "\n");
 
     int traffic_flow_id = 0;
@@ -131,8 +131,8 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
 
     // now print the router cluster ids and their associated traffic flow information for router cluster blocks
     // The associated traffic flows represent flows where the router block is either a source or destination router
-    fprintf(fp, "List of all unique router cluster blocks and their corresponding traffic flows where the router block is either a source or destination of the traffic flow:\n");
-    fprintf(fp, "--------------------------------------------------------------\n");
+    fprintf(fp, "List of all unique router cluster blocks and their associated traffic flows:\n");
+    fprintf(fp, "----------------------------------------------------------------------------\n");
     fprintf(fp, "\n");
 
     // go through each router block cluster and print its associated traffic flows
