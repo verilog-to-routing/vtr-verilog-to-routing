@@ -142,7 +142,6 @@ void Bucket::free_all_memory() {
 void Bucket::expand(size_t required_number_of_buckets) {
     auto old_size = heap_size_;
     heap_size_ = required_number_of_buckets * 2;
-    int i;
 
     BucketItem** temp = new BucketItem*[old_size];
     memcpy(temp, heap_, old_size);
