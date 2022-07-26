@@ -179,10 +179,10 @@ bool highlight_rr_nodes(int hit_node) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     char message[250] = "";
+    auto& device_ctx = g_vpr_ctx.device(); 
 
     if (hit_node != OPEN) {
         auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
-        const auto& device_ctx = g_vpr_ctx.device(); 
         for (auto node : nodes) {
             if (draw_state->draw_rr_node[node].color != ezgl::MAGENTA) {
                 /* If the node hasn't been clicked on before, highlight it
