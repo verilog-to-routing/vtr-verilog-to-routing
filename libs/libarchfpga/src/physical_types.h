@@ -1563,7 +1563,7 @@ enum e_directionality {
     BI_DIRECTIONAL
 };
 /* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
- * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *     
+ * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *
  * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
 enum e_parallel_axis {
     X_AXIS,
@@ -1759,12 +1759,12 @@ constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_T
 
 /* Constant/Reserved names for switches in architecture XML
  * Delayless switch:
- *   The zero-delay switch created by VPR internally 
+ *   The zero-delay switch created by VPR internally
  *   This is a special switch just to ease CAD algorithms
  *   It is mainly used in
- *     - the edges between SOURCE and SINK nodes in routing resource graphs  
+ *     - the edges between SOURCE and SINK nodes in routing resource graphs
  *     - the edges in CLB-to-CLB connections (defined by <directlist> in arch XML)
- *   
+ *
  */
 constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
 
@@ -2134,12 +2134,18 @@ struct t_arch {
     /// Secure hash digest of the architecture file to uniquely identify this architecture
     char* architecture_id;
 
+    /* Xifan Tang: options for tileable routing architectures */
+    bool tileable;
+    bool through_channel;
+
     t_chan_width_dist Chans;
     enum e_switch_block_type SBType;
+    enum e_switch_block_type SBSubType;
     std::vector<t_switchblock_inf> switchblocks;
     float R_minW_nmos;
     float R_minW_pmos;
     int Fs;
+    int subFs;
     float grid_logic_tile_area;
     std::vector<t_segment_inf> Segments;
 
