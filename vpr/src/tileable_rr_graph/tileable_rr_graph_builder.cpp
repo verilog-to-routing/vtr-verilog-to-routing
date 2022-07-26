@@ -72,126 +72,127 @@ namespace openfpga {
 
 // external functions: in vpr/src/route/rr_graph.cpp
 extern std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
-                                                        const int max_pins,
-                                                        const std::vector<t_segment_inf>& segment_inf,
+                                                              const int max_pins,
+                                                              const std::vector<t_segment_inf>& segment_inf,
 
-                                                        const int* sets_per_seg_type,
-                                                        const int max_chan_width,
-                                                        const e_fc_type fc_type,
-                                                        const enum                 e_directionality directionality,
-                                                        bool* Fc_clipped);
-extern t_clb_to_clb_directs*                                         alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs,       const int num_directs, int delayless_switch);
+                                                              const int* sets_per_seg_type,
+                                                              const int max_chan_width,
+                                                              const e_fc_type fc_type,
+                                                              const enum e_directionality directionality,
+                                                              bool* Fc_clipped);
+extern t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, int delayless_switch);
 extern void alloc_and_load_rr_switch_inf(const int num_arch_switches,
-                                          const float R_minW_nmos,
-                                          const float R_minW_pmos,
-                                          const int wire_to_arch_ipin_switch,
-                                          int* wire_to_rr_ipin_switch);
+                                         const float R_minW_nmos,
+                                         const float R_minW_pmos,
+                                         const int wire_to_arch_ipin_switch,
+                                         int* wire_to_rr_ipin_switch);
 extern void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
-                                int wire_to_rr_ipin_switch,
-                                enum e_base_cost_type base_cost_type);
+                               int wire_to_rr_ipin_switch,
+                               enum e_base_cost_type base_cost_type);
 
 void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& types,
                                     const DeviceGrid& grids,
                                     const t_chan_width& chan_width,
-                                    const e_switch_block_type& sb_type, const int& Fs,
-                                    const e_switch_block_type& sb_subtype, const int& subFs,
+                                    const e_switch_block_type& sb_type,
+                                    const int& Fs,
+                                    const e_switch_block_type& sb_subtype,
+                                    const int& subFs,
                                     const std::vector<t_segment_inf>& segment_inf,
                                     const int& delayless_switch,
                                     const int& wire_to_arch_ipin_switch,
                                     const float R_minW_nmos,
                                     const float R_minW_pmos,
                                     const enum e_base_cost_type& base_cost_type,
-                                    const t_direct_inf *directs,
+                                    const t_direct_inf* directs,
                                     const int& num_directs,
                                     int* wire_to_rr_ipin_switch,
                                     const bool& through_channel,
                                     const bool& wire_opposite_side,
-                                    int *Warnings) {
+                                    int* Warnings) {
+    vtr::ScopedStartFinishTimer timer("Build tileable routing resource graph");
 
-  vtr::ScopedStartFinishTimer timer("Build tileable routing resource graph");
+    /* Reset warning flag */
+    *Warnings = RR_GRAPH_NO_WARN;
 
-  /* Reset warning flag */
-  *Warnings = RR_GRAPH_NO_WARN;
+    /* Create a matrix of grid */
+    /* Create a vector of channel width, we support X-direction and Y-direction has different W */
+    vtr::Point<size_t> device_chan_width(chan_width.x_max, chan_width.y_max);
 
-  /* Create a matrix of grid */
-  /* Create a vector of channel width, we support X-direction and Y-direction has different W */
-  vtr::Point<size_t> device_chan_width(chan_width.x_max, chan_width.y_max);
+    VTR_LOG("X-direction routing channel width is %lu\n", device_chan_width.x());
+    VTR_LOG("Y-direction routing channel width is %lu\n", device_chan_width.y());
 
-  VTR_LOG("X-direction routing channel width is %lu\n", device_chan_width.x());
-  VTR_LOG("Y-direction routing channel width is %lu\n", device_chan_width.y());
+    /* Get a mutable device ctx so that we have a mutable rr_graph */
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
-  /* Get a mutable device ctx so that we have a mutable rr_graph */
-  DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
-
-  /* The number of segments are in general small, reserve segments may not bring
+    /* The number of segments are in general small, reserve segments may not bring
    * significant memory efficiency */
-  device_ctx.rr_graph_builder.reserve_segments(segment_inf.size());
-  /* Create the segments */
-  for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
-    device_ctx.rr_graph_builder.add_rr_segment(segment_inf[iseg]);
-  }
+    device_ctx.rr_graph_builder.reserve_segments(segment_inf.size());
+    /* Create the segments */
+    for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+        device_ctx.rr_graph_builder.add_rr_segment(segment_inf[iseg]);
+    }
 
-  /* TODO: Load architecture switch to rr_graph switches
+    /* TODO: Load architecture switch to rr_graph switches
    * Draft the switches as internal data of RRGraph object
    * These are temporary switches copied from arch switches
    * We use them to build the edges
    * We will reset all the switches in the function
    *   alloc_and_load_rr_switch_inf()
    */
-  /* TODO: Spot the switch id in the architecture switch list */
-  RRSwitchId wire_to_ipin_rr_switch = RRSwitchId::INVALID();
-  RRSwitchId delayless_rr_switch = RRSwitchId::INVALID();
+    /* TODO: Spot the switch id in the architecture switch list */
+    RRSwitchId wire_to_ipin_rr_switch = RRSwitchId::INVALID();
+    RRSwitchId delayless_rr_switch = RRSwitchId::INVALID();
 
-  device_ctx.rr_graph_builder.reserve_switches(device_ctx.num_arch_switches);
-  /* Create the switches */
-  for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; ++iswitch) {
-    const t_rr_switch_inf& temp_rr_switch = create_rr_switch_from_arch_switch(iswitch, R_minW_nmos, R_minW_pmos);
-    RRSwitchId rr_switch = device_ctx.rr_graph_builder.add_rr_switch(temp_rr_switch);
-    if (iswitch == wire_to_arch_ipin_switch) {
-      wire_to_ipin_rr_switch = rr_switch;
+    device_ctx.rr_graph_builder.reserve_switches(device_ctx.num_arch_switches);
+    /* Create the switches */
+    for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; ++iswitch) {
+        const t_rr_switch_inf& temp_rr_switch = create_rr_switch_from_arch_switch(iswitch, R_minW_nmos, R_minW_pmos);
+        RRSwitchId rr_switch = device_ctx.rr_graph_builder.add_rr_switch(temp_rr_switch);
+        if (iswitch == wire_to_arch_ipin_switch) {
+            wire_to_ipin_rr_switch = rr_switch;
+        }
+        if (iswitch == delayless_switch) {
+            delayless_rr_switch = rr_switch;
+        }
     }
-    if (iswitch == delayless_switch) {
-      delayless_rr_switch = rr_switch;
-    }
-  }
-  // NYI
-  #if 0
+// NYI
+#if 0
   /* Validate the special switches */
   VTR_ASSERT(true == device_ctx.rr_graph_builder.valid_switch_id(wire_to_ipin_rr_switch));
   VTR_ASSERT(true == device_ctx.rr_graph_builder.valid_switch_id(delayless_rr_switch));
-  #endif
+#endif
 
-  /* A temp data about the driver switch ids for each rr_node */
-  vtr::vector<RRNodeId, RRSwitchId> rr_node_driver_switches;
+    /* A temp data about the driver switch ids for each rr_node */
+    vtr::vector<RRNodeId, RRSwitchId> rr_node_driver_switches;
 
-  /* A temp data about the track ids for each CHANX and CHANY rr_node */
-  std::map<RRNodeId, std::vector<size_t>> rr_node_track_ids;
+    /* A temp data about the track ids for each CHANX and CHANY rr_node */
+    std::map<RRNodeId, std::vector<size_t>> rr_node_track_ids;
 
-  /************************
+    /************************
    * Allocate the rr_nodes
    ************************/
-  alloc_tileable_rr_graph_nodes(device_ctx.rr_graph_builder,
-                                rr_node_driver_switches,
-                                grids,
-                                device_chan_width,
-                                segment_inf,
-                                through_channel);
+    alloc_tileable_rr_graph_nodes(device_ctx.rr_graph_builder,
+                                  rr_node_driver_switches,
+                                  grids,
+                                  device_chan_width,
+                                  segment_inf,
+                                  through_channel);
 
-  /************************
+    /************************
    * Create all the rr_nodes
    ************************/
-  create_tileable_rr_graph_nodes(device_ctx.rr_graph,
-                                 device_ctx.rr_graph_builder,
-                                 rr_node_driver_switches,
-                                 rr_node_track_ids,
-                                 grids,
-                                 device_chan_width,
-                                 segment_inf,
-                                 wire_to_ipin_rr_switch,
-                                 delayless_rr_switch,
-                                 through_channel);
+    create_tileable_rr_graph_nodes(device_ctx.rr_graph,
+                                   device_ctx.rr_graph_builder,
+                                   rr_node_driver_switches,
+                                   rr_node_track_ids,
+                                   grids,
+                                   device_chan_width,
+                                   segment_inf,
+                                   wire_to_ipin_rr_switch,
+                                   delayless_rr_switch,
+                                   through_channel);
 
-  /************************************************************************
+    /************************************************************************
    * Create the connectivity of OPINs
    *   a. Evenly assign connections to OPINs to routing tracks
    *   b. the connection pattern should be same across the fabric
@@ -200,52 +201,52 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
    *   a. Evenly assign connections from routing tracks to IPINs
    *   b. the connection pattern should be same across the fabric
    ***********************************************************************/
-  /* Global routing uses a single longwire track */
-  int max_chan_width = find_unidir_routing_channel_width(chan_width.max);
-  VTR_ASSERT(max_chan_width > 0);
+    /* Global routing uses a single longwire track */
+    int max_chan_width = find_unidir_routing_channel_width(chan_width.max);
+    VTR_ASSERT(max_chan_width > 0);
 
-  /* get maximum number of pins across all blocks */
-  int max_pins = types[0].num_pins;
-  for (const auto& type : types) {
-    if (is_empty_type(&type)) {
-      continue;
+    /* get maximum number of pins across all blocks */
+    int max_pins = types[0].num_pins;
+    for (const auto& type : types) {
+        if (is_empty_type(&type)) {
+            continue;
+        }
+
+        if (type.num_pins > max_pins) {
+            max_pins = type.num_pins;
+        }
     }
 
-    if (type.num_pins > max_pins) {
-      max_pins = type.num_pins;
-    }
-  }
-
-  /* Fc assignment still uses the old function from VPR.
+    /* Fc assignment still uses the old function from VPR.
    * Should use tileable version so that we have can have full control
    */
-  std::vector<size_t> num_tracks = get_num_tracks_per_seg_type(max_chan_width / 2, segment_inf, false);
-  int* sets_per_seg_type = (int*)vtr::malloc(sizeof(int) * segment_inf.size());
-  VTR_ASSERT(num_tracks.size() == segment_inf.size());
-  for (size_t iseg = 0; iseg < num_tracks.size(); ++iseg) {
-    sets_per_seg_type[iseg] = num_tracks[iseg];
-  }
+    std::vector<size_t> num_tracks = get_num_tracks_per_seg_type(max_chan_width / 2, segment_inf, false);
+    int* sets_per_seg_type = (int*)vtr::malloc(sizeof(int) * segment_inf.size());
+    VTR_ASSERT(num_tracks.size() == segment_inf.size());
+    for (size_t iseg = 0; iseg < num_tracks.size(); ++iseg) {
+        sets_per_seg_type[iseg] = num_tracks[iseg];
+    }
 
-  bool Fc_clipped = false;
-  /* [0..num_types-1][0..num_pins-1] */
-  std::vector<vtr::Matrix<int>> Fc_in;
-  Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, max_chan_width,
-                                   e_fc_type::IN, UNI_DIRECTIONAL, &Fc_clipped);
-  if (Fc_clipped) {
-    *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
-  }
+    bool Fc_clipped = false;
+    /* [0..num_types-1][0..num_pins-1] */
+    std::vector<vtr::Matrix<int>> Fc_in;
+    Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, max_chan_width,
+                                     e_fc_type::IN, UNI_DIRECTIONAL, &Fc_clipped);
+    if (Fc_clipped) {
+        *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
+    }
 
-  Fc_clipped = false;
-  /* [0..num_types-1][0..num_pins-1] */
-  std::vector<vtr::Matrix<int>> Fc_out;
-  Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, max_chan_width,
-                                    e_fc_type::OUT, UNI_DIRECTIONAL, &Fc_clipped);
+    Fc_clipped = false;
+    /* [0..num_types-1][0..num_pins-1] */
+    std::vector<vtr::Matrix<int>> Fc_out;
+    Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, max_chan_width,
+                                      e_fc_type::OUT, UNI_DIRECTIONAL, &Fc_clipped);
 
-  if (Fc_clipped) {
-    *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
-  }
+    if (Fc_clipped) {
+        *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
+    }
 
-  /************************************************************************
+    /************************************************************************
    * Build the connections tile by tile:
    * We classify rr_nodes into a general switch block (GSB) data structure
    * where we create edges to each rr_nodes in the GSB with respect to
@@ -253,34 +254,34 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
    * In addition, we will also handle direct-connections:
    * Add edges that bridge OPINs and IPINs to the rr_graph
    ***********************************************************************/
-  /* Create edges for a tileable rr_graph */
-  build_rr_graph_edges(device_ctx.rr_graph,
-                       rr_node_driver_switches,
-                       grids,
-                       device_chan_width,
-                       segment_inf,
-                       Fc_in, Fc_out,
-                       sb_type, Fs, sb_subtype, subFs,
-                       wire_opposite_side);
+    /* Create edges for a tileable rr_graph */
+    build_rr_graph_edges(device_ctx.rr_graph,
+                         rr_node_driver_switches,
+                         grids,
+                         device_chan_width,
+                         segment_inf,
+                         Fc_in, Fc_out,
+                         sb_type, Fs, sb_subtype, subFs,
+                         wire_opposite_side);
 
-  /************************************************************************
+    /************************************************************************
    * Build direction connection lists
    * TODO: use tile direct builder
    ***********************************************************************/
-  /* Create data structure of direct-connections */
-  t_clb_to_clb_directs* clb_to_clb_directs = NULL;
-  if (num_directs > 0) {
-    clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, num_directs, delayless_switch);
-  }
-  std::vector<t_direct_inf> arch_directs;
-  std::vector<t_clb_to_clb_directs> clb2clb_directs;
-  for (int idirect = 0; idirect < num_directs; ++idirect) {
-    arch_directs.push_back(directs[idirect]);
-    clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
-  }
+    /* Create data structure of direct-connections */
+    t_clb_to_clb_directs* clb_to_clb_directs = NULL;
+    if (num_directs > 0) {
+        clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, num_directs, delayless_switch);
+    }
+    std::vector<t_direct_inf> arch_directs;
+    std::vector<t_clb_to_clb_directs> clb2clb_directs;
+    for (int idirect = 0; idirect < num_directs; ++idirect) {
+        arch_directs.push_back(directs[idirect]);
+        clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
+    }
 
-  build_rr_graph_direct_connections(device_ctx.rr_graph, grids, delayless_rr_switch,
-                                    arch_directs, clb2clb_directs);
+    build_rr_graph_direct_connections(device_ctx.rr_graph, grids, delayless_rr_switch,
+                                      arch_directs, clb2clb_directs);
 
 //NYI
 #if 0
@@ -290,12 +291,12 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
   device_ctx.rr_graph.rebuild_node_edges();
 #endif
 
-  /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
+    /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
    * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
-  alloc_and_load_rr_switch_inf(device_ctx.num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
+    alloc_and_load_rr_switch_inf(device_ctx.num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
 
-  /* Save the channel widths for the newly constructed graph */
-  device_ctx.chan_width = chan_width;
+    /* Save the channel widths for the newly constructed graph */
+    device_ctx.chan_width = chan_width;
 
 //NYI
 #if 0
@@ -303,49 +304,48 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
   device_ctx.rr_node_track_ids = rr_node_track_ids;
 #endif
 
-  /************************************************************************
+    /************************************************************************
    * Allocate external data structures
    *  a. cost_index
    *  b. RC tree
    ***********************************************************************/
-  rr_graph_externals(segment_inf,
-                     *wire_to_rr_ipin_switch, base_cost_type);
+    rr_graph_externals(segment_inf,
+                       *wire_to_rr_ipin_switch, base_cost_type);
 
-  /* Rebuild the link between RRGraph node and segments
+    /* Rebuild the link between RRGraph node and segments
    * Should be called only AFTER the function
    * rr_graph_externals()
    */
-  for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
-    if ( (CHANX != device_ctx.rr_graph.node_type(inode))
-      && (CHANY != device_ctx.rr_graph.node_type(inode)) ) {
-      continue;
-    }
+    for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
+        if ((CHANX != device_ctx.rr_graph.node_type(inode))
+            && (CHANY != device_ctx.rr_graph.node_type(inode))) {
+            continue;
+        }
 //NYI
 #if 0
     RRIndexedDataId irc_data = device_ctx.rr_graph.node_cost_index(inode);
     short iseg = device_ctx.rr_indexed_data[irc_data].seg_index;
     device_ctx.rr_graph_builder.set_node_segment(inode, RRSegmentId(iseg)); // NYI
 #endif
+    }
 
-  }
-
-  /************************************************************************
+    /************************************************************************
    * Sanitizer for the rr_graph, check connectivities of rr_nodes
    ***********************************************************************/
-  /* Essential check for rr_graph, build look-up and  */
-  if (false == device_ctx.rr_graph_builder.validate()) {
-    /* Error out if built-in validator of rr_graph fails */
-    vpr_throw(VPR_ERROR_ROUTE,
-              __FILE__,
-              __LINE__,
-              "Fundamental errors occurred when validating rr_graph object!\n");
-  }
+    /* Essential check for rr_graph, build look-up and  */
+    if (false == device_ctx.rr_graph_builder.validate()) {
+        /* Error out if built-in validator of rr_graph fails */
+        vpr_throw(VPR_ERROR_ROUTE,
+                  __FILE__,
+                  __LINE__,
+                  "Fundamental errors occurred when validating rr_graph object!\n");
+    }
 
-  check_rr_graph(GRAPH_UNIDIR, grids, types);
+    check_rr_graph(GRAPH_UNIDIR, grids, types);
 
-  // NYI
-  // vpr integration: DeviceContext does not provide direct RRGraph access
-  // we can skip it since check_rr_graph(GRAPH_UNDIR, GRIDS, TYPES) has been called above
+    // NYI
+    // vpr integration: DeviceContext does not provide direct RRGraph access
+    // we can skip it since check_rr_graph(GRAPH_UNDIR, GRIDS, TYPES) has been called above
 #if 0
   /* Error out if advanced checker of rr_graph fails */
   if (false == check_rr_graph(device_ctx.rr_graph)) {
@@ -357,14 +357,14 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
   }
 #endif
 
-  /************************************************************************
+    /************************************************************************
    * Free all temp stucts
    ***********************************************************************/
-  free(sets_per_seg_type);
+    free(sets_per_seg_type);
 
-  if (nullptr != clb_to_clb_directs) {
-    free(clb_to_clb_directs);
-  }
+    if (nullptr != clb_to_clb_directs) {
+        free(clb_to_clb_directs);
+    }
 }
 
 } /* end namespace openfpga */

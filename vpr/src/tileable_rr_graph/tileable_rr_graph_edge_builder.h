@@ -1,6 +1,3 @@
-#ifndef TILEABLE_RR_GRAPH_EDGE_BUILDER_H
-#define TILEABLE_RR_GRAPH_EDGE_BUILDER_H
-
 /********************************************************************
  * Include header files that are required by function declaration
  *******************************************************************/
@@ -41,5 +38,3 @@ void build_rr_graph_direct_connections(RRGraphView& rr_graph,
                                        const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs);
 
 } /* end namespace openfpga */
-
-#endif
