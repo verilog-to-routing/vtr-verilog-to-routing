@@ -183,6 +183,9 @@ t_physical_tile_type_ptr get_physical_type_of_noc_router_tile(const DeviceContex
     // assuming that all routers have the same physical type, so we are just using the physical type of the first router stored within the NoC
     auto physical_noc_router = noc_ctx.noc_model.get_noc_routers().begin();
 
+    // Cannot gurantee that there are any physical routers within the NoC, so check if the NoC has any routers, if it doesn't then throw an error
+    VTR_ASSERT(physical_noc_router != noc_ctx.noc_model.get_noc_routers().end());
+
     //Using the routers grid position go to the device and identify the physical type of the tile located there.
     return device_ctx.grid[physical_noc_router->get_router_grid_position_x()][physical_noc_router->get_router_grid_position_y()].type;
 }
