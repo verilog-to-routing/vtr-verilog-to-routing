@@ -215,7 +215,8 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         //driver_component.inst_name = cluster_ctx.clb_nlist.block_name(src_blk);
         driver_component.type_name = "intra '";
         if(is_flat_) {
-            driver_component.type_name += atom_ctx.lookup.atom_pb((AtomBlockId&)src_blk)->name;
+            const t_pb* atom_pb = atom_ctx.lookup.atom_pb((AtomBlockId&)src_blk);
+            driver_component.type_name += (std::string(atom_pb->name) + "(" + atom_pb->hierarchical_type_name() + ")");
         } else{
             driver_component.type_name += cluster_ctx.clb_nlist.block_type((ClusterBlockId&)src_blk)->name;
         }

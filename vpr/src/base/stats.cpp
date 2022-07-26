@@ -131,6 +131,7 @@ void length_and_bends_stats(bool is_flat) {
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         ParentNetId par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        VTR_ASSERT(par_net_id != ParentNetId::INVALID());
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
             get_num_bends_and_length(par_net_id, &bends, &length, &segments);
 

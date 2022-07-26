@@ -1519,7 +1519,6 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             //congestion cost are popped-off/reserved first. (Intuitively, we want
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
-            // We assume this function only run when flat_routing is not enabled.
             from_node = route_ctx.rr_blk_source[(const ParentBlockId&)blk_id][iclass];
             num_edges = rr_graph.num_edges(RRNodeId(from_node));
             for (iconn = 0; iconn < num_edges; iconn++) {
