@@ -26,85 +26,85 @@ namespace openfpga {
  * therefore, we assign tracks one by one until we meet the frequency requirement
  * In this way, we can assign the number of tracks with repect to frequency 
  ***********************************************************************/
-std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width, 
-                                                const std::vector<t_segment_inf>& segment_inf, 
+std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
+                                                const std::vector<t_segment_inf>& segment_inf,
                                                 const bool& use_full_seg_groups) {
-  std::vector<size_t> result;
-  std::vector<double> demand;
-  /* Make sure a clean start */
-  result.resize(segment_inf.size());
-  demand.resize(segment_inf.size());
+    std::vector<size_t> result;
+    std::vector<double> demand;
+    /* Make sure a clean start */
+    result.resize(segment_inf.size());
+    demand.resize(segment_inf.size());
 
-  /* Scale factor so we can divide by any length
+    /* Scale factor so we can divide by any length
    * and still use integers */
-  /* Get the sum of frequency */
-  size_t scale = 1;
-  size_t freq_sum = 0;
-  for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
-    scale *= segment_inf[iseg].length;
-    freq_sum += segment_inf[iseg].frequency;
-  }
-  size_t reduce = scale * freq_sum;
+    /* Get the sum of frequency */
+    size_t scale = 1;
+    size_t freq_sum = 0;
+    for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+        scale *= segment_inf[iseg].length;
+        freq_sum += segment_inf[iseg].frequency;
+    }
+    size_t reduce = scale * freq_sum;
 
-  /* Init assignments to 0 and set the demand values */
-  /* Get the fraction of each segment type considering the frequency:
+    /* Init assignments to 0 and set the demand values */
+    /* Get the fraction of each segment type considering the frequency:
    * num_track_per_seg = chan_width * (freq_of_seg / sum_freq)
    */
-  for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
-    result[iseg] = 0;
-    demand[iseg] = scale * chan_width * segment_inf[iseg].frequency;
-    if (true == use_full_seg_groups) {
-      demand[iseg] /= segment_inf[iseg].length;
-    }
-  }
-
-  /* check if the sum of num_tracks, matches the chan_width */
-  /* Keep assigning tracks until we use them up */
-  size_t assigned = 0;
-  size_t size = 0;
-  size_t imax = 0;
-  while (assigned < chan_width) {
-    /* Find current maximum demand */
-    double max = 0;
     for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
-      if (demand[iseg] > max) {
-        imax = iseg;
-      }
-      max = std::max(demand[iseg], max); 
+        result[iseg] = 0;
+        demand[iseg] = scale * chan_width * segment_inf[iseg].frequency;
+        if (true == use_full_seg_groups) {
+            demand[iseg] /= segment_inf[iseg].length;
+        }
     }
 
-    /* Assign tracks to the type and reduce the types demand */
-    size = (use_full_seg_groups ? segment_inf[imax].length : 1);
-    demand[imax] -= reduce;
-    result[imax] += size;
-    assigned += size;
-  }
+    /* check if the sum of num_tracks, matches the chan_width */
+    /* Keep assigning tracks until we use them up */
+    size_t assigned = 0;
+    size_t size = 0;
+    size_t imax = 0;
+    while (assigned < chan_width) {
+        /* Find current maximum demand */
+        double max = 0;
+        for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+            if (demand[iseg] > max) {
+                imax = iseg;
+            }
+            max = std::max(demand[iseg], max);
+        }
 
-  /* Undo last assignment if we were closer to goal without it */
-  if ((assigned - chan_width) > (size / 2)) {
-    result[imax] -= size;
-  }
+        /* Assign tracks to the type and reduce the types demand */
+        size = (use_full_seg_groups ? segment_inf[imax].length : 1);
+        demand[imax] -= reduce;
+        result[imax] += size;
+        assigned += size;
+    }
 
-  return result;
-} 
+    /* Undo last assignment if we were closer to goal without it */
+    if ((assigned - chan_width) > (size / 2)) {
+        result[imax] -= size;
+    }
+
+    return result;
+}
 
 /************************************************************************
  * Adapt the number of channel width to a tileable routing architecture
  ***********************************************************************/
-int adapt_to_tileable_route_chan_width(const int& chan_width, 
+int adapt_to_tileable_route_chan_width(const int& chan_width,
                                        const std::vector<t_segment_inf>& segment_infs) {
-  int tileable_chan_width = 0;
-  
-  /* Estimate the number of segments per type by the given ChanW*/ 
-  std::vector<size_t> num_tracks_per_seg_type = get_num_tracks_per_seg_type(chan_width, 
-                                                                            segment_infs, 
-                                                                            true); /* Force to use the full segment group */
-  /* Sum-up the number of tracks */
-  for (size_t iseg = 0; iseg < num_tracks_per_seg_type.size(); ++iseg) {
-    tileable_chan_width += num_tracks_per_seg_type[iseg];
-  }
-  
-  return tileable_chan_width;
+    int tileable_chan_width = 0;
+
+    /* Estimate the number of segments per type by the given ChanW*/
+    std::vector<size_t> num_tracks_per_seg_type = get_num_tracks_per_seg_type(chan_width,
+                                                                              segment_infs,
+                                                                              true); /* Force to use the full segment group */
+    /* Sum-up the number of tracks */
+    for (size_t iseg = 0; iseg < num_tracks_per_seg_type.size(); ++iseg) {
+        tileable_chan_width += num_tracks_per_seg_type[iseg];
+    }
+
+    return tileable_chan_width;
 }
 
 /************************************************************************
@@ -163,72 +163,72 @@ int adapt_to_tileable_route_chan_width(const int& chan_width,
  ***********************************************************************/
 ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
                                                const size_t& max_seg_length,
-                                               const bool& force_start, 
-                                               const bool& force_end, 
+                                               const bool& force_start,
+                                               const bool& force_end,
                                                const std::vector<t_segment_inf>& segment_inf) {
-  ChanNodeDetails chan_node_details;
-  size_t actual_chan_width = find_unidir_routing_channel_width(chan_width);
-  VTR_ASSERT(0 == actual_chan_width % 2);
-  
-  /* Reserve channel width */
-  chan_node_details.reserve(chan_width);
-  /* Return if zero width is forced */
-  if (0 == actual_chan_width) {
-    return chan_node_details; 
-  }
+    ChanNodeDetails chan_node_details;
+    size_t actual_chan_width = find_unidir_routing_channel_width(chan_width);
+    VTR_ASSERT(0 == actual_chan_width % 2);
 
-  /* Find the number of segments required by each group */
-  std::vector<size_t> num_tracks = get_num_tracks_per_seg_type(actual_chan_width / 2, segment_inf, false);  
+    /* Reserve channel width */
+    chan_node_details.reserve(chan_width);
+    /* Return if zero width is forced */
+    if (0 == actual_chan_width) {
+        return chan_node_details;
+    }
 
-  /* Add node to ChanNodeDetails */
-  size_t cur_track = 0;
-  for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
-    /* segment length will be set to maxium segment length if this is a longwire */
-    size_t seg_len = segment_inf[iseg].length;
-    if (true == segment_inf[iseg].longline) {
-      seg_len = max_seg_length;
-    } 
-    for (size_t itrack = 0; itrack < num_tracks[iseg]; ++itrack) {
-      bool seg_start = false;
-      bool seg_end = false;
-      /* Every first track of a group of Length-N wires, we set a starting point */
-      if (0 == itrack % seg_len) {
-        seg_start = true;
-      }
-      /* Every last track of a group of Length-N wires or this is the last track in this group, we set an ending point */
-      if ( (seg_len - 1 == itrack % seg_len) 
-        || (itrack == num_tracks[iseg] - 1) ) {
-        seg_end = true;
-      }
-      /* Since this is a unidirectional routing architecture,
+    /* Find the number of segments required by each group */
+    std::vector<size_t> num_tracks = get_num_tracks_per_seg_type(actual_chan_width / 2, segment_inf, false);
+
+    /* Add node to ChanNodeDetails */
+    size_t cur_track = 0;
+    for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+        /* segment length will be set to maxium segment length if this is a longwire */
+        size_t seg_len = segment_inf[iseg].length;
+        if (true == segment_inf[iseg].longline) {
+            seg_len = max_seg_length;
+        }
+        for (size_t itrack = 0; itrack < num_tracks[iseg]; ++itrack) {
+            bool seg_start = false;
+            bool seg_end = false;
+            /* Every first track of a group of Length-N wires, we set a starting point */
+            if (0 == itrack % seg_len) {
+                seg_start = true;
+            }
+            /* Every last track of a group of Length-N wires or this is the last track in this group, we set an ending point */
+            if ((seg_len - 1 == itrack % seg_len)
+                || (itrack == num_tracks[iseg] - 1)) {
+                seg_end = true;
+            }
+            /* Since this is a unidirectional routing architecture,
        * Add a pair of tracks, 1 INC track and 1 DEC track 
        */
-      chan_node_details.add_track(cur_track, Direction::INC, iseg, seg_len, seg_start, seg_end);
-      cur_track++;
-      chan_node_details.add_track(cur_track, Direction::DEC, iseg, seg_len, seg_start, seg_end);
-      cur_track++;
-    }    
-  }
-  /* Check if all the tracks have been satisified */ 
-  VTR_ASSERT(cur_track == actual_chan_width);
-  
-  /* If this is on the border of a device/heterogeneous blocks, segments should start/end */
-  if (true == force_start) {
-    /* INC should all start */
-    chan_node_details.set_tracks_start(Direction::INC);
-    /* DEC should all end */
-    chan_node_details.set_tracks_end(Direction::DEC);
-  }
+            chan_node_details.add_track(cur_track, Direction::INC, iseg, seg_len, seg_start, seg_end);
+            cur_track++;
+            chan_node_details.add_track(cur_track, Direction::DEC, iseg, seg_len, seg_start, seg_end);
+            cur_track++;
+        }
+    }
+    /* Check if all the tracks have been satisified */
+    VTR_ASSERT(cur_track == actual_chan_width);
 
-  /* If this is on the border of a device/heterogeneous blocks, segments should start/end */
-  if (true == force_end) {
-    /* INC should all end */
-    chan_node_details.set_tracks_end(Direction::INC);
-    /* DEC should all start */
-    chan_node_details.set_tracks_start(Direction::DEC);
-  }
+    /* If this is on the border of a device/heterogeneous blocks, segments should start/end */
+    if (true == force_start) {
+        /* INC should all start */
+        chan_node_details.set_tracks_start(Direction::INC);
+        /* DEC should all end */
+        chan_node_details.set_tracks_end(Direction::DEC);
+    }
 
-  return chan_node_details; 
+    /* If this is on the border of a device/heterogeneous blocks, segments should start/end */
+    if (true == force_end) {
+        /* INC should all end */
+        chan_node_details.set_tracks_end(Direction::INC);
+        /* DEC should all start */
+        chan_node_details.set_tracks_start(Direction::DEC);
+    }
+
+    return chan_node_details;
 }
 
 } /* end namespace openfpga */
