@@ -144,16 +144,15 @@ void BinaryHeap::sift_up(size_t leaf, t_heap* const node) {
 void BinaryHeap::expand_heap_if_full() {
     if (heap_tail_ > heap_size_) { /* Heap is full */
 
-        // copy elements from heap [1 ... heap_size_] to temp [0 ... heap_size_ -1]
-        std::vector<t_heap*> temp(heap_ + 1, heap_ + 1 + heap_size_);
+        size_t old_size = heap_size_;
+        heap_size *= 2;
         heap_++;
+        t_heap** temp = new t_heap*[old_size];
+        memcpy(temp, heap_, old_size);
         delete[] heap_;
-        size_t old_heap_size_ = heap_size_;
-        heap_size_ *= 2; //setting new heap size
         heap_ = new t_heap*[heap_size_];
+        heap_ = temp;
         heap_--;
-        for (size_t i = 0; i < old_heap_size_; i++)
-            heap_[i + 1] = temp[i];
     }
 }
 
