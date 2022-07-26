@@ -35,11 +35,6 @@
 #include "clock_modeling.h"
 #include "heap_type.h"
 
-#include "base_cost_type.h"
-#include "chan_width.h"
-#include "cost_indices.h"
-#include "route_type.h"
-
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
@@ -50,6 +45,8 @@
 #include "vtr_dynamic_bitset.h"
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
+#include "rr_graph_cost.h"
+#include "rr_graph_type.h"
 
 /*******************************************************************************
  * Global data types and constants

@@ -7,20 +7,17 @@
 #include "rr_graph_uxsdcxx_interface.h"
 
 #include "rr_node.h"
-#include "rr_rc_data.h"
-#include "rr_metadata.h"
+#include "rr_graph_type.h"
+#include "rr_graph_cost.h"
 #include "rr_graph_view.h"
 #include "rr_graph_builder.h"
+#include "rr_rc_data.h"
+#include "rr_metadata.h"
 
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
 
 #include "device_grid.h"
-#include "chan_width.h"
-#include "base_cost_type.h"
-#include "unified_to_parallel_seg_index.h"
-#include "rr_graph_type.h"
-#include "cost_indices.h"
 #include "alloc_and_load_rr_indexed_data.h"
 #include "get_parallel_segs.h"
 

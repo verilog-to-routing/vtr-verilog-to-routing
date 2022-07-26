@@ -13,11 +13,11 @@
 
 #include "vpr_error.h"
 
-#include "rr_graph_util.h"
+#include "rr_graph_utils.h"
 #include "read_xml_arch_file.h"
 
-#include "base_cost_type.h"
-#include "cost_indices.h"
+#include "rr_graph_cost.h"
+#include "rr_graph_type.h"
 
 #include "histogram.h"
 
