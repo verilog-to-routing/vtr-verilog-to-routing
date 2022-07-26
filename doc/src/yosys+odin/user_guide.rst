@@ -26,6 +26,8 @@ Synthesis Arguments
      **`--elaborator`**        **[odin (default), yosys]**       **Specify the tool that should perform the HDL elaboration**  				 	         
      **`--fflegalize`**                                          **Converts latches' sensitivity to the rising edge as required by VPR** 						 
      **`--show_yosys_log`**                                      **Showing the Yosys elaboration logs in the console window**           
+     **`--decode_names`**                                        **Enable extracting hierarchical information from Yosys coarse-grained BLIF file for signal naming \
+	 															   (the VTR flow scripts take advantage of this option by default)**
     =======================   ==============================    =================================================================================================
 
 
@@ -41,6 +43,15 @@ Additional Examples using Odin-II with the Yosys elaborator
 Passes a Verilog file to Yosys for performing elaboration. 
 The BLIF elaboration and partial mapping phases will be executed on the generated netlist.
 However, all latches in the Yosys+Odin-II output file will be rising edge.
+
+.. code-block:: bash
+
+    ./odin_II --elaborator yosys -V <Path/to/Verilog/file> --decode_names
+
+
+Performs the design elaboration by Yosys parsers and generates a coarse-grained netlist in BLIF.
+Odin-II then extracts the hierarchical information of subcircuits to use for signal naming when reading the coarse-grained BLIF file.
+The BLIF elaboration and partial mapping phases will be executed on the generated netlist.
 
 .. code-block:: bash
 

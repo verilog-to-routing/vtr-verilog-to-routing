@@ -198,8 +198,6 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
     power_ctx.tech->num_nmos_leakage_info = num_nmos_sizes;
     power_ctx.tech->nmos_leakage_info = new t_power_nmos_leakage_inf[num_nmos_sizes];
-    for (i = 0; i < num_nmos_sizes; i++)
-        power_ctx.tech->nmos_leakage_info[i] = t_power_nmos_leakage_inf();
 
     auto me = get_first_child(parent, "nmos", loc_data);
     nmos_idx = 0;
@@ -210,8 +208,6 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
         num_leakage_pairs = count_children(me, "nmos_leakage", loc_data);
         nmos_info->num_leakage_pairs = num_leakage_pairs;
         nmos_info->leakage_pairs = new t_power_nmos_leakage_pair[num_leakage_pairs];
-        for (i = 0; i < num_leakage_pairs; i++)
-            nmos_info->leakage_pairs[i] = t_power_nmos_leakage_pair();
 
         auto child = get_first_child(me, "nmos_leakage", loc_data);
         i = 0;
@@ -243,8 +239,6 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
     VTR_ASSERT(num_nmos_sizes > 0);
     power_ctx.tech->num_nmos_mux_info = num_nmos_sizes;
     power_ctx.tech->nmos_mux_info = new t_power_nmos_mux_inf[num_nmos_sizes];
-    for (i = 0; i < num_nmos_sizes; i++)
-        power_ctx.tech->nmos_mux_info[i] = t_power_nmos_mux_inf();
 
     auto me = get_first_child(parent, "nmos", loc_data);
     nmos_idx = 0;
@@ -260,8 +254,6 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
          */
         nmos_inf->max_mux_sl_size = 1 + num_mux_sizes;
         nmos_inf->mux_voltage_inf = new t_power_mux_volt_inf[nmos_inf->max_mux_sl_size + 1];
-        for (i = 0; i < nmos_inf->max_mux_sl_size + 1; i++)
-            nmos_inf->mux_voltage_inf[i] = t_power_mux_volt_inf();
 
         auto child = get_first_child(me, "multiplexer", loc_data);
         i = 1;
@@ -276,8 +268,6 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
             nmos_inf->mux_voltage_inf[i].num_voltage_pairs = num_voltages;
 
             nmos_inf->mux_voltage_inf[i].mux_voltage_pairs = new t_power_mux_volt_pair[num_voltages];
-            for (int k = 0; k < num_voltages; k++)
-                nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[k] = t_power_mux_volt_pair();
 
             auto gc = get_first_child(child, "voltages", loc_data);
             j = 0;
@@ -342,8 +332,6 @@ static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const p
     /* Process all transistor sizes */
     trans_inf->num_size_entries = count_children(parent, "size", loc_data);
     trans_inf->size_inf = new t_transistor_size_inf[trans_inf->num_size_entries];
-    for (i = 0; i < trans_inf->num_size_entries; i++)
-        trans_inf->size_inf[i] = t_transistor_size_inf();
 
     child = get_first_child(parent, "size", loc_data);
     i = 0;

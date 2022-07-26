@@ -25,6 +25,12 @@ def create_circuits_list(main_circuit, include_files):
     if include_files:
         # Verify that files are Paths or convert them to Paths + check that they exist
         for include in include_files:
+            file_extension = os.path.splitext(include)[-1]
+            # if the include file is not in the supported HDLs, we drop it
+            # NOTE: the include file is already copied to the temp folder
+            if file_extension not in FILE_TYPES:
+                continue
+
             include_file = vtr.verify_file(include, "Circuit")
             circuit_list.append(include_file.name)
 
@@ -81,7 +87,7 @@ def init_config_file(
     config_file.write(odin_config_full_path)
 
 
-# pylint: disable=too-many-arguments, too-many-locals
+# pylint: disable=too-many-arguments, too-many-locals, too-many-branches
 def run(
     architecture_file,
     circuit_file,
@@ -108,6 +114,9 @@ def run(
 
         circuit_file :
             Circuit file to optimize
+
+        include_files :
+            list of header files
 
         output_netlist :
             File name to output the resulting circuit to
@@ -181,6 +190,11 @@ def run(
     cmd = [odin_exec]
     use_odin_simulation = False
 
+    # handling the Odin-II decode_name flag for Yosys coarse-grained BLIFs
+    if not odin_args["encode_names"]:
+        odin_args["decode_names"] = True
+    del odin_args["encode_names"]
+
     if "use_odin_simulation" in odin_args:
         use_odin_simulation = True
         del odin_args["use_odin_simulation"]
@@ -236,4 +250,4 @@ def run(
         )
 
 
-# pylint: enable=too-many-arguments, too-many-locals
+# pylint: enable=too-many-arguments, too-many-locals, too-many-branches
