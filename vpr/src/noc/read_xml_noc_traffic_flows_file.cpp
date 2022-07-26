@@ -28,8 +28,7 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
      * time consuming, so instead we can compare to only blocks that are 
      * compatible to physical NoC router tiles. 
      */
-    std::vector<ClusterBlockId> cluster_blocks_compatible_with_noc_router_tiles;
-    get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_tile_type, cluster_blocks_compatible_with_noc_router_tiles);
+    std::vector<ClusterBlockId> cluster_blocks_compatible_with_noc_router_tiles = get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_tile_type);
 
     /* variabled used when parsing the file.
      * Stores xml related information while parsing the file, such as current 
@@ -225,9 +224,12 @@ bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& no
     return result;
 }
 
-void get_cluster_blocks_compatible_with_noc_router_tiles(const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles) {
+std::vector<ClusterBlockId> get_cluster_blocks_compatible_with_noc_router_tiles(const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type) {
     // get the ids of all cluster blocks in the netlist
     auto cluster_netlist_blocks = cluster_ctx.clb_nlist.blocks();
+
+    // vector to store all the cluster blocks ids that can be placed within a physical NoC router tile on the FPGA
+    std::vector<ClusterBlockId> cluster_blocks_compatible_with_noc_router_tiles;
 
     for (auto cluster_block_id = cluster_netlist_blocks.begin(); cluster_block_id != cluster_netlist_blocks.end(); cluster_block_id++) {
         // get the logical type of the block
@@ -240,5 +242,5 @@ void get_cluster_blocks_compatible_with_noc_router_tiles(const ClusteringContext
         }
     }
 
-    return;
+    return cluster_blocks_compatible_with_noc_router_tiles;
 }

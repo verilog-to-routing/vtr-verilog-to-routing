@@ -199,13 +199,10 @@ bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& no
  * @param noc_router_tile_type The physical type of a Noc router tile in the
  *                             FPGA. Used to check if the router block is
  *                             compatible with a router tile.
- * @param cluster_blocks_compatible_with_noc_router_tiles A vector of cluster 
- *                                            blocks in the netlist that are
- *                                            compatible with a noc router tile.
- *                                            The cluster blocks in the netlist
- *                                            are added to this vector in this
- *                                            function.
+ * @return std::vector<ClusterBlockId> The cluster block ids of the 
+ *                                     clusters within the netlist that    
+ *                                     are compatible with a NoC router tile. 
  */
-void get_cluster_blocks_compatible_with_noc_router_tiles(const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type, std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles);
+std::vector<ClusterBlockId> get_cluster_blocks_compatible_with_noc_router_tiles(const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type);
 
 #endif

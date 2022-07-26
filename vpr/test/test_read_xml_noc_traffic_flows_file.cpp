@@ -483,10 +483,8 @@ TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_
         golden_set_of_router_cluster_blocks_in_netlist.emplace_back(test_netlist->create_block(router_four, nullptr, router_ref_two));
 
         // stores the found cluster blocks in the netlist that are router blocks which are compatible with a NoC router tile
-        std::vector<ClusterBlockId> found_cluster_blocks_that_are_noc_router_compatible;
-
-        // execute the test function
-        get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_ref, found_cluster_blocks_that_are_noc_router_compatible);
+        // executing the test function here
+        std::vector<ClusterBlockId> found_cluster_blocks_that_are_noc_router_compatible = get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_ref);
 
         // check that the correct number of router blocks were found
         REQUIRE(golden_set_of_router_cluster_blocks_in_netlist.size() == found_cluster_blocks_that_are_noc_router_compatible.size());
@@ -517,11 +515,9 @@ TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_
         test_netlist->create_block(io_four, nullptr, i_o_ref);
 
         // stores the found cluster blocks in the netlist that are router blocks which are compatible with a NoC router tile
-        std::vector<ClusterBlockId> found_cluster_blocks_that_are_noc_router_compatible;
-
         // execute the test function
-        get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_ref, found_cluster_blocks_that_are_noc_router_compatible);
-
+        std::vector<ClusterBlockId> found_cluster_blocks_that_are_noc_router_compatible = get_cluster_blocks_compatible_with_noc_router_tiles(cluster_ctx, noc_router_ref);
+        
         // since there were no router blocks in this netlist, check that the test found function 0 blocks that were compatible with a noc router tile
         REQUIRE(found_cluster_blocks_that_are_noc_router_compatible.size() == 0);
 
