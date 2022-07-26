@@ -26,7 +26,7 @@ void BinaryHeap::free(t_heap* hptr) {
 
 void BinaryHeap::init_heap(const DeviceGrid& grid) {
     size_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
-    if (heap_ .empty() || heap_size_ < target_heap_size) {
+    if (heap_.empty() || heap_size_ < target_heap_size) {
         if (!heap_.empty()) {
             // coverity[offset_free : Intentional]
             heap_.clear();
@@ -141,9 +141,8 @@ void BinaryHeap::sift_up(size_t leaf, t_heap* const node) {
 //expands heap by "realloc"
 void BinaryHeap::expand_heap_if_full() {
     if (heap_tail_ > heap_size_) { /* Heap is full */
-    	heap_size_ *=2;
-        heap_.resize(heap_size_+1);
-
+        heap_size_ *= 2;
+        heap_.resize(heap_size_ + 1);
     }
 }
 
@@ -196,7 +195,7 @@ void BinaryHeap::free_all_memory() {
         heap_.clear();
     }
 
-  //  heap_ = nullptr; /* Defensive coding:  crash hard if I use these. */
+    //  heap_ = nullptr; /* Defensive coding:  crash hard if I use these. */
 
     storage_.free_all_memory();
 }
