@@ -1391,7 +1391,9 @@ void vpr_analysis(const Netlist<>& net_list,
         VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 
-    routing_stats(vpr_setup.RouterOpts.full_stats, vpr_setup.RouterOpts.route_type,
+    routing_stats(net_list,
+                  vpr_setup.RouterOpts.full_stats,
+                  vpr_setup.RouterOpts.route_type,
                   vpr_setup.Segments,
                   vpr_setup.RoutingArch.R_minW_nmos,
                   vpr_setup.RoutingArch.R_minW_pmos,

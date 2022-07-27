@@ -4,7 +4,8 @@
 #include <algorithm>
 #include "vpr_types.h"
 
-void routing_stats(bool full_stats,
+void routing_stats(const Netlist<>& net_list,
+                   bool full_stats,
                    enum e_route_type route_type,
                    std::vector<t_segment_inf>& segment_inf,
                    float R_minW_nmos,

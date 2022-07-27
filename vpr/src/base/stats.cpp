@@ -29,11 +29,14 @@
 
 /********************** Subroutines local to this module *********************/
 
-static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<int>& chany_occ, bool is_flat);
+static void load_channel_occupancies(const Netlist<>& net_list,
+                                     vtr::Matrix<int>& chanx_occ,
+                                     vtr::Matrix<int>& chany_occ,
+                                     bool is_flat);
 
-static void length_and_bends_stats(bool is_flat);
+static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 
-static void get_channel_occupancy_stats(bool is_flat);
+static void get_channel_occupancy_stats(const Netlist<>& net_list, bool is_flat);
 
 /************************* Subroutine definitions ****************************/
 
@@ -42,7 +45,8 @@ static void get_channel_occupancy_stats(bool is_flat);
  *
  * Both a routing and an rr_graph must exist when you call this routine.
  */
-void routing_stats(bool full_stats,
+void routing_stats(const Netlist<>& net_list,
+                   bool full_stats,
                    enum e_route_type route_type,
                    std::vector<t_segment_inf>& segment_inf,
                    float R_minW_nmos,
@@ -59,9 +63,9 @@ void routing_stats(bool full_stats,
 
     int num_rr_switch = rr_graph.num_rr_switches();
 
-    length_and_bends_stats(is_flat);
+    length_and_bends_stats(net_list, is_flat);
     print_channel_stats(is_flat);
-    get_channel_occupancy_stats(is_flat);
+    get_channel_occupancy_stats(net_list, is_flat);
 
     VTR_LOG("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
@@ -111,14 +115,12 @@ void routing_stats(bool full_stats,
  * @brief Figures out maximum, minimum and average number of bends
  *        and net length in the routing.
  */
-void length_and_bends_stats(bool is_flat) {
+void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     int bends, total_bends, max_bends;
     int length, total_length, max_length;
     int segments, total_segments, max_segments;
     float av_bends, av_length, av_segments;
     int num_global_nets, num_clb_opins_reserved;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     max_bends = 0;
     total_bends = 0;
@@ -129,11 +131,9 @@ void length_and_bends_stats(bool is_flat) {
     num_global_nets = 0;
     num_clb_opins_reserved = 0;
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        ParentNetId par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
-        VTR_ASSERT(par_net_id != ParentNetId::INVALID());
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
-            get_num_bends_and_length(par_net_id, &bends, &length, &segments);
+    for (auto net_id : net_list.nets()) {
+        if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) { /* Globals don't count. */
+            get_num_bends_and_length(net_id, &bends, &length, &segments);
 
             total_bends += bends;
             max_bends = std::max(bends, max_bends);
@@ -143,27 +143,28 @@ void length_and_bends_stats(bool is_flat) {
 
             total_segments += segments;
             max_segments = std::max(segments, max_segments);
-        } else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+        } else if (net_list.net_is_ignored(net_id)) {
             num_global_nets++;
-        } else {
+        } else if(!is_flat) {
+            /* If flat_routing is enabled, we don't need to count the number of reserved opins*/
             num_clb_opins_reserved++;
         }
     }
 
-    av_bends = (float)total_bends / (float)((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
+    av_bends = (float)total_bends / (float)((int)net_list.nets().size() - num_global_nets);
     VTR_LOG("\n");
     VTR_LOG("Average number of bends per net: %#g  Maximum # of bends: %d\n", av_bends, max_bends);
     VTR_LOG("\n");
 
-    av_length = (float)total_length / (float)((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
+    av_length = (float)total_length / (float)((int)net_list.nets().size() - num_global_nets);
     VTR_LOG("Number of global nets: %d\n", num_global_nets);
-    VTR_LOG("Number of routed nets (nonglobal): %d\n", (int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
+    VTR_LOG("Number of routed nets (nonglobal): %d\n", (int)net_list.nets().size() - num_global_nets);
     VTR_LOG("Wire length results (in units of 1 clb segments)...\n");
     VTR_LOG("\tTotal wirelength: %d, average net length: %#g\n", total_length, av_length);
     VTR_LOG("\tMaximum net length: %d\n", max_length);
     VTR_LOG("\n");
 
-    av_segments = (float)total_segments / (float)((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
+    av_segments = (float)total_segments / (float)((int)net_list.nets().size() - num_global_nets);
     VTR_LOG("Wire length results in terms of physical segments...\n");
     VTR_LOG("\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
     VTR_LOG("\tMaximum segments used by a net: %d\n", max_segments);
@@ -171,7 +172,7 @@ void length_and_bends_stats(bool is_flat) {
 }
 
 ///@brief Determines how many tracks are used in each channel.
-static void get_channel_occupancy_stats(bool is_flat) {
+static void get_channel_occupancy_stats(const Netlist<>& net_list, bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
 
     auto chanx_occ = vtr::Matrix<int>({{
@@ -185,7 +186,7 @@ static void get_channel_occupancy_stats(bool is_flat) {
                                           device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
                                       }},
                                       0);
-    load_channel_occupancies(chanx_occ, chany_occ, is_flat);
+    load_channel_occupancies(net_list, chanx_occ, chany_occ, is_flat);
 
     VTR_LOG("\n");
     VTR_LOG("X - Directed channels:   j max occ ave occ capacity\n");
@@ -231,14 +232,16 @@ static void get_channel_occupancy_stats(bool is_flat) {
  * @brief Loads the two arrays passed in with the total occupancy at each of the
  *        channel segments in the FPGA.
  */
-static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<int>& chany_occ, bool is_flat) {
+static void load_channel_occupancies(const Netlist<>& net_list,
+                                     vtr::Matrix<int>& chanx_occ,
+                                     vtr::Matrix<int>& chany_occ,
+                                     bool is_flat) {
     int i, j, inode;
     t_trace* tptr;
     t_rr_type rr_type;
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
     /* First set the occupancy of everything to zero. */
@@ -246,11 +249,12 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
     chany_occ.fill(0);
 
     /* Now go through each net and count the tracks and pins used everywhere */
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    for (auto net_id : net_list.nets()) {
         /* Skip global and empty nets. */
-        ParentNetId par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        if (net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0)
+            continue;
 
-        tptr = route_ctx.trace[par_net_id].head;
+        tptr = route_ctx.trace[net_id].head;
         while (tptr != nullptr) {
             inode = tptr->index;
             rr_type = rr_graph.node_type(RRNodeId(inode));
