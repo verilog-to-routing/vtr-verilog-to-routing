@@ -172,7 +172,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     if (cheapest == nullptr) {
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
 
-        //free_route_tree(rt_root);
+        free_route_tree(rt_root);
         heap_.empty_heap();
         rcv_path_manager.empty_heap();
         return std::make_pair(false, t_heap());
@@ -621,7 +621,7 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     float expected_cong;
 
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
-    // TODO: flat_routing is not tested for when is_flat is enabled
+    // TODO: This function is not tested for is_flat == true
     VTR_ASSERT(is_flat_ != true);
     std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(RRNodeId(to_node), RRNodeId(target_node), cost_params, R_upstream);
 
