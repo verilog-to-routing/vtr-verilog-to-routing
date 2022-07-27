@@ -573,7 +573,7 @@ static void set_grid_block_type(int priority, const t_physical_tile_type* type, 
         return;
     }
 
-    if (priority == max_priority_type_loc.priority) {
+    if (priority == max_priority_type_loc.priority && max_priority_type_loc.type != type) {
         //Ambiguous case where current grid block and new specification have equal priority
         //
         //We arbitrarily decide to take the 'last applied' wins approach, and warn the user
