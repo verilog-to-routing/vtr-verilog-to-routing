@@ -2,6 +2,7 @@
 #include "odin_types.h"
 #include "vtr_time.h"
 #include "vtr_version.h"
+#include <sys/resource.h>
 
 int main(int argc, char** argv) {
     vtr::ScopedFinishTimer t("Odin II");
@@ -26,6 +27,19 @@ int main(int argc, char** argv) {
         "=======================================================================\n"
         "\n",
         vtr::VERSION, vtr::VCS_REVISION, vtr::BUILD_TIMESTAMP, vtr::COMPILER, vtr::BUILD_INFO);
+
+/**
+ * set stack size to >= 128 MB in linux operating systems to avoid
+ * stack overflow in recursive routine calls for big benchmarks 
+ */
+#ifdef __linux__
+    struct rlimit rl;
+    const rlim_t new_stack_size = 128L * 1024L * 1024L;
+    if (getrlimit(RLIMIT_STACK, &rl) == 0 && rl.rlim_cur < new_stack_size) {
+        rl.rlim_cur = new_stack_size;
+        setrlimit(RLIMIT_STACK, &rl);
+    }
+#endif
 
     netlist_t* odin_netlist = start_odin_ii(argc, argv);
     terminate_odin_ii(odin_netlist);
