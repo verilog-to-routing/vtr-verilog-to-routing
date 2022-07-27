@@ -2138,8 +2138,8 @@
               <!-- FF Clocks -->
               <direct input="alm.clock" name="clock_dff0" output="dff[0].clk"/>
               <direct input="alm.clock" name="clock_dff1" output="dff[1].clk"/>
-              <direct input="alm.clock" name="clock_dff0" output="dff[2].clk"/>
-              <direct input="alm.clock" name="clock_dff1" output="dff[3].clk"/>
+              <direct input="alm.clock" name="clock_dff2" output="dff[2].clk"/>
+              <direct input="alm.clock" name="clock_dff3" output="dff[3].clk"/>
               <!-- ALM Carry Chain -->
               <direct input="alm.cin" name="alm_cin" output="comb_block.cin">
                 <pack_pattern name="LAB_carry_chain" in_port="alm.cin" out_port="comb_block.cin"/>
