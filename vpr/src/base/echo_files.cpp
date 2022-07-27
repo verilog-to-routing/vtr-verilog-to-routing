@@ -132,6 +132,7 @@ void alloc_and_load_echo_file_info() {
 
     //NoC
     setEchoFileName(E_ECHO_NOC_MODEL, "noc_model.echo");
+    setEchoFileName(E_ECHO_NOC_TRAFFIC_FLOWS, "noc_traffic_flows.echo");
 }
 
 void free_echo_file_info() {

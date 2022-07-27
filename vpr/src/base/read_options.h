@@ -140,6 +140,7 @@ struct t_options {
 
     /*NoC Options*/
     argparse::ArgValue<bool> noc;
+    argparse::ArgValue<std::string> noc_flows_file;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;

@@ -1273,7 +1273,8 @@ struct t_analysis_opts {
 
 // used to store NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
-    bool noc; ///<options to model the noc within the FPGA device
+    bool noc;                   ///<options to turn on hard NoC modeling & optimization
+    std::string noc_flows_file; ///<name of the file that contains all the traffic flow information in the NoC
 };
 
 /**
@@ -1727,7 +1728,14 @@ typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_u
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 
+/**
+ * @brief Free the linked list that saves all the packing molecules.
+ */
 void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
+
+/**
+ * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.
+ */
 void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
 
 #endif

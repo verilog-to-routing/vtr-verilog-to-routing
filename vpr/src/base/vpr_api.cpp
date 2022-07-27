@@ -39,6 +39,7 @@
 #include "SetupGrid.h"
 #include "setup_clocks.h"
 #include "setup_noc.h"
+#include "read_xml_noc_traffic_flows_file.h"
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -350,8 +351,10 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     fflush(stdout);
 
-    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
     helper_ctx.lb_type_rr_graphs = vpr_setup->PackerRRGraph;
+    device_ctx.pad_loc_type = vpr_setup->PlacerOpts.pad_loc_type;
 }
 
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
@@ -397,7 +400,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     //clean packing-placement data
     if (vpr_setup.PackerOpts.doPacking == STAGE_DO) {
-        auto& helper_ctx = g_vpr_ctx.mutable_helper();
+        auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
         free_cluster_placement_stats(helper_ctx.cluster_placement_stats);
     }
 
@@ -522,9 +525,11 @@ void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
  */
 void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     // check if the user provided the option to model the noc
-    if (vpr_setup.NocOpts.noc == true) {
+    if (vpr_setup.NocOpts.noc) {
         // create the NoC model based on the user description from the arch file
         setup_noc(arch);
+        // read and store the noc traffic flow information
+        read_xml_noc_traffic_flows_file(vpr_setup.NocOpts.noc_flows_file.c_str());
 
 #ifndef NO_GRAPHICS
         // setup the graphics

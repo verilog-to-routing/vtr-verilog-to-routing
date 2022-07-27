@@ -65,6 +65,7 @@ enum e_echo_files {
 
     //NoC
     E_ECHO_NOC_MODEL,
+    E_ECHO_NOC_TRAFFIC_FLOWS,
 
     E_ECHO_END_TOKEN
 };
