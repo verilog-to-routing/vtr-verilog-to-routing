@@ -773,9 +773,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 t_mode_selection_status mode_status;
                 is_cluster_legal = try_intra_lb_route(router_data, packer_opts.pack_verbosity, &mode_status);
                 if (is_cluster_legal) {
-                    VTR_LOGV(verbosity > 2, "\tPassed route at end.\n");
+                    VTR_LOGV(verbosity > 2, "\tPassed detailed intra-cluster routing at the end of cluster construction.\n");
                 } else {
-                    VTR_LOGV(verbosity > 2, "Failed route at end, repack cluster trying detailed routing at each stage.\n");
+                    VTR_LOGV(verbosity > 2, "Failed detailed intra-cluster routing at the end of cluster construction, repack cluster trying detailed routing at each stage.\n");
                 }
             } else {
                 is_cluster_legal = true;
