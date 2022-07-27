@@ -665,6 +665,7 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
 static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     // assign the noc specific options from the command line
     NocOpts->noc = Options.noc;
+    NocOpts->noc_flows_file = Options.noc_flows_file;
 
     return;
 }
