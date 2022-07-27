@@ -1,0 +1,2 @@
+pack_time;vpr.out;\s*Packing took (.*) seconds
+pack_max_mem;vpr.out;The entire flow of VPR took .* \(max_rss (.*) MiB\)
