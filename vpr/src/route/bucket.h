@@ -259,7 +259,7 @@ class Bucket : public HeapInterface {
 
     size_t seed_; /* Seed for fast_rand, should be non-zero */
 
-    BucketItem** heap_;      /* Buckets for linked lists*/
+    std::vector<BucketItem*> heap_;      /* Buckets for linked lists*/
     size_t heap_size_;       /* Number of buckets */
     size_t heap_head_;       /* First non-empty bucket */
     size_t heap_tail_;       /* Last non-empty bucket */
