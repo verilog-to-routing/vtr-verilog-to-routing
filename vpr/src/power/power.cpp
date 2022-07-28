@@ -173,9 +173,9 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
                         power_ctx.arch->LUT_transistor_size, SRAM_values,
                         input_probabilities, input_densities, power_ctx.solution_inf.T_crit);
         power_add_usage(power_usage, &sub_power_usage);
-        delete[](SRAM_values);
-        delete[](input_probabilities);
-        delete[](input_densities);
+        delete[]SRAM_values;
+        delete[]input_probabilities;
+        delete[]input_densities;
     } else if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_LATCH) == 0) {
         /* Flip-Flop */
 
@@ -763,7 +763,7 @@ static void power_usage_clock_single(t_power_usage* power_usage,
 /* Frees a multiplexer graph */
 static void dealloc_mux_graph(t_mux_node* node) {
     dealloc_mux_graph_rec(node);
-    delete (node);
+    delete node;
 }
 
 static void dealloc_mux_graph_rec(t_mux_node* node) {
@@ -1084,7 +1084,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
 }
 
 void power_uninit_pb_pin(t_pb_graph_pin* pin) {
-    delete (pin->pin_power);
+    delete pin->pin_power;
     pin->pin_power = nullptr;
 }
 
@@ -1379,7 +1379,7 @@ bool power_uninit() {
                 break;
         }
     }
-    delete[](rr_node_power);
+    delete[]rr_node_power;
 
     /* Free mux architectures */
     for (std::map<float, t_power_mux_info*>::iterator it = power_ctx.commonly_used->mux_info.begin();
@@ -1404,8 +1404,8 @@ bool power_uninit() {
         fclose(power_ctx.output->out);
     }
 
-    delete[](power_ctx.output->logs);
-    delete (power_ctx.output);
+    delete[]power_ctx.output->logs;
+    delete power_ctx.output;
 
     power_pb_pins_uninit();
 
