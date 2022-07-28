@@ -324,7 +324,7 @@ struct ClusteringHelperContext : public Context {
     t_ext_pin_util_targets target_external_pin_util;
 
     ~ClusteringHelperContext() {
-        free(primitives_list);
+        delete[] primitives_list;
     }
 };
 

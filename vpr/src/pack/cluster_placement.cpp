@@ -60,14 +60,16 @@ t_cluster_placement_stats* alloc_and_load_cluster_placement_stats() {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    cluster_placement_stats_list = (t_cluster_placement_stats*)vtr::calloc(device_ctx.logical_block_types.size(),
-                                                                           sizeof(t_cluster_placement_stats));
-    for (const auto& type : device_ctx.logical_block_types) {
-        if (!is_empty_type(&type)) {
-            cluster_placement_stats_list[type.index].valid_primitives = (t_cluster_placement_primitive**)vtr::calloc(
-                get_max_primitives_in_pb_type(type.pb_type) + 1,
-                sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
+    cluster_placement_stats_list = new t_cluster_placement_stats[device_ctx.logical_block_types.size()];
 
+    for (const auto& type : device_ctx.logical_block_types) {
+        cluster_placement_stats_list[type.index] = t_cluster_placement_stats();
+        if (!is_empty_type(&type)) {
+            cluster_placement_stats_list[type.index].valid_primitives = new t_cluster_placement_primitive*[get_max_primitives_in_pb_type(type.pb_type) + 1];
+            for (int i = 0; i < get_max_primitives_in_pb_type(type.pb_type) + 1; i++)
+                cluster_placement_stats_list[type.index].valid_primitives[i] = nullptr;
+
+            /* too much memory allocated but shouldn't be a problem */
             cluster_placement_stats_list[type.index].curr_molecule = nullptr;
             load_cluster_placement_stats_for_pb_graph_node(&cluster_placement_stats_list[type.index],
                                                            type.pb_graph_head);
@@ -259,8 +261,8 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
     const t_pb_type* pb_type = pb_graph_node->pb_type;
     bool success;
     if (pb_type->modes == nullptr) {
-        placement_primitive = (t_cluster_placement_primitive*)vtr::calloc(1,
-                                                                          sizeof(t_cluster_placement_primitive));
+        placement_primitive = new t_cluster_placement_primitive;
+        *placement_primitive = t_cluster_placement_primitive();
         placement_primitive->pb_graph_node = pb_graph_node;
         placement_primitive->valid = true;
         pb_graph_node->cluster_placement_primitive = placement_primitive;
@@ -272,8 +274,8 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
                 || cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type
                        == pb_graph_node->pb_type) {
                 if (cluster_placement_stats->valid_primitives[i] == nullptr) {
-                    cluster_placement_stats->valid_primitives[i] = (t_cluster_placement_primitive*)vtr::calloc(1,
-                                                                                                               sizeof(t_cluster_placement_primitive)); /* head of linked list is empty, makes it easier to remove nodes later */
+                    cluster_placement_stats->valid_primitives[i] = new t_cluster_placement_primitive; /* head of linked list is empty, makes it easier to remove nodes later */
+                    *cluster_placement_stats->valid_primitives[i] = t_cluster_placement_primitive();
                     cluster_placement_stats->num_pb_types++;
                 }
                 success = true;
