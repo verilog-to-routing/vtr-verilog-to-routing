@@ -763,7 +763,7 @@ static void power_usage_clock_single(t_power_usage* power_usage,
 /* Frees a multiplexer graph */
 static void dealloc_mux_graph(t_mux_node* node) {
     dealloc_mux_graph_rec(node);
-    delete node;
+    delete (node);
 }
 
 static void dealloc_mux_graph_rec(t_mux_node* node) {
@@ -1084,7 +1084,7 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
 }
 
 void power_uninit_pb_pin(t_pb_graph_pin* pin) {
-    delete pin->pin_power;
+    delete (pin->pin_power);
     pin->pin_power = nullptr;
 }
 
@@ -1405,7 +1405,7 @@ bool power_uninit() {
     }
 
     delete[](power_ctx.output->logs);
-    delete power_ctx.output;
+    delete (power_ctx.output);
 
     power_pb_pins_uninit();
 

@@ -648,10 +648,10 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
 
     if (power_opts->do_power) {
         if (!Arch->power)
-            Arch->power = new t_power_arch();
+            Arch->power = new t_power_arch;
 
         if (!Arch->clocks)
-            Arch->clocks = new t_clock_arch();
+            Arch->clocks = new t_clock_arch;
 
         device_ctx.clock_arch = Arch->clocks;
     } else {
