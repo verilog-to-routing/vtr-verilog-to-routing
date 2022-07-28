@@ -84,7 +84,7 @@ t_hash* insert_in_hash_table(t_hash** hash_table, const char* name, int next_fre
     h_ptr = hash_table[i];
 
     while (h_ptr != nullptr) {
-        if (strcmp(h_ptr->name.c_str(), name) == 0) {
+        if (h_ptr->name.c_str() == name) {
             h_ptr->count++;
             return (h_ptr);
         }
@@ -119,7 +119,7 @@ t_hash* get_hash_entry(t_hash** hash_table, const char* name) {
     h_ptr = hash_table[i];
 
     while (h_ptr != nullptr) {
-        if (strcmp(h_ptr->name.c_str(), name) == 0)
+        if (h_ptr->name.c_str() == name)
             return (h_ptr);
 
         h_ptr = h_ptr->next;
