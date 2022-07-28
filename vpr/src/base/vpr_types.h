@@ -1271,7 +1271,8 @@ struct t_analysis_opts {
 
 // used to store NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
-    bool noc; ///<options to model the noc within the FPGA device
+    bool noc;                   ///<options to turn on hard NoC modeling & optimization
+    std::string noc_flows_file; ///<name of the file that contains all the traffic flow information in the NoC
 };
 
 /**

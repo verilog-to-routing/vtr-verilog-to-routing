@@ -28,6 +28,7 @@
 #include "metadata_storage.h"
 #include "vpr_constraints.h"
 #include "noc_storage.h"
+#include "noc_traffic_flows.h"
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -322,7 +323,7 @@ struct ClusteringHelperContext : public Context {
     t_ext_pin_util_targets target_external_pin_util;
 
     ~ClusteringHelperContext() {
-        free(primitives_list);
+        delete[] primitives_list;
     }
 };
 
@@ -465,6 +466,16 @@ struct NocContext : public Context {
      * The NoC model is created once from the architecture file description. 
      */
     NocStorage noc_model;
+
+    /**
+     * @brief Stores all the communication happening between routers in the NoC 
+     *
+     * Contains all of the traffic flows that ddescribe which pairs of logical routers are communicating and also some metrics and constraints on the data transfer between the two routers. 
+     * 
+     *
+     * This is created from a user supplied .flows file.
+     */
+    NocTrafficFlows noc_traffic_flows_storage;
 };
 
 /**

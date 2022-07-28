@@ -751,10 +751,10 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                         }
                     }
                     for (j = 0; j < num_sets; j++) {
-                        free(pin_node[j]);
+                        delete[] pin_node[j];
                     }
-                    free(pin_node);
-                    free(num_ptrs);
+                    delete[] pin_node;
+                    delete[] num_ptrs;
                     if (!found) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
                                   "Unknown interconnect %s connecting to pin %s.\n",
@@ -820,10 +820,10 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                         }
                     }
                     for (j = 0; j < num_sets; j++) {
-                        free(pin_node[j]);
+                        delete[] pin_node[j];
                     }
-                    free(pin_node);
-                    free(num_ptrs);
+                    delete[] pin_node;
+                    delete[] num_ptrs;
                     if (!found) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
                                   "Unknown interconnect %s connecting to pin %s.\n",

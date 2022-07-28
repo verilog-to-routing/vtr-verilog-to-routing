@@ -52,9 +52,15 @@ static void print_stats() {
 
     num_clb_types = num_clb_inputs_used = num_clb_outputs_used = nullptr;
 
-    num_clb_types = (int*)vtr::calloc(device_ctx.logical_block_types.size(), sizeof(int));
-    num_clb_inputs_used = (int*)vtr::calloc(device_ctx.logical_block_types.size(), sizeof(int));
-    num_clb_outputs_used = (int*)vtr::calloc(device_ctx.logical_block_types.size(), sizeof(int));
+    num_clb_types = new int[device_ctx.logical_block_types.size()];
+    num_clb_inputs_used = new int[device_ctx.logical_block_types.size()];
+    num_clb_outputs_used = new int[device_ctx.logical_block_types.size()];
+
+    for (int i = 0; i < (int)device_ctx.logical_block_types.size(); i++) {
+        num_clb_types[i] = 0;
+        num_clb_inputs_used[i] = 0;
+        num_clb_outputs_used[i] = 0;
+    }
 
     for (auto net_id : atom_ctx.nlist.nets()) {
         nets_absorbed[net_id] = true;
@@ -124,9 +130,9 @@ static void print_stats() {
     }
     VTR_LOG("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n",
             total_nets_absorbed, (int)atom_ctx.nlist.nets().size(), (int)atom_ctx.nlist.nets().size() - total_nets_absorbed);
-    free(num_clb_types);
-    free(num_clb_inputs_used);
-    free(num_clb_outputs_used);
+    delete[] num_clb_types;
+    delete[] num_clb_inputs_used;
+    delete[] num_clb_outputs_used;
     /* TODO: print more stats */
 }
 
