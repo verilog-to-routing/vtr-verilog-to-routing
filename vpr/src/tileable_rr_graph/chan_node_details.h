@@ -18,9 +18,6 @@
  *  4. potentail track_id(ptc_num) of each segment
  ***********************************************************************/
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 /************************************************************************
  *  ChanNodeDetails records segment length, directionality and starting of routing tracks
  *    +---------------------------------+
@@ -71,7 +68,5 @@ class ChanNodeDetails {
     std::vector<bool>   track_start_; /* flag to identify if this is the starting point of the track */
     std::vector<bool>   track_end_; /* flag to identify if this is the ending point of the track */
 };
-
-} /* end namespace openfpga */
 
 #endif 

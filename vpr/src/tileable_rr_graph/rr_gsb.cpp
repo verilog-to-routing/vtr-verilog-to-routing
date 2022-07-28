@@ -10,9 +10,6 @@
 
 #include "rr_gsb.h"
 
-/* namespace openfpga begins */
-namespace openfpga {
-
 /************************************************************************
  * Constructors
  ***********************************************************************/
@@ -1140,5 +1137,3 @@ bool RRGSB::validate_ipin_node_id(const e_side& side, const size_t& node_id) con
 bool RRGSB::validate_cb_type(const t_rr_type& cb_type) const {
     return ((CHANX == cb_type) || (CHANY == cb_type));
 }
-
-} /* End namespace openfpga*/

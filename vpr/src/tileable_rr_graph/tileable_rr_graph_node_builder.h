@@ -1,3 +1,5 @@
+#ifndef TILEABLE_RR_GRAPH_NODE_BUILDER_H
+#define TILEABLE_RR_GRAPH_NODE_BUILDER_H
 /********************************************************************
  * Include header files that are required by function declaration
  *******************************************************************/
@@ -17,9 +19,6 @@
  * Function declaration
  *******************************************************************/
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    vtr::vector<RRNodeId, RRSwitchId>& driver_switches,
                                    const DeviceGrid& grids,
@@ -38,5 +37,5 @@ void create_tileable_rr_graph_nodes(RRGraphView& rr_graph,
                                     const RRSwitchId& delayless_switch,
                                     const bool& through_channel);
 
+#endif
 
-} /* end namespace openfpga */

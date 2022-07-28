@@ -5,9 +5,6 @@
 #include "vtr_assert.h"
 #include "rr_chan.h"
 
-/* namespace openfpga begins */
-namespace openfpga {
-
 /************************************************************************
  * Constructors
  ***********************************************************************/
@@ -221,5 +218,3 @@ bool RRChan::valid_node_id(const size_t& node_id) const {
 
     return false;
 }
-
-} /* End namespace openfpga*/

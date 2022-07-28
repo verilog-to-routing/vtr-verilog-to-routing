@@ -9,9 +9,6 @@
 
 #include "rr_chan.h"
 
-/* Begin namespace openfpga */
-namespace openfpga {
-
 /********************************************************************
  * Object Generic Switch Block
  * This block contains
@@ -283,7 +280,5 @@ class RRGSB {
     /* Logic Block Outputs data */
     std::vector<std::vector<RRNodeId>>  opin_node_;
 };
-
-} /* End namespace openfpga*/
 
 #endif

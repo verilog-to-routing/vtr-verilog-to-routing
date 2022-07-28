@@ -14,9 +14,6 @@
 #include "rr_graph_builder_utils.h"
 #include "tileable_chan_details_builder.h"
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 /************************************************************************
  * Generate the number of tracks for each types of routing segments
  * w.r.t. the frequency of each of segments and channel width
@@ -230,5 +227,3 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
 
     return chan_node_details;
 }
-
-} /* end namespace openfpga */

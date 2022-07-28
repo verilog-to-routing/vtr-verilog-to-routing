@@ -20,9 +20,6 @@
 #include "tileable_chan_details_builder.h"
 #include "tileable_rr_graph_gsb.h"
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 /************************************************************************
  * Internal data structures
  ***********************************************************************/
@@ -1428,5 +1425,3 @@ void build_direct_connections_for_one_gsb(RRGraph& rr_graph,
         }
     }
 }
-
-} /* end namespace openfpga */

@@ -21,9 +21,6 @@
 #include "tileable_rr_graph_node_builder.h"
 #include "rr_rc_data.h"
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 /************************************************************************
  * Find the number output pins by considering all the grid
  ***********************************************************************/
@@ -1032,5 +1029,3 @@ void create_tileable_rr_graph_nodes(RRGraphView& rr_graph,
     reverse_dec_chan_rr_node_track_ids(rr_graph,
                                        rr_node_track_ids);
 }
-
-} /* end namespace openfpga */
