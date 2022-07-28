@@ -75,6 +75,8 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     std::stringstream ss(user_input);
 
     auto search_type = get_search_type(app);
+    if (search_type == "")
+        return;
 
     // reset
     deselect_all();
@@ -121,22 +123,22 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
 
         AtomBlockId atom_blk_id = atom_ctx.nlist.find_block(block_name);
         if (atom_blk_id != AtomBlockId::INVALID()) {
-            ClusterBlockId block_id = atom_ctx.lookup.atom_clb(atom_blk_id);
-            if (!highlight_atom_block(atom_blk_id, block_id, app)) {
-                highlight_cluster_block(block_id);
+            ClusterBlockId cluster_block_id = atom_ctx.lookup.atom_clb(atom_blk_id);
+            if (!highlight_atom_block(atom_blk_id, cluster_block_id, app)) {
+                highlight_cluster_block(cluster_block_id);
             }
             return;
         }
 
         //Continues if atom block not found (Checking if user searched a clb)
-        ClusterBlockId block_id = ClusterBlockId::INVALID();
-        block_id = cluster_ctx.clb_nlist.find_block(block_name);
+        ClusterBlockId cluster_block_id = ClusterBlockId::INVALID();
+        cluster_block_id = cluster_ctx.clb_nlist.find_block(block_name);
 
-        if (block_id == ClusterBlockId::INVALID()) {
+        if (cluster_block_id == ClusterBlockId::INVALID()) {
             warning_dialog_box("Invalid Block Name");
             return; //name not exist
         }
-        highlight_cluster_block(block_id); //found block
+        highlight_cluster_block(cluster_block_id); //found block
     }
 
     else if (search_type == "Net ID") {
@@ -340,10 +342,11 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
 t_pb* find_atom_block_in_pb(std::string name, t_pb* pb) {
     //Checking if block is one being searched for
     std::string pbName(pb->name);
-    if (pbName == name) return pb;
+    if (pbName == name)
+        return pb;
     //If block has no children, returning
-    if (pb->child_pbs == nullptr) return nullptr;
-
+    if (pb->child_pbs == nullptr)
+        return nullptr;
     int num_child_types = pb->get_num_child_types();
     //Iterating through all child types
     for (int i = 0; i < num_child_types; ++i) {
@@ -373,10 +376,7 @@ void highlight_nets(ClusterNetId net_id) {
 
     //If routing does not exist return
     if (int(route_ctx.trace.size()) == 0) return;
-
-    for (tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
-        draw_state->net_color[net_id] = ezgl::MAGENTA;
-    }
+    draw_state->net_color[net_id] = ezgl::MAGENTA;
 }
 
 void warning_dialog_box(const char* message) {
@@ -445,13 +445,14 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
 
 /**
  * @brief A non-default matching function. As opposed to simply searching for a prefix(default),
- * searches string for presence of a substring. Ignores cases.
+ * searches string for presence of a substring. Case-insensitive
  * 
  * @param completer the GtkEntryCompletion being used
  * @param key a normalized and case-folded key representing the text
  * @param iter GtkTreeIter pointing at the current entry being compared
  * @param user_data null
- * @return gboolean 
+ * @return true | if the string pointed to by iter contains key (case-insensitive)
+ * @return false | if the string pointed to does not contain key
  */
 gboolean customMatchingFunction(
     GtkEntryCompletion* completer,
@@ -471,7 +472,8 @@ gboolean customMatchingFunction(
 }
 
 /**
- * @brief Creates a GdkEvent that simulates user pressing key "key"
+ * @brief Creates a GdkEvent that simulates user pressing key "key".
+ * Currently used to fool GtkEntryCompletion into showing options w/o receiving a new input
  * 
  * @param key character value
  * @param window GdkWindow
@@ -502,6 +504,27 @@ GdkEvent simulate_keypress(char key, GdkWindow* window) {
  * as the user hits the "Enter" key. To accomplish this, a fake Gdk event is created
  * to simulate the user hitting a key.
  * 
+ * This was done for usability reasons; if this is not done, user will need to input another key before seeing 
+ * autocomplete results. Considering the enter is supposed to be a search, we want to search for the users
+ * key, not the key + another char
+ * 
+ * PERFORMANCE DATA
+ * Correlation between key length and time is shaky; there might be some correlation to
+ * how many strings are similar to it. All tests are performed with the key "1" - pretty common
+ * Tests are searched three times then average
+ * MODEL 1: EARCH + TSENG.BLIF
+ * NETS         1483
+ * NET SRCH.    19392
+ * BLOCKS       1835
+ * BLOCK SRCH.  21840
+ * For second model (much larger, much longer CPU times) observed large dropoff in times from one char to two chars (about 2 times faster) but after stayed consistent
+ * Maybe when I ahve more time, will make a cute graph or something, no time right now
+ * MODEL 2: Strativix arch + MES_NOC (TITAN)
+ * NETS         577696
+ * NET SRCH.    4.93438e+06
+ * BLOCKS       572148
+ * BLOCKS SRCH. 4.8654e+06
+ * Obviously much slower w. more nets/blocks. However, it only performs a single search, pretty bearable considering its searching in strings
  * @param app ezgl app
  */
 void enable_autocomplete(ezgl::application* app) {
@@ -509,6 +532,8 @@ void enable_autocomplete(ezgl::application* app) {
     GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
 
     std::string searchType = get_search_type(app);
+    if (searchType == "")
+        return;
     //Checking to make sure that we are on a mode that uses auto-complete
     if (gtk_entry_completion_get_model(completion) == NULL) {
         std::cout << "NO MODEL SELECTED" << std::endl;
@@ -538,14 +563,15 @@ void enable_autocomplete(ezgl::application* app) {
     gdk_event_put(&new_event);
 }
 
+//Returns current search type. Returns empty string if fails
 std::string get_search_type(ezgl::application* app) {
     GObject* combo_box = (GObject*)app->get_object("SearchType");
     gchar* type = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo_box));
     //Checking that a type is selected
-    if (type && type[0] == '\0') {
+    if (!type || (type && type[0] == '\0')) {
         warning_dialog_box("Please select a search type");
         app->refresh_drawing();
-        return "Failed lol";
+        return "";
     }
     std::string searchType(type);
     return searchType;

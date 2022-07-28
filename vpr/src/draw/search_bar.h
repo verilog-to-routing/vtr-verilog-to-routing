@@ -40,7 +40,7 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
 //Turns on autocomplete/suggestions
 void enable_autocomplete(ezgl::application* app);
 
-//Simulates key press event 
+//Simulates key press event
 GdkEvent simulate_keypress(char key, GdkWindow* window);
 
 //Returns current search type

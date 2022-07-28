@@ -20,6 +20,7 @@
 #include <sstream>
 #include <array>
 #include <iostream>
+#include <time.h>
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -669,21 +670,15 @@ bool draw_if_net_highlighted(ClusterNetId inet) {
     if (draw_state->net_color[inet] != DEFAULT_RR_NODE_COLOR) {
         return true;
     }
-
     return false;
 }
 
-#    if defined(X11) && !defined(__MINGW32__)
-void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
-    //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
-    std::string key(key_name);
-    if (gtk_widget_is_focus(GTK_WIDGET(app->get_object("TextInput")))) {
-        if (key == "Return") {
-            enable_autocomplete(app);
-        }
-    }
-}
-#    else
+/**
+ * @brief cbk function for key press
+ * 
+ * At the moment, only does something if user is currently typing in searchBar and
+ * hits enter, at which point it runs autocomplete
+ */
 void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
     std::string key(key_name);
     GtkWidget* searchBar = GTK_WIDGET(app->get_object("TextInput"));
@@ -695,7 +690,6 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
         }
     }
 }
-#    endif
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
     //  std::cout << "User clicked the ";
