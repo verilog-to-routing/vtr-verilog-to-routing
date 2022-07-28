@@ -815,8 +815,10 @@ void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_size) {
     pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
     pb->pb_stats->num_feasible_blocks = NOT_VALID;
     pb->pb_stats->feasible_blocks = new t_pack_molecule*[feasible_block_array_size];
+
     for (int i = 0; i < feasible_block_array_size; i++)
         pb->pb_stats->feasible_blocks[i] = nullptr;
+
 
     pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 
