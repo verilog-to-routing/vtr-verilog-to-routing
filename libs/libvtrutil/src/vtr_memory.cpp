@@ -104,7 +104,7 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
         if (size > CHUNK_SIZE) {                  /* Too big, use standard routine. */
                                                   /* Want to allocate a block of memory the size of size.
                                                    * i.e. malloc(size) */
-            tmp_ptr = new char[size];
+            tmp_ptr = new char[(int)ceil(size / sizeof(char))];
 
             /* When debugging, uncomment the code below to see if memory allocation size */
             /* makes sense */
@@ -115,11 +115,11 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
 
             VTR_ASSERT(chunk_info != nullptr);
             chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
-            return tmp_ptr;
+            return (tmp_ptr);
         }
 
         if (chunk_info->mem_avail < FRAGMENT_THRESHOLD) { /* Only a small scrap left. */
-            chunk_info->next_mem_loc_ptr = new char[CHUNK_SIZE];
+            chunk_info->next_mem_loc_ptr = new char[(int)ceil(CHUNK_SIZE / sizeof(char))];
             chunk_info->mem_avail = CHUNK_SIZE;
             VTR_ASSERT(chunk_info != nullptr);
             chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, chunk_info->next_mem_loc_ptr);
@@ -130,11 +130,11 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
          * to allocate normally.                                           */
 
         else {
-            tmp_ptr = new char[size];
+            tmp_ptr = new char[(int)ceil(size / sizeof(char))];
             VTR_ASSERT(chunk_info != nullptr);
             chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
 
-            return tmp_ptr;
+            return (tmp_ptr);
         }
     }
 
@@ -150,7 +150,7 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
     tmp_ptr = chunk_info->next_mem_loc_ptr;
     chunk_info->next_mem_loc_ptr += aligned_size;
     chunk_info->mem_avail -= aligned_size;
-    return tmp_ptr;
+    return (tmp_ptr);
 }
 
 void free_chunk_memory(t_chunk* chunk_info) {
