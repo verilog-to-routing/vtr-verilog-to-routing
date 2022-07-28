@@ -4,6 +4,8 @@
 crit_path_route_success_iteration;vpr.out;Successfully routed after (\d+) routing iterations
 
 #VPR Analysis (final implementation) Timing Metrics
+num_rr_graph_nodes;vpr.out;\s*RR Graph Nodes: (\d+)
+num_rr_graph_edges;vpr.out;\s*RR Graph Edges: (\d+)
 critical_path_delay;vpr.out;Final critical path delay \(least slack\): (.*) ns
 geomean_nonvirtual_intradomain_critical_path_delay;vpr.out;Final geomean non-virtual intra-domain period: (.*) ns
 setup_TNS;vpr.out;Final setup Total Negative Slack \(sTNS\): (.*) ns
