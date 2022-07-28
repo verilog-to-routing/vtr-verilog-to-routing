@@ -138,8 +138,11 @@ void Bucket::free_all_memory() {
 }
 
 void Bucket::expand(size_t required_number_of_buckets) {
+	auto old_size = heap_size_;
     heap_size_ = required_number_of_buckets * 2;
     heap_.resize(heap_size_);
+    std::fill(heap_.begin() + old_size, heap_.begin() + heap_size_, nullptr);
+
 }
 
 void Bucket::verify() {
