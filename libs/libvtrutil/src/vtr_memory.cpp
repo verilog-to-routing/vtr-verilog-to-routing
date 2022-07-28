@@ -43,7 +43,7 @@ void* calloc(size_t nelem, size_t size) {
     if ((ret = std::calloc(nelem, size)) == nullptr) {
         throw VtrError("Unable to calloc memory.", __FILE__, __LINE__);
     }
-    return (ret);
+    return ret;
 }
 
 void* malloc(size_t size) {
@@ -55,7 +55,7 @@ void* malloc(size_t size) {
     if ((ret = std::malloc(size)) == nullptr && size != 0) {
         throw VtrError("Unable to malloc memory.", __FILE__, __LINE__);
     }
-    return (ret);
+    return ret;
 }
 
 void* realloc(void* ptr, size_t size) {
@@ -66,7 +66,7 @@ void* realloc(void* ptr, size_t size) {
         throw VtrError(string_fmt("Unable to realloc memory (ptr=%p, size=%d).", ptr, size),
                        __FILE__, __LINE__);
     }
-    return (ret);
+    return ret;
 }
 
 void* chunk_malloc(size_t size, t_chunk* chunk_info) {
@@ -115,7 +115,7 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
 
             VTR_ASSERT(chunk_info != nullptr);
             chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
-            return (tmp_ptr);
+            return tmp_ptr;
         }
 
         if (chunk_info->mem_avail < FRAGMENT_THRESHOLD) { /* Only a small scrap left. */
@@ -134,7 +134,7 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
             VTR_ASSERT(chunk_info != nullptr);
             chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
 
-            return (tmp_ptr);
+            return tmp_ptr;
         }
     }
 
@@ -150,7 +150,7 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
     tmp_ptr = chunk_info->next_mem_loc_ptr;
     chunk_info->next_mem_loc_ptr += aligned_size;
     chunk_info->mem_avail -= aligned_size;
-    return (tmp_ptr);
+    return tmp_ptr;
 }
 
 void free_chunk_memory(t_chunk* chunk_info) {
