@@ -195,7 +195,7 @@ struct DeviceContext : public Context {
     int num_arch_switches;
     t_arch_switch_inf* arch_switch_inf; // [0..(num_arch_switches-1)]
 
-    std::map<int, t_arch_switch_inf> pb_edge_sw_inf;
+    std::map<int, t_arch_switch_inf> all_sw_inf;
     /*
      * Clock Networks
      */

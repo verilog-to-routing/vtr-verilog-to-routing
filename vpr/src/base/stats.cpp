@@ -31,8 +31,7 @@
 
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::Matrix<int>& chanx_occ,
-                                     vtr::Matrix<int>& chany_occ,
-                                     bool is_flat);
+                                     vtr::Matrix<int>& chany_occ);
 
 static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 
@@ -186,7 +185,7 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool is_flat)
                                           device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
                                       }},
                                       0);
-    load_channel_occupancies(net_list, chanx_occ, chany_occ, is_flat);
+    load_channel_occupancies(net_list, chanx_occ, chany_occ);
 
     VTR_LOG("\n");
     VTR_LOG("X - Directed channels:   j max occ ave occ capacity\n");
@@ -234,8 +233,7 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool is_flat)
  */
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::Matrix<int>& chanx_occ,
-                                     vtr::Matrix<int>& chany_occ,
-                                     bool is_flat) {
+                                     vtr::Matrix<int>& chany_occ) {
     int i, j, inode;
     t_trace* tptr;
     t_rr_type rr_type;
