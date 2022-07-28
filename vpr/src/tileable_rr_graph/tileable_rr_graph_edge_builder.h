@@ -1,5 +1,5 @@
-#ifndef BILEABLE_RR_GRAPH_EDGE_BUILDER_H
-#define BILEABLE_RR_GRAPH_EDGE_BUILDER_H
+#ifndef TILEABLE_RR_GRAPH_EDGE_BUILDER_H
+#define TILEABLE_RR_GRAPH_EDGE_BUILDER_H
 
 /********************************************************************
  * Include header files that are required by function declaration
