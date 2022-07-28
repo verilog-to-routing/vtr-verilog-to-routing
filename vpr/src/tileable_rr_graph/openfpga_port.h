@@ -7,9 +7,6 @@
 #include <string>
 #include <vector>
 
-/* namespace openfpga begins */
-namespace openfpga {
-
 /* A basic port */
 class BasicPort {
   public: /* Constructors */
@@ -89,8 +86,6 @@ class ConfPorts {
 };
 
 /* TODO: create a class for BL and WL ports */
-
-} /* namespace openfpga ends */
 
 #endif
 

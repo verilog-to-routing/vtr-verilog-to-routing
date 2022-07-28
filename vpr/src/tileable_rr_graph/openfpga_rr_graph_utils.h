@@ -14,9 +14,6 @@
  * Function declaration
  *******************************************************************/
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 vtr::Point<size_t> get_track_rr_node_start_coordinate(const RRGraph& rr_graph, 
                                                       const RRNodeId& track_rr_node);
 
@@ -40,7 +37,5 @@ bool is_opin_direct_connected_ipin(const RRGraph& rr_graph,
 
 bool is_ipin_direct_connected_opin(const RRGraph& rr_graph,
                                    const RRNodeId& node);
-
-} /* end namespace openfpga */
 
 #endif

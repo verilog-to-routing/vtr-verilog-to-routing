@@ -27,9 +27,6 @@
 
 #include "globals.h"
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 /************************************************************************
  * Main function of this file
  * Builder for a detailed uni-directional tileable rr_graph
@@ -69,26 +66,6 @@ namespace openfpga {
  *    a. cost_index
  *    b. RC tree
  ***********************************************************************/
-
-// external functions: in vpr/src/route/rr_graph.cpp
-extern std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
-                                                              const int max_pins,
-                                                              const std::vector<t_segment_inf>& segment_inf,
-
-                                                              const int* sets_per_seg_type,
-                                                              const int max_chan_width,
-                                                              const e_fc_type fc_type,
-                                                              const enum e_directionality directionality,
-                                                              bool* Fc_clipped);
-extern t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, int delayless_switch);
-extern void alloc_and_load_rr_switch_inf(const int num_arch_switches,
-                                         const float R_minW_nmos,
-                                         const float R_minW_pmos,
-                                         const int wire_to_arch_ipin_switch,
-                                         int* wire_to_rr_ipin_switch);
-extern void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
-                               int wire_to_rr_ipin_switch,
-                               enum e_base_cost_type base_cost_type);
 
 void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& types,
                                     const DeviceGrid& grids,
@@ -157,9 +134,9 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     }
 // NYI
 #if 0
-  /* Validate the special switches */
-  VTR_ASSERT(true == device_ctx.rr_graph_builder.valid_switch_id(wire_to_ipin_rr_switch));
-  VTR_ASSERT(true == device_ctx.rr_graph_builder.valid_switch_id(delayless_rr_switch));
+    /* Validate the special switches */
+    VTR_ASSERT(true == device_ctx.rr_graph.validate_node(wire_to_ipin_rr_switch));
+    VTR_ASSERT(true == device_ctx.rr_graph.validate_node(delayless_rr_switch));
 #endif
 
     /* A temp data about the driver switch ids for each rr_node */
@@ -230,7 +207,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     bool Fc_clipped = false;
     /* [0..num_types-1][0..num_pins-1] */
     std::vector<vtr::Matrix<int>> Fc_in;
-    Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, max_chan_width,
+    Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*) &chan_width,
                                      e_fc_type::IN, UNI_DIRECTIONAL, &Fc_clipped);
     if (Fc_clipped) {
         *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -239,7 +216,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     Fc_clipped = false;
     /* [0..num_types-1][0..num_pins-1] */
     std::vector<vtr::Matrix<int>> Fc_out;
-    Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, max_chan_width,
+    Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*) &chan_width,
                                       e_fc_type::OUT, UNI_DIRECTIONAL, &Fc_clipped);
 
     if (Fc_clipped) {
@@ -255,6 +232,9 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
    * Add edges that bridge OPINs and IPINs to the rr_graph
    ***********************************************************************/
     /* Create edges for a tileable rr_graph */
+
+// Link error: undefined reference to `build_rr_graph_edges`
+#if 0
     build_rr_graph_edges(device_ctx.rr_graph,
                          rr_node_driver_switches,
                          grids,
@@ -263,6 +243,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                          Fc_in, Fc_out,
                          sb_type, Fs, sb_subtype, subFs,
                          wire_opposite_side);
+#endif
 
     /************************************************************************
    * Build direction connection lists
@@ -280,8 +261,11 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
         clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
     }
 
+// Link error: undefined reference to `build_rr_graph_direct_connections`
+#if 0
     build_rr_graph_direct_connections(device_ctx.rr_graph, grids, delayless_rr_switch,
                                       arch_directs, clb2clb_directs);
+#endif
 
 //NYI
 #if 0
@@ -309,7 +293,10 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
    *  a. cost_index
    *  b. RC tree
    ***********************************************************************/
-    rr_graph_externals(segment_inf,
+    t_unified_to_parallel_seg_index segment_index_map;
+    std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
+    std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y,
                        *wire_to_rr_ipin_switch, base_cost_type);
 
     /* Rebuild the link between RRGraph node and segments
@@ -321,12 +308,14 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
             && (CHANY != device_ctx.rr_graph.node_type(inode))) {
             continue;
         }
-//NYI
-#if 0
-    RRIndexedDataId irc_data = device_ctx.rr_graph.node_cost_index(inode);
-    short iseg = device_ctx.rr_indexed_data[irc_data].seg_index;
-    device_ctx.rr_graph_builder.set_node_segment(inode, RRSegmentId(iseg)); // NYI
-#endif
+        // NYI
+        #if 0
+        RRIndexedDataId irc_data = device_ctx.rr_graph.node_cost_index(inode);
+        short iseg = device_ctx.rr_indexed_data[irc_data].seg_index;
+        // device_ctx.rr_graph_builder.set_node_segment(inode, RRSegmentId(iseg)); // NYI
+        vtr::vector<RRSegmentId, t_segment_inf>  rr_segments = device_ctx.rr_graph_builder.rr_segments();
+        rr_segments[(RRSegmentId)iseg] = segment_inf;
+        #endif
     }
 
     /************************************************************************
@@ -345,7 +334,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 
     // NYI
     // vpr integration: DeviceContext does not provide direct RRGraph access
-    // we can skip it since check_rr_graph(GRAPH_UNDIR, GRIDS, TYPES) has been called above
+    // for advanced rr graph checker in check_rr_graph_obj.h, needs rr graph object
+    // rr graph view won't work here
 #if 0
   /* Error out if advanced checker of rr_graph fails */
   if (false == check_rr_graph(device_ctx.rr_graph)) {
@@ -366,5 +356,3 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
         free(clb_to_clb_directs);
     }
 }
-
-} /* end namespace openfpga */

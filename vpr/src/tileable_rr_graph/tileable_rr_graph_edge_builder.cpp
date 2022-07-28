@@ -15,14 +15,11 @@
 #include "tileable_rr_graph_gsb.h"
 #include "tileable_rr_graph_edge_builder.h"
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 /************************************************************************
  * Build the edges for all the SOURCE and SINKs nodes:
  * 1. create edges between SOURCE and OPINs
  ***********************************************************************/
-static void build_rr_graph_edges_for_source_nodes(RRGraph& rr_graph,
+void build_rr_graph_edges_for_source_nodes(RRGraph& rr_graph,
                                                   const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                                   const DeviceGrid& grids) {
     for (const RRNodeId& node : rr_graph.nodes()) {
@@ -51,7 +48,7 @@ static void build_rr_graph_edges_for_source_nodes(RRGraph& rr_graph,
  * Build the edges for all the SINKs nodes:
  * 1. create edges between IPINs and SINKs
  ***********************************************************************/
-static void build_rr_graph_edges_for_sink_nodes(RRGraph& rr_graph,
+void build_rr_graph_edges_for_sink_nodes(RRGraph& rr_graph,
                                                 const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                                 const DeviceGrid& grids) {
     for (const RRNodeId& node : rr_graph.nodes()) {
@@ -79,8 +76,8 @@ static void build_rr_graph_edges_for_sink_nodes(RRGraph& rr_graph,
  * Build the edges of each rr_node tile by tile:
  * We classify rr_nodes into a general switch block (GSB) data structure
  * where we create edges to each rr_nodes in the GSB with respect to
- * Fc_in and Fc_out, switch block patterns 
- * For each GSB: 
+ * Fc_in and Fc_out, switch block patterns
+ * For each GSB:
  * 1. create edges between CHANX | CHANY and IPINs (connections inside connection blocks)
  * 2. create edges between OPINs, CHANX and CHANY (connections inside switch blocks)
  * 3. create edges between OPINs and IPINs (direct-connections)
@@ -166,4 +163,3 @@ void build_rr_graph_direct_connections(RRGraph& rr_graph,
     }
 }
 
-} /* end namespace openfpga */

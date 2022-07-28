@@ -11,9 +11,6 @@
 #include "openfpga_rr_graph_utils.h"
 #include "rr_graph_types.h"
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 /************************************************************************
  * Get the coordinator of a starting point of a routing track 
  * For routing tracks in INC_DIRECTION
@@ -180,5 +177,3 @@ bool is_ipin_direct_connected_opin(const RRGraph& rr_graph,
 
     return true;
 }
-
-} /* end namespace openfpga */

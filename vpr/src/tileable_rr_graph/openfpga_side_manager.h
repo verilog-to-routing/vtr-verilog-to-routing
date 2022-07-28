@@ -10,9 +10,6 @@
 /* Header files form archfpga library */
 #include "physical_types.h"
 
-/* namespace openfpga begins */
-namespace openfpga {
-
 /********************************************************************
  * Define a class for the sides of a physical block in FPGA architecture
  * Basically, each block has four sides :
@@ -43,7 +40,5 @@ class SideManager {
   private: /* internal data */
     enum e_side side_;  
 };
-
-} /* namespace openfpga ends */
 
 #endif

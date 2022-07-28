@@ -12,9 +12,6 @@
  * Function declaration
  *******************************************************************/
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 size_t find_unidir_routing_channel_width(const size_t& chan_width);
 
 int get_grid_pin_class_index(const t_grid_tile& cur_grid,
@@ -91,8 +88,6 @@ short find_rr_graph_average_fan_in(const RRGraph& rr_graph,
                                    const std::vector<t_rr_type>& node_types);
 
 void print_rr_graph_mux_stats(const RRGraph& rr_graph);
-
-} /* end namespace openfpga */
 
 #endif
 

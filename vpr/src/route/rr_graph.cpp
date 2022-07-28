@@ -35,6 +35,7 @@
 #include "rr_graph_clock.h"
 #include "edge_groups.h"
 #include "rr_graph_builder.h"
+#include "tileable_rr_graph_builder.h"
 
 #include "rr_types.h"
 #include "echo_files.h"
@@ -52,16 +53,6 @@ struct t_mux_size_distribution {
     int max_index;
     int* distr;
     t_mux_size_distribution* next;
-};
-
-struct t_clb_to_clb_directs {
-    t_physical_tile_type_ptr from_clb_type;
-    int from_clb_pin_start_index;
-    int from_clb_pin_end_index;
-    t_physical_tile_type_ptr to_clb_type;
-    int to_clb_pin_start_index;
-    int to_clb_pin_end_index;
-    int switch_index; //The switch type used by this direct connection
 };
 
 struct t_pin_loc {
@@ -862,10 +853,52 @@ void create_rr_graph(const t_graph_type graph_type,
                                      is_flat,
                                      load_rr_graph);
 
-        if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
-            mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
-                                                              router_opts.reorder_rr_graph_nodes_threshold,
-                                                              router_opts.reorder_rr_graph_nodes_seed);
+        free_rr_graph();
+        if (GRAPH_UNIDIR_TILEABLE != graph_type) {
+            build_rr_graph(graph_type,
+                           block_types,
+                           grid,
+                           nodes_per_chan,
+                           det_routing_arch->switch_block_type,
+                           det_routing_arch->Fs,
+                           det_routing_arch->switchblocks,
+                           num_arch_switches,
+                           segment_inf,
+                           det_routing_arch->global_route_switch,
+                           det_routing_arch->wire_to_arch_ipin_switch,
+                           det_routing_arch->delayless_switch,
+                           det_routing_arch->R_minW_nmos,
+                           det_routing_arch->R_minW_pmos,
+                           router_opts.base_cost_type,
+                           router_opts.clock_modeling,
+                           directs, num_directs,
+                           &det_routing_arch->wire_to_rr_ipin_switch,
+                           Warnings);
+            if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
+                mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
+                                                                  router_opts.reorder_rr_graph_nodes_threshold,
+                                                                  router_opts.reorder_rr_graph_nodes_seed);
+            }
+        } else {
+            /* We do not support dedicated network for clocks in tileable rr_graph generation */
+            build_tileable_unidir_rr_graph(block_types,
+                                           grid,
+                                           nodes_per_chan,
+                                           det_routing_arch->switch_block_type,
+                                           det_routing_arch->Fs,
+                                           det_routing_arch->switch_block_subtype,
+                                           det_routing_arch->subFs,
+                                           segment_inf,
+                                           det_routing_arch->delayless_switch,
+                                           det_routing_arch->wire_to_arch_ipin_switch,
+                                           det_routing_arch->R_minW_nmos,
+                                           det_routing_arch->R_minW_pmos,
+                                           router_opts.base_cost_type,
+                                           directs, num_directs,
+                                           &det_routing_arch->wire_to_rr_ipin_switch,
+                                           router_opts.trim_obs_channels || det_routing_arch->through_channel, /* Allow/Prohibit through tracks across multi-height and multi-width grids */
+                                           false,                                                              /* Do not allow passing tracks to be wired to the same routing channels */
+                                           Warnings);
         }
 
         mutable_device_ctx.rr_graph_is_flat = true;
@@ -1905,7 +1938,7 @@ static void remap_rr_node_switch_indices(RRGraphBuilder& rr_graph_builder,
     rr_graph_builder.remap_rr_node_switch_indices(switch_fanin);
 }
 
-static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
+void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                                const std::vector<t_segment_inf>& segment_inf_x,
                                const std::vector<t_segment_inf>& segment_inf_y,
                                int wire_to_rr_ipin_switch,
@@ -2007,7 +2040,7 @@ static t_seg_details* alloc_and_load_global_route_seg_details(const int global_r
 }
 
 /* Calculates the number of track connections from each block pin to each segment type */
-static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
+std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
                                                               const int max_pins,
                                                               const std::vector<t_segment_inf>& segment_inf,
                                                               const int* sets_per_seg_type,

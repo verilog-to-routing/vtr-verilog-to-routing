@@ -12,9 +12,6 @@
 
 #include "rr_graph_builder_utils.h"
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 /************************************************************************
  * Correct number of routing channel width to be compatible to 
  * uni-directional routing architecture
@@ -547,5 +544,3 @@ void print_rr_graph_mux_stats(const RRGraph& rr_graph) {
             find_rr_graph_average_fan_in(rr_graph, cb_node_types));
     VTR_LOG("------------------------------------------------\n");
 }
-
-} /* end namespace openfpga */

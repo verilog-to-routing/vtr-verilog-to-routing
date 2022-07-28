@@ -13,9 +13,6 @@
  * Function declaration
  *******************************************************************/
 
-/* begin namespace openfpga */
-namespace openfpga {
-
 void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& types,
                                     const DeviceGrid& grids,
                                     const t_chan_width& chan_width,
@@ -33,7 +30,5 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const bool& through_channel,
                                     const bool& wire_opposite_side,
                                     int *Warnings); 
-
-} /* end namespace openfpga */
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef RR_GRAPH_TYPES
-#define RR_GRAPH_TYPES
+#ifndef RR_GRAPH_TYPES_H
+#define RR_GRAPH_TYPES_H
 
 /********************************************************************
  * Data types required by routing resource graph (RRGraph) definition

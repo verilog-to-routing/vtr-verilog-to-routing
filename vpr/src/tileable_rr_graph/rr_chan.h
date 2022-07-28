@@ -15,9 +15,6 @@
 /* Headers from vpr library */
 #include "rr_graph_obj.h"
 
-/* Begin namespace openfpga */
-namespace openfpga {
-
 /********************************************************************
  * RRChan object aim to describe a routing channel in a routing resource graph 
  *  - What are the nodes in the RRGraph object, for each routing track
@@ -86,9 +83,5 @@ class RRChan {
     std::vector<RRNodeId> nodes_; /* rr nodes of each track in the channel */
     std::vector<RRSegmentId> node_segments_; /* segment of each track */
 };
-
-
-
-} /* End namespace openfpga*/
 
 #endif
