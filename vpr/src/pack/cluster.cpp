@@ -659,6 +659,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      clb_index,
                                                      packer_opts.pack_verbosity);
             prev_molecule = istart;
+            int temp_num_molecules_processed = 0;
             while (next_molecule != nullptr && prev_molecule != next_molecule) {
                 block_pack_status = try_pack_molecule(cur_cluster_placement_stats_ptr,
                                                       atom_molecules,
@@ -727,9 +728,18 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
                 fflush(stdout);
 
+                if(detailed_routing_stage == E_DETAILED_ROUTE_FOR_EACH_ATOM)
+                {
                 //Since molecule passed, update num_molecules_processed
-                num_molecules_processed++;
-                mols_since_last_print++;
+                    num_molecules_processed++;
+                    mols_since_last_print++;
+                }
+                else
+                {
+                // Since the intra-cluster detailed routing has not been done yet, increment a temp variable that keeps count of number of molecules processed
+                // this variable will be added to num_molecules_processed if the detailed routing attempt passes
+                    temp_num_molecules_processed++;
+                }
                 print_pack_status(num_clb, num_molecules,
                                   num_molecules_processed,
                                   mols_since_last_print,
@@ -773,6 +783,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 t_mode_selection_status mode_status;
                 is_cluster_legal = try_intra_lb_route(router_data, packer_opts.pack_verbosity, &mode_status);
                 if (is_cluster_legal) {
+                    // since the detailed routing has been successful, update the num_molecules_processed and mols_since_last_print based on the temporary accumulator variable 
+                    num_molecules_processed += temp_num_molecules_processed;
+                    mols_since_last_print += temp_num_molecules_processed;
                     VTR_LOGV(verbosity > 2, "\tPassed detailed intra-cluster routing at the end of cluster construction.\n");
                 } else {
                     VTR_LOGV(verbosity > 2, "Failed detailed intra-cluster routing at the end of cluster construction, repack cluster trying detailed routing at each stage.\n");
@@ -891,7 +904,7 @@ static void print_pack_status(int num_clb,
 
     int int_molecule_increment = (int)(print_frequency * tot_num_molecules);
 
-    if (mols_since_last_print == int_molecule_increment) {
+    if (mols_since_last_print >= int_molecule_increment) {
         VTR_LOG(
             "%6d/%-6d  %3d%%   "
             "%26d   "
