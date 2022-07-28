@@ -90,7 +90,7 @@ BucketItems::BucketItems() noexcept
 Bucket::Bucket() noexcept
     : outstanding_items_(0)
     , seed_(1231)
-    , heap_()
+    , heap_(nullptr)
     , heap_size_(0)
     , heap_head_(std::numeric_limits<size_t>::max())
     , heap_tail_(0)
@@ -110,10 +110,11 @@ Bucket::~Bucket() {
 }
 
 void Bucket::init_heap(const DeviceGrid& grid) {
-    heap_.clear();
+    delete[] heap_;
+    heap_ = nullptr;
 
     heap_size_ = (grid.width() - 1) * (grid.height() - 1);
-    heap_.resize(heap_size_);
+    heap_ = new BucketItem*[heap_size_];
     for (int i = 0; i < (int)heap_size_; i++)
         heap_[i] = 0;
 
@@ -132,14 +133,21 @@ void Bucket::init_heap(const DeviceGrid& grid) {
 }
 
 void Bucket::free_all_memory() {
-    heap_.clear();
+    delete[] heap_;
+    heap_ = nullptr;
 
     items_.free();
 }
 
 void Bucket::expand(size_t required_number_of_buckets) {
+    auto old_size = heap_size_;
     heap_size_ = required_number_of_buckets * 2;
-    heap_.resize(heap_size_);
+
+    BucketItem** temp = new BucketItem*[old_size];
+    memcpy(temp, heap_, old_size);
+    delete[] heap_;
+    heap_ = new BucketItem*[heap_size_];
+    heap_ = temp;
 }
 
 void Bucket::verify() {
@@ -161,7 +169,7 @@ void Bucket::empty_heap() {
     VTR_ASSERT(outstanding_items_ == 0);
 
     if (heap_head_ != std::numeric_limits<size_t>::max()) {
-        std::fill(heap_.begin() + heap_head_, heap_.begin() + heap_tail_ + 1, nullptr);
+        std::fill(heap_ + heap_head_, heap_ + heap_tail_ + 1, nullptr);
     }
     heap_head_ = std::numeric_limits<size_t>::max();
     front_head_ = std::numeric_limits<size_t>::max();
@@ -239,7 +247,7 @@ void Bucket::rescale() {
             }
         }
 
-        std::fill(heap_.begin() + heap_head_, heap_.begin() + heap_tail_ + 1, nullptr);
+        std::fill(heap_ + heap_head_, heap_ + heap_tail_ + 1, nullptr);
         heap_head_ = std::numeric_limits<size_t>::max();
         heap_tail_ = 0;
 
@@ -340,7 +348,7 @@ void Bucket::push_back(t_heap* hptr) {
 t_heap* Bucket::get_heap_head() {
     auto heap_head = heap_head_;
     auto heap_tail = heap_tail_;
-    std::vector<BucketItem*> heap = heap_;
+    BucketItem** heap = heap_;
 
     // Check empty
     if (heap_head == std::numeric_limits<size_t>::max()) {
@@ -494,7 +502,7 @@ void Bucket::prune_heap() {
     conv_factor_ = rescale_func();
     check_conv_factor();
 
-    std::fill(heap_.begin(), heap_.begin() + heap_size_, nullptr);
+    std::fill(heap_, heap_ + heap_size_, nullptr);
     heap_head_ = std::numeric_limits<size_t>::max();
     front_head_ = std::numeric_limits<size_t>::max();
     front_list_.clear();
