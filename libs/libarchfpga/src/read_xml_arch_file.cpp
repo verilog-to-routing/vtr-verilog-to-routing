@@ -4672,7 +4672,7 @@ static void processTopology(pugi::xml_node topology_tag, const pugiutil::loc_dat
     /**
      * Stores router information that includes the number of connections a router has within a given topology and also the number of times a router was declared in the arch file using the <router> tag.
      * In the datastructure below, the router id is the key and the stored data is a pair, where the first element describes the number of router declarations and the second element describes the number of router connections.
-     * This is used only for erro checking.
+     * This is used only for error checking.
      */
     std::map<int, std::pair<int, int>> routers_in_arch_info;
 

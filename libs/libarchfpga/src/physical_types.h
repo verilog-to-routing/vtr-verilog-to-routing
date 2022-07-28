@@ -1235,9 +1235,9 @@ class t_pb_graph_pin {
   public:
     t_port* port = nullptr;
     int pin_number = 0;
-    t_pb_graph_edge** input_edges = nullptr; /* [0..num_input_edges] */
+    std::vector<t_pb_graph_edge*> input_edges; /* [0..num_input_edges] */
     int num_input_edges = 0;
-    t_pb_graph_edge** output_edges = nullptr; /* [0..num_output_edges] */
+    std::vector<t_pb_graph_edge*> output_edges; /* [0..num_output_edges] */
     int num_output_edges = 0;
 
     t_pb_graph_node* parent_node = nullptr;
@@ -1256,9 +1256,9 @@ class t_pb_graph_pin {
 
     /* combinational timing information */
     int num_pin_timing = 0;                   /* Number of ipin to opin timing edges*/
-    t_pb_graph_pin** pin_timing = nullptr;    /* timing edge sink pins  [0..num_pin_timing-1]*/
-    float* pin_timing_del_max = nullptr;      /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
-    float* pin_timing_del_min = nullptr;      /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
+    std::vector<t_pb_graph_pin*> pin_timing;  /* timing edge sink pins  [0..num_pin_timing-1]*/
+    std::vector<float> pin_timing_del_max;    /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
+    std::vector<float> pin_timing_del_min;    /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
     int num_pin_timing_del_max_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_max_annotated-1]
     int num_pin_timing_del_min_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_min_annotated-1]
 
@@ -1333,7 +1333,7 @@ class t_pb_graph_edge {
 
     /* pack pattern info */
     int num_pack_patterns;
-    const char** pack_pattern_names;
+    std::vector<const char*> pack_pattern_names;
     int* pack_pattern_indices;
     bool infer_pattern;
 
