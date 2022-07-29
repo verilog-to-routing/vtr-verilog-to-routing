@@ -4,11 +4,15 @@
 #include "vtr_strong_id.h"
 
 // data types used to index the routers and links within the noc
-
 struct noc_router_id_tag;
 struct noc_link_id_tag;
 
 typedef vtr::StrongId<noc_router_id_tag, int> NocRouterId;
 typedef vtr::StrongId<noc_link_id_tag, int> NocLinkId;
+
+// data type to index traffic flows within the noc
+struct noc_traffic_flow_id_tag;
+
+typedef vtr::StrongId<noc_traffic_flow_id_tag, int> NocTrafficFlowId;
 
 #endif

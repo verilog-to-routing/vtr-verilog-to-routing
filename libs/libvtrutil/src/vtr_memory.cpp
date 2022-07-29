@@ -6,6 +6,7 @@
 #include "vtr_memory.h"
 #include "vtr_error.h"
 #include "vtr_util.h"
+#include "vtr_log.h"
 
 #ifndef __GLIBC__
 #    include <stdlib.h>

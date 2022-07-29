@@ -39,6 +39,7 @@
 #include "SetupGrid.h"
 #include "setup_clocks.h"
 #include "setup_noc.h"
+#include "read_xml_noc_traffic_flows_file.h"
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -517,9 +518,11 @@ void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
  */
 void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     // check if the user provided the option to model the noc
-    if (vpr_setup.NocOpts.noc == true) {
+    if (vpr_setup.NocOpts.noc) {
         // create the NoC model based on the user description from the arch file
         setup_noc(arch);
+        // read and store the noc traffic flow information
+        read_xml_noc_traffic_flows_file(vpr_setup.NocOpts.noc_flows_file.c_str());
 
 #ifndef NO_GRAPHICS
         // setup the graphics
