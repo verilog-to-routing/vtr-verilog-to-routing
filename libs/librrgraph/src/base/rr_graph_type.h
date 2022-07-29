@@ -1,5 +1,5 @@
-#ifndef GRAPH_TYPE_H
-#define GRAPH_TYPE_H
+#ifndef RR_GRAPH_TYPE_H
+#define RR_GRAPH_TYPE_H
 
 #include <vector>
 #include "physical_types.h"

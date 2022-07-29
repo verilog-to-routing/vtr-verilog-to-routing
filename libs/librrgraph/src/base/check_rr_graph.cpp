@@ -47,7 +47,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const DeviceGrid& grid,
                     const t_chan_width& chan_width,
                     const t_graph_type graph_type,
-                    int virtual_clock_network_root_idx) {
+                    const int virtual_clock_network_root_idx) {
     e_route_type route_type = DETAILED;
     if (graph_type == GRAPH_GLOBAL) {
         route_type = GLOBAL;
@@ -291,8 +291,8 @@ void check_rr_node(const RRGraphView& rr_graph,
                    const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                    const DeviceGrid& grid,
                    const t_chan_width& chan_width,
-                   enum e_route_type route_type, 
-                   int inode) {
+                   const enum e_route_type route_type, 
+                   const int inode) {
     /* This routine checks that the rr_node is inside the grid and has a valid
      * pin number, etc.
      */
