@@ -1,18 +1,19 @@
 #################################################################
-# Yosys synthesis script, including generic 'synth' commands, 	#
-# in addition to techmap asynchronous FFs and VTR hard blocks.	#
+# Yosys synthesis script, including generic 'synth' commands,   #
+# in addition to techmap asynchronous FFs and VTR hard blocks.  #
 # Once the VTR flow runs with the Yosys front-end, Yosys        #
-# synthesizes the input design using the following commands. 	#
-#																#
-# NOTE: the script is adapted from the one Eddie Hung proposed 	#
-# for VTR-to-Bitstream[1]. However, a few minor changes to make	#
-# it adaptable with the current VTR flow have been made.		#
-#																#
-# [1] http://eddiehung.github.io/vtb.html						#
-#																#
-# Author: Eddie Hung											#
-# Co-author: Seyed Alireza Damghani	(sdamghann@gmail.com)  		#
+# synthesizes the input design using the following commands.    #
+#                                                               #
+# NOTE: the script is adapted from the one Eddie Hung proposed  #
+# for VTR-to-Bitstream[1]. However, a few minor changes to make #
+# it adaptable with the current VTR flow have been made.        #
+#                                                               #
+# [1] http://eddiehung.github.io/vtb.html                       #
+#                                                               #
+# Author: Eddie Hung                                            #
+# Co-author: Seyed Alireza Damghani (sdamghann@gmail.com)       #
 #################################################################
+yosys -import
 
 # XXX (input circuit) is replaced with filename by the run_vtr_flow script
 read_verilog -sv -nolatches XXX
@@ -23,7 +24,7 @@ read_verilog -sv -nolatches XXX
 # directory for any definitions to modules it doesn't know
 # about, such as hand-instantiated (not inferred) memories
 hierarchy -check -auto-top -libdir .
-proc
+procs
 
 # Check that there are no combinational loops
 scc -select
@@ -50,7 +51,7 @@ techmap -map +/adff2dff.v
 techmap -map TTT/../../../ODIN_II/techlib/adffe2dff.v
 
 # Map multipliers, DSPs, and add/subtracts according to yosys_models.v
-techmap -map YYY */t:$mul */t:$mem */t:$sub */t:$add
+techmap -map YYY */t:\$mul */t:\$mem */t:\$sub */t:\$add
 opt -fast -full
 
 memory_map
@@ -67,15 +68,19 @@ opt -fast
 # as blackboxes
 read_verilog -lib TTT/adder.v
 read_verilog -lib TTT/multiply.v
-read_verilog -lib SSS     #(SSS) will be replaced by single_port_ram.v by python script
-read_verilog -lib DDD     #(DDD) will be replaced by dual_port_ram.v by python script
+#(SSS) will be replaced by single_port_ram.v by python script
+read_verilog -lib SSS
+#(DDD) will be replaced by dual_port_ram.v by python script
+read_verilog -lib DDD
 
 # Rename singlePortRam to single_port_ram
-# Rename dualPortRam to dualZ_port_ram
+# Rename dualPortRam to dual_port_ram
 # rename function of Yosys not work here
 # since it may outcome hierarchy error
-read_verilog SSR         #(SSR) will be replaced by spram_rename.v by python script
-read_verilog DDR         #(DDR) will be replaced by dpram_rename.v by python script
+#(SSR) will be replaced by spram_rename.v by python script
+read_verilog SSR
+#(DDR) will be replaced by dpram_rename.v by python script
+read_verilog DDR
 
 # Flatten the netlist
 flatten

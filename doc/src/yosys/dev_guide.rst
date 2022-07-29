@@ -32,8 +32,8 @@ How to add new changes?
 -----------------------
 
 The Yosys synthesis commands, including the generic synthesis and additional VTR specific configurations, are provided
-in `synthesis.ys <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/synthesis.ys>`_. To make changes in the overall Yosys synthesis flow, the `synthesis.ys <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/synthesis.ys>`_
-script is perhaps the first file developers may require to change.
+in `synthesis.tcl <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/synthesis.tcl>`_. To make changes in the overall Yosys synthesis flow, the `synthesis.tcl <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/synthesis.tcl>`_
+script is perhaps the first file developers may be required to change.
 
 Moreover, the `yosys_models.v <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/yosys_models.v>`_ file includes the required definitions for Yosys to how it should infer implicit
 memories and instantiate arithmetic operations, such as addition, subtraction, and multiplication. Therefore, to alter these 

@@ -28,6 +28,7 @@
 #include "metadata_storage.h"
 #include "vpr_constraints.h"
 #include "noc_storage.h"
+#include "noc_traffic_flows.h"
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -56,17 +57,33 @@ struct AtomContext : public Context {
     /********************************************************************
      * Atom Netlist
      ********************************************************************/
+    /**
+     * @brief constructor
+     * 
+     * In the constructor initialize the list of pack molecules to nullptr and defines a custom deletor for it
+     */
     AtomContext()
         : list_of_pack_molecules(nullptr, free_pack_molecules) {}
+
     ///@brief Atom netlist
     AtomNetlist nlist;
 
     ///@brief Mappings to/from the Atom Netlist to physically described .blif models
     AtomLookup lookup;
 
-    ///@brief The molecules associated with each atom block
+    /**
+     * @brief The molecules associated with each atom block.
+     * 
+     * This map is loaded in the pre-packing stage and freed at the very end of vpr flow run.
+     * The pointers in this multimap is shared with list_of_pack_molecules.
+     */
     std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;
 
+    /**
+     * @brief A linked list of all the packing molecules that are loaded in pre-packing stage.
+     * 
+     * Is is useful in freeing the pack molecules at the destructor of the Atom context using free_pack_molecules.
+     */
     std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules;
 };
 
@@ -219,6 +236,11 @@ struct DeviceContext : public Context {
      * Used to determine when reading rrgraph if file is already loaded.
      */
     std::string read_rr_graph_filename;
+
+    /*******************************************************************
+     * Place Related
+     *******************************************************************/
+    enum e_pad_loc_type pad_loc_type;
 };
 
 /**
@@ -266,25 +288,42 @@ struct ClusteringContext : public Context {
      */
     std::map<ClusterBlockId, std::map<int, ClusterNetId>> post_routing_clb_pin_nets;
     std::map<ClusterBlockId, std::map<int, int>> pre_routing_net_pin_mapping;
-
-    std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
 };
 
+/**
+ * @brief State relating to helper data structure using in the clustering stage
+ * 
+ * This should contain helper data structures that are useful in the clustering/packing stage.
+ * They are encapsulated here as they are useful in clustering and reclustering algorithms that may be used
+ * in packing or placement stages.
+ */
 struct ClusteringHelperContext : public Context {
+    // A map used to save the number of used instances from each logical block type.
     std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
+
+    // Stats keeper for placement information during packing/clustering
     t_cluster_placement_stats* cluster_placement_stats;
+
+    // total number of models in the architecture
     int num_models;
+
     int max_cluster_size;
     t_pb_graph_node** primitives_list;
 
     bool enable_pin_feasibility_filter;
     int feasible_block_array_size;
 
+    // total number of CLBs
     int total_clb_num;
+
+    // A vector of routing resource nodes within each of logic cluster_ctx.blocks types [0 .. num_logical_block_type-1]
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs;
 
+    // the utilization of external input/output pins during packing (between 0 and 1)
+    t_ext_pin_util_targets target_external_pin_util;
+
     ~ClusteringHelperContext() {
-        free(primitives_list);
+        delete[] primitives_list;
     }
 };
 
@@ -427,6 +466,16 @@ struct NocContext : public Context {
      * The NoC model is created once from the architecture file description. 
      */
     NocStorage noc_model;
+
+    /**
+     * @brief Stores all the communication happening between routers in the NoC 
+     *
+     * Contains all of the traffic flows that ddescribe which pairs of logical routers are communicating and also some metrics and constraints on the data transfer between the two routers. 
+     * 
+     *
+     * This is created from a user supplied .flows file.
+     */
+    NocTrafficFlows noc_traffic_flows_storage;
 };
 
 /**
@@ -494,8 +543,8 @@ class VprContext : public Context {
     const ClusteringContext& clustering() const { return clustering_; }
     ClusteringContext& mutable_clustering() { return clustering_; }
 
-    const ClusteringHelperContext& helper() const { return helper_; }
-    ClusteringHelperContext& mutable_helper() { return helper_; }
+    const ClusteringHelperContext& cl_helper() const { return helper_; }
+    ClusteringHelperContext& mutable_cl_helper() { return helper_; }
 
     const PlacementContext& placement() const { return placement_; }
     PlacementContext& mutable_placement() { return placement_; }

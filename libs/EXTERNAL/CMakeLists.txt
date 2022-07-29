@@ -18,6 +18,20 @@ endif()
 # Yosys is compiled only if the user ask for it
 if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
     add_subdirectory(libyosys)
+
+    # In addition to libyosys in the build folder, we copy the libyosys directory
+    # into a temporary folder in the VTR root, named Yosys, to have access to Yosys 
+    # execs for using in VTR scripts (similar to VPR/vpr or ODIN_II/odin_II)
+    add_custom_target(vtr-yosys ALL 
+                      DEPENDS yosys
+                            COMMAND ${CMAKE_COMMAND} -E 
+                                                    remove_directory ${VTR_SOURCE_DIR}/Yosys/                     
+                            COMMAND ${CMAKE_COMMAND} -E 
+                                                    make_directory ${VTR_SOURCE_DIR}/Yosys/
+                            COMMAND ${CMAKE_COMMAND} -E 
+                                                    copy_directory ${CMAKE_CURRENT_BINARY_DIR}/libyosys ${VTR_SOURCE_DIR}/Yosys/                     
+                            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
 endif()
 
 if(${VTR_ENABLE_CAPNPROTO})

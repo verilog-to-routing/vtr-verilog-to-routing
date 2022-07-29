@@ -1,13 +1,6 @@
 #ifndef SETUP_NOC
 #define SETUP_NOC
 
-/*
- * THis file contains functions and datatypes that help setup the NoC model datastructure from the user NoC description in the arch file. 
- *
- * During VPR setup, the functions here should be used to setup the NoC. 
- *
- */
-
 /**
  * @file 
  * @brief This is the setup_noc header file. The main purpose of 

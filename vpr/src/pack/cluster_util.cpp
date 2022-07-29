@@ -237,15 +237,15 @@ void free_clustering_data(const t_packer_opts& packer_opts,
     clustering_data.intra_lb_routing.clear();
 
     if (packer_opts.hill_climbing_flag)
-        free(clustering_data.hill_climbing_inputs_avail);
+        delete[] clustering_data.hill_climbing_inputs_avail;
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks())
         cluster_ctx.clb_nlist.remove_block(blk_id);
 
     cluster_ctx.clb_nlist = ClusteredNetlist();
 
-    free(clustering_data.unclustered_list_head);
-    free(clustering_data.memory_pool);
+    delete[] clustering_data.unclustered_list_head;
+    delete[] clustering_data.memory_pool;
 }
 
 //check the clustering and output it
@@ -511,14 +511,15 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
     int max_molecule_size;
 
     /* alloc and load list of molecules to pack */
-    clustering_data.unclustered_list_head = (t_molecule_link*)vtr::calloc(max_molecule_stats.num_used_ext_inputs + 1, sizeof(t_molecule_link));
+    clustering_data.unclustered_list_head = new t_molecule_link[max_molecule_stats.num_used_ext_inputs + 1];
     unclustered_list_head_size = max_molecule_stats.num_used_ext_inputs + 1;
 
     for (int i = 0; i <= max_molecule_stats.num_used_ext_inputs; i++) {
+        clustering_data.unclustered_list_head[i] = t_molecule_link();
         clustering_data.unclustered_list_head[i].next = nullptr;
     }
 
-    molecule_array = (t_pack_molecule**)vtr::malloc(num_molecules * sizeof(t_pack_molecule*));
+    molecule_array = new t_pack_molecule*[num_molecules];
     cur_molecule = molecules_head;
     for (int i = 0; i < num_molecules; i++) {
         VTR_ASSERT(cur_molecule != nullptr);
@@ -529,7 +530,7 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
     qsort((void*)molecule_array, num_molecules, sizeof(t_pack_molecule*),
           compare_molecule_gain);
 
-    clustering_data.memory_pool = (t_molecule_link*)vtr::malloc(num_molecules * sizeof(t_molecule_link));
+    clustering_data.memory_pool = new t_molecule_link[num_molecules];
     next_ptr = clustering_data.memory_pool;
 
     for (int i = 0; i < num_molecules; i++) {
@@ -544,7 +545,7 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
 
         next_ptr++;
     }
-    free(molecule_array);
+    delete[] molecule_array;
 
     /* load net info */
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -576,7 +577,9 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
         }
         cur_molecule = cur_molecule->next;
     }
-    *primitives_list = (t_pb_graph_node**)vtr::calloc(max_molecule_size, sizeof(t_pb_graph_node*));
+    *primitives_list = new t_pb_graph_node*[max_molecule_size];
+    for (int i = 0; i < max_molecule_size; i++)
+        (*primitives_list)[i] = nullptr;
 }
 
 /*****************************************/
@@ -811,7 +814,9 @@ void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_size) {
     pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
     pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
     pb->pb_stats->num_feasible_blocks = NOT_VALID;
-    pb->pb_stats->feasible_blocks = (t_pack_molecule**)vtr::calloc(feasible_block_array_size, sizeof(t_pack_molecule*));
+    pb->pb_stats->feasible_blocks = new t_pack_molecule*[feasible_block_array_size];
+    for (int i = 0; i < feasible_block_array_size; i++)
+        pb->pb_stats->feasible_blocks[i] = nullptr;
 
     pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 
