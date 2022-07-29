@@ -807,10 +807,6 @@ int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical
     return num_pins;
 }
 
-bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
-    return (class_physical_num < (int)physical_tile->class_inf.size());
-}
-
 
 std::unordered_map<int, const t_class*>  get_pb_graph_node_num_class_pairs(t_physical_tile_type_ptr physical_tile,
                                                      const t_sub_tile* sub_tile,
@@ -963,10 +959,6 @@ int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, 
         return physical_tile->internal_pin_class.at(pin_physical_num);
     }
 
-}
-
-bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num) {
-    return(physical_num < physical_tile->num_pins);
 }
 
 std::vector<const t_pb_graph_pin*> get_pb_graph_node_pb_pins(const t_pb_graph_node* pb_graph_node) {

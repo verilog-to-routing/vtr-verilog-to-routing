@@ -318,7 +318,9 @@ e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physi
 
 int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
 
-bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_physical_num);
+inline bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_physical_num){
+    return (class_physical_num < (int)physical_tile->class_inf.size());
+}
 /** **/
 
 /** get classes under different blocks **/
@@ -351,7 +353,9 @@ e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_
 
 int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
 
-bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num);
+inline bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num) {
+    return(physical_num < physical_tile->num_pins);
+}
 
 std::vector<const t_pb_graph_pin*> get_pb_graph_node_pb_pins(const t_pb_graph_node* pb_graph_node);
 

@@ -211,6 +211,12 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
         // cheapest t_heap in current route tree to be expanded on
         cheapest = heap_.get_heap_head();
         ++router_stats_->heap_pops;
+        if(!is_node_on_tile(rr_graph_->node_type(RRNodeId(cheapest->index)),
+                             rr_graph_->node_xlow(RRNodeId(cheapest->index)),
+                             rr_graph_->node_ylow(RRNodeId(cheapest->index)),
+                             rr_graph_->node_ptc_num(RRNodeId(cheapest->index)))) {
+            ++router_stats_->intra_cluster_node_pops;
+        }
 
         int inode = cheapest->index;
         VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
@@ -296,6 +302,12 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
         // cheapest t_heap in current route tree to be expanded on
         t_heap* cheapest = heap_.get_heap_head();
         ++router_stats_->heap_pops;
+        if(!is_node_on_tile(rr_graph_->node_type(RRNodeId(cheapest->index)),
+                             rr_graph_->node_xlow(RRNodeId(cheapest->index)),
+                             rr_graph_->node_ylow(RRNodeId(cheapest->index)),
+                             rr_graph_->node_ptc_num(RRNodeId(cheapest->index)))) {
+            ++router_stats_->intra_cluster_node_pops;
+        }
 
         int inode = cheapest->index;
         VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
@@ -584,6 +596,12 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
 
         heap_.add_to_heap(next_ptr);
         ++router_stats_->heap_pushes;
+        if(!is_node_on_tile(rr_graph_->node_type(RRNodeId(to_node)),
+                             rr_graph_->node_xlow(RRNodeId(to_node)),
+                             rr_graph_->node_ylow(RRNodeId(to_node)),
+                             rr_graph_->node_ptc_num(RRNodeId(to_node)))) {
+            ++router_stats_->intra_cluster_node_pushes;
+        }
     }
 
     if (rcv_path_manager.is_enabled() && next.path_data != nullptr) {
@@ -878,6 +896,12 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     }
 
     ++router_stats_->heap_pushes;
+    if(!is_node_on_tile(rr_graph_->node_type(RRNodeId(inode)),
+                         rr_graph_->node_xlow(RRNodeId(inode)),
+                         rr_graph_->node_ylow(RRNodeId(inode)),
+                         rr_graph_->node_ptc_num(RRNodeId(inode)))) {
+        ++router_stats_->intra_cluster_node_pushes;
+    }
 }
 
 static t_bb adjust_highfanout_bounding_box(t_bb highfanout_bb) {

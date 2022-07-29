@@ -574,7 +574,9 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         router_stats.connections_routed += router_iteration_stats.connections_routed;
         router_stats.nets_routed += router_iteration_stats.nets_routed;
         router_stats.heap_pushes += router_iteration_stats.heap_pushes;
+        router_stats.intra_cluster_node_pushes += router_iteration_stats.intra_cluster_node_pushes;
         router_stats.heap_pops += router_iteration_stats.heap_pops;
+        router_stats.intra_cluster_node_pops += router_iteration_stats.intra_cluster_node_pops;
 
         /*
          * Are we finished?
@@ -846,8 +848,14 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
     VTR_LOG("Final Net Connection Criticality Histogram:\n");
     print_router_criticality_histogram(net_list, *route_timing_info, netlist_pin_lookup, is_flat);
 
-    VTR_LOG("Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu\n",
-            router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops);
+    VTR_ASSERT(router_stats.heap_pushes >= router_stats.intra_cluster_node_pushes);
+    VTR_ASSERT(router_stats.heap_pops >= router_stats.intra_cluster_node_pops);
+    size_t external_node_pushes = router_stats.heap_pushes - router_stats.intra_cluster_node_pushes;
+    size_t external_node_pops = router_stats.heap_pops - router_stats.intra_cluster_node_pops;
+    VTR_LOG("Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu "
+            "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu\n",
+            router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops,
+            router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops, external_node_pushes, external_node_pops);
 
     return routing_is_successful;
 }
