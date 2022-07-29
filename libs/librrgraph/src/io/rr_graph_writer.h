@@ -10,7 +10,6 @@
 #include "rr_graph_type.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_view.h"
-#include "rr_graph_fwd.h"
 #include "device_grid.h"
 #include "physical_types.h"
 
@@ -27,6 +26,6 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     const char* file_name,
                     const int virtual_clock_network_root_idx,
                     bool echo_enabled,
-                    const char* echo__file_name);
+                    const char* echo_file_name);
 
 #endif

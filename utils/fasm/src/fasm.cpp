@@ -635,7 +635,7 @@ void FasmWriterVisitor::walk_route_tree(const RRGraphBuilder& rr_graph_builder, 
 
 void FasmWriterVisitor::walk_routing() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     for(const auto &trace : route_ctx.trace) {
       t_trace *head = trace.head;

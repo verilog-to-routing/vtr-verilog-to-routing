@@ -1,5 +1,5 @@
-#ifndef DESCRIBE_RR_NODE
-#define DESCRIBE_RR_NODE
+#ifndef DESCRIBE_RR_NODE_H
+#define DESCRIBE_RR_NODE_H
 
 #include <string>
 #include "rr_graph_view.h"
