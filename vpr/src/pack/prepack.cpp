@@ -151,7 +151,7 @@ std::vector<t_pack_patterns> alloc_and_load_pack_patterns() {
              * For carry-chains, since carry-chains are typically quite flexible in terms
              * of size, it is optional whether or not an atom in a netlist matches any
              * particular block inside the chain */
-            list_of_packing_patterns[i].is_block_optional = (bool*)vtr::malloc(L_num_blocks * sizeof(bool));
+            list_of_packing_patterns[i].is_block_optional = new bool[L_num_blocks];
             for (int k = 0; k < L_num_blocks; k++) {
                 list_of_packing_patterns[i].is_block_optional[k] = false;
                 if (list_of_packing_patterns[i].is_chain && list_of_packing_patterns[i].root_block->block_id != k) {
@@ -211,7 +211,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
                     if (!output_edge->pack_pattern_indices) {
-                        output_edge->pack_pattern_indices = (int*)vtr::malloc(output_edge->num_pack_patterns * sizeof(int));
+                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
                     }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
@@ -244,7 +244,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
                     if (!output_edge->pack_pattern_indices) {
-                        output_edge->pack_pattern_indices = (int*)vtr::malloc(output_edge->num_pack_patterns * sizeof(int));
+                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
                     }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
@@ -277,7 +277,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
                     std::string pattern_name(output_edge->pack_pattern_names[m]);
                     int index = (pattern_names.insert({pattern_name, pattern_names.size()}).first)->second;
                     if (output_edge->pack_pattern_indices == nullptr) {
-                        output_edge->pack_pattern_indices = (int*)vtr::malloc(output_edge->num_pack_patterns * sizeof(int));
+                        output_edge->pack_pattern_indices = new int[output_edge->num_pack_patterns];
                     }
                     output_edge->pack_pattern_indices[m] = index;
                     // if this output edges belongs to a pack pattern. Expand forward starting from
@@ -352,14 +352,17 @@ void free_list_of_pack_patterns(std::vector<t_pack_patterns>& list_of_pack_patte
 void free_pack_pattern(t_pack_patterns* pack_pattern) {
     if (pack_pattern) {
         int num_pack_pattern_blocks = pack_pattern->num_blocks;
-        t_pack_pattern_block** pattern_block_list = (t_pack_pattern_block**)vtr::calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block*));
+        t_pack_pattern_block** pattern_block_list = new t_pack_pattern_block*[num_pack_pattern_blocks];
+        for (int i = 0; i < num_pack_pattern_blocks; i++)
+            pattern_block_list[i] = nullptr;
+
         free(pack_pattern->name);
-        free(pack_pattern->is_block_optional);
+        delete[] pack_pattern->is_block_optional;
         free_pack_pattern_block(pack_pattern->root_block, pattern_block_list);
         for (int j = 0; j < num_pack_pattern_blocks; j++) {
-            free(pattern_block_list[j]);
+            delete pattern_block_list[j];
         }
-        free(pattern_block_list);
+        delete[] pattern_block_list;
     }
 }
 
@@ -490,7 +493,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                 // a primitive that belongs to this pack pattern is found: 1) create a new pattern block,
                 // 2) assign an id to this pattern block, 3) increment the number of found blocks belonging to this
                 // pattern and 4) expand all its edges to find the other primitives that belong to this pattern
-                destination_block = (t_pack_pattern_block*)vtr::calloc(1, sizeof(t_pack_pattern_block));
+                destination_block = new t_pack_pattern_block;
+                *destination_block = t_pack_pattern_block();
                 list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(destination_pb_graph_node);
                 destination_block->block_id = *L_num_blocks;
                 (*L_num_blocks)++;
@@ -631,7 +635,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             /* If this pb_graph_node is part not of the current pattern index, put it in and expand all its edges */
             source_block = (t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad;
             if (source_block == nullptr || source_block->pattern_index != curr_pattern_index) {
-                source_block = (t_pack_pattern_block*)vtr::calloc(1, sizeof(t_pack_pattern_block));
+                source_block = new t_pack_pattern_block;
+                *source_block = t_pack_pattern_block();
                 source_block->block_id = *L_num_blocks;
                 (*L_num_blocks)++;
                 list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(source_pb_graph_node);
@@ -688,7 +693,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             if (destination_pin != nullptr) {
                 VTR_ASSERT(((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index);
                 source_block = (t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad;
-                pack_pattern_connection = (t_pack_pattern_connections*)vtr::calloc(1, sizeof(t_pack_pattern_connections));
+                pack_pattern_connection = new t_pack_pattern_connections;
+                *pack_pattern_connection = t_pack_pattern_connections();
                 pack_pattern_connection->from_block = source_block;
                 pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
                 pack_pattern_connection->to_block = destination_block;
@@ -696,7 +702,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                 pack_pattern_connection->next = source_block->connections;
                 source_block->connections = pack_pattern_connection;
 
-                pack_pattern_connection = (t_pack_pattern_connections*)vtr::calloc(1, sizeof(t_pack_pattern_connections));
+                pack_pattern_connection = new t_pack_pattern_connections;
+                *pack_pattern_connection = t_pack_pattern_connections();
                 pack_pattern_connection->from_block = source_block;
                 pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
                 pack_pattern_connection->to_block = destination_block;
@@ -779,7 +786,9 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& atom_mutable_ctx = g_vpr_ctx.mutable_atom();
 
-    is_used = (bool*)vtr::calloc(num_packing_patterns, sizeof(bool));
+    is_used = new bool[num_packing_patterns];
+    for (i = 0; i < num_packing_patterns; i++)
+        is_used[i] = false;
 
     cur_molecule = list_of_molecules_head = nullptr;
 
@@ -839,7 +848,7 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
             }
         }
     }
-    free(is_used);
+    delete[] is_used;
 
     /* List all atom blocks as a molecule for blocks that do not belong to any molecules.
      * This allows the packer to be consistent as it now packs molecules only instead of atoms and molecules
@@ -908,7 +917,7 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
         free_pack_pattern_block(connection->from_block, pattern_block_list);
         free_pack_pattern_block(connection->to_block, pattern_block_list);
         next = connection->next;
-        free(connection);
+        delete connection;
         connection = next;
     }
 }
