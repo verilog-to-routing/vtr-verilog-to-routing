@@ -20,7 +20,8 @@
  * Function declaration
  *******************************************************************/
 
-void build_rr_graph_edges(RRGraphView& rr_graph,
+void build_rr_graph_edges(const RRGraphView& rr_graph,
+                          RRGraphBuilder& rr_graph_builder,
                           const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                           const DeviceGrid& grids,
                           const vtr::Point<size_t>& device_chan_width,
@@ -33,17 +34,20 @@ void build_rr_graph_edges(RRGraphView& rr_graph,
                           const int& subFs,
                           const bool& wire_opposite_side);
 
-void build_rr_graph_direct_connections(RRGraphView& rr_graph,
+void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
+                                       RRGraphBuilder& rr_graph_builder,
                                        const DeviceGrid& grids,
                                        const RRSwitchId& delayless_switch,
                                        const std::vector<t_direct_inf>& directs,
                                        const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs);
 
-void build_rr_graph_edges_for_source_nodes(RRGraph& rr_graph,
+void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
+                                                  RRGraphBuilder& rr_graph_builder, 
                                                   const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                                   const DeviceGrid& grids);
 
-void build_rr_graph_edges_for_sink_nodes(RRGraph& rr_graph,
+void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
+                                                RRGraphBuilder& rr_graph_builder,
                                                 const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                                 const DeviceGrid& grids);
 

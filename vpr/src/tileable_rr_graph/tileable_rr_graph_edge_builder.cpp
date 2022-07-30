@@ -19,7 +19,8 @@
  * Build the edges for all the SOURCE and SINKs nodes:
  * 1. create edges between SOURCE and OPINs
  ***********************************************************************/
-void build_rr_graph_edges_for_source_nodes(RRGraph& rr_graph,
+void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
+                                                  RRGraphBuilder& rr_graph_builder,
                                                   const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                                   const DeviceGrid& grids) {
     for (const RRNodeId& node : rr_graph.nodes()) {
@@ -34,13 +35,17 @@ void build_rr_graph_edges_for_source_nodes(RRGraph& rr_graph,
                                                             rr_graph.node_pin_num(node));
 
         /* Create edges between SOURCE and OPINs */
-        const RRNodeId& src_node = rr_graph.find_node(xlow - grids[xlow][ylow].width_offset,
+        const RRNodeId& src_node = rr_graph_builder.node_lookup().find_node(xlow - grids[xlow][ylow].width_offset,
                                                       ylow - grids[xlow][ylow].height_offset,
                                                       SOURCE, src_node_class_num);
-        VTR_ASSERT(true == rr_graph.valid_node_id(src_node));
+        VTR_ASSERT(true == rr_graph.validate_node(src_node));
 
+        // NYI
+        (void)(rr_node_driver_switches);
+        #if 0
         /* add edges to the src_node */
-        rr_graph.create_edge(src_node, node, rr_node_driver_switches[node]);
+        rr_graph_builder.create_edge(src_node, node, rr_node_driver_switches[node]);
+        #endif
     }
 }
 
@@ -48,7 +53,8 @@ void build_rr_graph_edges_for_source_nodes(RRGraph& rr_graph,
  * Build the edges for all the SINKs nodes:
  * 1. create edges between IPINs and SINKs
  ***********************************************************************/
-void build_rr_graph_edges_for_sink_nodes(RRGraph& rr_graph,
+void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
+                                                RRGraphBuilder& rr_graph_builder,
                                                 const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                                 const DeviceGrid& grids) {
     for (const RRNodeId& node : rr_graph.nodes()) {
@@ -62,13 +68,23 @@ void build_rr_graph_edges_for_sink_nodes(RRGraph& rr_graph,
         short sink_node_class_num = get_grid_pin_class_index(grids[xlow][ylow],
                                                              rr_graph.node_pin_num(node));
         /* 1. create edges between IPINs and SINKs */
+        // NYI
+        (void)(sink_node_class_num);
+        #if 0
         const RRNodeId& sink_node = rr_graph.find_node(xlow - grids[xlow][ylow].width_offset,
                                                        ylow - grids[xlow][ylow].height_offset,
                                                        SINK, sink_node_class_num);
         VTR_ASSERT(true == rr_graph.valid_node_id(sink_node));
+        #endif
 
+        // NYI
+        (void)(rr_node_driver_switches);
+        (void)(rr_graph_builder);
+        #if 0
         /* add edges to connect the IPIN node to SINK nodes */
-        rr_graph.create_edge(node, sink_node, rr_node_driver_switches[sink_node]);
+        rr_graph_builder.create_edge(node, sink_node, rr_node_driver_switches[sink_node]);
+        #endif
+
     }
 }
 
@@ -82,7 +98,8 @@ void build_rr_graph_edges_for_sink_nodes(RRGraph& rr_graph,
  * 2. create edges between OPINs, CHANX and CHANY (connections inside switch blocks)
  * 3. create edges between OPINs and IPINs (direct-connections)
  ***********************************************************************/
-void build_rr_graph_edges(RRGraph& rr_graph,
+void build_rr_graph_edges(const RRGraphView& rr_graph,
+                          RRGraphBuilder& rr_graph_builder,
                           const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                           const DeviceGrid& grids,
                           const vtr::Point<size_t>& device_chan_width,
@@ -95,8 +112,8 @@ void build_rr_graph_edges(RRGraph& rr_graph,
                           const int& subFs,
                           const bool& wire_opposite_side) {
     /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
-    build_rr_graph_edges_for_source_nodes(rr_graph, rr_node_driver_switches, grids);
-    build_rr_graph_edges_for_sink_nodes(rr_graph, rr_node_driver_switches, grids);
+    build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids);
+    build_rr_graph_edges_for_sink_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids);
 
     vtr::Point<size_t> gsb_range(grids.width() - 2, grids.height() - 2);
 
@@ -126,7 +143,7 @@ void build_rr_graph_edges(RRGraph& rr_graph,
                                                    segment_inf);
 
             /* Build edges for a GSB */
-            build_edges_for_one_tileable_rr_gsb(rr_graph, rr_gsb,
+            build_edges_for_one_tileable_rr_gsb(rr_graph_builder, rr_gsb,
                                                 track2ipin_map, opin2track_map,
                                                 sb_conn, rr_node_driver_switches);
             /* Finish this GSB, go to the next*/
@@ -137,7 +154,8 @@ void build_rr_graph_edges(RRGraph& rr_graph,
 /************************************************************************
  * Build direct edges for Grids *
  ***********************************************************************/
-void build_rr_graph_direct_connections(RRGraph& rr_graph,
+void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
+                                       RRGraphBuilder& rr_graph_builder,
                                        const DeviceGrid& grids,
                                        const RRSwitchId& delayless_switch,
                                        const std::vector<t_direct_inf>& directs,
@@ -155,6 +173,7 @@ void build_rr_graph_direct_connections(RRGraph& rr_graph,
             }
             vtr::Point<size_t> from_grid_coordinate(ix, iy);
             build_direct_connections_for_one_gsb(rr_graph,
+                                                 rr_graph_builder,
                                                  grids,
                                                  from_grid_coordinate,
                                                  delayless_switch,
