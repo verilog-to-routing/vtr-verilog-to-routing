@@ -8,6 +8,7 @@
 #include "vtr_geometry.h"
 
 #include "rr_chan.h"
+#include "rr_graph_view.h"
 
 /********************************************************************
  * Object Generic Switch Block
@@ -83,7 +84,7 @@ class RRGSB {
     RRNodeId get_chan_node(const e_side& side, const size_t& track_id) const;
 
     /* get all the sorted incoming edges for a rr_node at a given side and track_id */
-    std::vector<RREdgeId> get_chan_node_in_edges(const RRGraph& rr_graph,
+    std::vector<RREdgeId> get_chan_node_in_edges(const RRGraphView& rr_graph,
                                                  const e_side& side,
                                                  const size_t& track_id) const;
 
@@ -107,16 +108,16 @@ class RRGSB {
     int get_chan_node_index(const e_side& node_side, const RRNodeId& node) const;
 
     /* Get the node index in the array, return -1 if not found */
-    int get_node_index(const RRGraph& rr_graph, const RRNodeId& node, const e_side& node_side, const PORTS& node_direction) const;
+    int get_node_index(const RRGraphView& rr_graph, const RRNodeId& node, const e_side& node_side, const PORTS& node_direction) const;
 
     /* Given a rr_node, try to find its side and index in the Switch block */
-    void get_node_side_and_index(const RRGraph& rr_graph, const RRNodeId& node, const PORTS& node_direction, e_side& node_side, int& node_index) const;
+    void get_node_side_and_index(const RRGraphView& rr_graph, const RRNodeId& node, const PORTS& node_direction, e_side& node_side, int& node_index) const;
 
     /* Check if the node exist in the opposite side of this Switch Block */
-    bool is_sb_node_exist_opposite_side(const RRGraph& rr_graph, const RRNodeId& node, const e_side& node_side) const;
+    bool is_sb_node_exist_opposite_side(const RRGraphView& rr_graph, const RRNodeId& node, const e_side& node_side) const;
   public: /* Accessors: to identify mirrors */
     /* check if the candidate SB is a mirror of the current one */
-    bool is_cb_mirror(const RRGraph& rr_graph, const RRGSB& cand, const t_rr_type& cb_type) const;
+    bool is_cb_mirror(const RRGraphView& rr_graph, const RRGSB& cand, const t_rr_type& cb_type) const;
 
     /* check if the connect block exists in the GSB */
     bool is_cb_exist(const t_rr_type& cb_type) const;
@@ -125,15 +126,15 @@ class RRGSB {
     bool is_sb_exist() const;
 
     /* Check if the node imply a short connection inside the SB, which happens to long wires across a FPGA fabric */
-    bool is_sb_node_passing_wire(const RRGraph& rr_graph, const e_side& node_side, const size_t& track_id) const;
+    bool is_sb_node_passing_wire(const RRGraphView& rr_graph, const e_side& node_side, const size_t& track_id) const;
 
     /* check if the candidate SB satisfy the basic requirements
      * on being a mirror of the current one
      */
-    bool is_sb_mirrorable(const RRGraph& rr_graph, const RRGSB& cand) const;
+    bool is_sb_mirrorable(const RRGraphView& rr_graph, const RRGSB& cand) const;
 
     /* check if all the routing segments of a side of candidate SB is a mirror of the current one */
-    bool is_sb_side_segment_mirror(const RRGraph& rr_graph, const RRGSB& cand,
+    bool is_sb_side_segment_mirror(const RRGraphView& rr_graph, const RRGSB& cand,
                                    const e_side& side, const RRSegmentId& seg_id) const;
 
     /* check if a side of candidate SB is a mirror of the current one
@@ -147,7 +148,7 @@ class RRGSB {
      * 5. check if pin class id and pin id are same
      * If all above are satisfied, the side of the two switch blocks are mirrors!
      */
-    bool is_sb_side_mirror(const RRGraph& rr_graph, const RRGSB& cand, const e_side& side) const;
+    bool is_sb_side_mirror(const RRGraphView& rr_graph, const RRGSB& cand, const e_side& side) const;
 
     /* check if the candidate SB is a mirror of the current one
      * Idenify mirror Switch blocks
@@ -161,7 +162,7 @@ class RRGSB {
      * 5. check if pin class id and pin id are same
      * If all above are satisfied, the two switch blocks are mirrors!
      */
-    bool is_sb_mirror(const RRGraph& rr_graph, const RRGSB& cand) const;
+    bool is_sb_mirror(const RRGraphView& rr_graph, const RRGSB& cand) const;
 
   public: /* Cooridinator conversion and output  */
     size_t get_x() const; /* get the x coordinate of this switch block */
@@ -204,7 +205,7 @@ class RRGSB {
                        const e_side& node_side);
 
     /* Sort all the incoming edges for routing channel rr_node */
-    void sort_chan_node_in_edges(const RRGraph& rr_graph);
+    void sort_chan_node_in_edges(const RRGraphView& rr_graph);
 
   public: /* Mutators: cleaners */
     void clear();
@@ -223,23 +224,23 @@ class RRGSB {
 
   private: /* Private Mutators: edge sorting */
     /* Sort all the incoming edges for one channel rr_node */
-    void sort_chan_node_in_edges(const RRGraph& rr_graph,
+    void sort_chan_node_in_edges(const RRGraphView& rr_graph,
                                  const e_side& chan_side,
                                  const size_t& track_id);
 
   private: /* internal functions */
-    bool is_sb_node_mirror(const RRGraph& rr_graph,
+    bool is_sb_node_mirror(const RRGraphView& rr_graph,
                            const RRGSB& cand,
                            const e_side& node_side,
                            const size_t& track_id) const;
 
-    bool is_cb_node_mirror(const RRGraph& rr_graph,
+    bool is_cb_node_mirror(const RRGraphView& rr_graph,
                            const RRGSB& cand,
                            const t_rr_type& cb_type,
                            const e_side& node_side,
                            const size_t& node_id) const;
 
-    size_t get_track_id_first_short_connection(const RRGraph& rr_graph, const e_side& node_side) const;
+    size_t get_track_id_first_short_connection(const RRGraphView& rr_graph, const e_side& node_side) const;
 
   private: /* internal validators */
     bool validate_num_sides() const;

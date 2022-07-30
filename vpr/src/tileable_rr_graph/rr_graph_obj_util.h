@@ -7,24 +7,25 @@
 #include <vector>
 #include "rr_graph_obj.h"
 #include "device_grid.h"
+#include "rr_graph_view.h"
 
 /* Get node-to-node switches in a RRGraph */
-std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
+std::vector<RRSwitchId> find_rr_graph_switches(const RRGraphView& rr_graph,
                                                const RRNodeId& from_node,
                                                const RRNodeId& to_node);
 
-std::vector<RRNodeId> find_rr_graph_nodes(const RRGraph& rr_graph,
+std::vector<RRNodeId> find_rr_graph_nodes(const RRGraphView& rr_graph,
                                           const int& x,
                                           const int& y,
                                           const t_rr_type& rr_type,
                                           const int& ptc);
 
-std::vector<RRNodeId> find_rr_graph_chan_nodes(const RRGraph& rr_graph,
+std::vector<RRNodeId> find_rr_graph_chan_nodes(const RRGraphView& rr_graph,
                                                const int& x,
                                                const int& y,
                                                const t_rr_type& rr_type);
 
-std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraph& rr_graph,
+std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
                                                const DeviceGrid& device_grid,
                                                const int& x,
                                                const int& y,

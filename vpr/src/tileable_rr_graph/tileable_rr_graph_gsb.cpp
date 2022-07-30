@@ -19,6 +19,9 @@
 #include "rr_graph_builder_utils.h"
 #include "tileable_chan_details_builder.h"
 #include "tileable_rr_graph_gsb.h"
+#include "rr_graph_view.h"
+#include "rr_graph_builder.h"
+#include "vtr_geometry.h"
 
 /************************************************************************
  * Internal data structures
@@ -45,7 +48,7 @@ enum e_track_status {
  * Check if a track ends at this GSB or not 
  * (xhigh, yhigh) should be same as the GSB side coordinate 
  ***********************************************************************/
-static enum e_track_status determine_track_status_of_gsb(const RRGraph& rr_graph,
+static enum e_track_status determine_track_status_of_gsb(const RRGraphView& rr_graph,
                                                          const RRGSB& rr_gsb,
                                                          const enum e_side& gsb_side,
                                                          const size_t& track_id) {
@@ -94,7 +97,7 @@ static enum e_track_status determine_track_status_of_gsb(const RRGraph& rr_graph
  *  We will find the offset between gsb_side_coordinate and (xlow,ylow) of the track
  *  Use the offset to check if the tracks should engage in this GSB connection
  ***********************************************************************/
-static bool is_gsb_in_track_cb_population(const RRGraph& rr_graph,
+static bool is_gsb_in_track_cb_population(const RRGraphView& rr_graph,
                                           const RRGSB& rr_gsb,
                                           const e_side& gsb_side,
                                           const int& track_id,
@@ -136,7 +139,7 @@ static bool is_gsb_in_track_cb_population(const RRGraph& rr_graph,
  *  We will find the offset between gsb_side_coordinate and (xlow,ylow) of the track
  *  Use the offset to check if the tracks should engage in this GSB connection
  ***********************************************************************/
-static bool is_gsb_in_track_sb_population(const RRGraph& rr_graph,
+static bool is_gsb_in_track_sb_population(const RRGraphView& rr_graph,
                                           const RRGSB& rr_gsb,
                                           const e_side& gsb_side,
                                           const int& track_id,
@@ -307,7 +310,7 @@ static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_typ
  * For each side of from_tracks, we call a routine to get the list of to_tracks
  * Then, we fill the track2track_map
  ***********************************************************************/
-static void build_gsb_one_group_track_to_track_map(const RRGraph& rr_graph,
+static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
                                                    const RRGSB& rr_gsb,
                                                    const e_switch_block_type& sb_type,
                                                    const int& Fs,
@@ -363,7 +366,7 @@ static void build_gsb_one_group_track_to_track_map(const RRGraph& rr_graph,
                     //       from_tracks[side].size(), inode, to_track_id, to_track_ids[to_track_id],
                     //       to_track_index, to_tracks[to_side_index].size());
                     const RRNodeId& to_track_node = rr_gsb.get_chan_node(to_side, to_track_index);
-                    VTR_ASSERT(true == rr_graph.valid_node_id(to_track_node));
+                    VTR_ASSERT(true == rr_graph.validate_node(to_track_node));
 
                     /* from_track should be IN_PORT */
                     VTR_ASSERT(IN_PORT == rr_gsb.get_chan_node_direction(from_side, from_track_index));
@@ -429,7 +432,7 @@ static void build_gsb_one_group_track_to_track_map(const RRGraph& rr_graph,
  *    b. tracks that will bypass at the BOTTOM side
  * 5. Apply switch block patterns to Group 2 (SUBSET, UNIVERSAL, WILTON) 
  ***********************************************************************/
-t_track2track_map build_gsb_track_to_track_map(const RRGraph& rr_graph,
+t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                                                const RRGSB& rr_gsb,
                                                const e_switch_block_type& sb_type,
                                                const int& Fs,
@@ -527,7 +530,7 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraph& rr_graph,
 /* Build a RRChan Object with the given channel type and coorindators */
 static RRChan build_one_tileable_rr_chan(const vtr::Point<size_t>& chan_coordinate,
                                          const t_rr_type& chan_type,
-                                         const RRGraph& rr_graph,
+                                         const RRGraphView& rr_graph,
                                          const ChanNodeDetails& chan_details) {
     std::vector<RRNodeId> chan_rr_nodes;
 
@@ -607,7 +610,7 @@ static RRChan build_one_tileable_rr_chan(const vtr::Point<size_t>& chan_coordina
  * as well as properly fill the ipin_grid_side information
  ***********************************************************************/
 RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
-                                const RRGraph& rr_graph,
+                                const RRGraphView& rr_graph,
                                 const vtr::Point<size_t>& device_chan_width,
                                 const std::vector<t_segment_inf>& segment_inf,
                                 const vtr::Point<size_t>& gsb_coordinate) {
@@ -908,12 +911,22 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
  * 2. create edges between OPINs, CHANX and CHANY (connections inside switch blocks) 
  * 3. create edges between OPINs and IPINs (direct-connections) 
  ***********************************************************************/
-void build_edges_for_one_tileable_rr_gsb(RRGraph& rr_graph,
+void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
                                          const RRGSB& rr_gsb,
                                          const t_track2pin_map& track2ipin_map,
                                          const t_pin2track_map& opin2track_map,
                                          const t_track2track_map& track2track_map,
                                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches) {
+
+    // NYI
+    // unused parameters
+    (void) (rr_graph_builder);
+    (void) (rr_gsb);
+    (void) (track2ipin_map);
+    (void) (opin2track_map);
+    (void) (track2track_map);
+    (void) (rr_node_driver_switches);
+    #if 0
     /* Walk through each sides */
     for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
         SideManager side_manager(side);
@@ -926,7 +939,7 @@ void build_edges_for_one_tileable_rr_gsb(RRGraph& rr_graph,
             /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
             /* add edges to the opin_node */
             for (const RRNodeId& track_node : opin2track_map[gsb_side][inode]) {
-                rr_graph.create_edge(opin_node, track_node, rr_node_driver_switches[track_node]);
+                rr_graph_builder.create_edge(opin_node, track_node, rr_node_driver_switches[track_node]);
             }
         }
 
@@ -940,7 +953,7 @@ void build_edges_for_one_tileable_rr_gsb(RRGraph& rr_graph,
             for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
                 const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
                 for (const RRNodeId& ipin_node : track2ipin_map[gsb_side][inode]) {
-                    rr_graph.create_edge(chan_node, ipin_node, rr_node_driver_switches[ipin_node]);
+                    rr_graph_builder.create_edge(chan_node, ipin_node, rr_node_driver_switches[ipin_node]);
                 }
             }
         }
@@ -953,6 +966,7 @@ void build_edges_for_one_tileable_rr_gsb(RRGraph& rr_graph,
             }
         }
     }
+    #endif
 }
 
 /************************************************************************
@@ -966,7 +980,7 @@ void build_edges_for_one_tileable_rr_gsb(RRGraph& rr_graph,
  * 3. Scale the Fc of each pin to the actual number of routing tracks
  *    actual_Fc = (int) Fc * num_tracks / chan_width
  ***********************************************************************/
-static void build_gsb_one_ipin_track2pin_map(const RRGraph& rr_graph,
+static void build_gsb_one_ipin_track2pin_map(const RRGraphView& rr_graph,
                                              const RRGSB& rr_gsb,
                                              const enum e_side& ipin_side,
                                              const size_t& ipin_node_id,
@@ -1059,7 +1073,7 @@ static void build_gsb_one_ipin_track2pin_map(const RRGraph& rr_graph,
  * 3. Scale the Fc of each pin to the actual number of routing tracks
  *    actual_Fc = (int) Fc * num_tracks / chan_width
  ***********************************************************************/
-static void build_gsb_one_opin_pin2track_map(const RRGraph& rr_graph,
+static void build_gsb_one_opin_pin2track_map(const RRGraphView& rr_graph,
                                              const RRGSB& rr_gsb,
                                              const enum e_side& opin_side,
                                              const size_t& opin_node_id,
@@ -1158,7 +1172,7 @@ static void build_gsb_one_opin_pin2track_map(const RRGraph& rr_graph,
  *    Then, we assign IPINs to tracks evenly while satisfying the actual_Fc 
  * 2. Convert the ipin_to_track_map to track_to_ipin_map
  ***********************************************************************/
-t_track2pin_map build_gsb_track_to_ipin_map(const RRGraph& rr_graph,
+t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
                                             const RRGSB& rr_gsb,
                                             const DeviceGrid& grids,
                                             const std::vector<t_segment_inf>& segment_inf,
@@ -1248,7 +1262,7 @@ t_track2pin_map build_gsb_track_to_ipin_map(const RRGraph& rr_graph,
  * 3. Scale the Fc of each pin to the actual number of routing tracks
  *    actual_Fc = (int) Fc * num_tracks / chan_width
  ***********************************************************************/
-t_pin2track_map build_gsb_opin_to_track_map(const RRGraph& rr_graph,
+t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
                                             const RRGSB& rr_gsb,
                                             const DeviceGrid& grids,
                                             const std::vector<t_segment_inf>& segment_inf,
@@ -1320,7 +1334,8 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraph& rr_graph,
 /************************************************************************
  * Add all direct clb-pin-to-clb-pin edges to given opin  
  ***********************************************************************/
-void build_direct_connections_for_one_gsb(RRGraph& rr_graph,
+void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
+                                          RRGraphBuilder& rr_graph_builder,
                                           const DeviceGrid& grids,
                                           const vtr::Point<size_t>& from_grid_coordinate,
                                           const RRSwitchId& delayless_switch,
@@ -1402,12 +1417,23 @@ void build_direct_connections_for_one_gsb(RRGraph& rr_graph,
                 std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids[to_grid_coordinate.x()][to_grid_coordinate.y()], ipin);
                 VTR_ASSERT(1 == ipin_grid_side.size());
 
+                // NYI
+                // unused parameters
+                (void)(rr_graph);
+                (void)(rr_graph_builder);
+                // unused variables
+                (void)(from_grid_width_ofs);
+                (void)(from_grid_height_ofs);
+                (void)(to_grid_width_ofs);
+                (void)(to_grid_height_ofs);
+                #if 0
                 const RRNodeId& opin_node_id = rr_graph.find_node(from_grid_coordinate.x() - from_grid_width_ofs,
                                                                   from_grid_coordinate.y() - from_grid_height_ofs,
                                                                   OPIN, opin, opin_grid_side[0]);
                 const RRNodeId& ipin_node_id = rr_graph.find_node(to_grid_coordinate.x() - to_grid_width_ofs,
                                                                   to_grid_coordinate.y() - to_grid_height_ofs,
                                                                   IPIN, ipin, ipin_grid_side[0]);
+                #endif
                 /*
         VTR_LOG("Direct connection: from grid[%lu][%lu].pin[%lu] at side %s to grid[%lu][%lu].pin[%lu] at side %s\n",
                 from_grid_coordinate.x() - from_grid_width_ofs,
@@ -1419,8 +1445,15 @@ void build_direct_connections_for_one_gsb(RRGraph& rr_graph,
          */
 
                 /* add edges to the opin_node */
-                rr_graph.create_edge(opin_node_id, ipin_node_id,
+
+                // NYI
+                // unused parameters
+                (void)(delayless_switch);
+                #if 0
+                rr_graph_builder.create_edge(opin_node_id, ipin_node_id,
                                      delayless_switch);
+                #endif
+
             }
         }
     }

@@ -67,7 +67,7 @@ RRSegmentId RRChan::get_node_segment(const size_t& track_num) const {
 }
 
 /* evaluate if two RRChan is mirror to each other */
-bool RRChan::is_mirror(const RRGraph& rr_graph, const RRChan& cand) const {
+bool RRChan::is_mirror(const RRGraphView& rr_graph, const RRChan& cand) const {
     /* If any following element does not match, it is not mirror */
     /* 1. type  */
     if (this->get_type() != cand.get_type()) {
@@ -166,7 +166,7 @@ void RRChan::reserve_node(const size_t& node_size) {
 }
 
 /* add a node to the array */
-void RRChan::add_node(const RRGraph& rr_graph, const RRNodeId& node, const RRSegmentId& node_segment) {
+void RRChan::add_node(const RRGraphView& rr_graph, const RRNodeId& node, const RRSegmentId& node_segment) {
     /* fill the dedicated element in the vector */
     nodes_.push_back(node);
     node_segments_.push_back(node_segment);
@@ -198,7 +198,7 @@ bool RRChan::valid_type(const t_rr_type& type) const {
 }
 
 /* Check each node, see if the node type is consistent with the type */
-bool RRChan::valid_node_type(const RRGraph& rr_graph, const RRNodeId& node) const {
+bool RRChan::valid_node_type(const RRGraphView& rr_graph, const RRNodeId& node) const {
     valid_type(rr_graph.node_type(node));
     if (NUM_RR_TYPES == type_) {
         return true;

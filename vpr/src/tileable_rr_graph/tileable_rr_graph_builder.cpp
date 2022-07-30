@@ -233,9 +233,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
    ***********************************************************************/
     /* Create edges for a tileable rr_graph */
 
-// Link error: undefined reference to `build_rr_graph_edges`
-#if 0
     build_rr_graph_edges(device_ctx.rr_graph,
+                         device_ctx.rr_graph_builder,
                          rr_node_driver_switches,
                          grids,
                          device_chan_width,
@@ -243,7 +242,6 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                          Fc_in, Fc_out,
                          sb_type, Fs, sb_subtype, subFs,
                          wire_opposite_side);
-#endif
 
     /************************************************************************
    * Build direction connection lists
@@ -261,13 +259,11 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
         clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
     }
 
-// Link error: undefined reference to `build_rr_graph_direct_connections`
-#if 0
-    build_rr_graph_direct_connections(device_ctx.rr_graph, grids, delayless_rr_switch,
+    build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, delayless_rr_switch,
                                       arch_directs, clb2clb_directs);
-#endif
 
 //NYI
+// We may not need to rebuild it again 
 #if 0
   /* First time to build edges so that we can remap the architecture switch to rr_switch
    * This is a must-do before function alloc_and_load_rr_switch_inf()

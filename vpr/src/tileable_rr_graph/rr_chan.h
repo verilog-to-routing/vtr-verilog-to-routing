@@ -15,6 +15,8 @@
 /* Headers from vpr library */
 #include "rr_graph_obj.h"
 
+#include "rr_graph_view.h"
+
 /********************************************************************
  * RRChan object aim to describe a routing channel in a routing resource graph 
  *  - What are the nodes in the RRGraph object, for each routing track
@@ -48,7 +50,7 @@ class RRChan {
     RRNodeId get_node(const size_t& track_num) const; /* get the rr_node with the track_id */
     RRSegmentId get_node_segment(const RRNodeId& node) const;
     RRSegmentId get_node_segment(const size_t& track_num) const;
-    bool is_mirror(const RRGraph& rr_graph, const RRChan& cand) const; /* evaluate if two RR_chan is mirror to each other */
+    bool is_mirror(const RRGraphView& rr_graph, const RRChan& cand) const; /* evaluate if two RR_chan is mirror to each other */
     std::vector<RRSegmentId> get_segment_ids() const; /* Get a list of segments used in this routing channel */
     std::vector<size_t> get_node_ids_by_segment_ids(const RRSegmentId& seg_id) const; /* Get a list of segments used in this routing channel */
   public: /* Mutators */
@@ -62,7 +64,7 @@ class RRChan {
     void reserve_node(const size_t& node_size); 
 
     /* add a node to the routing channel */
-    void add_node(const RRGraph& rr_graph, const RRNodeId& node, const RRSegmentId& node_segment); 
+    void add_node(const RRGraphView& rr_graph, const RRNodeId& node, const RRSegmentId& node_segment); 
 
     /* clear the content */
     void clear(); 
@@ -73,7 +75,7 @@ class RRChan {
     bool valid_type(const t_rr_type& type) const;  
 
     /* Check each node, see if the node type is consistent with the type of routing channel */
-    bool valid_node_type(const RRGraph& rr_graph, const RRNodeId& node) const;  
+    bool valid_node_type(const RRGraphView& rr_graph, const RRNodeId& node) const;  
 
     /* Validate if the track number in the range */
     bool valid_node_id(const size_t& node_id) const;  
