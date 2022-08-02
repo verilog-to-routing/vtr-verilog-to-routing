@@ -1,0 +1,87 @@
+FX68K
+
+68000 cycle accurate core
+Copyright (c) 2018 by Jorge Cwik
+fx68k@fxatari.com
+
+
+FX68K is a 68K cycle exact compatible core. In theory at least, it should be impossible to distinguish functionally from a real 68K processor.
+
+On Cyclone families it uses just over 5,100 LEs and about 5KB internal ram, reaching a max clock frequency close to 40MHz. Some optimizations are still possible to implement and increase the performance.
+
+The core is fully synchronous. Considerable effort was done to avoid any asynchronous logic.
+
+Written in SystemVerilog.
+
+The timing of the external bus signals is exactly as the original processor. The only feature that is not implemented yet is bus retry using the external HALT input signal.
+
+It was designed to replace an actual chip on a real board. This wasn't yet tested however and not all necessary output enable control signals are fully implemented.
+
+
+Copyright
+
+//
+// This source file is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 3 of the License, or
+// (at your option) any later version.
+//
+// This source file is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+
+
+Developer Notes
+
+
+The core receives a clock that must be at least twice the frequency of the desired nominal speed. The core also receives two signals for masking both phases of the clock (PHI1 and PHI2). These signals are implemented as simple clock enable for all the flip flops used by the core. This way, the original clock frequency can be any multiple and it doesn't even need to be regular or constant.
+
+These two signals are enPhi1 and enPhi2. They must be a single cycle pulse, and they don't need to be registered. Because they are actually used as clock enable, the output signals change one cycle later.
+
+enPhi1 should be asserted one cycle before the high phase of the nominal clock, and enPhi2 one cycle before the low phase.
+
+E.g., during a bus cycle, AS is asserted one cycle after enPhi1 is asserted, and AS is deasserted one cycle after enPhi2 is asserted. This follows the original bus timing that specify AS being asserted on the raising edge of the clock, and deasserted on the falling edge one.
+
+All signals follow the original polarity and then most are low active.
+
+extReset is external reset and is synchronous and high active. Hence is doesn't have to be registered.
+
+pwrUp qualifies external reset as being a cold power up reset. If it is asserted, then extReset must be asserted as well. Most system don't need to distinguish between a cold and a warm reset at the CPU level. Then both signals can be always asserted together. The core does expect pwrUp to be asserted initially because there is no true asynchronous reset. The signal is high active.
+
+
+Timing analysis
+
+Microcode access is one of the slowest paths on the core. But the microcode output is not needed immediately. Use the following constraints to get a more accurate timing analysis. Note that the full path might need to be modified:
+
+# Altera/Intel
+
+set_multicycle_path -start -setup -from [get_keepers fx68k:fx68k|Ir[*]] -to [get_keepers fx68k:fx68k|microAddr[*]] 2
+set_multicycle_path -start -hold -from [get_keepers fx68k:fx68k|Ir[*]] -to [get_keepers fx68k:fx68k|microAddr[*]] 1
+set_multicycle_path -start -setup -from [get_keepers fx68k:fx68k|Ir[*]] -to [get_keepers fx68k:fx68k|nanoAddr[*]] 2
+set_multicycle_path -start -hold -from [get_keepers fx68k:fx68k|Ir[*]] -to [get_keepers fx68k:fx68k|nanoAddr[*]] 1
+
+# For Xilinx Vivado
+
+set_multicycle_path -setup -from [get_pins fx68k/Ir*/C] -to [get_pins fx68k/nanoAddr_reg*/D] 2
+set_multicycle_path -setup -from [get_pins fx68k/Ir*/C] -to [get_pins fx68k/microAddr_reg*/D] 2
+set_multicycle_path -hold -from [get_pins fx68k/Ir*/C] -to [get_pins fx68k/nanoAddr_reg*/D] 1
+set_multicycle_path -hold -from [get_pins fx68k/Ir*/C] -to [get_pins fx68k/microAddr_reg*/D] 1
+
+
+The update of the CCR flags is also time critical. Some compilers might benefit with the following constraints, but this wasn't fully verified yet:
+
+
+# Altera/Intel
+# set_multicycle_path -start -setup -from [fx68k:fx68k|nanoLatch[*]]
+#      -to [get_keepers fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|pswCcr[*]] 2
+# set_multicycle_path -start -setup -from [fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|oper[*]]
+#      -to [get_keepers fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|pswCcr[*]] 2
+# set_multicycle_path -start -hold -from [fx68k:fx68k|nanoLatch[*]]
+#      -to [get_keepers fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|pswCcr[*]] 1
+# set_multicycle_path -start -hold -from [fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|oper[*]]
+#      -to [get_keepers fx68k:fx68k|excUnit:excUnit|fx68kAlu:alu|pswCcr[*]] 1
