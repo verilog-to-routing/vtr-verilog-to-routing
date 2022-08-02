@@ -70,6 +70,8 @@
  * and the router marked with the '$' character is the destination. The path
  * determined by the XY-Routing algorithm is shown as "<++++".
  * 
+ * Note that this routing algorithm in inherently deadlock free.
+ * 
  * Usage
  * -----
  * It is recommmended to use this algorithm when the NoC topology is of type
@@ -102,7 +104,9 @@ class XYRouting : public NocRouting {
     /**
      * @brief Finds a route that goes from the starting router in a 
      * traffic flow to the destination router. Uses the XY-routing
-     * algorithm to determine the route.
+     * algorithm to determine the route. A route consists of a series
+     * of links that should be traversed when travelling between two routers
+     * within the NoC.
      * 
      * @param src_router_id The source router of a traffic flow. Identifies 
      * the starting point of the route within the NoC. This is represents
@@ -110,10 +114,15 @@ class XYRouting : public NocRouting {
      * @param sink_router_id The destination router of a traffic flow.
      * Identifies the ending point of the route within the NoC.This is 
      * represents a unique identifier of the destination router.
+     * @param flow_route Stores the path as a series of NoC links found by 
+     * a NoC routing algorithm between two routers in a traffic flow.
+     * The function will clear any
+     * previously stored path and re-insert the new found path between the
+     * two routers. 
      * @param noc_model A model of the NoC. This is used to traverse the
      * NoC and find a route between the two routers.
      */
-    void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, const NocStorage& noc_model) override;
+    void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
 
     /**
      * @brief Based on the position of the current router the algorithm is
@@ -145,6 +154,9 @@ class XYRouting : public NocRouting {
      * @param curr_router_y_position he vertical grid position of the router
      * that is currently being visited on the FPGA
      * @param next_step_direction The direction to travel next
+     * @param flow_route Stores the path as a series of NoC links found by 
+     * a NoC routing algorithm between two routers in a traffic flow. The 
+     * NoC link found to travel next will be added to this path.
      * @param visited_routers Keeps track of which routers have been reached
      * already while traversing the NoC.
      * @param noc_model A model of the NoC. This is used to traverse the
@@ -152,7 +164,7 @@ class XYRouting : public NocRouting {
      * @return true A suitable link was found that we can traverse next
      * @return false N suitable links were found that could be traversed
      */
-    bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
+    bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
 
 };
 

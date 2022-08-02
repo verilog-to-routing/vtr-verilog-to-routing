@@ -51,13 +51,13 @@ class NocRouting {
     // protected pure virtual functions that should be implemendted in derived classes.
     protected:
 
-
-        // destructor
-        virtual ~NocRouting();
+        virtual ~NocRouting(){}
 
         /**
          * @brief Finds a route that goes from the starting router in a 
-         * traffic flow to the destination router. Derived classes will
+         * traffic flow to the destination router. A route consists of a series
+         * of links that should be traversed when travelling between two routers
+         * within the NoC. Derived classes will
          * primarily differ by the routing algorithm they use. The expectation
          * is that this function should be overridden in the derived classes
          * to implement the routing algorithm.
@@ -68,49 +68,15 @@ class NocRouting {
          * @param sink_router_id The destination router of a traffic flow.
          * Identifies the ending point of the route within the NoC.This is 
          * represents a unique identifier of the destination router.
+         * @param flow_route Stores the path as a series of NoC links found by 
+         * a NoC routing algorithm between two routers in a traffic flow.
+         * The function will clear any
+         * previously stored path and re-insert the new found path between the
+         * two routers. 
          * @param noc_model A model of the NoC. This is used to traverse the
          * NoC and find a route between the two routers.
          */
-        virtual void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, const NocStorage& noc_model) = 0;
-
-
-    // protected functions that are only accessible to derived classes. 
-    // These functions are used to modify and access the routed_path variable.
-    protected:
-
-        /**
-         * @brief Empties the routed_path variable. Whenever route needs
-         * to be found between two routers, the route is stored inside
-         * the routed_path variable. So each time a new route needs to be
-         * found, the routed_path variable needs to be empty so that
-         * it does not corrupt the new route. This function should
-         * be called before a new route needs to be found.
-         * 
-         * NOTE: If this function is called after finding a route between two
-         * routers in the NoC, then the found route is deleted.
-         */
-        void clear_routed_path(void);
-
-        /**
-         * @brief Adds a single link to the route between two routers.
-         * 
-         * @param link_in_route represents the next traversal step from
-         * a router within the NoC.
-         */
-        void add_link_to_routed_path(NocLinkId link_in_route);
-
-    // functions that should be accessible by outside users
-    public:
-        /**
-         * @brief Get the routed_path variable, which stores the
-         * route between the starting and destination routers of
-         * a traffic flow.
-         * 
-         * @return const std::vector<NocLinkId>& A vector of NocLinkIds that
-         * represent all the links that should be traversed within the NoC
-         * to get from a starting router to a destination router.
-         */
-        const std::vector<NocLinkId>& get_routed_path(void) const;
+        virtual void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route,const NocStorage& noc_model) = 0;
 
 };
 

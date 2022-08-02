@@ -95,12 +95,13 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         NocRouterId start_router_id = NocRouterId(10);
         NocRouterId sink_router_id = NocRouterId(10);
 
+        // store the route found by the algorithm
+        std::vector<NocLinkId> found_path;
+
         // make sure that a legal route was found (no error should be thrown)
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, noc_model));
+        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model));
 
         // now make sure that the found route is empty, we shouldn't be moving anywhere as the start and end routers are the same
-        const std::vector<NocLinkId> found_path = routing_algorithm.get_routed_path();
-
         REQUIRE(found_path.empty() == true);
 
     }
@@ -119,11 +120,11 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
             golden_path.emplace_back(NocLink(NocRouterId(current_router), NocRouterId(current_router - 1)));
         }
 
-        // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, noc_model));
+        // store the route found by the algorithm
+        std::vector<NocLinkId> found_path;
 
-        // now get the determined route
-        const std::vector<NocLinkId> found_path = routing_algorithm.get_routed_path();
+        // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
+        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model));
 
         // make sure that size of the found route and golden route match
         compare_routes(golden_path, found_path, noc_model);
@@ -144,11 +145,11 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
             golden_path.emplace_back(NocLink(NocRouterId(current_row*4 + 2), NocRouterId((current_row+1) * 4 + 2)));
         }
 
-        // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, noc_model));
+        // store the route found by the algorithm
+        std::vector<NocLinkId> found_path;
 
-        // now get the determined route
-        const std::vector<NocLinkId> found_path = routing_algorithm.get_routed_path();
+        // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
+        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model));
 
         // make sure that size of the found route and golden route match
         compare_routes(golden_path, found_path, noc_model);
@@ -176,11 +177,11 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
             golden_path.emplace_back(NocLink(NocRouterId(current_row*4), NocRouterId((current_row+1) * 4)));
         }
 
-        // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, noc_model));
+        // store the route found by the algorithm
+        std::vector<NocLinkId> found_path;
 
-        // now get the determined route
-        const std::vector<NocLinkId> found_path = routing_algorithm.get_routed_path();
+        // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
+        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model));
 
         // make sure that size of the found route and golden route match
         compare_routes(golden_path, found_path, noc_model);
@@ -211,11 +212,11 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
             golden_path.emplace_back(NocLink(NocRouterId(current_row*4 + 3), NocRouterId((current_row-1) * 4 + 3)));
         }
 
-        // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, noc_model));
+        // store the route found by the algorithm
+        std::vector<NocLinkId> found_path;
 
-        // now get the determined route
-        const std::vector<NocLinkId> found_path = routing_algorithm.get_routed_path();
+        // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
+        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model));
 
         // make sure that size of the found route and golden route match
         compare_routes(golden_path, found_path, noc_model);
@@ -293,8 +294,11 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
        // start by deleting the link that connects router 2 to router 1
        noc_model.remove_link(link_to_remove_src_router_id, link_to_remove_sink_router_id);
 
+       // store the route found by the algorithm
+        std::vector<NocLinkId> found_path;
+
        // now use the XY router to find a route, we expect it to fail
-       REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, noc_model), "No route could be found from starting router with ID:'3' and the destination router with ID:'0' using the XY-Routing algorithm.");
+       REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model), "No route could be found from starting router with ID:'3' and the destination router with ID:'0' using the XY-Routing algorithm.");
     }
     SECTION("Test case where the xy routing algorithm fails to find a vertical link to traverse.") {
         
@@ -315,8 +319,11 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
        // start by deleting the link that connects router 11 to router 15
        noc_model.remove_link(link_to_remove_src_router_id, link_to_remove_sink_router_id);
 
+       // store the route found by the algorithm
+        std::vector<NocLinkId> found_path;
+
        // now use the XY router to find a route, we expect it to fail
-       REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, noc_model), "No route could be found from starting router with ID:'3' and the destination router with ID:'15' using the XY-Routing algorithm.");
+       REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model), "No route could be found from starting router with ID:'3' and the destination router with ID:'15' using the XY-Routing algorithm.");
     }
 }
 TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_routing]") {
@@ -361,8 +368,11 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
     // creating the XY routing object
     XYRouting routing_algorithm;
 
+    // store the route found by the algorithm
+    std::vector<NocLinkId> found_path;
+
     // now use the XY router to find a route. We expect this to fail to check that.
-    REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, noc_model), "No route could be found from starting router with ID:'3' and the destination router with ID:'1' using the XY-Routing algorithm.");
+    REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model), "No route could be found from starting router with ID:'3' and the destination router with ID:'1' using the XY-Routing algorithm.");
 }
 
 }

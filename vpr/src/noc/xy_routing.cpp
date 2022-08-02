@@ -7,7 +7,7 @@
 
 XYRouting::~XYRouting(){}
 
-void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, const NocStorage& noc_model){
+void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model){
 
     // keep track of whether a legal route exists between the two routers
     bool route_exists = true;
@@ -35,6 +35,9 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
      */
     std::unordered_set<NocRouterId> visited_routers;
 
+    // clear any previously stored route before finding the current route
+    flow_route.clear();
+
     /*
      * If we are not at the sink router then run another iteration of the XY routing algorithm
      * to decide which link to take and also what the next router will be in the path.
@@ -54,7 +57,7 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
         RouteDirection next_step_direction = get_direction_to_travel(sink_router_x_position, sink_router_y_position, curr_router_x_position, curr_router_y_position);
 
         // Move to the next router based on the previously determined direction
-        route_exists = move_to_next_router(curr_router_id ,curr_router_x_position, curr_router_y_position, next_step_direction,visited_routers, noc_model);
+        route_exists = move_to_next_router(curr_router_id ,curr_router_x_position, curr_router_y_position, next_step_direction, flow_route, visited_routers, noc_model);
 
         // if we didn't find a legal router to move to then throw an error that there is no path between the source and destination routers
         if (!route_exists){
@@ -98,7 +101,7 @@ RouteDirection XYRouting::get_direction_to_travel(int sink_router_x_position, in
 
 }
 
-bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model){
+bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model){
 
     // represents the router that will be visited when taking an outgoing link
     NocRouterId next_router_id(-1);
@@ -161,7 +164,8 @@ bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router
         // check if the current link was acceptable. If it is, then make sure that the next router was not previously visited.
         // If the next router was already visited, then this link is not valid, so indicate this and move onto processing the next link.
         if (found_next_router && !visited_next_router){
-            add_link_to_routed_path(*connecting_link);
+            // if we are here then the link is legal to traverse, so add it to the found route and traverse the link by moving to the router connected by this link
+            flow_route.push_back(*connecting_link);
             curr_router_id = next_router_id;
 
             // we found a suitable router to visit next, so add it to the set of visited routers
