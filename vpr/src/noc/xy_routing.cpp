@@ -157,6 +157,10 @@ bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router
         if (found_next_router && !visited_next_router){
             add_link_to_routed_path(*connecting_link);
             curr_router_id = next_router_id;
+
+            // we found a suitable router to visit next, so add it to the set of visited routers
+            visited_routers.insert(next_router_id);
+
             break;
         }
         else{
