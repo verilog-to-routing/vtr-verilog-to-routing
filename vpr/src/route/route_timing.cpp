@@ -893,9 +893,14 @@ void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
 
     int max_sinks = std::max(get_max_pins_per_net() - 1, 0);
 
-    *pin_criticality_ptr = new float[max_sinks + 1]; /* First sink is pin #1. First element is empty.*/
+    *pin_criticality_ptr = new float[max_sinks + 1]; /* First sink is pin #1.*/
     *sink_order_ptr = new int[max_sinks + 1];
     *rt_node_of_sink_ptr = new t_rt_node*[max_sinks + 1];
+
+    /* Element 0 should be an invalid value so we are likely to crash if we accidentally use it. */
+    (*pin_criticality_ptr)[0] = -1;
+    (*sink_order_ptr)[0] = -1;
+    (*rt_node_of_sink_ptr)[0] = nullptr;
 
     alloc_route_tree_timing_structs();
 }
