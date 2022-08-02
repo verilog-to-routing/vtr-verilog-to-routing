@@ -490,7 +490,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
      * Change this if you want to investigate route-throughs.                   */
     if (target_node != OPEN) {
         t_rr_type to_type = rr_graph_->node_type(to_node);
-        if (to_type == IPIN && !node_in_same_physical_tile(RRNodeId(from_node), to_node)) {
+        if (to_type == IPIN) {
             //Check if this IPIN leads to the target block
             // IPIN's of the target block should be contained within it's bounding box
             if (to_xlow < target_bb.xmin
@@ -952,12 +952,12 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
     bool done = false;
-    for (int dx : {0, -1, +1}) {
+    for (int dx : {0, -1, +1, -2, +2}) {
         size_t bin_x = target_bin_x + dx;
 
         if (bin_x > spatial_rt_lookup.dim_size(0) - 1) continue; //Out of range
 
-        for (int dy : {0, -1, +1}) {
+        for (int dy : {0, -1, +1, -2, +2}) {
             size_t bin_y = target_bin_y + dy;
 
             if (bin_y > spatial_rt_lookup.dim_size(1) - 1) continue; //Out of range
@@ -974,8 +974,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(node));
                 highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
                 highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
-
-                ++nodes_added;
+                if(rr_graph_->node_type(node) == t_rr_type::CHANY || rr_graph_->node_type(node) == t_rr_type::CHANX)
+                    ++nodes_added;
             }
 
             constexpr int SINGLE_BIN_MIN_NODES = 2;
