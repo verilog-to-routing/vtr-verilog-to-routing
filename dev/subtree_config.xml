@@ -49,4 +49,9 @@
         internal_path="libs/EXTERNAL/libcatch2"
         external_url="https://github.com/catchorg/Catch2.git"
         default_external_ref="devel"/>
+    <subtree
+        name="hdmi"
+        internal_path="vtr_flow/benchmarks/system_verilog/hdmi"
+        external_url="https://github.com/hdl-util/hdmi.git"
+        default_external_ref="master"/>
 </subtrees>
