@@ -13,7 +13,7 @@
 static bool terminate_if_timing_fails = false;
 
 /* True if negative final slack. */
-static bool failed_timing = "";
+static bool failed_timing = false;
 
 void set_terminate_if_timing_fails(bool cmd_opt_terminate_if_timing_fails) {
     terminate_if_timing_fails = cmd_opt_terminate_if_timing_fails;
