@@ -272,10 +272,13 @@ class NocStorage {
 
     // general utiliy functions
     /**
-     * @brief Deletes a link from the NoC. The link is identified by its source
-     * and sink routers. Once identified, the link is removed from the vector 
-     * of links stored within the NoC. Then the link is is removed as an
-     * ourgoing link from its source router. If the link doesn't exist in the
+     * @brief The link is indentified by going through the outoging links of the
+     * source router and matching the sink router with each outgoing link.
+     * Once found, the link is removed from the outgoing link vector of
+     * the source router. The link is not removed from the vector of all
+     * links as this will require a re-indexing of all link ids. The link
+     * is still removed since it cannot be used to travel in the NoC from its
+     * source router. If the link doesn't exist in the
      * NoC then a warning message is printed and a boolean status is updated
      * indicating that the link does not exist in the NoC.
      * 

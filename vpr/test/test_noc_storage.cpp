@@ -324,26 +324,6 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
 
         /* now verify whether the link was removed correctly */
 
-
-        // go through all the links in the noc and check that the link with the previously found src and sink routers does not exist //
-
-        // variable to keep track of whether the link was deleted from the vector of all links within the NoC
-        bool link_removed_from_noc  = true;
-
-        auto links_in_noc = test_noc.get_noc_links();
-
-        for(auto single_link = links_in_noc.begin(); single_link != links_in_noc.end(); single_link++){
-
-            if ((single_link->get_source_router() == link_to_remove_src_router) && (single_link->get_sink_router() == link_to_remove_sink_router)) {
-                link_removed_from_noc = false;
-                break;
-            }
-
-        }
-
-        // verify the status of whether the link was removed from the NoC. This will report an error if the link wasnt removed.
-        REQUIRE(link_removed_from_noc == true);
-
         // go through all the outgoing links  of the source router in the link we removed and check that the link does not exis there as well. //
 
         // variable to keep tracj of whether the link was deleted from the vector outgoing links of its source router
