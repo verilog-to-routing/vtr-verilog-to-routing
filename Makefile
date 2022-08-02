@@ -69,6 +69,12 @@ ifeq ($(CMAKE),)
 	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
 endif
 	@ mkdir -p $(BUILD_DIR)
+
+ifneq (,$(findstring -DYOSYS_SV_UHDM_PLUGIN=ON,$(CMAKE_PARAMS)))
+	@echo "Performing Git Submodule Recursive Update on the VTR Submodules..."
+	git submodule update --init --recursive
+endif
+
 ifneq (,$(findstring pgo,$(BUILD_TYPE)))
 	#
 	#Profile Guided Optimization Build
