@@ -5,6 +5,8 @@
 #include "binary_heap.h"
 #include "bucket.h"
 
+#include "route_util.h"
+
 //Finds a path from the route tree rooted at rt_root to sink_node
 //
 //This is used when you want to allow previous routing of the same net to serve
@@ -488,7 +490,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
      * Change this if you want to investigate route-throughs.                   */
     if (target_node != OPEN) {
         t_rr_type to_type = rr_graph_->node_type(to_node);
-        if (to_type == IPIN) {
+        if (to_type == IPIN && !node_in_same_physical_tile(RRNodeId(from_node), to_node)) {
             //Check if this IPIN leads to the target block
             // IPIN's of the target block should be contained within it's bounding box
             if (to_xlow < target_bb.xmin
