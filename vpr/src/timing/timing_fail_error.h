@@ -16,6 +16,6 @@ void check_if_failed_timing_constraints(double& slack, std::string slack_name, s
 void error_if_timing_failed();
 
 /* Represents whether or not VPR should fail if timing constraints aren't met. */
-void toggle_terminate_if_timing_fails(bool cmd_opt_terminate_if_timing_fails);
+void set_terminate_if_timing_fails(bool cmd_opt_terminate_if_timing_fails);
 
 #endif
