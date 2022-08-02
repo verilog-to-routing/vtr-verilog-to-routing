@@ -116,7 +116,7 @@ void Bucket::init_heap(const DeviceGrid& grid) {
     heap_size_ = (grid.width() - 1) * (grid.height() - 1);
     heap_ = new BucketItem*[heap_size_];
     for (int i = 0; i < (int)heap_size_; i++)
-        heap_[i] = 0;
+        heap_[i] = nullptr;
 
     heap_head_ = std::numeric_limits<size_t>::max();
     front_head_ = std::numeric_limits<size_t>::max();
