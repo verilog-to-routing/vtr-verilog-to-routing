@@ -11,7 +11,7 @@
  * constraints. If both conditions are true, the function adds details about the negative slack to a string
  * that will be printed when VPR throws an error.
  */
-void check_if_failed_timing_constraints(double& slack, std::string slack_name, std::string prefix);
+void check_if_failed_timing_constraints(double& slack, std::string prefix);
 
 void error_if_timing_failed();
 

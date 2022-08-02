@@ -417,8 +417,8 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
 
     VTR_LOG("\n");
 
-    check_if_failed_timing_constraints(setup_worst_neg_slack, "setup Worst", prefix);
-    check_if_failed_timing_constraints(setup_total_neg_slack, "setup Total", prefix);
+    check_if_failed_timing_constraints(setup_worst_neg_slack, prefix);
+    check_if_failed_timing_constraints(setup_total_neg_slack, prefix);
 }
 
 /*
@@ -646,8 +646,8 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
     }
     VTR_LOG("\n");
 
-    check_if_failed_timing_constraints(hold_worst_neg_slack, "hold Worst", prefix);
-    check_if_failed_timing_constraints(hold_total_neg_slack, "hold Total", prefix);
+    check_if_failed_timing_constraints(hold_worst_neg_slack, prefix);
+    check_if_failed_timing_constraints(hold_total_neg_slack, prefix);
 }
 
 /*
