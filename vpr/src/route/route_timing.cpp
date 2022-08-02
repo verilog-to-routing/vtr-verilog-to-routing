@@ -894,8 +894,8 @@ void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
     int max_sinks = std::max(get_max_pins_per_net() - 1, 0);
 
     *pin_criticality_ptr = new float[max_sinks + 1]; /* First sink is pin #1. First element is empty.*/
-    *sink_order_ptr = new int[max_sinks] - 1;
-    *rt_node_of_sink_ptr = new t_rt_node*[max_sinks] - 1;
+    *sink_order_ptr = new int[max_sinks + 1];
+    *rt_node_of_sink_ptr = new t_rt_node*[max_sinks + 1];
 
     alloc_route_tree_timing_structs();
 }
@@ -910,9 +910,9 @@ void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t
     // coverity[offset_free : Intentional]
     delete[](pin_criticality); /* Starts at index 1. */
     // coverity[offset_free : Intentional]
-    delete[](sink_order + 1);
+    delete[](sink_order);
     // coverity[offset_free : Intentional]
-    delete[](rt_node_of_sink + 1);
+    delete[](rt_node_of_sink);
 
     free_route_tree_timing_structs();
 }
