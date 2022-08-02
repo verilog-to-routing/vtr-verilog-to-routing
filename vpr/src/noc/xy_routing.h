@@ -95,18 +95,6 @@ enum class RouteDirection {
 
 class XYRouting : public NocRouting {
 
-  private:
-
-    /**
-     * @brief Keeps track of which routers have been vistited already
-     * while traversing the NoC. This variable will help determine
-     * cases where a route could not be found and the algorithm is
-     * stuck going back and forth between routers it has already
-     * visited.
-     * 
-     */
-    std::unordered_set<NocRouterId> visited_routers;
-
   public:
 
     ~XYRouting() override;
@@ -157,12 +145,14 @@ class XYRouting : public NocRouting {
      * @param curr_router_y_position he vertical grid position of the router
      * that is currently being visited on the FPGA
      * @param next_step_direction The direction to travel next
+     * @param visited_routers Keeps track of which routers have been reached
+     * already while traversing the NoC.
      * @param noc_model A model of the NoC. This is used to traverse the
      * NoC and find a route between the two routers.
      * @return true A suitable link was found that we can traverse next
      * @return false N suitable links were found that could be traversed
      */
-    bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, const NocStorage& noc_model);
+    bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
 
 };
 

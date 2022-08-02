@@ -25,9 +25,15 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
     int sink_router_x_position = sink_router.get_router_grid_position_x();
     int sink_router_y_position = sink_router.get_router_grid_position_y();
 
-    // before finding a route, we need to clear the previously found route and the set of visited routers
-    clear_routed_path();
-    visited_routers.clear();
+    /**
+     * @brief Keeps track of which routers have been reached already
+     * while traversing the NoC. This variable will help determine
+     * cases where a route could not be found and the algorithm is
+     * stuck going back and forth between routers it has already
+     * visited.
+     * 
+     */
+    std::unordered_set<NocRouterId> visited_routers;
 
     /*
      * If we are not at the sink router then run another iteration of the XY routing algorithm
@@ -48,7 +54,7 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
         RouteDirection next_step_direction = get_direction_to_travel(sink_router_x_position, sink_router_y_position, curr_router_x_position, curr_router_y_position);
 
         // Move to the next router based on the previously determined direction
-        route_exists = move_to_next_router(curr_router_id ,curr_router_x_position, curr_router_y_position, next_step_direction, noc_model);
+        route_exists = move_to_next_router(curr_router_id ,curr_router_x_position, curr_router_y_position, next_step_direction,visited_routers, noc_model);
 
         // if we didn't find a legal router to move to then throw an error that there is no path between the source and destination routers
         if (!route_exists){
@@ -92,7 +98,7 @@ RouteDirection XYRouting::get_direction_to_travel(int sink_router_x_position, in
 
 }
 
-bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, const NocStorage& noc_model){
+bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model){
 
     // represents the router that will be visited when taking an outgoing link
     NocRouterId next_router_id(-1);
