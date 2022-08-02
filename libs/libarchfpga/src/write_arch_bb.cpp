@@ -13,6 +13,7 @@
 #include "vtr_error.h"
 #include "vtr_memory.h"
 
+#include "arch_util.h"
 #include "read_xml_arch_file.h"
 #include "write_models_bb.h"
 
@@ -48,7 +49,13 @@ int main(int argc, char** argv) {
         printf("Printing Results ...\n");
 
         WriteModels_bb(argv[1], argv[2], arch);
-        free(arch);
+
+        // CLEAN UP
+        free_arch(arch);
+        vtr::free(arch);
+        free_type_descriptors(physical_tile_types);
+        free_type_descriptors(logical_block_types);
+
     } catch (vtr::VtrError& vtr_error) {
         printf("Failed to process architecture %s: %s\n", argv[1], vtr_error.what());
         return 1;
