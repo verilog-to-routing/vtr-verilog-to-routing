@@ -4,21 +4,20 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/f4pga-examples/xc7/timer
-includes_dir=benchmarks/f4pga-examples/xc7/timer
+circuits_dir=benchmarks/system_verilog/f4pga/button_controller
+includes_dir=benchmarks/system_verilog/f4pga/button_controller
 
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
 
 # Add circuits to list to sweep
-include_list_add=timer.sv
 include_list_add=display_control.sv
-include_list_add=time_counter.sv
-include_list_add=modify_count.sv
+include_list_add=timer.sv
+include_list_add=debounce.sv
 
 # Add circuits to list to sweep
-circuit_list_add=timer/clock.sv
+circuit_list_add=button_controller.sv
 
 
 # Add architectures to list to sweep

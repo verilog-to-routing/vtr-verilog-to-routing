@@ -4,6 +4,3 @@
 [submodule "libs/EXTERNAL/yosys-f4pga-plugins"]
 	path = libs/EXTERNAL/yosys-f4pga-plugins
 	url = https://github.com/chipsalliance/yosys-f4pga-plugins.git
-[submodule "vtr_flow/benchmarks/f4pga-examples"]
-	path = vtr_flow/benchmarks/f4pga-examples
-	url = https://github.com/chipsalliance/f4pga-examples.git
