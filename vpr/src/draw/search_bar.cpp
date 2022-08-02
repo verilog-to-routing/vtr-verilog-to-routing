@@ -369,7 +369,6 @@ t_pb* find_atom_block_in_pb(std::string name, t_pb* pb) {
 }
 
 void highlight_nets(ClusterNetId net_id) {
-    t_trace* tptr;
     auto& route_ctx = g_vpr_ctx.routing();
 
     t_draw_state* draw_state = get_draw_state_vars();
@@ -524,12 +523,13 @@ GdkEvent simulate_keypress(char key, GdkWindow* window) {
  * NET SRCH.    4.93438e+06
  * BLOCKS       572148
  * BLOCKS SRCH. 4.8654e+06
- * Obviously much slower w. more nets/blocks. However, it only performs a single search, pretty bearable considering its searching in strings
+ * Obviously much slower w. more nets/blocks. However, it only performs a single search after each enter key press, pretty bearable considering its searching in strings
  * @param app ezgl app
  */
 void enable_autocomplete(ezgl::application* app) {
     GtkEntryCompletion* completion = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
     GtkEntry* searchBar = GTK_ENTRY(app->get_object("TextInput"));
+    auto draw_state = get_draw_state_vars();
 
     std::string searchType = get_search_type(app);
     if (searchType == "")
@@ -549,6 +549,8 @@ void enable_autocomplete(ezgl::application* app) {
 
     //Setting min key length to either 0 or 1 less than key length (max option)
     gtk_entry_completion_set_minimum_key_length(completion, std::max(0, (int)(oldText.length() - 1)));
+
+    draw_state->justEnabled = true;
 
     //If string len is 0, reutrning
     if (oldText.length() == 0) return;
