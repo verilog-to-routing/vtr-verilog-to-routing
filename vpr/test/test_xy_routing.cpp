@@ -222,7 +222,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
     }
 
 } 
-TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_routing") {
+TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_routing]") {
 
     /*
         Creating a test FPGA device below. The NoC itself will be
@@ -319,7 +319,7 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
        REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, noc_model), "No route could be found from starting router with ID:'3' and the destination router with ID:'15' using the XY-Routing algorithm.");
     }
 }
-TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_routing") {
+TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_routing]") {
 
     /*
         Creating a test FPGA device below. The NoC itself will be
