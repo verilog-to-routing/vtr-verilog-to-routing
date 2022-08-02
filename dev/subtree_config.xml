@@ -54,4 +54,9 @@
         internal_path="vtr_flow/benchmarks/system_verilog/hdmi"
         external_url="https://github.com/hdl-util/hdmi.git"
         default_external_ref="master"/>
+    <subtree
+        name="fx68k"
+        internal_path="vtr_flow/benchmarks/system_verilog/fx68k"
+        external_url="https://github.com/ijor/fx68k.git"
+        default_external_ref="master"/>
 </subtrees>
