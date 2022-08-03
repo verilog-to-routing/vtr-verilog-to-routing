@@ -417,8 +417,14 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
 
     VTR_LOG("\n");
 
-    check_if_failed_timing_constraints(setup_worst_neg_slack, prefix);
-    check_if_failed_timing_constraints(setup_total_neg_slack, prefix);
+    /* If the terminate_if_timing fails option is on, this checks if slack is negative and if user wants VPR
+     * flow to fail if their design doesn't meet timing constraints. If both conditions are true, the function
+     * adds details about the negative slack to a string that will be printed when VPR throws an error.
+     */
+    if (timing_ctx.terminate_if_timing_fails && (setup_worst_neg_slack < 0 || setup_total_neg_slack < 0) && prefix == "Final ") {
+        std::string msg = "\nDesign did not meet timing constraints.\nTiming failed and terminate_if_timing_fails set -- exiting";
+        VPR_FATAL_ERROR(VPR_ERROR_TIMING, msg.c_str());
+    }
 }
 
 /*
@@ -597,7 +603,9 @@ std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTiming
 }
 
 void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer, std::string prefix) {
-    auto hold_worst_neg_slack = sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer));
+     auto& timing_ctx = g_vpr_ctx.timing();
+
+	auto hold_worst_neg_slack = sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer));
     auto hold_total_neg_slack = sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer));
 
     VTR_LOG("%shold Worst Negative Slack (hWNS): %g ns\n", prefix.c_str(), hold_worst_neg_slack);
@@ -646,8 +654,14 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
     }
     VTR_LOG("\n");
 
-    check_if_failed_timing_constraints(hold_worst_neg_slack, prefix);
-    check_if_failed_timing_constraints(hold_total_neg_slack, prefix);
+    /* If the terminate_if_timing fails option is on, this checks if slack is negative and if user wants VPR
+     * flow to fail if their design doesn't meet timing constraints. If both conditions are true, the function
+     * adds details about the negative slack to a string that will be printed when VPR throws an error.
+     */
+    if (timing_ctx.terminate_if_timing_fails && (hold_worst_neg_slack < 0 || hold_total_neg_slack < 0) && prefix == "Final ") {
+         std::string msg = "\nDesign did not meet timing constraints.\nTiming failed and terminate_if_timing_fails set -- exiting";
+         VPR_FATAL_ERROR(VPR_ERROR_TIMING, msg.c_str());
+     }
 }
 
 /*
