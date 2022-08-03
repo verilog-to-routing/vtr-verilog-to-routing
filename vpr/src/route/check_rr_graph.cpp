@@ -499,6 +499,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                 }
             }
 
+            //To-do: add check for direct connect
             if (check_for_out_edges) {
                 std::string info = describe_rr_node(inode);
                 VTR_LOG_WARN("in check_rr_node: %s has no out-going edges.\n", info.c_str());
