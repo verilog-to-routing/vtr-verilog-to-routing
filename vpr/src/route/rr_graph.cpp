@@ -1551,11 +1551,6 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
              * special case of INPUTS = class 0 and OUTPUTS = class 1 and see what it  *
              * leads to.  If route throughs are allowed, you may want to increase the  *
              * base cost of OPINs and/or SOURCES so they aren't used excessively.      */
-
-            /* TODO: The casting will be removed when RRGraphBuilder has the following APIs:
-             * - set_node_cost_index(RRNodeId, int);
-             * - set_node_type(RRNodeId, t_rr_type);
-             */
             rr_graph_builder.set_node_cost_index(inode, RRIndexedDataId(SINK_COST_INDEX));
             rr_graph_builder.set_node_type(inode, SINK);
         }
@@ -2592,7 +2587,6 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
     return track_to_pin_lookup;
 }
 
-/* TODO: This function should adapt RRNodeId */
 std::string describe_rr_node(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
