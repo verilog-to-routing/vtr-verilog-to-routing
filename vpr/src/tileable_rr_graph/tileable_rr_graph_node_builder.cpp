@@ -191,17 +191,17 @@ static size_t estimate_num_chanx_rr_nodes(const DeviceGrid& grids,
             bool force_end = false;
 
             /* All the tracks have to start when
-       *  - the routing channel touch the RIGHT side a heterogeneous block
-       *  - the routing channel touch the LEFT side of FPGA
-       */
+             *  - the routing channel touch the RIGHT side a heterogeneous block
+             *  - the routing channel touch the LEFT side of FPGA
+             */
             if (true == is_chanx_right_to_multi_height_grid(grids, chanx_coord, through_channel)) {
                 force_start = true;
             }
 
             /* All the tracks have to end when
-       *  - the routing channel touch the LEFT side a heterogeneous block
-       *  - the routing channel touch the RIGHT side of FPGA
-       */
+             *  - the routing channel touch the LEFT side a heterogeneous block
+             *  - the routing channel touch the RIGHT side of FPGA
+             */
             if (true == is_chanx_left_to_multi_height_grid(grids, chanx_coord, through_channel)) {
                 force_end = true;
             }
@@ -243,17 +243,17 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
             bool force_end = false;
 
             /* All the tracks have to start when
-       *  - the routing channel touch the TOP side a heterogeneous block
-       *  - the routing channel touch the BOTTOM side of FPGA
-       */
+             *  - the routing channel touch the TOP side a heterogeneous block
+             *  - the routing channel touch the BOTTOM side of FPGA
+             */
             if (true == is_chany_top_to_multi_width_grid(grids, chany_coord, through_channel)) {
                 force_start = true;
             }
 
             /* All the tracks have to end when
-       *  - the routing channel touch the BOTTOM side a heterogeneous block
-       *  - the routing channel touch the TOP side of FPGA
-       */
+             *  - the routing channel touch the BOTTOM side a heterogeneous block
+             *  - the routing channel touch the TOP side of FPGA
+             */
             if (true == is_chany_bottom_to_multi_width_grid(grids, chany_coord, through_channel)) {
                 force_end = true;
             }
@@ -280,28 +280,28 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
     std::vector<size_t> num_rr_nodes_per_type(NUM_RR_TYPES, 0);
 
     /**
-   * 1 Find number of rr nodes related to grids
-   */
+     * 1 Find number of rr nodes related to grids
+     */
     num_rr_nodes_per_type[OPIN] = estimate_num_grid_rr_nodes_by_type(grids, OPIN);
     num_rr_nodes_per_type[IPIN] = estimate_num_grid_rr_nodes_by_type(grids, IPIN);
     num_rr_nodes_per_type[SOURCE] = estimate_num_grid_rr_nodes_by_type(grids, SOURCE);
     num_rr_nodes_per_type[SINK] = estimate_num_grid_rr_nodes_by_type(grids, SINK);
 
     /**
-   * 2. Assign the segments for each routing channel,
-   *    To be specific, for each routing track, we assign a routing segment.
-   *    The assignment is subject to users' specifications, such as
-   *    a. length of each type of segment
-   *    b. frequency of each type of segment.
-   *    c. routing channel width
-   *
-   *    SPECIAL for fringes:
-   *    All segments will start and ends with no exception
-   *
-   *    IMPORTANT: we should be aware that channel width maybe different
-   *    in X-direction and Y-direction channels!!!
-   *    So we will load segment details for different channels
-   */
+     * 2. Assign the segments for each routing channel,
+     *    To be specific, for each routing track, we assign a routing segment.
+     *    The assignment is subject to users' specifications, such as
+     *    a. length of each type of segment
+     *    b. frequency of each type of segment.
+     *    c. routing channel width
+     *
+     *    SPECIAL for fringes:
+     *    All segments will start and ends with no exception
+     *
+     *    IMPORTANT: we should be aware that channel width maybe different
+     *    in X-direction and Y-direction channels!!!
+     *    So we will load segment details for different channels
+     */
     num_rr_nodes_per_type[CHANX] = estimate_num_chanx_rr_nodes(grids,
                                                                chan_width.x(),
                                                                segment_infs,
@@ -361,8 +361,8 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     SideManager io_side_manager(io_side);
 
     /* Walk through the width height of each grid,
-   * get pins and configure the rr_nodes
-   */
+     * get pins and configure the rr_nodes
+     */
     for (int width = 0; width < cur_grid.type->width; ++width) {
         for (int height = 0; height < cur_grid.type->height; ++height) {
             /* Walk through sides */
@@ -423,8 +423,8 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     SideManager io_side_manager(io_side);
 
     /* Walk through the width and height of each grid,
-   * get pins and configure the rr_nodes
-   */
+     * get pins and configure the rr_nodes
+     */
     for (int width = 0; width < cur_grid.type->width; ++width) {
         for (int height = 0; height < cur_grid.type->height; ++height) {
             /* Walk through sides */
@@ -649,10 +649,10 @@ static void load_one_chan_rr_nodes_basic_info(RRGraphView& rr_graph,
                                               const std::vector<t_segment_inf>& segment_infs,
                                               const int& cost_index_offset) {
     /* Check each node_id(potential ptc_num) in the channel :
-   * If this is a starting point, we set a new rr_node with xlow/ylow, ptc_num
-   * If this is a ending point, we set xhigh/yhigh and track_ids
-   * For other nodes, we set changes in track_ids
-   */
+     * If this is a starting point, we set a new rr_node with xlow/ylow, ptc_num
+     * If this is a ending point, we set xhigh/yhigh and track_ids
+     * For other nodes, we set changes in track_ids
+     */
     for (size_t itrack = 0; itrack < chan_details.get_chan_width(); ++itrack) {
         /* For INC direction, a starting point requires a new chan rr_node  */
         if (((true == chan_details.is_track_start(itrack))
@@ -731,8 +731,8 @@ static void load_one_chan_rr_nodes_basic_info(RRGraphView& rr_graph,
         VTR_ASSERT(chan_details.get_track_direction(itrack) == rr_graph.node_direction(rr_node_id));
 
         /* Deposit xhigh and yhigh using the current chan_coordinate
-     * We will update when this track ends
-     */
+         * We will update when this track ends
+         */
         rr_graph_builder.set_node_coordinates(rr_node_id, rr_graph.node_xlow(rr_node_id),
                                               rr_graph.node_ylow(rr_node_id),
                                               chan_coordinate.x(),
@@ -777,17 +777,17 @@ static void load_chanx_rr_nodes_basic_info(RRGraphView& rr_graph,
             bool force_end = false;
 
             /* All the tracks have to start when
-       *  - the routing channel touch the RIGHT side a heterogeneous block
-       *  - the routing channel touch the LEFT side of FPGA
-       */
+             *  - the routing channel touch the RIGHT side a heterogeneous block
+             *  - the routing channel touch the LEFT side of FPGA
+             */
             if (true == is_chanx_right_to_multi_height_grid(grids, chanx_coord, through_channel)) {
                 force_start = true;
             }
 
             /* All the tracks have to end when
-       *  - the routing channel touch the LEFT side a heterogeneous block
-       *  - the routing channel touch the RIGHT side of FPGA
-       */
+             *  - the routing channel touch the LEFT side a heterogeneous block
+             *  - the routing channel touch the RIGHT side of FPGA
+             */
             if (true == is_chanx_left_to_multi_height_grid(grids, chanx_coord, through_channel)) {
                 force_end = true;
             }
@@ -797,40 +797,40 @@ static void load_chanx_rr_nodes_basic_info(RRGraphView& rr_graph,
             /* Force node_ids from the previous chanx */
             if (0 < track_node_ids.size()) {
                 /* Rotate should be done based on a typical case of routing tracks.
-         * Tracks on the borders are not regularly started and ended,
-         * which causes the node_rotation malfunction
-         */
+                 * Tracks on the borders are not regularly started and ended,
+                 * which causes the node_rotation malfunction
+                 */
                 ChanNodeDetails chanx_details_tt = build_unidir_chan_node_details(chan_width, grids.width() - 2,
                                                                                   false, false, segment_infs);
                 chanx_details_tt.set_track_node_ids(track_node_ids);
 
                 /* TODO:
-         * Do NOT rotate the tracks when the routing channel
-         * locates inside a multi-height and multi-width grid
-         * Let the routing channel passing through the grid (if through channel is allowed!)
-         * An example:
-         *
-         *               +------------------------------
-         *               |                             |
-         *               |          Grid               |
-         *  track0 ----->+-----------------------------+----> track0
-         *               |                             |
-         */
+                 * Do NOT rotate the tracks when the routing channel
+                 * locates inside a multi-height and multi-width grid
+                 * Let the routing channel passing through the grid (if through channel is allowed!)
+                 * An example:
+                 *
+                 *               +------------------------------
+                 *               |                             |
+                 *               |          Grid               |
+                 *  track0 ----->+-----------------------------+----> track0
+                 *               |                             |
+                 */
                 if (true == is_chanx_exist(grids, chanx_coord, through_channel)) {
                     /* Rotate the chanx_details by an offset of ix - 1, the distance to the most left channel */
                     /* For INC_DIRECTION, we use clockwise rotation
-           * node_id A ---->   -----> node_id D
-           * node_id B ---->  / ----> node_id A
-           * node_id C ----> /  ----> node_id B
-           * node_id D ---->    ----> node_id C
-           */
+                     * node_id A ---->   -----> node_id D
+                     * node_id B ---->  / ----> node_id A
+                     * node_id C ----> /  ----> node_id B
+                     * node_id D ---->    ----> node_id C
+                     */
                     chanx_details_tt.rotate_track_node_id(1, Direction::INC, true);
                     /* For DEC_DIRECTION, we use clockwise rotation
-           * node_id A <-----    <----- node_id B
-           * node_id B <----- \  <----- node_id C
-           * node_id C <-----  \ <----- node_id D
-           * node_id D <-----    <----- node_id A
-           */
+                     * node_id A <-----    <----- node_id B
+                     * node_id B <----- \  <----- node_id C
+                     * node_id C <-----  \ <----- node_id D
+                     * node_id D <-----    <----- node_id A
+                     */
                     chanx_details_tt.rotate_track_node_id(1, Direction::DEC, false);
                 }
 
@@ -884,17 +884,17 @@ static void load_chany_rr_nodes_basic_info(RRGraphView& rr_graph,
             bool force_end = false;
 
             /* All the tracks have to start when
-       *  - the routing channel touch the TOP side a heterogeneous block
-       *  - the routing channel touch the BOTTOM side of FPGA
-       */
+             *  - the routing channel touch the TOP side a heterogeneous block
+             *  - the routing channel touch the BOTTOM side of FPGA
+             */
             if (true == is_chany_top_to_multi_width_grid(grids, chany_coord, through_channel)) {
                 force_start = true;
             }
 
             /* All the tracks have to end when
-       *  - the routing channel touch the BOTTOM side a heterogeneous block
-       *  - the routing channel touch the TOP side of FPGA
-       */
+             *  - the routing channel touch the BOTTOM side a heterogeneous block
+             *  - the routing channel touch the TOP side of FPGA
+             */
             if (true == is_chany_bottom_to_multi_width_grid(grids, chany_coord, through_channel)) {
                 force_end = true;
             }
@@ -902,46 +902,46 @@ static void load_chany_rr_nodes_basic_info(RRGraphView& rr_graph,
             ChanNodeDetails chany_details = build_unidir_chan_node_details(chan_width, grids.height() - 2,
                                                                            force_start, force_end, segment_infs);
             /* Force node_ids from the previous chany
-       * This will not be applied when the routing channel is cut off (force to start)
-       */
+             * This will not be applied when the routing channel is cut off (force to start)
+             */
             if (0 < track_node_ids.size()) {
                 /* Rotate should be done based on a typical case of routing tracks.
-         * Tracks on the borders are not regularly started and ended,
-         * which causes the node_rotation malfunction
-         */
+                 * Tracks on the borders are not regularly started and ended,
+                 * which causes the node_rotation malfunction
+                 */
                 ChanNodeDetails chany_details_tt = build_unidir_chan_node_details(chan_width, grids.height() - 2,
                                                                                   false, false, segment_infs);
 
                 chany_details_tt.set_track_node_ids(track_node_ids);
 
                 /* TODO:
-         * Do NOT rotate the tracks when the routing channel
-         * locates inside a multi-height and multi-width grid
-         * Let the routing channel passing through the grid (if through channel is allowed!)
-         * An example:
-         *
-         *               +------------------------------
-         *               |                             |
-         *               |          Grid               |
-         *  track0 ----->+-----------------------------+----> track0
-         *               |                             |
-         * we should rotate only once at the bottom side of a grid
-         */
+                 * Do NOT rotate the tracks when the routing channel
+                 * locates inside a multi-height and multi-width grid
+                 * Let the routing channel passing through the grid (if through channel is allowed!)
+                 * An example:
+                 *
+                 *               +------------------------------
+                 *               |                             |
+                 *               |          Grid               |
+                 *  track0 ----->+-----------------------------+----> track0
+                 *               |                             |
+                 * we should rotate only once at the bottom side of a grid
+                 */
                 if (true == is_chany_exist(grids, chany_coord, through_channel)) {
                     /* Rotate the chany_details by an offset of 1*/
                     /* For INC_DIRECTION, we use clockwise rotation
-           * node_id A ---->   -----> node_id D
-           * node_id B ---->  / ----> node_id A
-           * node_id C ----> /  ----> node_id B
-           * node_id D ---->    ----> node_id C
-           */
+                     * node_id A ---->   -----> node_id D
+                     * node_id B ---->  / ----> node_id A
+                     * node_id C ----> /  ----> node_id B
+                     * node_id D ---->    ----> node_id C
+                     */
                     chany_details_tt.rotate_track_node_id(1, Direction::INC, true);
                     /* For DEC_DIRECTION, we use clockwise rotation
-           * node_id A <-----    <----- node_id B
-           * node_id B <----- \  <----- node_id C
-           * node_id C <-----  \ <----- node_id D
-           * node_id D <-----    <----- node_id A
-           */
+                     * node_id A <-----    <----- node_id B
+                     * node_id B <----- \  <----- node_id C
+                     * node_id C <-----  \ <----- node_id D
+                     * node_id D <-----    <----- node_id A
+                     */
                     chany_details_tt.rotate_track_node_id(1, Direction::DEC, false);
                 }
 

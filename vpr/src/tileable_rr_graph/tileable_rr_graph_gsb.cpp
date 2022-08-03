@@ -1,5 +1,5 @@
 /************************************************************************
- *  This file contains a builder for track-to-track connections inside a 
+ *  This file contains a builder for track-to-track connections inside a
  *  tileable General Switch Block (GSB).
  ***********************************************************************/
 #include <vector>
@@ -42,11 +42,11 @@ enum e_track_status {
 };
 
 /************************************************************************
- * Check if a track starts from this GSB or not 
- * (xlow, ylow) should be same as the GSB side coordinate 
+ * Check if a track starts from this GSB or not
+ * (xlow, ylow) should be same as the GSB side coordinate
  *
- * Check if a track ends at this GSB or not 
- * (xhigh, yhigh) should be same as the GSB side coordinate 
+ * Check if a track ends at this GSB or not
+ * (xhigh, yhigh) should be same as the GSB side coordinate
  ***********************************************************************/
 static enum e_track_status determine_track_status_of_gsb(const RRGraphView& rr_graph,
                                                          const RRGSB& rr_gsb,
@@ -173,14 +173,14 @@ static bool is_gsb_in_track_sb_population(const RRGraphView& rr_graph,
  * Create a list of track_id based on the to_track and num_to_tracks
  * We consider the following list [to_track, to_track + Fs/3 - 1]
  * if the [to_track + Fs/3 - 1] exceeds the num_to_tracks, we start over from 0!
-***********************************************************************/
+ ***********************************************************************/
 static std::vector<size_t> get_to_track_list(const int& Fs, const int& to_track, const int& num_to_tracks) {
     std::vector<size_t> to_tracks;
 
     for (int i = 0; i < Fs; i = i + 3) {
-        /* TODO: currently, for Fs > 3, I always search the next from_track until Fs is satisfied 
-     * The optimal track selection should be done in a more scientific way!!! 
-     */
+        /* TODO: currently, for Fs > 3, I always search the next from_track until Fs is satisfied
+         * The optimal track selection should be done in a more scientific way!!!
+         */
         int to_track_i = to_track + i;
         /* make sure the track id is still in range */
         if (to_track_i > num_to_tracks - 1) {
@@ -196,9 +196,9 @@ static std::vector<size_t> get_to_track_list(const int& Fs, const int& to_track,
 
 /************************************************************************
  * This function aims to return the track indices that drive the from_track
- * in a Switch Block 
+ * in a Switch Block
  * The track_ids to return will depend on different topologies of SB
- *  SUBSET, UNIVERSAL, and WILTON. 
+ *  SUBSET, UNIVERSAL, and WILTON.
  ***********************************************************************/
 static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_type& switch_block_type,
                                                         const int& Fs,
@@ -206,14 +206,14 @@ static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_typ
                                                         const int& from_track,
                                                         const e_side& to_side,
                                                         const int& num_to_tracks) {
-    /* This routine returns the track number to which the from_track should     
-   * connect.  It supports any Fs % 3 == 0, switch blocks.
-   */
+    /* This routine returns the track number to which the from_track should
+     * connect.  It supports any Fs % 3 == 0, switch blocks.
+     */
     std::vector<size_t> to_tracks;
 
-    /* TODO: currently, for Fs > 3, I always search the next from_track until Fs is satisfied 
-   * The optimal track selection should be done in a more scientific way!!! 
-   */
+    /* TODO: currently, for Fs > 3, I always search the next from_track until Fs is satisfied
+     * The optimal track selection should be done in a more scientific way!!!
+     */
     VTR_ASSERT(0 == Fs % 3);
 
     /* Adapt from_track to fit in the range of num_to_tracks */
@@ -227,10 +227,10 @@ static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_typ
         case UNIVERSAL:
             if ((from_side == LEFT)
                 || (from_side == RIGHT)) {
-                /* For the prev_side, to_track is from_track 
-      * For the next_side, to_track is num_to_tracks - 1 - from_track 
-      * For the opposite_side, to_track is always from_track
-      */
+                /* For the prev_side, to_track is from_track
+                 * For the next_side, to_track is num_to_tracks - 1 - from_track
+                 * For the opposite_side, to_track is always from_track
+                 */
                 SideManager side_manager(from_side);
                 if ((to_side == side_manager.get_opposite())
                     || (to_side == side_manager.get_rotate_counterclockwise())) {
@@ -242,10 +242,10 @@ static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_typ
 
             if ((from_side == TOP)
                 || (from_side == BOTTOM)) {
-                /* For the next_side, to_track is from_track 
-     * For the prev_side, to_track is num_to_tracks - 1 - from_track 
-     * For the opposite_side, to_track is always from_track
-     */
+                /* For the next_side, to_track is from_track
+                 * For the prev_side, to_track is num_to_tracks - 1 - from_track
+                 * For the opposite_side, to_track is always from_track
+                 */
                 SideManager side_manager(from_side);
                 if ((to_side == side_manager.get_opposite())
                     || (to_side == side_manager.get_rotate_clockwise())) {
@@ -305,7 +305,7 @@ static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_typ
 }
 
 /************************************************************************
- * Build the track_to_track_map[from_side][0..chan_width-1][to_side][track_indices] 
+ * Build the track_to_track_map[from_side][0..chan_width-1][to_side][track_indices]
  * For a group of from_track nodes and to_track nodes
  * For each side of from_tracks, we call a routine to get the list of to_tracks
  * Then, we fill the track2track_map
@@ -389,21 +389,21 @@ static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
 }
 
 /************************************************************************
- * Build the track_to_track_map[from_side][0..chan_width-1][to_side][track_indices] 
+ * Build the track_to_track_map[from_side][0..chan_width-1][to_side][track_indices]
  * based on the existing routing resources in the General Switch Block (GSB)
- * The track_indices is the indices of tracks that the node at from_side and [0..chan_width-1] will drive 
+ * The track_indices is the indices of tracks that the node at from_side and [0..chan_width-1] will drive
  * IMPORTANT: the track_indices are the indicies in the GSB context, but not the rr_graph!!!
  * We separate the connections into two groups:
- * Group 1: the routing tracks start from this GSB 
- *          We will apply switch block patterns (SUBSET, UNIVERSAL, WILTON) 
+ * Group 1: the routing tracks start from this GSB
+ *          We will apply switch block patterns (SUBSET, UNIVERSAL, WILTON)
  * Group 2: the routing tracks do not start from this GSB (bypassing wires)
- *          We will apply switch block patterns (SUBSET, UNIVERSAL, WILTON) 
- *          but we will check the Switch Block (SB) population of these 
+ *          We will apply switch block patterns (SUBSET, UNIVERSAL, WILTON)
+ *          but we will check the Switch Block (SB) population of these
  *          routing segments, and determine which requires connections
- *          
+ *
  *                         CHANY  CHANY  CHANY CHANY
  *                          [0]    [1]    [2]   [3]
- *                   start  yes    no     yes   no            
+ *                   start  yes    no     yes   no
  *        end             +-------------------------+           start    Group 1      Group 2
  *         no    CHANX[0] |           TOP           |  CHANX[0]  yes   TOP/BOTTOM   TOP/BOTTOM
  *                        |                         |                  CHANY[0,2]   CHANY[1,3]
@@ -412,25 +412,25 @@ static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
  *         no    CHANX[2] |                         |  CHANX[2]  yes
  *                        |                         |
  *        yes    CHANX[3] |         BOTTOM          |  CHANX[3]  no
- *                        +-------------------------+           
+ *                        +-------------------------+
  *                         CHANY  CHANY  CHANY CHANY
  *                          [0]    [1]    [2]   [3]
- *                   start  yes    no     yes   no            
- *            
+ *                   start  yes    no     yes   no
+ *
  * The mapping is done in the following steps: (For each side of the GSB)
  * 1. Build a list of tracks that will start from this side
  *    if a track starts, its xlow/ylow is the same as the x,y of this gsb
  * 2. Build a list of tracks on the other sides belonging to Group 1.
- *    Take the example of RIGHT side, we will collect 
- *    a. tracks that will end at the LEFT side 
+ *    Take the example of RIGHT side, we will collect
+ *    a. tracks that will end at the LEFT side
  *    b. tracks that will start at the TOP side
  *    c. tracks that will start at the BOTTOM side
- * 3. Apply switch block patterns to Group 1 (SUBSET, UNIVERSAL, WILTON) 
+ * 3. Apply switch block patterns to Group 1 (SUBSET, UNIVERSAL, WILTON)
  * 4. Build a list of tracks on the other sides belonging to Group 1.
- *    Take the example of RIGHT side, we will collect 
+ *    Take the example of RIGHT side, we will collect
  *    a. tracks that will bypass at the TOP side
  *    b. tracks that will bypass at the BOTTOM side
- * 5. Apply switch block patterns to Group 2 (SUBSET, UNIVERSAL, WILTON) 
+ * 5. Apply switch block patterns to Group 2 (SUBSET, UNIVERSAL, WILTON)
  ***********************************************************************/
 t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                                                const RRGSB& rr_gsb,
@@ -442,10 +442,10 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                                                const std::vector<t_segment_inf>& segment_inf) {
     t_track2track_map track2track_map; /* [0..gsb_side][0..chan_width][track_indices] */
 
-    /* Categorize tracks into 3 groups: 
-   * (1) tracks will start here 
-   * (2) tracks will end here 
-   * (2) tracks will just pass through the SB */
+    /* Categorize tracks into 3 groups:
+     * (1) tracks will start here
+     * (2) tracks will end here
+     * (2) tracks will just pass through the SB */
     t_track_group start_tracks; /* [0..gsb_side][track_indices] */
     t_track_group end_tracks;   /* [0..gsb_side][track_indices] */
     t_track_group pass_tracks;  /* [0..gsb_side][track_indices] */
@@ -461,9 +461,9 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
         e_side gsb_side = side_manager.get_side();
         /* Build a list of tracks that will start from this side */
         for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
-            /* We need to check Switch block population of this track 
-       * The track node will not be considered if there supposed to be no SB at this position 
-       */
+            /* We need to check Switch block population of this track
+             * The track node will not be considered if there supposed to be no SB at this position
+             */
             if (false == is_gsb_in_track_sb_population(rr_graph, rr_gsb, gsb_side, inode, segment_inf)) {
                 continue; /* skip this node and go to the next */
             }
@@ -516,8 +516,8 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
 
     /* For Group 2: we build connections between end_tracks and start_tracks*/
     /* Currently, I use the same Switch Block pattern for the passing tracks and end tracks,
-   * TODO: This can be improved with different patterns! 
-   */
+     * TODO: This can be improved with different patterns!
+     */
     build_gsb_one_group_track_to_track_map(rr_graph, rr_gsb,
                                            sb_subtype, subFs,
                                            wire_opposite_side, /* Pass tracks may not be wired to start tracks */
@@ -558,10 +558,10 @@ static RRChan build_one_tileable_rr_chan(const vtr::Point<size_t>& chan_coordina
 }
 
 /***********************************************************************
- * Build a General Switch Block (GSB) 
+ * Build a General Switch Block (GSB)
  * which includes:
  * [I] A Switch Box subckt consists of following ports:
- * 1. Channel Y [x][y] inputs 
+ * 1. Channel Y [x][y] inputs
  * 2. Channel X [x+1][y] inputs
  * 3. Channel Y [x][y-1] outputs
  * 4. Channel X [x][y] outputs
@@ -581,7 +581,7 @@ static RRChan build_one_tileable_rr_chan(const vtr::Point<size_t>& chan_coordina
  *    |            |          |            |
  *    --------------          --------------
  *                  ----------
- *     ChanX & CBX  | Switch |     ChanX 
+ *     ChanX & CBX  | Switch |     ChanX
  *       [x][y]     |   Box  |    [x+1][y]
  *                  | [x][y] |
  *                  ----------
@@ -602,11 +602,11 @@ static RRChan build_one_tileable_rr_chan(const vtr::Point<size_t>& chan_coordina
  *
  * [II] A X-direction Connection Block [x][y]
  * The connection block shares the same routing channel[x][y] with the Switch Block
- * We just need to fill the ipin nodes at TOP and BOTTOM sides 
+ * We just need to fill the ipin nodes at TOP and BOTTOM sides
  * as well as properly fill the ipin_grid_side information
  * [III] A Y-direction Connection Block [x][y+1]
  * The connection block shares the same routing channel[x][y+1] with the Switch Block
- * We just need to fill the ipin nodes at LEFT and RIGHT sides 
+ * We just need to fill the ipin nodes at LEFT and RIGHT sides
  * as well as properly fill the ipin_grid_side information
  ***********************************************************************/
 RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
@@ -638,9 +638,9 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
         enum e_side opin_grid_side[2] = {NUM_SIDES, NUM_SIDES};
         enum PORTS chan_dir_to_port_dir_mapping[2] = {OUT_PORT, IN_PORT}; /* 0: INC_DIRECTION => ?; 1: DEC_DIRECTION => ? */
 
-        /* Build a segment details, where we need the segment ids for building rr_chan  
-     * We do not care starting and ending points here, so set chan_side as NUM_SIDES 
-     */
+        /* Build a segment details, where we need the segment ids for building rr_chan
+         * We do not care starting and ending points here, so set chan_side as NUM_SIDES
+         */
         ChanNodeDetails chanx_details = build_unidir_chan_node_details(device_chan_width.x(), grids.width() - 1,
                                                                        false, false, segment_inf);
         ChanNodeDetails chany_details = build_unidir_chan_node_details(device_chan_width.y(), grids.height() - 1,
@@ -812,34 +812,34 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
         opin_grid_side[1] = NUM_SIDES;
     }
 
-    /* Add IPIN nodes from adjacent grids: the 4 grids sitting on the 4 corners of the Switch Block 
-   *
-   * - The concept of top/bottom side of connection block in GSB domain:
-   *
-   *     |    Grid[x][y+1]       |
-   *     |      BOTTOM side      |
-   *     +-----------------------+
-   *                |
-   *                v
-   *     +-----------------------+
-   *     |        TOP side       |
-   *     |  X- Connection Block  |
-   *     |     BOTTOM side       |
-   *     +-----------------------+
-   *                ^
-   *                |
-   *     +-----------------------+
-   *     |      TOP side         |
-   *     |    Grid[x][y]         |
-   *
-   * - The concept of top/bottom side of connection block in GSB domain:
-   *
-   *   ---------------+  +---------------------- ... ---------------------+  +----------------
-   *     Grid[x][y+1] |->| Y- Connection Block        Y- Connection Block |<-| Grid[x+1][y+1]
-   *    RIGHT side    |  | LEFT side             ...  RIGHT side          |  | LEFT side
-   *    --------------+  +---------------------- ... ---------------------+  +----------------
-   *
-   */
+    /* Add IPIN nodes from adjacent grids: the 4 grids sitting on the 4 corners of the Switch Block
+     *
+     * - The concept of top/bottom side of connection block in GSB domain:
+     *
+     *     |    Grid[x][y+1]       |
+     *     |      BOTTOM side      |
+     *     +-----------------------+
+     *                |
+     *                v
+     *     +-----------------------+
+     *     |        TOP side       |
+     *     |  X- Connection Block  |
+     *     |     BOTTOM side       |
+     *     +-----------------------+
+     *                ^
+     *                |
+     *     +-----------------------+
+     *     |      TOP side         |
+     *     |    Grid[x][y]         |
+     *
+     * - The concept of top/bottom side of connection block in GSB domain:
+     *
+     *   ---------------+  +---------------------- ... ---------------------+  +----------------
+     *     Grid[x][y+1] |->| Y- Connection Block        Y- Connection Block |<-| Grid[x+1][y+1]
+     *    RIGHT side    |  | LEFT side             ...  RIGHT side          |  | LEFT side
+     *    --------------+  +---------------------- ... ---------------------+  +----------------
+     *
+     */
     for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
         SideManager side_manager(side);
         size_t ix;
@@ -907,9 +907,9 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
 
 /************************************************************************
  * Create edges for each rr_node of a General Switch Blocks (GSB):
- * 1. create edges between CHANX | CHANY and IPINs (connections inside connection blocks) 
- * 2. create edges between OPINs, CHANX and CHANY (connections inside switch blocks) 
- * 3. create edges between OPINs and IPINs (direct-connections) 
+ * 1. create edges between CHANX | CHANY and IPINs (connections inside connection blocks)
+ * 2. create edges between OPINs, CHANX and CHANY (connections inside switch blocks)
+ * 3. create edges between OPINs and IPINs (direct-connections)
  ***********************************************************************/
 void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
                                          const RRGSB& rr_gsb,
@@ -943,9 +943,9 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Find  CHANX or CHANY */
-        /* For TRACKs to IPINs, we only care LEFT and TOP sides 
-     * Skip RIGHT and BOTTOM for the ipin2track_map since they should be handled in other GSBs 
-     */
+        /* For TRACKs to IPINs, we only care LEFT and TOP sides
+         * Skip RIGHT and BOTTOM for the ipin2track_map since they should be handled in other GSBs
+         */
         if ((side_manager.get_side() == rr_gsb.get_cb_chan_side(CHANX))
             || (side_manager.get_side() == rr_gsb.get_cb_chan_side(CHANY))) {
             /* 2. create edges between CHANX|CHANY and IPINs, using ipin2track_map */
@@ -969,9 +969,9 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
 }
 
 /************************************************************************
- * Build track2ipin_map for an IPIN  
+ * Build track2ipin_map for an IPIN
  * 1. build a list of routing tracks which are allowed for connections
- *    We will check the Connection Block (CB) population of each routing track. 
+ *    We will check the Connection Block (CB) population of each routing track.
  *    By comparing current chan_y - ylow, we can determine if a CB connection
  *    is required for each routing track
  * 2. Divide the routing tracks by segment types, so that we can balance
@@ -1015,9 +1015,9 @@ static void build_gsb_one_ipin_track2pin_map(const RRGraphView& rr_graph,
         int actual_Fc = std::ceil((float)Fc[iseg] * (float)actual_track_list.size() / (float)chan_width);
         /* Minimum Fc should be 2 : ensure we will connect to a pair of routing tracks */
         actual_Fc = std::max(1, actual_Fc);
-        /* Compute the step between two connection from this IPIN to tracks: 
-     * step = W' / Fc', W' and Fc' are the adapted W and Fc from actual_track_list and Fc_in 
-     */
+        /* Compute the step between two connection from this IPIN to tracks:
+         * step = W' / Fc', W' and Fc' are the adapted W and Fc from actual_track_list and Fc_in
+         */
         size_t track_step = std::floor((float)actual_track_list.size() / (float)actual_Fc);
         /* Make sure step should be at least 2 */
         track_step = std::max(1, (int)track_step);
@@ -1052,19 +1052,19 @@ static void build_gsb_one_ipin_track2pin_map(const RRGraphView& rr_graph,
         /* Ensure the number of tracks is similar to Fc */
         /* Give a warning if Fc is < track_cnt */
         /*
-    if (actual_Fc != track_cnt) {
-      vpr_printf(TIO_MESSAGE_INFO, 
-                 "IPIN Node(%lu) will have a different Fc(=%lu) than specified(=%lu)!\n",
-                 ipin_node - rr_graph->rr_node, track_cnt, actual_Fc);
-    }
-    */
+         * if (actual_Fc != track_cnt) {
+         * vpr_printf(TIO_MESSAGE_INFO,
+         * "IPIN Node(%lu) will have a different Fc(=%lu) than specified(=%lu)!\n",
+         * ipin_node - rr_graph->rr_node, track_cnt, actual_Fc);
+         * }
+         */
     }
 }
 
 /************************************************************************
- * Build opin2track_map for an OPIN  
+ * Build opin2track_map for an OPIN
  * 1. build a list of routing tracks which are allowed for connections
- *    We will check the Switch Block (SB) population of each routing track. 
+ *    We will check the Switch Block (SB) population of each routing track.
  *    By comparing current chan_y - ylow, we can determine if a SB connection
  *    is required for each routing track
  * 2. Divide the routing tracks by segment types, so that we can balance
@@ -1112,9 +1112,9 @@ static void build_gsb_one_opin_pin2track_map(const RRGraphView& rr_graph,
         int actual_Fc = std::ceil((float)Fc[iseg] * (float)actual_track_list.size() / (float)chan_width);
         /* Minimum Fc should be 1 : ensure we will drive 1 routing track */
         actual_Fc = std::max(1, actual_Fc);
-        /* Compute the step between two connection from this IPIN to tracks: 
-     * step = W' / Fc', W' and Fc' are the adapted W and Fc from actual_track_list and Fc_in 
-    */
+        /* Compute the step between two connection from this IPIN to tracks:
+         * step = W' / Fc', W' and Fc' are the adapted W and Fc from actual_track_list and Fc_in
+         */
         size_t track_step = std::floor((float)actual_track_list.size() / (float)actual_Fc);
         /* Track step mush be a multiple of 2!!!*/
         /* Make sure step should be at least 1 */
@@ -1141,34 +1141,34 @@ static void build_gsb_one_opin_pin2track_map(const RRGraphView& rr_graph,
             opin2track_map[opin_side_index][opin_node_id].push_back(track_rr_node_index);
             /* update track counter */
             track_cnt++;
-            /* Stop when we have enough Fc: this may lead to some tracks have zero drivers. 
-       * So I comment it. And we just make sure its track_cnt >= actual_Fc
-      if (actual_Fc == track_cnt) {
-        break;
-      }
-      */
+            /* Stop when we have enough Fc: this may lead to some tracks have zero drivers.
+             * So I comment it. And we just make sure its track_cnt >= actual_Fc
+             * if (actual_Fc == track_cnt) {
+             * break;
+             * }
+             */
         }
 
         /* Ensure the number of tracks is similar to Fc */
         /* Give a warning if Fc is < track_cnt */
         /*
-    if (actual_Fc != track_cnt) {
-      vpr_printf(TIO_MESSAGE_INFO, 
-                 "OPIN Node(%lu) will have a different Fc(=%lu) than specified(=%lu)!\n",
-                 opin_node_id, track_cnt, actual_Fc);
-    }
-    */
+         * if (actual_Fc != track_cnt) {
+         * vpr_printf(TIO_MESSAGE_INFO,
+         * "OPIN Node(%lu) will have a different Fc(=%lu) than specified(=%lu)!\n",
+         * opin_node_id, track_cnt, actual_Fc);
+         * }
+         */
     }
 }
 
 /************************************************************************
- * Build the track_to_ipin_map[gsb_side][0..chan_width-1][ipin_indices] 
+ * Build the track_to_ipin_map[gsb_side][0..chan_width-1][ipin_indices]
  * based on the existing routing resources in the General Switch Block (GSB)
- * This function supports both X-directional and Y-directional tracks 
+ * This function supports both X-directional and Y-directional tracks
  * The mapping is done in the following steps:
  * 1. Build ipin_to_track_map[gsb_side][0..num_ipin_nodes-1][track_indices]
  *    For each IPIN, we ensure at least one connection to the tracks.
- *    Then, we assign IPINs to tracks evenly while satisfying the actual_Fc 
+ *    Then, we assign IPINs to tracks evenly while satisfying the actual_Fc
  * 2. Convert the ipin_to_track_map to track_to_ipin_map
  ***********************************************************************/
 t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
@@ -1250,9 +1250,9 @@ t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
 }
 
 /************************************************************************
- * Build the opin_to_track_map[gsb_side][0..num_opin_nodes-1][track_indices] 
+ * Build the opin_to_track_map[gsb_side][0..num_opin_nodes-1][track_indices]
  * based on the existing routing resources in the General Switch Block (GSB)
- * This function supports both X-directional and Y-directional tracks 
+ * This function supports both X-directional and Y-directional tracks
  * The mapping is done in the following steps:
  * 1. Build a list of routing tracks whose starting points locate at this GSB
  *    (xlow - gsb_x == 0)
@@ -1323,15 +1323,15 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
         }
 
         /* Check:
-     * 1. We want to ensure that each OPIN will drive at least one track
-     * 2. We want to ensure that each track will be driven by at least 1 OPIN */
+         * 1. We want to ensure that each OPIN will drive at least one track
+         * 2. We want to ensure that each track will be driven by at least 1 OPIN */
     }
 
     return opin2track_map;
 }
 
 /************************************************************************
- * Add all direct clb-pin-to-clb-pin edges to given opin  
+ * Add all direct clb-pin-to-clb-pin edges to given opin
  ***********************************************************************/
 void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                           RRGraphBuilder& rr_graph_builder,
@@ -1352,9 +1352,9 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
             continue;
         }
 
-        /* This opin is specified to connect directly to an ipin, 
-     * now compute which ipin to connect to 
-     */
+        /* This opin is specified to connect directly to an ipin,
+         * now compute which ipin to connect to
+         */
         vtr::Point<size_t> to_grid_coordinate(from_grid_coordinate.x() + directs[i].x_offset,
                                               from_grid_coordinate.y() + directs[i].y_offset);
 
@@ -1408,8 +1408,8 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 int to_grid_height_ofs = grids[to_grid_coordinate.x()][to_grid_coordinate.y()].height_offset;
 
                 /* Find the side of grid pins, the pin location should be unique!
-         * Pin location is required by searching a node in rr_graph 
-         */
+                 * Pin location is required by searching a node in rr_graph
+                 */
                 std::vector<e_side> opin_grid_side = find_grid_pin_sides(from_grid, opin);
                 VTR_ASSERT(1 == opin_grid_side.size());
 
@@ -1434,14 +1434,14 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                                                   IPIN, ipin, ipin_grid_side[0]);
 #endif
                 /*
-        VTR_LOG("Direct connection: from grid[%lu][%lu].pin[%lu] at side %s to grid[%lu][%lu].pin[%lu] at side %s\n",
-                from_grid_coordinate.x() - from_grid_width_ofs,
-                from_grid_coordinate.y() - from_grid_height_ofs,
-                opin, SIDE_STRING[opin_grid_side[0]],
-                to_grid_coordinate.x() - to_grid_width_ofs,
-                to_grid_coordinate.y() - to_grid_height_ofs,
-                ipin, SIDE_STRING[ipin_grid_side[0]]);
-         */
+                 * VTR_LOG("Direct connection: from grid[%lu][%lu].pin[%lu] at side %s to grid[%lu][%lu].pin[%lu] at side %s\n",
+                 * from_grid_coordinate.x() - from_grid_width_ofs,
+                 * from_grid_coordinate.y() - from_grid_height_ofs,
+                 * opin, SIDE_STRING[opin_grid_side[0]],
+                 * to_grid_coordinate.x() - to_grid_width_ofs,
+                 * to_grid_coordinate.y() - to_grid_height_ofs,
+                 * ipin, SIDE_STRING[ipin_grid_side[0]]);
+                 */
 
                 /* add edges to the opin_node */
 

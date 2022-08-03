@@ -247,8 +247,8 @@ bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
     VTR_ASSERT(0 < chanx_coord.x());
     if (1 == chanx_coord.x()) {
         /* This is already the LEFT side of FPGA fabric,
-     * it is the same results as chanx is right to a multi-height grid
-     */
+         * it is the same results as chanx is right to a multi-height grid
+         */
         return true;
     }
 
@@ -322,8 +322,8 @@ bool is_chany_top_to_multi_width_grid(const DeviceGrid& grids,
     VTR_ASSERT(0 < chany_coord.y());
     if (1 == chany_coord.y()) {
         /* This is already the BOTTOM side of FPGA fabric,
-     * it is the same results as chany is at the top of a multi-width grid
-     */
+         * it is the same results as chany is at the top of a multi-width grid
+         */
         return true;
     }
 
@@ -362,8 +362,8 @@ bool is_chany_bottom_to_multi_width_grid(const DeviceGrid& grids,
     VTR_ASSERT(chany_coord.y() < grids.height() - 1);
     if (grids.height() - 2 == chany_coord.y()) {
         /* This is already the TOP side of FPGA fabric,
-     * it is the same results as chany is at the bottom of a multi-width grid
-     */
+         * it is the same results as chany is at the bottom of a multi-width grid
+         */
         return true;
     }
 

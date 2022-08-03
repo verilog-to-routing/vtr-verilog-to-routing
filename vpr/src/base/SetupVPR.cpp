@@ -426,7 +426,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 
     /* copy over the switch block information */
     RoutingArch->switchblocks = Arch.switchblocks;
-    
+
     /* Copy the tileable routing setting */
     RoutingArch->tileable = Arch.tileable;
     RoutingArch->through_channel = Arch.through_channel;

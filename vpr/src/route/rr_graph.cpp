@@ -1939,10 +1939,10 @@ static void remap_rr_node_switch_indices(RRGraphBuilder& rr_graph_builder,
 }
 
 void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
-                               const std::vector<t_segment_inf>& segment_inf_x,
-                               const std::vector<t_segment_inf>& segment_inf_y,
-                               int wire_to_rr_ipin_switch,
-                               enum e_base_cost_type base_cost_type) {
+                        const std::vector<t_segment_inf>& segment_inf_x,
+                        const std::vector<t_segment_inf>& segment_inf_y,
+                        int wire_to_rr_ipin_switch,
+                        enum e_base_cost_type base_cost_type) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;

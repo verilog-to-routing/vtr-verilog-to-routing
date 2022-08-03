@@ -94,10 +94,12 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
                                                        const e_fc_type fc_type,
                                                        const enum e_directionality directionality,
                                                        bool* Fc_clipped);
+
 t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, const int delayless_switch);
+
 void alloc_and_load_rr_switch_inf(const int num_arch_switches,
-                                         const float R_minW_nmos,
-                                         const float R_minW_pmos,
-                                         const int wire_to_arch_ipin_switch,
-                                         int* wire_to_rr_ipin_switch);
+                                  const float R_minW_nmos,
+                                  const float R_minW_pmos,
+                                  const int wire_to_arch_ipin_switch,
+                                  int* wire_to_rr_ipin_switch);
 #endif

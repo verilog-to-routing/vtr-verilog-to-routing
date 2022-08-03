@@ -102,7 +102,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     /* The number of segments are in general small, reserve segments may not bring
-   * significant memory efficiency */
+     * significant memory efficiency */
     device_ctx.rr_graph_builder.reserve_segments(segment_inf.size());
     /* Create the segments */
     for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
@@ -110,12 +110,12 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     }
 
     /* TODO: Load architecture switch to rr_graph switches
-   * Draft the switches as internal data of RRGraph object
-   * These are temporary switches copied from arch switches
-   * We use them to build the edges
-   * We will reset all the switches in the function
-   *   alloc_and_load_rr_switch_inf()
-   */
+     * Draft the switches as internal data of RRGraph object
+     * These are temporary switches copied from arch switches
+     * We use them to build the edges
+     * We will reset all the switches in the function
+     *   alloc_and_load_rr_switch_inf()
+     */
     /* TODO: Spot the switch id in the architecture switch list */
     RRSwitchId wire_to_ipin_rr_switch = RRSwitchId::INVALID();
     RRSwitchId delayless_rr_switch = RRSwitchId::INVALID();
@@ -146,8 +146,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     std::map<RRNodeId, std::vector<size_t>> rr_node_track_ids;
 
     /************************
-   * Allocate the rr_nodes
-   ************************/
+     * Allocate the rr_nodes
+     ************************/
     alloc_tileable_rr_graph_nodes(device_ctx.rr_graph_builder,
                                   rr_node_driver_switches,
                                   grids,
@@ -156,8 +156,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                   through_channel);
 
     /************************
-   * Create all the rr_nodes
-   ************************/
+     * Create all the rr_nodes
+     ************************/
     create_tileable_rr_graph_nodes(device_ctx.rr_graph,
                                    device_ctx.rr_graph_builder,
                                    rr_node_driver_switches,
@@ -170,14 +170,14 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    through_channel);
 
     /************************************************************************
-   * Create the connectivity of OPINs
-   *   a. Evenly assign connections to OPINs to routing tracks
-   *   b. the connection pattern should be same across the fabric
-   *
-   * Create the connectivity of IPINs
-   *   a. Evenly assign connections from routing tracks to IPINs
-   *   b. the connection pattern should be same across the fabric
-   ***********************************************************************/
+     * Create the connectivity of OPINs
+     *   a. Evenly assign connections to OPINs to routing tracks
+     *   b. the connection pattern should be same across the fabric
+     *
+     * Create the connectivity of IPINs
+     *   a. Evenly assign connections from routing tracks to IPINs
+     *   b. the connection pattern should be same across the fabric
+     ***********************************************************************/
     /* Global routing uses a single longwire track */
     int max_chan_width = find_unidir_routing_channel_width(chan_width.max);
     VTR_ASSERT(max_chan_width > 0);
@@ -195,8 +195,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     }
 
     /* Fc assignment still uses the old function from VPR.
-   * Should use tileable version so that we have can have full control
-   */
+     * Should use tileable version so that we have can have full control
+     */
     std::vector<size_t> num_tracks = get_num_tracks_per_seg_type(max_chan_width / 2, segment_inf, false);
     int* sets_per_seg_type = (int*)vtr::malloc(sizeof(int) * segment_inf.size());
     VTR_ASSERT(num_tracks.size() == segment_inf.size());
@@ -224,13 +224,13 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     }
 
     /************************************************************************
-   * Build the connections tile by tile:
-   * We classify rr_nodes into a general switch block (GSB) data structure
-   * where we create edges to each rr_nodes in the GSB with respect to
-   * Fc_in and Fc_out, switch block patterns
-   * In addition, we will also handle direct-connections:
-   * Add edges that bridge OPINs and IPINs to the rr_graph
-   ***********************************************************************/
+     * Build the connections tile by tile:
+     * We classify rr_nodes into a general switch block (GSB) data structure
+     * where we create edges to each rr_nodes in the GSB with respect to
+     * Fc_in and Fc_out, switch block patterns
+     * In addition, we will also handle direct-connections:
+     * Add edges that bridge OPINs and IPINs to the rr_graph
+     ***********************************************************************/
     /* Create edges for a tileable rr_graph */
 
     build_rr_graph_edges(device_ctx.rr_graph,
@@ -244,9 +244,9 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                          wire_opposite_side);
 
     /************************************************************************
-   * Build direction connection lists
-   * TODO: use tile direct builder
-   ***********************************************************************/
+     * Build direction connection lists
+     * TODO: use tile direct builder
+     ***********************************************************************/
     /* Create data structure of direct-connections */
     t_clb_to_clb_directs* clb_to_clb_directs = NULL;
     if (num_directs > 0) {
@@ -272,7 +272,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 #endif
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
-   * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
+     * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
     alloc_and_load_rr_switch_inf(device_ctx.num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
 
     /* Save the channel widths for the newly constructed graph */
@@ -285,10 +285,10 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 #endif
 
     /************************************************************************
-   * Allocate external data structures
-   *  a. cost_index
-   *  b. RC tree
-   ***********************************************************************/
+     * Allocate external data structures
+     *  a. cost_index
+     *  b. RC tree
+     ***********************************************************************/
     t_unified_to_parallel_seg_index segment_index_map;
     std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
     std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS);
@@ -296,9 +296,9 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                        *wire_to_rr_ipin_switch, base_cost_type);
 
     /* Rebuild the link between RRGraph node and segments
-   * Should be called only AFTER the function
-   * rr_graph_externals()
-   */
+     * Should be called only AFTER the function
+     * rr_graph_externals()
+     */
     for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
         if ((CHANX != device_ctx.rr_graph.node_type(inode))
             && (CHANY != device_ctx.rr_graph.node_type(inode))) {
@@ -315,8 +315,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     }
 
     /************************************************************************
-   * Sanitizer for the rr_graph, check connectivities of rr_nodes
-   ***********************************************************************/
+     * Sanitizer for the rr_graph, check connectivities of rr_nodes
+     ***********************************************************************/
     /* Essential check for rr_graph, build look-up and  */
     if (false == device_ctx.rr_graph_builder.validate()) {
         /* Error out if built-in validator of rr_graph fails */
@@ -344,8 +344,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 #endif
 
     /************************************************************************
-   * Free all temp stucts
-   ***********************************************************************/
+     * Free all temp stucts
+     ***********************************************************************/
     free(sets_per_seg_type);
 
     if (nullptr != clb_to_clb_directs) {

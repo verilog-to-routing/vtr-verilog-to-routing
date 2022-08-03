@@ -8,7 +8,7 @@
 #include "openfpga_port.h"
 
 /************************************************************************
- * Member functions for BasicPort class 
+ * Member functions for BasicPort class
  ***********************************************************************/
 
 /************************************************************************
@@ -49,7 +49,7 @@ BasicPort::BasicPort(const std::string& name, const size_t& width) {
 }
 
 /************************************************************************
- * Accessors 
+ * Accessors
  ***********************************************************************/
 /* get the port width */
 size_t BasicPort::get_width() const {
@@ -98,8 +98,8 @@ bool BasicPort::mergeable(const BasicPort& portA) const {
 }
 
 /* Check if a port is contained by this port:
- * this function will check if the (LSB, MSB) of portA 
- * is contained by the (LSB, MSB) of this port 
+ * this function will check if the (LSB, MSB) of portA
+ * is contained by the (LSB, MSB) of this port
  */
 bool BasicPort::contained(const BasicPort& portA) const {
     return (lsb_ <= portA.get_lsb() && portA.get_msb() <= msb_);
@@ -111,12 +111,12 @@ size_t BasicPort::get_origin_port_width() const {
 }
 
 /************************************************************************
- * Overloaded operators 
+ * Overloaded operators
  ***********************************************************************/
-/* Two ports are the same only when: 
+/* Two ports are the same only when:
  * 1. port names are the same
  * 2. LSBs are the same
- * 3. MSBs are the same 
+ * 3. MSBs are the same
  */
 bool BasicPort::operator==(const BasicPort& portA) const {
     if ((0 == this->get_name().compare(portA.get_name()))
@@ -137,7 +137,7 @@ bool BasicPort::operator<(const BasicPort& portA) const {
 }
 
 /************************************************************************
- * Mutators 
+ * Mutators
  ***********************************************************************/
 /* copy */
 void BasicPort::set(const BasicPort& basic_port) {
@@ -227,9 +227,9 @@ bool BasicPort::rotate(const size_t& offset) {
         set_width(offset);
         return true;
     }
-    /* check if leads to overflow: 
-   * if limits - msb is larger than offset
-   */
+    /* check if leads to overflow:
+     * if limits - msb is larger than offset
+     */
     if ((std::numeric_limits<size_t>::max() - msb_ < offset)) {
         return false;
     }
@@ -241,15 +241,15 @@ bool BasicPort::rotate(const size_t& offset) {
 
 /* rotate: decrease both lsb and msb by an offset  */
 bool BasicPort::counter_rotate(const size_t& offset) {
-    /* If current port is invalid or offset is 0, 
-   * we do nothing 
-   */
+    /* If current port is invalid or offset is 0,
+     * we do nothing
+     */
     if ((0 == offset) || (0 == get_width())) {
         return true;
     }
-    /* check if leads to overflow: 
-   * if limits is larger than offset
-   */
+    /* check if leads to overflow:
+     * if limits is larger than offset
+     */
     if ((std::numeric_limits<size_t>::min() + lsb_ < offset)) {
         return false;
     }
@@ -282,7 +282,7 @@ void BasicPort::combine(const BasicPort& port) {
 /* A restricted combine function for two ports,
  * Following conditions will be applied:
  * 1. the two ports have the same name
- *    Note: you must run mergable() function first 
+ *    Note: you must run mergable() function first
  *          to make sure this assumption is valid
  * 2. the new MSB will be the maximum MSB of the two ports
  * 3. the new LSB will be the minimum LSB of the two ports
@@ -323,11 +323,11 @@ bool BasicPort::is_valid() const {
 }
 
 /************************************************************************
- * ConfPorts member functions 
+ * ConfPorts member functions
  ***********************************************************************/
 
 /************************************************************************
- * Constructor 
+ * Constructor
  ***********************************************************************/
 /* Default constructor */
 ConfPorts::ConfPorts() {
@@ -369,7 +369,7 @@ size_t ConfPorts::get_regular_port_msb() const {
 }
 
 /************************************************************************
- * Mutators 
+ * Mutators
  ***********************************************************************/
 void ConfPorts::set(const ConfPorts& conf_ports) {
     set_reserved_port(conf_ports.get_reserved_port_width());
