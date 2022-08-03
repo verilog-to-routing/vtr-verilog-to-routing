@@ -22,6 +22,7 @@ class SideManager {
     SideManager(enum e_side side);
     SideManager();
     SideManager(size_t side);
+
   public: /* Accessors */
     enum e_side get_side() const;
     enum e_side get_opposite() const;
@@ -31,14 +32,16 @@ class SideManager {
     size_t to_size_t() const;
     const char* c_str() const;
     std::string to_string() const;
+
   public: /* Mutators */
     void set_side(size_t side);
     void set_side(enum e_side side);
     void set_opposite();
     void rotate_clockwise();
     void rotate_counterclockwise();
+
   private: /* internal data */
-    enum e_side side_;  
+    enum e_side side_;
 };
 
 #endif

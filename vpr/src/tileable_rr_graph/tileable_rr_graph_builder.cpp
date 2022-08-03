@@ -207,7 +207,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     bool Fc_clipped = false;
     /* [0..num_types-1][0..num_pins-1] */
     std::vector<vtr::Matrix<int>> Fc_in;
-    Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*) &chan_width,
+    Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*)&chan_width,
                                      e_fc_type::IN, UNI_DIRECTIONAL, &Fc_clipped);
     if (Fc_clipped) {
         *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -216,7 +216,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     Fc_clipped = false;
     /* [0..num_types-1][0..num_pins-1] */
     std::vector<vtr::Matrix<int>> Fc_out;
-    Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*) &chan_width,
+    Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*)&chan_width,
                                       e_fc_type::OUT, UNI_DIRECTIONAL, &Fc_clipped);
 
     if (Fc_clipped) {
@@ -263,7 +263,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                       arch_directs, clb2clb_directs);
 
 //NYI
-// We may not need to rebuild it again 
+// We may not need to rebuild it again
 #if 0
   /* First time to build edges so that we can remap the architecture switch to rr_switch
    * This is a must-do before function alloc_and_load_rr_switch_inf()
@@ -304,14 +304,14 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
             && (CHANY != device_ctx.rr_graph.node_type(inode))) {
             continue;
         }
-        // NYI
-        #if 0
+// NYI
+#if 0
         RRIndexedDataId irc_data = device_ctx.rr_graph.node_cost_index(inode);
         short iseg = device_ctx.rr_indexed_data[irc_data].seg_index;
         // device_ctx.rr_graph_builder.set_node_segment(inode, RRSegmentId(iseg)); // NYI
         vtr::vector<RRSegmentId, t_segment_inf>  rr_segments = device_ctx.rr_graph_builder.rr_segments();
         rr_segments[(RRSegmentId)iseg] = segment_inf;
-        #endif
+#endif
     }
 
     /************************************************************************

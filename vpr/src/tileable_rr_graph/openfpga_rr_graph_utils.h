@@ -15,7 +15,7 @@
  * Function declaration
  *******************************************************************/
 
-vtr::Point<size_t> get_track_rr_node_start_coordinate(const RRGraphView& rr_graph, 
+vtr::Point<size_t> get_track_rr_node_start_coordinate(const RRGraphView& rr_graph,
                                                       const RRNodeId& track_rr_node);
 
 vtr::Point<size_t> get_track_rr_node_end_coordinate(const RRGraphView& rr_graph,

@@ -74,4 +74,3 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                           const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs);
 
 #endif
-
