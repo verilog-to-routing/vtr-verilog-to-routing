@@ -161,11 +161,11 @@ std::vector<RREdgeId> RRGSB::get_chan_node_in_edges(const RRGraphView& rr_graph,
         // NYI
         // unused parameter
         (void)(rr_graph);
-        #if 0
+#if 0
         for (const RREdgeId& edge : rr_graph.node_in_edges(get_chan_node(side, track_id))) {
             unsorted_edges.push_back(edge);
         }
-        #endif
+#endif
 
         return unsorted_edges;
     }
@@ -449,10 +449,10 @@ bool RRGSB::is_sb_node_passing_wire(const RRGraphView& rr_graph,
         VTR_LOG("GSB[%lu][%lu] track node[%lu] at %s:\n",
                 get_x(), get_y(), track_id, SIDE_STRING[node_side]);
 
-        // NYI
-        #if 0
+// NYI
+#if 0
         rr_graph.print_node(track_node);
-        #endif
+#endif
     }
     VTR_ASSERT(true == is_sb_node_exist_opposite_side(rr_graph, track_node, node_side));
 
@@ -827,7 +827,7 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
     (void)(rr_graph);
     // unused variable
     (void)(chan_node);
-    #if 0
+#if 0
     for (const RREdgeId& edge : rr_graph.node_in_edges(chan_node)) {
         /* We care the source node of this edge, and it should be an input of the GSB!!! */
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
@@ -857,7 +857,7 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
 
         edge_counter++;
     }
-    #endif
+#endif
 
     /* Store the sorted edge */
     for (size_t side = 0; side < get_num_sides(); ++side) {
@@ -987,8 +987,8 @@ bool RRGSB::is_sb_node_mirror(const RRGraphView& rr_graph,
 
     VTR_ASSERT(node_in_edges.size() == cand_node_in_edges.size());
 
-    // NYI
-    #if 0
+// NYI
+#if 0
     for (size_t iedge = 0; iedge < node_in_edges.size(); ++iedge) {
         RREdgeId src_edge = node_in_edges[iedge];
         RREdgeId src_cand_edge = cand_node_in_edges[iedge];
@@ -1013,7 +1013,7 @@ bool RRGSB::is_sb_node_mirror(const RRGraphView& rr_graph,
             return false;
         }
     }
-    #endif
+#endif
 
     return true;
 }
@@ -1039,7 +1039,7 @@ bool RRGSB::is_cb_node_mirror(const RRGraphView& rr_graph,
     // unused variables
     (void)(node);
     (void)(cand_node);
-    #if 0
+#if 0
     if (rr_graph.node_in_edges(node).size() != rr_graph.node_in_edges(cand_node).size()) {
         return false;
     }
@@ -1094,7 +1094,7 @@ bool RRGSB::is_cb_node_mirror(const RRGraphView& rr_graph,
             return false;
         }
     }
-    #endif
+#endif
 
     return true;
 }

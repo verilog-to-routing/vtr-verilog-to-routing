@@ -21,7 +21,7 @@
  *******************************************************************/
 
 void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
-                                   vtr::vector<RRNodeId, RRSwitchId>& driver_switches, 
+                                   vtr::vector<RRNodeId, RRSwitchId>& driver_switches,
                                    const DeviceGrid& grids,
                                    const vtr::Point<size_t>& chan_width,
                                    const std::vector<t_segment_inf>& segment_infs,
@@ -29,15 +29,13 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
 
 void create_tileable_rr_graph_nodes(RRGraphView& rr_graph,
                                     RRGraphBuilder& rr_graph_builder,
-                                    vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches, 
+                                    vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                     std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
-                                    const DeviceGrid& grids, 
-                                    const vtr::Point<size_t>& chan_width, 
+                                    const DeviceGrid& grids,
+                                    const vtr::Point<size_t>& chan_width,
                                     const std::vector<t_segment_inf>& segment_infs,
                                     const RRSwitchId& wire_to_ipin_switch,
                                     const RRSwitchId& delayless_switch,
                                     const bool& through_channel);
-
-
 
 #endif

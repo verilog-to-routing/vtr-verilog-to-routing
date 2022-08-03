@@ -49,9 +49,9 @@
  * num_conf_bits: number of configuration bits this switch block requires
  *******************************************************************/
 class RRGSB {
-  public: /* Contructors */
-    RRGSB();/* Default constructor */
-  public: /* Accessors */
+  public:    /* Contructors */
+    RRGSB(); /* Default constructor */
+  public:    /* Accessors */
     /* Get the number of sides of this SB */
     size_t get_num_sides() const;
 
@@ -115,6 +115,7 @@ class RRGSB {
 
     /* Check if the node exist in the opposite side of this Switch Block */
     bool is_sb_node_exist_opposite_side(const RRGraphView& rr_graph, const RRNodeId& node, const e_side& node_side) const;
+
   public: /* Accessors: to identify mirrors */
     /* check if the candidate SB is a mirror of the current one */
     bool is_cb_mirror(const RRGraphView& rr_graph, const RRGSB& cand, const t_rr_type& cb_type) const;
@@ -134,8 +135,7 @@ class RRGSB {
     bool is_sb_mirrorable(const RRGraphView& rr_graph, const RRGSB& cand) const;
 
     /* check if all the routing segments of a side of candidate SB is a mirror of the current one */
-    bool is_sb_side_segment_mirror(const RRGraphView& rr_graph, const RRGSB& cand,
-                                   const e_side& side, const RRSegmentId& seg_id) const;
+    bool is_sb_side_segment_mirror(const RRGraphView& rr_graph, const RRGSB& cand, const e_side& side, const RRSegmentId& seg_id) const;
 
     /* check if a side of candidate SB is a mirror of the current one
      * Check the specified side of two switch blocks:
@@ -164,19 +164,20 @@ class RRGSB {
      */
     bool is_sb_mirror(const RRGraphView& rr_graph, const RRGSB& cand) const;
 
-  public: /* Cooridinator conversion and output  */
-    size_t get_x() const; /* get the x coordinate of this switch block */
-    size_t get_y() const; /* get the y coordinate of this switch block */
-    size_t get_sb_x() const; /* get the x coordinate of this switch block */
-    size_t get_sb_y() const; /* get the y coordinate of this switch block */
-    vtr::Point<size_t> get_sb_coordinate() const; /* Get the coordinate of the SB */
-    size_t get_cb_x(const t_rr_type& cb_type) const; /* get the x coordinate of this X/Y-direction block */
-    size_t get_cb_y(const t_rr_type& cb_type) const; /* get the y coordinate of this X/Y-direction block */
+  public:                                                                 /* Cooridinator conversion and output  */
+    size_t get_x() const;                                                 /* get the x coordinate of this switch block */
+    size_t get_y() const;                                                 /* get the y coordinate of this switch block */
+    size_t get_sb_x() const;                                              /* get the x coordinate of this switch block */
+    size_t get_sb_y() const;                                              /* get the y coordinate of this switch block */
+    vtr::Point<size_t> get_sb_coordinate() const;                         /* Get the coordinate of the SB */
+    size_t get_cb_x(const t_rr_type& cb_type) const;                      /* get the x coordinate of this X/Y-direction block */
+    size_t get_cb_y(const t_rr_type& cb_type) const;                      /* get the y coordinate of this X/Y-direction block */
     vtr::Point<size_t> get_cb_coordinate(const t_rr_type& cb_type) const; /* Get the coordinate of the X/Y-direction CB */
-    e_side get_cb_chan_side(const t_rr_type& cb_type) const; /* get the side of a Connection block */
-    e_side get_cb_chan_side(const e_side& ipin_side) const; /* get the side of a Connection block */
+    e_side get_cb_chan_side(const t_rr_type& cb_type) const;              /* get the side of a Connection block */
+    e_side get_cb_chan_side(const e_side& ipin_side) const;               /* get the side of a Connection block */
     vtr::Point<size_t> get_side_block_coordinate(const e_side& side) const;
     vtr::Point<size_t> get_grid_coordinate() const;
+
   public: /* Mutators */
     /* get a copy from a source */
     void set(const RRGSB& src);
@@ -249,6 +250,7 @@ class RRGSB {
     bool validate_opin_node_id(const e_side& side, const size_t& node_id) const;
     bool validate_ipin_node_id(const e_side& side, const size_t& node_id) const;
     bool validate_cb_type(const t_rr_type& cb_type) const;
+
   private: /* Internal Data */
     /* Coordinator */
     vtr::Point<size_t> coordinate_;
@@ -257,10 +259,10 @@ class RRGSB {
      * Each GSB may have four sides of routing track nodes
      */
     /* Node id in rr_graph denoting each routing track */
-    std::vector<RRChan>  chan_node_;
+    std::vector<RRChan> chan_node_;
 
     /* Direction of a port when the channel node appear in the GSB module */
-    std::vector<std::vector<PORTS>>  chan_node_direction_;
+    std::vector<std::vector<PORTS>> chan_node_direction_;
 
     /* Sequence of edge ids for each routing channel node,
      * this is sorted by the location of edge source nodes in the context of GSB
@@ -276,10 +278,10 @@ class RRGSB {
     std::vector<std::vector<std::vector<RREdgeId>>> chan_node_in_edges_;
 
     /* Logic Block Inputs data */
-    std::vector<std::vector<RRNodeId>>  ipin_node_;
+    std::vector<std::vector<RRNodeId>> ipin_node_;
 
     /* Logic Block Outputs data */
-    std::vector<std::vector<RRNodeId>>  opin_node_;
+    std::vector<std::vector<RRNodeId>> opin_node_;
 };
 
 #endif

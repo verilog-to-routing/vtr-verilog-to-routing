@@ -71,11 +71,10 @@ vtr::Point<size_t> get_track_rr_node_end_coordinate(const RRGraphView& rr_graph,
  ***********************************************************************/
 std::vector<RRSwitchId> get_rr_graph_driver_switches(const RRGraphView& rr_graph,
                                                      const RRNodeId& node) {
-
     std::vector<RRSwitchId> driver_switches;
 
-// NYI
-// unused argements
+    // NYI
+    // unused argements
     (void)(rr_graph);
     (void)(node);
 #if 0
@@ -96,8 +95,8 @@ std::vector<RRNodeId> get_rr_graph_driver_nodes(const RRGraphView& rr_graph,
                                                 const RRNodeId& node) {
     std::vector<RRNodeId> driver_nodes;
 
-// NYI
-// unused argements
+    // NYI
+    // unused argements
     (void)(rr_graph);
     (void)(node);
 #if 0
@@ -116,8 +115,8 @@ std::vector<RRNodeId> get_rr_graph_configurable_driver_nodes(const RRGraphView& 
                                                              const RRNodeId& node) {
     std::vector<RRNodeId> driver_nodes;
 
-// NYI
-// unused argements
+    // NYI
+    // unused argements
     (void)(rr_graph);
     (void)(node);
 #if 0
@@ -142,8 +141,8 @@ std::vector<RRNodeId> get_rr_graph_non_configurable_driver_nodes(const RRGraphVi
                                                                  const RRNodeId& node) {
     std::vector<RRNodeId> driver_nodes;
 
-// NYI
-// unused argements
+    // NYI
+    // unused argements
     (void)(rr_graph);
     (void)(node);
 #if 0
@@ -170,8 +169,8 @@ bool is_opin_direct_connected_ipin(const RRGraphView& rr_graph,
     /* We only accept OPIN */
     VTR_ASSERT(OPIN == rr_graph.node_type(node));
 
-// NYI
-// unused argements
+    // NYI
+    // unused argements
     (void)(rr_graph);
     (void)(node);
 #if 0
@@ -202,8 +201,8 @@ bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
     /* We only accept IPIN */
     VTR_ASSERT(IPIN == rr_graph.node_type(node));
 
-// NYI
-// unused argements
+    // NYI
+    // unused argements
     (void)(rr_graph);
     (void)(node);
 #if 0
