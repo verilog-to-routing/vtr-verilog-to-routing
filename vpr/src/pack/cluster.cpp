@@ -585,6 +585,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
         savedseedindex = seedindex;
         for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_INVALID; detailed_routing_stage++) {
             ClusterBlockId clb_index(num_clb);
+            int temp_num_molecules_processed = 0;
 
             VTR_LOGV(verbosity > 2, "Complex block %d:\n", num_clb);
 
@@ -609,8 +610,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               temp_cluster_pr);
 
             //initial molecule in cluster has been processed
-            num_molecules_processed++;
-            mols_since_last_print++;
+
             print_pack_status(num_clb,
                               num_molecules,
                               num_molecules_processed,
@@ -639,6 +639,18 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  attraction_groups);
             num_clb++;
 
+            if(detailed_routing_stage == E_DETAILED_ROUTE_FOR_EACH_ATOM)
+            {
+            //Since a molecule has been selected to start a new cluster increment the counter
+                num_molecules_processed++;
+                mols_since_last_print++;
+            }
+            else
+            {
+            // Since the intra-cluster detailed routing has not been done yet, increment a temp variable that keeps count of number of molecules processed
+            // this variable will be added to num_molecules_processed if the detailed routing attempt passes
+                temp_num_molecules_processed++;
+            }
             if (packer_opts.timing_driven) {
                 blocks_since_last_analysis++;
                 /*it doesn't make sense to do a timing analysis here since there*
@@ -659,7 +671,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      clb_index,
                                                      packer_opts.pack_verbosity);
             prev_molecule = istart;
-            int temp_num_molecules_processed = 0;
             while (next_molecule != nullptr && prev_molecule != next_molecule) {
                 block_pack_status = try_pack_molecule(cur_cluster_placement_stats_ptr,
                                                       atom_molecules,
@@ -786,6 +797,11 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                     // since the detailed routing has been successful, update the num_molecules_processed and mols_since_last_print based on the temporary accumulator variable 
                     num_molecules_processed += temp_num_molecules_processed;
                     mols_since_last_print += temp_num_molecules_processed;
+                    print_pack_status(num_clb, num_molecules,
+                        num_molecules_processed,
+                        mols_since_last_print,
+                        device_ctx.grid.width(),
+                        device_ctx.grid.height());
                     VTR_LOGV(verbosity > 2, "\tPassed detailed intra-cluster routing at the end of cluster construction.\n");
                 } else {
                     VTR_LOGV(verbosity > 2, "Failed detailed intra-cluster routing at the end of cluster construction, repack cluster trying detailed routing at each stage.\n");
@@ -902,9 +918,9 @@ static void print_pack_status(int num_clb,
 
     int int_percentage = int(percentage);
 
-    int int_molecule_increment = (int)(print_frequency * tot_num_molecules);
+    int int_molecule_increment = std::max((int)(print_frequency * tot_num_molecules), 1);
 
-    if (mols_since_last_print >= int_molecule_increment) {
+    if (mols_since_last_print >= int_molecule_increment || (mols_since_last_print > 0 && (num_molecules_processed == tot_num_molecules))) {
         VTR_LOG(
             "%6d/%-6d  %3d%%   "
             "%26d   "
