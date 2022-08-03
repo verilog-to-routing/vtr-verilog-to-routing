@@ -114,9 +114,10 @@ void Bucket::init_heap(const DeviceGrid& grid) {
     heap_ = nullptr;
 
     heap_size_ = (grid.width() - 1) * (grid.height() - 1);
+
     heap_ = new BucketItem*[heap_size_];
-    for (int i = 0; i < (int)heap_size_; i++)
-        heap_[i] = nullptr;
+    for (size_t i = 0; i < (size_t)heap_size_; i++)
+        heap_[i] = 0;
 
     heap_head_ = std::numeric_limits<size_t>::max();
     front_head_ = std::numeric_limits<size_t>::max();
@@ -142,14 +143,14 @@ void Bucket::free_all_memory() {
 void Bucket::expand(size_t required_number_of_buckets) {
     auto old_size = heap_size_;
     heap_size_ = required_number_of_buckets * 2;
-    int i;
+    size_t i;
 
-    BucketItem** temp = new BucketItem*[old_size];
-    memcpy(temp, heap_, old_size);
+    std::vector<BucketItem*> temp(heap_, heap_ + old_size);
     delete[] heap_;
     heap_ = new BucketItem*[heap_size_];
-    heap_ = temp;
-    for (i = old_size; i < heap_size_; i++)
+    for (i = 0; i < old_size; i++)
+        heap_[i] = temp[i];
+    for (i = temp.size(); i < heap_size_; i++)
         heap_[i] = nullptr;
 }
 
