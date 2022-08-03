@@ -1,7 +1,7 @@
 /************************************************************************
- *  This file contains a builder for the ChanNodeDetails data structure 
- *  Different from VPR rr_graph builders, this builder aims to create a 
- *  highly regular routing channel. Thus, it is called tileable, 
+ *  This file contains a builder for the ChanNodeDetails data structure
+ *  Different from VPR rr_graph builders, this builder aims to create a
+ *  highly regular routing channel. Thus, it is called tileable,
  *  which brings significant advantage in producing large FPGA fabrics.
  ***********************************************************************/
 #include <vector>
@@ -18,10 +18,10 @@
  * Generate the number of tracks for each types of routing segments
  * w.r.t. the frequency of each of segments and channel width
  * Note that if we dertermine the number of tracks per type using
- *     chan_width * segment_frequency / total_freq may cause 
- * The total track num may not match the chan_width, 
+ *     chan_width * segment_frequency / total_freq may cause
+ * The total track num may not match the chan_width,
  * therefore, we assign tracks one by one until we meet the frequency requirement
- * In this way, we can assign the number of tracks with repect to frequency 
+ * In this way, we can assign the number of tracks with repect to frequency
  ***********************************************************************/
 std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
                                                 const std::vector<t_segment_inf>& segment_inf,
@@ -33,7 +33,7 @@ std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
     demand.resize(segment_inf.size());
 
     /* Scale factor so we can divide by any length
-   * and still use integers */
+     * and still use integers */
     /* Get the sum of frequency */
     size_t scale = 1;
     size_t freq_sum = 0;
@@ -45,8 +45,8 @@ std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
 
     /* Init assignments to 0 and set the demand values */
     /* Get the fraction of each segment type considering the frequency:
-   * num_track_per_seg = chan_width * (freq_of_seg / sum_freq)
-   */
+     * num_track_per_seg = chan_width * (freq_of_seg / sum_freq)
+     */
     for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
         result[iseg] = 0;
         demand[iseg] = scale * chan_width * segment_inf[iseg].frequency;
@@ -105,11 +105,11 @@ int adapt_to_tileable_route_chan_width(const int& chan_width,
 }
 
 /************************************************************************
- * Build details of routing tracks in a channel 
- * The function will 
+ * Build details of routing tracks in a channel
+ * The function will
  * 1. Assign the segments for each routing channel,
  *    To be specific, for each routing track, we assign a routing segment.
- *    The assignment is subject to users' specifications, such as 
+ *    The assignment is subject to users' specifications, such as
  *    a. length of each type of segment
  *    b. frequency of each type of segment.
  *    c. routing channel width
@@ -154,9 +154,9 @@ int adapt_to_tileable_route_chan_width(const int& chan_width,
  *    if device_side is NUM_SIDES, we assume this channel does not locate on borders
  *    All segments will start and ends with no exception
  *
- * 4. IMPORTANT: we should be aware that channel width maybe different 
+ * 4. IMPORTANT: we should be aware that channel width maybe different
  *    in X-direction and Y-direction channels!!!
- *    So we will load segment details for different channels 
+ *    So we will load segment details for different channels
  ***********************************************************************/
 ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
                                                const size_t& max_seg_length,
@@ -198,8 +198,8 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
                 seg_end = true;
             }
             /* Since this is a unidirectional routing architecture,
-       * Add a pair of tracks, 1 INC track and 1 DEC track 
-       */
+             * Add a pair of tracks, 1 INC track and 1 DEC track
+             */
             chan_node_details.add_track(cur_track, Direction::INC, iseg, seg_len, seg_start, seg_end);
             cur_track++;
             chan_node_details.add_track(cur_track, Direction::DEC, iseg, seg_len, seg_start, seg_end);

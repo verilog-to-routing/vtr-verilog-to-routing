@@ -235,8 +235,6 @@ void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder,
                           const t_rr_edge_info_set& rr_edges_to_create);
 
-
-
 static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin);
 
 static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, const t_arch_switch_fanin& switch_fanin);
@@ -1026,10 +1024,10 @@ static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin
 }
 
 void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
-                               const std::vector<t_segment_inf>& segment_inf_x,
-                               const std::vector<t_segment_inf>& segment_inf_y,
-                               int wire_to_rr_ipin_switch,
-                               enum e_base_cost_type base_cost_type) {
+                        const std::vector<t_segment_inf>& segment_inf_x,
+                        const std::vector<t_segment_inf>& segment_inf_y,
+                        int wire_to_rr_ipin_switch,
+                        enum e_base_cost_type base_cost_type) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     add_rr_graph_C_from_switches(rr_graph.rr_switch_inf(RRSwitchId(wire_to_rr_ipin_switch)).Cin);
@@ -1123,13 +1121,13 @@ static t_seg_details* alloc_and_load_global_route_seg_details(const int global_r
 
 /* Calculates the number of track connections from each block pin to each segment type */
 std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
-                                                              const int max_pins,
-                                                              const std::vector<t_segment_inf>& segment_inf,
-                                                              const int* sets_per_seg_type,
-                                                              const t_chan_width* nodes_per_chan,
-                                                              const e_fc_type fc_type,
-                                                              const enum e_directionality directionality,
-                                                              bool* Fc_clipped) {
+                                                       const int max_pins,
+                                                       const std::vector<t_segment_inf>& segment_inf,
+                                                       const int* sets_per_seg_type,
+                                                       const t_chan_width* nodes_per_chan,
+                                                       const e_fc_type fc_type,
+                                                       const enum e_directionality directionality,
+                                                       bool* Fc_clipped) {
     //Initialize Fc of all blocks to zero
     auto zeros = vtr::Matrix<int>({size_t(max_pins), segment_inf.size()}, 0);
     std::vector<vtr::Matrix<int>> Fc(types.size(), zeros);

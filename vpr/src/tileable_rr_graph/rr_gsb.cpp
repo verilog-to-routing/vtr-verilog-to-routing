@@ -153,8 +153,8 @@ std::vector<RREdgeId> RRGSB::get_chan_node_in_edges(const RRGraphView& rr_graph,
     VTR_ASSERT(OUT_PORT == get_chan_node_direction(side, track_id));
 
     /* if sorted, we give sorted edges
-   * if not sorted, we give the empty vector
-   */
+     * if not sorted, we give the empty vector
+     */
     if (0 == chan_node_in_edges_.size()) {
         std::vector<RREdgeId> unsorted_edges;
 
@@ -304,12 +304,12 @@ void RRGSB::get_node_side_and_index(const RRGraphView& rr_graph,
     SideManager side_manager;
 
     /* Count the number of existence of cur_rr_node in cur_sb_info
-   * It could happen that same cur_rr_node appears on different sides of a SB
-   * For example, a routing track go vertically across the SB.
-   * Then its corresponding rr_node appears on both TOP and BOTTOM sides of this SB. 
-   * We need to ensure that the found rr_node has the same direction as user want.
-   * By specifying the direction of rr_node, There should be only one rr_node can satisfy!
-   */
+     * It could happen that same cur_rr_node appears on different sides of a SB
+     * For example, a routing track go vertically across the SB.
+     * Then its corresponding rr_node appears on both TOP and BOTTOM sides of this SB.
+     * We need to ensure that the found rr_node has the same direction as user want.
+     * By specifying the direction of rr_node, There should be only one rr_node can satisfy!
+     */
     for (side = 0; side < get_num_sides(); ++side) {
         side_manager.set_side(side);
         node_index = get_node_index(rr_graph, node, side_manager.get_side(), node_direction);
@@ -340,9 +340,9 @@ bool RRGSB::is_sb_node_exist_opposite_side(const RRGraphView& rr_graph,
 
     VTR_ASSERT((CHANX == rr_graph.node_type(node)) || (CHANY == rr_graph.node_type(node)));
 
-    /* See if we can find the same src_rr_node in the opposite chan_side 
-   * if there is one, it means a shorted wire across the SB 
-   */
+    /* See if we can find the same src_rr_node in the opposite chan_side
+     * if there is one, it means a shorted wire across the SB
+     */
     index = get_node_index(rr_graph, node, side_manager.get_opposite(), IN_PORT);
 
     return (-1 != index);
@@ -402,13 +402,13 @@ bool RRGSB::is_sb_exist() const {
 }
 
 /************************************************************************
- * Check if the node indicates a passing wire across the Switch Block part of the GSB 
- * Therefore, we actually do the following check 
- * Check if a track starts from this GSB or not 
+ * Check if the node indicates a passing wire across the Switch Block part of the GSB
+ * Therefore, we actually do the following check
+ * Check if a track starts from this GSB or not
  * For INC_DIRECTION
- * (xlow, ylow) should be same as the GSB side coordinate 
+ * (xlow, ylow) should be same as the GSB side coordinate
  * For DEC_DIRECTION
- * (xhigh, yhigh) should be same as the GSB side coordinate 
+ * (xhigh, yhigh) should be same as the GSB side coordinate
  ***********************************************************************/
 bool RRGSB::is_sb_node_passing_wire(const RRGraphView& rr_graph,
                                     const e_side& node_side,
@@ -442,9 +442,9 @@ bool RRGSB::is_sb_node_passing_wire(const RRGraphView& rr_graph,
         return false; /* This is an ending point */
     }
 
-    /* Reach here it means that this will be a passing wire, 
-   * we should be able to find the node on the opposite side of the GSB!
-   */
+    /* Reach here it means that this will be a passing wire,
+     * we should be able to find the node on the opposite side of the GSB!
+     */
     if (true != is_sb_node_exist_opposite_side(rr_graph, track_node, node_side)) {
         VTR_LOG("GSB[%lu][%lu] track node[%lu] at %s:\n",
                 get_x(), get_y(), track_id, SIDE_STRING[node_side]);
@@ -460,9 +460,9 @@ bool RRGSB::is_sb_node_passing_wire(const RRGraphView& rr_graph,
 }
 
 /* check if the candidate SB satisfy the basic requirements on being a mirror of the current one */
-/* Idenify mirror Switch blocks 
- * Check each two switch blocks: 
- * Number of channel/opin/ipin rr_nodes are same 
+/* Idenify mirror Switch blocks
+ * Check each two switch blocks:
+ * Number of channel/opin/ipin rr_nodes are same
  * If all above are satisfied, the two switch blocks may be mirrors !
  */
 bool RRGSB::is_sb_mirrorable(const RRGraphView& rr_graph, const RRGSB& cand) const {
@@ -524,8 +524,8 @@ bool RRGSB::is_sb_side_segment_mirror(const RRGraphView& rr_graph, const RRGSB& 
             return false;
         }
         /* Check the track_id of each node
-     * ptc is not necessary, we care the connectivity!
-     */
+         * ptc is not necessary, we care the connectivity!
+         */
         /* For OUT_PORT rr_node, we need to check fan-in */
         if (OUT_PORT != get_chan_node_direction(side, itrack)) {
             continue; /* skip IN_PORT */
@@ -813,14 +813,14 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
     size_t edge_counter = 0;
 
     /* For each incoming edge, find the node side and index in this GSB.
-   * and cache these. Then we will use the data to sort the edge in the 
-   * following sequence:
-   *  0----------------------------------------------------------------> num_in_edges()
-   *  |<--TOP side-->|<--RIGHT side-->|<--BOTTOM side-->|<--LEFT side-->|
-   *  For each side, the edge will be sorted by the node index starting from 0 
-   *  For each side, the edge from grid pins will be the 1st part
-   *  while the edge from routing tracks will be the 2nd part
-   */
+     * and cache these. Then we will use the data to sort the edge in the
+     * following sequence:
+     *  0----------------------------------------------------------------> num_in_edges()
+     *  |<--TOP side-->|<--RIGHT side-->|<--BOTTOM side-->|<--LEFT side-->|
+     *  For each side, the edge will be sorted by the node index starting from 0
+     *  For each side, the edge from grid pins will be the 1st part
+     *  while the edge from routing tracks will be the 2nd part
+     */
 
     // NYI
     // unused parameter
@@ -951,11 +951,11 @@ void RRGSB::clear_one_side(const e_side& node_side) {
  * Internal Accessors: identify mirrors
  ***********************************************************************/
 
-/* check if two rr_nodes have a similar set of drive_rr_nodes 
+/* check if two rr_nodes have a similar set of drive_rr_nodes
  * for each drive_rr_node:
  * 1. CHANX or CHANY: should have the same side and index
  * 2. OPIN or IPIN: should have the same side and index
- * 3. each drive_rr_switch should be the same 
+ * 3. each drive_rr_switch should be the same
  */
 bool RRGSB::is_sb_node_mirror(const RRGraphView& rr_graph,
                               const RRGSB& cand,
@@ -969,10 +969,10 @@ bool RRGSB::is_sb_node_mirror(const RRGraphView& rr_graph,
     }
 
     if (true == is_short_conkt) {
-        /* Since, both are pass wires, 
-     * The two node should be equivalent    
-     * we can return here
-     */
+        /* Since, both are pass wires,
+         * The two node should be equivalent
+         * we can return here
+         */
         return true;
     }
 
@@ -1018,10 +1018,10 @@ bool RRGSB::is_sb_node_mirror(const RRGraphView& rr_graph,
     return true;
 }
 
-/* check if two ipin_nodes have a similar set of drive_rr_nodes 
+/* check if two ipin_nodes have a similar set of drive_rr_nodes
  * for each drive_rr_node:
  * 1. CHANX or CHANY: should have the same side and index
- * 2. each drive_rr_switch should be the same 
+ * 2. each drive_rr_switch should be the same
  */
 bool RRGSB::is_cb_node_mirror(const RRGraphView& rr_graph,
                               const RRGSB& cand,
