@@ -1,3 +1,1 @@
-modules = {
-    "local": "./src/"
-}
+modules = {"local": "./src/"}

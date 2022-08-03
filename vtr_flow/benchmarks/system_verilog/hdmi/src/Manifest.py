@@ -8,5 +8,5 @@ files = [
     "source_product_description_info_frame.sv",
     "audio_clock_regeneration_packet.sv",
     "audio_info_frame.sv",
-    "audio_sample_packet.sv"
+    "audio_sample_packet.sv",
 ]

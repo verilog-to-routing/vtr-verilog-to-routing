@@ -3,7 +3,5 @@ files = [
 ]
 
 modules = {
-    "local": [
-        "../src"
-    ],
+    "local": ["../src"],
 }

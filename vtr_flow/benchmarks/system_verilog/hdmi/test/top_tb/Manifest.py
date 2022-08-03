@@ -1,8 +1,5 @@
-files = [
-    "top_tb.sv",
-    "pll.sv"
-]
+files = ["top_tb.sv", "pll.sv"]
 
 modules = {
-  "local" : [ "../../top/" ],
+    "local": ["../../top/"],
 }
