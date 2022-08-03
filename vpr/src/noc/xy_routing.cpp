@@ -26,7 +26,7 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
     int sink_router_y_position = sink_router.get_router_grid_position_y();
 
     /**
-     * @brief Keeps track of which routers have been reached already
+     * Keeps track of which routers have been reached already
      * while traversing the NoC. This variable will help determine
      * cases where a route could not be found and the algorithm is
      * stuck going back and forth between routers it has already
