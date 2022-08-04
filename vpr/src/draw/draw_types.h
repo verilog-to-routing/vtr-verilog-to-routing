@@ -217,6 +217,7 @@ struct t_draw_state {
     bool show_noc_button = false;
     e_draw_noc draw_noc = DRAW_NO_NOC;
     std::shared_ptr<const vtr::ColorMap> noc_usage_color_map = nullptr; // color map used to display noc link bandwidth usage
+    bool justEnabled = false;                                           //Whether auto-complete was just enabled
 
     std::vector<Breakpoint> list_of_breakpoints;
 

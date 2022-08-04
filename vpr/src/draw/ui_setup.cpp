@@ -80,7 +80,7 @@ void net_button_setup(ezgl::application* app) {
  * @brief sets up block related buttons, connects their signals
  * 
  * Connects signals and sets init. values for blk internals spin button,
- * blk pin util combo box, and placement macros combo box created in
+ * blk pin util combo box,placement macros combo box, and noc combo bx created in
  * main.ui. Found in Block Settings dropdown
  * @param app 
  */
@@ -100,6 +100,15 @@ void block_button_setup(ezgl::application* app) {
     //Toggle Placement Macros
     GtkComboBoxText* placement_macros = GTK_COMBO_BOX_TEXT(app->get_object("TogglePlacementMacros"));
     g_signal_connect(placement_macros, "changed", G_CALLBACK(placement_macros_cbk), app);
+
+    //Toggle NoC Display (based on startup cmd --noc on)
+    if (!draw_state->show_noc_button) {
+        hide_widget("NocLabel", app);
+        hide_widget("ToggleNocBox", app);
+    } else {
+        GtkComboBoxText* toggleNocBox = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNocBox"));
+        g_signal_connect(toggleNocBox, "changed", G_CALLBACK(toggle_noc_cbk), app);
+    }
 }
 
 /**
@@ -139,6 +148,19 @@ void routing_button_setup(ezgl::application* app) {
 }
 
 /**
+ * @brief Loads required data for search autocomplete, sets up special completion fn
+ * 
+ * @param app ezgl app
+ */
+void search_setup(ezgl::application* app) {
+    load_block_names(app);
+    load_net_names(app);
+    //Setting custom matching function for entry completion (searches whole string instead of start)
+    GtkEntryCompletion* wildcardComp = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
+    gtk_entry_completion_set_match_func(wildcardComp, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
+}
+
+/**
  * @brief connects critical path button to its cbk fn
  * 
  * @param app ezgl application
@@ -167,6 +189,50 @@ void hide_crit_path_button(ezgl::application* app) {
 void hide_widget(std::string widgetName, ezgl::application* app) {
     GtkWidget* widget = GTK_WIDGET(app->get_object(widgetName.c_str()));
     gtk_widget_hide(widget);
+}
+
+/**
+ * @brief loads atom and cluster lvl names into gtk list store item used for completion
+ * 
+ * @param app ezgl application used for ui
+ */
+void load_block_names(ezgl::application* app) {
+    auto blockStorage = GTK_LIST_STORE(app->get_object("BlockNames"));
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
+    GtkTreeIter iter;
+    int i = 0;
+    for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
+        gtk_list_store_append(blockStorage, &iter);
+        gtk_list_store_set(blockStorage, &iter,
+                           0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
+        i++;
+    }
+    for (AtomBlockId id : atom_ctx.nlist.blocks()) {
+        gtk_list_store_append(blockStorage, &iter);
+        gtk_list_store_set(blockStorage, &iter,
+                           0, (atom_ctx.nlist.block_name(id)).c_str(), -1);
+        i++;
+    }
+}
+
+/**
+ * @brief loads atom net names into gtk list store item used for completion
+ * 
+ * @param app ezgl application used for ui
+ */
+void load_net_names(ezgl::application* app) {
+    auto netStorage = GTK_LIST_STORE(app->get_object("NetNames"));
+    auto& atom_ctx = g_vpr_ctx.atom();
+    GtkTreeIter iter;
+    //Loading net names
+    int i = 0;
+    for (AtomNetId id : atom_ctx.nlist.nets()) {
+        gtk_list_store_append(netStorage, &iter);
+        gtk_list_store_set(netStorage, &iter,
+                           0, (atom_ctx.nlist.net_name(id)).c_str(), -1);
+        i++;
+    }
 }
 
 #endif /* NO_GRAPHICS */
