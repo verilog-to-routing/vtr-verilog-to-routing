@@ -56,6 +56,7 @@
 #include "breakpoint.h"
 #include "manual_moves.h"
 #include "draw_noc.h"
+#include "draw_floorplanning.h"
 
 #include "move_utils.h"
 #include "ui_setup.h"
@@ -254,6 +255,8 @@ static void draw_main_canvas(ezgl::renderer* g) {
     draw_logical_connections(g);
 
     draw_noc(g);
+
+    highlight_regions(g);
 
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
