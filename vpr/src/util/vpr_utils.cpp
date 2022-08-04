@@ -2021,5 +2021,4 @@ void print_timing_stats(std::string name,
             current.num_full_setup_updates - past.num_full_setup_updates,
             current.num_full_hold_updates - past.num_full_hold_updates,
             current.num_full_setup_hold_updates - past.num_full_setup_hold_updates);
-
 }

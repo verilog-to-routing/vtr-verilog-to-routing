@@ -116,7 +116,6 @@ struct TimingContext : public Context {
 
     /* Represents whether or not VPR should fail if timing constraints aren't met. */
     bool terminate_if_timing_fails = false;
-
 };
 
 namespace std {
