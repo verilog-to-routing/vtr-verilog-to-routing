@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <queue>
 
 #include "noc_routing.h"
 
@@ -36,7 +37,29 @@ class BFSRouting : public NocRouting {
          */
         void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
 
-
+        /**
+         * @brief Traces the path taken by the BFS routing algorithm from the destination router to the source router. 
+         * Starting with the destination router, the parent link (link taken to get to this router) is found and is added
+         * to the path. Then the algorithm moves to the source router of the parent link. Then it repeats the previous process
+         * of finding the parent link, adding it to the path and moving to the source router. This is repeated until the
+         * source router is reached.
+         * 
+         * @param start_router_id The router to use as a starting point
+         * when tracing back the route from the destination router. 
+         * to the the starting router. Generally this
+         * would be the sink router of the flow.
+         * @param flow_route Stores the path as a series of NoC links found by 
+         * a NoC routing algorithm between two routers in a traffic flow.
+         * The function will clear any
+         * previously stored path and re-insert the new found path between the
+         * two routers. 
+         * @param noc_model A model of the NoC. This is used to traverse the
+         * NoC and find a route between the two routers.
+         * @param router_parent_link Contains the parent link associated to each
+         * router in the NoC (parent link is the link used to visit the router during
+         * the BFS routing algorithm).
+         */
+        void generate_route(NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model, const std::unordered_map<NocRouterId, NocLinkId>& router_parent_link); 
 
 
 
