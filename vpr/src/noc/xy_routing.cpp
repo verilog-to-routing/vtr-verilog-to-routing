@@ -5,10 +5,9 @@
 #include "globals.h"
 #include "vpr_error.h"
 
-XYRouting::~XYRouting(){}
+XYRouting::~XYRouting() {}
 
-void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model){
-
+void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) {
     // keep track of whether a legal route exists between the two routers
     bool route_exists = true;
 
@@ -43,9 +42,7 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
      * to decide which link to take and also what the next router will be in the path.
      *
      * */
-    while(curr_router_id != sink_router_id){
-
-        
+    while (curr_router_id != sink_router_id) {
         // store the router that is currently visited at each iteration of the algorithm
         const NocRouter curr_router = noc_model.get_single_noc_router(curr_router_id);
 
@@ -57,24 +54,21 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
         RouteDirection next_step_direction = get_direction_to_travel(sink_router_x_position, sink_router_y_position, curr_router_x_position, curr_router_y_position);
 
         // Move to the next router based on the previously determined direction
-        route_exists = move_to_next_router(curr_router_id ,curr_router_x_position, curr_router_y_position, next_step_direction, flow_route, visited_routers, noc_model);
+        route_exists = move_to_next_router(curr_router_id, curr_router_x_position, curr_router_y_position, next_step_direction, flow_route, visited_routers, noc_model);
 
         // if we didn't find a legal router to move to then throw an error that there is no path between the source and destination routers
-        if (!route_exists){
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from starting router with ID:'%d' and the destination router with ID:'%d' using the XY-Routing algorithm.",src_router.get_router_user_id(), sink_router.get_router_user_id());
+        if (!route_exists) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from starting router with ID:'%d' and the destination router with ID:'%d' using the XY-Routing algorithm.", src_router.get_router_user_id(), sink_router.get_router_user_id());
         }
     }
 
     return;
-
 }
 
 // check whether x or y correspond to horizontal and vertical directions
 RouteDirection XYRouting::get_direction_to_travel(int sink_router_x_position, int sink_router_y_position, int curr_router_x_position, int curr_router_y_position) {
-
     // initialize to an arbitrary value
     RouteDirection direction_to_travel = RouteDirection::DOWN;
-
 
     /**
      * Check the horizontal direction first. If the current x position is greater than the destination, we need to move left.
@@ -84,40 +78,34 @@ RouteDirection XYRouting::get_direction_to_travel(int sink_router_x_position, in
      * down.
      *
      * */
-    if (curr_router_x_position > sink_router_x_position){
+    if (curr_router_x_position > sink_router_x_position) {
         direction_to_travel = RouteDirection::LEFT;
-    }
-    else if (curr_router_x_position < sink_router_x_position){
+    } else if (curr_router_x_position < sink_router_x_position) {
         direction_to_travel = RouteDirection::RIGHT;
-    }
-    else if (curr_router_y_position < sink_router_y_position){
+    } else if (curr_router_y_position < sink_router_y_position) {
         direction_to_travel = RouteDirection::UP;
-    }
-    else if (curr_router_y_position > sink_router_y_position){
+    } else if (curr_router_y_position > sink_router_y_position) {
         direction_to_travel = RouteDirection::DOWN;
     }
 
     return direction_to_travel;
-
 }
 
-bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model){
-
+bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model) {
     // represents the router that will be visited when taking an outgoing link
     NocRouterId next_router_id(-1);
 
     // keeps track of whether a router was found that we can move to
     bool found_next_router = false;
 
-    // When a acceptable link is found, this variable keeps track of whether the next router visited using the link was already visited or not. 
+    // When a acceptable link is found, this variable keeps track of whether the next router visited using the link was already visited or not.
     bool visited_next_router = false;
 
     // get all the outgoing links for the current router
     std::vector<NocLinkId> router_connections = noc_model.get_noc_router_connections(curr_router_id);
 
     // go through each outgoing link and determine whether the link leads towards the inteded route direction
-    for (auto connecting_link = router_connections.begin(); connecting_link != router_connections.end(); connecting_link++){
-        
+    for (auto connecting_link = router_connections.begin(); connecting_link != router_connections.end(); connecting_link++) {
         // get the current outgoing link which is being processed
         const NocLink curr_outgoing_link = noc_model.get_single_noc_link(*connecting_link);
 
@@ -130,26 +118,26 @@ bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router
         int next_router_y_position = next_router.get_router_grid_position_y();
 
         /*
-            Using the position of the next router we will visit if we take the current link, determine if the travel direction through the link matches the direction the algorithm determined we must travel in. If the directions do not match, then this link is not valid.
-        */
+         * Using the position of the next router we will visit if we take the current link, determine if the travel direction through the link matches the direction the algorithm determined we must travel in. If the directions do not match, then this link is not valid.
+         */
         switch (next_step_direction) {
             case RouteDirection::LEFT:
-                if (next_router_x_position < curr_router_x_position){
+                if (next_router_x_position < curr_router_x_position) {
                     found_next_router = true;
                 }
                 break;
             case RouteDirection::RIGHT:
-                if (next_router_x_position > curr_router_x_position){
+                if (next_router_x_position > curr_router_x_position) {
                     found_next_router = true;
                 }
                 break;
             case RouteDirection::UP:
-                if (next_router_y_position > curr_router_y_position){
+                if (next_router_y_position > curr_router_y_position) {
                     found_next_router = true;
                 }
                 break;
             case RouteDirection::DOWN:
-                if (next_router_y_position < curr_router_y_position){
+                if (next_router_y_position < curr_router_y_position) {
                     found_next_router = true;
                 }
                 break;
@@ -157,13 +145,13 @@ bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router
                 break;
         }
         // check whether the next router we will visit was already visited
-        if (visited_routers.find(next_router_id) != visited_routers.end()){
+        if (visited_routers.find(next_router_id) != visited_routers.end()) {
             visited_next_router = true;
         }
 
         // check if the current link was acceptable. If it is, then make sure that the next router was not previously visited.
         // If the next router was already visited, then this link is not valid, so indicate this and move onto processing the next link.
-        if (found_next_router && !visited_next_router){
+        if (found_next_router && !visited_next_router) {
             // if we are here then the link is legal to traverse, so add it to the found route and traverse the link by moving to the router connected by this link
             flow_route.push_back(*connecting_link);
             curr_router_id = next_router_id;
@@ -172,8 +160,7 @@ bool XYRouting::move_to_next_router(NocRouterId& curr_router_id, int curr_router
             visited_routers.insert(next_router_id);
 
             break;
-        }
-        else{
+        } else {
             found_next_router = false;
             visited_next_router = false;
         }

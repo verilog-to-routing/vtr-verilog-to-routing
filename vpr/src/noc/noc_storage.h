@@ -291,10 +291,6 @@ class NocStorage {
      */
     bool remove_link(NocRouterId src_router_id, NocRouterId sink_router_id);
 
-
-
-
-
     /**
      * @brief Asserts an internal flag which represents that the NoC
      * has been built. This means that no changes can be made to the

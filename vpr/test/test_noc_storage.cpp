@@ -258,16 +258,15 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
     }
 }
 TEST_CASE("test_remove_link", "[vpr_noc]") {
-
     // setup random number generation
     std::random_device device;
     std::mt19937 rand_num_gen(device());
 
     // random number generation to determine routers of the link to remove
     std::uniform_int_distribution<std::mt19937::result_type> src_router(0, NUM_OF_ROUTERS);
-    std::uniform_int_distribution<std::mt19937::result_type> sink_router(1,NOC_CONNECTIVITY - 1);
+    std::uniform_int_distribution<std::mt19937::result_type> sink_router(1, NOC_CONNECTIVITY - 1);
 
-    // create the NoC 
+    // create the NoC
     NocStorage test_noc;
 
     // temp variables that hold the routers involved within a link
@@ -290,7 +289,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
     }
 
     // now go through and add the links to the NoC
-    
+
     // allocate the size for outgoing link vector for each router
     test_noc.make_room_for_noc_router_link_list();
 
@@ -306,18 +305,16 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
                 test_noc.add_link(source, sink);
             }
         }
-    }    
+    }
 
-    SECTION("Test case where a legal link is removed from the NoC."){
-
+    SECTION("Test case where a legal link is removed from the NoC.") {
         // choose a source router and a sink router of a link that we want to remove
         NocRouterId link_to_remove_src_router = NocRouterId(src_router(rand_num_gen));
         NocRouterId link_to_remove_sink_router;
 
-        do{
+        do {
             link_to_remove_sink_router = NocRouterId(sink_router(rand_num_gen));
-        }while(link_to_remove_src_router == link_to_remove_sink_router);
-
+        } while (link_to_remove_src_router == link_to_remove_sink_router);
 
         // run the test function, which is to delete a link with the source and sink router found above
         REQUIRE_NOTHROW(test_noc.remove_link(link_to_remove_src_router, link_to_remove_sink_router) == true);
@@ -331,32 +328,27 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
 
         auto outgoing_links = test_noc.get_noc_router_connections(link_to_remove_src_router);
 
-        for (auto outgoing_link_id = outgoing_links.begin(); outgoing_link_id != outgoing_links.end(); outgoing_link_id++){
-
+        for (auto outgoing_link_id = outgoing_links.begin(); outgoing_link_id != outgoing_links.end(); outgoing_link_id++) {
             // get the current outgoing link
             const NocLink curr_outgoing_link = test_noc.get_single_noc_link(*outgoing_link_id);
 
-            if ((curr_outgoing_link.get_source_router() == link_to_remove_src_router) && (curr_outgoing_link.get_sink_router() == link_to_remove_sink_router)){
+            if ((curr_outgoing_link.get_source_router() == link_to_remove_src_router) && (curr_outgoing_link.get_sink_router() == link_to_remove_sink_router)) {
                 link_removed_from_outgoing_vector = false;
                 break;
             }
-
-        } 
+        }
 
         // verify the status of whether the link was removed as an outgoing link from the source router
         REQUIRE(link_removed_from_outgoing_vector == true);
-
     }
-    SECTION("Test the case where the link to remove does not exist in the NoC."){
+    SECTION("Test the case where the link to remove does not exist in the NoC.") {
         // choose a source router and a sink router of a link that we want to remove. These routers are chosen so that the link does not exist in the NoC.
         NocRouterId link_to_remove_src_router = NocRouterId(NUM_OF_ROUTERS + 1);
         NocRouterId link_to_remove_sink_router = NocRouterId(NUM_OF_ROUTERS + 2);
 
         // run the test function, which is to delete a link with the source and sink router found above. We expect the status of the function to indicate that the deletion failed
         REQUIRE(test_noc.remove_link(link_to_remove_src_router, link_to_remove_sink_router) == false);
-
-
-    }    
+    }
 }
 
 } // namespace

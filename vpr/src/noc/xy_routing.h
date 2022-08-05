@@ -89,16 +89,14 @@
  * to travel.
  */
 enum class RouteDirection {
-    LEFT, /*!< Moving towards the negative X-axis*/ 
-    RIGHT,/*!< Moving towards the positive X-axis*/
-    UP, /*!< Moving towards the positive Y-axis*/
-    DOWN /*!< Moving towards the negative Y-axis*/
+    LEFT,  /*!< Moving towards the negative X-axis*/
+    RIGHT, /*!< Moving towards the positive X-axis*/
+    UP,    /*!< Moving towards the positive Y-axis*/
+    DOWN   /*!< Moving towards the negative Y-axis*/
 };
 
 class XYRouting : public NocRouting {
-
   public:
-
     ~XYRouting() override;
 
     /**
@@ -165,7 +163,6 @@ class XYRouting : public NocRouting {
      * @return false N suitable links were found that could be traversed
      */
     bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
-
 };
 
 #endif
