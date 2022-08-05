@@ -5,10 +5,10 @@ total_nets_routed;vpr.out;Router Stats: total_nets_routed: (\d+) .*
 total_connections_routed;vpr.out;Router Stats: .*total_connections_routed: (\d+) .*
 total_heap_pushes;vpr.out;Router Stats: .*total_heap_pushes: (\d+) .*
 total_heap_pops;vpr.out;Router Stats: .*total_heap_pops: (\d+)
-total_internal_heap_pushes;vpr.out; .*total_internal_heap_pushes: (\d+) .*
-total_internal_heap_pops;vpr.out; .*total_internal_heap_pops: (\d+) .*
-total_external_heap_pushes;vpr.out; .*total_external_heap_pushes: (\d+) .*
-total_external_heap_pops;vpr.out; .*total_external_heap_pops: (\d+)
+total_internal_heap_pushes;vpr.out;Router Stats: .*total_internal_heap_pushes: (\d+) .*
+total_internal_heap_pops;vpr.out;Router Stats: .*total_internal_heap_pops: (\d+) .*
+total_external_heap_pushes;vpr.out;Router Stats: .*total_external_heap_pushes: (\d+) .*
+total_external_heap_pops;vpr.out;Router Stats: .*total_external_heap_pops: (\d+)
 
 #Area Metrics
 logic_block_area_total;vpr.out;\s*Total logic block area .*: (.*)
