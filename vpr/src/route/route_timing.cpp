@@ -913,7 +913,7 @@ void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t
     /* Frees all the structures needed only by the timing-driven router.        */
 
     // coverity[offset_free : Intentional]
-    delete[](pin_criticality); 
+    delete[](pin_criticality);
     // coverity[offset_free : Intentional]
     delete[](sink_order);
     // coverity[offset_free : Intentional]
