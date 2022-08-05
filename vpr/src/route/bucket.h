@@ -259,25 +259,25 @@ class Bucket : public HeapInterface {
 
     size_t seed_; /* Seed for fast_rand, should be non-zero */
 
-    BucketItem** heap_; /* Buckets for linked lists*/
-    size_t heap_size_;              /* Number of buckets */
-    size_t heap_head_;              /* First non-empty bucket */
-    size_t heap_tail_;              /* Last non-empty bucket */
-    float conv_factor_;             /* Cost bucket scaling factor.
-                                     *
-                                     * Larger conv_factor_ means each bucket is
-                                     * smaller.
-                                     *
-                                     * bucket index = cost * conv_factor_
-                                     *
-                                     */
-    float division_scaling_;        /* Scaling factor used during rescaling.
-                                     * Larger division scaling results in larger
-                                     * conversion factor.
-                                     */
-    ssize_t max_buckets_;           /* Maximum number of buckets to control when to
-                                     * rescale.
-                                     */
+    BucketItem** heap_;      /* Buckets for linked lists*/
+    size_t heap_size_;       /* Number of buckets */
+    size_t heap_head_;       /* First non-empty bucket */
+    size_t heap_tail_;       /* Last non-empty bucket */
+    float conv_factor_;      /* Cost bucket scaling factor.
+                              *
+                              * Larger conv_factor_ means each bucket is
+                              * smaller.
+                              *
+                              * bucket index = cost * conv_factor_
+                              *
+                              */
+    float division_scaling_; /* Scaling factor used during rescaling.
+                              * Larger division scaling results in larger
+                              * conversion factor.
+                              */
+    ssize_t max_buckets_;    /* Maximum number of buckets to control when to
+                              * rescale.
+                              */
 
     float min_cost_; /* Smallest cost seen */
     float max_cost_; /* Largest cost seen */
