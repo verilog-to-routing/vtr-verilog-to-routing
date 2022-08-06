@@ -1188,6 +1188,35 @@ int get_tile_ipin_opin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
     }
 
 }
+
+bool intra_tile_pins_connected(t_physical_tile_type_ptr physical_type,
+                               int from_ptc_num,
+                               int to_ptc_num){
+    const t_pb_graph_node* from_pb_node = nullptr;
+    if(is_pin_on_tile(physical_type, from_ptc_num)) {
+        auto logical_block = get_logical_block_from_pin_physical_num(physical_type, to_ptc_num);
+        from_pb_node = get_tile_pin_pb_pin(physical_type, logical_block, from_ptc_num)->parent_node;
+    } else {
+        from_pb_node = get_pb_graph_node_form_pin_physical_pin(physical_type, from_ptc_num);
+    }
+    const t_pb_graph_node* to_pb_node = get_pb_graph_node_form_pin_physical_pin(physical_type, to_ptc_num);
+
+    if(from_pb_node == to_pb_node){
+        return true;
+    } else if(from_pb_node->parent_pb_graph_node == to_pb_node->parent_pb_graph_node) {
+        return true;
+    } else {
+        auto parent_pb_node = to_pb_node->parent_pb_graph_node;
+        while(parent_pb_node != nullptr){
+            if(parent_pb_node == from_pb_node)
+                return true;
+            parent_pb_node = parent_pb_node->parent_pb_graph_node;
+        }
+    }
+
+    return false;
+
+}
 /* */
 
 

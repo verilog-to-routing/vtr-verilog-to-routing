@@ -29,6 +29,8 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               const int j,
                               int class_physical_num);
 
+bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second);
+
 // This function generates and returns a vector indexed by RRNodeId
 // containing a list of fan-in edges for each node.
 vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list();

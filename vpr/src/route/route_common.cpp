@@ -1855,58 +1855,39 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               const t_conn_cost_params cost_params,
                               bool is_flat) {
     if(is_flat) {
-        RRNodeId on_tile_from_node = RRNodeId::INVALID();
+        const auto& device_ctx = g_vpr_ctx.device();
+        const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+        auto from_type = rr_graph.node_type(from_node);
+        int from_x_low = rr_graph.node_xlow(from_node);
+        int from_y_low = rr_graph.node_ylow(from_node);
+        int from_ptc = rr_graph.node_ptc_num(from_node);
 
-        RRNodeId on_tile_to_node = RRNodeId::INVALID();
+        auto to_type = rr_graph.node_type(to_node);
+        int to_x_low = rr_graph.node_xlow(to_node);
+        int to_y_low = rr_graph.node_ylow(to_node);
+        int to_ptc = rr_graph.node_ptc_num(to_node);
 
-        auto& device_ctx = g_vpr_ctx.device();
-
-        auto from_node_type = rr_graph_view.node_type(from_node);
-
-        auto to_node_type = rr_graph_view.node_type(to_node);
-
-        int from_node_low_x = rr_graph_view.node_xlow(from_node);
-        int from_node_low_y = rr_graph_view.node_ylow(from_node);
-
-        int to_node_low_x = rr_graph_view.node_xlow(to_node);
-        int to_node_low_y = rr_graph_view.node_ylow(to_node);
-
-        int from_ptc = rr_graph_view.node_ptc_num(from_node);
-
-        int to_ptc = rr_graph_view.node_ptc_num(to_node);
-
-        bool from_node_on_tile = is_node_on_tile(from_node_type, from_node_low_x, from_node_low_y, from_ptc);
-
-        bool to_node_on_tile = is_node_on_tile(to_node_type, to_node_low_x, to_node_low_y, to_ptc);
-
-        if(from_node_on_tile && to_node_on_tile) {
-            on_tile_from_node = from_node;
-            on_tile_to_node = to_node;
-        } else {
-            if(from_node_type == t_rr_type::CHANX || from_node_type == t_rr_type::CHANY ||
-                to_node_type == t_rr_type::CHANX || to_node_type == t_rr_type::CHANY) {
-                on_tile_from_node = get_connected_on_tile_node(rr_graph_view, from_node, is_flat);
-                VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
-                on_tile_to_node = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
-                VTR_ASSERT(on_tile_to_node != RRNodeId::INVALID());
-            } else {
-                int from_root_x = from_node_low_x - device_ctx.grid[from_node_low_x][from_node_low_y].width_offset;
-                int from_root_y = from_node_low_y - device_ctx.grid[from_node_low_x][from_node_low_y].height_offset;
-
-                int to_root_x = to_node_low_x - device_ctx.grid[to_node_low_x][to_node_low_y].width_offset;
-                int to_root_y = to_node_low_y - device_ctx.grid[to_node_low_x][to_node_low_y].height_offset;
-
-                if(from_root_x == to_root_x && from_root_y == to_root_y) {
+        if(from_type == CHANX || from_type == CHANY) {
+            RRNodeId connected_to_node_id = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
+            VTR_ASSERT(connected_to_node_id != RRNodeId::INVALID());
+            return router_lookahead.get_expected_cost(from_node, connected_to_node_id, cost_params, R_upstream);
+        } else if(node_in_same_physical_tile(from_node, to_node)){
+            if(from_type == t_rr_type::IPIN) {
+                if(intra_tile_pins_connected(device_ctx.grid[from_x_low][from_y_low].type,from_ptc, to_ptc)) {
                     return 0.0;
                 } else {
-                    on_tile_from_node = get_connected_on_tile_node(rr_graph_view, from_node, is_flat);
-                    VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
-                    on_tile_to_node = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
-                    VTR_ASSERT(on_tile_to_node != RRNodeId::INVALID());
+                    return std::numeric_limits<float>::max() / 1e12;
                 }
+            } else {
+                return 0.0;
             }
+        } else if(is_node_on_tile(from_type, from_x_low, from_y_low, from_ptc)) {
+            RRNodeId connected_to_node_id = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
+            VTR_ASSERT(connected_to_node_id != RRNodeId::INVALID());
+            return router_lookahead.get_expected_cost(from_node, connected_to_node_id, cost_params, R_upstream);
+        } else {
+            return 0.0;
         }
-        return router_lookahead.get_expected_cost(on_tile_from_node, on_tile_to_node, cost_params, R_upstream);
     } else {
         return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
     }

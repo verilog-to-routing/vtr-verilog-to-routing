@@ -391,6 +391,10 @@ int get_total_num_tile_internal_pins(t_physical_tile_type_ptr tile);
 
 int get_tile_ipin_opin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 
+bool intra_tile_pins_connected(t_physical_tile_type_ptr physical_type,
+                               int from_ptc_num,
+                               int to_ptc_num);
+
 /* */
 
 #endif

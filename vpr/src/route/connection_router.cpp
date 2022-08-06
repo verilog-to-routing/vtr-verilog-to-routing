@@ -5,8 +5,6 @@
 #include "binary_heap.h"
 #include "bucket.h"
 
-#include "route_util.h"
-
 //Finds a path from the route tree rooted at rt_root to sink_node
 //
 //This is used when you want to allow previous routing of the same net to serve
