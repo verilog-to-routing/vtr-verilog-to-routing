@@ -31,21 +31,6 @@
 #include "noc_storage.h"
 
 class NocRouting {
-  private:
-    /**
-     * @brief Stores the path found by a NoC routing algorithm between two 
-     * routers. This variable should be cleared before each iteration
-     * where a route needs to be found between two routers. Once a route is
-     * found, it can be accessed through this variable. 
-     * 
-     * A route consists of a series of links that should be traversed when
-     * beginning at a start router to reach the destination router. 
-     * 
-     * The derived classes that implement a NoC routing algorithm should
-     * all store the found route in this variable. Then external functions
-     * should access the found route through this variable.
-     */
-    std::vector<NocLinkId> routed_path;
 
     // protected pure virtual functions that should be implemendted in derived classes.
   protected:
