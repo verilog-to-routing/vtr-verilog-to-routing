@@ -1865,19 +1865,14 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
         auto to_type = rr_graph.node_type(to_node);
         int to_ptc = rr_graph.node_ptc_num(to_node);
 
-        if(from_type == CHANX || from_type == CHANY) {
-            RRNodeId connected_to_node_id = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
-            VTR_ASSERT(connected_to_node_id != RRNodeId::INVALID());
-            return router_lookahead.get_expected_cost(from_node, connected_to_node_id, cost_params, R_upstream);
-        } else if(node_in_same_physical_tile(from_node, to_node)){
+        if(node_in_same_physical_tile(from_node, to_node)) {
             VTR_ASSERT(from_type != t_rr_type::IPIN || intra_tile_nodes_connected(device_ctx.grid[from_x_low][from_y_low].type,
-                                                  from_ptc,
-                                                  to_ptc,
-                                                  from_type == t_rr_type::SINK || from_type == t_rr_type::SOURCE,
-                                                  to_type == t_rr_type::SINK || to_type == t_rr_type::SOURCE));
+                                                                                  from_ptc,
+                                                                                  to_ptc,
+                                                                                  from_type == t_rr_type::SINK || from_type == t_rr_type::SOURCE,
+                                                                                  to_type == t_rr_type::SINK || to_type == t_rr_type::SOURCE));
             return 0.0;
         } else if(is_node_on_tile(from_type, from_x_low, from_y_low, from_ptc)) {
-            VTR_ASSERT(from_type == t_rr_type::OPIN || from_type == t_rr_type::SOURCE);
             RRNodeId connected_to_node_id = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
             VTR_ASSERT(connected_to_node_id != RRNodeId::INVALID());
             return router_lookahead.get_expected_cost(from_node, connected_to_node_id, cost_params, R_upstream);

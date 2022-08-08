@@ -519,7 +519,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                to_xlow, to_ylow, to_xhigh, to_yhigh,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
                 return;
-            } else if (node_in_same_physical_tile(to_node, RRNodeId(target_node))) {
+            } else if (node_in_same_physical_tile(to_node, RRNodeId(target_node)) && is_flat_) {
                 auto to_ptc = rr_graph_->node_ptc_num(to_node);
 
                 auto target_type = rr_graph_->node_type(RRNodeId(target_node));
