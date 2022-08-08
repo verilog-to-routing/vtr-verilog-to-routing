@@ -364,8 +364,6 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
 
 #else
 
-    //channel_width is only used in FAST_SB_COMPUTATION, do below so it doesn't throw a compile warning.
-    (void)channel_width;
     /******** slow switch block computation method; computes switchblocks at each coordinate ********/
     /* iterate over all the switchblocks specified in the architecture */
     for (int i_sb = 0; i_sb < (int)switchblocks.size(); i_sb++) {
