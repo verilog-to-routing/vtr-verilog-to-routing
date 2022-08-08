@@ -12,6 +12,22 @@
 //
 //Returns either the last element of the path, or nullptr if no path is found
 
+inline static bool relevant_node_to_target(const RRGraphView* rr_graph,
+                                           RRNodeId node_to_add,
+                                           RRNodeId target_node) {
+    if(is_node_on_tile(rr_graph->node_type(node_to_add),
+                        rr_graph->node_xlow(node_to_add),
+                        rr_graph->node_ylow(node_to_add),
+                        rr_graph->node_ptc_num(node_to_add)) ||
+        node_in_same_physical_tile(node_to_add, target_node) ||
+        rr_graph->node_type(node_to_add) == t_rr_type::SOURCE) {
+        return true;
+    } else {
+        return false;
+    }
+
+}
+
 template<typename Heap>
 std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_from_route_tree(
     t_rt_node* rt_root,
@@ -503,7 +519,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                to_xlow, to_ylow, to_xhigh, to_yhigh,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
                 return;
-            } else if (node_in_same_physical_tile(RRNodeId(from_node), RRNodeId(to_node))) {
+            } else if (node_in_same_physical_tile(to_node, RRNodeId(target_node))) {
                 auto to_ptc = rr_graph_->node_ptc_num(to_node);
 
                 auto target_type = rr_graph_->node_type(RRNodeId(target_node));
@@ -848,9 +864,19 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node->re_expand) {
-        add_route_tree_node_to_heap(rt_node,
-                                    target_node,
-                                    cost_params);
+        if(is_flat_) {
+            if(relevant_node_to_target(rr_graph_,
+                                        RRNodeId(rt_node->inode),
+                                        RRNodeId(target_node))) {
+                add_route_tree_node_to_heap(rt_node,
+                                            target_node,
+                                            cost_params);
+            }
+        } else {
+            add_route_tree_node_to_heap(rt_node,
+                                        target_node,
+                                        cost_params);
+        }
     }
 
     linked_rt_edge = rt_node->u.child_list;
@@ -977,16 +1003,17 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 if (!rt_node->re_expand) continue; //Some nodes (like IPINs) shouldn't be re-expanded
 
                 //Put the node onto the heap
-                add_route_tree_node_to_heap(rt_node, target_node, cost_params);
-
-                //Update Bounding Box
-                RRNodeId node(rt_node->inode);
-                highfanout_bb.xmin = std::min<int>(highfanout_bb.xmin, rr_graph_->node_xlow(node));
-                highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(node));
-                highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
-                highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
-                if(rr_graph_->node_type(node) == t_rr_type::CHANY || rr_graph_->node_type(node) == t_rr_type::CHANX)
-                    ++nodes_added;
+                if(relevant_node_to_target(rr_graph_, RRNodeId(rt_node->inode), RRNodeId(target_node))){
+                    add_route_tree_node_to_heap(rt_node, target_node, cost_params);
+                    //Update Bounding Box
+                    RRNodeId node(rt_node->inode);
+                    highfanout_bb.xmin = std::min<int>(highfanout_bb.xmin, rr_graph_->node_xlow(node));
+                    highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(node));
+                    highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
+                    highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
+                    if(rr_graph_->node_type(node) == t_rr_type::CHANY || rr_graph_->node_type(node) == t_rr_type::CHANX)
+                        ++nodes_added;
+                }
             }
 
             constexpr int SINGLE_BIN_MIN_NODES = 2;

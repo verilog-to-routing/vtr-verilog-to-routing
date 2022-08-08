@@ -1863,8 +1863,6 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
         int from_ptc = rr_graph.node_ptc_num(from_node);
 
         auto to_type = rr_graph.node_type(to_node);
-        int to_x_low = rr_graph.node_xlow(to_node);
-        int to_y_low = rr_graph.node_ylow(to_node);
         int to_ptc = rr_graph.node_ptc_num(to_node);
 
         if(from_type == CHANX || from_type == CHANY) {
@@ -1879,7 +1877,7 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                                                   to_type == t_rr_type::SINK || to_type == t_rr_type::SOURCE));
             return 0.0;
         } else if(is_node_on_tile(from_type, from_x_low, from_y_low, from_ptc)) {
-            VTR_ASSERT(from_type == t_rr_type::OPIN);
+            VTR_ASSERT(from_type == t_rr_type::OPIN || from_type == t_rr_type::SOURCE);
             RRNodeId connected_to_node_id = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
             VTR_ASSERT(connected_to_node_id != RRNodeId::INVALID());
             return router_lookahead.get_expected_cost(from_node, connected_to_node_id, cost_params, R_upstream);
