@@ -18,10 +18,13 @@
 void basic_button_setup(ezgl::application* app);
 void net_button_setup(ezgl::application* app);
 void block_button_setup(ezgl::application* app);
+void search_setup(ezgl::application* app);
 void routing_button_setup(ezgl::application* app);
 void crit_path_button_setup(ezgl::application* app);
 void hide_crit_path_button(ezgl::application* app);
 
+void load_block_names(ezgl::application* app);
+void load_net_names(ezgl::application* app);
 void hide_widget(std::string widgetName, ezgl::application* app);
 void show_widget(std::string widgetName, ezgl::application* app);
 
