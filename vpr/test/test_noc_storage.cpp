@@ -321,18 +321,30 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
 
         /* now verify whether the link was removed correctly */
 
-        // go through all the outgoing links  of the source router in the link we removed and check that the link does not exis there as well. //
-
-        // variable to keep tracj of whether the link was deleted from the vector outgoing links of its source router
+        // variable to keep track of whether the link was deleted from the vector outgoing links of its source router
         bool link_removed_from_outgoing_vector = true;
 
         auto outgoing_links = test_noc.get_noc_router_connections(link_to_remove_src_router);
-
+        // go through all the outgoing links  of the source router in the link we removed and check that the link does not exis there as well.
         for (auto outgoing_link_id = outgoing_links.begin(); outgoing_link_id != outgoing_links.end(); outgoing_link_id++) {
             // get the current outgoing link
             const NocLink curr_outgoing_link = test_noc.get_single_noc_link(*outgoing_link_id);
 
             if ((curr_outgoing_link.get_source_router() == link_to_remove_src_router) && (curr_outgoing_link.get_sink_router() == link_to_remove_sink_router)) {
+                link_removed_from_outgoing_vector = false;
+                break;
+            }
+        }
+
+        // verify that the link was set to be in invalid inside the vector of all links in the NoC
+        auto links_in_noc = test_noc.get_noc_links();
+        // go through the links and make sure that none of them have the source and sink router of the link 
+        // that we removed. THe removed link should have the source and sink routers set to invalid values.
+        for (auto single_link = links_in_noc.begin(); single_link != links_in_noc.end(); single_link++) {
+
+            // check whether the source and sink router of the current link matches the routers in the link to remove
+            if ((single_link->get_source_router() == link_to_remove_src_router) && (single_link->get_sink_router() == link_to_remove_sink_router)) {
+                // this indicates that the link was not set to an invalid state and not removed properly
                 link_removed_from_outgoing_vector = false;
                 break;
             }

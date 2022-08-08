@@ -111,10 +111,14 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
             // check to see if the current link id matches the id of the link to remove
             if (link_storage[*outgoing_link_id].get_sink_router() == sink_router_id) {
                 // found the link we need to remove so we delete it here
+                //change the link to be invalid
+                link_storage[*outgoing_link_id].set_source_router(NocRouterId::INVALID());
+                link_storage[*outgoing_link_id].set_sink_router(NocRouterId::INVALID());
+                link_storage[*outgoing_link_id].set_bandwidth_usage(-1);
 
                 // removing this link as an outgoing link from the source router
                 source_router_outgoing_links->erase(source_router_outgoing_links->begin() + outgoing_link_index);
-
+            
                 // indicate that the link to remove has been found and deleted
                 link_removed_status = true;
 
