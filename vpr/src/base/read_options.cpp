@@ -1481,7 +1481,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "File format for the input atom-level circuit/netlist.\n"
             " * vtr: Architecture expressed in the explicit VTR format"
-            " * fpga-interchage: Architecture expressed in the FPGA Interchange schema format\n")
+            " * fpga-interchage: Architecture expressed in the FPGA Interchange schema format\n"
+            "   FPGA Interchange in curent version does not allow for auto size grids\n"
+            "   Grid size is taken directly from device database file\n")
         .default_value("vtr")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
