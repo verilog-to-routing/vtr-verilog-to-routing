@@ -1189,25 +1189,51 @@ int get_tile_ipin_opin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
 
 }
 
-bool intra_tile_pins_connected(t_physical_tile_type_ptr physical_type,
-                               int from_ptc_num,
-                               int to_ptc_num){
+bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
+                                int from_ptc_num,
+                                int to_ptc_num,
+                                bool is_from_node_sink_src,
+                                bool is_to_node_sink_src){
     const t_pb_graph_node* from_pb_node = nullptr;
-    if(is_pin_on_tile(physical_type, from_ptc_num)) {
+
+    int from_pin_physical_num = OPEN;
+    int to_pin_physical_num = OPEN;
+
+    if(is_from_node_sink_src) {
+        if(is_class_on_tile(physical_type, from_ptc_num)){
+            from_pin_physical_num = physical_type->class_inf[from_ptc_num].pinlist[0];
+        } else {
+            from_pin_physical_num = physical_type->internal_class_inf.at(from_ptc_num).pinlist[0];
+        }
+    } else {
+        from_pin_physical_num = from_ptc_num;
+    }
+
+    if(is_pin_on_tile(physical_type, from_pin_physical_num)) {
         auto logical_block = get_logical_block_from_pin_physical_num(physical_type, to_ptc_num);
-        from_pb_node = get_tile_pin_pb_pin(physical_type, logical_block, from_ptc_num)->parent_node;
+        from_pb_node = get_tile_pin_pb_pin(physical_type, logical_block, from_pin_physical_num)->parent_node;
+        VTR_ASSERT(from_pb_node->is_root());
     } else {
         from_pb_node = get_pb_graph_node_form_pin_physical_pin(physical_type, from_ptc_num);
     }
-    const t_pb_graph_node* to_pb_node = get_pb_graph_node_form_pin_physical_pin(physical_type, to_ptc_num);
 
-    if(from_pb_node == to_pb_node){
-        return true;
-    } else if(from_pb_node->parent_pb_graph_node == to_pb_node->parent_pb_graph_node) {
+    if(is_to_node_sink_src) {
+        if(is_class_on_tile(physical_type, to_ptc_num)){
+            to_pin_physical_num = physical_type->class_inf[to_ptc_num].pinlist[0];
+        } else {
+            to_pin_physical_num = physical_type->internal_class_inf.at(to_ptc_num).pinlist[0];
+        }
+    } else {
+        to_pin_physical_num = to_ptc_num;
+    }
+
+    const t_pb_graph_node* to_pb_node = get_pb_graph_node_form_pin_physical_pin(physical_type, to_pin_physical_num);
+
+    if(from_pb_node->parent_pb_graph_node == to_pb_node->parent_pb_graph_node) {
         return true;
     } else {
         auto parent_pb_node = to_pb_node->parent_pb_graph_node;
-        while(parent_pb_node != nullptr){
+        while(parent_pb_node->pb_type->depth >= from_pb_node->pb_type->depth){
             if(parent_pb_node == from_pb_node)
                 return true;
             parent_pb_node = parent_pb_node->parent_pb_graph_node;
