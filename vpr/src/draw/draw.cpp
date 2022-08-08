@@ -20,6 +20,7 @@
 #include <sstream>
 #include <array>
 #include <iostream>
+#include <time.h>
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -282,6 +283,7 @@ static void default_setup(ezgl::application* app) {
     basic_button_setup(app);
     net_button_setup(app);
     block_button_setup(app);
+    search_setup(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -301,7 +303,6 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     //Hiding unused functionality
     hide_widget("RoutingMenuButton", app);
     hide_crit_path_button(app);
-    button_for_displaying_noc();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -356,7 +357,6 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     default_setup(app);
     routing_button_setup(app);
     hide_crit_path_button(app);
-    button_for_displaying_noc();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -670,19 +670,33 @@ bool draw_if_net_highlighted(ClusterNetId inet) {
     if (draw_state->net_color[inet] != DEFAULT_RR_NODE_COLOR) {
         return true;
     }
-
     return false;
 }
 
-#    if defined(X11) && !defined(__MINGW32__)
-void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name) {
-    //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
+/**
+ * @brief cbk function for key press
+ * 
+ * At the moment, only does something if user is currently typing in searchBar and
+ * hits enter, at which point it runs autocomplete
+ */
+void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
     std::string key(key_name);
+    GtkWidget* searchBar = GTK_WIDGET(app->get_object("TextInput"));
+    std::string text(gtk_entry_get_text(GTK_ENTRY(searchBar)));
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (gtk_widget_is_focus(searchBar)) {
+        if (key == "Return") {
+            enable_autocomplete(app);
+            gtk_editable_set_position(GTK_EDITABLE(searchBar), text.length());
+            return;
+        }
+    }
+    if (draw_state->justEnabled) {
+        draw_state->justEnabled = false;
+    } else {
+        gtk_entry_set_completion(GTK_ENTRY(searchBar), nullptr);
+    }
 }
-#    else
-void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* /*key_name*/) {
-}
-#    endif
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
     //  std::cout << "User clicked the ";

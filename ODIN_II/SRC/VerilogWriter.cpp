@@ -169,7 +169,7 @@ std::string Verilog::Writer::declare_ports(t_model* model) {
         input_stream << TAB
                      << INPUT_PORT << TAB
                      << OPEN_SQUARE_BRACKET
-                     << input_port->size << COLON << "0"
+                     << input_port->size - 1 << COLON << "0"
                      << CLOSE_SQUARE_BRACKET
                      << TAB << input_port->name
                      << COMMA << std::endl;
@@ -184,7 +184,7 @@ std::string Verilog::Writer::declare_ports(t_model* model) {
         output_stream << TAB
                       << OUTPUT_PORT << TAB
                       << OPEN_SQUARE_BRACKET
-                      << output_port->size << COLON << "0"
+                      << output_port->size - 1 << COLON << "0"
                       << CLOSE_SQUARE_BRACKET
                       << TAB << output_port->name
                       << COMMA << std::endl;
