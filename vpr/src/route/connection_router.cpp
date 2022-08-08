@@ -15,17 +15,32 @@
 inline static bool relevant_node_to_target(const RRGraphView* rr_graph,
                                            RRNodeId node_to_add,
                                            RRNodeId target_node) {
-    if(is_node_on_tile(rr_graph->node_type(node_to_add),
-                        rr_graph->node_xlow(node_to_add),
-                        rr_graph->node_ylow(node_to_add),
-                        rr_graph->node_ptc_num(node_to_add)) ||
-        node_in_same_physical_tile(node_to_add, target_node) ||
-        rr_graph->node_type(node_to_add) == t_rr_type::SOURCE) {
+    auto node_to_add_type = rr_graph->node_type(node_to_add);
+    auto node_to_add_x_low = rr_graph->node_xlow(node_to_add);
+    auto node_to_add_y_low = rr_graph->node_ylow(node_to_add);
+    if(is_node_on_tile(node_to_add_type,
+                        node_to_add_x_low,
+                        node_to_add_y_low,
+                        rr_graph->node_ptc_num(node_to_add))) {
         return true;
-    } else {
-        return false;
+    } else if (node_in_same_physical_tile(node_to_add, target_node)) {
+        auto target_type = rr_graph->node_type(target_node);
+        if(node_to_add_type == OPIN || node_to_add_type == SOURCE) {
+            return true;
+        } else if(intra_tile_nodes_connected(g_vpr_ctx.device().grid[node_to_add_x_low][node_to_add_y_low].type,
+                                              rr_graph->node_ptc_num(node_to_add),
+                                              rr_graph->node_ptc_num(target_node),
+                                              node_to_add_type == t_rr_type::SINK || node_to_add_type == t_rr_type::SOURCE,
+                                              target_type == t_rr_type::SINK || target_type == t_rr_type::SOURCE)) {
+            return true;
+        } else {
+            return false;
+        }
+    } else if(node_to_add_type == t_rr_type::SOURCE || node_to_add_type == t_rr_type::OPIN) {
+        return true;
     }
-
+    
+    return false;
 }
 
 template<typename Heap>
@@ -519,7 +534,9 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                to_xlow, to_ylow, to_xhigh, to_yhigh,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
                 return;
-            } else if (node_in_same_physical_tile(to_node, RRNodeId(target_node)) && is_flat_) {
+            } else if ((to_type != t_rr_type::CHANY && to_type != t_rr_type::CHANX) &&
+                       node_in_same_physical_tile(to_node, RRNodeId(target_node)) &&
+                       is_flat_) {
                 auto to_ptc = rr_graph_->node_ptc_num(to_node);
 
                 auto target_type = rr_graph_->node_type(RRNodeId(target_node));
