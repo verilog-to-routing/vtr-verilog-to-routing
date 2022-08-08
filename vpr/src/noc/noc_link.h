@@ -76,6 +76,20 @@ class NocLink {
 
     // setters
     /**
+     * @brief Can be used to set the source router of the link to a different router. 
+     * @param source_router The identifier representing the router that should be the source of
+     * this link
+     */
+    void set_source_router(NocRouterId source);
+
+    /**
+     * @brief Can be used to set the sink router of the link to a different router. 
+     * @param source_router The identifier representing the router that should be the sibk of
+     * this link
+     */
+    void set_sink_router(NocRouterId sink);
+
+    /**
      * @brief Can modify the bandwidth of the link. It is expected that when the NoC is being placed
      * the traffic flows will be re-routed multiple times. So the links will end up being used and un-used
      * by different traffic flows and the bandwidths of the links will correspondingly change. This function
