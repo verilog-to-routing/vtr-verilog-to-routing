@@ -242,11 +242,17 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
         // cheapest t_heap in current route tree to be expanded on
         cheapest = heap_.get_heap_head();
         ++router_stats_->heap_pops;
-        if(!is_node_on_tile(rr_graph_->node_type(RRNodeId(cheapest->index)),
+        auto cheap_type = rr_graph_->node_type(RRNodeId(cheapest->index));
+        if(is_node_on_tile(rr_graph_->node_type(RRNodeId(cheapest->index)),
                              rr_graph_->node_xlow(RRNodeId(cheapest->index)),
                              rr_graph_->node_ylow(RRNodeId(cheapest->index)),
                              rr_graph_->node_ptc_num(RRNodeId(cheapest->index)))) {
+            router_stats_->inter_node_type_cnt_pops[cheap_type]++;
+
+        } else {
             ++router_stats_->intra_cluster_node_pops;
+            router_stats_->intra_node_type_cnt_pops[cheap_type]++;
+
         }
 
         int inode = cheapest->index;
@@ -333,11 +339,16 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
         // cheapest t_heap in current route tree to be expanded on
         t_heap* cheapest = heap_.get_heap_head();
         ++router_stats_->heap_pops;
-        if(!is_node_on_tile(rr_graph_->node_type(RRNodeId(cheapest->index)),
+        auto cheap_type = rr_graph_->node_type(RRNodeId(cheapest->index));
+        if(is_node_on_tile(rr_graph_->node_type(RRNodeId(cheapest->index)),
                              rr_graph_->node_xlow(RRNodeId(cheapest->index)),
                              rr_graph_->node_ylow(RRNodeId(cheapest->index)),
                              rr_graph_->node_ptc_num(RRNodeId(cheapest->index)))) {
+            router_stats_->inter_node_type_cnt_pops[cheap_type]++;
+
+        } else {
             ++router_stats_->intra_cluster_node_pops;
+            router_stats_->intra_node_type_cnt_pops[cheap_type]++;
         }
 
         int inode = cheapest->index;
@@ -642,11 +653,16 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
 
         heap_.add_to_heap(next_ptr);
         ++router_stats_->heap_pushes;
-        if(!is_node_on_tile(rr_graph_->node_type(RRNodeId(to_node)),
+        auto node_type = rr_graph_->node_type(RRNodeId(to_node));
+        if(is_node_on_tile(rr_graph_->node_type(RRNodeId(to_node)),
                              rr_graph_->node_xlow(RRNodeId(to_node)),
                              rr_graph_->node_ylow(RRNodeId(to_node)),
                              rr_graph_->node_ptc_num(RRNodeId(to_node)))) {
+            router_stats_->inter_node_type_cnt_pushes[node_type]++;
+
+        } else {
             ++router_stats_->intra_cluster_node_pushes;
+            router_stats_->intra_node_type_cnt_pushes[node_type]++;
         }
     }
 
@@ -952,11 +968,16 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     }
 
     ++router_stats_->heap_pushes;
-    if(!is_node_on_tile(rr_graph_->node_type(RRNodeId(inode)),
+    auto node_type = rr_graph_->node_type(RRNodeId(inode));
+    if(is_node_on_tile(rr_graph_->node_type(RRNodeId(inode)),
                          rr_graph_->node_xlow(RRNodeId(inode)),
                          rr_graph_->node_ylow(RRNodeId(inode)),
                          rr_graph_->node_ptc_num(RRNodeId(inode)))) {
+        router_stats_->inter_node_type_cnt_pushes[node_type]++;
+
+    } else {
         ++router_stats_->intra_cluster_node_pushes;
+        router_stats_->intra_node_type_cnt_pushes[node_type]++;
     }
 }
 
@@ -995,6 +1016,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     int target_bin_x = grid_to_bin_x(rr_graph_->node_xlow(target_node_id), spatial_rt_lookup);
     int target_bin_y = grid_to_bin_y(rr_graph_->node_ylow(target_node_id), spatial_rt_lookup);
 
+    int global_nodes_added = 0;
     int nodes_added = 0;
 
     t_bb highfanout_bb;
@@ -1006,12 +1028,12 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
     bool done = false;
-    for (int dx : {0, -1, +1, -2, +2}) {
+    for (int dx : {0, -1, +1}) {
         size_t bin_x = target_bin_x + dx;
 
         if (bin_x > spatial_rt_lookup.dim_size(0) - 1) continue; //Out of range
 
-        for (int dy : {0, -1, +1, -2, +2}) {
+        for (int dy : {0, -1, +1}) {
             size_t bin_y = target_bin_y + dy;
 
             if (bin_y > spatial_rt_lookup.dim_size(1) - 1) continue; //Out of range
@@ -1029,12 +1051,13 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
                     highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
                     if(rr_graph_->node_type(node) == t_rr_type::CHANY || rr_graph_->node_type(node) == t_rr_type::CHANX)
-                        ++nodes_added;
+                        ++global_nodes_added;
+                    nodes_added++;
                 }
             }
 
             constexpr int SINGLE_BIN_MIN_NODES = 2;
-            if (dx == 0 && dy == 0 && nodes_added > SINGLE_BIN_MIN_NODES) {
+            if (dx == 0 && dy == 0 && global_nodes_added > SINGLE_BIN_MIN_NODES) {
                 //Target bin contained at least minimum amount of routing
                 //
                 //We require at least SINGLE_BIN_MIN_NODES to be added.
@@ -1051,6 +1074,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     t_bb bounding_box = net_bounding_box;
     if (nodes_added == 0) { //If the target bin and it's surrounding bins were empty, just add the full route tree
         add_route_tree_to_heap(rt_root, target_node, cost_params);
+        VTR_LOG_WARN("Couldn't find any node in neighbouring bins(target: %d) - Add the hole tree\n", target_node);
     } else {
         //We found nearby routing, replace original bounding box to be localized around that routing
         bounding_box = adjust_highfanout_bounding_box(highfanout_bb);
