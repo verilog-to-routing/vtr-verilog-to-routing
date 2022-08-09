@@ -36,13 +36,18 @@ void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_i
     // router was not found then this means no route exists between the source and destination router.
     bool found_sink_router = false;
 
-    // Start by processing the source router
+    // Start by processing the source router of the flow
     routers_to_process.push(src_router_id);
     visited_routers.insert(src_router_id);
 
+    //handle case where the source and sink router of the flow are the same
+    if (src_router_id == sink_router_id){
+        found_sink_router = true;
+    }
+
     // Explore the NoC from the starting router and try to find a path to the destination router
-    // we finish searching when there are no more routers to process or we found the destination router
-    while (!routers_to_process.empty()) {
+    // We finish searching when there are no more routers to process or we found the destination router
+    while (!routers_to_process.empty() && !found_sink_router) {
         // get the next router to process
         NocRouterId processing_router = routers_to_process.front();
         routers_to_process.pop();
@@ -73,11 +78,6 @@ void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_i
                     break;
                 }
             }
-        }
-
-        // If the destination router was found there is no need to keep exploring the NoC
-        if (found_sink_router) {
-            break;
         }
     }
 
