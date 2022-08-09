@@ -141,7 +141,6 @@ typedef struct {
     bool node_highlighted;
 } t_draw_rr_node;
 
-
 /**
  * @brief Structure used to store variables related to highlighting/drawing
  * 
@@ -210,8 +209,6 @@ struct t_draw_state {
     ///@brief How often is user input required. (0: each t, 1: each place, 2: never)
     int gr_automode = 0;
 
-
-
     ///@brief Should we automatically finish drawing (instead of waiting in the event loop for user interaction?
     bool auto_proceed = false;
 
@@ -265,7 +262,7 @@ struct t_draw_state {
     std::shared_ptr<const vtr::ColorMap> noc_usage_color_map = nullptr; // color map used to display noc link bandwidth usage
 
     ///Tracks autocomplete enabling.
-    bool justEnabled = false;                                           
+    bool justEnabled = false;
 
     std::vector<Breakpoint> list_of_breakpoints;
 
@@ -275,7 +272,6 @@ struct t_draw_state {
     t_draw_state() = default;
     t_draw_state(const t_draw_state&) = default;
     t_draw_state& operator=(const t_draw_state&) = default;
-
 
     void reset_nets_congestion_and_rr();
 
