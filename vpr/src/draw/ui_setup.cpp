@@ -56,7 +56,7 @@ void basic_button_setup(ezgl::application* app) {
  * 
  * Sets up the toggle nets combo box, net alpha spin button, and max fanout
  * spin button which are created in main.ui file. Found in Net Settings dropdown
- * @param app 
+ * @param app ezgl::application ptr
  */
 void net_button_setup(ezgl::application* app) {
     //Toggle net signal connection
@@ -114,7 +114,9 @@ void block_button_setup(ezgl::application* app) {
 /**
  * @brief configures and connects signals/functions for routing buttons
  * 
- * @param app 
+ * Connects signals/sets default values for toggleRRButton, ToggleCongestion,
+ * ToggleCongestionCost, ToggleRoutingBBox, RoutingExpansionCost, ToggleRoutingUtil 
+ * buttons. 
  */
 void routing_button_setup(ezgl::application* app) {
     auto& route_ctx = g_vpr_ctx.routing();
@@ -149,8 +151,6 @@ void routing_button_setup(ezgl::application* app) {
 
 /**
  * @brief Loads required data for search autocomplete, sets up special completion fn
- * 
- * @param app ezgl app
  */
 void search_setup(ezgl::application* app) {
     load_block_names(app);
