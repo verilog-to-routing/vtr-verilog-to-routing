@@ -3,12 +3,12 @@
 
 /**
  * @file 
- * @brief This file defines the XYRouting class, which represents a directional
+ * @brief This file defines the XYRouting class, which represents a direction
  * oriented routing algorithm.
  * 
  * Overview
  * ========
- * The XYRouting class performs routing between routers in the
+ * The XYRouting class performs packet routing between routers in the
  * NoC. This class is based on the XY routing algorithm.
  * 
  * XY Routing Algorithm
@@ -17,12 +17,12 @@
  * in the Y-direction. 
  * 
  * First the algorithm compares the source router and the 
- * destination router, checking the corrdinates in the X-axis. If the
- * corrdinates are not the same (so not horizontall aligned), then the
+ * destination router, checking the coordinates in the X-axis. If the
+ * coordinates are not the same (so not horizontally aligned), then the
  * algorithm moves in the direction towards the destination router in the 
  * X-axis. For each router in the path, the algorithm checks again to see
- * whether it is horizontall aligned with the destination router,
- * otherwise in moves in the direction to the destination router (once again
+ * whether it is horizontally aligned with the destination router;
+ * otherwise it moves in the direction of the destination router (once again
  * the movement is done in the X-axis). 
  * 
  * Once horizontally aligned (current router in the path
@@ -31,7 +31,7 @@
  * router and the current router in the path (checking for vertical alignment).
  * Similiar to the x-axis movement, the algorithm moves in the Y-axis towards
  * the destination router. Once again, at each router in the path the algorithm
- * checks for vertical alignment, if not aligned it then moves in the y-axis
+ * checks for vertical alignment; if not aligned it then moves in the y-axis
  * towards the destination router until it is aligned vertically.
  * 
  * The main aspect of this algorithm is that it is deterministic. It will always
@@ -76,8 +76,9 @@
  * -----
  * It is recommmended to use this algorithm when the NoC topology is of type
  * Mesh. This algorithm will work for other types of toplogies but the
- * directional nature of the algorithm make it ideal for mesh topologies. If
- * the algorithm fails to find a router then an error is thrown.
+ * directional nature of the algorithm makes it ideal for mesh topologies. If
+ * the algorithm fails to find a router then an error is thrown; this should
+ * only happen for non-mesh topologies.
  * 
  */
 
@@ -107,12 +108,13 @@ class XYRouting : public NocRouting {
      * within the NoC.
      * 
      * @param src_router_id The source router of a traffic flow. Identifies 
-     * the starting point of the route within the NoC. This is represents
-     * a unique identifier of the source router.
+     * the starting point of the route within the NoC. This represents a 
+     * physical router on the FPGA.
      * @param sink_router_id The destination router of a traffic flow.
-     * Identifies the ending point of the route within the NoC.This is 
-     * represents a unique identifier of the destination router.
-     * @param flow_route Stores the path as a series of NoC links found by 
+     * Identifies the ending point of the route within the NoC.This represents a 
+     * physical router on the FPGA.
+     * @param flow_route Stores the path returned by this fuction
+     * as a series of NoC links found by 
      * a NoC routing algorithm between two routers in a traffic flow.
      * The function will clear any
      * previously stored path and re-insert the new found path between the
@@ -121,7 +123,9 @@ class XYRouting : public NocRouting {
      * NoC and find a route between the two routers.
      */
     void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
-
+  
+  // internally used helper functions
+  private:
     /**
      * @brief Based on the position of the current router the algorithm is
      * visiting, this function determines the next direction to travel. 
@@ -140,13 +144,13 @@ class XYRouting : public NocRouting {
 
     /**
      * @brief Given the direction to travel next, this function determines
-     * the outgoing link that should be used to travel in the inteded direction.
+     * the outgoing link that should be used to travel in the intended direction.
      * Each router may have any number of outgoing links and each link is not
      * guaranteed to point in the intended direction, So this function makes
      * sure that the link chosen points in the intended direction.
      * 
-     * @param curr_router_id The unique identifier of the current router that
-     * is being visited on the FPGA
+     * @param curr_router_id The physical router on the FPGA that the routing
+     * algorithm is currently visiting. 
      * @param curr_router_x_position The horizontal grid position of the
      * router that is currently being visited on the FPGA
      * @param curr_router_y_position he vertical grid position of the router
@@ -160,7 +164,7 @@ class XYRouting : public NocRouting {
      * @param noc_model A model of the NoC. This is used to traverse the
      * NoC and find a route between the two routers.
      * @return true A suitable link was found that we can traverse next
-     * @return false N suitable links were found that could be traversed
+     * @return false No suitable link was found that could be traversed
      */
     bool move_to_next_router(NocRouterId& curr_router_id, int curr_router_x_position, int curr_router_y_position, RouteDirection next_step_direction, std::vector<NocLinkId>& flow_route, std::unordered_set<NocRouterId>& visited_routers, const NocStorage& noc_model);
 };

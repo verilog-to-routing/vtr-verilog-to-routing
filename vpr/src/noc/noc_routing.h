@@ -4,24 +4,21 @@
 /**
  * @file NocRouting.h
  * @brief This file defines the NocRouting class, which handles the
- * routing between routers within the NoC. It describes the routing
+ * packet routing between routers within the NoC. It describes the routing
  * algorithm for the NoC.
  * 
  * Overview
  * ========
  * The NocRouting class is an abstract class. It is intended to be used as
  * a base class and should not be used on its own. The NocRouting
- * class describes the structure of what a routing algorithm class should
- * look like. 
+ * class is used as a base (interface) class.
  * 
  * Usage
  * -----
  * When a new routing algorithm for the NoC is needed, a new class should be
- * made that inherits this class. Then two things need to be done:
+ * made that inherits this class. Then the following needs to be done:
  *  - The routing algorithm should be implemented inside the route_flow
- *    function and should match the prototype dclared below
- *  - The found route should be stored inside the member variable defined below
- *    called routed_path.
+ *    function and should match the prototype declared below
  */
 
 #include <vector>
@@ -32,7 +29,7 @@
 
 class NocRouting {
 
-    // protected pure virtual functions that should be implemendted in derived classes.
+    // protected pure virtual functions that should be implemented in derived classes.
   protected:
     virtual ~NocRouting() {}
 
@@ -46,12 +43,13 @@ class NocRouting {
      * to implement the routing algorithm.
      * 
      * @param src_router_id The source router of a traffic flow. Identifies 
-     * the starting point of the route within the NoC. This is represents
-     * a unique identifier of the source router.
+     * the starting point of the route within the NoC. This represents a 
+     * physical router on the FPGA.
      * @param sink_router_id The destination router of a traffic flow.
-     * Identifies the ending point of the route within the NoC.This is 
-     * represents a unique identifier of the destination router.
-     * @param flow_route Stores the path as a series of NoC links found by 
+     * Identifies the ending point of the route within the NoC.This represents a 
+     * physical router on the FPGA.
+     * @param flow_route Stores the path returned by this fuction
+     * as a series of NoC links found by 
      * a NoC routing algorithm between two routers in a traffic flow.
      * The function will clear any
      * previously stored path and re-insert the new found path between the

@@ -50,7 +50,6 @@ void XYRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id
         int curr_router_x_position = curr_router.get_router_grid_position_x();
         int curr_router_y_position = curr_router.get_router_grid_position_y();
 
-        // determine how we should path next
         RouteDirection next_step_direction = get_direction_to_travel(sink_router_x_position, sink_router_y_position, curr_router_x_position, curr_router_y_position);
 
         // Move to the next router based on the previously determined direction

@@ -13,10 +13,9 @@ void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_i
 
     /**
      * Keeps track of which routers have been reached already
-     * while traversing the NoC. This variable will help determine
-     * cases where a route could not be found and the algorithm is
-     * stuck going back and forth between routers it has already
-     * visited.
+     * while traversing the NoC. This variable will help prevent 
+     * the algorithm from getting stuck visiting routers that
+     * jave already been visited.
      * 
      */
     std::unordered_set<NocRouterId> visited_routers;
@@ -26,7 +25,7 @@ void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_i
      * corresponding link that was used to reach the router. This
      * datastructure stores the link that was used to visit each router in 
      * the NoC.
-     * Once the sink router has been found. This datastructure can be used to
+     * Once the destination router has been found. This datastructure can be used to
      * trace the path back to the source router.
      */
     std::unordered_map<NocRouterId, NocLinkId> router_parent_link;
@@ -48,7 +47,7 @@ void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_i
         NocRouterId processing_router = routers_to_process.front();
         routers_to_process.pop();
 
-        // get the links leaving the currenly processing router (these represent possible paths to explore in the NoC)
+        // get the links leaving the router currently being processed(these represent possible paths to explore in the NoC)
         const std::vector<NocLinkId> outgoing_links = noc_model.get_noc_router_connections(processing_router);
 
         // go through the outgoing links of the current router and process the sink routers connected to these links
@@ -59,7 +58,7 @@ void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_i
             // check if we already explored the router we are visiting
             if (visited_routers.find(connected_router) == visited_routers.end()) {
                 // if we are here then this is the first time visiting this router //
-                // mark this router as visited and add sned the router to be processed
+                // mark this router as visited and add send the router to be processed
                 visited_routers.insert(connected_router);
                 routers_to_process.push(connected_router);
 
@@ -85,7 +84,7 @@ void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_i
     // check if the above search found a valid path from the source to the destination
     // router.
     if (found_sink_router) {
-        // a lgeal path was found, so construct it
+        // a legal path was found, so construct it
         generate_route(sink_router_id, flow_route, noc_model, router_parent_link);
     } else {
         // a path was not found so throw an error to the user
@@ -96,18 +95,18 @@ void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_i
 }
 
 void BFSRouting::generate_route(NocRouterId start_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model, const std::unordered_map<NocRouterId, NocLinkId>& router_parent_link) {
-    // The intermediate router being visited while tracing the path back from the destination router to the src router in the flow.
-    // Initially this is set to the router at the end of the path (start_router)
+    // The intermediate router being visited while tracing the path back from the destination router to the starting router in the flow.
+    // Initially this is set to the router at the end of the path (destination router)
     NocRouterId curr_intermediate_router = start_router_id;
 
-    // get a reference to the beginning of the vector that stores the detgermined route of the flow
+    // get a reference to the beginning of the vector that stores the found route of the flow
     // need this since each link we find in the path will be added to the beginning of the vector
     auto route_beginning = flow_route.begin();
 
     // get the parent link of the start router
     std::unordered_map<NocRouterId, NocLinkId>::const_iterator curr_intermediate_router_parent_link = router_parent_link.find(curr_intermediate_router);
 
-    // keeop tracking baackwards from each router in the path until a router doesn't have a parent link (this means we reached the starting router in the path)
+    // keep tracking baackwards from each router in the path until a router doesn't have a parent link (this means we reached the starting router in the flow)
     while (curr_intermediate_router_parent_link != router_parent_link.end()) {
         // add the parent link to the path. Since we are tracing backwards we need to store the links in fron of the last link.
         flow_route.emplace(route_beginning, curr_intermediate_router_parent_link->second);
