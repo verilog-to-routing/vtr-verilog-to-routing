@@ -2,9 +2,9 @@
 VPR Draw Structures
 ===============
 
-T_Draw_Struct
+T_Draw_State
 ----------
-.. doxygenstruct:: t_draw_struct
+.. doxygenstruct:: t_draw_state
    :project: vpr
    :members:
 

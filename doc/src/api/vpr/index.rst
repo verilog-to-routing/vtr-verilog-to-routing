@@ -11,5 +11,4 @@ VPR API
    mapping
    rr_graph
    draw_structs
-   ui
-
+   vpr_ui
