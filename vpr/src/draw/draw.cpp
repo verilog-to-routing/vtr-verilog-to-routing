@@ -126,6 +126,7 @@ static void setup_default_ezgl_callbacks(ezgl::application* app);
 static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void run_graphics_commands(std::string commands);
 
@@ -256,7 +257,8 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     draw_noc(g);
 
-    highlight_regions(g);
+    if (draw_state->draw_partitions)
+    	highlight_regions(g);
 
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
@@ -1096,6 +1098,10 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect Debug Button
     GObject* debugger = app->get_object("debugButton");
     g_signal_connect(debugger, "clicked", G_CALLBACK(draw_debug_window), NULL);
+
+    // Connect Draw Partitions Checkbox
+    GObject* draw_partitions = app->get_object("drawPartitions");
+    g_signal_connect(draw_partitions, "toggled", G_CALLBACK(set_draw_partitions), app);
 }
 
 // Callback function for Block Outline checkbox
@@ -1136,6 +1142,21 @@ static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer 
         draw_state->clip_routing_util = true;
     else
         draw_state->clip_routing_util = false;
+
+    //redraw
+    application.update_message(draw_state->default_message);
+    application.refresh_drawing();
+}
+
+// Callback function for Draw Partitions checkbox
+static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    // assign corresponding bool value to draw_state->draw_partitions
+    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
+        draw_state->draw_partitions = true;
+    else
+        draw_state->draw_partitions = false;
 
     //redraw
     application.update_message(draw_state->default_message);
