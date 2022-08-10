@@ -5,5 +5,5 @@ VPR UI
 UI SETUP
 -------
 .. doxygenfile:: ui_setup.h
-   :project: vtr
+   :project: vpr
    :sections: briefdescription detaileddescription innernamespace func
