@@ -1,9 +1,5 @@
-#ifndef UISETUP_H
-#define UISETUP_H
-
-#ifndef NO_GRAPHICS
 /**
- * @file UI_SETUP.H
+ * @file ui_setup.h
  * @author Sebastian Lievano
  * @brief declares ui setup functions
  * 
@@ -11,6 +7,10 @@
  * This file (ui_setup.h/cpp) contains the setup of these buttons, which are connected to their respective callback functions
  * in draw_toggle_functions.cpp. 
  */
+#ifndef UISETUP_H
+#define UISETUP_H
+
+#ifndef NO_GRAPHICS
 
 #    include "draw_global.h"
 
