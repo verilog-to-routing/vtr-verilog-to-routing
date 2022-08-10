@@ -1262,6 +1262,7 @@ struct t_analysis_opts {
 struct t_noc_opts {
     bool noc;                   ///<options to turn on hard NoC modeling & optimization
     std::string noc_flows_file; ///<name of the file that contains all the traffic flow information in the NoC
+    std::string noc_routing_algorithm; ///<controls the routing algorithm used to route packets within the NoC
 };
 
 /**

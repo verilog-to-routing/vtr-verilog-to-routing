@@ -2635,6 +2635,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    noc_grp.add_argument<std::string>(args.noc_routing_algorithm, "--noc_routing_algorithm")
+        .help(
+            "Controls the algorithm used by the NoC to route packets.\n"
+            "* xy_routing: Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
+            "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links.\n" 
+                            "This can be used with any NoC topology\n"
+        )
+        .default_value("bfs_routing")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     return parser;
 }
 
