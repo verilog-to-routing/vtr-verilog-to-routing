@@ -98,6 +98,23 @@ jobs:
       run: ./dev/${{ matrix.script }}
 
 
+  UniTests:
+    name: 'U: C++ Unit Tests'
+    runs-on: ubuntu-18.04
+    steps:
+
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+    - uses: actions/checkout@v2
+    - run: ./.github/scripts/install_dependencies.sh
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
+      run: ./.github/scripts/unittest.sh
+
+
   Warnings:
     name: 'W: Check Compilation Warnings'
     runs-on: ubuntu-18.04
