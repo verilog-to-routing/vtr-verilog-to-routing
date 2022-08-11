@@ -3059,8 +3059,17 @@ std::string describe_rr_node(int inode, bool is_flat) {
                                pin_name.c_str());
     } else {
         VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK);
-
-        msg += vtr::string_fmt(" class: %d", rr_graph.node_class_num(RRNodeId(inode)));
+        auto type = device_ctx.grid[rr_graph.node_xlow(RRNodeId(inode))][rr_graph.node_ylow(RRNodeId(inode))].type;
+        auto class_physical_num = rr_graph.node_ptc_num(RRNodeId(inode));
+        if(is_class_on_tile(type, class_physical_num)) {
+            msg += vtr::string_fmt(" class: %d (On-Tile)",
+                                   rr_graph.node_class_num(RRNodeId(inode)));
+        } else {
+            std::string class_name = get_class_block_name(type, class_physical_num);
+            msg += vtr::string_fmt(" class: %d (Internal) class_name: %s",
+                                   rr_graph.node_class_num(RRNodeId(inode)),
+                                   class_name.c_str());
+        }
     }
 
     msg += vtr::string_fmt(" capacity: %d", rr_graph.node_capacity(RRNodeId(inode)));

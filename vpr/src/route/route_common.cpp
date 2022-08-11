@@ -1855,22 +1855,17 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               const t_conn_cost_params cost_params,
                               bool is_flat) {
     if(is_flat) {
-
-        const auto& rr_graph = g_vpr_ctx.device().rr_graph;
-        auto from_type = rr_graph.node_type(from_node);
-        int from_x_low = rr_graph.node_xlow(from_node);
-        int from_y_low = rr_graph.node_ylow(from_node);
-        int from_ptc = rr_graph.node_ptc_num(from_node);
-
         if(node_in_same_physical_tile(from_node, to_node)) {
             return 0.0;
-        } else if(is_node_on_tile(from_type, from_x_low, from_y_low, from_ptc)) {
-            RRNodeId connected_to_node_id = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
-            VTR_ASSERT(connected_to_node_id != RRNodeId::INVALID());
-            return router_lookahead.get_expected_cost(from_node, connected_to_node_id, cost_params, R_upstream);
         } else {
-            VTR_ASSERT(from_type == t_rr_type::OPIN || from_type == t_rr_type::SOURCE);
-            return 0.0;
+            RRNodeId on_tile_from_node = get_connected_on_tile_node(rr_graph_view, from_node, is_flat);
+            RRNodeId on_tile_to_node = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
+            VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
+            VTR_ASSERT(on_tile_to_node != RRNodeId::INVALID());
+            return router_lookahead.get_expected_cost(on_tile_from_node,
+                                                      on_tile_to_node,
+                                                      cost_params,
+                                                      R_upstream);
         }
     } else {
         return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
@@ -1881,10 +1876,9 @@ static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRN
     auto& device_ctx = g_vpr_ctx.device();
     int x_low = rr_graph_view.node_xlow(node_id);
     int y_low = rr_graph_view.node_ylow(node_id);
-    int node_ptc = rr_graph_view.node_ptc_num(node_id);
     auto node_type = rr_graph_view.node_type(node_id);
 
-    if(is_node_on_tile(node_type, x_low, y_low, node_ptc)) {
+    if(is_node_on_tile(node_type, x_low, y_low, rr_graph_view.node_ptc_num(node_id))) {
         return node_id;
     } else {
         int max_ptc = get_rr_node_max_ptc(rr_graph_view,
@@ -1892,7 +1886,7 @@ static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRN
                                           is_flat);
         RRNodeId on_tile_node = RRNodeId::INVALID();
         int on_tile_ptc = 0;
-        while(node_ptc < max_ptc) {
+        while(on_tile_ptc < max_ptc) {
             for(auto side : SIDES) {
                 on_tile_node =  device_ctx.rr_graph.node_lookup().find_node(x_low, y_low, node_type, on_tile_ptc, side);
                 if(on_tile_node != RRNodeId::INVALID())

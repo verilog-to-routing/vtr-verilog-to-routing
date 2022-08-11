@@ -764,10 +764,6 @@ static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
     std::list<int> pin_list;
     pin_list.insert(pin_list.begin(), class_inf->pinlist.begin(), class_inf->pinlist.end());
 
-    if(physical_class_num == 1642){
-        std::cout << "Hi" << std::endl;
-    }
-
     std::set<t_pb_graph_pin*> seen_pb_pins;
     while(!pin_list.empty()) {
         int curr_pin_physical_num = pin_list.front();
