@@ -1,2 +1,0 @@
-```{include} ../../README.developers.md
-```
