@@ -1,12 +1,14 @@
 /**
  * @file ui_setup.h
- * @author Sebastian Lievano
  * @brief declares ui setup functions
  * 
  * UI Members are initialized and created through a main.ui file, which is maintained and edited using the Glade program.
  * This file (ui_setup.h/cpp) contains the setup of these buttons, which are connected to their respective callback functions
  * in draw_toggle_functions.cpp. 
+ * 
+ * Author: Sebastian Lievano
  */
+
 #ifndef UISETUP_H
 #define UISETUP_H
 

@@ -685,7 +685,7 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
     std::string text(gtk_entry_get_text(GTK_ENTRY(searchBar)));
     t_draw_state* draw_state = get_draw_state_vars();
     if (gtk_widget_is_focus(searchBar)) {
-        if (key == "Return") {
+        if (key == "Return" || key == "Tab") {
             enable_autocomplete(app);
             gtk_editable_set_position(GTK_EDITABLE(searchBar), text.length());
             return;
@@ -695,6 +695,9 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
         draw_state->justEnabled = false;
     } else {
         gtk_entry_set_completion(GTK_ENTRY(searchBar), nullptr);
+    }
+    if(key == "Escape"){
+        deselect_all();
     }
 }
 

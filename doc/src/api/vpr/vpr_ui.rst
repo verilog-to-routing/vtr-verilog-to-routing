@@ -6,4 +6,4 @@ UI SETUP
 -------
 .. doxygenfile:: ui_setup.h
    :project: vpr
-   :sections: briefdescription detaileddescription innernamespace func
+   :sections: detaileddescription func
