@@ -23,7 +23,7 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
-/**
+/*
  * @brief configures basic buttons
  * 
  * Sets up Window, Search, Save, and SearchType buttons. Buttons are 
@@ -51,7 +51,7 @@ void basic_button_setup(ezgl::application* app) {
     g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
 }
 
-/**
+/*
  * @brief sets up net related buttons and connects their signals
  * 
  * Sets up the toggle nets combo box, net alpha spin button, and max fanout
@@ -76,7 +76,7 @@ void net_button_setup(ezgl::application* app) {
     gtk_spin_button_set_range(max_fanout, 0., (double)get_max_fanout());
 }
 
-/**
+/*
  * @brief sets up block related buttons, connects their signals
  * 
  * Connects signals and sets init. values for blk internals spin button,
@@ -111,7 +111,7 @@ void block_button_setup(ezgl::application* app) {
     }
 }
 
-/**
+/*
  * @brief configures and connects signals/functions for routing buttons
  * 
  * Connects signals/sets default values for toggleRRButton, ToggleCongestion,
@@ -149,7 +149,7 @@ void routing_button_setup(ezgl::application* app) {
     g_signal_connect(toggle_router_util, "changed", G_CALLBACK(toggle_router_util_cbk), app);
 }
 
-/**
+/*
  * @brief Loads required data for search autocomplete, sets up special completion fn
  */
 void search_setup(ezgl::application* app) {
@@ -160,7 +160,7 @@ void search_setup(ezgl::application* app) {
     gtk_entry_completion_set_match_func(wildcardComp, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
 }
 
-/**
+/*
  * @brief connects critical path button to its cbk fn
  * 
  * @param app ezgl application
@@ -170,7 +170,7 @@ void crit_path_button_setup(ezgl::application* app) {
     g_signal_connect(toggle_crit_path, "changed", G_CALLBACK(toggle_crit_path_cbk), app);
 }
 
-/**
+/*
  * @brief hides critical path button
  * 
  * @param app ezgl app
@@ -180,7 +180,7 @@ void hide_crit_path_button(ezgl::application* app) {
     hide_widget("ToggleCritPath", app);
 }
 
-/**
+/*
  * @brief Hides the widget with the given name
  * 
  * @param widgetName string of widget name in main.ui
@@ -191,7 +191,7 @@ void hide_widget(std::string widgetName, ezgl::application* app) {
     gtk_widget_hide(widget);
 }
 
-/**
+/*
  * @brief loads atom and cluster lvl names into gtk list store item used for completion
  * 
  * @param app ezgl application used for ui
@@ -216,7 +216,7 @@ void load_block_names(ezgl::application* app) {
     }
 }
 
-/**
+/*
  * @brief loads atom net names into gtk list store item used for completion
  * 
  * @param app ezgl application used for ui

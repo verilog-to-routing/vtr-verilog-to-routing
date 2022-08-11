@@ -696,7 +696,7 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
     } else {
         gtk_entry_set_completion(GTK_ENTRY(searchBar), nullptr);
     }
-    if(key == "Escape"){
+    if (key == "Escape") {
         deselect_all();
     }
 }
