@@ -10,5 +10,3 @@ VPR API
    netlist
    mapping
    rr_graph
-   draw_structs
-   vpr_ui
