@@ -13,6 +13,8 @@ if ! { [ $VTR_TEST == "vtr_reg_strong" ] || [ $VTR_TEST == "odin_reg_strong" ] \
 	source $SCRIPT_DIR/vtr-full-setup.sh
 fi
 
+# Update VtR submodules
+source $SCRIPT_DIR/vtr-submodules.sh
 # Build VtR
 source $SCRIPT_DIR/vtr-build.sh
 # Run the reg test.

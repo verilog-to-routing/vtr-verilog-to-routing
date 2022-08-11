@@ -39,6 +39,7 @@ sudo apt install -y \
   valgrind \
   zip \
   qt5-default \
+  default-jdk \
   clang-format-7 \
   g++-7 \
   gcc-7 \

@@ -1,3 +1,5 @@
+include(ExternalProject)
+
 #Manually synchronized external libraries
 add_subdirectory(libpugixml)
 
@@ -31,39 +33,50 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
         set(YOSYS_DATDIR ${libyosys_BINARY_DIR}/share/yosys)
         # keep record of the yosys-uhdm-plugin-integration path
         set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
+        set(SURELOG_BINARY_DIR ${SURELOG_SOURCE_DIR}/build)
         set(YOSYS_F4PGA_PLUGINS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-f4pga-plugins)
 
-        # building Surelog and UHDM in a custom command to avoid any target conflict with VTR targets
-        add_custom_command( OUTPUT ${libyosys_BINARY_DIR}/bin/surelog ${libyosys_BINARY_DIR}/bin/uhdm-dump ${libyosys_BINARY_DIR}/bin/uhdm-hier  DEPENDS yosys 
-                            # Surelog
-                            COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release
-                                                     -DCMAKE_INSTALL_PREFIX=${libyosys_BINARY_DIR}
-                                                     -DCMAKE_POSITION_INDEPENDENT_CODE=ON 
-                                                     -S ${SURELOG_SOURCE_DIR}
-                                                     -B ${SURELOG_SOURCE_DIR}/build
-                                                     -Wno-deprecated
-                                                     > /dev/null 2>&1
-                            COMMAND ${CMAKE_COMMAND} --build ${SURELOG_SOURCE_DIR}/build
-                                                     -j${CMAKE_BUILD_PARALLEL_LEVEL}
-                                                     > /dev/null 2>&1
-                            COMMAND ${CMAKE_COMMAND} --install ${SURELOG_SOURCE_DIR}/build
-                                                     > /dev/null 2>&1
-                            # UHDM
-                            COMMAND ${MAKE_PROGRAM}  -C ${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}
-                                                     PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
-                                                     UHDM_INSTALL_DIR=${libyosys_BINARY_DIR}
-                                                     install
-                                                     -j${CMAKE_BUILD_PARALLEL_LEVEL}
-                                                     > /dev/null 2>&1
+        ExternalProject_Add(surelog
+            # root directory for Surelog project
+            PREFIX ""
+            
+            # setting source, build and install directories
+            SOURCE_DIR "${SURELOG_SOURCE_DIR}"
+            # BINARY_DIR "${SURELOG_BINARY_DIR}"
+            BUILD_IN_SOURCE ON
+            INSTALL_DIR "${SURELOG_BINARY_DIR}"
 
-                            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+            # define Surelog cache values
+            CMAKE_CACHE_DEFAULT_ARGS 
+                "-DCMAKE_BUILD_TYPE:STRING=Release"
+                "-DCMAKE_INSTALL_PREFIX:FILEPATH=${libyosys_BINARY_DIR}"
+                "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON"
+                "-DCMAKE_WARN_DEPRECATED:BOOL=OFF"
 
-        # create a custom target out of the plugins compilation result
-        add_custom_target(yosys-plugins ALL 
-                          DEPENDS 
-                          ${libyosys_BINARY_DIR}/bin/surelog 
-                          ${libyosys_BINARY_DIR}/bin/uhdm-dump
-                          ${libyosys_BINARY_DIR}/bin/uhdm-hier)
+            # redirect logs to a logfile
+            LOG_BUILD ON
+            LOG_UPDATE ON
+            LOG_INSTALL ON
+            LOG_DOWNLOAD ON
+            LOG_CONFIGURE ON
+            LOG_OUTPUT_ON_FAILURE ON
+            
+            # usefull flags
+            EXCLUDE_FROM_ALL ON
+            DEPENDS yosys
+        )
+
+        # building Surelog and UHDM in a custom target to avoid any target conflict with VTR targets
+        add_custom_target(yosys-plugins ALL DEPENDS surelog yosys
+                          # uhdm
+                          COMMAND ${MAKE_PROGRAM}  -C ${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}
+                                                   PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
+                                                   UHDM_INSTALL_DIR=${libyosys_BINARY_DIR}
+                                                   install
+                                                   -j${CMAKE_BUILD_PARALLEL_LEVEL}
+
+                          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                          )
     endif()
 
     # In addition to libyosys in the build folder, we copy the libyosys directory
