@@ -65,6 +65,7 @@ apt install -y \
   valgrind \
   zip \
   qt5-default \
+  uuid-dev \
   default-jdk \
   g++-9 \
   gcc-9 \

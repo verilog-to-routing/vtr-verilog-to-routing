@@ -4,13 +4,15 @@ set -e
 
 source $(dirname "$0")/common.sh
 
+# Update VtR submodules
+if [[ $CMAKE_PARAMS == *"-DYOSYS_SV_UHDM_PLUGIN=ON"* ]]; then
+	make update_submodules
+fi
+
 $SPACER
 
 start_section "vtr.build" "${GREEN}Building..${NC}"
 export FAILURE=0
-if [[ ${CMAKE_PARAMS} == *"-DYOSYS_SV_UHDM_PLUGIN=ON"* ]]; then
-  git submodule update --init --recursive
-fi
 make -k BUILD_TYPE=${BUILD_TYPE} CMAKE_PARAMS="-Werror=dev ${CMAKE_PARAMS} ${CMAKE_INSTALL_PREFIX_PARAMS}" -j2 || export FAILURE=1
 end_section "vtr.build"
 

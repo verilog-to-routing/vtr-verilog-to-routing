@@ -20,6 +20,7 @@ sudo apt-get install -y \
 sudo apt-get install -y \
     clang \
     tcl-dev \
+    uuid-dev \
     default-jdk \
     libreadline-dev
 
