@@ -858,10 +858,10 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
             router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops,
             router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops, external_node_pushes, external_node_pops);
     for(int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
-        VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.inter_node_type_cnt_pushes[node_type_idx]);
-        VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.inter_node_type_cnt_pops[node_type_idx]);
-        VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.intra_node_type_cnt_pushes[node_type_idx]);
-        VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.intra_node_type_cnt_pops[node_type_idx]);
+        VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.inter_node_type_cnt_pushes[node_type_idx]);
+        VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.inter_node_type_cnt_pops[node_type_idx]);
+        VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.intra_node_type_cnt_pushes[node_type_idx]);
+        VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.intra_node_type_cnt_pops[node_type_idx]);
     }
     VTR_LOG("\n");
 

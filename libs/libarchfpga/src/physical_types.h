@@ -35,6 +35,7 @@
 #include <unordered_map>
 #include <limits>
 #include <numeric>
+#include <set>
 
 #include "vtr_ndmatrix.h"
 #include "vtr_hash.h"
@@ -859,7 +860,7 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
-    std::unordered_map<int, const t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping; /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping; /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
     std::unordered_map<const t_pb_graph_pin*, int> pb_pin_to_class_logical_num_mapping; /* pb_pin_to_class_logical_num_mapping[pb_graph_pin ptr] -> class logical number */
     std::vector<t_class> logical_class_inf; /* logical_class_inf[class_logical_number] -> class */
 
@@ -1279,6 +1280,8 @@ class t_pb_graph_pin {
     float tco_min = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the minimum clock to output time */
     float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
     t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
+
+    std::set<int> connected_sinks_ptc;
 
     /* combinational timing information */
     int num_pin_timing = 0;                   /* Number of ipin to opin timing edges*/

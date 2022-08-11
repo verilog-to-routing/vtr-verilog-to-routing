@@ -1,6 +1,7 @@
 #include <cstring>
 #include <vector>
 #include <sstream>
+#include <list>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -47,6 +48,10 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
 static void alloc_and_load_intra_cluster_resources();
+static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
+                                      t_logical_block_type* logical_block,
+                                      t_class* class_inf,
+                                      int physical_class_num);
 
 /**
  * @brief Sets VPR parameters and defaults.
@@ -705,6 +710,9 @@ static void alloc_and_load_intra_cluster_resources() {
             sub_tile.starting_internal_pin_idx.resize(sub_tile.capacity.total());
             for(int sub_tile_inst = 0; sub_tile_inst < sub_tile.capacity.total(); sub_tile_inst++) {
                 for(auto logic_block_ptr : sub_tile.equivalent_sites) {
+                    int logical_block_idx = logic_block_ptr->index;
+                    t_logical_block_type* mutable_logical_block = &device_ctx.logical_block_types[logical_block_idx];
+                    VTR_ASSERT(mutable_logical_block == logic_block_ptr);
                     sub_tile.starting_internal_class_idx[sub_tile_inst].insert(
                         std::make_pair(logic_block_ptr, physical_class_offset));
                     sub_tile.starting_internal_pin_idx[sub_tile_inst].insert(
@@ -719,6 +727,12 @@ static void alloc_and_load_intra_cluster_resources() {
                     for(auto& logic_class : logical_classes) {
                         auto result = physical_type.internal_class_inf.insert(std::make_pair(physical_class_num, logic_class));
                         VTR_ASSERT(result.second);
+                        if(logic_class.type == e_pin_type::RECEIVER) {
+                            add_class_to_related_pins(&physical_type,
+                                                      mutable_logical_block,
+                                                      &logic_class,
+                                                      physical_class_num);
+                        }
                         physical_class_num++;
                     }
 
@@ -739,5 +753,40 @@ static void alloc_and_load_intra_cluster_resources() {
         }
     }
 
+
+}
+
+static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
+                                      t_logical_block_type* logical_block,
+                                      t_class* class_inf,
+                                      int physical_class_num) {
+
+    std::list<int> pin_list;
+    pin_list.insert(pin_list.begin(), class_inf->pinlist.begin(), class_inf->pinlist.end());
+
+    if(physical_class_num == 1642){
+        std::cout << "Hi" << std::endl;
+    }
+
+    std::set<t_pb_graph_pin*> seen_pb_pins;
+    while(!pin_list.empty()) {
+        int curr_pin_physical_num = pin_list.front();
+        pin_list.pop_front();
+        if(is_pin_on_tile(physical_tile, curr_pin_physical_num)) {
+            continue;
+        }
+        t_pb_graph_pin* curr_pb_graph_pin = get_mutable_pb_pin_from_pin_physical_num(physical_tile, logical_block, curr_pin_physical_num);
+        auto insert_res = seen_pb_pins.insert(curr_pb_graph_pin);
+        if(!insert_res.second){
+            continue;
+        }
+        curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
+        auto driving_pins = get_physical_pin_driving_pins(physical_tile,
+                                                          logical_block,
+                                                          curr_pin_physical_num);
+        for(auto driving_pin_physical_num: driving_pins) {
+            pin_list.push_back(driving_pin_physical_num);
+        }
+    }
 
 }

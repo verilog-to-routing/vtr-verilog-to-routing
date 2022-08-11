@@ -376,7 +376,7 @@ static void set_pins_logical_num(t_logical_block_type* logical_block) {
     auto root_pb_graph_node = logical_block->pb_graph_head;
     std::queue<t_pb_graph_node*> pb_graph_node_to_set_pin_index_q;
 
-    std::unordered_map<int, const t_pb_graph_pin*>& pb_pin_idx_map = logical_block->pin_logical_num_to_pb_pin_mapping;
+    std::unordered_map<int, t_pb_graph_pin*>& pb_pin_idx_map = logical_block->pin_logical_num_to_pb_pin_mapping;
     int offset = 0;
 
     pb_graph_node_to_set_pin_index_q.push(root_pb_graph_node);
