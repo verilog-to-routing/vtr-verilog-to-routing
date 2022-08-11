@@ -1,0 +1,138 @@
+.model blink
+.inputs blink^clk blink^i_reset
+.outputs blink^o_led
+
+.names gnd
+.names unconn
+.names vcc
+1
+
+.names blink^i_reset blink^nMUX~0^lNOT~1 gnd blink^ADD~2-1[1] blink^nMUX~0^MUX_2~23
+1-1- 1
+-1-1 1
+
+.latch blink^nMUX~0^MUX_2~23 blink^r_counter~0_FF re blink^clk 3
+
+
+.subckt adder a[0]=blink^r_counter~0_FF b[0]=vcc cin[0]=blink^ADD~2-0[0]\
+ cout[0]=blink^ADD~2-1[0] sumout[0]=blink^ADD~2-1[1]
+
+
+.subckt adder a[0]=blink^r_counter~1_FF b[0]=gnd cin[0]=blink^ADD~2-1[0]\
+ cout[0]=blink^ADD~2-2[0] sumout[0]=blink^ADD~2-2[1]
+
+
+.subckt adder a[0]=blink^r_counter~2_FF b[0]=gnd cin[0]=blink^ADD~2-2[0]\
+ cout[0]=blink^ADD~2-3[0] sumout[0]=blink^ADD~2-3[1]
+
+
+.subckt adder a[0]=blink^r_counter~3_FF b[0]=gnd cin[0]=blink^ADD~2-3[0]\
+ cout[0]=blink^ADD~2-4[0] sumout[0]=blink^ADD~2-4[1]
+
+
+.subckt adder a[0]=blink^r_counter~4_FF b[0]=gnd cin[0]=blink^ADD~2-4[0]\
+ cout[0]=blink^ADD~2-5[0] sumout[0]=blink^ADD~2-5[1]
+
+.names blink^i_reset blink^nMUX~0^lNOT~1 gnd blink^ADD~2-5[1] blink^nMUX~0^MUX_2~27
+1-1- 1
+-1-1 1
+
+.latch blink^nMUX~0^MUX_2~27 blink^r_counter~4_FF re blink^clk 3
+
+.names vcc blink^r_counter~4_FF gnd blink^LT~4^GT~18
+100 1
+
+.names blink^LT~4^GT~10 blink^LT~4^GT~12 blink^LT~4^GT~14 blink^LT~4^GT~16 blink^LT~4^GT~18 blink^LT~4^lOR~9
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+
+.names blink^LT~4^lOR~9 blink^nMUX~3^lNOT~5 vcc gnd blink^nMUX~3^MUX_2~7
+1-1- 1
+-1-1 1
+
+.names blink^LT~4^lOR~9 blink^nMUX~3^lNOT~5
+0 1
+
+.names blink^r_counter~4_FF vcc blink^LT~4^lXOR~8^lXOR~22
+01 1
+10 1
+
+.names blink^LT~4^lXOR~8^lXOR~22 gnd blink^LT~4^lOR~17
+1- 1
+-1 1
+
+.names blink^LT~4^lXOR~8^lXOR~21 blink^LT~4^lOR~17 blink^LT~4^lOR~15
+1- 1
+-1 1
+
+.names blink^LT~4^lXOR~8^lXOR~20 blink^LT~4^lOR~15 blink^LT~4^lOR~13
+1- 1
+-1 1
+
+.names blink^LT~4^lXOR~8^lXOR~19 blink^LT~4^lOR~13 blink^LT~4^lOR~11
+1- 1
+-1 1
+
+.names gnd blink^r_counter~0_FF blink^LT~4^lOR~11 blink^LT~4^GT~10
+100 1
+
+.names gnd blink^r_counter~1_FF blink^LT~4^lOR~13 blink^LT~4^GT~12
+100 1
+
+.names gnd blink^r_counter~2_FF blink^LT~4^lOR~15 blink^LT~4^GT~14
+100 1
+
+.names gnd blink^r_counter~3_FF blink^LT~4^lOR~17 blink^LT~4^GT~16
+100 1
+
+.names blink^i_reset blink^nMUX~0^lNOT~1 gnd blink^ADD~2-4[1] blink^nMUX~0^MUX_2~26
+1-1- 1
+-1-1 1
+
+.latch blink^nMUX~0^MUX_2~26 blink^r_counter~3_FF re blink^clk 3
+
+.names blink^r_counter~3_FF gnd blink^LT~4^lXOR~8^lXOR~21
+01 1
+10 1
+
+.names blink^i_reset blink^nMUX~0^lNOT~1 gnd blink^ADD~2-3[1] blink^nMUX~0^MUX_2~25
+1-1- 1
+-1-1 1
+
+.latch blink^nMUX~0^MUX_2~25 blink^r_counter~2_FF re blink^clk 3
+
+.names blink^r_counter~2_FF gnd blink^LT~4^lXOR~8^lXOR~20
+01 1
+10 1
+
+.names blink^i_reset blink^nMUX~0^lNOT~1 gnd blink^ADD~2-2[1] blink^nMUX~0^MUX_2~24
+1-1- 1
+-1-1 1
+
+.latch blink^nMUX~0^MUX_2~24 blink^r_counter~1_FF re blink^clk 3
+
+.names blink^r_counter~1_FF gnd blink^LT~4^lXOR~8^lXOR~19
+01 1
+10 1
+
+
+.subckt adder a[0]=gnd b[0]=gnd cin[0]=unconn cout[0]=blink^ADD~2-0[0]\
+ sumout[0]=blink^ADD~2-0~dummy_output~0~1
+
+.names blink^i_reset blink^nMUX~0^lNOT~1
+0 1
+
+.names blink^nMUX~3^MUX_2~7 blink^o_led
+1 1
+
+.end
+
+.model adder
+.inputs  a[0]  b[0]  cin[0]
+.outputs cout[0] sumout[0]
+.blackbox
+.end
+
