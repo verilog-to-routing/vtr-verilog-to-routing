@@ -424,17 +424,17 @@ void free_placement_macros_structs() {
     unsigned int itype;
     if (f_idirect_from_blk_pin != nullptr) {
         for (itype = 1; itype < device_ctx.physical_tile_types.size(); itype++) {
-            free(f_idirect_from_blk_pin[itype]);
+            delete[](f_idirect_from_blk_pin[itype]);
         }
-        free(f_idirect_from_blk_pin);
+        delete[](f_idirect_from_blk_pin);
         f_idirect_from_blk_pin = nullptr;
     }
 
     if (f_direct_type_from_blk_pin != nullptr) {
         for (itype = 1; itype < device_ctx.physical_tile_types.size(); itype++) {
-            free(f_direct_type_from_blk_pin[itype]);
+            delete[](f_direct_type_from_blk_pin[itype]);
         }
-        free(f_direct_type_from_blk_pin);
+        delete[](f_direct_type_from_blk_pin);
         f_direct_type_from_blk_pin = nullptr;
     }
 }

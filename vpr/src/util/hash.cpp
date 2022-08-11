@@ -11,7 +11,9 @@ t_hash** alloc_hash_table() {
 
     t_hash** hash_table;
 
-    hash_table = (t_hash**)vtr::calloc(sizeof(t_hash*), HASHSIZE);
+    hash_table = new t_hash*[HASHSIZE];
+    for (int i = 0; i < HASHSIZE; i++)
+        hash_table[i] = nullptr;
     return (hash_table);
 }
 
@@ -24,14 +26,13 @@ void free_hash_table(t_hash** hash_table) {
     for (i = 0; i < HASHSIZE; i++) {
         h_ptr = hash_table[i];
         while (h_ptr != nullptr) {
-            free(h_ptr->name);
             temp_ptr = h_ptr->next;
-            free(h_ptr);
+            delete h_ptr;
             h_ptr = temp_ptr;
         }
     }
 
-    free(hash_table);
+    delete[] hash_table;
 }
 
 t_hash_iterator start_hash_table_iterator() {
@@ -83,7 +84,7 @@ t_hash* insert_in_hash_table(t_hash** hash_table, const char* name, int next_fre
     h_ptr = hash_table[i];
 
     while (h_ptr != nullptr) {
-        if (strcmp(h_ptr->name, name) == 0) {
+        if (h_ptr->name == name) {
             h_ptr->count++;
             return (h_ptr);
         }
@@ -94,7 +95,7 @@ t_hash* insert_in_hash_table(t_hash** hash_table, const char* name, int next_fre
 
     /* Name string wasn't in the hash table.  Add it. */
 
-    h_ptr = (t_hash*)vtr::malloc(sizeof(t_hash));
+    h_ptr = new t_hash;
     if (prev_ptr == nullptr) {
         hash_table[i] = h_ptr;
     } else {
@@ -103,8 +104,7 @@ t_hash* insert_in_hash_table(t_hash** hash_table, const char* name, int next_fre
     h_ptr->next = nullptr;
     h_ptr->index = next_free_index;
     h_ptr->count = 1;
-    h_ptr->name = (char*)vtr::malloc((strlen(name) + 1) * sizeof(char));
-    strcpy(h_ptr->name, name);
+    h_ptr->name = name;
     return (h_ptr);
 }
 
@@ -119,7 +119,7 @@ t_hash* get_hash_entry(t_hash** hash_table, const char* name) {
     h_ptr = hash_table[i];
 
     while (h_ptr != nullptr) {
-        if (strcmp(h_ptr->name, name) == 0)
+        if (h_ptr->name == name)
             return (h_ptr);
 
         h_ptr = h_ptr->next;
