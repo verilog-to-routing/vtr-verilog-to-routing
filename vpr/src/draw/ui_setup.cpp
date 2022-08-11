@@ -23,13 +23,6 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
-/*
- * @brief configures basic buttons
- * 
- * Sets up Window, Search, Save, and SearchType buttons. Buttons are 
- * created in glade main.ui file. Connects them to their cbk functions
- * @param app ezgl::application*
- */
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
