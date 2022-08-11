@@ -4,21 +4,34 @@
 #include <cstring>
 #include <algorithm>
 
-#include "rr_graph.h"
 #include "rr_graph_uxsdcxx_interface.h"
+
 #include "rr_node.h"
-#include "vpr_error.h"
+#include "rr_graph_type.h"
+#include "rr_graph_cost.h"
+#include "rr_graph_view.h"
+#include "rr_graph_builder.h"
+#include "rr_rc_data.h"
 #include "rr_metadata.h"
+
+#include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
+
+#include "device_grid.h"
+#include "alloc_and_load_rr_indexed_data.h"
+#include "get_parallel_segs.h"
+
+#include "vpr_error.h"
 #include "vtr_log.h"
 #include "vtr_version.h"
-#include "vpr_utils.h"
-#include "check_rr_graph.h"
-#include "rr_graph2.h"
-#include "rr_graph_indexed_data.h"
+#include "vtr_util.h"
+#include "arch_util.h"
+#include "physical_types_util.h"
+
 class MetadataBind {
   public:
-    MetadataBind(vtr::string_internment* strings, vtr::interned_string empty)
+    MetadataBind(MetadataStorage<int>* rr_node_metadata, MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata,
+                vtr::string_internment* strings, vtr::interned_string empty)
         : is_node_(false)
         , is_edge_(false)
         , ignore_(false)
@@ -27,7 +40,9 @@ class MetadataBind {
         , switch_id_(OPEN)
         , strings_(strings)
         , name_(empty)
-        , value_(empty) {}
+        , value_(empty)
+        , rr_node_metadata_(rr_node_metadata)
+        , rr_edge_metadata_(rr_edge_metadata) {}
 
     ~MetadataBind() {
         assert_clear();
@@ -69,9 +84,9 @@ class MetadataBind {
 
     void bind() {
         if (is_node_) {
-            vpr::add_rr_node_metadata(inode_, name_, value_);
+            vpr::add_rr_node_metadata(*rr_node_metadata_, inode_, name_, value_);
         } else if (is_edge_) {
-            vpr::add_rr_edge_metadata(inode_, sink_node_, switch_id_,
+            vpr::add_rr_edge_metadata(*rr_edge_metadata_,inode_, sink_node_, switch_id_,
                                       name_,
                                       value_);
         } else if (ignore_) {
@@ -103,6 +118,8 @@ class MetadataBind {
     vtr::string_internment* strings_;
     vtr::interned_string name_;
     vtr::interned_string value_;
+    MetadataStorage<int>* rr_node_metadata_;
+    MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata_;
 };
 
 // Context for walking metadata.
@@ -259,12 +276,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const char* read_rr_graph_name,
         std::string* read_rr_graph_filename,
         bool read_edge_metadata,
+        bool echo_enabled,
+        const char* echo_file_name,
         t_chan_width* chan_width,
         t_rr_graph_storage* rr_nodes,
         RRGraphBuilder* rr_graph_builder,
         RRGraphView* rr_graph,
         vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf,
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
+        std::vector<t_rr_rc_data>* rr_rc_data,
+        const int virtual_clock_network_root_idx,
         const size_t num_arch_switches,
         const t_arch_switch_inf* arch_switch_inf,
         const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
@@ -281,11 +302,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_switch_inf_(rr_switch_inf)
         , rr_indexed_data_(rr_indexed_data)
         , read_rr_graph_filename_(read_rr_graph_filename)
+        , rr_rc_data_(rr_rc_data)
+        , virtual_clock_network_root_idx_(virtual_clock_network_root_idx)
         , graph_type_(graph_type)
         , base_cost_type_(base_cost_type)
         , do_check_rr_graph_(do_check_rr_graph)
         , read_rr_graph_name_(read_rr_graph_name)
         , read_edge_metadata_(read_edge_metadata)
+        , echo_enabled_ (echo_enabled)
+        , echo_file_name_ (echo_file_name)
         , num_arch_switches_(num_arch_switches)
         , arch_switch_inf_(arch_switch_inf)
         , segment_inf_(segment_inf)
@@ -675,7 +700,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int init_node_timing(int& inode, float C, float R) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
-        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(R, C)));
+        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(R, C, *rr_rc_data_)));
         return inode;
     }
     inline void finish_node_timing(int& /*inode*/) final {}
@@ -733,7 +758,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline MetadataBind init_node_metadata(int& inode) final {
-        MetadataBind bind(strings_, empty_);
+        MetadataBind bind(rr_node_metadata_, rr_edge_metadata_, strings_, empty_);
         bind.set_node_target(inode);
         return bind;
     }
@@ -795,7 +820,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     type);
         }
 
-        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0, 0)));
+        rr_graph_builder_->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0, 0, *rr_rc_data_)));
 
         return id;
     }
@@ -886,7 +911,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 src_node, rr_nodes_->size());
         }
 
-        MetadataBind bind(strings_, empty_);
+        MetadataBind bind(rr_node_metadata_, rr_edge_metadata_, strings_, empty_);
         if (read_edge_metadata_) {
             bind.set_edge_target(src_node, sink_node, switch_id);
         } else {
@@ -1569,11 +1594,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto segment_inf_y_ = get_parallel_segs(temp_rr_segs, seg_index_map, Y_AXIS);
 
         alloc_and_load_rr_indexed_data(
+            *rr_graph_,
+            grid_,
             temp_rr_segs,
             segment_inf_x_,
             segment_inf_y_,
+            *rr_indexed_data_,
             *wire_to_rr_ipin_switch_,
-            base_cost_type_);
+            base_cost_type_,
+            echo_enabled_,
+            echo_file_name_);
 
         VTR_ASSERT(rr_indexed_data_->size() == seg_index_.size());
         for (size_t i = 0; i < seg_index_.size(); ++i) {
@@ -1585,7 +1615,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         read_rr_graph_filename_->assign(read_rr_graph_name_);
 
         if (do_check_rr_graph_) {
-            check_rr_graph(graph_type_, grid_, physical_tile_types_);
+            check_rr_graph(*rr_graph_, physical_tile_types_, *rr_indexed_data_, grid_, *chan_width_, graph_type_, virtual_clock_network_root_idx_);
         }
     }
 
@@ -1882,6 +1912,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
     t_rr_node_indices* rr_node_indices_;
     std::string* read_rr_graph_filename_;
+    std::vector<t_rr_rc_data>* rr_rc_data_;
+    const int virtual_clock_network_root_idx_;
 
     // Constant data for loads and writes.
     const t_graph_type graph_type_;
@@ -1889,6 +1921,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     const bool do_check_rr_graph_;
     const char* read_rr_graph_name_;
     const bool read_edge_metadata_;
+    const bool echo_enabled_;
+    const char* echo_file_name_;
 
     const size_t num_arch_switches_;
     const t_arch_switch_inf* arch_switch_inf_;

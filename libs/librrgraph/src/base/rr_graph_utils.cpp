@@ -1,22 +1,48 @@
+
+/****************************************************************************
+ * This file include most-utilized functions that manipulate on the
+ * RRGraph object
+ ***************************************************************************/
 #include <queue>
 #include <random>
 #include <algorithm>
 
+#include "rr_graph_utils.h"
+
 #include "vtr_memory.h"
 #include "vtr_time.h"
 
-#include "vpr_types.h"
 #include "vpr_error.h"
 
-#include "globals.h"
-#include "rr_graph_util.h"
+#include "rr_graph_obj.h"
 
-int seg_index_of_cblock(t_rr_type from_rr_type, int to_node) {
+/****************************************************************************
+ * Find the switches interconnecting two nodes
+ * Return a vector of switch ids
+ ***************************************************************************/
+std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
+                                               const RRNodeId& from_node,
+                                               const RRNodeId& to_node) {
+    std::vector<RRSwitchId> switches;
+    std::vector<RREdgeId> edges = rr_graph.find_edges(from_node, to_node);
+    if (true == edges.empty()) {
+        /* edge is open, we return an empty vector of switches */
+        return switches;
+    }
+
+    /* Reach here, edge list is not empty, find switch id one by one
+     * and update the switch list
+     */
+    for (auto edge : edges) {
+        switches.push_back(rr_graph.edge_switch(edge));
+    }
+
+    return switches;
+}
+
+int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int to_node) {
     /* Returns the segment number (distance along the channel) of the connection *
      * box from from_rr_type (CHANX or CHANY) to to_node (IPIN).                 */
-
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
 
     if (from_rr_type == CHANX)
         return (rr_graph.node_xlow(RRNodeId(to_node)));
@@ -25,7 +51,7 @@ int seg_index_of_cblock(t_rr_type from_rr_type, int to_node) {
         return (rr_graph.node_ylow(RRNodeId(to_node)));
 }
 
-int seg_index_of_sblock(int from_node, int to_node) {
+int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node) {
     /* Returns the segment number (distance along the channel) of the switch box *
      * box from from_node (CHANX or CHANY) to to_node (CHANX or CHANY).  The     *
      * switch box on the left side of a CHANX segment at (i,j) has seg_index =   *
@@ -34,9 +60,6 @@ int seg_index_of_sblock(int from_node, int to_node) {
      * 0 to device_ctx.grid.width()-1 (if from_node is a CHANX) or 0 to device_ctx.grid.height()-1 (if from_node is a CHANY).   */
 
     t_rr_type from_rr_type, to_rr_type;
-
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
 
     from_rr_type = rr_graph.node_type(RRNodeId(from_node));
     to_rr_type = rr_graph.node_type(RRNodeId(to_node));
@@ -83,9 +106,7 @@ int seg_index_of_sblock(int from_node, int to_node) {
     }
 }
 
-vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list() {
-    auto& rr_graph = g_vpr_ctx.device().rr_graph;
-
+vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& rr_graph) {
     vtr::vector<RRNodeId, std::vector<RREdgeId>> node_fan_in_list;
 
     node_fan_in_list.resize(rr_graph.num_nodes(), std::vector<RREdgeId>(0));
