@@ -118,7 +118,7 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
 
                 // removing this link as an outgoing link from the source router
                 source_router_outgoing_links->erase(source_router_outgoing_links->begin() + outgoing_link_index);
-            
+
                 // indicate that the link to remove has been found and deleted
                 link_removed_status = true;
 

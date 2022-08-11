@@ -85,8 +85,7 @@ RouteDirection XYRouting::get_direction_to_travel(int sink_router_x_position, in
         direction_to_travel = RouteDirection::UP;
     } else if (curr_router_y_position > sink_router_y_position) {
         direction_to_travel = RouteDirection::DOWN;
-    }
-    else { //case where the current router and the destination router are on the same location
+    } else { //case where the current router and the destination router are on the same location
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "XY router cannot determine direction to travel since the current router is already at the destination.");
     }
 

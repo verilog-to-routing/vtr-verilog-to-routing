@@ -338,10 +338,9 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
 
         // verify that the link was set to be in invalid inside the vector of all links in the NoC
         auto links_in_noc = test_noc.get_noc_links();
-        // go through the links and make sure that none of them have the source and sink router of the link 
+        // go through the links and make sure that none of them have the source and sink router of the link
         // that we removed. THe removed link should have the source and sink routers set to invalid values.
         for (auto single_link = links_in_noc.begin(); single_link != links_in_noc.end(); single_link++) {
-
             // check whether the source and sink router of the current link matches the routers in the link to remove
             if ((single_link->get_source_router() == link_to_remove_src_router) && (single_link->get_sink_router() == link_to_remove_sink_router)) {
                 // this indicates that the link was not set to an invalid state and not removed properly

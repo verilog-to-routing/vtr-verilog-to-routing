@@ -53,7 +53,7 @@ class BFSRouting : public NocRouting {
     void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
 
     // internally used helper functions
-    private:
+  private:
     /**
      * @brief Traces the path taken by the BFS routing algorithm from the destination router to the starting router. 
      * Starting with the destination router, the parent link (link taken to get to this router) is found and is added

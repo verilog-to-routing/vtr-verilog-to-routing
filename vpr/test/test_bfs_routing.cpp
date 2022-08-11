@@ -5,7 +5,6 @@
 
 namespace {
 
-
 TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
     /*
      * Creating a test FPGA device below. The NoC itself will be
@@ -88,7 +87,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
 
         // we need to know the ids of the new links that are being added. We know that the
         // router ids are based on the vector size, so get the size of the vector of links
-        // within the NoC 
+        // within the NoC
         int number_of_links = noc_model.get_noc_links().size();
 
         // add the diagonal links and also add them to the golden path
@@ -98,7 +97,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         golden_path.push_back(NocLinkId(number_of_links++));
         noc_model.add_link(NocRouterId(6), NocRouterId(3));
         golden_path.push_back(NocLinkId(number_of_links++));
-        
+
         // now run the routinjg algorithm
         // make sure that a legal route was found (no error should be thrown)
         REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model));
@@ -107,7 +106,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         REQUIRE(golden_path.size() == found_path.size());
         // go through the expected path and verify that each link matches to the found path
         // by the routing algorithm
-        for (int link_in_path = 0; link_in_path < (int)golden_path.size(); link_in_path++){
+        for (int link_in_path = 0; link_in_path < (int)golden_path.size(); link_in_path++) {
             REQUIRE(golden_path[link_in_path] == found_path[link_in_path]);
         }
     }
@@ -127,7 +126,6 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         // run the routing algorithm and we expect ir ro fail
         REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model), "No route could be found from starting router with ID:'12' and the destination router with ID:'3' using the XY-Routing algorithm.");
     }
-    
 }
 
-}
+} // namespace

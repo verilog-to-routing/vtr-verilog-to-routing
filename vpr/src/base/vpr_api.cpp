@@ -549,12 +549,11 @@ void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
  * @param noc_routing_algorithm_name A user provided string that identifies a 
  * NoC routing algorithm
  */
-void vpr_setup_noc_routing_algorithm(std::string noc_routing_algorithm_name){
-
+void vpr_setup_noc_routing_algorithm(std::string noc_routing_algorithm_name) {
     // Need to be abke to modify the NoC context, since we will be adding the
     // newly created routing algorithm to it
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
-    
+
     noc_ctx.noc_flows_router = NocRoutingAlgorithmCreator().create_routing_algorithm(noc_routing_algorithm_name);
     return;
 }

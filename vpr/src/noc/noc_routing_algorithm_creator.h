@@ -23,47 +23,22 @@
 #include "bfs_routing.h"
 
 class NocRoutingAlgorithmCreator {
+  public:
+    // nothing to do in the constructor and destructor
+    NocRoutingAlgorithmCreator() {}
+    ~NocRoutingAlgorithmCreator() {}
 
-    public:
-        // nothing to do in the constructor and destructor
-        NocRoutingAlgorithmCreator(){}
-        ~NocRoutingAlgorithmCreator(){}
-
-        /**
-         * @brief Given a string that identifies a NoC routing algorithm, this function
-         * create the corresponding routing algorithm and returns a reference to it. If
-         * the provided string does not match any available routing algorithms then an
-         * error is thrown.
-         * 
-         * @param routing_algorithm_name A user provided string that identifies a 
-         * NoC routing algorithm
-         * @return NocRouting* A reference to the created NoC routing algorithm
-         */
-        NocRouting* create_routing_algorithm(std::string routing_algorithm_name);
-
+    /**
+     * @brief Given a string that identifies a NoC routing algorithm, this function
+     * create the corresponding routing algorithm and returns a reference to it. If
+     * the provided string does not match any available routing algorithms then an
+     * error is thrown.
+     * 
+     * @param routing_algorithm_name A user provided string that identifies a 
+     * NoC routing algorithm
+     * @return NocRouting* A reference to the created NoC routing algorithm
+     */
+    NocRouting* create_routing_algorithm(std::string routing_algorithm_name);
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif

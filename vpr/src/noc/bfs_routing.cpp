@@ -41,7 +41,7 @@ void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_i
     visited_routers.insert(src_router_id);
 
     //handle case where the source and sink router of the flow are the same
-    if (src_router_id == sink_router_id){
+    if (src_router_id == sink_router_id) {
         found_sink_router = true;
     }
 

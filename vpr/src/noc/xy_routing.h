@@ -123,8 +123,8 @@ class XYRouting : public NocRouting {
      * NoC and find a route between the two routers.
      */
     void route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) override;
-  
-  // internally used helper functions
+
+    // internally used helper functions
   private:
     /**
      * @brief Based on the position of the current router the algorithm is
