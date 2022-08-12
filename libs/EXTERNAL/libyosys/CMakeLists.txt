@@ -39,7 +39,10 @@ add_custom_target(yosys ALL DEPENDS ${LIB_FILE} ${BINARY_LIB_FILE})
 
 # create an library target out of the library compilation result
 add_library(libyosys SHARED IMPORTED GLOBAL)
-add_dependencies(libyosys yosys)
+
+# adding dependency to libarchfpga, as it is required
+# by VTR scripts for Yosys standalone frontend
+add_dependencies(libyosys yosys libarchfpga)
 
 # specify where the library is and where to find the headers
 set_target_properties(libyosys
