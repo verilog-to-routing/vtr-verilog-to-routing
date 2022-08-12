@@ -21,8 +21,6 @@
 #include <fstream>
 
 #include "vtr_time.h"
-#include "vpr_types.h"
-#include "globals.h"
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
@@ -32,26 +30,41 @@
 #endif
 
 /************************ Subroutine definitions ****************************/
-
-/*loads the given RR_graph file into the appropriate data structures
+/* loads the given RR_graph file into the appropriate data structures
  * as specified by read_rr_graph_name. Set up correct routing data
  * structures as well*/
-void load_rr_file(const t_graph_type graph_type,
-                  const DeviceGrid& grid,
+
+/**FIXME: To make rr_graph_reader independent of vpr_context, the below
+ * parameters are a workaround to passing the data structures of DeviceContext. 
+ * Needs a solution to reduce the number of parameters passed in.*/
+
+void load_rr_file(RRGraphBuilder* rr_graph_builder,
+                  RRGraphView* rr_graph,
+                  const std::vector<t_physical_tile_type>& physical_tile_types,
                   const std::vector<t_segment_inf>& segment_inf,
+                  vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
+                  std::vector<t_rr_rc_data>* rr_rc_data,
+                  const DeviceGrid& grid,
+                  const t_arch_switch_inf* arch_switch_inf,
+                  const t_graph_type graph_type,
+                  const t_arch* arch,
+                  t_chan_width* chan_width,
                   const enum e_base_cost_type base_cost_type,
+                  const size_t num_arch_switches,
+                  const int virtual_clock_network_root_idx,
                   int* wire_to_rr_ipin_switch,
                   const char* read_rr_graph_name,
+                  std::string* read_rr_graph_filename,
                   bool read_edge_metadata,
-                  bool do_check_rr_graph) {
+                  bool do_check_rr_graph,
+                  bool echo_enabled,
+                  const char* echo_file_name) {
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-
     size_t num_segments = segment_inf.size();
-    device_ctx.rr_graph_builder.reserve_segments(num_segments);
+    rr_graph_builder->reserve_segments(num_segments);
     for (size_t iseg = 0; iseg < num_segments; ++iseg) {
-        device_ctx.rr_graph_builder.add_rr_segment(segment_inf[(iseg)]);
+        rr_graph_builder->add_rr_segment(segment_inf[(iseg)]);
     }
 
     RrGraphSerializer reader(
@@ -60,22 +73,26 @@ void load_rr_file(const t_graph_type graph_type,
         wire_to_rr_ipin_switch,
         do_check_rr_graph,
         read_rr_graph_name,
-        &device_ctx.read_rr_graph_filename,
+        read_rr_graph_filename,
         read_edge_metadata,
-        &device_ctx.chan_width,
-        &device_ctx.rr_graph_builder.rr_nodes(),
-        &device_ctx.rr_graph_builder,
-        &device_ctx.rr_graph,
-        &device_ctx.rr_graph_builder.rr_switch(),
-        &device_ctx.rr_indexed_data,
-        device_ctx.num_arch_switches,
-        device_ctx.arch_switch_inf,
-        device_ctx.rr_graph.rr_segments(),
-        device_ctx.physical_tile_types,
+        echo_enabled,
+        echo_file_name,
+        chan_width,
+        &rr_graph_builder->rr_nodes(),
+        rr_graph_builder,
+        rr_graph,
+        &rr_graph_builder->rr_switch(),
+        rr_indexed_data,
+        rr_rc_data,
+        virtual_clock_network_root_idx,
+        num_arch_switches,
+        arch_switch_inf,
+        rr_graph->rr_segments(),
+        physical_tile_types,
         grid,
-        &device_ctx.rr_graph_builder.rr_node_metadata(),
-        &device_ctx.rr_graph_builder.rr_edge_metadata(),
-        &device_ctx.arch->strings);
+        &rr_graph_builder->rr_node_metadata(),
+        &rr_graph_builder->rr_edge_metadata(),
+        &arch->strings);
 
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml")) {
         try {

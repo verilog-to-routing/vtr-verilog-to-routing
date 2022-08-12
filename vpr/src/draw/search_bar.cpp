@@ -178,9 +178,11 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
 bool highlight_rr_nodes(int hit_node) {
     t_draw_state* draw_state = get_draw_state_vars();
 
+    //TODO: fixed sized char array may cause overflow.
     char message[250] = "";
 
     if (hit_node != OPEN) {
+        const auto& device_ctx = g_vpr_ctx.device();
         auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
         for (auto node : nodes) {
             if (draw_state->draw_rr_node[node].color != ezgl::MAGENTA) {
@@ -197,11 +199,11 @@ bool highlight_rr_nodes(int hit_node) {
                 draw_state->draw_rr_node[node].node_highlighted = false;
             }
             //Print info about all nodes to terminal
-            VTR_LOG("%s\n", describe_rr_node(node).c_str());
+            VTR_LOG("%s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, node).c_str());
         }
 
         //Show info about *only* hit node to graphics
-        std::string info = describe_rr_node(hit_node);
+        std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node);
 
         sprintf(message, "Selected %s", info.c_str());
         rr_highlight_message = message;

@@ -59,7 +59,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
                                     clustering_ctx.clb_nlist.net_name(net_id).c_str(),
                                     clustering_ctx.clb_nlist.net_name(rr_node_nets[rr_node]).c_str(),
                                     size_t(rr_node),
-                                    describe_rr_node((int)size_t(rr_node)).c_str());
+                                    describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, (int)size_t(rr_node)).c_str());
                 } else {
                     rr_node_nets[rr_node] = net_id;
                 }

@@ -328,7 +328,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
                                             rr_node_arch_name(size_t(from_node)).c_str(),
-                                            describe_rr_node(size_t(from_node)).c_str())
+                                            describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, size_t(from_node)).c_str())
                                 .c_str());
 
     } else if (from_type == CHANX || from_type == CHANY) {
@@ -352,7 +352,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
                                             rr_node_arch_name(size_t(from_node)).c_str(),
-                                            describe_rr_node(size_t(from_node)).c_str())
+                                            describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, size_t(from_node)).c_str())
                                 .c_str());
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
@@ -628,7 +628,7 @@ static void run_dijkstra(RRNodeId start_node, int start_x, int start_y, t_routin
             continue;
         }
 
-        //VTR_LOG("Expanding with delay=%10.3g cong=%10.3g (%s)\n", current.delay, current.congestion_upstream, describe_rr_node(curr_node).c_str());
+        //VTR_LOG("Expanding with delay=%10.3g cong=%10.3g (%s)\n", current.delay, current.congestion_upstream, describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, curr_node).c_str());
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
         if (rr_graph.node_type(curr_node) == IPIN) {

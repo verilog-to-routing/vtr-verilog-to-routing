@@ -19,13 +19,29 @@
 #    include "rr_graph_uxsdcxx_capnp.h"
 #endif
 
-#include "globals.h"
-
 /************************ Subroutine definitions ****************************/
 
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
-void write_rr_graph(const char* file_name) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+/**FIXME: To make rr_graph_reader independent of vpr_context, the below
+ * parameters are a workaround to passing the data structures of DeviceContext. 
+ * Needs a solution to reduce the number of parameters passed in.*/
+
+void write_rr_graph(RRGraphBuilder* rr_graph_builder,
+                    RRGraphView* rr_graph_view,
+                    const std::vector<t_physical_tile_type>& physical_tile_types,
+                    vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
+                    std::vector<t_rr_rc_data>* rr_rc_data,
+                    const DeviceGrid& grid,
+                    const t_arch_switch_inf* arch_switch_inf,
+                    const t_arch* arch,
+                    t_chan_width* chan_width,
+                    const size_t num_arch_switches,
+                    const char* file_name,
+                    const int virtual_clock_network_root_idx,
+                    bool echo_enabled,
+                    const char* echo_file_name) {
+
     RrGraphSerializer reader(
         /*graph_type=*/t_graph_type(),
         /*base_cost_type=*/e_base_cost_type(),
@@ -34,20 +50,24 @@ void write_rr_graph(const char* file_name) {
         /*read_rr_graph_name=*/nullptr,
         /*read_rr_graph_filename=*/nullptr,
         /*read_edge_metadata=*/false,
-        &device_ctx.chan_width,
-        &device_ctx.rr_graph_builder.rr_nodes(),
-        &device_ctx.rr_graph_builder,
-        &device_ctx.rr_graph,
-        &device_ctx.rr_graph_builder.rr_switch(),
-        &device_ctx.rr_indexed_data,
-        device_ctx.num_arch_switches,
-        device_ctx.arch_switch_inf,
-        device_ctx.rr_graph.rr_segments(),
-        device_ctx.physical_tile_types,
-        device_ctx.grid,
-        &device_ctx.rr_graph_builder.rr_node_metadata(),
-        &device_ctx.rr_graph_builder.rr_edge_metadata(),
-        &device_ctx.arch->strings);
+        echo_enabled,
+        echo_file_name,
+        chan_width,
+        &rr_graph_builder->rr_nodes(),
+        rr_graph_builder,
+        rr_graph_view,
+        &rr_graph_builder->rr_switch(),
+        rr_indexed_data,
+        rr_rc_data,
+        virtual_clock_network_root_idx,
+        num_arch_switches,
+        arch_switch_inf,
+        rr_graph_view->rr_segments(),
+        physical_tile_types,
+        grid,
+        &rr_graph_builder->rr_node_metadata(),
+        &rr_graph_builder->rr_edge_metadata(),
+        &arch->strings);
 
     if (vtr::check_file_name_extension(file_name, ".xml")) {
         std::fstream fp;

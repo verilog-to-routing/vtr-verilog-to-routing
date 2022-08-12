@@ -228,7 +228,7 @@ struct t_draw_state {
      * ROUTING is on screen.
      * [0..device_ctx.rr_nodes.size()-1]
      */
-    t_draw_rr_node* draw_rr_node = nullptr;
+    std::vector<t_draw_rr_node> draw_rr_node;
 
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
 
