@@ -8,8 +8,8 @@
  * As a note, looks into draw_global.c for understanding the data structures associated with drawing->
  *
  * Contains all functions that didn't fit in any other draw_*.cpp file.
- * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang
- * Last updated: June 2019
+ * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang, Sebastian Lievano
+ * Last updated: August 2022
  */
 
 #include <cstdio>

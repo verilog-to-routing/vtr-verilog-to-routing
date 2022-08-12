@@ -1,3 +1,12 @@
+/**
+ * @file search_bar.h
+ * 
+ * This file essentially follows the whole search process, from searching, finding the match,
+ * and finally highlighting the searched for item. Also includes auto-complete functionality/matching functions.
+ * 
+ * Author: Sebastian Lievano
+ */
+
 #ifndef SEARCH_BAR_H
 #define SEARCH_BAR_H
 

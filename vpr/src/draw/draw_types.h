@@ -1,4 +1,7 @@
-/* This file contains declarations of structures and types shared by all drawing
+/**
+ * @file draw_types.h
+ * 
+ * This file contains declarations of structures and types shared by all drawing
  * routines.
  *
  * Key structures:
@@ -9,8 +12,7 @@
  *               - holds state variables that control drawing and highlighting of
  *				   architectural elements on the FPGA chip
  *
- * Author: Long Yu (Mike) Wang
- * Date: August 20, 2013
+ * Author: Long Yu (Mike) Wang, Sebastian Lievano
  */
 
 #ifndef DRAW_TYPES_H
