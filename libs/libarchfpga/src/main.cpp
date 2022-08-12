@@ -20,7 +20,7 @@ void print_help();
 
 int main(int argc, char** argv) {
     try {
-        t_arch* arch = (t_arch*)vtr::calloc(1, sizeof(t_arch));
+        t_arch arch;
         std::vector<t_physical_tile_type> physical_tile_types;
         std::vector<t_logical_block_type> logical_block_types;
 
@@ -44,15 +44,14 @@ int main(int argc, char** argv) {
         printf("Reading in architecture\n");
 
         /* function declarations */
-        XmlReadArch(argv[1], atoi(argv[2]), arch, physical_tile_types, logical_block_types);
+        XmlReadArch(argv[1], atoi(argv[2]), &arch, physical_tile_types, logical_block_types);
 
         printf("Printing Results\n");
 
-        EchoArch(argv[3], physical_tile_types, logical_block_types, arch);
+        EchoArch(argv[3], physical_tile_types, logical_block_types, &arch);
 
         // CLEAN UP
-        free_arch(arch);
-        vtr::free(arch);
+        free_arch(&arch);
         free_type_descriptors(physical_tile_types);
         free_type_descriptors(logical_block_types);
 
