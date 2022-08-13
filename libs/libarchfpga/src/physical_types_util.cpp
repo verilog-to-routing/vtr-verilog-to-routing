@@ -605,6 +605,10 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
 
         pin_name += "[" + std::to_string(pb_pin->pin_number) + "]";
 
+        pin_name += ".[";
+        pin_name += std::to_string(pin_physical_num);
+        pin_name += "]";
+
         if(is_flat) {
             pin_name += " Inter-Tile";
         }

@@ -48,6 +48,9 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
 static void alloc_and_load_intra_cluster_resources();
+static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,
+                                                        t_logical_block_type* logical_block,
+                                                        t_class* class_inf);
 static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
                                       t_logical_block_type* logical_block,
                                       t_class* class_inf,
@@ -756,6 +759,40 @@ static void alloc_and_load_intra_cluster_resources() {
 
 }
 
+static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,
+                                                        t_logical_block_type* logical_block,
+                                                        t_class* class_inf) {
+
+    std::set<t_pb_graph_node*> relevant_pb_nodes;
+    int conn_pin_physical_num = class_inf->pinlist[0];
+    t_pb_graph_pin* conn_pb_pin = get_mutable_pb_pin_from_pin_physical_num(physical_tile,
+                                                                           logical_block,
+                                                                           conn_pin_physical_num);
+    t_pb_graph_node* curr_pb_graph_node = conn_pb_pin->parent_node;
+    relevant_pb_nodes.insert(curr_pb_graph_node);
+
+    if(!curr_pb_graph_node->is_root()) {
+        t_pb_graph_node* first_parent = curr_pb_graph_node->parent_pb_graph_node;
+
+        for(int mode_num = 0; mode_num < first_parent->pb_type->num_modes; mode_num++) {
+            auto mode = first_parent->pb_type->modes[mode_num];
+            for(int type_idx = 0; type_idx < mode.num_pb_type_children; type_idx++) {
+                for(int pb_idx = 0; pb_idx < mode.pb_type_children[type_idx].num_pb; pb_idx++) {
+                    relevant_pb_nodes.insert(&first_parent->child_pb_graph_nodes[mode_num][type_idx][pb_idx]);
+                }
+            }
+        }
+    }
+
+    while(!curr_pb_graph_node->is_root()) {
+        relevant_pb_nodes.insert(curr_pb_graph_node);
+        curr_pb_graph_node = curr_pb_graph_node->parent_pb_graph_node;
+    }
+
+    return relevant_pb_nodes;
+
+}
+
 static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
                                       t_logical_block_type* logical_block,
                                       t_class* class_inf,
@@ -763,6 +800,10 @@ static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
 
     std::list<int> pin_list;
     pin_list.insert(pin_list.begin(), class_inf->pinlist.begin(), class_inf->pinlist.end());
+
+    std::set<t_pb_graph_node*> relevant_pb_nodes = get_relevant_pb_nodes(physical_tile,
+                                                                         logical_block,
+                                                                         class_inf);
 
     std::set<t_pb_graph_pin*> seen_pb_pins;
     while(!pin_list.empty()) {
@@ -772,8 +813,9 @@ static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
             continue;
         }
         t_pb_graph_pin* curr_pb_graph_pin = get_mutable_pb_pin_from_pin_physical_num(physical_tile, logical_block, curr_pin_physical_num);
+
         auto insert_res = seen_pb_pins.insert(curr_pb_graph_pin);
-        if(!insert_res.second){
+        if(!insert_res.second || relevant_pb_nodes.find(curr_pb_graph_pin->parent_node) == relevant_pb_nodes.end()){
             continue;
         }
         curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);

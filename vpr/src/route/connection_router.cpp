@@ -564,6 +564,16 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                            target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax,
                                            get_class_block_name(type, target_ptc).c_str());
                             return;
+                        } else {
+                            auto type = g_vpr_ctx.device().grid[rr_graph_->node_xlow(to_node)][rr_graph_->node_ylow(to_node)].type;
+                            VTR_LOGV_DEBUG(router_debug_,
+                                           "       Add internal IPIN expansion of node %d edge %zu -> %d"
+                                           " (to node is IPIN at %d,%dx%d,%d[%s] which does not"
+                                           " lead to target block %d,%dx%d,%d[%s])\n",
+                                           from_node, size_t(from_edge), to_node_int,
+                                           to_xlow, to_ylow, to_xhigh, to_yhigh, block_type_pin_index_to_name(type, to_ptc, is_flat_).c_str(),
+                                           target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax,
+                                           get_class_block_name(type, target_ptc).c_str());
                         }
                     }
                 }
