@@ -1,5 +1,6 @@
 #ifndef TILEABLE_RR_GRAPH_NODE_BUILDER_H
 #define TILEABLE_RR_GRAPH_NODE_BUILDER_H
+
 /********************************************************************
  * Include header files that are required by function declaration
  *******************************************************************/
@@ -38,4 +39,3 @@ void create_tileable_rr_graph_nodes(RRGraphView& rr_graph,
                                     const bool& through_channel);
 
 #endif
-

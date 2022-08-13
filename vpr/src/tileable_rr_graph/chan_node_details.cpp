@@ -9,7 +9,7 @@
 #include "chan_node_details.h"
 
 /************************************************************************
- *  Constructors 
+ *  Constructors
  ***********************************************************************/
 ChanNodeDetails::ChanNodeDetails(const ChanNodeDetails& src) {
     /* duplicate */
@@ -76,9 +76,9 @@ bool ChanNodeDetails::is_track_end(const size_t& track_id) const {
     return track_end_[track_id];
 }
 
-/* Track_id is the starting point of group (whose is_start should be true) 
+/* Track_id is the starting point of group (whose is_start should be true)
  * This function will try to find the track_ids with the same directionality as track_id and seg_length
- * A group size is the number of such nodes between the starting points (include the 1st starting point) 
+ * A group size is the number of such nodes between the starting points (include the 1st starting point)
  */
 std::vector<size_t> ChanNodeDetails::get_seg_group(const size_t& track_id) const {
     VTR_ASSERT(validate_chan_width());
@@ -222,8 +222,8 @@ void ChanNodeDetails::rotate_track_node_id(const size_t& offset, const Direction
     }
 
     /* Rotate the node_ids by groups
-   * A group begins from a track_start and ends before another track_start  
-   */
+     * A group begins from a track_start and ends before another track_start
+     */
     VTR_ASSERT(validate_chan_width());
     for (size_t itrack = 0; itrack < get_chan_width(); ++itrack) {
         /* Bypass non-start segment */
@@ -264,7 +264,7 @@ void ChanNodeDetails::clear() {
 }
 
 /************************************************************************
- *  Validators 
+ *  Validators
  ***********************************************************************/
 bool ChanNodeDetails::validate_chan_width() const {
     size_t chan_width = track_node_ids_.size();
