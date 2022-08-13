@@ -1,4 +1,4 @@
-# Building VTR1
+# Building VTR
 
 
 ## Setting up Your Environment
