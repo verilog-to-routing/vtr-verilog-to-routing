@@ -132,12 +132,10 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
             delayless_rr_switch = rr_switch;
         }
     }
-// NYI
-#if 0
+
     /* Validate the special switches */
-    VTR_ASSERT(true == device_ctx.rr_graph.validate_node(wire_to_ipin_rr_switch));
-    VTR_ASSERT(true == device_ctx.rr_graph.validate_node(delayless_rr_switch));
-#endif
+    VTR_ASSERT(true == device_ctx.rr_graph.rr_nodes().validate_node(wire_to_ipin_rr_switch));
+    VTR_ASSERT(true == device_ctx.rr_graph.rr_nodes().validate_node(delayless_rr_switch));
 
     /* A temp data about the driver switch ids for each rr_node */
     vtr::vector<RRNodeId, RRSwitchId> rr_node_driver_switches;
@@ -162,6 +160,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    device_ctx.rr_graph_builder,
                                    rr_node_driver_switches,
                                    rr_node_track_ids,
+                                   device_ctx.rr_rc_data,
                                    grids,
                                    device_chan_width,
                                    segment_inf,
@@ -262,15 +261,6 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, delayless_rr_switch,
                                       arch_directs, clb2clb_directs);
 
-//NYI
-// We may not need to rebuild it again
-#if 0
-  /* First time to build edges so that we can remap the architecture switch to rr_switch
-   * This is a must-do before function alloc_and_load_rr_switch_inf()
-   */
-  device_ctx.rr_graph.rebuild_node_edges();
-#endif
-
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
     alloc_and_load_rr_switch_inf(device_ctx.num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
@@ -278,11 +268,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     /* Save the channel widths for the newly constructed graph */
     device_ctx.chan_width = chan_width;
 
-//NYI
-#if 0
-  /* Save the track ids for tileable routing resource graph */
-  device_ctx.rr_node_track_ids = rr_node_track_ids;
-#endif
+    /* Save the track ids for tileable routing resource graph */
+    device_ctx.rr_node_track_ids = rr_node_track_ids;
 
     /************************************************************************
      * Allocate external data structures
@@ -294,25 +281,6 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS);
     rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y,
                        *wire_to_rr_ipin_switch, base_cost_type);
-
-    /* Rebuild the link between RRGraph node and segments
-     * Should be called only AFTER the function
-     * rr_graph_externals()
-     */
-    for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
-        if ((CHANX != device_ctx.rr_graph.node_type(inode))
-            && (CHANY != device_ctx.rr_graph.node_type(inode))) {
-            continue;
-        }
-// NYI
-#if 0
-        RRIndexedDataId irc_data = device_ctx.rr_graph.node_cost_index(inode);
-        short iseg = device_ctx.rr_indexed_data[irc_data].seg_index;
-        // device_ctx.rr_graph_builder.set_node_segment(inode, RRSegmentId(iseg)); // NYI
-        vtr::vector<RRSegmentId, t_segment_inf>  rr_segments = device_ctx.rr_graph_builder.rr_segments();
-        rr_segments[(RRSegmentId)iseg] = segment_inf;
-#endif
-    }
 
     /************************************************************************
      * Sanitizer for the rr_graph, check connectivities of rr_nodes
@@ -326,22 +294,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                   "Fundamental errors occurred when validating rr_graph object!\n");
     }
 
-    check_rr_graph(GRAPH_UNIDIR, grids, types);
-
-    // NYI
-    // vpr integration: DeviceContext does not provide direct RRGraph access
-    // for advanced rr graph checker in check_rr_graph_obj.h, needs rr graph object
-    // rr graph view won't work here
-#if 0
-  /* Error out if advanced checker of rr_graph fails */
-  if (false == check_rr_graph(device_ctx.rr_graph)) {
-    vpr_throw(VPR_ERROR_ROUTE,
-              __FILE__,
-              __LINE__,
-              "Advanced checking rr_graph object fails! Routing may still work "
-              "but not smooth\n");
-  }
-#endif
+    /* No clock network support yet */
+    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, device_ctx.chan_width, GRAPH_UNIDIR, OPEN);
 
     /************************************************************************
      * Free all temp stucts
