@@ -10,6 +10,7 @@
 #include "vpr_types.h"
 #include "rr_graph_type.h"
 #include "describe_rr_node.h"
+#include "clb2clb_directs.h"
 
 /* Warnings about the routing graph that can be returned.
  * This is to avoid output messages during a value sweep */
@@ -37,6 +38,26 @@ void free_rr_graph();
 t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
                                                   const float R_minW_nmos,
                                                   const float R_minW_pmos);
+
+void alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, const int wire_to_arch_ipin_switch, int* wire_to_rr_ipin_switch);
+
+void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
+                        const std::vector<t_segment_inf>& segment_inf_x,
+                        const std::vector<t_segment_inf>& segment_inf_y,
+                        int wire_to_rr_ipin_switch,
+                        enum e_base_cost_type base_cost_type);
+
+t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, int delayless_switch);
+
+std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
+                                                       const int max_pins,
+                                                       const std::vector<t_segment_inf>& segment_inf,
+                                                       const int* sets_per_seg_type,
+                                                       const t_chan_width* nodes_per_chan,
+                                                       const e_fc_type fc_type,
+                                                       const enum e_directionality directionality,
+                                                       bool* Fc_clipped);
+
 // Sets the spec for the rr_switch based on the arch switch
 void load_rr_switch_from_arch_switch(int arch_switch_idx,
                                      int rr_switch_idx,
