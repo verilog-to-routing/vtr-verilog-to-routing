@@ -20,6 +20,7 @@
 #include <sstream>
 #include <array>
 #include <iostream>
+#include <time.h>
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -282,6 +283,7 @@ static void default_setup(ezgl::application* app) {
     basic_button_setup(app);
     net_button_setup(app);
     block_button_setup(app);
+    search_setup(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -301,7 +303,6 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     //Hiding unused functionality
     hide_widget("RoutingMenuButton", app);
     hide_crit_path_button(app);
-    button_for_displaying_noc();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -356,7 +357,6 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     default_setup(app);
     routing_button_setup(app);
     hide_crit_path_button(app);
-    button_for_displaying_noc();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -516,8 +516,7 @@ void alloc_draw_structs(const t_arch* arch) {
 
     /* Space is allocated for draw_rr_node but not initialized because we do *
      * not yet know information about the routing resources.				  */
-    draw_state->draw_rr_node = (t_draw_rr_node*)vtr::malloc(
-        device_ctx.rr_graph.num_nodes() * sizeof(t_draw_rr_node));
+    draw_state->draw_rr_node.resize(device_ctx.rr_graph.num_nodes());
 
     draw_state->arch_info = arch;
 
@@ -534,7 +533,6 @@ void free_draw_structs() {
      *
      * For safety, set all the array pointers to NULL in case any data
      * structure gets freed twice.													 */
-    t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     if (draw_coords != nullptr) {
@@ -544,10 +542,6 @@ void free_draw_structs() {
         draw_coords->tile_y = nullptr;
     }
 
-    if (draw_state != nullptr) {
-        free(draw_state->draw_rr_node);
-        draw_state->draw_rr_node = nullptr;
-    }
 #else
     ;
 #endif /* NO_GRAPHICS */
@@ -569,9 +563,7 @@ void init_draw_coords(float width_val) {
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
     if (rr_graph.num_nodes() != 0) {
-        draw_state->draw_rr_node = (t_draw_rr_node*)vtr::realloc(
-            draw_state->draw_rr_node,
-            (rr_graph.num_nodes()) * sizeof(t_draw_rr_node));
+        draw_state->draw_rr_node.resize(rr_graph.num_nodes());
         /*FIXME: the type cast should be eliminated by making draw_rr_node adapt RRNodeId */
         for (const RRNodeId& rr_id : rr_graph.nodes()) {
             draw_state->draw_rr_node[(size_t)rr_id].color = DEFAULT_RR_NODE_COLOR;
@@ -670,19 +662,33 @@ bool draw_if_net_highlighted(ClusterNetId inet) {
     if (draw_state->net_color[inet] != DEFAULT_RR_NODE_COLOR) {
         return true;
     }
-
     return false;
 }
 
-#    if defined(X11) && !defined(__MINGW32__)
-void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name) {
-    //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
+/**
+ * @brief cbk function for key press
+ * 
+ * At the moment, only does something if user is currently typing in searchBar and
+ * hits enter, at which point it runs autocomplete
+ */
+void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
     std::string key(key_name);
+    GtkWidget* searchBar = GTK_WIDGET(app->get_object("TextInput"));
+    std::string text(gtk_entry_get_text(GTK_ENTRY(searchBar)));
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (gtk_widget_is_focus(searchBar)) {
+        if (key == "Return") {
+            enable_autocomplete(app);
+            gtk_editable_set_position(GTK_EDITABLE(searchBar), text.length());
+            return;
+        }
+    }
+    if (draw_state->justEnabled) {
+        draw_state->justEnabled = false;
+    } else {
+        gtk_entry_set_completion(GTK_ENTRY(searchBar), nullptr);
+    }
 }
-#    else
-void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* /*key_name*/) {
-}
-#    endif
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
     //  std::cout << "User clicked the ";
@@ -780,7 +786,8 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
         if (hit_node != OPEN) {
             //Update message
 
-            std::string info = describe_rr_node(hit_node);
+            const auto& device_ctx = g_vpr_ctx.device();
+            std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node);
             std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
             app->update_message(msg.c_str());
         } else {

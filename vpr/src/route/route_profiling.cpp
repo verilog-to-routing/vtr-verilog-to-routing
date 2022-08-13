@@ -214,6 +214,7 @@ void conn_start() {
     conn_start_time = clock();
 }
 void conn_finish(int src_rr, int sink_rr, float criticality) {
+    const auto& device_ctx = g_vpr_ctx.device();
     float route_time = static_cast<float>(clock() - conn_start_time) / CLOCKS_PER_SEC;
     if (route_time > worst_conn_time) {
         worst_src_rr = src_rr;
@@ -223,16 +224,17 @@ void conn_finish(int src_rr, int sink_rr, float criticality) {
     }
 
     VTR_LOG("%s to %s (crit: %f) took %f\n",
-            describe_rr_node(src_rr).c_str(),
-            describe_rr_node(sink_rr).c_str(),
+            describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, src_rr).c_str(),
+            describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_rr).c_str(),
             criticality,
             route_time);
 }
 void net_finish() {
     if (worst_conn_time > 0.f) {
+        const auto& device_ctx = g_vpr_ctx.device();
         VTR_LOG("Worst conn was %s to %s (crit: %f) took %f\n",
-                describe_rr_node(worst_src_rr).c_str(),
-                describe_rr_node(worst_sink_rr).c_str(),
+                describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, worst_src_rr).c_str(),
+                describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, worst_sink_rr).c_str(),
                 worst_crit,
                 worst_conn_time);
     }

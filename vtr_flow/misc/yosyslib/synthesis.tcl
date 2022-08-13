@@ -18,6 +18,9 @@ yosys -import
 # XXX (input circuit) is replaced with filename by the run_vtr_flow script
 read_verilog -sv -nolatches XXX
 
+# read the custom complex blocks in the architecture
+read_verilog -lib CCC
+
 # These commands follow the generic `synth'
 # command script inside Yosys
 # The -libdir argument allows Yosys to search the current 
@@ -64,7 +67,7 @@ opt -full
 techmap 
 opt -fast
 
-# We read the definitions for all the VTR primitives
+# read the definitions for all the VTR primitives
 # as blackboxes
 read_verilog -lib TTT/adder.v
 read_verilog -lib TTT/multiply.v

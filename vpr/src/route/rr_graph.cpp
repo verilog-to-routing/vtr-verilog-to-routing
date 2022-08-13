@@ -17,7 +17,7 @@
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "rr_graph_util.h"
+#include "rr_graph_utils.h"
 #include "rr_graph.h"
 #include "rr_graph_area.h"
 #include "rr_graph2.h"
@@ -38,6 +38,7 @@
 #include "tileable_rr_graph_builder.h"
 
 #include "rr_types.h"
+#include "echo_files.h"
 
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
@@ -286,18 +287,33 @@ void create_rr_graph(const t_graph_type graph_type,
                      int* Warnings) {
     const auto& device_ctx = g_vpr_ctx.device();
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
+    bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
+    const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     if (!det_routing_arch->read_rr_graph_filename.empty()) {
         if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
             free_rr_graph();
 
-            load_rr_file(graph_type,
-                         grid,
+            load_rr_file(&mutable_device_ctx.rr_graph_builder,
+                         &mutable_device_ctx.rr_graph,
+                         device_ctx.physical_tile_types,
                          segment_inf,
+                         &mutable_device_ctx.rr_indexed_data,
+                         &mutable_device_ctx.rr_rc_data,
+                         grid,
+                         device_ctx.arch_switch_inf,
+                         graph_type,
+                         device_ctx.arch,
+                         &mutable_device_ctx.chan_width,
                          router_opts.base_cost_type,
+                         num_arch_switches,
+                         device_ctx.virtual_clock_network_root_idx,
                          &det_routing_arch->wire_to_rr_ipin_switch,
                          det_routing_arch->read_rr_graph_filename.c_str(),
+                         &det_routing_arch->read_rr_graph_filename,
                          router_opts.read_rr_edge_metadata,
-                         router_opts.do_check_rr_graph);
+                         router_opts.do_check_rr_graph,
+                         echo_enabled,
+                         echo_file_name);
             if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
                 mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
                                                                   router_opts.reorder_rr_graph_nodes_threshold,
@@ -362,13 +378,26 @@ void create_rr_graph(const t_graph_type graph_type,
 
     process_non_config_sets();
 
-    verify_rr_node_indices(grid, device_ctx.rr_graph, device_ctx.rr_graph.rr_nodes());
+    verify_rr_node_indices(grid, device_ctx.rr_graph, device_ctx.rr_indexed_data, device_ctx.rr_graph.rr_nodes());
 
     print_rr_graph_stats();
 
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
-        write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str());
+        write_rr_graph(&mutable_device_ctx.rr_graph_builder,
+                       &mutable_device_ctx.rr_graph,
+                       device_ctx.physical_tile_types,
+                       &mutable_device_ctx.rr_indexed_data,
+                       &mutable_device_ctx.rr_rc_data,
+                       grid,
+                       device_ctx.arch_switch_inf,
+                       device_ctx.arch,
+                       &mutable_device_ctx.chan_width,
+                       num_arch_switches,
+                       det_routing_arch->write_rr_graph_filename.c_str(),
+                       device_ctx.virtual_clock_network_root_idx,
+                       echo_enabled,
+                       echo_file_name);
     }
 }
 
@@ -822,7 +851,13 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, *wire_to_rr_ipin_switch, base_cost_type);
 
-    check_rr_graph(graph_type, grid, types);
+    check_rr_graph(device_ctx.rr_graph,
+                   types,
+                   device_ctx.rr_indexed_data,
+                   grid,
+                   device_ctx.chan_width,
+                   graph_type,
+                   device_ctx.virtual_clock_network_root_idx);
 
     /* Free all temp structs */
     delete[] seg_details_x;
@@ -1030,9 +1065,14 @@ void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         enum e_base_cost_type base_cost_type) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    const auto& grid = device_ctx.grid;
+    auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
+    auto& rr_indexed_data = mutable_device_ctx.rr_indexed_data;
+    bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
+    const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     add_rr_graph_C_from_switches(rr_graph.rr_switch_inf(RRSwitchId(wire_to_rr_ipin_switch)).Cin);
-    alloc_and_load_rr_indexed_data(segment_inf, segment_inf_x,
-                                   segment_inf_y, wire_to_rr_ipin_switch, base_cost_type);
+    alloc_and_load_rr_indexed_data(rr_graph, grid, segment_inf, segment_inf_x,
+                                   segment_inf_y, rr_indexed_data, wire_to_rr_ipin_switch, base_cost_type, echo_enabled, echo_file_name);
     //load_rr_index_segments(segment_inf.size());
 }
 
@@ -1499,6 +1539,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
     const std::vector<int>& pin_class = type->pin_class;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     /* SINK and SOURCE-to-OPIN edges */
@@ -1555,7 +1596,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_coordinates(inode, i, j, i + type->width - 1, j + type->height - 1);
         float R = 0.;
         float C = 0.;
-        rr_graph_builder.set_node_rc_index(inode, NodeRCIndex(find_create_rr_rc_data(R, C)));
+        rr_graph_builder.set_node_rc_index(inode, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
         rr_graph_builder.set_node_class_num(inode, iclass);
     }
 
@@ -1606,7 +1647,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                             rr_graph_builder.set_node_capacity(inode, 1);
                             float R = 0.;
                             float C = 0.;
-                            rr_graph_builder.set_node_rc_index(inode, NodeRCIndex(find_create_rr_rc_data(R, C)));
+                            rr_graph_builder.set_node_rc_index(inode, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
                             rr_graph_builder.set_node_pin_num(inode, ipin);
 
                             //Note that we store the grid tile location and side where the pin is located,
@@ -1655,6 +1696,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
      * coordinates based on channel type */
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
     //Initally a assumes CHANX
     int seg_coord = x_coord;                           //The absolute coordinate of this segment within the channel
@@ -1810,7 +1852,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         int length = end - start + 1;
         float R = length * seg_details[track].Rmetal();
         float C = length * seg_details[track].Cmetal();
-        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C)));
+        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
 
         rr_graph_builder.set_node_type(node, chan_type);
         rr_graph_builder.set_node_track_num(node, track);
@@ -2580,50 +2622,6 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
     }
 
     return track_to_pin_lookup;
-}
-
-/* TODO: This function should adapt RRNodeId */
-std::string describe_rr_node(int inode) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    std::string msg = vtr::string_fmt("RR node: %d", inode);
-
-    if (rr_graph.node_type(RRNodeId(inode)) == CHANX || rr_graph.node_type(RRNodeId(inode)) == CHANY) {
-        auto cost_index = rr_graph.node_cost_index(RRNodeId(inode));
-
-        int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
-        std::string rr_node_direction_string = rr_graph.node_direction_string(RRNodeId(inode));
-
-        if (seg_index < (int)rr_graph.num_rr_segments()) {
-            msg += vtr::string_fmt(" track: %d longline: %d",
-                                   rr_graph.node_track_num(RRNodeId(inode)),
-                                   rr_graph.rr_segments(RRSegmentId(seg_index)).longline);
-        } else {
-            msg += vtr::string_fmt(" track: %d seg_type: ILLEGAL_SEG_INDEX %d",
-                                   rr_graph.node_track_num(RRNodeId(inode)),
-                                   seg_index);
-        }
-    } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
-        auto type = device_ctx.grid[rr_graph.node_xlow(RRNodeId(inode))][rr_graph.node_ylow(RRNodeId(inode))].type;
-        std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(RRNodeId(inode)));
-
-        msg += vtr::string_fmt(" pin: %d pin_name: %s",
-                               rr_graph.node_pin_num(RRNodeId(inode)),
-                               pin_name.c_str());
-    } else {
-        VTR_ASSERT(rr_graph.node_type(RRNodeId(inode)) == SOURCE || rr_graph.node_type(RRNodeId(inode)) == SINK);
-
-        msg += vtr::string_fmt(" class: %d", rr_graph.node_class_num(RRNodeId(inode)));
-    }
-
-    msg += vtr::string_fmt(" capacity: %d", rr_graph.node_capacity(RRNodeId(inode)));
-    msg += vtr::string_fmt(" fan-in: %d", rr_graph.node_fan_in(RRNodeId(inode)));
-    msg += vtr::string_fmt(" fan-out: %d", rr_graph.num_edges(RRNodeId(inode)));
-
-    msg += " " + rr_graph.node_coordinate_to_string(RRNodeId(inode));
-
-    return msg;
 }
 
 /*AA: 

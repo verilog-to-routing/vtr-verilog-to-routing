@@ -622,25 +622,26 @@ void FasmWriterVisitor::visit_atom_impl(const t_pb* atom) {
   check_for_param(atom);
 }
 
-void FasmWriterVisitor::walk_route_tree(const t_rt_node *root) {
+void FasmWriterVisitor::walk_route_tree(const RRGraphBuilder& rr_graph_builder, const t_rt_node *root) {
     for (t_linked_rt_edge* edge = root->u.child_list; edge != nullptr; edge = edge->next) {
-        auto *meta = vpr::rr_edge_metadata(root->inode, edge->child->inode, edge->iswitch, fasm_features);
+        auto *meta = vpr::rr_edge_metadata(rr_graph_builder, root->inode, edge->child->inode, edge->iswitch, fasm_features);
         if(meta != nullptr) {
             output_fasm_features(meta->as_string().get(strings_), "", "");
         }
 
-        walk_route_tree(edge->child);
+        walk_route_tree(rr_graph_builder, edge->child);
     }
 }
 
 void FasmWriterVisitor::walk_routing() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     for(const auto &trace : route_ctx.trace) {
       t_trace *head = trace.head;
       if (!head) continue;
       t_rt_node* root = traceback_to_route_tree(head);
-      walk_route_tree(root);
+      walk_route_tree(device_ctx.rr_graph_builder, root);
       free_route_tree(root);
     }
 }

@@ -15,16 +15,16 @@ A Constraints File Example
 	<vpr_constraints tool_name="vpr">
      		<partition_list>
 	  	<partition name="Part0">
-	       		<add_atom name_pattern="li354">
-	       		<add_atom name_pattern="alu*"> <!-- Regular expressions can be used to provide name patterns of the primitives to be added -->
-	       		<add_atom name_pattern="n877">
-	      		 <add_region x_low="3" y_low="1" x_high="7" y_high="2"> <!-- Two rectangular regions are specified, together describing an L-shaped region -->
-	       		<add_region x_low="7" y_low="3" x_high="7" y_high="6"
+	       		<add_atom name_pattern="li354"/>
+	       		<add_atom name_pattern="alu*"/> <!-- Regular expressions can be used to provide name patterns of the primitives to be added -->
+	       		<add_atom name_pattern="n877"/>
+	      		 <add_region x_low="3" y_low="1" x_high="7" y_high="2"/> <!-- Two rectangular regions are specified, together describing an L-shaped region -->
+	       		<add_region x_low="7" y_low="3" x_high="7" y_high="6"/>
 	  	 </partition>
 	 	 <partition name="Part1">
-	       		<add_region x_low="3" y_low="3" x_high="7" y_high="7" subtile="0"> <!-- One specific location is specified -->
-	       		<add_atom name_pattern="n4917">
-	      		<add_atom name_pattern="n6010">
+	       		<add_region x_low="3" y_low="3" x_high="7" y_high="7" subtile="0"/> <!-- One specific location is specified -->
+	       		<add_atom name_pattern="n4917"/>
+	      		<add_atom name_pattern="n6010"/>
 	  	</partition>
      		</partition_list>
 	</vpr_constraints>
@@ -41,7 +41,7 @@ VPR has a specific XML format which must be used when creating a placement const
 
 The file is passed as an input to VPR when running with placement constraints. When the file is read in, its information is used during the packing and placement stages of VPR. The hierarchy of the file is set up as follows.
 
-.. note:: Use the VPR :option: `--read_vpr_constraints` to specify the VPR placement constraints file that is to be loaded. 
+.. note:: Use the VPR option :vpr:option:`--read_vpr_constraints` to specify the VPR placement constraints file that is to be loaded. 
 
 The top level tag is the ``<vpr_constraints>`` tag. This tag contains one ``<partition_list>`` tag. The ``<partition_list>`` tag can be made up of an unbounded number of ``<partition>`` tags. The ``<partition>`` tags contains all of the detailed information of the placement constraints, and is described in detail below.
 
