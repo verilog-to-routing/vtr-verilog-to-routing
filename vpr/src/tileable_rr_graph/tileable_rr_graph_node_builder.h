@@ -11,8 +11,8 @@
 #include "physical_types.h"
 
 /* Headers from vpr library */
-#include "rr_graph_obj.h"
 #include "device_grid.h"
+#include "rr_node_types.h"
 #include "rr_graph_view.h"
 #include "rr_graph_builder.h"
 
@@ -31,6 +31,7 @@ void create_tileable_rr_graph_nodes(RRGraphView& rr_graph,
                                     RRGraphBuilder& rr_graph_builder,
                                     vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                     std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
+                                    std::vector<t_rr_rc_data>& rr_rc_data,
                                     const DeviceGrid& grids,
                                     const vtr::Point<size_t>& chan_width,
                                     const std::vector<t_segment_inf>& segment_infs,
