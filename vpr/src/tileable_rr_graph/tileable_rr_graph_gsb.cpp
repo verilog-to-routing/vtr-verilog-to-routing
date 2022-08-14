@@ -952,7 +952,7 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
         for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
             const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
             for (const RRNodeId& track_node : track2track_map[gsb_side][inode]) {
-                rr_graph.create_edge(chan_node, track_node, rr_node_driver_switches[track_node]);
+                rr_graph_builder.create_edge(chan_node, track_node, rr_node_driver_switches[track_node]);
             }
         }
     }
