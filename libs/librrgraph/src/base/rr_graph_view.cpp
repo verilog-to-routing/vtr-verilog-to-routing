@@ -23,9 +23,19 @@ RRGraphView::RRGraphView(const t_rr_graph_storage& node_storage,
 }
 
 std::vector<RREdgeId> RRGraphView::node_in_edges(RRNodeId node) const {
-  VTR_ASSERT(size_t(node) < node_storage_.size());
-  if (node_in_edges_.empty()) {
-    return std::vector<RREdgeId>();
-  }
-  return node_in_edges_[node];
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    if (node_in_edges_.empty()) {
+        return std::vector<RREdgeId>();
+    }
+    return node_in_edges_[node];
+}
+
+std::vector<RREdgeId> RRGraphView::find_edges(const RRNodeId& src_node, const RRNodeId& des_node) const {
+    std::vector<RREdgeId> edge_list;
+    for (auto iedge : node_out_edges(src_node)) {
+        if (edge_sink_node(RREdgeId(iedge)) == des_node) {
+            edge_list.push_back(RREdgeId(iedge));
+        }
+    }
+    return edge_list;
 }

@@ -13,12 +13,6 @@ std::vector<RRSwitchId> find_rr_graph_switches(const RRGraphView& rr_graph,
                                                const RRNodeId& to_node) {
     std::vector<RRSwitchId> switches;
 
-    // NYI
-    // unused parameters
-    (void)(rr_graph);
-    (void)(from_node);
-    (void)(to_node);
-#if 0
     std::vector<RREdgeId> edges = rr_graph.find_edges(from_node, to_node);
     if (true == edges.empty()) {
         /* edge is open, we return an empty vector of switches */
@@ -31,7 +25,6 @@ std::vector<RRSwitchId> find_rr_graph_switches(const RRGraphView& rr_graph,
     for (auto edge : edges) {
         switches.push_back(rr_graph.edge_switch(edge));
     }
-#endif
 
     return switches;
 }

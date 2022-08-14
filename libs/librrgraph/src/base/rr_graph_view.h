@@ -505,8 +505,10 @@ class RRGraphView {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
-    /** @brief Return the number of edges.
-     */
+    /** @brief find the edges between two nodes */
+    std::vector<RREdgeId> find_edges(const RRNodeId& src_node, const RRNodeId& des_node) const;
+
+    /** @brief Get the number of edges. This function is inlined for runtime optimization. */
     inline t_edge_size num_edges(RRNodeId node) const {
         return node_storage_.num_edges(node);
     }
