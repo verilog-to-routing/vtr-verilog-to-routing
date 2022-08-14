@@ -1,5 +1,5 @@
 /**
- * @file draw_toggle_functions.cpp
+ * @file draw_toggle_functions.h
  * 
  * This file contains all of the callback functions for main UI elements. 
  * These callback functions alter the state of a set enum member in t_draw_state (draw_types.cpp)
