@@ -79,6 +79,7 @@ void RRGraphBuilder::clear() {
     rr_edge_metadata_.clear();
     rr_segments_.clear();
     rr_switch_inf_.clear();
+    edges_to_build_.clear();
 }
 
 void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm,
@@ -149,4 +150,15 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
                                size_t(dest_order[RRNodeId(std::get<1>(edge))]),
                                std::get<2>(edge));
     });
+}
+
+void RRGraphBuilder::create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch) {
+    edges_to_build_.emplace_back(src, dest, size_t(edge_switch));
+}
+
+void RRGraphBuilder::build_edges() {
+    std::sort(edges_to_build_.begin(), edges_to_build_.end());
+    edges_to_build_.erase(std::unique(edges_to_build_.begin(), edges_to_build_.end()), edges_to_build_.end());
+    alloc_and_load_edges(&edges_to_build_);
+    edges_to_build_.clear(); 
 }

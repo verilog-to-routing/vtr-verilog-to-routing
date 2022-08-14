@@ -917,15 +917,6 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
                                          const t_pin2track_map& opin2track_map,
                                          const t_track2track_map& track2track_map,
                                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches) {
-    // NYI
-    // unused parameters
-    (void)(rr_graph_builder);
-    (void)(rr_gsb);
-    (void)(track2ipin_map);
-    (void)(opin2track_map);
-    (void)(track2track_map);
-    (void)(rr_node_driver_switches);
-#if 0
     /* Walk through each sides */
     for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
         SideManager side_manager(side);
@@ -965,7 +956,6 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
             }
         }
     }
-#endif
 }
 
 /************************************************************************
@@ -1416,23 +1406,12 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids[to_grid_coordinate.x()][to_grid_coordinate.y()], ipin);
                 VTR_ASSERT(1 == ipin_grid_side.size());
 
-                // NYI
-                // unused parameters
-                (void)(rr_graph);
-                (void)(rr_graph_builder);
-                // unused variables
-                (void)(from_grid_width_ofs);
-                (void)(from_grid_height_ofs);
-                (void)(to_grid_width_ofs);
-                (void)(to_grid_height_ofs);
-#if 0
-                const RRNodeId& opin_node_id = rr_graph.find_node(from_grid_coordinate.x() - from_grid_width_ofs,
-                                                                  from_grid_coordinate.y() - from_grid_height_ofs,
-                                                                  OPIN, opin, opin_grid_side[0]);
-                const RRNodeId& ipin_node_id = rr_graph.find_node(to_grid_coordinate.x() - to_grid_width_ofs,
-                                                                  to_grid_coordinate.y() - to_grid_height_ofs,
-                                                                  IPIN, ipin, ipin_grid_side[0]);
-#endif
+                const RRNodeId& opin_node_id = rr_graph.node_lookup().find_node(from_grid_coordinate.x() - from_grid_width_ofs,
+                                                                                from_grid_coordinate.y() - from_grid_height_ofs,
+                                                                                OPIN, opin, opin_grid_side[0]);
+                const RRNodeId& ipin_node_id = rr_graph.node_lookup().find_node(to_grid_coordinate.x() - to_grid_width_ofs,
+                                                                                to_grid_coordinate.y() - to_grid_height_ofs,
+                                                                                IPIN, ipin, ipin_grid_side[0]);
                 /*
                  * VTR_LOG("Direct connection: from grid[%lu][%lu].pin[%lu] at side %s to grid[%lu][%lu].pin[%lu] at side %s\n",
                  * from_grid_coordinate.x() - from_grid_width_ofs,
@@ -1445,13 +1424,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 
                 /* add edges to the opin_node */
 
-                // NYI
-                // unused parameters
-                (void)(delayless_switch);
-#if 0
-                rr_graph_builder.create_edge(opin_node_id, ipin_node_id,
-                                     delayless_switch);
-#endif
+                rr_graph_builder.create_edge(opin_node_id, ipin_node_id, delayless_switch);
             }
         }
     }

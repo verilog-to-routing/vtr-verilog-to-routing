@@ -40,13 +40,11 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
                                                                             SOURCE, src_node_class_num);
         VTR_ASSERT(true == rr_graph.validate_node(src_node));
 
-        // NYI
-        (void)(rr_node_driver_switches);
-#if 0
         /* add edges to the src_node */
         rr_graph_builder.create_edge(src_node, node, rr_node_driver_switches[node]);
-#endif
     }
+    /* Allocate edges for all the source nodes */
+    rr_graph_builder.build_edges();
 }
 
 /************************************************************************
@@ -73,14 +71,11 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
                                                                      SINK, sink_node_class_num);
         VTR_ASSERT(true == rr_graph.validate_node(sink_node));
 
-        // NYI
-        (void)(rr_node_driver_switches);
-        (void)(rr_graph_builder);
-#if 0
         /* add edges to connect the IPIN node to SINK nodes */
         rr_graph_builder.create_edge(node, sink_node, rr_node_driver_switches[sink_node]);
-#endif
     }
+    /* Allocate edges for all the source nodes */
+    rr_graph_builder.build_edges();
 }
 
 /************************************************************************
@@ -142,6 +137,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                                                 track2ipin_map, opin2track_map,
                                                 sb_conn, rr_node_driver_switches);
             /* Finish this GSB, go to the next*/
+            rr_graph_builder.build_edges();
         }
     }
 }
