@@ -246,6 +246,15 @@ class RRGraphBuilder {
      * while the cache will be empty once build-up is accomplished */
     void build_edges();
 
+    /** @brief Allocate and build incoming edges for each node. 
+     *  By default, no incoming edges are kept in storage, to be memory efficient */
+    void build_in_edges();
+
+    /** @brief Return incoming edges for a given routing resource node 
+     *  Require build_in_edges() to be called first
+     */
+    std::vector<RREdgeId> node_in_edges(RRNodeId node);
+
     /** @brief Reserve the lists of edges to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,
      * when adding a large number of edges in order to avoid memory fragements */
@@ -413,7 +422,11 @@ class RRGraphBuilder {
     /* Detailed information about the switches, which are used in the RRGraph */
     vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
 
-    /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
+    /** A list of incoming edges for each routing resource node. This can be built optionally, as required by applications.
+     *  By default, it is empty! Call build_in_edges() to construct it!!! */
+    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edges_;
+
+    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
      *  e.g., node_lookup! */
     /* Metadata is an extra data on rr-nodes and edges, respectively, that is not used by vpr
      * but simply passed through the flow so that it can be used by downstream tools.
@@ -437,6 +450,11 @@ class RRGraphBuilder {
      * value:   map of <attribute_name, attribute_value>
      */
     MetadataStorage<std::tuple<int, int, short>> rr_edge_metadata_;
+
+    /** @brief a flag to mark the status of edge storage
+     *  dirty means that the edge storage is not complete, should call related APIs to build */
+    bool is_edge_dirty_;
+    bool is_incoming_edge_dirty_;
 };
 
 #endif

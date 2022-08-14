@@ -7,7 +7,10 @@
 
 //#include "globals.h"
 
-RRGraphBuilder::RRGraphBuilder() {}
+RRGraphBuilder::RRGraphBuilder() {
+    is_edge_dirty_ = true;
+    is_incoming_edge_dirty_ = true;
+}
 
 t_rr_graph_storage& RRGraphBuilder::rr_nodes() {
     return node_storage_;
@@ -80,6 +83,8 @@ void RRGraphBuilder::clear() {
     rr_segments_.clear();
     rr_switch_inf_.clear();
     edges_to_build_.clear();
+    is_edge_dirty_ = true;
+    is_incoming_edge_dirty_ = true;
 }
 
 void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm,
@@ -154,6 +159,8 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
 
 void RRGraphBuilder::create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch) {
     edges_to_build_.emplace_back(src, dest, size_t(edge_switch));
+    is_edge_dirty_ = true; /* Adding a new edge revokes the flag */
+    is_incoming_edge_dirty_ = true;
 }
 
 void RRGraphBuilder::build_edges() {
@@ -161,4 +168,31 @@ void RRGraphBuilder::build_edges() {
     edges_to_build_.erase(std::unique(edges_to_build_.begin(), edges_to_build_.end()), edges_to_build_.end());
     alloc_and_load_edges(&edges_to_build_);
     edges_to_build_.clear(); 
+    is_edge_dirty_ = false;
+}
+
+void RRGraphBuilder::build_in_edges() {
+    VTR_ASSERT(validate());
+    node_in_edges_.clear();
+    node_in_edges_.resize(node_storage_.size());
+
+    for (const RRNodeId& src_node: vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(node_storage_.size()))) {
+        for (size_t iedge = size_t(node_storage_.first_edge(src_node)); iedge < size_t(node_storage_.last_edge(src_node)); iedge++) {
+            RRNodeId des_node = node_storage_.edge_sink_node(RREdgeId(iedge));
+            node_in_edges_[des_node].push_back(RREdgeId(iedge));
+        }
+    }
+    is_incoming_edge_dirty_ = false;
+}
+
+std::vector<RREdgeId> RRGraphBuilder::node_in_edges(RRNodeId node) {
+  VTR_ASSERT(size_t(node) < node_storage_.size());
+  if (is_incoming_edge_dirty_) {
+    VTR_LOG_ERROR("Incoming edges are built yet in routing resource graph. Please call build_in_edges().");
+    return std::vector<RREdgeId>();
+  }
+  if (node_in_edges_.empty()) {
+    return std::vector<RREdgeId>();
+  }
+  return node_in_edges_[node];
 }
