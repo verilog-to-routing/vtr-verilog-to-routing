@@ -2,12 +2,14 @@
 VPR Draw Files
 ===============
 
-**breakpoint**
+breakpoint
+--------------
 .. doxygenfile:: breakpoint.h
    :project: vpr
    :sections: detaileddescription
 
-**draw_basic**
+draw_basic
+--------------
 .. doxygenfile:: draw_basic.h
    :project: vpr
    :sections: detaileddescription
