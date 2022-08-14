@@ -16,6 +16,7 @@
 #include "rr_graph_storage.h"
 #include "rr_spatial_lookup.h"
 #include "metadata_storage.h"
+#include "rr_edge.h"
 
 class RRGraphBuilder {
     /* -- Constructors -- */
@@ -200,6 +201,15 @@ class RRGraphBuilder {
         node_storage_.set_node_direction(id, new_direction);
     }
 
+    /** @brief Add a new edge to the cache of edges to be built 
+     *  .. note:: This will not add an edge to storage! You need to call build_edges() after all the edges are cached! */
+    void create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch);
+
+    /** @brief Allocate and build actual edges in storage. 
+     *  Once called, the cached edges will be uniquified and added to routing resource nodes, 
+     * while the cache will be empty once build-up is accomplished */
+    void build_edges();
+
     /** @brief Reserve the lists of edges to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,
      * when adding a large number of edges in order to avoid memory fragements */
@@ -285,13 +295,13 @@ class RRGraphBuilder {
         rr_switch_inf_.resize(size);
     }
 
-    /** @brief Validate that edge data is partitioned correctly
+    /** @brief Validate that edge data is partitioned correctly. Also there are no edges left to be built!
      * @note This function is used to validate the correctness of the routing resource graph in terms
      * of graph attributes. Strongly recommend to call it when you finish the building a routing resource
      * graph. If you need more advance checks, which are related to architecture features, you should
      * consider to use the check_rr_graph() function or build your own check_rr_graph() function. */
     inline bool validate() const {
-        return node_storage_.validate(rr_switch_inf_);
+        return node_storage_.validate(rr_switch_inf_) && edges_to_build_.empty();
     }
 
     /** @brief Sorts edge data such that configurable edges appears before
@@ -324,6 +334,14 @@ class RRGraphBuilder {
     t_rr_graph_storage node_storage_;
     /* Fast look-up for rr nodes */
     RRSpatialLookup node_lookup_;
+
+    /* A cache for edge-related information, required to build edges for routing resource nodes.
+     * It is used when building a routing resource graph by considering memory efficiency.
+     * It will be clear up after calling build_edges().
+     *
+     * .. warning:: This is a temporary data which is used to collect edges to be built for nodes
+     */
+    t_rr_edge_info_set edges_to_build_;
 
     /**  Wire segment types in RR graph
      * - Each rr_segment contains the detailed information of a routing track, which is denoted by a node in CHANX or CHANY type.
