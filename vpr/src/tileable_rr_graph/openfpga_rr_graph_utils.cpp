@@ -73,17 +73,11 @@ std::vector<RRSwitchId> get_rr_graph_driver_switches(const RRGraphView& rr_graph
                                                      const RRNodeId& node) {
     std::vector<RRSwitchId> driver_switches;
 
-    // NYI
-    // unused argements
-    (void)(rr_graph);
-    (void)(node);
-#if 0
     for (const RREdgeId& edge : rr_graph.node_in_edges(node)) {
         if (driver_switches.end() == std::find(driver_switches.begin(), driver_switches.end(), rr_graph.edge_switch(edge))) {
             driver_switches.push_back(rr_graph.edge_switch(edge));
         }
     }
-#endif
 
     return driver_switches;
 }
@@ -95,15 +89,9 @@ std::vector<RRNodeId> get_rr_graph_driver_nodes(const RRGraphView& rr_graph,
                                                 const RRNodeId& node) {
     std::vector<RRNodeId> driver_nodes;
 
-    // NYI
-    // unused argements
-    (void)(rr_graph);
-    (void)(node);
-#if 0
     for (const RREdgeId& edge : rr_graph.node_in_edges(node)) {
         driver_nodes.push_back(rr_graph.edge_src_node(edge));
     }
-#endif
 
     return driver_nodes;
 }
@@ -115,13 +103,6 @@ std::vector<RRNodeId> get_rr_graph_configurable_driver_nodes(const RRGraphView& 
                                                              const RRNodeId& node) {
     std::vector<RRNodeId> driver_nodes;
 
-    // NYI
-    // unused argements
-    (void)(rr_graph);
-    (void)(node);
-#if 0
-    (void)(rr_graph);
-    (void)(node);
     for (const RREdgeId& edge : rr_graph.node_in_edges(node)) {
         /* Bypass non-configurable edges */
         if (false == rr_graph.edge_is_configurable(edge)) {
@@ -129,7 +110,6 @@ std::vector<RRNodeId> get_rr_graph_configurable_driver_nodes(const RRGraphView& 
         }
         driver_nodes.push_back(rr_graph.edge_src_node(edge));
     }
-#endif
 
     return driver_nodes;
 }
@@ -141,11 +121,6 @@ std::vector<RRNodeId> get_rr_graph_non_configurable_driver_nodes(const RRGraphVi
                                                                  const RRNodeId& node) {
     std::vector<RRNodeId> driver_nodes;
 
-    // NYI
-    // unused argements
-    (void)(rr_graph);
-    (void)(node);
-#if 0
     for (const RREdgeId& edge : rr_graph.node_in_edges(node)) {
         /* Bypass configurable edges */
         if (true == rr_graph.edge_is_configurable(edge)) {
@@ -153,7 +128,6 @@ std::vector<RRNodeId> get_rr_graph_non_configurable_driver_nodes(const RRGraphVi
         }
         driver_nodes.push_back(rr_graph.edge_src_node(edge));
     }
-#endif
 
     return driver_nodes;
 }
@@ -169,23 +143,17 @@ bool is_opin_direct_connected_ipin(const RRGraphView& rr_graph,
     /* We only accept OPIN */
     VTR_ASSERT(OPIN == rr_graph.node_type(node));
 
-    // NYI
-    // unused argements
-    (void)(rr_graph);
-    (void)(node);
-#if 0
     if (1 != rr_graph.node_out_edges(node).size()) {
         return false;
     }
 
     VTR_ASSERT(1 == rr_graph.node_out_edges(node).size());
-    for (const RREdgeId& edge : rr_graph.node_out_edges(node)) {
-        const RRNodeId& sink_node = rr_graph.edge_sink_node(edge);
+    for (auto edge : rr_graph.node_out_edges(node)) {
+        const RRNodeId& sink_node = rr_graph.edge_sink_node(RREdgeId(edge));
         if (IPIN != rr_graph.node_type(sink_node)) {
             return false;
         }
     }
-#endif
 
     return true;
 }
@@ -201,11 +169,6 @@ bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
     /* We only accept IPIN */
     VTR_ASSERT(IPIN == rr_graph.node_type(node));
 
-    // NYI
-    // unused argements
-    (void)(rr_graph);
-    (void)(node);
-#if 0
     if (1 != rr_graph.node_in_edges(node).size()) {
         return false;
     }
@@ -217,7 +180,6 @@ bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
             return false;
         }
     }
-#endif
 
     return true;
 }

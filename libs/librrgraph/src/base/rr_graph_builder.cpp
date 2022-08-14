@@ -28,6 +28,10 @@ MetadataStorage<std::tuple<int, int, short>>& RRGraphBuilder::rr_edge_metadata()
     return rr_edge_metadata_;
 }
 
+vtr::vector<RRNodeId, std::vector<RREdgeId>> RRGraphBuilder::node_in_edge_storage() {
+    return node_in_edges_;
+}
+
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     t_rr_type node_type = node_storage_.node_type(node);
     short node_ptc_num = node_storage_.node_ptc_num(node);
@@ -185,7 +189,7 @@ void RRGraphBuilder::build_in_edges() {
     is_incoming_edge_dirty_ = false;
 }
 
-std::vector<RREdgeId> RRGraphBuilder::node_in_edges(RRNodeId node) {
+std::vector<RREdgeId> RRGraphBuilder::node_in_edges(RRNodeId node) const {
   VTR_ASSERT(size_t(node) < node_storage_.size());
   if (is_incoming_edge_dirty_) {
     VTR_LOG_ERROR("Incoming edges are built yet in routing resource graph. Please call build_in_edges().");

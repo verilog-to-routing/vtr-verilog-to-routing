@@ -567,6 +567,11 @@ t_edge_size t_rr_graph_storage::num_non_configurable_edges(RRNodeId node, const 
     return num_edges(node) - num_configurable_edges(node, rr_switches);
 }
 
+bool t_rr_graph_storage::edge_is_configurable(RREdgeId edge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+  auto iswitch = edge_switch(edge);
+  return rr_switches[RRSwitchId(iswitch)].configurable();
+}
+
 bool t_rr_graph_storage::edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
   auto iswitch = edge_switch(id, iedge);
   return rr_switches[RRSwitchId(iswitch)].configurable();

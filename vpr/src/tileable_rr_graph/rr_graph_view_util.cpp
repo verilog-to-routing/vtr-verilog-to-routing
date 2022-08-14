@@ -48,19 +48,11 @@ std::vector<RRNodeId> find_rr_graph_nodes(const RRGraphView& rr_graph,
                                           const int& ptc) {
     std::vector<RRNodeId> indices;
 
-    // NYI
-    // unused parameters
-    (void)(rr_graph);
-    (void)(x);
-    (void)(y);
-    (void)(rr_type);
-    (void)(ptc);
-#if 0
     if (rr_type == IPIN || rr_type == OPIN) {
         //For pins we need to look at all the sides of the current grid tile
 
         for (e_side side : SIDES) {
-            RRNodeId rr_node_index = rr_graph.find_node(x, y, rr_type, ptc, side);
+            RRNodeId rr_node_index = rr_graph.node_lookup().find_node(x, y, rr_type, ptc, side);
 
             if (rr_node_index != RRNodeId::INVALID()) {
                 indices.push_back(rr_node_index);
@@ -68,13 +60,12 @@ std::vector<RRNodeId> find_rr_graph_nodes(const RRGraphView& rr_graph,
         }
     } else {
         //Sides do not effect non-pins so there should only be one per ptc
-        RRNodeId rr_node_index = rr_graph.find_node(x, y, rr_type, ptc);
+        RRNodeId rr_node_index = rr_graph.node_lookup().find_node(x, y, rr_type, ptc);
 
         if (rr_node_index != RRNodeId::INVALID()) {
             indices.push_back(rr_node_index);
         }
     }
-#endif
 
     return indices;
 }
@@ -140,16 +131,11 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
             continue;
         }
 
-        // NYI
-        // unused parameter
-        (void)(rr_graph);
-#if 0
         /* Try to find the rr node */
-        RRNodeId rr_node_index = rr_graph.find_node(x, y, rr_type, pin, side);
+        RRNodeId rr_node_index = rr_graph.node_lookup().find_node(x, y, rr_type, pin, side);
         if (rr_node_index != RRNodeId::INVALID()) {
             indices.push_back(rr_node_index);
         }
-#endif
     }
 
     return indices;

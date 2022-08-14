@@ -45,6 +45,8 @@ class RRGraphBuilder {
     MetadataStorage<int>& rr_node_metadata();
     /** @brief Return a writable object for the meta data on the edge */
     MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata();
+    /** @brief Return a writable object fo the incoming edge storage */
+    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edge_storage();
 
     /** @brief Return the size for rr_node_metadata */
     inline size_t rr_node_metadata_size() const {
@@ -253,7 +255,7 @@ class RRGraphBuilder {
     /** @brief Return incoming edges for a given routing resource node 
      *  Require build_in_edges() to be called first
      */
-    std::vector<RREdgeId> node_in_edges(RRNodeId node);
+    std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
 
     /** @brief Reserve the lists of edges to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,

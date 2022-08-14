@@ -74,7 +74,8 @@ class RRGraphView {
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                 const std::vector<t_rr_rc_data>& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
-                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
+                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
+                const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the
@@ -417,21 +418,23 @@ class RRGraphView {
     inline short edge_switch(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_switch(id, iedge);
     }
-
-    /** @brief Return the source node for the specified edge. 
-    */
-    inline RRNodeId edge_src_node(const RREdgeId edge_id) const {
-        return node_storage_.edge_src_node(edge_id);
+    inline RRSwitchId edge_switch(RREdgeId edge) const {
+        return RRSwitchId(node_storage_.edge_switch(edge));
     }
-
-    /** @brief Return the destination node for the iedge'th edge from specified RRNodeId.
-     *  @param id the id of the node
-     *  @param iedge the iedge'th edge of the node
-     *  @return destination node id of the specified edge 
-     *  @note This method should generally not be used, and instead first_edge and 
-     * last_edge should be used.*/
+    /** @brief Get the source node for the iedge'th edge from specified RRNodeId.
+     *  This method should generally not be used, and instead first_edge and
+     *  last_edge should be used.*/
+    inline RRNodeId edge_src_node(RREdgeId edge) const {
+        return node_storage_.edge_source_node(edge);
+    }
+    /** @brief Get the destination node for the iedge'th edge from specified RRNodeId.
+     *  This method should generally not be used, and instead first_edge and
+     *  last_edge should be used.*/
     inline RRNodeId edge_sink_node(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_sink_node(id, iedge);
+    }
+    inline RRNodeId edge_sink_node(RREdgeId edge) const {
+        return node_storage_.edge_sink_node(edge);
     }
 
     /** @brief Get the source node for the iedge'th edge from specified RRNodeId.
@@ -449,6 +452,9 @@ class RRGraphView {
     */
     inline bool edge_is_configurable(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_is_configurable(id, iedge, rr_switch_inf_);
+    }
+    inline bool edge_is_configurable(RREdgeId edge) const {
+        return node_storage_.edge_is_configurable(edge, rr_switch_inf_);
     }
 
     /** @brief Return the number of configurable edges. 
@@ -493,6 +499,9 @@ class RRGraphView {
      * }
      */
     inline edge_idx_range edges(const RRNodeId& id) const {
+        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
+    }
+    inline edge_idx_range node_out_edges(const RRNodeId& id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
@@ -545,8 +554,12 @@ class RRGraphView {
         return node_storage_.node_cost_index(node);
     }
 
-    /** @brief Return detailed routing segment information of a specified segment
-     * @note The routing segments here may not be exactly same as those defined in architecture file. They have been
+    /** @brief Return incoming edges for a given routing resource node 
+     *  Require build_in_edges() to be called first
+     */
+    std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
+
+    /** @brief Return detailed routing segment information with a given id* @note The routing segments here may not be exactly same as those defined in architecture file. They have been
      * adapted to fit the context of routing resource graphs.
      */
     inline const t_segment_inf& rr_segments(RRSegmentId seg_id) const {
@@ -665,6 +678,10 @@ class RRGraphView {
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
     /// switch info for rr nodes
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
+
+    /** A list of incoming edges for each routing resource node. This can be built optionally, as required by applications.
+     *  By default, it is empty! Call build_in_edges() to construct it!!! */
+    const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges_;
 };
 
 #endif
