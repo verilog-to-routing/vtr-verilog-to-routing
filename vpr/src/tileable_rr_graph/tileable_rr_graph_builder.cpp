@@ -134,8 +134,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     }
 
     /* Validate the special switches */
-    VTR_ASSERT(true == device_ctx.rr_graph.rr_nodes().validate_node(wire_to_ipin_rr_switch));
-    VTR_ASSERT(true == device_ctx.rr_graph.rr_nodes().validate_node(delayless_rr_switch));
+    VTR_ASSERT(true == device_ctx.rr_graph.valid_switch(wire_to_ipin_rr_switch));
+    VTR_ASSERT(true == device_ctx.rr_graph.valid_switch(delayless_rr_switch));
 
     /* A temp data about the driver switch ids for each rr_node */
     vtr::vector<RRNodeId, RRSwitchId> rr_node_driver_switches;

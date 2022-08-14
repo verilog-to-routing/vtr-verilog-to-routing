@@ -619,6 +619,11 @@ class RRGraphView {
         return node_storage_.validate_node(node_id, rr_switch_inf_);
     }
 
+    /** @brief Check if the switch is a valid one in storage */
+    inline bool valid_switch(RRSwitchId switch_id) const {
+        return (size_t(switch_id) < rr_switch_inf_.size());
+    }
+
     /* -- Internal data storage -- */
     /* Note: only read-only object or data structures are allowed!!! */
   private:
