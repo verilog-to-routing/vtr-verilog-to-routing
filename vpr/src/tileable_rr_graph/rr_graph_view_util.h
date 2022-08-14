@@ -1,11 +1,10 @@
-#ifndef RR_GRAPH_OBJ_UTIL_H
-#define RR_GRAPH_OBJ_UTIL_H
+#ifndef RR_GRAPH_VIEW_UTIL_H
+#define RR_GRAPH_VIEW_UTIL_H
 
 /* Include header files which include data structures used by
  * the function declaration
  */
 #include <vector>
-#include "rr_graph_obj.h"
 #include "device_grid.h"
 #include "rr_graph_view.h"
 
