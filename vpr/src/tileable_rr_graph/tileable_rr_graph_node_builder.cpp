@@ -979,28 +979,22 @@ static void load_chany_rr_nodes_basic_info(RRGraphView& rr_graph,
  * However, DEC direction routing tracks should have a reversed sequence in
  * track ids
  ***********************************************************************/
-static void reverse_dec_chan_rr_node_track_ids(const RRGraphBuilder& rr_graph_builder,
+static void reverse_dec_chan_rr_node_track_ids(const RRGraphView& rr_graph,
                                                std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids) {
-    // NYI
-    // unused parameters
-    (void)(rr_graph_builder);
-    (void)(rr_node_track_ids);
-#if 0
     // this should call rr_graph_builder to do the job
-  for (const RRNodeId& node : rr_graph_builder.nodes()) {
-    /* Bypass condition: only focus on CHANX and CHANY in DEC_DIRECTION */
-    if ( (CHANX != rr_graph_builder.node_type(node))
-      && (CHANY != rr_graph_builder.node_type(node)) ) {
-      continue;
+    for (const RRNodeId& node : rr_graph.nodes()) {
+        /* Bypass condition: only focus on CHANX and CHANY in DEC_DIRECTION */
+        if ( (CHANX != rr_graph.node_type(node))
+          && (CHANY != rr_graph.node_type(node)) ) {
+            continue;
+        }
+        /* Reach here, we must have a node of CHANX or CHANY */
+        if (Direction::DEC != rr_graph.node_direction(node)) {
+            continue;
+        }
+        std::reverse(rr_node_track_ids[node].begin(),
+                     rr_node_track_ids[node].end() );
     }
-    /* Reach here, we must have a node of CHANX or CHANY */
-    if (Direction::DEC != rr_graph_builder.node_direction(node)) {
-      continue;
-    }
-    std::reverse(rr_node_track_ids[node].begin(),
-                 rr_node_track_ids[node].end() );
-  }
-#endif
 }
 
 /************************************************************************
@@ -1042,6 +1036,6 @@ void create_tileable_rr_graph_nodes(RRGraphView& rr_graph,
                                    segment_infs,
                                    through_channel);
 
-    reverse_dec_chan_rr_node_track_ids(rr_graph_builder,
+    reverse_dec_chan_rr_node_track_ids(rr_graph,
                                        rr_node_track_ids);
 }
