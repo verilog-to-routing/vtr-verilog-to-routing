@@ -8,7 +8,6 @@
  * Authors: Long Yu Wang, Matthew J.P. Walker, Sebastian Lievano
  */
 
-
 /* Author: Long Yu Wang
  * Date: August 2013
  *

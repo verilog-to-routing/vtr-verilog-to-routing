@@ -25,7 +25,6 @@
 #include "move_transactions.h"
 #include "vtr_expr_eval.h"
 
-
 typedef enum breakpoint_types {
     BT_MOVE_NUM,
     BT_TEMP_NUM,

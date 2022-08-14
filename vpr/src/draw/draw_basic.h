@@ -6,7 +6,6 @@
  * All functions in this file contain the prefix draw_.
  */
 
-
 #ifndef DRAW_BASIC_H
 #define DRAW_BASIC_H
 
