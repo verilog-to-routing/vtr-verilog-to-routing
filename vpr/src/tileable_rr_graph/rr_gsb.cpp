@@ -158,14 +158,9 @@ std::vector<RREdgeId> RRGSB::get_chan_node_in_edges(const RRGraphView& rr_graph,
     if (0 == chan_node_in_edges_.size()) {
         std::vector<RREdgeId> unsorted_edges;
 
-        // NYI
-        // unused parameter
-        (void)(rr_graph);
-#if 0
         for (const RREdgeId& edge : rr_graph.node_in_edges(get_chan_node(side, track_id))) {
             unsorted_edges.push_back(edge);
         }
-#endif
 
         return unsorted_edges;
     }
@@ -819,13 +814,6 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
      *  For each side, the edge from grid pins will be the 1st part
      *  while the edge from routing tracks will be the 2nd part
      */
-
-    // NYI
-    // unused parameter
-    (void)(rr_graph);
-    // unused variable
-    (void)(chan_node);
-#if 0
     for (const RREdgeId& edge : rr_graph.node_in_edges(chan_node)) {
         /* We care the source node of this edge, and it should be an input of the GSB!!! */
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
@@ -837,9 +825,13 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
         if (NUM_SIDES == side) {
             VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
             VTR_LOG("SRC node:\n");
-            rr_graph.print_node(src_node);
+            VTR_LOG("Node type: %s\n", rr_graph.node_type_string(src_node));
+            VTR_LOG("Node coordinate: %d\n", rr_graph.node_coordinate_to_string(src_node).c_str());
+            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(src_node));
             VTR_LOG("Channel node:\n");
-            rr_graph.print_node(chan_node);
+            VTR_LOG("Node type: %s\n", rr_graph.node_type_string(chan_node));
+            VTR_LOG("Node coordinate: %d\n", rr_graph.node_coordinate_to_string(chan_node).c_str());
+            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(chan_node));
         }
 
         VTR_ASSERT(NUM_SIDES != side);
@@ -855,7 +847,6 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
 
         edge_counter++;
     }
-#endif
 
     /* Store the sorted edge */
     for (size_t side = 0; side < get_num_sides(); ++side) {
@@ -985,8 +976,6 @@ bool RRGSB::is_sb_node_mirror(const RRGraphView& rr_graph,
 
     VTR_ASSERT(node_in_edges.size() == cand_node_in_edges.size());
 
-// NYI
-#if 0
     for (size_t iedge = 0; iedge < node_in_edges.size(); ++iedge) {
         RREdgeId src_edge = node_in_edges[iedge];
         RREdgeId src_cand_edge = cand_node_in_edges[iedge];
@@ -1011,7 +1000,6 @@ bool RRGSB::is_sb_node_mirror(const RRGraphView& rr_graph,
             return false;
         }
     }
-#endif
 
     return true;
 }
@@ -1030,14 +1018,6 @@ bool RRGSB::is_cb_node_mirror(const RRGraphView& rr_graph,
     RRNodeId node = this->get_ipin_node(node_side, node_id);
     RRNodeId cand_node = cand.get_ipin_node(node_side, node_id);
 
-    // NYI
-    // unused parameter
-    (void)(rr_graph);
-    (void)(cb_type);
-    // unused variables
-    (void)(node);
-    (void)(cand_node);
-#if 0
     if (rr_graph.node_in_edges(node).size() != rr_graph.node_in_edges(cand_node).size()) {
         return false;
     }
@@ -1092,7 +1072,6 @@ bool RRGSB::is_cb_node_mirror(const RRGraphView& rr_graph,
             return false;
         }
     }
-#endif
 
     return true;
 }

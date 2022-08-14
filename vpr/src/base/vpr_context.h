@@ -191,7 +191,7 @@ struct DeviceContext : public Context {
     /* A read-only view of routing resource graph to be the ONLY database 
      * for client functions: GUI, placer, router, timing analyzer etc.
      */
-    RRGraphView rr_graph{rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_graph_builder.rr_node_metadata(), rr_graph_builder.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch()};
+    RRGraphView rr_graph{rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_graph_builder.rr_node_metadata(), rr_graph_builder.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch(), rr_graph_builder.node_in_edge_storage()};
 
     /* Track ids for each rr_node in the rr_graph.
      * This is used by drawer for tileable routing resource graph
