@@ -74,20 +74,11 @@ std::vector<RRNodeId> find_rr_graph_chan_nodes(const RRGraphView& rr_graph,
 
     VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
-    // NYI
-    // unused parameters
-    (void)(rr_graph);
-    (void)(x);
-    (void)(y);
-#if 0
-    for (short track = 0; track < rr_graph.chan_num_tracks(x, y, rr_type); ++track) {
-        RRNodeId rr_node_index = rr_graph.find_node(x, y, rr_type, track);
-
+    for (const RRNodeId& rr_node_index : rr_graph.node_lookup().find_channel_nodes(x, y, rr_type)) {
         if (rr_node_index != RRNodeId::INVALID()) {
             indices.push_back(rr_node_index);
         }
     }
-#endif
 
     return indices;
 }
