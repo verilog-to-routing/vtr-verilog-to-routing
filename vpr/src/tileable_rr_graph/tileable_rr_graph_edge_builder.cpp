@@ -68,14 +68,10 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
         short sink_node_class_num = get_grid_pin_class_index(grids[xlow][ylow],
                                                              rr_graph.node_pin_num(node));
         /* 1. create edges between IPINs and SINKs */
-        // NYI
-        (void)(sink_node_class_num);
-#if 0
-        const RRNodeId& sink_node = rr_graph.find_node(xlow - grids[xlow][ylow].width_offset,
-                                                       ylow - grids[xlow][ylow].height_offset,
-                                                       SINK, sink_node_class_num);
-        VTR_ASSERT(true == rr_graph.valid_node_id(sink_node));
-#endif
+        const RRNodeId& sink_node = rr_graph.node_lookup().find_node(xlow - grids[xlow][ylow].width_offset,
+                                                                     ylow - grids[xlow][ylow].height_offset,
+                                                                     SINK, sink_node_class_num);
+        VTR_ASSERT(true == rr_graph.validate_node(sink_node));
 
         // NYI
         (void)(rr_node_driver_switches);
