@@ -2,8 +2,7 @@
  * This file include most-utilized functions that manipulate on the
  * RRGraph object
  ***************************************************************************/
-#include "rr_graph_obj.h"
-#include "rr_graph_obj_util.h"
+#include "rr_graph_view_util.h"
 
 /****************************************************************************
  * Find the switches interconnecting two nodes

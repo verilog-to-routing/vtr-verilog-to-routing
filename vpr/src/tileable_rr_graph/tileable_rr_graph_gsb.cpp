@@ -14,7 +14,7 @@
 #include "openfpga_side_manager.h"
 
 #include "vpr_utils.h"
-#include "rr_graph_obj_util.h"
+#include "rr_graph_view_util.h"
 #include "openfpga_rr_graph_utils.h"
 #include "rr_graph_builder_utils.h"
 #include "tileable_chan_details_builder.h"
