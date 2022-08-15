@@ -257,8 +257,10 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     draw_noc(g);
 
-    if (draw_state->draw_partitions)
+    if (draw_state->draw_partitions){
     	highlight_regions(g);
+    	draw_constrained_atoms(g);
+    }
 
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);

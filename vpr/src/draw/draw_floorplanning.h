@@ -13,6 +13,7 @@
 #    include "ezgl/graphics.hpp"
 
 void highlight_regions(ezgl::renderer* g);
+void draw_constrained_atoms(ezgl::renderer* g);
 
 #endif /*NO_GRAPHICS*/
 
