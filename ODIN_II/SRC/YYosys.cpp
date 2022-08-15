@@ -270,28 +270,28 @@ void YYosys::execute() {
             aggregated_circuits += circuit + " ";
             // Read Verilog/SystemVerilog/UHDM files based on their type, considering the SystemVerilog/UHDM plugins
 #    ifdef YOSYS_SV_UHDM_PLUGIN
-            /* Load SystemVerilog/UHDM plugins in the Yosys frontend */
-            switch (configuration.input_file_type) {
-                case (file_type_e::_VERILOG): // fallthrough
-                case (file_type_e::_VERILOG_HEADER): {
-                    run_pass(std::string("read_verilog -sv -nolatches " + aggregated_circuits));
-                    break;
-                }
-                case (file_type_e::_SYSTEM_VERILOG): {
-                    run_pass(std::string("read_systemverilog -debug " + aggregated_circuits));
-                    break;
-                }
-                case (file_type_e::_UHDM): {
-                    run_pass(std::string("read_uhdm -debug " + aggregated_circuits));
-                    break;
-                }
-                default: {
-                    error_message(UTIL, unknown_location,
-                                  "Invalid file type (%s) for Yosys+Odin-II synthesizer.", file_extension_strmap[configuration.input_file_type]);
-                }
+        /* Load SystemVerilog/UHDM plugins in the Yosys frontend */
+        switch (configuration.input_file_type) {
+            case (file_type_e::_VERILOG): // fallthrough
+            case (file_type_e::_VERILOG_HEADER): {
+                run_pass(std::string("read_verilog -sv -nolatches " + aggregated_circuits));
+                break;
             }
+            case (file_type_e::_SYSTEM_VERILOG): {
+                run_pass(std::string("read_systemverilog -debug " + aggregated_circuits));
+                break;
+            }
+            case (file_type_e::_UHDM): {
+                run_pass(std::string("read_uhdm -debug " + aggregated_circuits));
+                break;
+            }
+            default: {
+                error_message(UTIL, unknown_location,
+                              "Invalid file type (%s) for Yosys+Odin-II synthesizer.", file_extension_strmap[configuration.input_file_type]);
+            }
+        }
 #    else
-            run_pass(std::string("read_verilog -sv -nolatches " + aggregated_circuits));
+        run_pass(std::string("read_verilog -sv -nolatches " + aggregated_circuits));
 #    endif
         // Check whether cells match libraries and find top module
         if (global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED) {
