@@ -28,8 +28,8 @@ Changes applied to the VTB files are outlined as follows:
 	The LUT size is considered the one defined in the architecture file as the same as the regular VTR flow
 
 
-How to add new changes?
------------------------
+Working with Complex Blocks and How to Instantiate them?
+-------------------------------------------------------
 
 The Yosys synthesis commands, including the generic synthesis and additional VTR specific configurations, are provided
 in `synthesis.tcl <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/synthesis.tcl>`_. To make changes in the overall Yosys synthesis flow, the `synthesis.tcl <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/synthesis.tcl>`_
@@ -42,10 +42,31 @@ the `yosys_models.v <https://github.com/verilog-to-routing/vtr-verilog-to-routin
 
 Except for `single_port_ram.v <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/single_port_ram.v>`_ and `dual_port_ram.v <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/dual_port_ram.v>`_ Verilog files that perform the depth splitting
 process, the other files are defined as black-box, i.e., their declarations are required while no definition is needed. To add new black-box
-components, developers should first provide the corresponding Verilog files similar to the `adder.v <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/adder.v>`_. Then, a new  `read_verilog -lib TTT/NEW_BB.v`
+components manually, developers should first provide the corresponding Verilog files similar to the `adder.v <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/adder.v>`_. Then, a new  `read_verilog -lib TTT/NEW_BB.v`
 command should be added to the Yosys synthesis script. If there is an implicit inference of the new black-box component, the `yosys_models.v <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/misc/yosyslib/yosys_models.v>`_
 Verilog file must also be modified, as mentioned earlier.
 
+It is worth noting that the VTR flow scripts for running Yosys standalone as the VTR frontend are designed to automatically provide the black box declaration of complex blocks defined in the architecture XML file for Yosys.
+Technically, by running the ``run_vtr_flow.py`` script with the Yosys frontend, the ``write_arch_bb`` routine, defined in the ``libarchfpga``, is executed initially to extract the information of complex blocks defined in the architecture file.
+Then, the routine generates a file, including the black box declaration of the complex blocks in the Verilog format.
+The output file is named ``arch_dsps.v`` by default, found in the project destination directory.
+
+Instantiation of complex blocks is similar to the explicit instantiation of VTR primitives in HDL format.
+The ``write_arch_bb`` generates a Verilog module with the same name as the complex block model.
+Module ports are also defined according to the port declaration provided in the architecture file.
+For instance, the HDL instantiation of the ``multiply_fp_clk`` complex block defined in the ``COFFE_22nm/k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml`` architecture file is as follows:
+
+.. code-block:: verilog
+	...
+	multiply_fp_clk instance_name(
+		.b(i_b),		// input	[31:0]	b
+		.a(i_a), 		// input	[31:0]	a
+		.clk(i_clk), 	// input	[0:0]	clk
+		.out(i_out)		// output	[31:0]	out
+	);
+	...
+
+**Algorithm 1** - Custom Complex Blocks HDL Instantiation
 
 Yosys Synthesis Script File
 ---------------------------
@@ -135,4 +156,4 @@ Yosys Synthesis Script File
 	# ZZZ will be replaced by run_vtr_flow.pl
 	write_blif -true + vcc -false + gnd -undef + unconn -blackbox ZZZ
 
-**Algorithm 1** - The Yosys Tcl Script File
+**Algorithm 2** - The Yosys Tcl Script File

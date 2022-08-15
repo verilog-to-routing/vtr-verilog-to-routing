@@ -27,6 +27,7 @@ YOSYS_LIB_FILES = {
     "DPRAM": "dual_port_ram.v",
     "SPRAMR": "spram_rename.v",
     "DPRAMR": "dpram_rename.v",
+    "DSPBB": "arch_dsps.v",
 }
 
 YOSYS_PARSERS = ["yosys", "surelog", "yosys-plugin"]
@@ -82,6 +83,7 @@ def init_script_file(
     yosys_dpram_full_path,
     yosys_spram_rename_full_path,
     yosys_dpram_rename_full_path,
+    architecture_dsp_full_path,
     circuit_list,
     output_netlist,
     memory_addr_width,
@@ -105,6 +107,7 @@ def init_script_file(
             "DDD": yosys_dpram_full_path,
             "SSR": yosys_spram_rename_full_path,
             "DDR": yosys_dpram_rename_full_path,
+            "CCC": architecture_dsp_full_path,
             "TTT": str(vtr.paths.yosys_lib_path),
             "ZZZ": output_netlist,
         },
@@ -226,6 +229,21 @@ def run(
     shutil.copyfile(yosys_base_spram_rename, yosys_spram_rename_full_path)
     shutil.copyfile(yosys_base_dpram_rename, yosys_dpram_rename_full_path)
 
+    write_arch_bb_exec = str(vtr.paths.write_arch_bb_exe_path)
+    architecture_dsp_full_path = str(vtr.paths.scripts_path / temp_dir / YOSYS_LIB_FILES["DSPBB"])
+
+    # executing write_arch_bb to extract the black box definitions of the given arch file
+    command_runner.run_system_command(
+        [
+            write_arch_bb_exec,
+            str(vtr.paths.scripts_path / architecture_file),
+            architecture_dsp_full_path,
+        ],
+        temp_dir=temp_dir,
+        log_filename="write_arch_bb.log",
+        indent_depth=1,
+    )
+
     # Create a list showing all (.v) and (.vh) files
     circuit_list = create_circuits_list(circuit_file, include_files)
 
@@ -236,6 +254,7 @@ def run(
         yosys_dpram_full_path,
         yosys_spram_rename_full_path,
         yosys_dpram_rename_full_path,
+        architecture_dsp_full_path,
         circuit_list,
         output_netlist.name,
         vtr.determine_memory_addr_width(str(architecture_file)),

@@ -1064,7 +1064,7 @@ void remove_list_node(t_linked_vptr* pre, t_linked_vptr* next) {
         pre->next = next->next;
     else
         pre->next = NULL;
-    vtr::free(next);
+    delete next;
 }
 
 /*---------------------------------------------------------------------------

@@ -1684,16 +1684,16 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Allocate and initialize the values to OPEN (-1). */
-    temp_idirect_from_blk_pin = (int**)vtr::malloc(device_ctx.physical_tile_types.size() * sizeof(int*));
-    temp_direct_type_from_blk_pin = (int**)vtr::malloc(device_ctx.physical_tile_types.size() * sizeof(int*));
+    temp_idirect_from_blk_pin = new int*[device_ctx.physical_tile_types.size()];
+    temp_direct_type_from_blk_pin = new int*[device_ctx.physical_tile_types.size()];
     for (const auto& type : device_ctx.physical_tile_types) {
         if (is_empty_type(&type)) continue;
 
         int itype = type.index;
         num_type_pins = type.num_pins;
 
-        temp_idirect_from_blk_pin[itype] = (int*)vtr::malloc(num_type_pins * sizeof(int));
-        temp_direct_type_from_blk_pin[itype] = (int*)vtr::malloc(num_type_pins * sizeof(int));
+        temp_idirect_from_blk_pin[itype] = new int[num_type_pins];
+        temp_direct_type_from_blk_pin[itype] = new int[num_type_pins];
 
         /* Initialize values to OPEN */
         for (iblk_pin = 0; iblk_pin < num_type_pins; iblk_pin++) {

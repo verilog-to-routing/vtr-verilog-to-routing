@@ -1,5 +1,4 @@
 #include "device_grid.h"
-#include "vpr_utils.h"
 
 DeviceGrid::DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid)
     : name_(grid_name)
