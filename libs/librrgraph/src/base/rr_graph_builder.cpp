@@ -66,6 +66,20 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     }
 }
 
+RRNodeId RRGraphBuilder::create_node(int x, int y, t_rr_type type, int ptc, e_side side) {
+    node_storage_.emplace_back();
+    RRNodeId new_node = RRNodeId(node_storage_.size() - 1);
+    node_storage_.set_node_type(new_node, type);
+    node_storage_.set_node_coordinates(new_node, x, y, x, y);
+    node_storage_.set_node_ptc_num(new_node, ptc);
+    if (CHANX != type && CHANY != type) {
+      node_storage_.add_node_side(new_node, side);
+    }
+    node_lookup_.add_node(new_node, x, y, type, ptc, side);
+
+    return new_node;
+}
+
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
     node_storage_.clear();

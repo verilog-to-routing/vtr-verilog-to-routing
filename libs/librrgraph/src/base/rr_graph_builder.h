@@ -118,6 +118,10 @@ class RRGraphBuilder {
     inline void set_node_type(RRNodeId id, t_rr_type type) {
         node_storage_.set_node_type(id, type);
     }
+    /** @brief Create a new rr_node in the node storage and register it to the node look-up.
+     *  Return a valid node id if succeed. Otherwise, return an invalid id.
+     */
+    RRNodeId create_node(int x, int y, t_rr_type type, int ptc, e_side side = SIDES[0]); 
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
      *
