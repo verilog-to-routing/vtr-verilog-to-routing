@@ -1423,9 +1423,10 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                  */
 
                 /* add edges to the opin_node */
-
                 rr_graph_builder.create_edge(opin_node_id, ipin_node_id, delayless_switch);
             }
         }
     }
+    /* Build actual edges */
+    rr_graph_builder.build_edges();
 }
