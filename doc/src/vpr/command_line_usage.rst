@@ -283,6 +283,12 @@ General Options
     .. warning:: Exercise extreme caution when turning this option off -- be sure you completely understand why the issue is being flagged, and why it is OK to treat as a warning instead of an error.
     
     **Default:** ``on``
+    
+.. option:: --terminate_if_timing_fails {on, off}
+
+    Controls whether VPR should terminate if timing is not met after routing. 
+    
+    **Default:** ``off``
 
 .. _filename_options:
 
