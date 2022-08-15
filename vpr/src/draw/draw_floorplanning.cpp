@@ -177,47 +177,30 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, c
     		g->draw_rectangle(abs_bbox);
     	}
 
-
+    	g->set_color(ezgl::BLACK);
     	if (current_pb->name != nullptr) {
-    		g->set_font_size(16); // note: calc_text_xbound(...) assumes this is 16
-    		if (pb_type->depth == draw_state->show_blk_internal || current_pb->child_pbs == nullptr) {
-    			// If this pb is at the lowest displayed level, or has no more children, then
-    			// label it in the center with its type and name
+    		g->set_font_size(10); // note: calc_text_xbound(...) assumes this is 16
+
 
     			std::string pb_type_name(pb_type->name);
     			std::string pb_name(current_pb->name);
 
     			std::string blk_tag = pb_type_name + pb_name;
 
-    			if (draw_state->draw_block_text) {
     				g->draw_text(
                     abs_bbox.center(),
                     blk_tag.c_str(),
-                    abs_bbox.width(),
-                    abs_bbox.height());
-    			}
+                    abs_bbox.width()+10,
+                    abs_bbox.height()+10);
 
-    		} else {
-    			// else (ie. has chilren, and isn't at the lowest displayed level)
-    			// just label its type, and put it up at the top so we can see it
-    			if (draw_state->draw_block_text) {
-    				g->draw_text(
-                    ezgl::point2d(abs_bbox.center_x(),
-                                  abs_bbox.top() - (abs_bbox.height()) / 15.0),
-                    pb_type->name,
-                    abs_bbox.width(),
-                    abs_bbox.height());
-    			}
-    		}
+
     	} else {
-    		// If child block is not used, label it only by its type
-    		if (draw_state->draw_block_text) {
     			g->draw_text(
                 abs_bbox.center(),
                 pb_type->name,
-                abs_bbox.width(),
-                abs_bbox.height());
-    		}
+                abs_bbox.width()+10,
+                abs_bbox.height()+10);
+
     	}
     }
 
