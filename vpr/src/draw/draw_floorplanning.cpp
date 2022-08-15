@@ -45,11 +45,11 @@
 #        include <X11/keysym.h>
 #    endif
 
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g);
+static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::color color, ezgl::renderer* g);
 
 const std::vector<ezgl::color> kelly_max_contrast_colors = {
 		//ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
-		ezgl::color(34, 34, 34),    //black
+		//ezgl::color(34, 34, 34),    //black: hard to differentiate between outline & primitive.
 		ezgl::color(243, 195, 0),   //yellow
 		ezgl::color(135, 86, 146),  //purple
 		ezgl::color(243, 132, 0),   //orange
@@ -77,7 +77,6 @@ void highlight_regions(ezgl::renderer* g){
 	auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 	auto constraints = floorplanning_ctx.constraints;
 	auto num_partitions = constraints.get_num_partitions();
-    t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	for (int partitionID = 0 ; partitionID < num_partitions; partitionID++){
@@ -85,9 +84,7 @@ void highlight_regions(ezgl::renderer* g){
 		auto& partition_region = partition.get_part_region();
 		auto regions = partition_region.get_partition_region();
 
-		g->set_color(kelly_max_contrast_colors[partitionID % (kelly_max_contrast_colors.size())], 50);
-
-		// NOTE: are these comments too personalized for me lol
+		g->set_color(kelly_max_contrast_colors[partitionID % (kelly_max_contrast_colors.size())], 30);
 
 		// The units of space in the constraints xml file will be refered to as "tile units"
 		// The units of space that'll be used by ezgl to draw will be refered to as "on screen units"
@@ -127,19 +124,18 @@ void draw_constrained_atoms(ezgl::renderer* g){
 			AtomBlockId const& const_atom = atoms[j];
 			if(atom_ctx.lookup.atom_pb(const_atom)!=nullptr){
 				const t_pb* pb = atom_ctx.lookup.atom_pb(const_atom);
-
+				auto color = kelly_max_contrast_colors[partitionID % (kelly_max_contrast_colors.size())];
 				ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atoms[j]);
-
 				auto type = cluster_ctx.clb_nlist.block_type(clb_index);
 
-			    draw_internal_pb(clb_index, cluster_ctx.clb_nlist.block_pb(clb_index), pb, ezgl::rectangle({0, 0}, 0, 0), type, g);
+			    draw_internal_pb(clb_index, cluster_ctx.clb_nlist.block_pb(clb_index), pb, ezgl::rectangle({0, 0}, 0, 0), type, color, g);
 
 			}
 		}
 	}
 }
 
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g) {
+static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::color color, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -147,11 +143,8 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, c
     ezgl::rectangle temp = draw_coords->get_pb_bbox(clb_index, *current_pb->pb_graph_node);
     ezgl::rectangle abs_bbox = temp + parent_bbox.bottom_left();
 
-
-//    VTR_LOG("current pb: %s \n", current_pb->name);
-//    VTR_LOG("current pb: %s \n", pb_to_draw->name);
-
     if (current_pb != pb_to_draw){
+
     	int num_child_types = current_pb->get_num_child_types();
     	for (int i = 0; i < num_child_types; ++i) {
     		if (current_pb->child_pbs[i] == nullptr) {
@@ -171,21 +164,19 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, c
     			}
 
     			// now recurse
-    			draw_internal_pb(clb_index, child_pb, pb_to_draw, abs_bbox, type, g);
+    			draw_internal_pb(clb_index, child_pb, pb_to_draw, abs_bbox, type, color, g);
     		}
     	}
     }
 
     else{
-    	g->set_color(ezgl::RED);
+    	g->set_color(color);
+
     	g->fill_rectangle(abs_bbox);
     	if (draw_state->draw_block_outlines) {
     		g->draw_rectangle(abs_bbox);
     	}
 
-    	/// then draw text ///
-
-    	g->set_color(ezgl::BLACK);
 
     	if (current_pb->name != nullptr) {
     		g->set_font_size(16); // note: calc_text_xbound(...) assumes this is 16
