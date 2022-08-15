@@ -272,7 +272,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     device_ctx.rr_node_track_ids = rr_node_track_ids;
 
     /* Build incoming edges */
-    device_ctx.rr_graph_builder.build_incoming_edges();
+    device_ctx.rr_graph_builder.build_in_edges();
 
     /************************************************************************
      * Allocate external data structures
