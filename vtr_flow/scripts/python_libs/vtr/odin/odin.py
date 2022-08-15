@@ -11,9 +11,9 @@ import vtr
 # supported input file type by Odin
 FILE_TYPES = {
     ".v": "verilog",
-    ".vh": "verilog",
-    ".sv": "verilog",
-    ".svh": "verilog",
+    ".vh": "verilog_header",
+    ".sv": "systemverilog",
+    ".svh": "systemverilog_header",
     ".blif": "blif",
 }
 

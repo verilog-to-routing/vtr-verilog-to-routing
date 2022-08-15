@@ -65,8 +65,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             LOG_CONFIGURE ON
             LOG_OUTPUT_ON_FAILURE ON
             
-            # usefull flags 
-            ALWAYS  TRUE 
+            # dependency
             DEPENDS yosys 
         ) 
 
@@ -98,8 +97,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             LOG_CONFIGURE ON
             LOG_OUTPUT_ON_FAILURE ON
             
-            # usefull flags 
-            ALWAYS  TRUE 
+            # dependency
             DEPENDS surelog yosys 
         ) 
     endif() 
