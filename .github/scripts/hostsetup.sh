@@ -30,7 +30,6 @@ apt install -y \
   build-essential \
   capnproto \
   clang \
-  cmake \
   ctags \
   curl \
   doxygen \
@@ -72,6 +71,15 @@ apt install -y \
   wget
   # Don't include libtbb-dev since it may increase memory usage
   #libtbb-dev \
+
+# installing the latest version of cmake
+apt install -y apt-transport-https ca-certificates gnupg
+wget -qO - https://apt.kitware.com/keys/kitware-archive-latest.asc |apt-key add -
+
+apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+apt update
+apt install -y cmake
+
 
 export PATH="$PATH:/home/kbuilder/.local/bin"
 
