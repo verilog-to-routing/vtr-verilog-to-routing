@@ -340,7 +340,7 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
         num_nodes += num_node_per_type;
     }
 
-    rr_graph_builder.reserve_nodes(num_nodes);
+    rr_graph_builder.resize_nodes(num_nodes);
 
     rr_node_driver_switches.reserve(num_nodes);
 }
