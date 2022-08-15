@@ -27,7 +27,7 @@ using vtr::t_linked_vptr;
 /* a comment for the body of black box modules */
 const char* HARD_BLOCK_COMMENT = "/* the body of the complex block module is empty since it should be seen as a black box */";
 /* list of vtr primitives blocks */
-static constexpr short num_vtr_primitives = 8;
+static constexpr short num_vtr_primitives = 9;
 static constexpr const char* vtr_primitives[num_vtr_primitives] = {
     "LUT_K",
     "DFF",
@@ -36,7 +36,9 @@ static constexpr const char* vtr_primitives[num_vtr_primitives] = {
     "adder",
     "multiply",
     "single_port_ram",
-    "dual_port_ram"};
+    "dual_port_ram",
+    "memory_pim"
+    };
 
 /* declarations */
 void DeclareModel_bb(FILE* Echo, const t_model* model);
