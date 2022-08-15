@@ -2417,7 +2417,10 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     VTR_ASSERT(layout_tag.name() == std::string("layout"));
 
     //Expect no attributes on <layout>
-    expect_only_attributes(layout_tag, {}, loc_data);
+    //expect_only_attributes(layout_tag, {}, loc_data);
+
+    arch->tileable = get_attribute(layout_tag, "tileable", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->through_channel = get_attribute(layout_tag, "through_channel", loc_data, ReqOpt::OPTIONAL).as_bool(false);
 
     //Count the number of <auto_layout> or <fixed_layout> tags
     size_t auto_layout_cnt = 0;
