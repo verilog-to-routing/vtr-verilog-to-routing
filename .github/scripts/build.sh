@@ -4,11 +4,6 @@ set -e
 
 source $(dirname "$0")/common.sh
 
-# Update VtR submodules
-if [[ $CMAKE_PARAMS == *"-DYOSYS_SV_UHDM_PLUGIN=ON"* ]]; then
-	make update_submodules
-fi
-
 $SPACER
 
 start_section "vtr.build" "${GREEN}Building..${NC}"

@@ -59,7 +59,6 @@ export CTEST_OUTPUT_ON_FAILURE=TRUE
 #For a BUILD_TYPE without 'pgo', a single stage (non-pgo) compilation is performed.
 
 #Forward any targets that are not named 'distclean' or 'clean' to the generated Makefile
-ifneq ($(MAKECMDGOALS),update_submodules)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),clean)
 all $(MAKECMDGOALS):
@@ -109,12 +108,6 @@ endif #BUILD_TYPE
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
 endif #clean
 endif #distclean
-endif #update_submodules
-
-# Update GitHub submodules exist in VTR repository
-update_submodules: 
-	@echo "Performing Git Submodule Recursive Update on the VTR Submodules..."
-	git submodule update --init --recursive
 
 #Call the generated Makefile's clean, and then remove all cmake generated files
 distclean: clean

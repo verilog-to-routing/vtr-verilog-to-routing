@@ -27,31 +27,35 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
 
     add_subdirectory(libyosys)
 
-    # adding a custom target to download (submodules), and compile Yosys plugins
-    if(${YOSYS_SV_UHDM_PLUGIN})
-        # keep record of the yosys DAT dir
-        set(YOSYS_DATDIR ${libyosys_BINARY_DIR}/share/yosys)
-        # keep record of the yosys-uhdm-plugin-integration path
-        set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
-        set(SURELOG_BINARY_DIR ${SURELOG_SOURCE_DIR}/build)
-        set(YOSYS_F4PGA_PLUGINS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-f4pga-plugins)
+    # building Surelog and UHDM in a custom target to avoid any target conflict with VTR targets 
+    if(${YOSYS_SV_UHDM_PLUGIN}) 
+        # keep record of the yosys DAT dir 
+        set(YOSYS_DATDIR ${libyosys_BINARY_DIR}/share/yosys) 
+        # keep record of the yosys-uhdm-plugin-integration path 
+        set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog) 
+        set(SURELOG_BINARY_DIR ${SURELOG_SOURCE_DIR}/build) 
+        set(YOSYS_F4PGA_PLUGINS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-f4pga-plugins) 
 
-        ExternalProject_Add(surelog
-            # root directory for Surelog project
-            PREFIX ""
+        # Surelog 
+        ExternalProject_Add(surelog 
+            # root directory for Surelog project 
+            PREFIX "" 
+
+            GIT_REPOSITORY    https://github.com/chipsalliance/Surelog.git 
+            GIT_TAG           8da6fcba650826219ead335a3382c52f1c1d5690 # yosys-systemverilog release c7f1ded-2022-08-10 
+            GIT_PROGRESS      TRUE 
             
-            # setting source, build and install directories
-            SOURCE_DIR "${SURELOG_SOURCE_DIR}"
-            # BINARY_DIR "${SURELOG_BINARY_DIR}"
-            BUILD_IN_SOURCE ON
-            INSTALL_DIR "${SURELOG_BINARY_DIR}"
+            # setting source, build and install directories 
+            SOURCE_DIR "${SURELOG_SOURCE_DIR}" 
+            BUILD_IN_SOURCE TRUE 
+            INSTALL_DIR "${SURELOG_BINARY_DIR}" 
 
-            # define Surelog cache values
-            CMAKE_CACHE_DEFAULT_ARGS 
-                "-DCMAKE_BUILD_TYPE:STRING=Release"
-                "-DCMAKE_INSTALL_PREFIX:FILEPATH=${libyosys_BINARY_DIR}"
-                "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON"
-                "-DCMAKE_WARN_DEPRECATED:BOOL=OFF"
+            # define Surelog cache values 
+            CMAKE_CACHE_ARGS 
+                "-DCMAKE_BUILD_TYPE:STRING=Release" 
+                "-DCMAKE_INSTALL_PREFIX:PATH=${libyosys_BINARY_DIR}" 
+                "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON" 
+                "-DCMAKE_WARN_DEPRECATED:BOOL=OFF" 
 
             # redirect logs to a logfile
             LOG_BUILD ON
@@ -61,23 +65,44 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             LOG_CONFIGURE ON
             LOG_OUTPUT_ON_FAILURE ON
             
-            # usefull flags
-            EXCLUDE_FROM_ALL ON
-            DEPENDS yosys
-        )
+            # usefull flags 
+            ALWAYS  TRUE 
+            DEPENDS yosys 
+        ) 
 
-        # building Surelog and UHDM in a custom target to avoid any target conflict with VTR targets
-        add_custom_target(yosys-plugins ALL DEPENDS surelog yosys
-                          # uhdm
-                          COMMAND ${MAKE_PROGRAM}  -C ${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}
-                                                   PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
-                                                   UHDM_INSTALL_DIR=${libyosys_BINARY_DIR}
-                                                   install
-                                                   -j${CMAKE_BUILD_PARALLEL_LEVEL}
+        ExternalProject_Add(yosys-plugins 
+            # root directory for the Yosys-F4PGA-Plugins project 
+            PREFIX "" 
 
-                          WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                          )
-    endif()
+            GIT_REPOSITORY    https://github.com/chipsalliance/yosys-f4pga-plugins.git 
+            GIT_TAG           3b3dcc5cc216f7a39d26a6d894c53b8aa3e10d71 # yosys-systemverilog release c7f1ded-2022-08-10 
+            GIT_PROGRESS      TRUE 
+            
+            # setting source, build and install directories 
+            SOURCE_DIR "${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}" 
+            BUILD_IN_SOURCE TRUE 
+            INSTALL_DIR "" 
+
+            INSTALL_COMMAND "" 
+            CONFIGURE_COMMAND "" 
+            BUILD_COMMAND ${MAKE_PROGRAM} -C ${YOSYS_F4PGA_PLUGINS_SOURCE_DIR} 
+                                        PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH} 
+                                        UHDM_INSTALL_DIR=${libyosys_BINARY_DIR} 
+                                        install -j${CMAKE_BUILD_PARALLEL_LEVEL} 
+            
+            # redirect logs to a logfile
+            LOG_BUILD ON
+            LOG_UPDATE ON
+            LOG_INSTALL ON
+            LOG_DOWNLOAD ON
+            LOG_CONFIGURE ON
+            LOG_OUTPUT_ON_FAILURE ON
+            
+            # usefull flags 
+            ALWAYS  TRUE 
+            DEPENDS surelog yosys 
+        ) 
+    endif() 
 
     # In addition to libyosys in the build folder, we copy the libyosys directory
     # into a temporary folder in the VTR root, named Yosys, to have access to Yosys 
