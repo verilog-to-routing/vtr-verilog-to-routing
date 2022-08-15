@@ -1235,9 +1235,9 @@ class t_pb_graph_pin {
   public:
     t_port* port = nullptr;
     int pin_number = 0;
-    t_pb_graph_edge** input_edges = nullptr; /* [0..num_input_edges] */
+    std::vector<t_pb_graph_edge*> input_edges; /* [0..num_input_edges] */
     int num_input_edges = 0;
-    t_pb_graph_edge** output_edges = nullptr; /* [0..num_output_edges] */
+    std::vector<t_pb_graph_edge*> output_edges; /* [0..num_output_edges] */
     int num_output_edges = 0;
 
     t_pb_graph_node* parent_node = nullptr;
@@ -1256,9 +1256,9 @@ class t_pb_graph_pin {
 
     /* combinational timing information */
     int num_pin_timing = 0;                   /* Number of ipin to opin timing edges*/
-    t_pb_graph_pin** pin_timing = nullptr;    /* timing edge sink pins  [0..num_pin_timing-1]*/
-    float* pin_timing_del_max = nullptr;      /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
-    float* pin_timing_del_min = nullptr;      /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
+    std::vector<t_pb_graph_pin*> pin_timing;  /* timing edge sink pins  [0..num_pin_timing-1]*/
+    std::vector<float> pin_timing_del_max;    /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
+    std::vector<float> pin_timing_del_min;    /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
     int num_pin_timing_del_max_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_max_annotated-1]
     int num_pin_timing_del_min_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_min_annotated-1]
 
@@ -1333,7 +1333,7 @@ class t_pb_graph_edge {
 
     /* pack pattern info */
     int num_pack_patterns;
-    const char** pack_pattern_names;
+    std::vector<const char*> pack_pattern_names;
     int* pack_pattern_indices;
     bool infer_pattern;
 
@@ -1791,6 +1791,43 @@ struct t_lut_element {
     }
 };
 
+/**
+ * Represents a Network-on-chip(NoC) Router data type. It is used
+ * to store individual router information when parsing the arch file.
+ * */
+struct t_router {
+    /** A unique id provided by the user to identify a router. Must be a positive value*/
+    int id = -1;
+
+    /** A value representing the approximate horizontal position on the FPGA device where the router
+     * tile is located*/
+    double device_x_position = -1;
+    /** A value representing the approximate vertical position on the FPGA device where the router
+     * tile is located*/
+    double device_y_position = -1;
+
+    /** A list of router ids that are connected to the current router*/
+    std::vector<int> connection_list;
+};
+
+/**
+ * Network-on-chip(NoC) data type used to store the network properties
+ * when parsing the arh file. This is used when building the dedicated on-chip
+ * network during the device creation.
+ * */
+struct t_noc_inf {
+    double link_bandwidth; /*!< The maximum bandwidth supported in the NoC. This value is the same for all links. units in bps*/
+    double link_latency;   /*!< The worst case latency seen when traversing a link. This value is the same for all links. units in seconds*/
+    double router_latency; /*!< The worst case latency seen when traversing a router. This value is the same for all routers, units in seconds*/
+
+    /** A list of all routers in the NoC*/
+    std::vector<t_router> router_list;
+
+    /** Represents the name of a router tile on the FPGA device. This should match the name used in the arch file when
+     * describing a NoC router tile within the FPGA device*/
+    std::string noc_router_tile_name;
+};
+
 /*   Detailed routing architecture */
 struct t_arch {
     mutable vtr::string_internment strings;
@@ -1851,6 +1888,9 @@ struct t_arch {
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 
     t_clock_arch_spec clock_arch; // Clock related data types
+
+    // if we have an embedded NoC in the architecture, then we store it here
+    t_noc_inf* noc = nullptr;
 };
 
 #endif

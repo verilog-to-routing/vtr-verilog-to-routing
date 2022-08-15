@@ -228,6 +228,77 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ///@brief Sets the flag in net_is_global_ = state
     void set_net_is_global(ClusterNetId net_id, bool state);
 
+    /**
+     * @brief Given a name of a block and vector of possible cluster blocks
+     *        that are candidates to match the block name, go through 
+     *        the vector of cluster blocks and return the id of the block
+     *        where the block name matches the provided name.
+     * 
+     *        Given a string pattern representing a block name and a vector of
+     *        poissble cluster blocks that are candidates to match to the block
+     *        name pattern, go through the vector of cluster blocks and return 
+     *        the id of the block where the block name matches to the provided
+     *        input pattern.
+     * 
+     */
+
+    /**
+     * @brief The intented use is to find the block id of a 
+     *        hard block without knowing its name in the netlist. Instead
+     *        a pattern can be created that we know the block's name will
+     *        match to. Generally, we expect the pattern to be constructed
+     *        using the block's module name in the HDL design, since we can
+     *        expect the netlist name of the block to include the module
+     *        name within it.
+     * 
+     *        For example, suppose a RAM block was named in the netlist as
+     *        "top|alu|test_ram|out". The user instantiated the ram module
+     *        in the HDL design as "test_ram". So instead of going through 
+     *        the netlist and finding the ram block's full name, this
+     *        function can be used by just providing the string pattern as
+     *        ".*test_ram.*". We know that the module name should be somewhere
+     *        within the string, so the pattern we provide says that the netlist
+     *        name of the block contains arbritary characters then the module
+     *        name and then some other arbritary characters after.
+     *        This pattern will then be used to match to the block in the
+     *        netlist. The matched cluster block id is returned, and if no
+     *        block matched to the input string then an invalid block id
+     *        is returned.
+     * 
+     *        The function 
+     *        here additionally requires a vector of possible cluster blocks
+     *        that can match to the input pattern. This vector can be the
+     *        entire netlist or a subset. For example, if the intended use 
+     *        is to find hard blocks, it is quite inefficient
+     *        to go through all the blocks to find a matching one. Instead, a
+     *        a filtered vector can be passed that is a subset of the entire 
+     *        netlist and can only contain blocks of a certain logical block 
+     *        type (blocks that can be placed on a specific hard block).
+     *        The idea here is that the filtered vector should be
+     *        considereably smaller that a vector of every block in the netlist
+     *        and this should help improve run time.
+     * 
+     *        This function runs in linear time (O(N)) as it goes over the
+     *        vector of 'cluster_block_candidates'. 'cluster_block_candidates'
+     *        could be the whole netlist or a subset as explained above.
+     *        Additionally, if there are multiple
+     *        blocks that match to the provided input pattern, then the
+     *        first block found is returned.
+     * 
+     * 
+     * @param name_pattern A regex string pattern that can be used to match to  
+     *             a clustered block name within the netlist.
+     * @param cluster_block_candidates A vector of clustered block ids that
+     *                                 represent a subset of the clustered
+     *                                 netlist. The blocks in this vector
+     *                                 will be used to compare and match
+     *                                 to the input string pattern. 
+     * @return A cluster block id representing a unique cluster block that 
+     *         matched to the input string pattern.
+     *         
+     */
+    ClusterBlockId find_block_by_name_fragment(const std::string& name_pattern, const std::vector<ClusterBlockId>& cluster_block_candidates) const;
+
   private: //Private Members
     /*
      * Netlist compression/optimization

@@ -118,6 +118,18 @@ enum e_edge_dir {
     FROM_Y_TO_X
 };
 
+/*
+ * Defines the type of drawings that can be generated for the NoC.
+ * DRAW_NO_NOC -> user did not select the option to draw the NoC
+ * DRAW_NOC_LINKS -> display the NoC links and how they are connected to each other
+ * DRAW_NOC_LINK_USAGE -> Display the NoC links (same as DRAW_NOC_LINKS) and color the links based on their bandwidth usage
+ */
+enum e_draw_noc {
+    DRAW_NO_NOC = 0,
+    DRAW_NOC_LINKS,
+    DRAW_NOC_LINK_USAGE
+};
+
 /* Structure which stores state information of a rr_node. Used
  * for controling the drawing each rr_node when ROUTING is on screen.
  * color: Color of the rr_node
@@ -191,7 +203,7 @@ struct t_draw_state {
     e_route_type draw_route_type = GLOBAL;
     char default_message[vtr::bufsize];
     vtr::vector<ClusterNetId, ezgl::color> net_color;
-    t_draw_rr_node* draw_rr_node = nullptr;
+    std::vector<t_draw_rr_node> draw_rr_node;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
     std::shared_ptr<const vtr::ColorMap> color_map = nullptr;
@@ -202,6 +214,10 @@ struct t_draw_state {
     float net_alpha = 0.1;
     float pres_fac = 1.;
     ManualMovesState manual_moves_state;
+    bool show_noc_button = false;
+    e_draw_noc draw_noc = DRAW_NO_NOC;
+    std::shared_ptr<const vtr::ColorMap> noc_usage_color_map = nullptr; // color map used to display noc link bandwidth usage
+    bool justEnabled = false;                                           //Whether auto-complete was just enabled
 
     std::vector<Breakpoint> list_of_breakpoints;
 

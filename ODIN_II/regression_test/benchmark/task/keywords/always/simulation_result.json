@@ -36,17 +36,17 @@
         "generated_blif": "always_clk_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 2 mismatch:",
-            "[OUTPUT_BLIF] Vector 3 mismatch:",
-            "[OUTPUT_BLIF] Vector 6 mismatch:",
-            "[OUTPUT_BLIF] Vector 7 mismatch:",
-            "[OUTPUT_BLIF] Vector 26 mismatch:",
-            "[OUTPUT_BLIF] Vector 27 mismatch:",
-            "[OUTPUT_BLIF] Vector 30 mismatch:",
-            "[OUTPUT_BLIF] Vector 31 mismatch:"
+            "[SIMULATION] Vector 2 mismatch:",
+            "[SIMULATION] Vector 3 mismatch:",
+            "[SIMULATION] Vector 6 mismatch:",
+            "[SIMULATION] Vector 7 mismatch:",
+            "[SIMULATION] Vector 26 mismatch:",
+            "[SIMULATION] Vector 27 mismatch:",
+            "[SIMULATION] Vector 30 mismatch:",
+            "[SIMULATION] Vector 31 mismatch:"
         ]
     },
     "always/always_posedge_negedge/no_arch": {
@@ -54,24 +54,24 @@
         "generated_blif": "always_posedge_negedge_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 2 mismatch:",
-            "[OUTPUT_BLIF] Vector 3 mismatch:",
-            "[OUTPUT_BLIF] Vector 6 mismatch:",
-            "[OUTPUT_BLIF] Vector 7 mismatch:",
-            "[OUTPUT_BLIF] Vector 26 mismatch:",
-            "[OUTPUT_BLIF] Vector 27 mismatch:",
-            "[OUTPUT_BLIF] Vector 30 mismatch:",
-            "[OUTPUT_BLIF] Vector 31 mismatch:"
+            "[SIMULATION] Vector 2 mismatch:",
+            "[SIMULATION] Vector 3 mismatch:",
+            "[SIMULATION] Vector 6 mismatch:",
+            "[SIMULATION] Vector 7 mismatch:",
+            "[SIMULATION] Vector 26 mismatch:",
+            "[SIMULATION] Vector 27 mismatch:",
+            "[SIMULATION] Vector 30 mismatch:",
+            "[SIMULATION] Vector 31 mismatch:"
         ]
     },
     "always/always_asterisk_event/no_arch": {
         "test_name": "always/always_asterisk_event/no_arch",
         "generated_blif": "always_asterisk_event_generated.blif",
         "warnings": [
-            "[OUTPUT_BLIF] Vector 0 equivalent but output vector has bits set when expecting don't care :"
+            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :"
         ],
         "max_rss(MiB)": 30,
         "exec_time(ms)": 3.4,
@@ -89,7 +89,7 @@
         "test_name": "always/always_lone_asterisk/no_arch",
         "generated_blif": "always_lone_asterisk_generated.blif",
         "warnings": [
-            "[OUTPUT_BLIF] Vector 0 equivalent but output vector has bits set when expecting don't care :"
+            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :"
         ],
         "max_rss(MiB)": 29.8,
         "exec_time(ms)": 3.5,
@@ -108,17 +108,17 @@
         "generated_blif": "always_or_event_generated.blif",
         "exit": 134,
         "errors": [
-            "[OUTPUT_BLIF] Vector files differ."
+            "[SIMULATION] Vector files differ."
         ],
         "warnings": [
-            "[OUTPUT_BLIF] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[OUTPUT_BLIF] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[OUTPUT_BLIF] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[OUTPUT_BLIF] Vector 3 equivalent but output vector has bits set when expecting don't care :",
-            "[OUTPUT_BLIF] Vector 34 mismatch:",
-            "[OUTPUT_BLIF] Vector 35 mismatch:",
-            "[OUTPUT_BLIF] Vector 38 mismatch:",
-            "[OUTPUT_BLIF] Vector 39 mismatch:"
+            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
+            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
+            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
+            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :",
+            "[SIMULATION] Vector 34 mismatch:",
+            "[SIMULATION] Vector 35 mismatch:",
+            "[SIMULATION] Vector 38 mismatch:",
+            "[SIMULATION] Vector 39 mismatch:"
         ]
     },
     "DEFAULT": {

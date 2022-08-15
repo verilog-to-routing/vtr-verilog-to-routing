@@ -147,7 +147,7 @@ static void optimization() {
         }
 
         if (block_memories_info.read_only_memory_list || block_memories_info.block_memory_list) {
-            /* Perform a hard block registration and splitting in width */
+            /* Perform a hard block registration and splitting in width for Yosys generated memory blocks */
             iterate_block_memories(syn_netlist);
             free_block_memories();
         }
@@ -533,6 +533,12 @@ void get_options(int argc, char** argv) {
         .help("TCL file")
         .metavar("TCL_FILE");
 
+    ext_elaborator_group.add_argument(global_args.decode_names, "--decode_names")
+        .help("Enable extracting hierarchical information from Yosys coarse-grained BLIF file for signal naming")
+        .default_value("false")
+        .action(argparse::Action::STORE_TRUE)
+        .metavar("DECODE_NAMES");
+
     auto& other_grp = parser.add_argument_group("other options");
 
     other_grp.add_argument(global_args.show_help, "-h")
@@ -752,6 +758,10 @@ void get_options(int argc, char** argv) {
         configuration.elaborator_type = elaborator_e::_YOSYS;
     }
 
+    if (global_args.decode_names.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.decode_names = global_args.decode_names;
+    }
+
     if (global_args.write_netlist_as_dot.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.output_netlist_graphs = global_args.write_netlist_as_dot;
     }
@@ -809,6 +819,7 @@ void set_default_config() {
     configuration.coarsen = false;
     configuration.fflegalize = false;
     configuration.show_yosys_log = false;
+    configuration.decode_names = false;
     configuration.tcl_file = "";
     configuration.output_file_type = file_type_e::_BLIF;
     configuration.elaborator_type = elaborator_e::_ODIN;

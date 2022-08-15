@@ -35,6 +35,8 @@ static void SetupPlacerOpts(const t_options& Options,
 static void SetupAnnealSched(const t_options& Options,
                              t_annealing_sched* AnnealSched);
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts);
+static void SetupNocOpts(const t_options& Options,
+                         t_noc_opts* NocOpts);
 static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch* RoutingArch);
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
 static void SetupSwitches(const t_arch& Arch,
@@ -64,6 +66,7 @@ void SetupVPR(const t_options* Options,
               t_annealing_sched* AnnealSched,
               t_router_opts* RouterOpts,
               t_analysis_opts* AnalysisOpts,
+              t_noc_opts* NocOpts,
               t_det_routing_arch* RoutingArch,
               std::vector<t_lb_type_rr_node>** PackerRRGraphs,
               std::vector<t_segment_inf>& Segments,
@@ -108,6 +111,7 @@ void SetupVPR(const t_options* Options,
     SetupRouterOpts(*Options, RouterOpts);
     SetupAnalysisOpts(*Options, *AnalysisOpts);
     SetupPowerOpts(*Options, PowerOpts, Arch);
+    SetupNocOpts(*Options, NocOpts);
 
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
@@ -644,15 +648,28 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
 
     if (power_opts->do_power) {
         if (!Arch->power)
-            Arch->power = (t_power_arch*)vtr::malloc(sizeof(t_power_arch));
+            Arch->power = new t_power_arch();
+
         if (!Arch->clocks)
-            Arch->clocks = (t_clock_arch*)vtr::malloc(sizeof(t_clock_arch));
+            Arch->clocks = new t_clock_arch();
+
         device_ctx.clock_arch = Arch->clocks;
     } else {
         Arch->power = nullptr;
         Arch->clocks = nullptr;
         device_ctx.clock_arch = nullptr;
     }
+}
+
+/*
+ * Go through all the NoC options supplied by the user and store them internally.
+ */
+static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
+    // assign the noc specific options from the command line
+    NocOpts->noc = Options.noc;
+    NocOpts->noc_flows_file = Options.noc_flows_file;
+
+    return;
 }
 
 static int find_ipin_cblock_switch_index(const t_arch& Arch) {
