@@ -340,9 +340,9 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
         num_nodes += num_node_per_type;
     }
 
-    rr_graph_builder.resize_nodes(num_nodes);
+    rr_graph_builder.reserve_nodes(num_nodes);
 
-    rr_node_driver_switches.reserve(num_nodes);
+    rr_node_driver_switches.resize(num_nodes);
 }
 
 /************************************************************************
@@ -380,7 +380,7 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                                                                 width, height);
                 for (const int& pin_num : opin_list) {
                     /* Create a new node and fill information */
-                    const RRNodeId& node = rr_graph_builder.node_lookup().find_node(width, height, OPIN, pin_num, side);
+                    const RRNodeId& node = rr_graph_builder.create_node(width, height, OPIN, pin_num, side);
 
                     /* node bounding box */
                     rr_graph_builder.set_node_coordinates(node, grid_coordinate.x() + width,
@@ -396,8 +396,7 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(OPIN_COST_INDEX));
 
                     /* Switch info */
-                    VTR_ASSERT(size_t(node) == rr_node_driver_switches.size());
-                    rr_node_driver_switches.push_back(delayless_switch);
+                    rr_node_driver_switches[node] = delayless_switch;
 
                     /* RC data */
                     rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
@@ -443,7 +442,7 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                 std::vector<int> ipin_list = get_grid_side_pins(cur_grid, RECEIVER, side_manager.get_side(), width, height);
                 for (const int& pin_num : ipin_list) {
                     /* Create a new node and fill information */
-                    const RRNodeId& node = rr_graph_builder.node_lookup().find_node(width, height, IPIN, pin_num, side);
+                    const RRNodeId& node = rr_graph_builder.create_node(width, height, IPIN, pin_num, side);
 
                     /* node bounding box */
                     rr_graph_builder.set_node_coordinates(node, grid_coordinate.x() + width,
@@ -459,8 +458,7 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(IPIN_COST_INDEX));
 
                     /* Switch info */
-                    VTR_ASSERT(size_t(node) == rr_node_driver_switches.size());
-                    rr_node_driver_switches.push_back(wire_to_ipin_switch);
+                    rr_node_driver_switches[node] = wire_to_ipin_switch;
 
                     /* RC data */
                     rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
@@ -495,7 +493,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
         }
 
         /* Create a new node and fill information */
-        const RRNodeId& node = rr_graph_builder.node_lookup().find_node(grid_coordinate.x(), grid_coordinate.y(), SOURCE, iclass);
+        const RRNodeId& node = rr_graph_builder.create_node(grid_coordinate.x(), grid_coordinate.y(), SOURCE, iclass);
 
         /* node bounding box */
         rr_graph_builder.set_node_coordinates(node, grid_coordinate.x(),
@@ -513,8 +511,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(SOURCE_COST_INDEX));
 
         /* Switch info */
-        VTR_ASSERT(size_t(node) == rr_node_driver_switches.size());
-        rr_node_driver_switches.push_back(delayless_switch);
+        rr_node_driver_switches[node] = delayless_switch;
 
         /* RC data */
         rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
@@ -546,7 +543,7 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
         }
 
         /* Create a new node and fill information */
-        const RRNodeId& node = rr_graph_builder.node_lookup().find_node(grid_coordinate.x(), grid_coordinate.y(), SINK, iclass);
+        const RRNodeId& node = rr_graph_builder.create_node(grid_coordinate.x(), grid_coordinate.y(), SINK, iclass);
 
         /* node bounding box */
         rr_graph_builder.set_node_coordinates(node, grid_coordinate.x(),
@@ -564,8 +561,7 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(SINK_COST_INDEX));
 
         /* Switch info */
-        VTR_ASSERT(size_t(node) == rr_node_driver_switches.size());
-        rr_node_driver_switches.push_back(delayless_switch);
+        rr_node_driver_switches[node] = delayless_switch;
 
         /* RC data */
         rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
@@ -670,7 +666,7 @@ static void load_one_chan_rr_nodes_basic_info(RRGraphView& rr_graph,
             || ((true == chan_details.is_track_end(itrack))
                 && (Direction::DEC == chan_details.get_track_direction(itrack)))) {
             /* Create a new chan rr_node  */
-            const RRNodeId& node = rr_graph_builder.node_lookup().find_node(chan_coordinate.x(), chan_coordinate.y(), chan_type, itrack);
+            const RRNodeId& node = rr_graph_builder.create_node(chan_coordinate.x(), chan_coordinate.y(), chan_type, itrack);
 
             rr_graph_builder.set_node_direction(node, chan_details.get_track_direction(itrack));
             rr_graph_builder.set_node_track_num(node, itrack);
@@ -680,8 +676,7 @@ static void load_one_chan_rr_nodes_basic_info(RRGraphView& rr_graph,
 
             /* assign switch id */
             size_t seg_id = chan_details.get_track_segment_id(itrack);
-            VTR_ASSERT(size_t(node) == rr_node_driver_switches.size());
-            rr_node_driver_switches.push_back(RRSwitchId(segment_infs[seg_id].arch_opin_switch));
+            rr_node_driver_switches[node] = RRSwitchId(segment_infs[seg_id].arch_opin_switch);
 
             /* Update chan_details with node_id */
             chan_details.set_track_node_id(itrack, size_t(node));
