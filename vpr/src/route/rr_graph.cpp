@@ -874,13 +874,9 @@ void create_rr_graph(const t_graph_type graph_type,
                            directs, num_directs,
                            &det_routing_arch->wire_to_rr_ipin_switch,
                            Warnings);
-            if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
-                mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
-                                                                  router_opts.reorder_rr_graph_nodes_threshold,
-                                                                  router_opts.reorder_rr_graph_nodes_seed);
-            }
         } else {
             /* We do not support dedicated network for clocks in tileable rr_graph generation */
+            VTR_LOG_WARN("Tileable routing resource graph does not support clock modeling yet! Related options are ignored...");
             build_tileable_unidir_rr_graph(block_types,
                                            grid,
                                            nodes_per_chan,
