@@ -488,9 +488,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
     SideManager io_side_manager(io_side);
 
     /* Set a SOURCE rr_node for each DRIVER class */
-    VTR_LOG("Grid type=%s, x=%d, y=%d, num_class=%d\n",
-            cur_grid.type->name, grid_coordinate.x(), grid_coordinate.y(), cur_grid.type->class_inf.size());
-    for (int iclass = 0; iclass < cur_grid.type->class_inf.size(); ++iclass) {
+    for (size_t iclass = 0; iclass < cur_grid.type->class_inf.size(); ++iclass) {
         /* Set a SINK rr_node for the OPIN */
         if (DRIVER != cur_grid.type->class_inf[iclass].type) {
             continue;
@@ -498,8 +496,8 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
 
         /* Create a new node and fill information */
         RRNodeId node = rr_graph_builder.create_node(grid_coordinate.x(), grid_coordinate.y(), SOURCE, iclass);
-        VTR_LOG("Node: %d, x=%d, y=%d, type=SOURCE, class=%d\n",
-                size_t(node), grid_coordinate.x(), grid_coordinate.y(), iclass);
+        VTR_LOG("Node id=%d, x=%d, y=%d, class=%d\n", size_t(node), grid_coordinate.x(), grid_coordinate.y(), iclass);
+        VTR_ASSERT(RRNodeId(0) == rr_graph_builder.node_lookup().find_node(1, 0, SOURCE, 1));
 
         /* node bounding box */
         rr_graph_builder.set_node_coordinates(node, grid_coordinate.x(),
@@ -540,7 +538,7 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     SideManager io_side_manager(io_side);
 
     /* Set a SINK rr_node for each RECEIVER class */
-    for (int iclass = 0; iclass < cur_grid.type->class_inf.size(); ++iclass) {
+    for (size_t iclass = 0; iclass < cur_grid.type->class_inf.size(); ++iclass) {
         /* Set a SINK rr_node for the OPIN */
         if (RECEIVER != cur_grid.type->class_inf[iclass].type) {
             continue;
@@ -669,7 +667,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
  * coordinates: xlow, ylow, xhigh, yhigh,
  * features: capacity, track_ids, ptc_num, direction
  ***********************************************************************/
-static void load_one_chan_rr_nodes_basic_info(RRGraphView& rr_graph,
+static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                               RRGraphBuilder& rr_graph_builder,
                                               vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                               std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
@@ -780,7 +778,7 @@ static void load_one_chan_rr_nodes_basic_info(RRGraphView& rr_graph,
  * features: capacity, track_ids, ptc_num, direction
  * grid_info : pb_graph_pin
  ***********************************************************************/
-static void load_chanx_rr_nodes_basic_info(RRGraphView& rr_graph,
+static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                            RRGraphBuilder& rr_graph_builder,
                                            vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                            std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
@@ -887,7 +885,7 @@ static void load_chanx_rr_nodes_basic_info(RRGraphView& rr_graph,
  * coordinates: xlow, ylow, xhigh, yhigh,
  * features: capacity, track_ids, ptc_num, direction
  ***********************************************************************/
-static void load_chany_rr_nodes_basic_info(RRGraphView& rr_graph,
+static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                            RRGraphBuilder& rr_graph_builder,
                                            vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                            std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
@@ -1020,7 +1018,7 @@ static void reverse_dec_chan_rr_node_track_ids(const RRGraphView& rr_graph,
 /************************************************************************
  * Create all the rr_nodes covering both grids and routing channels
  ***********************************************************************/
-void create_tileable_rr_graph_nodes(RRGraphView& rr_graph,
+void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     RRGraphBuilder& rr_graph_builder,
                                     vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                     std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
