@@ -496,8 +496,6 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
 
         /* Create a new node and fill information */
         RRNodeId node = rr_graph_builder.create_node(grid_coordinate.x(), grid_coordinate.y(), SOURCE, iclass);
-        VTR_LOG("Node id=%d, x=%d, y=%d, class=%d\n", size_t(node), grid_coordinate.x(), grid_coordinate.y(), iclass);
-        VTR_ASSERT(RRNodeId(0) == rr_graph_builder.node_lookup().find_node(1, 0, SOURCE, 1));
 
         /* node bounding box */
         rr_graph_builder.set_node_coordinates(node, grid_coordinate.x(),
@@ -596,11 +594,26 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
             vtr::Point<size_t> grid_coordinate(ix, iy);
             enum e_side io_side = NUM_SIDES;
 
+            std::vector<e_side> wanted_sides{TOP, RIGHT, BOTTOM, LEFT};
+
             /* If this is the block on borders, we consider IO side */
             if (true == is_io_type(grids[ix][iy].type)) {
                 vtr::Point<size_t> io_device_size(grids.width() - 1, grids.height() - 1);
                 io_side = determine_io_grid_pin_side(io_device_size, grid_coordinate);
+                wanted_sides.clear();
+                wanted_sides.push_back(io_side);
             }
+
+            for (e_side side : wanted_sides) {
+                 for (int width_offset = 0; width_offset < grids[ix][iy].type->width; ++width_offset) {
+                     int x_tile = ix + width_offset;
+                     for (int height_offset = 0; height_offset < grids[ix][iy].type->height; ++height_offset) {
+                         int y_tile = iy + height_offset;
+                         rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN, grids[ix][iy].type->num_pins, side);
+                         rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN, grids[ix][iy].type->num_pins, side);
+                     }
+                 }
+             }
 
             /* Configure source rr_nodes for this grid */
             load_one_grid_source_nodes_basic_info(rr_graph_builder,
@@ -1029,6 +1042,21 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     const RRSwitchId& wire_to_ipin_switch,
                                     const RRSwitchId& delayless_switch,
                                     const bool& through_channel) {
+    /* Allocates and loads all the structures needed for fast lookups of the   *
+     * index of an rr_node.  rr_node_indices is a matrix containing the index  *
+     * of the *first* rr_node at a given (i,j) location.                       */
+
+    /* Alloc the lookup table 
+     * .. warning: It is mandatory. There are bugs in resize() when called incrementally in RRSpatialLookup.
+     *             When comment the following block out, you will see errors */
+    for (t_rr_type rr_type : RR_TYPES) {
+        if (rr_type == CHANX) {
+            rr_graph_builder.node_lookup().resize_nodes(grids.height(), grids.width(), rr_type, NUM_SIDES);
+        } else {
+            rr_graph_builder.node_lookup().resize_nodes(grids.width(), grids.height(), rr_type, NUM_SIDES);
+        }
+    }
+
     load_grid_nodes_basic_info(rr_graph_builder,
                                rr_node_driver_switches,
                                rr_rc_data,
