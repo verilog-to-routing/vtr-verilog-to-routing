@@ -86,11 +86,8 @@ void load_net_names(ezgl::application* app);
  */
 void hide_widget(std::string widgetName, ezgl::application* app);
 
-/*
+/**
  * @brief Shows widget with given name; name is id string created in Glade
- * 
- * @param widgetName 
- * @param app 
  */
 void show_widget(std::string widgetName, ezgl::application* app);
 

@@ -40,9 +40,6 @@ void search_type_changed(GtkComboBox* /*self*/, ezgl::application* app);
 /*function below pops up a dialog box with no button, showing the input warning message*/
 void warning_dialog_box(const char* message);
 
-//Returns pb ptr of given atom block name
-t_pb* find_atom_block_in_pb(std::string name, t_pb* pb);
-
 //Highlights atom block in cluster block
 bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::application* app);
 

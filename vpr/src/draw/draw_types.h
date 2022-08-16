@@ -148,10 +148,10 @@ typedef struct {
  * 
  * Stores a lot of different variables to reflect current draw state. Most callback functions/UI elements
  * mutate some member in this struct, which then alters the draw state. Accessible through
- * global function get_draw_state_vars() in draw_global.cpp. 
+ * global function get_draw_state_vars() in draw_global.cpp. It is recommended to name the variable draw_state for consistent form.
  * 
- * @note t_draw_struct is used in the same way as a Context, but cannot be a Context because Contexts are
- * not copyable, while t_draw_struct must be. (t_draw_struct is copied to save a restore of the graphics state
+ * @note t_draw_state is used in the same way as a Context, but cannot be a Context because Contexts are
+ * not copyable, while t_draw_state must be. (t_draw_state is copied to save a restore of the graphics state
  * when running graphics commands.)
  */
 struct t_draw_state {
@@ -250,7 +250,7 @@ struct t_draw_state {
     int sequence_number = 0;
     float net_alpha = 0.1;
 
-    ///@brief Present congestion cost factor
+    ///@brief Present congestion cost factor used when drawing. Is a copy of router's current pres_fac
     float pres_fac = 1.;
 
     ManualMovesState manual_moves_state;
@@ -352,7 +352,7 @@ struct t_draw_coords {
 
     /**
      * @brief returns a bounding box for the given pb in the given
-     * clb with absolute coordinates, that can be directtly drawn.
+     * clb with absolute coordinates, that can be directly drawn.
      */
     ezgl::rectangle get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode);
 
