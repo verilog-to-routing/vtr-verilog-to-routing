@@ -233,7 +233,6 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
      * Add edges that bridge OPINs and IPINs to the rr_graph
      ***********************************************************************/
     /* Create edges for a tileable rr_graph */
-
     build_rr_graph_edges(device_ctx.rr_graph,
                          device_ctx.rr_graph_builder,
                          rr_node_driver_switches,
