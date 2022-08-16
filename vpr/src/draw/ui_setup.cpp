@@ -186,7 +186,9 @@ void hide_widget(std::string widgetName, ezgl::application* app) {
     gtk_widget_hide(widget);
 }
 
-/*
+/**
+ * @brief Hides the widget with the given name
+ */
 void show_widget(std::string widgetName, ezgl::application* app) {
     GtkWidget* widget = GTK_WIDGET(app->get_object(widgetName.c_str()));
     gtk_widget_show(widget);
