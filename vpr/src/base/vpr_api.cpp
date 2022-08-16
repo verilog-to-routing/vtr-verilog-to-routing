@@ -834,7 +834,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
                               ClbNetPinsMatrix<float>& net_delay) {
     // If flat-routing is enabled, rr_graph will be created from scratch anyway. Thus, there is no use to build lookahead here!
-    if(!vpr_setup.RouterOpts.flat_routing) {
+    if (!vpr_setup.RouterOpts.flat_routing) {
         if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
             // Prime lookahead cache to avoid adding lookahead computation cost to
             // the routing timer.

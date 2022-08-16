@@ -874,7 +874,7 @@ class Netlist {
      */
     PinId create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, bool is_const = false);
 
-     /**
+    /**
      * @brief Create an empty, or return an existing net in the netlist
      *
      *   @param name   The unique name of the net

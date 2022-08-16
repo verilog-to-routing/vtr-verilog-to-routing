@@ -253,7 +253,7 @@ void SetupVPR(const t_options* Options,
         *PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
     }
 
-    if(RouterOpts->flat_routing) {
+    if (RouterOpts->flat_routing) {
         alloc_and_load_intra_cluster_resources();
     }
 
@@ -696,14 +696,14 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch) {
 static void alloc_and_load_intra_cluster_resources() {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    for(auto& physical_type : device_ctx.physical_tile_types) {
+    for (auto& physical_type : device_ctx.physical_tile_types) {
         int physical_pin_offset = physical_type.num_pins;
         int physical_class_offset = (int)physical_type.class_inf.size();
-        for(auto& sub_tile : physical_type.sub_tiles) {
+        for (auto& sub_tile : physical_type.sub_tiles) {
             sub_tile.starting_internal_class_idx.resize(sub_tile.capacity.total());
             sub_tile.starting_internal_pin_idx.resize(sub_tile.capacity.total());
-            for(int sub_tile_inst = 0; sub_tile_inst < sub_tile.capacity.total(); sub_tile_inst++) {
-                for(auto logic_block_ptr : sub_tile.equivalent_sites) {
+            for (int sub_tile_inst = 0; sub_tile_inst < sub_tile.capacity.total(); sub_tile_inst++) {
+                for (auto logic_block_ptr : sub_tile.equivalent_sites) {
                     sub_tile.starting_internal_class_idx[sub_tile_inst].insert(
                         std::make_pair(logic_block_ptr, physical_class_offset));
                     sub_tile.starting_internal_pin_idx[sub_tile_inst].insert(
@@ -711,23 +711,23 @@ static void alloc_and_load_intra_cluster_resources() {
 
                     auto logical_classes = logic_block_ptr->logical_class_inf;
                     std::for_each(logical_classes.begin(), logical_classes.end(),
-                                  [&physical_pin_offset](t_class &l_class){ for(auto &pin : l_class.pinlist) {
+                                  [&physical_pin_offset](t_class& l_class) { for(auto &pin : l_class.pinlist) {
                         pin += physical_pin_offset;} });
 
                     int physical_class_num = physical_class_offset;
-                    for(auto& logic_class : logical_classes) {
+                    for (auto& logic_class : logical_classes) {
                         auto result = physical_type.internal_class_inf.insert(std::make_pair(physical_class_num, logic_class));
                         VTR_ASSERT(result.second);
                         physical_class_num++;
                     }
 
                     vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
-                    for(auto pin_to_pb_pin_map : logic_block_ptr->pin_logical_num_to_pb_pin_mapping) {
+                    for (auto pin_to_pb_pin_map : logic_block_ptr->pin_logical_num_to_pb_pin_mapping) {
                         int physical_pin_num = pin_to_pb_pin_map.first + physical_pin_offset;
                         int class_logical_num = logic_block_ptr->pb_pin_to_class_logical_num_mapping.at(pin_to_pb_pin_map.second);
 
                         auto result = physical_type.internal_pin_class.insert(
-                            std::make_pair(physical_pin_num, class_logical_num+physical_class_offset));
+                            std::make_pair(physical_pin_num, class_logical_num + physical_class_offset));
                         VTR_ASSERT(result.second);
                     }
 
@@ -737,6 +737,4 @@ static void alloc_and_load_intra_cluster_resources() {
             }
         }
     }
-
-
 }

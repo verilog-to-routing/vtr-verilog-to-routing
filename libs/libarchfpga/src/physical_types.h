@@ -623,8 +623,8 @@ struct t_physical_tile_type {
     std::vector<int> pin_height_offset; // [0..num_pins-1]
     std::vector<int> pin_class;         // [0..num_pins-1]
     std::unordered_map<int, int> internal_pin_class;
-    std::vector<bool> is_ignored_pin;   // [0..num_pins-1]
-    std::vector<bool> is_pin_global;    // [0..num_pins-1]
+    std::vector<bool> is_ignored_pin; // [0..num_pins-1]
+    std::vector<bool> is_pin_global;  // [0..num_pins-1]
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -859,9 +859,9 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
-    std::unordered_map<int, const t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping; /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<int, const t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;   /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
     std::unordered_map<const t_pb_graph_pin*, int> pb_pin_to_class_logical_num_mapping; /* pb_pin_to_class_logical_num_mapping[pb_graph_pin ptr] -> class logical number */
-    std::vector<t_class> logical_class_inf; /* logical_class_inf[class_logical_number] -> class */
+    std::vector<t_class> logical_class_inf;                                             /* logical_class_inf[class_logical_number] -> class */
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
@@ -1211,7 +1211,6 @@ class t_pb_graph_node {
     int num_output_pin_class;   /* number of output pin classes that this pb_graph_node has */
 
     int total_primitive_count; /* total number of this primitive type in the cluster */
-
 
     /* Interconnect instances for this pb
      * Only used for power

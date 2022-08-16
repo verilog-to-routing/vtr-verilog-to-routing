@@ -41,7 +41,8 @@ class node_edge_sorter {
 
 void check_rr_graph(const t_graph_type graph_type,
                     const DeviceGrid& grid,
-                    const std::vector<t_physical_tile_type>& types, bool is_flat) {
+                    const std::vector<t_physical_tile_type>& types,
+                    bool is_flat) {
     e_route_type route_type = DETAILED;
     if (graph_type == GRAPH_GLOBAL) {
         route_type = GLOBAL;
@@ -142,7 +143,7 @@ void check_rr_graph(const t_graph_type graph_type,
             bool is_chan_to_ipin = (rr_type == CHANX || rr_type == CHANY) && to_rr_type == IPIN;
             bool is_opin_to_chan = rr_type == OPIN && (to_rr_type == CHANX || to_rr_type == CHANY);
             bool is_internal_edge = false;
-            if(is_flat) {
+            if (is_flat) {
                 is_internal_edge = (rr_type == IPIN && to_rr_type == IPIN) || (rr_type == OPIN && to_rr_type == OPIN);
             }
             if (!(is_chan_to_chan || is_chan_to_ipin || is_opin_to_chan || is_internal_edge)) {
@@ -215,20 +216,20 @@ void check_rr_graph(const t_graph_type graph_type,
         int xlow = rr_graph.node_xlow(rr_node);
         int ylow = rr_graph.node_ylow(rr_node);
         t_physical_tile_type_ptr type = device_ctx.grid[xlow][ylow].type;
-        if(rr_type == IPIN || rr_type == OPIN) {
+        if (rr_type == IPIN || rr_type == OPIN) {
             // #TODO: No edges are added for internal pins. However, they needs to be checks somehow!
-            if(ptc_num >= type->num_pins)
+            if (ptc_num >= type->num_pins)
                 continue;
         }
 
         if (rr_type != SOURCE) {
             // #TODO: For current implementation, OPINs on the tile doesn't have any fanin. If I remove rr_type != OPIN, several errors would rise - Proper checking for OPINs should be added
-            if((is_flat && rr_type != OPIN) || (!is_flat)) {
+            if ((is_flat && rr_type != OPIN) || (!is_flat)) {
                 if (total_edges_to_node[inode] < 1 && !rr_node_is_global_clb_ipin(rr_node)) {
                     /* A global CLB input pin will not have any edges, and neither will  *
-                 * a SOURCE or the start of a carry-chain.  Anything else is an error.
-                 * For simplicity, carry-chain input pin are entirely ignored in this test
-                 */
+                     * a SOURCE or the start of a carry-chain.  Anything else is an error.
+                     * For simplicity, carry-chain input pin are entirely ignored in this test
+                     */
                     bool is_chain = false;
                     if (rr_type == IPIN) {
                         for (const t_fc_specification& fc_spec : types[type->index].fc_specs) {
@@ -404,10 +405,10 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
 
     /* Check that it's capacities and such make sense. */
 
-    if(rr_type == SOURCE || rr_type == SINK) {
+    if (rr_type == SOURCE || rr_type == SINK) {
         int max_ptc = get_tile_class_max_ptc(type, is_flat);
         e_pin_type pin_type = (rr_type == SINK) ? RECEIVER : DRIVER;
-        if(ptc_num >= max_ptc){
+        if (ptc_num >= max_ptc) {
             VPR_ERROR(VPR_ERROR_ROUTE,
                       "in check_rr_node: inode %d (type %d) has a ptc_num of %d - max_ptc = %d.\n", inode, rr_type, ptc_num, max_ptc);
         }
@@ -422,19 +423,19 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                             "in check_rr_node: inode %d (type %d) had a capacity of %d.\n", inode, rr_type, capacity);
         }
 
-    } else if(rr_type == IPIN || rr_type == OPIN) {
+    } else if (rr_type == IPIN || rr_type == OPIN) {
         int max_ptc = get_tile_ipin_opin_max_ptc(type, is_flat);
         e_pin_type pin_type = (rr_type == IPIN) ? RECEIVER : DRIVER;
         if (ptc_num >= max_ptc) {
             VPR_ERROR(VPR_ERROR_ROUTE,
                       "in check_rr_node: inode %d (type %d) had a ptc_num of %d - max_ptc = %d.\n", inode, rr_type, ptc_num, max_ptc);
         }
-        if(is_flat) {
+        if (is_flat) {
             /* In flat routing, classes are defined only for primitive pins */
             /* TODO: Only primitive pins are assigned to a class - This should be changed */
-            if(ptc_num >= type->num_pins) {
+            if (ptc_num >= type->num_pins) {
                 auto pb_pin = get_pb_pin_from_pin_physical_num(type, ptc_num);
-                if(pb_pin->is_primitive_pin()) {
+                if (pb_pin->is_primitive_pin()) {
                     auto logical_block = get_logical_block_from_pin_physical_num(type, ptc_num);
                     if (logical_block->logical_class_inf[logical_block->pb_pin_to_class_logical_num_mapping.at(pb_pin)].type != pin_type) {
                         VPR_ERROR(VPR_ERROR_ROUTE,
@@ -444,7 +445,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             }
         } else {
             VTR_ASSERT(is_flat == false);
-            if(get_pin_type_from_pin_physical_num(type, ptc_num) != pin_type) {
+            if (get_pin_type_from_pin_physical_num(type, ptc_num) != pin_type) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: inode %d (type %d) type is not equal to DRIVER.\n", inode, rr_type, ptc_num);
             }
@@ -453,13 +454,13 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
         }
-    } else if(rr_type == CHANX || rr_type == CHANY) {
+    } else if (rr_type == CHANX || rr_type == CHANY) {
         if (route_type == DETAILED) {
             nodes_per_chan = device_ctx.chan_width.max;
             tracks_per_node = 1;
         } else {
             nodes_per_chan = 1;
-            if(rr_type == CHANX)
+            if (rr_type == CHANX)
                 tracks_per_node = device_ctx.chan_width.x_list[ylow];
             else
                 tracks_per_node = device_ctx.chan_width.y_list[xlow];
@@ -480,7 +481,6 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                         "in check_rr_node: Unexpected segment type: %d\n", rr_type);
     }
 
-
     /* Check that the number of (out) edges is reasonable. */
     num_edges = rr_graph.num_edges(RRNodeId(inode));
 
@@ -493,7 +493,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             //Don't worry about disconnect PINs which have no adjacent channels (i.e. on the device perimeter)
             bool check_for_out_edges = true;
             if (rr_type == IPIN || rr_type == OPIN) {
-                if(ptc_num < type->num_pins) {
+                if (ptc_num < type->num_pins) {
                     // If the node is related to the pins on the physical tile
                     if (!has_adjacent_channel(rr_graph.rr_nodes()[inode], device_ctx.grid)) {
                         check_for_out_edges = false;
@@ -509,7 +509,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             }
         }
     } else if (rr_type == SINK) { /* SINK -- remove this check if feedthroughs allowed */
-        if(is_flat) {
+        if (is_flat) {
             // #TODO: A checking structure need to be build for SINK! The problem is that although all possible pins are added to the rr_graph, not all edges are added.
 
         } else {

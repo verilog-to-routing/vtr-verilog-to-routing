@@ -54,23 +54,23 @@ static void assign_tile_pins_indices(RRGraphBuilder& rr_graph_builder,
                                      const std::vector<e_side>& wanted_sides);
 
 static void add_tile_sink_src_spatial_lookup(RRGraphBuilder& rr_graph_builder,
-                                 const DeviceGrid& grid,
-                                 int x,
-                                 int y,
-                                 int* index);
+                                             const DeviceGrid& grid,
+                                             int x,
+                                             int y,
+                                             int* index);
 
 static void add_intra_src_sink_spatial_lookup(RRGraphBuilder& rr_graph_builder,
-                                        ClusterBlockId cluster_blk_id,
-                                        int x,
-                                        int y,
-                                        int* index);
+                                              ClusterBlockId cluster_blk_id,
+                                              int x,
+                                              int y,
+                                              int* index);
 
 static void add_intra_ipin_opin_spatial_lookup(RRGraphBuilder& rr_graph_builder,
-                                         ClusterBlockId cluster_blk_id,
-                                         const DeviceGrid& grid,
-                                         int x,
-                                         int y,
-                                         int* index);
+                                               ClusterBlockId cluster_blk_id,
+                                               const DeviceGrid& grid,
+                                               int x,
+                                               int y,
+                                               int* index);
 
 static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                        const std::vector<int> conn_tracks,
@@ -1117,9 +1117,6 @@ static void load_chan_rr_indices(const int max_chan_width,
     }
 }
 
-
-
-
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
  * TODO: these building functions should only talk to a RRGraphBuilder object
  */
@@ -1133,7 +1130,6 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
         for (size_t y = 0; y < grid.height(); y++) {
             //Process each block from it's root location
             if (grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0) {
-
                 //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
                 add_tile_sink_src_spatial_lookup(rr_graph_builder, grid, x, y, index);
@@ -1192,10 +1188,9 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                 }
 
                 add_tile_pins_spatial_lookup(rr_graph_builder, grid, x, y, index, wanted_sides);
-                if(is_flat) {
+                if (is_flat) {
                     alloc_and_load_intra_cluster_rr_node_indices(rr_graph_builder, grid, x, y, index);
                 }
-
             }
         }
     }
@@ -1223,14 +1218,12 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-
 static void add_tile_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                          const DeviceGrid& grid,
                                          int x,
                                          int y,
                                          int* index,
                                          const std::vector<e_side>& wanted_sides) {
-
     auto type = grid[x][y].type;
 
     // Reserve nodes for top-level blocks in lookup to save memory
@@ -1252,8 +1245,6 @@ static void add_tile_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                              y,
                              index,
                              wanted_sides);
-
-
 }
 
 static void assign_tile_pins_indices(RRGraphBuilder& rr_graph_builder,
@@ -1285,29 +1276,27 @@ static void assign_tile_pins_indices(RRGraphBuilder& rr_graph_builder,
             }
         }
         /* A pin may locate on multiple sides of a tile.
-                     * Instead of allocating multiple rr_nodes for the pin,
-                     * we just create a rr_node and make it indexable on these sides
-                     * As such, we can avoid redundant rr_node to be allocated
-                     * and multiple nets to be mapped to the pin
-                     *
-                     * Considering that some pin could be just dangling, we do not need
-                     * to create a void rr_node for it.
-                     * As such, we only allocate a rr node when the pin is indeed located
-                     * on at least one side
-                     */
+         * Instead of allocating multiple rr_nodes for the pin,
+         * we just create a rr_node and make it indexable on these sides
+         * As such, we can avoid redundant rr_node to be allocated
+         * and multiple nets to be mapped to the pin
+         *
+         * Considering that some pin could be just dangling, we do not need
+         * to create a void rr_node for it.
+         * As such, we only allocate a rr node when the pin is indeed located
+         * on at least one side
+         */
         if (assigned_to_rr_node) {
             ++(*index);
         }
     }
-
 }
 
 static void add_tile_sink_src_spatial_lookup(RRGraphBuilder& rr_graph_builder,
-                                   const DeviceGrid& grid,
-                                   int x,
-                                   int y,
-                                   int* index) {
-
+                                             const DeviceGrid& grid,
+                                             int x,
+                                             int y,
+                                             int* index) {
     auto type = grid[x][y].type;
     for (size_t iclass = 0; iclass < type->class_inf.size(); ++iclass) {
         auto class_type = type->class_inf[iclass].type;
@@ -1319,22 +1308,19 @@ static void add_tile_sink_src_spatial_lookup(RRGraphBuilder& rr_graph_builder,
         }
         ++(*index);
     }
-
 }
 
 static void add_intra_src_sink_spatial_lookup(RRGraphBuilder& rr_graph_builder,
-                                        ClusterBlockId cluster_blk_id,
-                                        int x,
-                                        int y,
-                                        int* index) {
+                                              ClusterBlockId cluster_blk_id,
+                                              int x,
+                                              int y,
+                                              int* index) {
     VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
     auto& device_ctx = g_vpr_ctx.mutable_device();
-
 
     t_rr_edge_info_set rr_edges_to_create;
 
     device_ctx.rr_graph_builder.rr_nodes().edges_read_ = false;
-
 
     auto cluster_internal_classes = get_cluster_internal_class_pairs(cluster_blk_id);
     for (auto class_pair : cluster_internal_classes) {
@@ -1350,15 +1336,14 @@ static void add_intra_src_sink_spatial_lookup(RRGraphBuilder& rr_graph_builder,
         }
         ++(*index);
     }
-
 }
 
 static void add_intra_ipin_opin_spatial_lookup(RRGraphBuilder& rr_graph_builder,
-                                         ClusterBlockId cluster_blk_id,
-                                         const DeviceGrid& grid,
-                                         int x,
-                                         int y,
-                                         int* index) {
+                                               ClusterBlockId cluster_blk_id,
+                                               const DeviceGrid& grid,
+                                               int x,
+                                               int y,
+                                               int* index) {
     VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
     /* The side of the internal pins is considered to be only TOP, and they are only accessible in the root location of the tile */
 
@@ -1390,7 +1375,6 @@ static void add_intra_ipin_opin_spatial_lookup(RRGraphBuilder& rr_graph_builder,
         if (assigned_to_rr_node)
             ++(*index);
     }
-
 }
 
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
@@ -1441,31 +1425,28 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
     VTR_ASSERT(grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0);
     auto& place_ctx = g_vpr_ctx.placement();
 
-
-
     auto type = grid[x][y].type;
     auto grid_block = place_ctx.grid_blocks[x][y];
     //iterate over different sub tiles inside a tile
-    for(int abs_cap = 0; abs_cap < type->capacity; abs_cap++) {
+    for (int abs_cap = 0; abs_cap < type->capacity; abs_cap++) {
         if (grid_block.subtile_empty(abs_cap)) {
             continue;
         }
         auto cluster_blk_id = grid_block.blocks[abs_cap];
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
         add_intra_src_sink_spatial_lookup(rr_graph_builder,
-                                    cluster_blk_id,
-                                    x,
-                                    y,
-                                    index);
+                                          cluster_blk_id,
+                                          x,
+                                          y,
+                                          index);
 
         add_intra_ipin_opin_spatial_lookup(rr_graph_builder,
-                                     cluster_blk_id,
-                                     grid,
-                                     x,
-                                     y,
-                                     index);
+                                           cluster_blk_id,
+                                           grid,
+                                           x,
+                                           y,
+                                           index);
     }
-
 }
 
 /**

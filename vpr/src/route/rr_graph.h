@@ -41,8 +41,6 @@ void create_rr_graph(const t_graph_type graph_type,
                      int* Warnings,
                      bool is_flat = false);
 
-
-
 void free_rr_graph();
 
 //Returns a brief one-line summary of an RR node

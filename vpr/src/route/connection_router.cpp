@@ -493,7 +493,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
             }
         }
     }
-    if(is_flat_) {
+    if (is_flat_) {
         t_rr_type to_type = rr_graph_->node_type(to_node);
         if (to_type == IPIN || to_type == OPIN) {
             int node_ptc = rr_graph_->node_ptc_num(to_node);

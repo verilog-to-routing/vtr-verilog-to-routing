@@ -87,7 +87,7 @@ bool is_node_on_tile(t_rr_type node_type,
                      int root_x,
                      int root_y,
                      int node_ptc) {
-    if(node_type == CHANX || node_type == CHANY) {
+    if (node_type == CHANX || node_type == CHANY) {
         return true;
     } else {
         VTR_ASSERT(node_type == IPIN || node_type == SINK || node_type == OPIN || node_type == SOURCE);
@@ -100,7 +100,6 @@ bool is_node_on_tile(t_rr_type node_type,
             return is_class_on_tile(tile_type, node_ptc);
         }
     }
-
 }
 
 vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list() {
