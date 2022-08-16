@@ -28,7 +28,6 @@ class PartitionRegion {
     std::vector<Region> get_partition_region();
     std::vector<Region> get_partition_region() const;
 
-
     /**
      * @brief Set the union of regions
      */
