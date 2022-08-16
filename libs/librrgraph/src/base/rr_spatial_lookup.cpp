@@ -1,4 +1,5 @@
 #include "vtr_assert.h"
+#include "vtr_log.h"
 #include "rr_spatial_lookup.h"
 
 RRSpatialLookup::RRSpatialLookup() {

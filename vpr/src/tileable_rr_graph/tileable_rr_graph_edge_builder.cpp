@@ -33,16 +33,10 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
         short ylow = rr_graph.node_ylow(node);
         short src_node_class_num = get_grid_pin_class_index(grids[xlow][ylow],
                                                             rr_graph.node_pin_num(node));
-        VTR_ASSERT(node == rr_graph.node_lookup().find_node(xlow, ylow, OPIN, rr_graph.node_pin_num(node), TOP));
-
         /* Create edges between SOURCE and OPINs */
         RRNodeId src_node = rr_graph.node_lookup().find_node(xlow - grids[xlow][ylow].width_offset,
                                                              ylow - grids[xlow][ylow].height_offset,
                                                              SOURCE, src_node_class_num);
-        VTR_LOG("Des Node: %ld, %s\n",
-                size_t(node), rr_graph.node_coordinate_to_string(node).c_str());
-        VTR_LOG("Src Node: %ld, xlow: %d, ylow:%d, grid.width_offset:%d, grid.height_offset:%d, class_id:%d\n",
-                size_t(src_node), xlow, ylow, grids[xlow][ylow].width_offset, grids[xlow][ylow].height_offset, src_node_class_num);
         VTR_ASSERT(true == rr_graph.valid_node(src_node));
 
         /* add edges to the src_node */
