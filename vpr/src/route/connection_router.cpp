@@ -564,16 +564,6 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                            target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax,
                                            get_class_block_name(type, target_ptc).c_str());
                             return;
-                        } else {
-                            auto type = g_vpr_ctx.device().grid[rr_graph_->node_xlow(to_node)][rr_graph_->node_ylow(to_node)].type;
-                            VTR_LOGV_DEBUG(router_debug_,
-                                           "       Add internal IPIN expansion of node %d edge %zu -> %d"
-                                           " (to node is IPIN at %d,%dx%d,%d[%s] which does not"
-                                           " lead to target block %d,%dx%d,%d[%s])\n",
-                                           from_node, size_t(from_edge), to_node_int,
-                                           to_xlow, to_ylow, to_xhigh, to_yhigh, block_type_pin_index_to_name(type, to_ptc, is_flat_).c_str(),
-                                           target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax,
-                                           get_class_block_name(type, target_ptc).c_str());
                         }
                     }
                 }
@@ -627,7 +617,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
 
     next.R_upstream = current->R_upstream;
 
-    VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node, describe_rr_node(to_node, is_flat_).c_str());
+
 
     evaluate_timing_driven_node_costs(&next,
                                       cost_params,
@@ -643,6 +633,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
     float new_back_cost = next.backward_path_cost;
 
     if (new_total_cost < best_total_cost && ((rcv_path_manager.is_enabled()) || (new_back_cost < best_back_cost))) {
+        VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node, describe_rr_node(to_node, is_flat_).c_str());
+        VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g\n", new_total_cost, new_back_cost);
         //Add node to the heap only if the cost via the current partial path is less than the
         //best known cost, since there is no reason for the router to expand more expensive paths.
         //
@@ -681,6 +673,10 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
             ++router_stats_->intra_cluster_node_pushes;
             router_stats_->intra_node_type_cnt_pushes[node_type]++;
         }
+    } else {
+        VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(to_node, is_flat_).c_str());
+        VTR_LOGV_DEBUG(router_debug_, "        Prev Total Cost %g Prev back Cost %g \n", best_total_cost, best_back_cost);
+        VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g \n", new_total_cost, new_back_cost);
     }
 
     if (rcv_path_manager.is_enabled() && next.path_data != nullptr) {
@@ -1033,7 +1029,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     int target_bin_x = grid_to_bin_x(rr_graph_->node_xlow(target_node_id), spatial_rt_lookup);
     int target_bin_y = grid_to_bin_y(rr_graph_->node_ylow(target_node_id), spatial_rt_lookup);
 
-    int global_nodes_added = 0;
     int nodes_added = 0;
 
     t_bb highfanout_bb;
@@ -1067,8 +1062,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(node));
                     highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
                     highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
-                    if(rr_graph_->node_type(node) == t_rr_type::CHANY || rr_graph_->node_type(node) == t_rr_type::CHANX)
-                        ++global_nodes_added;
                     nodes_added++;
                 } else {
                     auto rt_node_id = RRNodeId(rt_node->inode);
@@ -1088,7 +1081,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
             }
 
             constexpr int SINGLE_BIN_MIN_NODES = 2;
-            if (dx == 0 && dy == 0 && global_nodes_added > SINGLE_BIN_MIN_NODES) {
+            if (dx == 0 && dy == 0 && nodes_added > SINGLE_BIN_MIN_NODES) {
                 //Target bin contained at least minimum amount of routing
                 //
                 //We require at least SINGLE_BIN_MIN_NODES to be added.
