@@ -343,8 +343,6 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
     rr_graph_builder.reserve_nodes(num_nodes);
 
     rr_node_driver_switches.resize(num_nodes);
-
-    VTR_LOG("Allocated %d nodes\n", num_nodes);
 }
 
 /************************************************************************

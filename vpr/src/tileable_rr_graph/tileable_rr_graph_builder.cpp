@@ -168,8 +168,6 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    delayless_rr_switch,
                                    through_channel);
 
-    VTR_LOG("Built %d nodes\n", device_ctx.rr_graph.num_nodes());
-
     /************************************************************************
      * Create the connectivity of OPINs
      *   a. Evenly assign connections to OPINs to routing tracks
@@ -264,6 +262,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
+    device_ctx.rr_graph_builder.init_fan_in();
     alloc_and_load_rr_switch_inf(device_ctx.num_arch_switches, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
 
     /* Save the channel widths for the newly constructed graph */
@@ -273,6 +272,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     device_ctx.rr_node_track_ids = rr_node_track_ids;
 
     /* Build incoming edges */
+    device_ctx.rr_graph_builder.partition_edges();
     device_ctx.rr_graph_builder.build_in_edges();
 
     /************************************************************************
