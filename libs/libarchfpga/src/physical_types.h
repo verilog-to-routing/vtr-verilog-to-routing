@@ -170,7 +170,7 @@ enum e_interconnect {
     NUM_INTERC_TYPES /* Invalid type */
 };
 /* String version of interconnect types. Use for debugging messages */
-constexpr std::array<const chat*, NUM_INTERC_TYPES> INTERCONNECT_TYPE_STRING = {{"unknown", "complete", "direct", "mux"}};
+constexpr std::array<const char*, NUM_INTERC_TYPES> INTERCONNECT_TYPE_STRING = {{"unknown", "complete", "direct", "mux"}};
 
 /* Orientations. */
 enum e_side : unsigned char {
