@@ -166,8 +166,11 @@ enum e_pin_type {
 enum e_interconnect {
     COMPLETE_INTERC = 1,
     DIRECT_INTERC = 2,
-    MUX_INTERC = 3
+    MUX_INTERC = 3,
+    NUM_INTERC_TYPES /* Invalid type */
 };
+/* String version of interconnect types. Use for debugging messages */
+constexpr std::array<const chat*, NUM_INTERC_TYPES> INTERCONNECT_TYPE_STRING = {{"unknown", "complete", "direct", "mux"}};
 
 /* Orientations. */
 enum e_side : unsigned char {
