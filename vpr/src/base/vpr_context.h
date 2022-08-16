@@ -113,6 +113,9 @@ struct TimingContext : public Context {
     std::shared_ptr<tatum::TimingConstraints> constraints;
 
     t_timing_analysis_profile_info stats;
+
+    /* Represents whether or not VPR should fail if timing constraints aren't met. */
+    bool terminate_if_timing_fails = false;
 };
 
 namespace std {

@@ -13,7 +13,7 @@ It then performs:
 to generate FPGA speed and area results.
 VTR includes a set of benchmark designs known to work with the design flow.
 
-VTR can also produce [FASM](https://symbiflow.readthedocs.io/en/latest/fasm/docs/specification.html) to program some commercial FPGAs (via [Symbiflow](https://symbiflow.github.io/))
+VTR can also produce [FASM](https://fasm.readthedocs.io/en/latest/) to program some commercial FPGAs (via [Symbiflow](https://chipsalliance.org/announcement/2022/02/18/chips-alliance-forms-f4pga-workgroup-to-accelerate-adoption-of-open-source-fpga-tooling/))
 
 | Placement (carry-chains highlighted) | Critical Path |
 | ------------------------------------ | ------------- |
