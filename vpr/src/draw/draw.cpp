@@ -286,19 +286,16 @@ static void default_setup(ezgl::application* app) {
     search_setup(app);
 }
 
+// Initial Setup functions run default setup if they are a new window. Then, they will run
+// the specific hiding/showing functions that separate them from the other init. setup functions
+
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_PLACEMENT */
 static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
                                                   bool is_new_window) {
-    if (!is_new_window)
-        return;
-
-    //Configuring visible buttons
-    default_setup(app);
-
-    //THIS WILL BE CHANGED SOON IGNORE
-    load_block_names(app);
+    if (is_new_window)
+        default_setup(app);
 
     //Hiding unused functionality
     hide_widget("RoutingMenuButton", app);
@@ -311,9 +308,10 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
 static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
     ezgl::application* app,
     bool is_new_window) {
-    if (!is_new_window)
-        return;
-    default_setup(app);
+    if (is_new_window)
+        default_setup(app);
+
+    //Showing given functionality
     crit_path_button_setup(app);
 
     //Hiding unused routing menu
@@ -325,11 +323,10 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
  * PLACEMENT_to_ROUTING */
 static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
                                                bool is_new_window) {
-    if (!is_new_window)
-        return;
-    default_setup(app);
-    routing_button_setup(app);
+    if (is_new_window)
+        default_setup(app);
 
+    routing_button_setup(app);
     hide_crit_path_button(app);
 }
 
@@ -338,9 +335,8 @@ static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
  * ROUTING_to_PLACEMENT */
 static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
                                                bool is_new_window) {
-    if (!is_new_window)
-        return;
-    default_setup(app);
+    if (is_new_window)
+        default_setup(app);
 
     //Hiding unused functionality
     hide_widget("RoutingMenuButton", app);
@@ -352,9 +348,9 @@ static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
  * NO_PICTURE_to_ROUTING */
 static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
                                                 bool is_new_window) {
-    if (!is_new_window)
-        return;
-    default_setup(app);
+    if (is_new_window)
+        default_setup(app);
+
     routing_button_setup(app);
     hide_crit_path_button(app);
 }
@@ -365,9 +361,9 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
 static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
     ezgl::application* app,
     bool is_new_window) {
-    if (!is_new_window)
-        return;
-    default_setup(app);
+    if (is_new_window)
+        default_setup(app);
+
     routing_button_setup(app);
     crit_path_button_setup(app);
 }
@@ -379,7 +375,6 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     /* Updates the screen if the user has requested graphics.  The priority  *
      * value controls whether or not the Proceed button must be clicked to   *
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
-
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (!draw_state->show_graphics)

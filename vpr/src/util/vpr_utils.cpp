@@ -19,6 +19,7 @@
 #include "string.h"
 #include "pack_types.h"
 #include "device_grid.h"
+#include "timing_fail_error.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */

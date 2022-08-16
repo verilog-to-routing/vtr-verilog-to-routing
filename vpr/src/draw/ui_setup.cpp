@@ -140,6 +140,7 @@ void routing_button_setup(ezgl::application* app) {
     //Toggle Router Util
     GtkComboBoxText* toggle_router_util = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRoutingUtil"));
     g_signal_connect(toggle_router_util, "changed", G_CALLBACK(toggle_router_util_cbk), app);
+    show_widget("RoutingMenuButton", app);
 }
 
 /*
@@ -161,6 +162,7 @@ void search_setup(ezgl::application* app) {
 void crit_path_button_setup(ezgl::application* app) {
     GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
     g_signal_connect(toggle_crit_path, "changed", G_CALLBACK(toggle_crit_path_cbk), app);
+    show_widget("ToggleCritPath", app);
 }
 
 /*
@@ -185,6 +187,12 @@ void hide_widget(std::string widgetName, ezgl::application* app) {
 }
 
 /*
+void show_widget(std::string widgetName, ezgl::application* app) {
+    GtkWidget* widget = GTK_WIDGET(app->get_object(widgetName.c_str()));
+    gtk_widget_show(widget);
+}
+
+/**
  * @brief loads atom and cluster lvl names into gtk list store item used for completion
  * 
  * @param app ezgl application used for ui
