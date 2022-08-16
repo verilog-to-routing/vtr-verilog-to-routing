@@ -659,15 +659,26 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     **Default:** ``on`` if timing-driven placement is specified, ``off`` otherwise.
 
 .. option:: --inner_num <float>
+    
+    The number of moves attempted at each temperature in placement can be calculated from inner_num scaled with circuit size or device-circuit size as specified in ``place_effort_scaling``. 
 
-    The number of moves attempted at each temperature is inner_num *  num_blocks^(4/3) in the circuit.
-    The number of blocks in a circuit is the number of pads plus the number of clbs.
     Changing inner_num is the best way to change the speed/quality tradeoff of the placer, as it leaves the highly-efficient automatic annealing schedule on and simply changes the number of moves per temperature.
 
     Specifying ``-inner_num 10`` will slow the placer by a factor of 10 while typically improving placement quality only by 10% or less (depends on the architecture).
     Hence users more concerned with quality than CPU time may find this a more appropriate value of inner_num.
 
-    **Default:** ``1.0``
+    **Default:** ``0.5``
+
+.. option:: --place_effort_scaling {circuit | device_circuit}
+
+    Controls how the number of placer moves level scales with circuit and device size:
+
+    * ``circuit``: The number of moves attempted at each temperature is inner_num *  num_blocks^(4/3) in the circuit.
+    * ``device_circuit``: The number of moves attempted at each temperature is inner_num * grid_size^(2/3) * num_blocks^(4/3) in the circuit.
+
+    The number of blocks in a circuit is the number of pads plus the number of clbs.
+
+    **Default:** ``circuit``
 
 .. option:: --init_t <float>
 
