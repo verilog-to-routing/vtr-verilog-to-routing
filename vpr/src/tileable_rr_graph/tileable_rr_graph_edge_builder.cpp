@@ -35,10 +35,14 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
                                                             rr_graph.node_pin_num(node));
 
         /* Create edges between SOURCE and OPINs */
-        const RRNodeId& src_node = rr_graph_builder.node_lookup().find_node(xlow - grids[xlow][ylow].width_offset,
-                                                                            ylow - grids[xlow][ylow].height_offset,
-                                                                            SOURCE, src_node_class_num);
-        VTR_ASSERT(true == rr_graph.validate_node(src_node));
+        const RRNodeId& src_node = rr_graph.node_lookup().find_node(xlow - grids[xlow][ylow].width_offset,
+                                                                    ylow - grids[xlow][ylow].height_offset,
+                                                                    SOURCE, src_node_class_num, SIDES[0]);
+        VTR_LOG("Des Node: %ld, %s\n",
+                size_t(node), rr_graph.node_coordinate_to_string(node).c_str());
+        VTR_LOG("Src Node: %ld, xlow: %d, ylow:%d, grid.width_offset:%d, grid.height_offset:%d, class_id:%d\n",
+                size_t(src_node), xlow, ylow, grids[xlow][ylow].width_offset, grids[xlow][ylow].height_offset, src_node_class_num);
+        VTR_ASSERT(true == rr_graph.valid_node(src_node));
 
         /* add edges to the src_node */
         rr_graph_builder.create_edge(src_node, node, rr_node_driver_switches[node]);
@@ -68,8 +72,8 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
         /* 1. create edges between IPINs and SINKs */
         const RRNodeId& sink_node = rr_graph.node_lookup().find_node(xlow - grids[xlow][ylow].width_offset,
                                                                      ylow - grids[xlow][ylow].height_offset,
-                                                                     SINK, sink_node_class_num);
-        VTR_ASSERT(true == rr_graph.validate_node(sink_node));
+                                                                     SINK, sink_node_class_num, SIDES[0]);
+        VTR_ASSERT(true == rr_graph.valid_node(sink_node));
 
         /* add edges to connect the IPIN node to SINK nodes */
         rr_graph_builder.create_edge(node, sink_node, rr_node_driver_switches[sink_node]);

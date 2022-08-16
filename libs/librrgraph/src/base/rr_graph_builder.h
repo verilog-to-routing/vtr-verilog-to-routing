@@ -130,6 +130,10 @@ class RRGraphBuilder {
     inline void set_node_name(RRNodeId id, std::string name) {
         node_storage_.set_node_name(id, name);
     }
+    /** @brief Create a new rr_node in the node storage and register it to the node look-up.
+     *  Return a valid node id if succeed. Otherwise, return an invalid id.
+     */
+    RRNodeId create_node(int x, int y, t_rr_type type, int ptc, e_side side = NUM_SIDES); 
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
      *

@@ -876,7 +876,7 @@ void create_rr_graph(const t_graph_type graph_type,
                            Warnings);
         } else {
             /* We do not support dedicated network for clocks in tileable rr_graph generation */
-            VTR_LOG_WARN("Tileable routing resource graph does not support clock modeling yet! Related options are ignored...");
+            VTR_LOG_WARN("Tileable routing resource graph does not support clock modeling yet! Related options are ignored...\n");
             build_tileable_unidir_rr_graph(block_types,
                                            grid,
                                            nodes_per_chan,

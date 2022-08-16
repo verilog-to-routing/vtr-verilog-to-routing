@@ -634,6 +634,11 @@ class RRGraphView {
         return node_storage_.validate_node(node_id, rr_switch_inf_);
     }
 
+    /** @brief Check if the node id is a valid one in storage */
+    inline bool valid_node(RRNodeId node_id) const {
+        return size_t(node_id) < node_storage_.size();
+    }
+
     /** @brief Check if the switch is a valid one in storage */
     inline bool valid_switch(RRSwitchId switch_id) const {
         return (size_t(switch_id) < rr_switch_inf_.size());
