@@ -88,7 +88,12 @@ RRNodeId RRGraphBuilder::create_node(int x, int y, t_rr_type type, int ptc, e_si
     if (OPIN == type || IPIN == type) {
         node_storage_.add_node_side(new_node, node_side);
     }
-    node_lookup_.add_node(new_node, x, y, type, ptc, node_side);
+    /* Special for CHANX, being consistent with the rule in find_node() */
+    if (CHANX == type) {
+        node_lookup_.add_node(new_node, y, x, type, ptc, node_side);
+    } else {
+        node_lookup_.add_node(new_node, x, y, type, ptc, node_side);
+    }
 
 void RRGraphBuilder::clear_temp_storage() {
     node_storage_.clear_temp_storage();

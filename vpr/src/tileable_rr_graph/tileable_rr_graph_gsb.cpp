@@ -158,6 +158,7 @@ static bool is_gsb_in_track_sb_population(const RRGraphView& rr_graph,
     /* Get segment id */
     RRSegmentId seg_id = rr_gsb.get_chan_node_segment(gsb_side, track_id);
     /* validate offset */
+    if (!(offset < segment_inf[size_t(seg_id)].sb.size()))
     VTR_ASSERT(offset < segment_inf[size_t(seg_id)].sb.size());
 
     /* Get the SB population */
