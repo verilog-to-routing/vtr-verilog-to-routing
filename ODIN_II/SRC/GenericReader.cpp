@@ -45,7 +45,8 @@ inline void* GenericReader::_read() {
     void* netlist = NULL;
 
     switch (configuration.input_file_type) {
-        case (file_type_e::_VERILOG): {
+        case (file_type_e::_VERILOG): // fallthrough
+        case (file_type_e::_VERILOG_HEADER): {
             netlist = this->read_verilog();
             break;
         }
