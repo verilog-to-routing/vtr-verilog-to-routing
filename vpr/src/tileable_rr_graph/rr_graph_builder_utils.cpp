@@ -136,7 +136,7 @@ size_t get_grid_num_classes(const t_grid_tile& cur_grid,
                             const e_pin_type& pin_type) {
     size_t num_classes = 0;
 
-    for (int iclass = 0; iclass < cur_grid.type->num_class; ++iclass) {
+    for (int iclass = 0; iclass < cur_grid.type->class_inf.size(); ++iclass) {
         /* Bypass unmatched pin_type */
         if (pin_type != cur_grid.type->class_inf[iclass].type) {
             continue;
