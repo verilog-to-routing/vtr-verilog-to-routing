@@ -366,7 +366,7 @@ static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
                     //       from_tracks[side].size(), inode, to_track_id, to_track_ids[to_track_id],
                     //       to_track_index, to_tracks[to_side_index].size());
                     const RRNodeId& to_track_node = rr_gsb.get_chan_node(to_side, to_track_index);
-                    VTR_ASSERT(true == rr_graph.validate_node(to_track_node));
+                    VTR_ASSERT(true == rr_graph.valid_node(to_track_node));
 
                     /* from_track should be IN_PORT */
                     VTR_ASSERT(IN_PORT == rr_gsb.get_chan_node_direction(from_side, from_track_index));

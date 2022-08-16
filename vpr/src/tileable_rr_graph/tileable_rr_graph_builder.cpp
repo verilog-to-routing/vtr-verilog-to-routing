@@ -168,6 +168,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    delayless_rr_switch,
                                    through_channel);
 
+    VTR_LOG("Built %d nodes\n", device_ctx.rr_graph.num_nodes());
+
     /************************************************************************
      * Create the connectivity of OPINs
      *   a. Evenly assign connections to OPINs to routing tracks

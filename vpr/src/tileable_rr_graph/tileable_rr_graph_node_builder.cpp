@@ -343,6 +343,8 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
     rr_graph_builder.reserve_nodes(num_nodes);
 
     rr_node_driver_switches.resize(num_nodes);
+
+    VTR_LOG("Allocated %d nodes\n", num_nodes);
 }
 
 /************************************************************************
@@ -380,7 +382,7 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                                                                 width, height);
                 for (const int& pin_num : opin_list) {
                     /* Create a new node and fill information */
-                    const RRNodeId& node = rr_graph_builder.create_node(width, height, OPIN, pin_num, side);
+                    RRNodeId node = rr_graph_builder.create_node(grid_coordinate.x() + width, grid_coordinate.y() + height, OPIN, pin_num, side);
 
                     /* node bounding box */
                     rr_graph_builder.set_node_coordinates(node, grid_coordinate.x() + width,
@@ -442,7 +444,7 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                 std::vector<int> ipin_list = get_grid_side_pins(cur_grid, RECEIVER, side_manager.get_side(), width, height);
                 for (const int& pin_num : ipin_list) {
                     /* Create a new node and fill information */
-                    const RRNodeId& node = rr_graph_builder.create_node(width, height, IPIN, pin_num, side);
+                    RRNodeId node = rr_graph_builder.create_node(grid_coordinate.x() + width, grid_coordinate.y() + height, IPIN, pin_num, side);
 
                     /* node bounding box */
                     rr_graph_builder.set_node_coordinates(node, grid_coordinate.x() + width,
@@ -486,14 +488,18 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
     SideManager io_side_manager(io_side);
 
     /* Set a SOURCE rr_node for each DRIVER class */
-    for (int iclass = 0; iclass < cur_grid.type->num_class; ++iclass) {
+    VTR_LOG("Grid type=%s, x=%d, y=%d, num_class=%d\n",
+            cur_grid.type->name, grid_coordinate.x(), grid_coordinate.y(), cur_grid.type->class_inf.size());
+    for (int iclass = 0; iclass < cur_grid.type->class_inf.size(); ++iclass) {
         /* Set a SINK rr_node for the OPIN */
         if (DRIVER != cur_grid.type->class_inf[iclass].type) {
             continue;
         }
 
         /* Create a new node and fill information */
-        const RRNodeId& node = rr_graph_builder.create_node(grid_coordinate.x(), grid_coordinate.y(), SOURCE, iclass);
+        RRNodeId node = rr_graph_builder.create_node(grid_coordinate.x(), grid_coordinate.y(), SOURCE, iclass);
+        VTR_LOG("Node: %d, x=%d, y=%d, type=SOURCE, class=%d\n",
+                size_t(node), grid_coordinate.x(), grid_coordinate.y(), iclass);
 
         /* node bounding box */
         rr_graph_builder.set_node_coordinates(node, grid_coordinate.x(),
@@ -501,8 +507,6 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
                                               grid_coordinate.x() + cur_grid.type->width - 1,
                                               grid_coordinate.y() + cur_grid.type->height - 1);
         rr_graph_builder.set_node_class_num(node, iclass);
-
-        rr_graph_builder.set_node_capacity(node, 1);
 
         /* The capacity should be the number of pins in this class*/
         rr_graph_builder.set_node_capacity(node, cur_grid.type->class_inf[iclass].num_pins);
@@ -536,14 +540,14 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     SideManager io_side_manager(io_side);
 
     /* Set a SINK rr_node for each RECEIVER class */
-    for (int iclass = 0; iclass < cur_grid.type->num_class; ++iclass) {
+    for (int iclass = 0; iclass < cur_grid.type->class_inf.size(); ++iclass) {
         /* Set a SINK rr_node for the OPIN */
         if (RECEIVER != cur_grid.type->class_inf[iclass].type) {
             continue;
         }
 
         /* Create a new node and fill information */
-        const RRNodeId& node = rr_graph_builder.create_node(grid_coordinate.x(), grid_coordinate.y(), SINK, iclass);
+        RRNodeId node = rr_graph_builder.create_node(grid_coordinate.x(), grid_coordinate.y(), SINK, iclass);
 
         /* node bounding box */
         rr_graph_builder.set_node_coordinates(node, grid_coordinate.x(),
@@ -635,6 +639,27 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                 grids[ix][iy],
                                                 io_side,
                                                 wire_to_ipin_switch);
+        }
+    }
+    //Copy the SOURCE/SINK nodes to all offset positions for blocks with width > 1 and/or height > 1
+    // This ensures that look-ups on non-root locations will still find the correct SOURCE/SINK
+    for (size_t x = 0; x < grids.width(); x++) {
+        for (size_t y = 0; y < grids.height(); y++) {
+            int width_offset = grids[x][y].width_offset;
+            int height_offset = grids[x][y].height_offset;
+            if (width_offset != 0 || height_offset != 0) {
+                int root_x = x - width_offset;
+                int root_y = y - height_offset;
+
+                rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
+                                                            vtr::Point<int>(x, y),
+                                                            SOURCE,
+                                                            SIDES[0]);
+                rr_graph_builder.node_lookup().mirror_nodes(vtr::Point<int>(root_x, root_y),
+                                                            vtr::Point<int>(x, y),
+                                                            SINK,
+                                                            SIDES[0]);
+            }
         }
     }
 }
