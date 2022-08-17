@@ -477,6 +477,9 @@ class RRGraphView {
     inline edge_idx_range configurable_edges(RRNodeId node) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)));
     }
+    inline edge_idx_range node_configurable_out_edges(RRNodeId node) const {
+        return configurable_edges(node);
+    }
 
     /** @brief Return ID range for non-configurable edges. 
      * @note A non-configurable edge represents a hard-wired connection between routing resources, which could be 
@@ -485,6 +488,9 @@ class RRGraphView {
      */
     inline edge_idx_range non_configurable_edges(RRNodeId node) const {
         return vtr::make_range(edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)), edge_idx_iterator(num_edges(node)));
+    }
+    inline edge_idx_range node_non_configurable_out_edges(RRNodeId node) const {
+        return non_configurable_edges(node);
     }
 
     /**
@@ -563,6 +569,8 @@ class RRGraphView {
      *  Require build_in_edges() to be called first
      */
     std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
+    std::vector<RREdgeId> node_configurable_in_edges(RRNodeId node) const;
+    std::vector<RREdgeId> node_non_configurable_in_edges(RRNodeId node) const;
 
     /** @brief Return detailed routing segment information with a given id* @note The routing segments here may not be exactly same as those defined in architecture file. They have been
      * adapted to fit the context of routing resource graphs.

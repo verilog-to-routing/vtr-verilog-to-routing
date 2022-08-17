@@ -30,6 +30,36 @@ std::vector<RREdgeId> RRGraphView::node_in_edges(RRNodeId node) const {
     return node_in_edges_[node];
 }
 
+std::vector<RREdgeId> RRGraphView::node_configurable_in_edges(RRNodeId node) const {
+    /* Note: This is not efficient in runtime, should sort edges by configurability when allocating the array! */
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    std::vector<RREdgeId> ret_edges;
+    if (node_in_edges_.empty()) {
+        return ret_edges;
+    }
+    for (const RREdgeId& edge : node_in_edges_[node]) {
+        if (rr_switch_inf_[edge_switch(edge)].configurable()) {
+            ret_edges.push_back(edge);
+        }
+    }
+    return ret_edges;
+}
+
+std::vector<RREdgeId> RRGraphView::node_non_configurable_in_edges(RRNodeId node) const {
+    /* Note: This is not efficient in runtime, should sort edges by configurability when allocating the array! */
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    std::vector<RREdgeId> ret_edges;
+    if (node_in_edges_.empty()) {
+        return ret_edges;
+    }
+    for (const RREdgeId& edge : node_in_edges_[node]) {
+        if (!rr_switch_inf_[edge_switch(edge)].configurable()) {
+            ret_edges.push_back(edge);
+        }
+    }
+    return ret_edges;
+}
+
 std::vector<RREdgeId> RRGraphView::find_edges(const RRNodeId& src_node, const RRNodeId& des_node) const {
     std::vector<RREdgeId> edge_list;
     for (auto iedge : node_out_edges(src_node)) {
