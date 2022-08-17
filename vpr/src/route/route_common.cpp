@@ -247,7 +247,8 @@ bool try_route(int width_fac,
                t_chan_width_dist chan_width_dist,
                t_direct_inf* directs,
                int num_directs,
-               ScreenUpdatePriority first_iteration_priority) {
+               ScreenUpdatePriority first_iteration_priority,
+               bool is_flat) {
     /* Attempts a routing via an iterated maze router algorithm.  Width_fac *
      * specifies the relative width of the channels, while the members of   *
      * router_opts determine the value of the costs assigned to routing     *
@@ -285,7 +286,7 @@ bool try_route(int width_fac,
                     directs,
                     num_directs,
                     &warning_count,
-                    router_opts.flat_routing);
+                    is_flat);
 
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(width_fac);
@@ -319,7 +320,8 @@ bool try_route(int width_fac,
             netlist_pin_lookup,
             timing_info,
             delay_calc,
-            first_iteration_priority);
+            first_iteration_priority,
+            is_flat);
 
         profiling::time_on_fanout_analysis();
     }
@@ -1599,7 +1601,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
 }
 
 //Print information about an invalid routing, caused by overused routing resources
-void print_invalid_routing_info() {
+void print_invalid_routing_info(bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1622,7 +1624,7 @@ void print_invalid_routing_info() {
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int cap = rr_graph.node_capacity(rr_id);
         if (occ > cap) {
-            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode).c_str(), occ, cap);
+            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str(), occ, cap);
 
             auto range = rr_node_nets.equal_range(inode);
             for (auto itr = range.first; itr != range.second; ++itr) {
@@ -1735,12 +1737,13 @@ bool router_needs_lookahead(enum e_router_algorithm router_algorithm) {
     }
 }
 
-std::string describe_unrouteable_connection(const int source_node, const int sink_node) {
+std::string describe_unrouteable_connection(const int source_node, const int sink_node, bool is_flat) {
+    const auto& device_ctx = g_vpr_ctx.device();
     std::string msg = vtr::string_fmt(
         "Cannot route from %s (%s) to "
         "%s (%s) -- no possible path",
-        rr_node_arch_name(source_node).c_str(), describe_rr_node(source_node).c_str(),
-        rr_node_arch_name(sink_node).c_str(), describe_rr_node(sink_node).c_str());
+        rr_node_arch_name(source_node).c_str(), describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, source_node, is_flat).c_str(),
+        rr_node_arch_name(sink_node).c_str(), describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
 
     return msg;
 }

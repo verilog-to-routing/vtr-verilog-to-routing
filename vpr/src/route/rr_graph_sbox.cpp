@@ -5,7 +5,7 @@
 
 #include "vpr_types.h"
 #include "rr_graph_sbox.h"
-#include "rr_graph_util.h"
+#include "rr_graph_utils.h"
 #include "rr_graph2.h"
 #include "echo_files.h"
 

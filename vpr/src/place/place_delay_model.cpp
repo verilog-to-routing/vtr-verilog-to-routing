@@ -254,7 +254,7 @@ void OverrideDelayModel::read(const std::string& file) {
     auto model = reader.getRoot<VprOverrideDelayModel>();
     ToNdMatrix<2, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
 
-    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays);
+    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays, is_flat_);
 
     // Reading non-scalar capnproto fields is roughly equivilant to using
     // a std::vector of the field type.  Actual type is capnp::List<X>::Reader.
@@ -311,9 +311,10 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(t_chan_width_dist
                                                                t_det_routing_arch* det_routing_arch,
                                                                std::vector<t_segment_inf>& segment_inf,
                                                                const t_direct_inf* directs,
-                                                               const int num_directs) {
+                                                               const int num_directs,
+                                                               bool is_flat) {
     return compute_place_delay_model(placer_opts, router_opts, det_routing_arch, segment_inf,
-                                     chan_width_dist, directs, num_directs);
+                                     chan_width_dist, directs, num_directs, is_flat);
 }
 
 /**

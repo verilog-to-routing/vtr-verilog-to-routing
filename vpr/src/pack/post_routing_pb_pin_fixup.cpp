@@ -1031,7 +1031,8 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
                               ClusteringContext& clustering_ctx,
                               const PlacementContext& placement_ctx,
                               const RoutingContext& routing_ctx,
-                              const bool& verbose) {
+                              const bool& verbose,
+                              bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Synchronize the packed netlist to routing optimization");
 
     /* Reset the database for post-routing clb net mapping */
@@ -1042,7 +1043,8 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
     vtr::vector<RRNodeId, ClusterNetId> rr_node_nets = annotate_rr_node_nets(device_ctx,
                                                                              clustering_ctx,
                                                                              routing_ctx,
-                                                                             verbose);
+                                                                             verbose,
+                                                                             is_flat);
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
 

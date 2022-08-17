@@ -6,6 +6,7 @@
 
 #include "vtr_vector.h"
 #include "physical_types.h"
+#include "rr_graph_storage_utils.h"
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_fwd.h"
@@ -14,7 +15,6 @@
 #include "vtr_memory.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
-#include "rr_graph_utils.h"
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *

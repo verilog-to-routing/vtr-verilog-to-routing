@@ -325,7 +325,7 @@ static std::vector<int> get_pb_pin_driving_pins(t_physical_tile_type_ptr physica
                                                 int relative_cap,
                                                 const t_pb_graph_pin* pin) {
     std::vector<int> driving_pins;
-    t_pb_graph_edge** edges = pin->input_edges;
+    const auto& edges = pin->input_edges;
     t_pb_graph_pin** connected_pins_ptr;
     int num_edges = pin->num_input_edges;
     int num_pins = 0;

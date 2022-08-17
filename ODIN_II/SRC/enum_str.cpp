@@ -42,14 +42,14 @@ const char* LUTRAM_string = "lutram_ram";
 
 const char* operation_list_STR[][2] = {
     {"NO_OP", "nOP"},
+    {"CLOCK_NODE", "CLK"},
+    {"INPUT_NODE", "IN"},
+    {"OUTPUT_NODE", "OUT"},
     {"MULTI_PORT_MUX", "nMUX"}, // port 1 = control, port 2+ = mux options
     {"FF_NODE", "FF"},
     {"BUF_NODE", "BUF"},
-    {"INPUT_NODE", "IN"},
-    {"OUTPUT_NODE", "OUT"},
     {"GND_NODE", "GND"},
     {"VCC_NODE", "VCC"},
-    {"CLOCK_NODE", "CLK"},
     {"ADD", "ADD"},             // +
     {"MINUS", "MIN"},           // -
     {"BITWISE_NOT", "bNOT"},    // ~

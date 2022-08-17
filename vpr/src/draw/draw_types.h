@@ -203,7 +203,7 @@ struct t_draw_state {
     e_route_type draw_route_type = GLOBAL;
     char default_message[vtr::bufsize];
     vtr::vector<ClusterNetId, ezgl::color> net_color;
-    t_draw_rr_node* draw_rr_node = nullptr;
+    std::vector<t_draw_rr_node> draw_rr_node;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
     std::shared_ptr<const vtr::ColorMap> color_map = nullptr;
@@ -214,9 +214,11 @@ struct t_draw_state {
     float net_alpha = 0.1;
     float pres_fac = 1.;
     ManualMovesState manual_moves_state;
+    bool is_flat = false;
     bool show_noc_button = false;
     e_draw_noc draw_noc = DRAW_NO_NOC;
     std::shared_ptr<const vtr::ColorMap> noc_usage_color_map = nullptr; // color map used to display noc link bandwidth usage
+    bool justEnabled = false;                                           //Whether auto-complete was just enabled
 
     std::vector<Breakpoint> list_of_breakpoints;
 

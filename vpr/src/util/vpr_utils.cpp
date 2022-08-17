@@ -19,6 +19,7 @@
 #include "string.h"
 #include "pack_types.h"
 #include "device_grid.h"
+#include "timing_fail_error.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
@@ -1536,7 +1537,7 @@ void free_pb_stats(t_pb* pb) {
         pb->pb_stats->num_pins_of_net_in_pb.clear();
 
         if (pb->pb_stats->feasible_blocks) {
-            free(pb->pb_stats->feasible_blocks);
+            delete[] pb->pb_stats->feasible_blocks;
         }
         if (!pb->parent_pb) {
             pb->pb_stats->transitive_fanout_candidates.clear();
@@ -1819,16 +1820,16 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Allocate and initialize the values to OPEN (-1). */
-    temp_idirect_from_blk_pin = (int**)vtr::malloc(device_ctx.physical_tile_types.size() * sizeof(int*));
-    temp_direct_type_from_blk_pin = (int**)vtr::malloc(device_ctx.physical_tile_types.size() * sizeof(int*));
+    temp_idirect_from_blk_pin = new int*[device_ctx.physical_tile_types.size()];
+    temp_direct_type_from_blk_pin = new int*[device_ctx.physical_tile_types.size()];
     for (const auto& type : device_ctx.physical_tile_types) {
         if (is_empty_type(&type)) continue;
 
         int itype = type.index;
         num_type_pins = type.num_pins;
 
-        temp_idirect_from_blk_pin[itype] = (int*)vtr::malloc(num_type_pins * sizeof(int));
-        temp_direct_type_from_blk_pin[itype] = (int*)vtr::malloc(num_type_pins * sizeof(int));
+        temp_idirect_from_blk_pin[itype] = new int[num_type_pins];
+        temp_direct_type_from_blk_pin[itype] = new int[num_type_pins];
 
         /* Initialize values to OPEN */
         for (iblk_pin = 0; iblk_pin < num_type_pins; iblk_pin++) {
@@ -2176,4 +2177,20 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
         }
     }
     return primitives;
+}
+
+bool is_node_on_tile(t_physical_tile_type_ptr physical_tile,
+                     t_rr_type node_type,
+                     int node_ptc) {
+    if (node_type == CHANX || node_type == CHANY) {
+        return true;
+    } else {
+        VTR_ASSERT(node_type == IPIN || node_type == SINK || node_type == OPIN || node_type == SOURCE);
+        if (node_type == IPIN || node_type == OPIN) {
+            return is_pin_on_tile(physical_tile, node_ptc);
+        } else {
+            VTR_ASSERT(node_type == SINK || node_type == SOURCE);
+            return is_class_on_tile(physical_tile, node_ptc);
+        }
+    }
 }

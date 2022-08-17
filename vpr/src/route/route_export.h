@@ -25,7 +25,8 @@ bool try_route(int width_fac,
                t_chan_width_dist chan_width_dist,
                t_direct_inf* directs,
                int num_directs,
-               ScreenUpdatePriority first_iteration_priority);
+               ScreenUpdatePriority first_iteration_priority,
+               bool is_flat);
 
 bool feasible_routing();
 

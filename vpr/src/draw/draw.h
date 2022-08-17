@@ -31,7 +31,12 @@ void init_draw_coords(float clb_width);
 /* Sets the static show_graphics and gr_automode variables to the    *
  * desired values.  They control if graphics are enabled and, if so, *
  * how often the user is prompted for input.                         */
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics, std::string graphics_commands);
+void init_graphics_state(bool show_graphics_val,
+                         int gr_automode_val,
+                         enum e_route_type route_type,
+                         bool save_graphics,
+                         std::string graphics_commands,
+                         bool is_flat);
 
 /* Allocates the structures needed to draw the placement and routing.*/
 void alloc_draw_structs(const t_arch* arch);
@@ -102,6 +107,10 @@ ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 
 /* Lightens a color's luminance [0, 1] by an aboslute 'amount' */
 ezgl::color lighten_color(ezgl::color color, float amount);
+
+void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
+
+size_t get_max_fanout();
 
 #endif /* NO_GRAPHICS */
 

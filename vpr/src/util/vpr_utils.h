@@ -185,4 +185,8 @@ void print_timing_stats(std::string name,
 
 std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_graph_node* pb_graph_node);
 
+bool is_node_on_tile(t_physical_tile_type_ptr physical_tile,
+                     t_rr_type node_type,
+                     int node_ptc);
+
 #endif

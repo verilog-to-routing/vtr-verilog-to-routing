@@ -14,6 +14,7 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
                               ClusteringContext& clustering_ctx,
                               const PlacementContext& placement_ctx,
                               const RoutingContext& routing_ctx,
-                              const bool& verbose);
+                              const bool& verbose,
+                              bool is_flat);
 
 #endif

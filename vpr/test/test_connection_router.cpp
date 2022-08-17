@@ -16,6 +16,7 @@ namespace {
 // Route from source_node to sink_node, returning either the delay, or infinity if unroutable.
 static float do_one_route(int source_node, int sink_node, const t_router_opts& router_opts, const std::vector<t_segment_inf>& segment_inf) {
     auto& device_ctx = g_vpr_ctx.device();
+    bool is_flat = router_opts.flat_routing;
 
     t_rt_node* rt_root = init_route_tree_to_source_no_net(source_node);
 
@@ -41,7 +42,8 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
         router_opts.lookahead_type,
         router_opts.write_router_lookahead,
         router_opts.read_router_lookahead,
-        segment_inf);
+        segment_inf,
+        is_flat);
 
     ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,
@@ -50,7 +52,8 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
         &device_ctx.rr_graph,
         device_ctx.rr_rc_data,
         device_ctx.rr_graph.rr_switch(),
-        g_vpr_ctx.mutable_routing().rr_node_route_inf);
+        g_vpr_ctx.mutable_routing().rr_node_route_inf,
+        is_flat);
 
     // Find the cheapest route if possible.
     bool found_path;

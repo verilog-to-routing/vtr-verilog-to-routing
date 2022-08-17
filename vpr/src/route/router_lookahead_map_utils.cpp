@@ -337,9 +337,8 @@ t_src_opin_delays compute_router_src_opin_lookahead() {
                 for (RRNodeId node_id : rr_nodes_at_loc) {
                     int ptc = rr_graph.node_ptc_num(node_id);
                     // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                    if (!is_node_on_tile(rr_type,
-                                         rr_graph.node_xlow(node_id),
-                                         rr_graph.node_ylow(node_id),
+                    if (!is_node_on_tile(&device_ctx.physical_tile_types[itile],
+                                         rr_type,
                                          ptc)) {
                         continue;
                     }
@@ -507,9 +506,10 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                if (!is_node_on_tile(rr_graph.node_type(next_node),
-                                     rr_graph.node_xlow(next_node),
-                                     rr_graph.node_ylow(next_node),
+                t_physical_tile_type_ptr physical_type =
+                    device_ctx.grid[rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)].type;
+                if (!is_node_on_tile(physical_type,
+                                     rr_graph.node_type(next_node),
                                      rr_graph.node_ptc_num(next_node))) {
                     continue;
                 }
