@@ -1827,6 +1827,9 @@
     </auto_layout>
 
   </layout>
+  <!-- <directlist> -->
+      <!-- <direct name="LAB_feedback" from_pin="LAB.data_out" to_pin="LAB.data_in" x_offset="0" y_offset="0" z_offset="0"/> -->
+  <!-- </directlist> -->
 
   <complexblocklist>
 
