@@ -8,8 +8,8 @@
  * As a note, looks into draw_global.c for understanding the data structures associated with drawing->
  *
  * Contains all functions that didn't fit in any other draw_*.cpp file.
- * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang
- * Last updated: June 2019
+ * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang, Sebastian Lievano
+ * Last updated: August 2022
  */
 
 #include <cstdio>
@@ -672,7 +672,7 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
     std::string text(gtk_entry_get_text(GTK_ENTRY(searchBar)));
     t_draw_state* draw_state = get_draw_state_vars();
     if (gtk_widget_is_focus(searchBar)) {
-        if (key == "Return") {
+        if (key == "Return" || key == "Tab") {
             enable_autocomplete(app);
             gtk_editable_set_position(GTK_EDITABLE(searchBar), text.length());
             return;
@@ -682,6 +682,9 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
         draw_state->justEnabled = false;
     } else {
         gtk_entry_set_completion(GTK_ENTRY(searchBar), nullptr);
+    }
+    if (key == "Escape") {
+        deselect_all();
     }
 }
 
