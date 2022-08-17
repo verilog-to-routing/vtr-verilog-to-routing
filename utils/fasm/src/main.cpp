@@ -90,7 +90,8 @@ int main(int argc, const char **argv) {
                                      g_vpr_ctx.placement(),
                                      g_vpr_ctx.routing(),
                                      vpr_setup.PackerOpts.pack_verbosity > 2,
-                                     vpr_setup.RouterOpts);
+                                     vpr_setup.RouterOpts,
+                                     vpr_setup.RouterOpts.flat_routing);
         }
 
         /* Actually write output FASM file. */
