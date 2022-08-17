@@ -9,12 +9,7 @@
 /* Headers from vtrutil library */
 #include "vtr_geometry.h"
 
-/* Headers from openfpgautil library */
-#include "openfpga_port.h"
-
 /* Headers from vpr library */
-#include "rr_graph_obj.h"
-
 #include "rr_graph_view.h"
 
 /********************************************************************
