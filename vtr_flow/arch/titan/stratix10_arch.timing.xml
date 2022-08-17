@@ -1916,7 +1916,7 @@
     </pb_type>
 
     <pb_type name="LAB">
-      <input name="data_in" num_pins="80" equivalent="full"/>
+      <input name="data_in" num_pins="60" equivalent="full"/>
       <input name="control_in" num_pins="5" equivalent="full"/>
       <input name="cin" num_pins="1" equivalent="none"/>
       <output name="data_out" num_pins="40" equivalent="full"/>
@@ -2174,12 +2174,8 @@
                    The average observed is: 104 ps-->
             <delay_constant max="171e-12" min="104e-12" in_port="LAB.data_in" out_port="alm[9:0].data_in"/>
           </complete>
-          <!-- ALM feedback: two of four ALM outputs (one from each 1/2 ALM) feedback to the ALM inputs  -->
-          <complete input="alm[9:0].data_out[0] alm[9:0].data_out[3]" name="LAB_alm_feedback" output="alm[9:0].data_in">
-            <delay_constant max="75e-12" min="40e-12" in_port="alm[9:0].data_out[0] alm[9:0].data_out[3]" out_port="alm[9:0].data_in"/>
-          </complete>
           <!-- ALM Outputs: directly drive global routing -->
-          <complete input="alm[9:0].data_out[1] alm[9:0].data_out[2]" name="LAB_dataout" output="LAB.data_out"/>
+          <complete input="alm[9:0].data_out" name="LAB_dataout" output="LAB.data_out"/>
           <!-- ALM Control Inputs -->
           <complete input="LAB.control_in" name="LAB_control" output="alm[9:0].control">
             <!-- The delay modeled here on the ALM control inputs consists of two components:
