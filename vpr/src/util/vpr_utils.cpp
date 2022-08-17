@@ -1143,7 +1143,7 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pi
 }
 
 /* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
-static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
+t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
     t_pb_graph_pin** pb_graph_pin_lookup_from_type = nullptr;
 
     t_pb_graph_node* pb_graph_head = type->pb_graph_head;
