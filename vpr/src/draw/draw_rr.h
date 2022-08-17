@@ -1,3 +1,9 @@
+/**
+ * @file draw_rr.h
+ * 
+ * draw_rr.cpp contains all functions that relate to drawing routing resources.
+ */
+
 #ifndef DRAW_RR_H
 #define DRAW_RR_H
 

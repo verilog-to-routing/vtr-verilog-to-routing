@@ -1,10 +1,10 @@
-/*
- * @file 	manual_moves.h
- * @author	Paula Perdomo
- * @date 	2021-07-19
- * @brief 	Contains the function prototypes needed for manual moves feature.
- *
- * Includes the data structures and gtk function for manual moves. The Manual Move Generator class is defined  manual_move_generator.h/cpp.
+/**
+ * @file manual_moves.h
+ * 
+ * Includes the data structures and gtk function for manual moves. 
+ * The Manual Move Generator class is defined  manual_move_generator.h/cpp.
+ * 
+ * Author: Paula Perdomo
  */
 
 #ifndef MANUAL_MOVES_H
