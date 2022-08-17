@@ -39,4 +39,7 @@ bool is_opin_direct_connected_ipin(const RRGraphView& rr_graph,
 bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
                                    const RRNodeId& node);
 
+e_side get_rr_graph_single_node_side(const RRGraphView& rr_graph,
+                                     const RRNodeId& node);
+
 #endif
