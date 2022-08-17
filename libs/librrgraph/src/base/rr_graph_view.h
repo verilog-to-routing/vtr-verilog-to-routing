@@ -556,6 +556,9 @@ class RRGraphView {
         return node_storage_.node_cost_index(node);
     }
 
+    /** @brief Get the segment id which a routing resource node represents. Only applicable to nodes whose type is CHANX or CHANY */
+    RRSegmentId node_segment(RRNodeId node) const;
+
     /** @brief Return incoming edges for a given routing resource node 
      *  Require build_in_edges() to be called first
      */

@@ -39,3 +39,8 @@ std::vector<RREdgeId> RRGraphView::find_edges(const RRNodeId& src_node, const RR
     }
     return edge_list;
 }
+
+RRSegmentId node_segment(RRNodeId node) const {
+    RRIndexedDataId cost_index = node_cost_index(node);
+    return RRSegmentId(rr_indexed_data_[cost_index].seg_index);
+}
