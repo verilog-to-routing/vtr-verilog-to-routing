@@ -1,11 +1,17 @@
-#ifndef DRAW_TOGGLE_FUNCTIONS_H
-#define DRAW_TOGGLE_FUNCTIONS_H
-
 /**
  * @file draw_toggle_functions.h
- * @author Sebastian Lievano
- * @brief Declarations of callback functions.
+ * 
+ * This file contains all of the callback functions for main UI elements. 
+ * These callback functions alter the state of a set enum member in t_draw_state (draw_types.cpp)
+ * which is then reflected in the drawing. 
+ * Please add any new callback functions here, and if it makes sense, add _cbk at the end 
+ * of function name to prevent someone else calling it in any non gtk context. 
+ * 
+ * Author: Sebastian Lievano
  */
+
+#ifndef DRAW_TOGGLE_FUNCTIONS_H
+#define DRAW_TOGGLE_FUNCTIONS_H
 
 #include <cstdio>
 #include <cfloat>
@@ -107,11 +113,10 @@ void toggle_crit_path_cbk(GtkComboBoxText* self, ezgl::application* app);
  * Draws different router expansion costs based on user input. Changes value of draw_state->show_router_expansion_cost. */
 void toggle_expansion_cost_cbk(GtkComboBoxText* self, ezgl::application* app);
 
-/* Callback function for runtime created toggle_noc_display 
- * in button.cpp.
+/* Callback function for main.ui created ToggleNocBox in ui_setup.cpp
  * Controls if the NoC on chip should be visualized and whether the link usage
  * in the NoC should be visualized. Changes value of draw_state->draw_noc */
-void toggle_noc_display(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+void toggle_noc_cbk(GtkComboBoxText* self, ezgl::application* app);
 
 /* Callback function for main.ui created netMaxFanout widget in button.cpp.
  * Sets draw_state->draw_net_max_fanout to its corresponding value in the UI. */

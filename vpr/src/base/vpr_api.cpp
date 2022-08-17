@@ -73,6 +73,7 @@
 #include "vpr_constraints_reader.h"
 #include "place_constraints.h"
 #include "place_util.h"
+#include "timing_fail_error.h"
 
 #include "vpr_constraints_writer.h"
 
@@ -341,6 +342,9 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         {
             vtr::ScopedStartFinishTimer t("Load Timing Constraints");
             timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph);
+        }
+        {
+            set_terminate_if_timing_fails(options->terminate_if_timing_fails);
         }
     }
 

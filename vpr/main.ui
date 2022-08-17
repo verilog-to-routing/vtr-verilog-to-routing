@@ -13,16 +13,6 @@
       </row>
     </data>
   </object>
-  <object class="GtkEntryCompletion" id="BlockNameCompleter">
-    <property name="model">BlockNames</property>
-    <property name="text_column">0</property>
-    <child>
-      <object class="GtkCellRendererText" id="Renderer"/>
-      <attributes>
-        <attribute name="text">0</attribute>
-      </attributes>
-    </child>
-  </object>
   <object class="GtkPopover" id="BlockPopover">
     <property name="can_focus">False</property>
     <child>
@@ -114,6 +104,35 @@
           </packing>
         </child>
         <child>
+          <object class="GtkLabel" id="NocLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Toggle NoC Display</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">6</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkComboBoxText" id="ToggleNocBox">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="active">0</property>
+            <items>
+              <item translatable="yes">None</item>
+              <item translatable="yes">NoC Links</item>
+              <item translatable="yes">NoC Link Usage</item>
+            </items>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">7</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkCheckButton" id="blockOutline">
             <property name="label" translatable="yes">Block Outline</property>
             <property name="visible">True</property>
@@ -126,7 +145,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">6</property>
+            <property name="position">8</property>
           </packing>
         </child>
         <child>
@@ -142,7 +161,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">7</property>
+            <property name="position">9</property>
           </packing>
         </child>
         <child>
@@ -161,6 +180,16 @@
           </packing>
         </child>
       </object>
+    </child>
+  </object>
+  <object class="GtkEntryCompletion" id="Completion">
+    <property name="minimum_key_length">5</property>
+    <property name="text_column">0</property>
+    <child>
+      <object class="GtkCellRendererText" id="CompRenderer"/>
+      <attributes>
+        <attribute name="text">0</attribute>
+      </attributes>
     </child>
   </object>
   <object class="GtkPopover" id="MiscPopover">
@@ -253,6 +282,12 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkListStore" id="NetNames">
+    <columns>
+      <!-- column-name gchararray1 -->
+      <column type="gchararray"/>
+    </columns>
   </object>
   <object class="GtkPopover" id="NetPopover">
     <property name="can_focus">False</property>
@@ -550,12 +585,97 @@
       </object>
     </child>
   </object>
-  <object class="GtkPopover" id="SearchPopover">
+  <object class="GtkWindow" id="MainWindow">
+    <property name="visible">True</property>
     <property name="can_focus">False</property>
+    <property name="title">VPR: Versatile Place and Route for FPGAs</property>
+    <property name="default_width">800</property>
+    <property name="default_height">600</property>
+    <child type="titlebar">
+      <placeholder/>
+    </child>
     <child>
-      <object class="GtkGrid">
+      <object class="GtkGrid" id="OuterGrid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="column_homogeneous">True</property>
+        <child>
+          <object class="GtkGrid" id="InnerGrid">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="halign">end</property>
+            <child>
+              <object class="GtkButton" id="ZoomFitButton">
+                <property name="label" translatable="yes">Zoom Fit</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="Window">
+                <property name="label" translatable="yes">Window</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="valign">start</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">4</property>
+            <property name="top_attach">0</property>
+            <property name="height">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkStatusbar" id="StatusBar">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="spacing">2</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">5</property>
+            <property name="width">4</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="ProceedButton">
+            <property name="label" translatable="yes">Done</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="halign">end</property>
+            <property name="image_position">right</property>
+          </object>
+          <packing>
+            <property name="left_attach">4</property>
+            <property name="top_attach">5</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkDrawingArea" id="MainCanvas">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">2</property>
+            <property name="width">4</property>
+            <property name="height">3</property>
+          </packing>
+        </child>
         <child>
           <object class="GtkComboBoxText" id="SearchType">
             <property name="name">SearchType</property>
@@ -576,19 +696,6 @@
           </packing>
         </child>
         <child>
-          <object class="GtkEntry" id="TextInput">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="tooltip_text" translatable="yes">search</property>
-            <property name="primary_icon_stock">gtk-find</property>
-            <property name="placeholder_text" translatable="yes">Search...</property>
-          </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">0</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkButton" id="Search">
             <property name="label" translatable="yes">Search</property>
             <property name="visible">True</property>
@@ -596,199 +703,156 @@
             <property name="receives_default">True</property>
           </object>
           <packing>
-            <property name="left_attach">2</property>
+            <property name="left_attach">3</property>
             <property name="top_attach">0</property>
           </packing>
         </child>
-      </object>
-    </child>
-  </object>
-  <object class="GtkWindow" id="MainWindow">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="title">VPR: Versatile Place and Route for FPGAs</property>
-    <property name="default_width">800</property>
-    <property name="default_height">600</property>
-    <child type="titlebar">
-      <placeholder/>
-    </child>
-    <child>
-      <object class="GtkGrid" id="OuterGrid">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
         <child>
-          <object class="GtkDrawingArea" id="MainCanvas">
+          <object class="GtkEntry" id="TextInput">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="can_focus">True</property>
+            <property name="tooltip_text" translatable="yes">search</property>
             <property name="hexpand">True</property>
-            <property name="vexpand">True</property>
+            <property name="primary_icon_stock">gtk-find</property>
+            <property name="placeholder_text" translatable="yes">Search...</property>
+            <property name="completion">Completion</property>
           </object>
           <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">1</property>
-            <property name="width">4</property>
-            <property name="height">3</property>
+            <property name="left_attach">1</property>
+            <property name="top_attach">0</property>
+            <property name="width">2</property>
           </packing>
         </child>
         <child>
-          <object class="GtkGrid" id="InnerGrid">
+          <object class="GtkGrid" id="MenuGrid">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="column_homogeneous">True</property>
             <child>
-              <object class="GtkButton" id="Window">
-                <property name="label" translatable="yes">Window</property>
+              <object class="GtkMenuButton" id="BlockMenuButton">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="focus_on_click">False</property>
                 <property name="receives_default">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="ZoomFitButton">
-                <property name="label" translatable="yes">Zoom Fit</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
+                <property name="popover">BlockPopover</property>
+                <child>
+                  <object class="GtkLabel" id="BlockMenuLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Block Settings</property>
+                  </object>
+                </child>
               </object>
               <packing>
                 <property name="left_attach">0</property>
                 <property name="top_attach">0</property>
               </packing>
             </child>
-          </object>
-          <packing>
-            <property name="left_attach">4</property>
-            <property name="top_attach">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkStatusbar" id="StatusBar">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="spacing">2</property>
+            <child>
+              <object class="GtkMenuButton" id="NetMenuButton">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="focus_on_click">False</property>
+                <property name="receives_default">True</property>
+                <property name="popover">NetPopover</property>
+                <child>
+                  <object class="GtkLabel" id="NetMenuLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Net Settings</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkMenuButton" id="RoutingMenuButton">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="focus_on_click">False</property>
+                <property name="receives_default">True</property>
+                <property name="popover">RoutingPopover</property>
+                <child>
+                  <object class="GtkLabel" id="DebugMenuLabe">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Routing Options</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">2</property>
+                <property name="top_attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkMenuButton" id="MiscMenuButton">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="focus_on_click">False</property>
+                <property name="receives_default">True</property>
+                <property name="popover">MiscPopover</property>
+                <child>
+                  <object class="GtkLabel" id="MiscMenuLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Misc.</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">3</property>
+                <property name="top_attach">0</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">4</property>
+            <property name="top_attach">1</property>
             <property name="width">4</property>
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="ProceedButton">
-            <property name="label" translatable="yes">Done</property>
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="image_position">right</property>
-          </object>
-          <packing>
-            <property name="left_attach">4</property>
-            <property name="top_attach">4</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkMenuButton" id="SearchMenuButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="focus_on_click">False</property>
-            <property name="receives_default">True</property>
-            <property name="popover">SearchPopover</property>
-            <child>
-              <object class="GtkImage" id="GtkSearchImage">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="valign">center</property>
-                <property name="stock">gtk-find</property>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">0</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkMenuButton" id="BlockMenuButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="focus_on_click">False</property>
-            <property name="receives_default">True</property>
-            <property name="popover">BlockPopover</property>
-            <child>
-              <object class="GtkLabel" id="BlockMenuLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Block Settings</property>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="left_attach">1</property>
-            <property name="top_attach">0</property>
-          </packing>
+          <placeholder/>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkPopover" id="SearchPopover">
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkGrid">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <child>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkMenuButton" id="NetMenuButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="focus_on_click">False</property>
-            <property name="receives_default">True</property>
-            <property name="popover">NetPopover</property>
-            <child>
-              <object class="GtkLabel" id="NetMenuLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Net Settings</property>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="left_attach">2</property>
-            <property name="top_attach">0</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkMenuButton" id="RoutingMenuButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="focus_on_click">False</property>
-            <property name="receives_default">True</property>
-            <property name="popover">RoutingPopover</property>
-            <child>
-              <object class="GtkLabel" id="DebugMenuLabe">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Routing Options</property>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="left_attach">3</property>
-            <property name="top_attach">0</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <object class="GtkMenuButton" id="MiscMenuButton">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="focus_on_click">False</property>
-            <property name="receives_default">True</property>
-            <property name="popover">MiscPopover</property>
-            <child>
-              <object class="GtkLabel" id="MiscMenuLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Misc.</property>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="left_attach">4</property>
-            <property name="top_attach">0</property>
-          </packing>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
         </child>
         <child>
           <placeholder/>

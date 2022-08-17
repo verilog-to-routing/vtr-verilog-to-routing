@@ -696,12 +696,12 @@ class BlackBoxInst : public Instance {
                     os << indent(depth + 3) << "(IOPATH ";
                     os << escape_sdf_identifier(arc.source_name());
                     if (find_port_size(arc.source_name()) > 1) {
-                        os << "\\[" << arc.source_ipin() << "\\]";
+                        os << "[" << arc.source_ipin() << "]";
                     }
                     os << " ";
                     os << escape_sdf_identifier(arc.sink_name());
                     if (find_port_size(arc.sink_name()) > 1) {
-                        os << "\\[" << arc.sink_ipin() << "\\]";
+                        os << "[" << arc.sink_ipin() << "]";
                     }
                     os << " ";
                     os << delay_triple.str();

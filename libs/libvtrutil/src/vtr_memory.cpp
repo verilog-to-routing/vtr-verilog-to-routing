@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <cstdlib>
+#include <math.h>
 
 #include "vtr_assert.h"
 #include "vtr_list.h"
@@ -43,7 +44,7 @@ void* calloc(size_t nelem, size_t size) {
     if ((ret = std::calloc(nelem, size)) == nullptr) {
         throw VtrError("Unable to calloc memory.", __FILE__, __LINE__);
     }
-    return (ret);
+    return ret;
 }
 
 void* malloc(size_t size) {
@@ -55,7 +56,7 @@ void* malloc(size_t size) {
     if ((ret = std::malloc(size)) == nullptr && size != 0) {
         throw VtrError("Unable to malloc memory.", __FILE__, __LINE__);
     }
-    return (ret);
+    return ret;
 }
 
 void* realloc(void* ptr, size_t size) {
@@ -66,7 +67,7 @@ void* realloc(void* ptr, size_t size) {
         throw VtrError(string_fmt("Unable to realloc memory (ptr=%p, size=%d).", ptr, size),
                        __FILE__, __LINE__);
     }
-    return (ret);
+    return ret;
 }
 
 void* chunk_malloc(size_t size, t_chunk* chunk_info) {
@@ -102,7 +103,9 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
 
     if ((size_t)(chunk_info->mem_avail) < size) { /* Need to malloc more memory. */
         if (size > CHUNK_SIZE) {                  /* Too big, use standard routine. */
-            tmp_ptr = (char*)vtr::malloc(size);
+                                                  /* Want to allocate a block of memory the size of size.
+                                                   * i.e. malloc(size) */
+            tmp_ptr = new char[size];
 
             /* When debugging, uncomment the code below to see if memory allocation size */
             /* makes sense */
@@ -113,11 +116,11 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
 
             VTR_ASSERT(chunk_info != nullptr);
             chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
-            return (tmp_ptr);
+            return tmp_ptr;
         }
 
         if (chunk_info->mem_avail < FRAGMENT_THRESHOLD) { /* Only a small scrap left. */
-            chunk_info->next_mem_loc_ptr = (char*)vtr::malloc(CHUNK_SIZE);
+            chunk_info->next_mem_loc_ptr = new char[CHUNK_SIZE];
             chunk_info->mem_avail = CHUNK_SIZE;
             VTR_ASSERT(chunk_info != nullptr);
             chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, chunk_info->next_mem_loc_ptr);
@@ -128,10 +131,11 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
          * to allocate normally.                                           */
 
         else {
-            tmp_ptr = (char*)vtr::malloc(size);
+            tmp_ptr = new char[size];
             VTR_ASSERT(chunk_info != nullptr);
             chunk_info->chunk_ptr_head = insert_in_vptr_list(chunk_info->chunk_ptr_head, tmp_ptr);
-            return (tmp_ptr);
+
+            return tmp_ptr;
         }
     }
 
@@ -147,7 +151,7 @@ void* chunk_malloc(size_t size, t_chunk* chunk_info) {
     tmp_ptr = chunk_info->next_mem_loc_ptr;
     chunk_info->next_mem_loc_ptr += aligned_size;
     chunk_info->mem_avail -= aligned_size;
-    return (tmp_ptr);
+    return tmp_ptr;
 }
 
 void free_chunk_memory(t_chunk* chunk_info) {
@@ -158,11 +162,14 @@ void free_chunk_memory(t_chunk* chunk_info) {
     curr_ptr = chunk_info->chunk_ptr_head;
 
     while (curr_ptr != nullptr) {
-        free(curr_ptr->data_vptr); /* Free memory "chunk". */
+        /* Must cast pointers to type char*, since the're of type void*, which delete can't
+         * be called on.*/
+        delete[]((char*)curr_ptr->data_vptr); /* Free memory "chunk". */
         prev_ptr = curr_ptr;
         curr_ptr = curr_ptr->next;
-        free(prev_ptr); /* Free memory used to track "chunk". */
+        delete (t_linked_vptr*)prev_ptr; /* Free memory used to track "chunk". */
     }
+
     chunk_info->chunk_ptr_head = nullptr;
     chunk_info->mem_avail = 0;
     chunk_info->next_mem_loc_ptr = nullptr;

@@ -1,3 +1,9 @@
+/**
+ * @file hsl.h
+ * 
+ * This file manages conversions between color (red, green, and blue) and hsl (hue, saturation, and luminesence)
+ */
+
 #ifndef HSL_H
 #define HSL_H
 
