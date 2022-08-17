@@ -129,7 +129,7 @@ class RRGraphBuilder {
     /** @brief Set the node name with a given valid id */
     inline void set_node_name(RRNodeId id, std::string name) {
         node_storage_.set_node_name(id, name);
-    }
+    } 
     /** @brief Create a new rr_node in the node storage and register it to the node look-up.
      *  Return a valid node id if succeed. Otherwise, return an invalid id.
      */
