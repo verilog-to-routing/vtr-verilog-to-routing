@@ -1369,8 +1369,7 @@ std::vector<int> get_pb_pins(t_physical_tile_type_ptr physical_type,
         return pin_nums;
 
     } else {
-        return get_pb_graph_node_pins(physical_type,
-                                      sub_tile,
+        return get_pb_graph_node_pins(sub_tile,
                                       logical_block,
                                       rel_cap,
                                       pb->pb_graph_node);
