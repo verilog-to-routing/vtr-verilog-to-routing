@@ -332,7 +332,6 @@ static std::vector<int> get_pb_pin_driving_pins(t_physical_tile_type_ptr physica
 
     for (int edge_idx = 0; edge_idx < num_edges; edge_idx++) {
         const t_pb_graph_edge* pb_graph_edge = edges[edge_idx];
-        connected_pins_ptr = pb_graph_edge->input_pins;
         num_pins += pb_graph_edge->num_input_pins;
     }
     driving_pins.reserve(num_pins);
@@ -350,8 +349,7 @@ static std::vector<int> get_pb_pin_driving_pins(t_physical_tile_type_ptr physica
                                                                              sub_tile->capacity.low + relative_cap,
                                                                              conn_pin->pin_count_in_cluster));
             } else {
-                driving_pins.push_back(get_pb_pin_physical_num(physical_type,
-                                                               sub_tile,
+                driving_pins.push_back(get_pb_pin_physical_num(sub_tile,
                                                                logical_block,
                                                                relative_cap,
                                                                conn_pin));
@@ -908,8 +906,7 @@ int get_pin_physical_num_from_class_physical_num(t_physical_tile_type_ptr physic
         VTR_ASSERT(sub_tile_cap != -1);
         auto logical_block = get_logical_block_from_class_physical_num(physical_tile, physical_class_num);
         auto pb_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
-        pin_physical_num = get_pb_pin_physical_num(physical_tile,
-                                                   sub_tile,
+        pin_physical_num = get_pb_pin_physical_num(sub_tile,
                                                    logical_block,
                                                    sub_tile_cap,
                                                    pb_pin);
@@ -930,7 +927,6 @@ std::unordered_map<int, const t_class*> get_pb_graph_node_num_class_pairs(t_phys
     std::unordered_set<int> seen_logical_class_num;
     std::unordered_map<int, const t_class*> classes_map;
     const std::unordered_map<const t_pb_graph_pin*, int>& pb_pin_class_map = logical_block->pb_pin_to_class_logical_num_mapping;
-    auto& logical_block_classes = logical_block->logical_class_inf;
 
     std::vector<const t_pb_graph_pin*> pb_pins = get_pb_graph_node_pins(pb_graph_node);
 
@@ -939,8 +935,7 @@ std::unordered_map<int, const t_class*> get_pb_graph_node_num_class_pairs(t_phys
         bool is_added;
         std::tie(std::ignore, is_added) = seen_logical_class_num.emplace(class_logical_num);
         if (is_added) {
-            int pin_physical_num = get_pb_pin_physical_num(physical_tile,
-                                                           sub_tile,
+            int pin_physical_num = get_pb_pin_physical_num(sub_tile,
                                                            logical_block,
                                                            sub_tile_relative_cap,
                                                            pin);
@@ -1056,16 +1051,14 @@ bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num) {
     return (physical_num < physical_tile->num_pins);
 }
 
-std::vector<int> get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
-                                        const t_sub_tile* sub_tile,
+std::vector<int> get_pb_graph_node_pins(const t_sub_tile* sub_tile,
                                         t_logical_block_type_ptr logical_block,
                                         int relative_cap,
                                         const t_pb_graph_node* pb_graph_node) {
     std::vector<int> pins_num;
     auto pins = get_pb_graph_node_pins(pb_graph_node);
     for (auto pin : pins) {
-        int pin_num = get_pb_pin_physical_num(physical_tile,
-                                              sub_tile,
+        int pin_num = get_pb_pin_physical_num(sub_tile,
                                               logical_block,
                                               relative_cap,
                                               pin);
@@ -1111,8 +1104,7 @@ std::vector<int> get_physical_pin_driving_pins(t_physical_tile_type_ptr physical
     }
 }
 
-int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
-                            const t_sub_tile* sub_tile,
+int get_pb_pin_physical_num(const t_sub_tile* sub_tile,
                             t_logical_block_type_ptr logical_block,
                             int relative_cap,
                             const t_pb_graph_pin* pin) {

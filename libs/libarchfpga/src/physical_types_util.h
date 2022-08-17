@@ -350,8 +350,7 @@ int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, 
 
 bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num);
 
-std::vector<int> get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
-                                        const t_sub_tile* sub_tile,
+std::vector<int> get_pb_graph_node_pins(const t_sub_tile* sub_tile,
                                         t_logical_block_type_ptr logical_block,
                                         int relative_cap,
                                         const t_pb_graph_node* pb_graph_node);
@@ -360,8 +359,7 @@ std::vector<int> get_physical_pin_driving_pins(t_physical_tile_type_ptr physical
                                                t_logical_block_type_ptr logical_block,
                                                int pin_physical_num);
 
-int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
-                            const t_sub_tile* sub_tile,
+int get_pb_pin_physical_num(const t_sub_tile* sub_tile,
                             t_logical_block_type_ptr logical_block,
                             int relative_cap,
                             const t_pb_graph_pin* pin);
