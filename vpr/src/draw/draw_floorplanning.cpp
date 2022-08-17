@@ -72,57 +72,75 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color(43, 61, 38)     //olive green
 };
 
-void highlight_regions(ezgl::renderer* g) {
+#    define DEFAULT_HIGHLIGHT_ALPHA 30
+#    define CLICKED_HIGHLIGHT_ALPHA 100
+
+static std::vector<int> highlight_alpha;
+
+static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
+    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    auto constraints = floorplanning_ctx.constraints;
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    auto partition = constraints.get_partition((PartitionId)partitionID);
+    auto& partition_region = partition.get_part_region();
+    auto regions = partition_region.get_partition_region();
+
+    bool name_drawn = false;
+    ezgl::color partition_color = kelly_max_contrast_colors[partitionID % (kelly_max_contrast_colors.size())];
+    g->set_color(partition_color, alpha);
+
+    // The units of space in the constraints xml file will be refered to as "tile units"
+    // The units of space that'll be used by ezgl to draw will be refered to as "on screen units"
+
+    // Find the coordinates of the region by retrieving from the xml file
+    // which tiles are at the corner of the region, then translate that to on
+    // the on screen units for ezgl to use.
+
+    for (int region = 0; (size_t)region < regions.size(); region++) {
+        auto tile_rect = regions[region].get_region_rect();
+
+        ezgl::rectangle top_right = draw_coords->get_absolute_clb_bbox(tile_rect.xmax(),
+                                                                       tile_rect.ymax(), 0);
+        ezgl::rectangle bottom_left = draw_coords->get_absolute_clb_bbox(tile_rect.xmin(),
+                                                                         tile_rect.ymin(), 0);
+
+        ezgl::rectangle on_screen_rect(bottom_left.bottom_left(), top_right.top_right());
+
+        if (!name_drawn) {
+            g->set_font_size(10);
+            std::string partition_name("Partition " + std::to_string(partitionID));
+
+            g->set_color(partition_color, 230);
+
+            g->draw_text(
+                on_screen_rect.center(),
+                partition_name.c_str(),
+                on_screen_rect.width() - 10,
+                on_screen_rect.height() - 10);
+
+            name_drawn = true;
+
+            g->set_color(partition_color, alpha);
+        }
+
+        g->fill_rectangle(on_screen_rect);
+    }
+}
+
+void highlight_all_regions(ezgl::renderer* g) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
     auto num_partitions = constraints.get_num_partitions();
-    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    if (highlight_alpha.empty()) {
+        highlight_alpha.resize(num_partitions);
+        std::fill(highlight_alpha.begin(), highlight_alpha.end(),
+                  DEFAULT_HIGHLIGHT_ALPHA);
+    }
 
     for (int partitionID = 0; partitionID < num_partitions; partitionID++) {
-        auto partition = constraints.get_partition((PartitionId)partitionID);
-        auto& partition_region = partition.get_part_region();
-        auto regions = partition_region.get_partition_region();
-
-        bool name_drawn = false;
-        ezgl::color partition_color = kelly_max_contrast_colors[partitionID % (kelly_max_contrast_colors.size())];
-        g->set_color(partition_color, 30);
-
-        // The units of space in the constraints xml file will be refered to as "tile units"
-        // The units of space that'll be used by ezgl to draw will be refered to as "on screen units"
-
-        // Find the coordinates of the region by retrieving from the xml file
-        // which tiles are at the corner of the region, then translate that to on
-        // the on screen units for ezgl to use.
-
-        for (int region = 0; (size_t)region < regions.size(); region++) {
-            auto tile_rect = regions[region].get_region_rect();
-
-            ezgl::rectangle top_right = draw_coords->get_absolute_clb_bbox(tile_rect.xmax(),
-                                                                           tile_rect.ymax(), 0);
-            ezgl::rectangle bottom_left = draw_coords->get_absolute_clb_bbox(tile_rect.xmin(),
-                                                                             tile_rect.ymin(), 0);
-
-            ezgl::rectangle on_screen_rect(bottom_left.bottom_left(), top_right.top_right());
-
-            if (!name_drawn) {
-                g->set_font_size(10);
-                std::string partition_name("Partition " + std::to_string(partitionID));
-
-                g->set_color(partition_color, 230);
-
-                g->draw_text(
-                    on_screen_rect.center(),
-                    partition_name.c_str(),
-                    on_screen_rect.width() - 10,
-                    on_screen_rect.height() - 10);
-
-                name_drawn = true;
-
-                g->set_color(partition_color, 30);
-            }
-
-            g->fill_rectangle(on_screen_rect);
-        }
+        highlight_partition(g, partitionID, highlight_alpha[partitionID]);
     }
 }
 
@@ -214,6 +232,98 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, c
                 abs_bbox.height() + 10);
         }
     }
+}
+
+enum {
+    COL_NAME = 0,
+    NUM_COLS
+};
+
+void highlight_selected_partition(GtkWidget* widget) {
+    ezgl::renderer* g = application.get_renderer();
+    GtkTreeIter iter;
+    GtkTreeModel* model;
+    gchar* row_value;
+
+    if (gtk_tree_selection_get_selected(GTK_TREE_SELECTION(widget), &model, &iter)) {
+        gtk_tree_model_get(model, &iter, COL_NAME, &row_value, -1);
+
+        std::string row_value_str(row_value);
+        std::string partition("Partition ");
+        auto partitionID_exists = row_value_str.find(partition);
+        if (partitionID_exists != std::string::npos) {
+            std::string partitionID_str = row_value_str.erase(0, partition.length());
+            int partitionID = stoi(partitionID_str);
+            VTR_L
+            if (highlight_alpha.empty())
+                return;
+
+            if (highlight_alpha[partitionID] == CLICKED_HIGHLIGHT_ALPHA) {
+                highlight_alpha[partitionID] = DEFAULT_HIGHLIGHT_ALPHA;
+            } else {
+                highlight_alpha[partitionID] = CLICKED_HIGHLIGHT_ALPHA;
+            }
+
+            highlight_partition(g, partitionID, highlight_alpha[partitionID]);
+        }
+
+        g_free(row_value);
+        gtk_tree_selection_unselect_all(GTK_TREE_SELECTION(widget));
+    }
+    application.refresh_drawing();
+}
+
+static GtkTreeModel* create_and_fill_model(void) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    auto constraints = floorplanning_ctx.constraints;
+    auto num_partitions = constraints.get_num_partitions();
+
+    GtkTreeStore* store = gtk_tree_store_new(NUM_COLS, G_TYPE_STRING);
+
+    for (int partitionID = 0; partitionID < num_partitions; partitionID++) {
+        auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
+
+        std::string partition_name("Partition " + std::to_string(partitionID)
+                                   + "(" + std::to_string(atoms.size()) + "primitives)");
+        /* Append a row and fill in some data */
+        GtkTreeIter iter, child_iter;
+        gtk_tree_store_append(store, &iter, NULL);
+        gtk_tree_store_set(store, &iter,
+                           COL_NAME, partition_name.c_str(),
+                           -1);
+
+        for (size_t j = 0; j < atoms.size(); j++) {
+            AtomBlockId const& const_atom = atoms[j];
+            std::string atom_name = (atom_ctx.lookup.atom_pb(const_atom))->name;
+            gtk_tree_store_append(store, &child_iter, &iter);
+            gtk_tree_store_set(store, &child_iter,
+                               COL_NAME, atom_name.c_str(),
+                               -1);
+        }
+    }
+
+    return GTK_TREE_MODEL(store);
+}
+
+GtkWidget* setup_floorplanning_legend(GtkWidget* content_tree) {
+    GtkCellRenderer* renderer;
+
+    renderer = gtk_cell_renderer_text_new();
+    gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(content_tree),
+                                                -1,
+                                                "Partition",
+                                                renderer,
+                                                "text", COL_NAME,
+                                                NULL);
+
+    GtkTreeModel* model = create_and_fill_model();
+
+    gtk_tree_view_set_model(GTK_TREE_VIEW(content_tree), model);
+
+    g_object_unref(model);
+
+    return content_tree;
 }
 
 #endif

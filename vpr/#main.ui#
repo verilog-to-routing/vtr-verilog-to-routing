@@ -802,7 +802,13 @@
   <object class="GtkPopover">
     <property name="can_focus">False</property>
     <child>
-      <placeholder/>
+      <object class="GtkTreeView">
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <child internal-child="selection">
+          <object class="GtkTreeSelection"/>
+        </child>
+      </object>
     </child>
   </object>
 </interface>

@@ -12,8 +12,10 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
-void highlight_regions(ezgl::renderer* g);
+void highlight_all_regions(ezgl::renderer* g);
 void draw_constrained_atoms(ezgl::renderer* g);
+GtkWidget* setup_floorplanning_legend(GtkWidget* content_tree);
+void highlight_selected_partition(GtkWidget* widget);
 
 #endif /*NO_GRAPHICS*/
 
