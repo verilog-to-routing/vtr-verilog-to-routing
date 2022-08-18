@@ -55,6 +55,7 @@ option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 # Allow the user to enable building Yosys
 option(WITH_YOSYS "Enable building Yosys" OFF)
 option(ODIN_USE_YOSYS "Enable building Yosys" OFF)
+option(YOSYS_SV_UHDM_PLUGIN "Enable building and installing Yosys SystemVerilog and UHDM plugins" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 1)
@@ -395,6 +396,14 @@ elseif(${WITH_ODIN})
     # blifexplorer depends on odin
     if(${WITH_BLIFEXPLORER})
         add_subdirectory(blifexplorer)
+    endif()
+endif()
+
+# handle cmake params to compile Yosys SystemVerilog/UHDM plugins
+if(${YOSYS_SV_UHDM_PLUGIN})
+    # avoid compiling plugins in case the Yosys frontend is not active
+    if(NOT ${WITH_YOSYS} AND NOT ${ODIN_USE_YOSYS})
+        message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Yosys frontend. Please set either WITH_YOSYS or ODIN_USE_YOSYS on.")
     endif()
 endif()
 

@@ -84,6 +84,22 @@ grandfathered_files = [
     repo_path / "vtr_flow/scripts/spice/run_spice.py",
 ]
 
+# These python files are related to external repositories added as subtrees
+# to the vtr_flow directory. They should be skipped for the Linting process
+subtree_files = [
+    repo_path / "vtr_flow/benchmarks/system_verilog/hdmi/top/Manifest.py",
+    repo_path / "vtr_flow/benchmarks/system_verilog/hdmi/test/top_tb/Manifest.py",
+    repo_path / "vtr_flow/benchmarks/system_verilog/hdmi/test/audio_param_tb/Manifest.py",
+    repo_path / "vtr_flow/benchmarks/system_verilog/hdmi/test/audio_clock_tb/Manifest.py",
+    repo_path / "vtr_flow/benchmarks/system_verilog/hdmi/test/spd_tb/Manifest.py",
+    repo_path / "vtr_flow/benchmarks/system_verilog/hdmi/sim/top_tb/Manifest.py",
+    repo_path / "vtr_flow/benchmarks/system_verilog/hdmi/sim/audio_param_tb/Manifest.py",
+    repo_path / "vtr_flow/benchmarks/system_verilog/hdmi/sim/audio_clock_tb/Manifest.py",
+    repo_path / "vtr_flow/benchmarks/system_verilog/hdmi/sim/spd_tb/Manifest.py",
+    repo_path / "vtr_flow/benchmarks/system_verilog/hdmi/src/Manifest.py",
+    repo_path / "vtr_flow/benchmarks/system_verilog/hdmi/Manifest.py",
+]
+
 ################################################################################
 ################################################################################
 ################################################################################
@@ -177,6 +193,14 @@ def main():
             print(
                 TermColor.YELLOW + relpath_str,
                 "skipped (grandfathered)",
+                TermColor.END,
+            )
+            continue
+
+        if path in subtree_files:
+            print(
+                TermColor.YELLOW + relpath_str,
+                "skipped (external subtree python file)",
                 TermColor.END,
             )
             continue

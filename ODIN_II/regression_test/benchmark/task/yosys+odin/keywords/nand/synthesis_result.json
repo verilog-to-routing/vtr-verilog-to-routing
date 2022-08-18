@@ -89,7 +89,7 @@
         "verilog": "replicate_nand_int_wide.vh",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "nand/replicate_nand_ultra_wide/no_arch": {
@@ -97,7 +97,7 @@
         "verilog": "replicate_nand_ultra_wide.vh",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "nand/replicate_nand_wide/no_arch": {
@@ -105,7 +105,7 @@
         "verilog": "replicate_nand_wide.vh",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "DEFAULT": {
