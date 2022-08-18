@@ -1,10 +1,31 @@
 yosys -import
 
 # the environment variable VTR_ROOT is set by Odin-II.
-# Feel free to specify file paths using "$env(VTR_ROOT)/ ..." 
+# Feel free to specify file paths using "$env(VTR_ROOT)/ ..."
 
-# Read the hardware decription Verilog
-read_verilog -sv -nomem2reg -nolatches $env(TCL_CIRCUIT);
+# Read VTR baseline library first
+read_verilog -nomem2reg $env(ODIN_TECHLIB)/../../vtr_flow/primitives.v
+setattr -mod -set keep_hierarchy 1 single_port_ram
+setattr -mod -set keep_hierarchy 1 dual_port_ram
+
+# Read the HDL file with pre-defined parer in the "run_yosys.sh" script
+if {$env(PARSER) == "surelog" } {
+	puts "Using Yosys read_uhdm command"
+    plugin -i systemverilog;
+    yosys -import
+	read_uhdm -debug $env(TCL_CIRCUIT);
+} elseif {$env(PARSER) == "yosys-plugin" } {
+	puts "Using Yosys read_systemverilog command"
+    plugin -i systemverilog;
+    yosys -import
+	read_systemverilog -debug $env(TCL_CIRCUIT)
+} elseif {$env(PARSER) == "yosys" } {
+	puts "Using Yosys read_verilog command"
+	read_verilog -sv -nomem2reg -nolatches $env(TCL_CIRCUIT);
+} else {
+	error "Invalid PARSER"
+}
+
 # Check that cells match libraries and find top module
 hierarchy -check -auto-top -purge_lib;
 
@@ -23,7 +44,7 @@ check;
 techmap -map $env(ODIN_TECHLIB)/adff2dff.v;
 techmap -map $env(ODIN_TECHLIB)/adffe2dff.v;
 # To resolve Yosys internal indexed part-select circuitry
-techmap */t:$shift */t:$shiftx;
+techmap */t:\$shift */t:\$shiftx;
 # convert mem block to bram/rom
 
 # [NOTE]: Yosys complains about expression width more than 24 bits.
