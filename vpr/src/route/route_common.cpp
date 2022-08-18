@@ -1715,7 +1715,7 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int cap = rr_graph.node_capacity(rr_id);
         if (occ > cap) {
-            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(inode, is_flat).c_str(), occ, cap);
+            VTR_LOG("  %s is overused (occ=%d capacity=%d)\n", describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str(), occ, cap);
 
             auto range = rr_node_nets.equal_range(inode);
             for (auto itr = range.first; itr != range.second; ++itr) {
@@ -1726,7 +1726,8 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
                     auto blk = net_list.pin_block(pin);
                     std::tie(x, y) = get_block_loc(blk, is_flat);
                     if(x == node_x && y == node_y) {
-                        VTR_LOG("      Is in the same cluster: %s \n",  describe_rr_node(itr->first, is_flat).c_str());
+                        VTR_LOG("      Is in the same cluster: %s \n",  describe_rr_node(rr_graph, device_ctx.grid,
+                                                                                        device_ctx.rr_indexed_data, itr->first, is_flat).c_str());
                     }
                 }
             }
@@ -1838,11 +1839,14 @@ bool router_needs_lookahead(enum e_router_algorithm router_algorithm) {
 }
 
 std::string describe_unrouteable_connection(const int source_node, const int sink_node, bool is_flat) {
+    const auto& device_ctx = g_vpr_ctx.device();
     std::string msg = vtr::string_fmt(
         "Cannot route from %s (%s) to "
         "%s (%s) -- no possible path",
-        rr_node_arch_name(source_node, is_flat).c_str(), describe_rr_node(source_node, is_flat).c_str(),
-        rr_node_arch_name(sink_node, is_flat).c_str(), describe_rr_node(sink_node, is_flat).c_str());
+        rr_node_arch_name(source_node, is_flat).c_str(),
+            describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, source_node, is_flat).c_str(),
+        rr_node_arch_name(sink_node, is_flat).c_str(),
+            describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
 
     return msg;
 }
@@ -1878,7 +1882,7 @@ static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRN
     int y_low = rr_graph_view.node_ylow(node_id);
     auto node_type = rr_graph_view.node_type(node_id);
 
-    if(is_node_on_tile(node_type, x_low, y_low, rr_graph_view.node_ptc_num(node_id))) {
+    if(is_node_on_tile(device_ctx.grid[x_low][y_low].type, node_type, rr_graph_view.node_ptc_num(node_id))) {
         return node_id;
     } else {
         int max_ptc = get_rr_node_max_ptc(rr_graph_view,

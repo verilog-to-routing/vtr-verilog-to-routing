@@ -45,7 +45,7 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
         router_opts.write_router_lookahead,
         router_opts.read_router_lookahead,
         segment_inf,
-        router_opts.flat_routing);
+        is_flat);
 
     ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,
@@ -55,7 +55,7 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
         device_ctx.rr_rc_data,
         device_ctx.rr_graph.rr_switch(),
         g_vpr_ctx.mutable_routing().rr_node_route_inf,
-        router_opts.flat_routing);
+        is_flat);
 
     // Find the cheapest route if possible.
     bool found_path;

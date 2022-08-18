@@ -1,3 +1,11 @@
+/**
+ * @file draw_basic.h
+ * 
+ * draw_basic.cpp contains all functions that draw in the main graphics area
+ * that aren't RR nodes or muxes (they have their own file).
+ * All functions in this file contain the prefix draw_.
+ */
+
 #ifndef DRAW_BASIC_H
 #define DRAW_BASIC_H
 

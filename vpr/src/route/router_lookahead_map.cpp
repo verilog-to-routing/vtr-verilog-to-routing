@@ -205,7 +205,7 @@ t_wire_cost_map f_wire_cost_map;
 
 /******** File-Scope Functions ********/
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y);
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf, bool is_flat);
+static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
 
 /* returns index of a node from which to start routing */
 static RRNodeId get_start_node(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
@@ -215,14 +215,12 @@ static void run_dijkstra(RRNodeId start_node,
                          int start_x,
                          int start_y,
                          t_routing_cost_map& routing_cost_map,
-                         t_dijkstra_data* data,
-                         bool is_flat);
+                         t_dijkstra_data* data);
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
-                                       std::priority_queue<PQ_Entry>& pq,
-                                       bool is_flat);
+                                       std::priority_queue<PQ_Entry>& pq);
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_routing_cost_map& routing_cost_map);
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
@@ -243,19 +241,19 @@ static void print_router_cost_map(const t_routing_cost_map& router_cost_map);
 float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-
+    t_physical_tile_type_ptr physical_type =
+        device_ctx.grid[rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)].type;
     t_rr_type rr_type = rr_graph.node_type(current_node);
     //  TODO: These two assertions is only added for debugging flat-routing - it needs to be removed
-    VTR_ASSERT(is_node_on_tile(rr_graph.node_type(current_node),
-                                rr_graph.node_xlow(current_node),
-                                rr_graph.node_ylow(current_node),
-                                rr_graph.node_ptc_num(current_node)));
+    VTR_ASSERT(is_node_on_tile(physical_type,
+                               rr_type,
+                               rr_graph.node_ptc_num(current_node)));
 
-    VTR_ASSERT(is_node_on_tile(rr_graph.node_type(target_node),
-                                rr_graph.node_xlow(target_node),
-                                rr_graph.node_ylow(target_node),
-                                rr_graph.node_ptc_num(target_node)));
-
+    t_physical_tile_type_ptr target_physical_type =
+        device_ctx.grid[rr_graph.node_xlow(target_node)][rr_graph.node_ylow(target_node)].type;
+    VTR_ASSERT(is_node_on_tile(target_physical_type,
+                               rr_graph.node_type(target_node),
+                               rr_graph.node_ptc_num(target_node)));
 
     if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         float delay_cost, cong_cost;
@@ -348,7 +346,11 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
                                             rr_node_arch_name(size_t(from_node), is_flat_).c_str(),
-                                            describe_rr_node(size_t(from_node), is_flat_).c_str()).c_str());
+                                            describe_rr_node(rr_graph,
+                                                             device_ctx.grid,
+                                                             device_ctx.rr_indexed_data,
+                                                             size_t(from_node),
+                                                             is_flat_).c_str()).c_str());
 
     } else if (from_type == CHANX || from_type == CHANY) {
         VTR_ASSERT_SAFE(from_type == CHANX || from_type == CHANY);
@@ -371,8 +373,11 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
                                             rr_node_arch_name(size_t(from_node), is_flat_).c_str(),
-                                            describe_rr_node(size_t(from_node), is_flat_).c_str())
-                                .c_str());
+                                            describe_rr_node(rr_graph,
+                                                             device_ctx.grid,
+                                                             device_ctx.rr_indexed_data,
+                                                             size_t(from_node),
+                                                             is_flat_).c_str()).c_str());
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
@@ -387,7 +392,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
 
     //First compute the delay map when starting from the various wire types
     //(CHANX/CHANY)in the routing architecture
-    compute_router_wire_lookahead(segment_inf, is_flat_);
+    compute_router_wire_lookahead(segment_inf);
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
@@ -422,7 +427,7 @@ Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, in
     return f_wire_cost_map[chan_index][seg_index][delta_x][delta_y];
 }
 
-static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf, bool is_flat) {
+static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -547,8 +552,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                                  sample_x,
                                  sample_y,
                                  routing_cost_map,
-                                 &dijkstra_data,
-                                 is_flat);
+                                 &dijkstra_data);
                 }
 
                 if (false) print_router_cost_map(routing_cost_map);
@@ -615,8 +619,7 @@ static void run_dijkstra(RRNodeId start_node,
                          int start_x,
                          int start_y,
                          t_routing_cost_map& routing_cost_map,
-                         t_dijkstra_data* data,
-                         bool is_flat) {
+                         t_dijkstra_data* data) {
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -654,7 +657,7 @@ static void run_dijkstra(RRNodeId start_node,
             continue;
         }
 
-        //VTR_LOG("Expanding with delay=%10.3g cong=%10.3g (%s)\n", current.delay, current.congestion_upstream, describe_rr_node(curr_node).c_str());
+        //VTR_LOG("Expanding with delay=%10.3g cong=%10.3g (%s)\n", current.delay, current.congestion_upstream, describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, curr_node).c_str());
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
         if (rr_graph.node_type(curr_node) == IPIN) {
@@ -671,7 +674,7 @@ static void run_dijkstra(RRNodeId start_node,
             }
         }
 
-        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq, is_flat);
+        expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq);
         node_expanded[curr_node] = true;
     }
 }
@@ -680,8 +683,7 @@ static void run_dijkstra(RRNodeId start_node,
 static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId,float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
-                                       std::priority_queue<PQ_Entry>& pq,
-                                       bool is_flat) {
+                                       std::priority_queue<PQ_Entry>& pq) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -689,14 +691,13 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
 
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
-        if(is_flat) {
-            // For the time being, we decide to not let the lookahead explore the node inside the clusters
-            if(!is_node_on_tile(rr_graph.node_type(child_node),
-                                 rr_graph.node_xlow(child_node),
-                                 rr_graph.node_ylow(child_node),
-                                 rr_graph.node_ptc_num(child_node))) {
-                continue;
-            }
+        // For the time being, we decide to not let the lookahead explore the node inside the clusters
+        t_physical_tile_type_ptr physical_type =
+            device_ctx.grid[rr_graph.node_xlow(child_node)][rr_graph.node_ylow(child_node)].type;
+        if (!is_node_on_tile(physical_type,
+                             rr_graph.node_type(child_node),
+                             rr_graph.node_ptc_num(child_node))) {
+            continue;
         }
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
 

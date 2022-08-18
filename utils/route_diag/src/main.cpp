@@ -63,7 +63,8 @@ static void do_one_route(const Netlist<>& net_list,
                          int source_node,
                          int sink_node,
                          const t_router_opts& router_opts,
-                         const std::vector<t_segment_inf>& segment_inf) {
+                         const std::vector<t_segment_inf>& segment_inf,
+                         bool is_flat) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -89,7 +90,7 @@ static void do_one_route(const Netlist<>& net_list,
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
 
-    route_budgets budgeting_inf(net_list, router_opts.flat_routing);
+    route_budgets budgeting_inf(net_list, is_flat);
 
 
     RouterStats router_stats;
@@ -98,7 +99,7 @@ static void do_one_route(const Netlist<>& net_list,
             router_opts.write_router_lookahead,
             router_opts.read_router_lookahead,
             segment_inf,
-            router_opts.flat_routing);
+            is_flat);
 
     ConnectionRouter<BinaryHeap> router(
             device_ctx.grid,
@@ -108,7 +109,7 @@ static void do_one_route(const Netlist<>& net_list,
             device_ctx.rr_rc_data,
             device_ctx.rr_graph.rr_switch(),
             g_vpr_ctx.mutable_routing().rr_node_route_inf,
-            router_opts.flat_routing);
+            is_flat);
     enable_router_debug(router_opts, ParentNetId(), sink_node, 1, &router);
     bool found_path;
     t_heap cheapest;
@@ -141,7 +142,8 @@ static void do_one_route(const Netlist<>& net_list,
 static void profile_source(const Netlist<>& net_list,
                            int source_rr_node,
                            const t_router_opts& router_opts,
-                           const std::vector<t_segment_inf>& segment_inf) {
+                           const std::vector<t_segment_inf>& segment_inf,
+                           bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Profiling source");
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
@@ -151,8 +153,8 @@ static void profile_source(const Netlist<>& net_list,
             router_opts.write_router_lookahead,
             router_opts.read_router_lookahead,
             segment_inf,
-            router_opts.flat_routing);
-    RouterDelayProfiler profiler(net_list, router_lookahead.get(), router_opts.flat_routing);
+            is_flat);
+    RouterDelayProfiler profiler(net_list, router_lookahead.get(), is_flat);
 
     int start_x = 0;
     int end_x = grid.width() - 1;
@@ -300,34 +302,37 @@ int main(int argc, const char **argv) {
 
         vpr_setup_clock_networks(vpr_setup, Arch);
 
-        const Netlist<>& net_list = vpr_setup.RouterOpts.flat_routing ? (const Netlist<>&)g_vpr_ctx.atom().nlist :
-                                                                      (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+        bool is_flat = vpr_setup.RouterOpts.flat_routing;
+
+        const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist :
+                                            (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
         t_chan_width chan_width = setup_chan_width(
                 vpr_setup.RouterOpts,
                 Arch.Chans);
+
         alloc_routing_structs(
-                chan_width,
-                vpr_setup.RouterOpts,
-                &vpr_setup.RoutingArch,
-                vpr_setup.Segments,
-                Arch.Directs,
-                Arch.num_directs,
-                vpr_setup.RouterOpts.flat_routing
-                );
+            chan_width,
+            vpr_setup.RouterOpts,
+            &vpr_setup.RoutingArch,
+            vpr_setup.Segments,
+            Arch.Directs,
+            Arch.num_directs,
+            is_flat);
 
         if(route_options.profile_source) {
             profile_source(net_list,
                            route_options.source_rr_node,
                            vpr_setup.RouterOpts,
-                           vpr_setup.Segments
-                );
+                           vpr_setup.Segments,
+                           is_flat);
         } else {
             do_one_route(net_list,
                          route_options.source_rr_node,
                          route_options.sink_rr_node,
                          vpr_setup.RouterOpts,
-                         vpr_setup.Segments);
+                         vpr_setup.Segments,
+                         is_flat);
         }
         free_routing_structs(net_list);
 

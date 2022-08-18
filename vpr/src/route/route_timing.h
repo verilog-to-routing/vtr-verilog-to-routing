@@ -75,6 +75,7 @@ void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
                                        int** sink_order_ptr,
                                        t_rt_node*** rt_node_of_sink_ptr,
                                        int max_sinks);
+
 void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t_rt_node** rt_node_of_sink);
 
 void enable_router_debug(const t_router_opts& router_opts, ParentNetId net, int sink_rr, int router_iteration, ConnectionRouterInterface* router);

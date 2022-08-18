@@ -107,6 +107,11 @@ ODIN_II/usefull_tools/**/track_completed
 Yosys
 
 #
+#ArchFPGA exec dir
+#
+ArchFPGA
+
+#
 #Python
 #
 *.pyc

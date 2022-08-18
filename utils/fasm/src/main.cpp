@@ -83,8 +83,9 @@ int main(int argc, const char **argv) {
 
         /* Sync netlist to the actual routing (necessary if there are block
            ports with equivalent pins) */
+        bool is_flat = vpr_setup.RouterOpts.flat_routing;
         if (flow_succeeded) {
-            if(vpr_setup.RouterOpts.flat_routing) {
+            if(is_flat) {
                 sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.atom().nlist,
                                          g_vpr_ctx.device(),
                                          g_vpr_ctx.mutable_atom(),
@@ -93,7 +94,7 @@ int main(int argc, const char **argv) {
                                          g_vpr_ctx.placement(),
                                          g_vpr_ctx.routing(),
                                          vpr_setup.PackerOpts.pack_verbosity > 2,
-                                         vpr_setup.RouterOpts.flat_routing);
+                                         is_flat);
             } else {
                 sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
                                          g_vpr_ctx.device(),
@@ -103,12 +104,12 @@ int main(int argc, const char **argv) {
                                          g_vpr_ctx.placement(),
                                          g_vpr_ctx.routing(),
                                          vpr_setup.PackerOpts.pack_verbosity > 2,
-                                         vpr_setup.RouterOpts.flat_routing);
+                                         is_flat);
             }
         }
 
         /* Actually write output FASM file. */
-        flow_succeeded = write_fasm(vpr_setup.RouterOpts.flat_routing);
+        flow_succeeded = write_fasm(is_flat);
         if (!flow_succeeded) {
             return UNIMPLEMENTABLE_EXIT_CODE;
         }
@@ -119,7 +120,7 @@ int main(int argc, const char **argv) {
                 (float) (entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 
         /* free data structures */
-        if(vpr_setup.RouterOpts.flat_routing) {
+        if(is_flat) {
             vpr_free_all((const Netlist<>&) g_vpr_ctx.atom().nlist, Arch, vpr_setup);
         } else {
             vpr_free_all((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist, Arch, vpr_setup);

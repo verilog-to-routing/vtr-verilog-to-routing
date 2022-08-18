@@ -1,3 +1,8 @@
+/**
+ * @file draw_mux.h
+ * 
+ * This file contains all functions related to drawing muxes
+ */
 #ifndef DRAW_MUX_H
 #define DRAW_MUX_H
 

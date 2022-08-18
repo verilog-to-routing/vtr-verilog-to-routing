@@ -952,9 +952,14 @@ void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
                                        t_rt_node*** rt_node_of_sink_ptr,
                                        int max_sinks) {
     /* Allocates all the structures needed only by the timing-driven router.   */
-    *pin_criticality_ptr = new float[max_sinks] - 1; /* First sink is pin #1. */
-    *sink_order_ptr = new int[max_sinks] - 1;
-    *rt_node_of_sink_ptr = new t_rt_node*[max_sinks] - 1;
+    *pin_criticality_ptr = new float[max_sinks + 1]; /* First sink is pin #1.*/
+    *sink_order_ptr = new int[max_sinks + 1];
+    *rt_node_of_sink_ptr = new t_rt_node*[max_sinks + 1];
+
+    /* Element 0 should be an invalid value so we are likely to crash if we accidentally use it. */
+    (*pin_criticality_ptr)[0] = -1;
+    (*sink_order_ptr)[0] = -1;
+    (*rt_node_of_sink_ptr)[0] = nullptr;
 
     alloc_route_tree_timing_structs();
 }
@@ -967,11 +972,11 @@ void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t
     /* Frees all the structures needed only by the timing-driven router.        */
 
     // coverity[offset_free : Intentional]
-    delete[](pin_criticality + 1); /* Starts at index 1. */
+    delete[](pin_criticality);
     // coverity[offset_free : Intentional]
-    delete[](sink_order + 1);
+    delete[](sink_order);
     // coverity[offset_free : Intentional]
-    delete[](rt_node_of_sink + 1);
+    delete[](rt_node_of_sink);
 
     free_route_tree_timing_structs();
 }
@@ -1245,13 +1250,13 @@ static bool timing_driven_pre_route_to_clock_root(ConnectionRouter& router,
                                                   SpatialRouteTreeLookup& spatial_rt_lookup,
                                                   RouterStats& router_stats,
                                                   bool is_flat) {
+    const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& m_route_ctx = g_vpr_ctx.mutable_routing();
 
     bool high_fanout = is_high_fanout(net_list.net_sinks(net_id).size(), high_fanout_threshold);
 
-    VTR_LOGV_DEBUG(f_router_debug, "Net %zu pre-route to (%s)\n", size_t(net_id), describe_rr_node(sink_node, is_flat).c_str());
-
+    VTR_LOGV_DEBUG(f_router_debug, "Net %zu pre-route to (%s)\n", size_t(net_id), describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
     profiling::sink_criticality_start();
 
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
@@ -1274,7 +1279,7 @@ static bool timing_driven_pre_route_to_clock_root(ConnectionRouter& router,
         ParentBlockId src_block = net_list.net_driver_block(net_id);
         VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s' (#%zu)\n",
                 net_list.block_name(src_block).c_str(),
-                describe_rr_node(sink_node, is_flat).c_str(),
+                describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str(),
                 net_list.net_name(net_id).c_str(),
                 size_t(net_id));
         if (f_router_debug) {
@@ -1347,12 +1352,13 @@ static bool timing_driven_route_sink(ConnectionRouter& router,
                                      bool is_flat) {
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
+    const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     profiling::sink_criticality_start();
 
     int sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
-    VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(sink_node, is_flat).c_str());
+    VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
 
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 

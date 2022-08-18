@@ -39,7 +39,10 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                          bool is_flat);
 
 static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_flat);
-static bool check_non_configurable_edges(const Netlist<>& net_list, ParentNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets, bool is_flat);
+static bool check_non_configurable_edges(const Netlist<>& net_list,
+                                         ParentNetId net,
+                                         const t_non_configurable_rr_sets& non_configurable_rr_sets,
+                                         bool is_flat);
 static void check_net_for_stubs(const Netlist<>& net_list,
                                 ParentNetId net,
                                 bool is_flat);
@@ -148,8 +151,8 @@ void check_route(const Netlist<>& net_list,
                               "  %s\n"
                               "  %s\n",
                               size_t(net_id),
-                              describe_rr_node(prev_node, is_flat).c_str(),
-                              describe_rr_node(inode, is_flat).c_str());
+                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, prev_node, is_flat).c_str(),
+                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str());
                 }
 
                 connected_to_route[inode] = true; /* Mark as in path. */
@@ -654,9 +657,12 @@ static void check_node_and_range(int inode,
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_graph.num_nodes() - 1);
     }
-    check_rr_node(inode,
+    check_rr_node(device_ctx.rr_graph,
+                  device_ctx.rr_indexed_data,
+                  device_ctx.grid,
+                  device_ctx.chan_width,
                   route_type,
-                  device_ctx,
+                  inode,
                   is_flat);
 }
 
@@ -667,7 +673,10 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
     auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
 
     for (auto net_id : net_list.nets()) {
-        check_non_configurable_edges(net_list, net_id, non_configurable_rr_sets, is_flat);
+        check_non_configurable_edges(net_list,
+                                     net_id,
+                                     non_configurable_rr_sets,
+                                     is_flat);
     }
 }
 
@@ -679,6 +688,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                                          ParentNetId net,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
                                          bool is_flat) {
+    const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
     t_trace* head = route_ctx.trace[net].head;
 
@@ -742,7 +752,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                     net_list.net_name(net).c_str(), size_t(net));
 
                 for (auto inode : difference) {
-                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(inode, is_flat).c_str());
+                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str());
                 }
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
@@ -810,8 +820,16 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                 for (t_node_edge missing_edge : dedupped_difference) {
                     msg += vtr::string_fmt("  Expected RR Node: %d and RR Node: %d to be non-configurably connected, but edge missing from routing:\n",
                                            missing_edge.from_node, missing_edge.to_node);
-                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.from_node, is_flat).c_str());
-                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.to_node, is_flat).c_str());
+                    msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
+                                                                        device_ctx.grid,
+                                                                        device_ctx.rr_indexed_data,
+                                                                        missing_edge.from_node,
+                                                                        is_flat).c_str());
+                    msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
+                                                                        device_ctx.grid,
+                                                                        device_ctx.rr_indexed_data,
+                                                                        missing_edge.to_node,
+                                                                        is_flat).c_str());
                 }
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
@@ -863,10 +881,14 @@ void check_net_for_stubs(const Netlist<>& net_list,
 
     bool any_stubs = stub_finder.CheckNet(net);
     if (any_stubs) {
+        const auto& device_ctx = g_vpr_ctx.device();
         std::string msg = vtr::string_fmt("Route tree for net '%s' (#%zu) contains stub branches rooted at:\n",
                                           net_list.net_name(net).c_str(), size_t(net));
         for (int inode : stub_finder.stub_nodes()) {
-            msg += vtr::string_fmt("    %s\n", describe_rr_node(inode, is_flat).c_str());
+            msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
+                                                                device_ctx.grid,
+                                                                device_ctx.rr_indexed_data,
+                                                                inode, is_flat).c_str());
         }
 
         VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());

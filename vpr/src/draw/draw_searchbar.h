@@ -1,3 +1,10 @@
+/**
+ * @file draw_searchbar.h
+ * 
+ * draw_searchbar contains functions that draw/highlight search results,
+ * and manages the selection/highlighting of currently selected options.
+ */
+
 #ifndef DRAW_SEARCHBAR_H
 #define DRAW_SEARCHBAR_H
 

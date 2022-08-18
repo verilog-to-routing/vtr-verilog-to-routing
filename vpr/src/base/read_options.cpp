@@ -1475,6 +1475,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.terminate_if_timing_fails, "--terminate_if_timing_fails")
+        .help(
+            "During final timing analysis after routing, if a negative slack anywhere is returned and this option is set, \n"
+            "VPR_FATAL_ERROR is called and processing ends.")
+        .default_value("off");
+
     auto& file_grp = parser.add_argument_group("file options");
 
     file_grp.add_argument<e_arch_format, ParseArchFormat>(args.arch_format, "--arch_format")

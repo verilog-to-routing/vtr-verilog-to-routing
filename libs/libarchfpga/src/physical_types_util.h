@@ -305,11 +305,9 @@ const t_physical_tile_port* get_port_by_pin(const t_sub_tile* sub_tile, int pin)
  */
 const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
 
-
 /************************************ Access to intra-block resources ************************************/
 
 /* Access information related to pin classes */
-
 
 /** get information given class physical num **/
 std::tuple<const t_sub_tile*, int> get_sub_tile_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
@@ -372,8 +370,8 @@ std::vector<int> get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
                                         const t_pb_graph_node* pb_graph_node);
 
 std::vector<int> get_physical_pin_driving_pins(t_physical_tile_type_ptr physical_type,
-                                          t_logical_block_type_ptr logical_block,
-                                          int pin_physical_num);
+                                               t_logical_block_type_ptr logical_block,
+                                               int pin_physical_num);
 
 int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                             const t_sub_tile* sub_tile,

@@ -79,7 +79,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
 /* Routing */
 
 ///@brief Perform, load or skip the routing stage
-RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch);
+RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat);
 
 ///@brief Perform routing at a fixed channel width)
 RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
@@ -87,14 +87,16 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                              NetPinsMatrix<float>& net_delay);
+                              NetPinsMatrix<float>& net_delay,
+                              bool is_flat);
 
 ///@brief Perform routing to find the minimum channel width
 RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                            NetPinsMatrix<float>& net_delay);
+                            NetPinsMatrix<float>& net_delay,
+                            bool is_flat);
 
 ///@brief Loads a previous routing
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
@@ -110,13 +112,15 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
 bool vpr_analysis_flow(const Netlist<>& net_list,
                        t_vpr_setup& vpr_setup,
                        const t_arch& Arch,
-                       const RouteStatus& route_status);
+                       const RouteStatus& route_status,
+                       bool is_flat);
 
 ///@brief Perform post-implementation analysis
 void vpr_analysis(const Netlist<>& net_list,
                   t_vpr_setup& vpr_setup,
                   const t_arch& Arch,
-                  const RouteStatus& route_status);
+                  const RouteStatus& route_status,
+                  bool is_flat);
 
 /* Device creating */
 

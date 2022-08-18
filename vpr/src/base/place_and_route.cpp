@@ -61,12 +61,13 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   std::vector<t_segment_inf>& segment_inf,
                                   NetPinsMatrix<float>& net_delay,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                  std::shared_ptr<RoutingDelayCalculator> delay_calc) {
+                                  std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                                  bool is_flat) {
     vtr::vector<ParentNetId, t_trace*> best_routing; /* Saves the best routing found so far. */
+
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
     bool using_minw_hint = false;
-    bool is_flat = router_opts.flat_routing;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -180,9 +181,16 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
 
         if (placer_opts.place_freq == PLACE_ALWAYS) {
             placer_opts.place_chan_width = current;
-            try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
-                      arch->Chans, det_routing_arch, segment_inf,
-                      arch->Directs, arch->num_directs);
+            try_place(placer_opts,
+                      annealing_sched,
+                      router_opts,
+                      analysis_opts,
+                      arch->Chans,
+                      det_routing_arch,
+                      segment_inf,
+                      arch->Directs,
+                      arch->num_directs,
+                      false);
         }
         success = try_route(router_net_list,
                             current,
@@ -193,7 +201,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                             timing_info,
                             delay_calc,
                             arch->Chans,
-                            arch->Directs, arch->num_directs,
+                            arch->Directs,
+                            arch->num_directs,
                             (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
                             is_flat);
 
@@ -320,7 +329,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                 placer_opts.place_chan_width = current;
                 try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
                           arch->Chans, det_routing_arch, segment_inf,
-                          arch->Directs, arch->num_directs);
+                          arch->Directs, arch->num_directs,
+                          false);
             }
 
             success = try_route(router_net_list,
@@ -332,7 +342,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                 timing_info,
                                 delay_calc,
                                 arch->Chans,
-                                arch->Directs, arch->num_directs,
+                                arch->Directs,
+                                arch->num_directs,
                                 ScreenUpdatePriority::MINOR,
                                 is_flat);
 

@@ -98,7 +98,9 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 }
 
 //Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists
-std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts) {
+std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node,
+                                                          const t_router_opts& router_opts,
+                                                          bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& routing_ctx = g_vpr_ctx.mutable_routing();
 
@@ -119,8 +121,8 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
     /* This function is called during placement. Thus, the flat routing option should be disabled. */
     auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
-                                                  /*segment_inf=*/{}, false);
-    // This router is used during placement - Thus, we is_flat is set to false.
+                                                  /*segment_inf=*/{},
+                                                  is_flat);
     ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,
         *router_lookahead,
@@ -129,7 +131,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
         device_ctx.rr_rc_data,
         device_ctx.rr_graph.rr_switch(),
         routing_ctx.rr_node_route_inf,
-        false);
+        is_flat);
     RouterStats router_stats;
 
     std::vector<t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(rt_root,

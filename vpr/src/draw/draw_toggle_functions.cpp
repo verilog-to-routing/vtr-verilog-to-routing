@@ -1,13 +1,4 @@
-/**
- * @file draw_toggle_functions.cpp
- * @author Sebastian Lievano (sebastian.lievanoarzayus@mail.utoronto.ca)
- * @brief Callback functions for ui elements
- * @date July 4th, 2022
- * 
- * This file contains all of the callback functions for UI elements. 
- * Please add any new callback functions here, and if it makes sense, add _cbk at the end 
- * of function name to prevent someone else calling it in any non gtk context. 
- */
+
 
 #include <cstdio>
 #include <cfloat>
@@ -406,15 +397,18 @@ void toggle_expansion_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_noc_display(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_noc_display button
-     * which is written in button.cpp                                         */
+/**
+ * @brief cbk fn to toggle Network-On-Chip (Noc) visibility
+ * alters draw_state->draw_noc to reflect new state
+ * Reacts to main.ui created combo box, setup in ui_setup.cpp
+ * 
+ * @param self ptr to combo box
+ * @param app ezgl application
+ */
+void toggle_noc_cbk(GtkComboBoxText* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_noc_display";
-    auto toggle_crit_path = find_button(button_name.c_str());
 
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(toggle_crit_path));
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
     if (strcmp(combo_box_content, "None") == 0) {
         draw_state->draw_noc = DRAW_NO_NOC;
     } else if (strcmp(combo_box_content, "NoC Links") == 0)
@@ -423,7 +417,7 @@ void toggle_noc_display(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*
         draw_state->draw_noc = DRAW_NOC_LINK_USAGE;
 
     g_free(combo_box_content);
-    application.refresh_drawing();
+    app->refresh_drawing();
 }
 
 /**
