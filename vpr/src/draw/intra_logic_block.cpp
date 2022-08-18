@@ -874,4 +874,40 @@ bool t_selected_sub_block_info::gnode_clb_pair::operator==(const gnode_clb_pair&
            && pb_gnode == rhs.pb_gnode;
 }
 
+/**
+ * @brief Recursively looks through pb graph to find block w. given name
+ * 
+ * @param name name of block being searched for
+ * @param pb current node to be examined
+ * @return t_pb* t_pb ptr of block w. name "name". Returns nullptr if nothing found
+ */
+t_pb* find_atom_block_in_pb(std::string name, t_pb* pb) {
+    //Checking if block is one being searched for
+    std::string pbName(pb->name);
+    if (pbName == name)
+        return pb;
+    //If block has no children, returning
+    if (pb->child_pbs == nullptr)
+        return nullptr;
+    int num_child_types = pb->get_num_child_types();
+    //Iterating through all child types
+    for (int i = 0; i < num_child_types; ++i) {
+        if (pb->child_pbs[i] == nullptr) continue;
+        int num_children_of_type = pb->get_num_children_of_type(i);
+        //Iterating through all of pb's children of given type
+        for (int j = 0; j < num_children_of_type; ++j) {
+            t_pb* child_pb = &pb->child_pbs[i][j];
+            //If child exists, recursively calling function on it
+            if (child_pb->name != nullptr) {
+                t_pb* subtree_result = find_atom_block_in_pb(name, child_pb);
+                //If a result is found, returning it to top of recursive calls
+                if (subtree_result != nullptr) {
+                    return subtree_result;
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
 #endif // NO_GRAPHICS

@@ -1,11 +1,17 @@
-#ifndef DRAW_TOGGLE_FUNCTIONS_H
-#define DRAW_TOGGLE_FUNCTIONS_H
-
 /**
  * @file draw_toggle_functions.h
- * @author Sebastian Lievano
- * @brief Declarations of callback functions.
+ * 
+ * This file contains all of the callback functions for main UI elements. 
+ * These callback functions alter the state of a set enum member in t_draw_state (draw_types.cpp)
+ * which is then reflected in the drawing. 
+ * Please add any new callback functions here, and if it makes sense, add _cbk at the end 
+ * of function name to prevent someone else calling it in any non gtk context. 
+ * 
+ * Author: Sebastian Lievano
  */
+
+#ifndef DRAW_TOGGLE_FUNCTIONS_H
+#define DRAW_TOGGLE_FUNCTIONS_H
 
 #include <cstdio>
 #include <cfloat>

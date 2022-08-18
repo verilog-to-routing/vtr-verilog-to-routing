@@ -1,13 +1,4 @@
-/**
- * @file draw_toggle_functions.cpp
- * @author Sebastian Lievano (sebastian.lievanoarzayus@mail.utoronto.ca)
- * @brief Callback functions for ui elements
- * @date July 4th, 2022
- * 
- * This file contains all of the callback functions for UI elements. 
- * Please add any new callback functions here, and if it makes sense, add _cbk at the end 
- * of function name to prevent someone else calling it in any non gtk context. 
- */
+
 
 #include <cstdio>
 #include <cfloat>

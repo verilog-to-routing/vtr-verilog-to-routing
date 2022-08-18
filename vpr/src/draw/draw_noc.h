@@ -1,8 +1,5 @@
-#ifndef DRAW_NOC_H
-#define DRAW_NOC_H
-
 /**
- * @file 
+ * @file draw_noc.h
  * @brief This is the draw_noc header file. This file provides utilities
  * to display a user described NoC within the VTR GUI. The only function
  * that should be used externally to display the NoC is draw_noc().
@@ -21,7 +18,12 @@
  * and each link is colored based on how much of its bandwidth is being used
  * relative to its maximum capaity. 
  * 
+ * Author: Srivatsan Srinivasan
  */
+
+#ifndef DRAW_NOC_H
+#define DRAW_NOC_H
+
 #include <iostream>
 #include <vector>
 
