@@ -72,6 +72,7 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color(43, 61, 38)     //olive green
 };
 
+/* Highlights partitions. */
 void highlight_regions(ezgl::renderer* g) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
@@ -104,9 +105,10 @@ void highlight_regions(ezgl::renderer* g) {
 
             ezgl::rectangle on_screen_rect(bottom_left.bottom_left(), top_right.top_right());
 
+            // Ensures name is drawn only once per partition
             if (!name_drawn) {
                 g->set_font_size(10);
-                std::string partition_name("Partition " + std::to_string(partitionID));
+                std::string partition_name = partition.get_name();
 
                 g->set_color(partition_color, 230);
 
@@ -126,6 +128,7 @@ void highlight_regions(ezgl::renderer* g) {
     }
 }
 
+/* Function to draw all constrained primitives */
 void draw_constrained_atoms(ezgl::renderer* g) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
@@ -136,6 +139,7 @@ void draw_constrained_atoms(ezgl::renderer* g) {
     for (int partitionID = 0; partitionID < num_partitions; partitionID++) {
         auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
 
+        //iterate through every primitive in the partition
         for (size_t j = 0; j < atoms.size(); j++) {
             AtomBlockId const& const_atom = atoms[j];
             if (atom_ctx.lookup.atom_pb(const_atom) != nullptr) {
@@ -150,6 +154,10 @@ void draw_constrained_atoms(ezgl::renderer* g) {
     }
 }
 
+/* Helper subroutine to draw a specific subblock (pb_to_draw). This function traverses through the pb_graph
+ * which a netlist block can map to, and checks each sub-block inside its parent blocks
+ * to see if it is the sub-block to be drawn.
+ */
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::color color, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
@@ -158,6 +166,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, c
     ezgl::rectangle temp = draw_coords->get_pb_bbox(clb_index, *current_pb->pb_graph_node);
     ezgl::rectangle abs_bbox = temp + parent_bbox.bottom_left();
 
+    // if the current pb is not the pb_to_draw,
     if (current_pb != pb_to_draw) {
         int num_child_types = current_pb->get_num_child_types();
         for (int i = 0; i < num_child_types; ++i) {
@@ -183,7 +192,9 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, c
         }
     }
 
+    //if the current pb is the pb we want to draw
     else {
+        //Draws the pb as a rectangle on the screen
         g->set_color(color);
 
         g->fill_rectangle(abs_bbox);
@@ -192,13 +203,15 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, c
         }
 
         g->set_color(ezgl::BLACK);
+
+        //Draws the name of the pb
         if (current_pb->name != nullptr) {
             g->set_font_size(10);
 
             std::string pb_type_name(pb_type->name);
             std::string pb_name(current_pb->name);
 
-            std::string blk_tag = pb_type_name + pb_name;
+            std::string blk_tag = pb_name + " (" + pb_type_name + ")";
 
             g->draw_text(
                 abs_bbox.center(),

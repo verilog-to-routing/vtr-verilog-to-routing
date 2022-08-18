@@ -195,7 +195,7 @@ struct t_draw_state {
 
     ///@brief Boolean that toggles block names
     bool draw_block_text = true;
-  
+
     ///@brief Boolean that turns on drawing partitions
     bool draw_partitions = false;
 
