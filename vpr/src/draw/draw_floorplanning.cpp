@@ -216,7 +216,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, c
             std::string pb_type_name(pb_type->name);
             std::string pb_name(current_pb->name);
 
-            std::string blk_tag = pb_type_name + pb_name;
+            std::string blk_tag = pb_name + " (" + pb_type_name + ")";
 
             g->draw_text(
                 abs_bbox.center(),
@@ -285,8 +285,8 @@ static GtkTreeModel* create_and_fill_model(void) {
         auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
 
         std::string partition_name("Partition " + std::to_string(partitionID)
-                                   + "(" + std::to_string(atoms.size()) + "primitives)");
-        /* Append a row and fill in some data */
+                                   + " ( " + std::to_string(atoms.size()) + "primitives)");
+
         GtkTreeIter iter, child_iter;
         gtk_tree_store_append(store, &iter, NULL);
         gtk_tree_store_set(store, &iter,
