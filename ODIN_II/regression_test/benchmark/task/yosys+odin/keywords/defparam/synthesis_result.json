@@ -4,7 +4,7 @@
         "verilog": "defparam_depth_1_failure.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "defparam/defparam_depth_1/no_arch": {
@@ -40,7 +40,7 @@
         "verilog": "defparam_failure.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "defparam/defparam/no_arch": {
@@ -48,7 +48,7 @@
         "verilog": "defparam.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "defparam/defparam_simple_failure/no_arch": {
@@ -56,7 +56,7 @@
         "verilog": "defparam_simple_failure.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "defparam/defparam_string/no_arch": {
@@ -64,7 +64,7 @@
         "verilog": "defparam_string.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "defparam/override_same_param_name/no_arch": {

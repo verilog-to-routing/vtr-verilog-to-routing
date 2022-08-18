@@ -40,8 +40,6 @@
 #include <stdlib.h>
 #include <sys/types.h> // pid_t
 
-#define ODIN_USE_YOSYS_STR "-DODIN_USE_YOSYS=ON"
-
 #include "odin_globals.h" // global_args
 
 /* to set local environment variable */

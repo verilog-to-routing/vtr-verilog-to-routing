@@ -34,6 +34,6 @@ module second_module (clk, in1, in2, out);
 endmodule
 
 /*
-	-V ~/desktop/exin/module/expression_in_chain_modules.v -o ~/desktop/exin/module/output.blif -G -A -t ~/desktop/exin/module/expression_in_chain_modules_input -T ~/desktop/exin/module/expression_in_chain_modules_output
+	-v ~/desktop/exin/module/expression_in_chain_modules.v -o ~/desktop/exin/module/output.blif -G -A -t ~/desktop/exin/module/expression_in_chain_modules_input -T ~/desktop/exin/module/expression_in_chain_modules_output
 
 */
