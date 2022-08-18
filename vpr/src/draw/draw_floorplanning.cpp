@@ -254,7 +254,7 @@ void highlight_selected_partition(GtkWidget* widget) {
         if (partitionID_exists != std::string::npos) {
             std::string partitionID_str = row_value_str.erase(0, partition.length());
             int partitionID = stoi(partitionID_str);
-            VTR_L
+
             if (highlight_alpha.empty())
                 return;
 
