@@ -51,15 +51,6 @@
 #ifdef ODIN_USE_YOSYS
 #    include "kernel/yosys.h" // Yosys
 USING_YOSYS_NAMESPACE
-#    define YOSYS_ELABORATION_ERROR                        \
-        "\n\tERROR: Yosys failed to perform elaboration, " \
-        "Please look at the log file for the failure cause or pass \'--show_yosys_log\' to Odin-II to see the logs.\n"
-#    define YOSYS_FORK_ERROR \
-        "\n\tERROR: Yosys child process failed to be created\n"
-#else
-#    define YOSYS_INSTALLATION_ERROR                                    \
-        "ERROR: It seems Yosys is not installed in the VTR repository." \
-        " Please compile the VTR with (" ODIN_USE_YOSYS_STR ") flag.\n"
 #endif
 
 /**
@@ -137,11 +128,31 @@ void YYosys::perform_elaboration() {
         /* wait for the Yosys child process */
         auto yosys_status = -1; // the status of the Yosys fork
         waitpid(0, &yosys_status, 0);
-        int yosys_exit_status = WEXITSTATUS(yosys_status);
-
-        if (yosys_exit_status != 0) {
-            error_message(PARSER, unknown_location, "%s", YOSYS_ELABORATION_ERROR);
+        /* check if Yosys exited abnormally */
+        if (!WIFEXITED(yosys_status)) {
+            if (WIFSIGNALED(yosys_status)) {
+                error_message(PARSER, unknown_location,
+                              "Yosys exited with signal %d - %s",
+                              WTERMSIG(yosys_status),
+                              YOSYS_ELABORATION_ERROR);
+            } else if (WIFSTOPPED(yosys_status)) {
+                error_message(PARSER, unknown_location,
+                              "Yosys stopped with signal %d - %s",
+                              WSTOPSIG(yosys_status),
+                              YOSYS_ELABORATION_ERROR);
+            } else {
+                error_message(PARSER, unknown_location, "%s",
+                              "Something strange just happened with Yosys child process.\n");
+            }
+        } else {
+            auto yosys_exit_status = WEXITSTATUS(yosys_status);
+            if (yosys_exit_status != 0)
+                error_message(PARSER, unknown_location,
+                              "Yosys exited with status %d - %s",
+                              yosys_exit_status,
+                              YOSYS_ELABORATION_ERROR);
         }
+
         /* Yosys successfully generated coarse-grain BLIF file */
         this->re_initialize_odin_globals();
     }
@@ -197,6 +208,11 @@ void YYosys::init_yosys() {
     yosys_setup();
     yosys_banner();
 
+#    ifdef YOSYS_SV_UHDM_PLUGIN
+    /* Load SystemVerilog/UHDM plugins in the Yosys frontend */
+    run_pass(std::string("plugin -i systemverilog"));
+#    endif
+
     /* Read VTR baseline library first */
     run_pass(std::string("read_verilog -nomem2reg " + this->vtr_primitives_file));
     run_pass(std::string("setattr -mod -set keep_hierarchy 1 " + std::string(SINGLE_PORT_RAM_string)));
@@ -249,9 +265,34 @@ void YYosys::execute() {
     } else {
         // Read the hardware decription Verilog circuits
         // FOR loop enables include feature for Yosys+Odin (multiple Verilog input files)
-        for (auto verilog_circuit : this->verilog_circuits)
-            run_pass(std::string("read_verilog -sv -nolatches " + verilog_circuit));
-
+        std::string aggregated_circuits;
+        for (auto circuit : this->verilog_circuits)
+            aggregated_circuits += circuit + " ";
+            // Read Verilog/SystemVerilog/UHDM files based on their type, considering the SystemVerilog/UHDM plugins
+#    ifdef YOSYS_SV_UHDM_PLUGIN
+        /* Load SystemVerilog/UHDM plugins in the Yosys frontend */
+        switch (configuration.input_file_type) {
+            case (file_type_e::_VERILOG): // fallthrough
+            case (file_type_e::_VERILOG_HEADER): {
+                run_pass(std::string("read_verilog -sv -nolatches " + aggregated_circuits));
+                break;
+            }
+            case (file_type_e::_SYSTEM_VERILOG): {
+                run_pass(std::string("read_systemverilog -debug " + aggregated_circuits));
+                break;
+            }
+            case (file_type_e::_UHDM): {
+                run_pass(std::string("read_uhdm -debug " + aggregated_circuits));
+                break;
+            }
+            default: {
+                error_message(UTIL, unknown_location,
+                              "Invalid file type (%s) for Yosys+Odin-II synthesizer.", file_extension_strmap[configuration.input_file_type]);
+            }
+        }
+#    else
+        run_pass(std::string("read_verilog -sv -nolatches " + aggregated_circuits));
+#    endif
         // Check whether cells match libraries and find top module
         if (global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED) {
             run_pass(std::string("hierarchy -check -top " + global_args.top_level_module_name.value() + " -purge_lib"));
@@ -298,7 +339,7 @@ void YYosys::execute() {
         run_pass(std::string("pmuxtree"));
         // To possibly reduce word sizes by Yosys
         run_pass(std::string("wreduce"));
-        // "-undirven" to ensure there is no wire without drive
+        // "-undriven" to ensure there is no wire without drive
         // -noff #potential option to remove all sdffXX and etc. Only dff will remain
         // "opt_muxtree" removes dead branches, "opt_expr" performs const folding and
         // removes "undef" from mux inputs and replace muxes with buffers and inverters
