@@ -28,8 +28,8 @@
 #include "noc_storage.h"
 
 class NocRouting {
-    // protected pure virtual functions that should be implemented in derived classes.
-  protected:
+    // pure virtual functions that should be implemented in derived classes.
+  public:
     virtual ~NocRouting() {}
 
     /**

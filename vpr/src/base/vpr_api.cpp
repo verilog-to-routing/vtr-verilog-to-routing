@@ -1154,6 +1154,13 @@ static void free_routing() {
     routing_ctx.net_status.clear();
     routing_ctx.route_bb.clear();
 }
+/**
+ * @brief handles the deletion of NoC related datastructures.
+ */
+static void free_noc() {
+    auto& noc_ctx = g_vpr_ctx.mutable_noc();
+    delete noc_ctx.noc_flows_router;
+}
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {
@@ -1165,6 +1172,7 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
     free_placement();
     free_routing();
     free_atoms();
+    free_noc();
 }
 
 void vpr_free_all(t_arch& Arch,
