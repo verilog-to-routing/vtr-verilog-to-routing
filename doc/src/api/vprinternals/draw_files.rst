@@ -31,6 +31,12 @@ draw_global.h/cpp
 .. doxygenfile:: draw_global.h
    :project: vpr
    :sections: detaileddescription
+   
+draw_floorplanning.h/cpp
+--------------
+.. doxygenfile:: draw_floorplanning.h
+   :project: vpr
+   :sections: detaileddescription
 
 draw_mux.h/cpp
 --------------
