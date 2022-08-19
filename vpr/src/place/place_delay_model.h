@@ -87,7 +87,8 @@ class DeltaDelayModel : public PlaceDelayModel {
     DeltaDelayModel(bool is_flat)
         : is_flat_(is_flat) {}
     DeltaDelayModel(vtr::Matrix<float> delta_delays, bool is_flat)
-        : delays_(std::move(delta_delays)), is_flat_(is_flat) {}
+        : delays_(std::move(delta_delays))
+        , is_flat_(is_flat) {}
 
     void compute(
         RouterDelayProfiler& router,

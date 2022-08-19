@@ -64,7 +64,8 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
                                                      device_ctx.grid,
                                                      device_ctx.rr_indexed_data,
                                                      (int)size_t(rr_node),
-                                                     is_flat).c_str());
+                                                     is_flat)
+                                        .c_str());
                 } else {
                     rr_node_nets[rr_node] = net_id;
                 }

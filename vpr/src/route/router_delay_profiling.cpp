@@ -12,7 +12,8 @@
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
 RouterDelayProfiler::RouterDelayProfiler(
-    const RouterLookahead* lookahead, bool is_flat)
+    const RouterLookahead* lookahead,
+    bool is_flat)
     : router_(
           g_vpr_ctx.device().grid,
           *lookahead,

@@ -506,8 +506,7 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                t_physical_tile_type_ptr physical_type =
-                    device_ctx.grid[rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)].type;
+                t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)].type;
                 if (!is_node_on_tile(physical_type,
                                      rr_graph.node_type(next_node),
                                      rr_graph.node_ptc_num(next_node))) {
