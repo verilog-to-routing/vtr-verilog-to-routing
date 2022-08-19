@@ -87,17 +87,26 @@
     "not/replicate_not_int_wide/no_arch": {
         "test_name": "not/replicate_not_int_wide/no_arch",
         "verilog": "replicate_not_int_wide.vh",
-        "exit": 6
+        "exit": 6,
+        "errors": [
+            "[PARSE_TO_AST] Yosys exited with signal 6 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+        ]
     },
     "not/replicate_not_ultra_wide/no_arch": {
         "test_name": "not/replicate_not_ultra_wide/no_arch",
         "verilog": "replicate_not_ultra_wide.vh",
-        "exit": 6
+        "exit": 6,
+        "errors": [
+            "[PARSE_TO_AST] Yosys exited with signal 6 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+        ]
     },
     "not/replicate_not_wide/no_arch": {
         "test_name": "not/replicate_not_wide/no_arch",
         "verilog": "replicate_not_wide.vh",
-        "exit": 6
+        "exit": 6,
+        "errors": [
+            "[PARSE_TO_AST] Yosys exited with signal 6 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+        ]
     },
     "DEFAULT": {
         "test_name": "n/a",
