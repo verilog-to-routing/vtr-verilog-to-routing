@@ -124,7 +124,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         std::vector<NocLinkId> found_path;
 
         // run the routing algorithm and we expect ir ro fail
-        REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model), "No route could be found from starting router with ID:'12' and the destination router with ID:'3' using the XY-Routing algorithm.");
+        REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, found_path, noc_model), "No route could be found from starting router with id:'12' and the destination router with id:'3' using the breadth-first search routing algorithm.");
     }
 }
 
