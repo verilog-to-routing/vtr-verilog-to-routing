@@ -23,13 +23,6 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
-/**
- * @brief configures basic buttons
- * 
- * Sets up Window, Search, Save, and SearchType buttons. Buttons are 
- * created in glade main.ui file. Connects them to their cbk functions
- * @param app ezgl::application*
- */
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -51,12 +44,12 @@ void basic_button_setup(ezgl::application* app) {
     g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
 }
 
-/**
+/*
  * @brief sets up net related buttons and connects their signals
  * 
  * Sets up the toggle nets combo box, net alpha spin button, and max fanout
  * spin button which are created in main.ui file. Found in Net Settings dropdown
- * @param app 
+ * @param app ezgl::application ptr
  */
 void net_button_setup(ezgl::application* app) {
     //Toggle net signal connection
@@ -76,7 +69,7 @@ void net_button_setup(ezgl::application* app) {
     gtk_spin_button_set_range(max_fanout, 0., (double)get_max_fanout());
 }
 
-/**
+/*
  * @brief sets up block related buttons, connects their signals
  * 
  * Connects signals and sets init. values for blk internals spin button,
@@ -111,10 +104,12 @@ void block_button_setup(ezgl::application* app) {
     }
 }
 
-/**
+/*
  * @brief configures and connects signals/functions for routing buttons
  * 
- * @param app 
+ * Connects signals/sets default values for toggleRRButton, ToggleCongestion,
+ * ToggleCongestionCost, ToggleRoutingBBox, RoutingExpansionCost, ToggleRoutingUtil 
+ * buttons. 
  */
 void routing_button_setup(ezgl::application* app) {
     auto& route_ctx = g_vpr_ctx.routing();
@@ -145,12 +140,11 @@ void routing_button_setup(ezgl::application* app) {
     //Toggle Router Util
     GtkComboBoxText* toggle_router_util = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRoutingUtil"));
     g_signal_connect(toggle_router_util, "changed", G_CALLBACK(toggle_router_util_cbk), app);
+    show_widget("RoutingMenuButton", app);
 }
 
-/**
+/*
  * @brief Loads required data for search autocomplete, sets up special completion fn
- * 
- * @param app ezgl app
  */
 void search_setup(ezgl::application* app) {
     load_block_names(app);
@@ -160,7 +154,7 @@ void search_setup(ezgl::application* app) {
     gtk_entry_completion_set_match_func(wildcardComp, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
 }
 
-/**
+/*
  * @brief connects critical path button to its cbk fn
  * 
  * @param app ezgl application
@@ -168,9 +162,10 @@ void search_setup(ezgl::application* app) {
 void crit_path_button_setup(ezgl::application* app) {
     GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
     g_signal_connect(toggle_crit_path, "changed", G_CALLBACK(toggle_crit_path_cbk), app);
+    show_widget("ToggleCritPath", app);
 }
 
-/**
+/*
  * @brief hides critical path button
  * 
  * @param app ezgl app
@@ -180,7 +175,7 @@ void hide_crit_path_button(ezgl::application* app) {
     hide_widget("ToggleCritPath", app);
 }
 
-/**
+/*
  * @brief Hides the widget with the given name
  * 
  * @param widgetName string of widget name in main.ui
@@ -189,6 +184,14 @@ void hide_crit_path_button(ezgl::application* app) {
 void hide_widget(std::string widgetName, ezgl::application* app) {
     GtkWidget* widget = GTK_WIDGET(app->get_object(widgetName.c_str()));
     gtk_widget_hide(widget);
+}
+
+/**
+ * @brief Hides the widget with the given name
+ */
+void show_widget(std::string widgetName, ezgl::application* app) {
+    GtkWidget* widget = GTK_WIDGET(app->get_object(widgetName.c_str()));
+    gtk_widget_show(widget);
 }
 
 /**
@@ -216,7 +219,7 @@ void load_block_names(ezgl::application* app) {
     }
 }
 
-/**
+/*
  * @brief loads atom net names into gtk list store item used for completion
  * 
  * @param app ezgl application used for ui

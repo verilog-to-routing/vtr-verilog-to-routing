@@ -1,5 +1,3 @@
-/* draw_triangle.cpp contains functions that draw triangles. Used for drawing arrows for showing switching in the routing,
- * direction of signals, flylines */
 #include <cstdio>
 #include <cfloat>
 #include <cstring>

@@ -1,3 +1,9 @@
+/**
+ * @file draw_rr_edges.h
+ * 
+ * draw_rr_edges.cpp contains all functions that draw lines between RR nodes.
+ */
+
 #ifndef DRAW_X_TO_Y_H
 #define DRAW_X_TO_Y_H
 

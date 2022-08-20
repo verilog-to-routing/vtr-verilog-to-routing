@@ -254,6 +254,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
         auto &device_ctx = g_vpr_ctx.mutable_device();
         const auto& rr_graph = device_ctx.rr_graph;
+        bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
+        const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
         for (const RRNodeId& inode : rr_graph.nodes()){
             for(t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); ++iedge) {
                 auto sink_inode = size_t(rr_graph.edge_sink_node(inode, iedge));
@@ -269,12 +271,30 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                     value = value + "\n" + pin_feature;
                 }
 
-                vpr::add_rr_edge_metadata((size_t)inode, sink_inode, switch_id,
-                        vtr::string_view("fasm_features"), vtr::string_view(value.data(), value.size()));
+                vpr::add_rr_edge_metadata(device_ctx.rr_graph_builder.rr_edge_metadata(),
+                                          (size_t)inode,
+                                          sink_inode, 
+                                          switch_id,
+                                          vtr::string_view("fasm_features"), 
+                                          vtr::string_view(value.data(), value.size()),
+                                          device_ctx.arch);
             }
         }
 
-        write_rr_graph(kRrGraphFile);
+        write_rr_graph(&device_ctx.rr_graph_builder,
+                       &device_ctx.rr_graph,
+                       device_ctx.physical_tile_types,
+                       &device_ctx.rr_indexed_data,
+                       &device_ctx.rr_rc_data,
+                       device_ctx.grid,
+                       device_ctx.arch_switch_inf,
+                       device_ctx.arch,
+                       &device_ctx.chan_width,
+                       device_ctx.num_arch_switches,
+                       kRrGraphFile,
+                       device_ctx.virtual_clock_network_root_idx,
+                       echo_enabled,
+                       echo_file_name);
         vpr_free_all(arch, vpr_setup);
     }
 

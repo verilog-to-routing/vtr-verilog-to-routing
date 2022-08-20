@@ -12,6 +12,8 @@ FILE_TYPES = {
     ".v": "Verilog",
     ".vh": "Verilog",
     ".sv": "SystemVerilog",
+    ".svh": "SystemVerilog",
+    ".uhdm": "UHDM",
     ".blif": "BLIF",
     ".aig": "aiger",
     ".json": "JSON",
@@ -25,7 +27,30 @@ YOSYS_LIB_FILES = {
     "DPRAM": "dual_port_ram.v",
     "SPRAMR": "spram_rename.v",
     "DPRAMR": "dpram_rename.v",
+    "DSPBB": "arch_dsps.v",
 }
+
+YOSYS_PARSERS = ["yosys", "surelog", "yosys-plugin"]
+
+
+def get_input_file_type(circuit_list):
+    """Return the type of input files, should all be the same"""
+    file_type = FILE_TYPES[os.path.splitext(circuit_list[0])[1].lower()]
+    # Check the extensions of input files
+    for circuit in circuit_list:
+        local_file_type = FILE_TYPES[os.path.splitext(circuit)[1].lower()]
+        if local_file_type != file_type and local_file_type not in [
+            FILE_TYPES[".v"],
+            FILE_TYPES[".sv"],
+        ]:
+            raise vtr.VtrError(
+                "File ({circuit}) has different type than other input file, \
+                            all input files should have share a common type.".format(
+                    circuit=circuit
+                )
+            )
+
+    return file_type
 
 
 def create_circuits_list(main_circuit, include_files):
@@ -58,6 +83,7 @@ def init_script_file(
     yosys_dpram_full_path,
     yosys_spram_rename_full_path,
     yosys_dpram_rename_full_path,
+    architecture_dsp_full_path,
     circuit_list,
     output_netlist,
     memory_addr_width,
@@ -81,6 +107,7 @@ def init_script_file(
             "DDD": yosys_dpram_full_path,
             "SSR": yosys_spram_rename_full_path,
             "DDR": yosys_dpram_rename_full_path,
+            "CCC": architecture_dsp_full_path,
             "TTT": str(vtr.paths.yosys_lib_path),
             "ZZZ": output_netlist,
         },
@@ -99,7 +126,7 @@ def init_script_file(
     vtr.file_replace(yosys_dpram_rename_full_path, {"PPP": memory_addr_width})
 
 
-# pylint: disable=too-many-arguments, too-many-locals
+# pylint: disable=too-many-arguments, too-many-locals, too-many-statements, too-many-branches
 def run(
     architecture_file,
     circuit_file,
@@ -202,6 +229,21 @@ def run(
     shutil.copyfile(yosys_base_spram_rename, yosys_spram_rename_full_path)
     shutil.copyfile(yosys_base_dpram_rename, yosys_dpram_rename_full_path)
 
+    write_arch_bb_exec = str(vtr.paths.write_arch_bb_exe_path)
+    architecture_dsp_full_path = str(vtr.paths.scripts_path / temp_dir / YOSYS_LIB_FILES["DSPBB"])
+
+    # executing write_arch_bb to extract the black box definitions of the given arch file
+    command_runner.run_system_command(
+        [
+            write_arch_bb_exec,
+            str(vtr.paths.scripts_path / architecture_file),
+            architecture_dsp_full_path,
+        ],
+        temp_dir=temp_dir,
+        log_filename="write_arch_bb.log",
+        indent_depth=1,
+    )
+
     # Create a list showing all (.v) and (.vh) files
     circuit_list = create_circuits_list(circuit_file, include_files)
 
@@ -212,12 +254,56 @@ def run(
         yosys_dpram_full_path,
         yosys_spram_rename_full_path,
         yosys_dpram_rename_full_path,
+        architecture_dsp_full_path,
         circuit_list,
         output_netlist.name,
         vtr.determine_memory_addr_width(str(architecture_file)),
         min_hard_mult_size,
         min_hard_adder_size,
     )
+
+    # check if SystemVerilog/UHDM plugins are installed
+    yosys_bin = Path(vtr.paths.yosys_path / "bin")
+    surelog_exec_path = Path(yosys_bin / "surelog")
+    uhdm_dump_exec_path = Path(yosys_bin / "uhdm-dump")
+    uhdm_hier_exec_path = Path(yosys_bin / "uhdm-hier")
+
+    # get input file extension
+    input_file_type = get_input_file_type(circuit_list)
+    # set the parser
+    if "parser" in yosys_args:
+        if yosys_args["parser"] in YOSYS_PARSERS:
+            os.environ["PARSER"] = yosys_args["parser"]
+            del yosys_args["parser"]
+        else:
+            raise vtr.VtrError(
+                "Invalid parser is specified for Yosys, available parsers are [{}]".format(
+                    " ".join(str(x) for x in YOSYS_PARSERS)
+                )
+            )
+    elif (
+        surelog_exec_path.is_file()
+        and uhdm_dump_exec_path.is_file()
+        and uhdm_hier_exec_path.is_file()
+    ):
+        os.environ["PARSER"] = {
+            FILE_TYPES[".v"]: "yosys",
+            FILE_TYPES[".sv"]: "yosys-plugin",
+            FILE_TYPES[".uhdm"]: "surelog",
+        }[input_file_type]
+    else:
+        if input_file_type in [
+            FILE_TYPES[".v"],
+            FILE_TYPES[".vh"],
+            FILE_TYPES[".sv"],
+            FILE_TYPES[".svh"],
+        ]:
+            os.environ["PARSER"] = "yosys"
+        else:
+            raise vtr.VtrError(
+                "The VTR-Yosys parser has full support for Verilog and partial support \
+                for SystemVerilog. Please install Yosys-plugins to utilize other parsers."
+            )
 
     cmd = [yosys_exec]
 
@@ -236,4 +322,4 @@ def run(
     )
 
 
-# pylint: enable=too-many-arguments, too-many-locals
+# pylint: enable=too-many-arguments, too-many-locals, too-many-statements, too-many-branches

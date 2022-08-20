@@ -63,6 +63,7 @@ For more specific documentation about VPR see :ref:`vpr`.
 
    api/vpr/index
    api/vtrutil/index
+   api/vprinternals/index
 
 Indices and tables
 ==================

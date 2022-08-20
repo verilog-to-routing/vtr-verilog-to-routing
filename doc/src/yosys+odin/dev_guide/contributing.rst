@@ -156,6 +156,10 @@ If no architecture is passed in, Odin-II will create the soft logic and use LUTs
 However, if an architecture is passed, Odin-II will map accordingly to the available hard blocks and LUTs.
 It uses a combination of soft logic and hard logic.
 
+.. note::
+
+	Please visit the Yosys's `Developers Guide <https://docs.verilogtorouting.org/en/latest/yosys/dev_guide/#working-with-complex-blocks-and-how-to-instantiate-them?>`_ for more information about how Yosys deals with the complex blocks defined in the VTR architecture file.
+
 With the integration of Yosys+Odin-II, the Odin-II partial mapping features such as hard/soft logic trade-offs become available for a Yosys elaborated circuit.
 For instance, using optimization command arguments, a user can force the partial mapper to infer at least a user-defined percentage of multipliers in soft logic.
 

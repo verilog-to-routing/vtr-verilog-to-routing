@@ -1,3 +1,10 @@
+/**
+ * @file draw_triangle.h
+ *
+ * draw_triangle.cpp contains functions that draw triangles. Used for drawing arrows for showing switching in the routing,
+ * direction of signals, flylines 
+ */
+
 #ifndef DRAW_TRIANGLE_H
 #define DRAW_TRIANGLE_H
 

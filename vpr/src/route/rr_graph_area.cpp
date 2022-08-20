@@ -10,7 +10,7 @@
 
 #include "globals.h"
 #include "rr_graph.h"
-#include "rr_graph_util.h"
+#include "rr_graph_utils.h"
 #include "rr_graph_area.h"
 
 /* Select which transistor area equation to use. As found by Chiasson's and Betz's FPL 2013 paper
@@ -187,7 +187,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                             iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
 
                             if (rr_graph.rr_switch_inf(RRSwitchId(iswitch)).buffered()) {
-                                iseg = seg_index_of_sblock(from_node, size_t(to_node));
+                                iseg = seg_index_of_sblock(rr_graph, from_node, size_t(to_node));
                                 shared_buffer_trans[iseg] = std::max(shared_buffer_trans[iseg],
                                                                      sharable_switch_trans[iswitch]);
 
@@ -208,7 +208,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                             max_inputs_to_cblock = std::max(max_inputs_to_cblock,
                                                             num_inputs_to_cblock[size_t(to_node)]);
 
-                            iseg = seg_index_of_cblock(from_rr_type, size_t(to_node));
+                            iseg = seg_index_of_cblock(rr_graph, from_rr_type, size_t(to_node));
 
                             if (cblock_counted[iseg] == false) {
                                 cblock_counted[iseg] = true;
@@ -411,7 +411,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                                             "Uni-directional RR node driven by non-configurable "
                                             "BUFFER has fan in %d (expected 1)\n",
                                             fan_in);
-                                        msg += "  " + describe_rr_node(size_t(to_node));
+                                        msg += "  " + describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, size_t(to_node));
                                         VPR_FATAL_ERROR(VPR_ERROR_OTHER, msg.c_str());
                                     }
 
@@ -430,7 +430,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                             num_inputs_to_cblock[size_t(to_node)]++;
                             max_inputs_to_cblock = std::max(max_inputs_to_cblock,
                                                             num_inputs_to_cblock[size_t(to_node)]);
-                            iseg = seg_index_of_cblock(from_rr_type, size_t(to_node));
+                            iseg = seg_index_of_cblock(rr_graph, from_rr_type, size_t(to_node));
 
                             if (cblock_counted[iseg] == false) {
                                 cblock_counted[iseg] = true;

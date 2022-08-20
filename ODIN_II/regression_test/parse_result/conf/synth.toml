@@ -1,7 +1,7 @@
 #include head.toml
 
 ["verilog"]
-    regex = "Verilog: (.+)"
+    regex = "Input (?:verilog|verilog_header|systemverilog|systemverilog_header|uhdm|blif|eblif|ilang) file: (.+)"
     default = "n/a"
 
 #include basic.toml

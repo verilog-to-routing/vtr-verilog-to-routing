@@ -178,9 +178,11 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
 bool highlight_rr_nodes(int hit_node) {
     t_draw_state* draw_state = get_draw_state_vars();
 
+    //TODO: fixed sized char array may cause overflow.
     char message[250] = "";
 
     if (hit_node != OPEN) {
+        const auto& device_ctx = g_vpr_ctx.device();
         auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
         for (auto node : nodes) {
             if (draw_state->draw_rr_node[node].color != ezgl::MAGENTA) {
@@ -197,11 +199,11 @@ bool highlight_rr_nodes(int hit_node) {
                 draw_state->draw_rr_node[node].node_highlighted = false;
             }
             //Print info about all nodes to terminal
-            VTR_LOG("%s\n", describe_rr_node(node).c_str());
+            VTR_LOG("%s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, node).c_str());
         }
 
         //Show info about *only* hit node to graphics
-        std::string info = describe_rr_node(hit_node);
+        std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node);
 
         sprintf(message, "Selected %s", info.c_str());
         rr_highlight_message = message;
@@ -330,42 +332,6 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
     get_selected_sub_block_info().set(atom_block_pb, cl_blk);
     app->refresh_drawing();
     return true;
-}
-
-/**
- * @brief Recursively looks through pb graph to find block w. given name
- * 
- * @param name name of block being searched for
- * @param pb current node to be examined
- * @return t_pb* t_pb ptr of block w. name "name". Returns nullptr if nothing found
- */
-t_pb* find_atom_block_in_pb(std::string name, t_pb* pb) {
-    //Checking if block is one being searched for
-    std::string pbName(pb->name);
-    if (pbName == name)
-        return pb;
-    //If block has no children, returning
-    if (pb->child_pbs == nullptr)
-        return nullptr;
-    int num_child_types = pb->get_num_child_types();
-    //Iterating through all child types
-    for (int i = 0; i < num_child_types; ++i) {
-        if (pb->child_pbs[i] == nullptr) continue;
-        int num_children_of_type = pb->get_num_children_of_type(i);
-        //Iterating through all of pb's children of given type
-        for (int j = 0; j < num_children_of_type; ++j) {
-            t_pb* child_pb = &pb->child_pbs[i][j];
-            //If child exists, recursively calling function on it
-            if (child_pb->name != nullptr) {
-                t_pb* subtree_result = find_atom_block_in_pb(name, child_pb);
-                //If a result is found, returning it to top of recursive calls
-                if (subtree_result != nullptr) {
-                    return subtree_result;
-                }
-            }
-        }
-    }
-    return nullptr;
 }
 
 void highlight_nets(ClusterNetId net_id) {
