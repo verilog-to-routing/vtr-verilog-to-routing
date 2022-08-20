@@ -342,7 +342,7 @@ void read_sb_switchfuncs(pugi::xml_node Node, t_switchblock_inf* sb, const pugiu
 }
 
 static void parse_switch_override(const char* switch_override, t_wireconn_inf& wireconn, const t_arch_switch_inf* switches, int num_switches) {
-    // check to see if user did not specify a switch_override
+    // sentinel value to use default driving switch for the receiving wire type
     if (switch_override == std::string("")) {
         wireconn.switch_override_indx = DEFAULT_SWITCH; //Default
         return;

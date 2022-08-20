@@ -2403,9 +2403,11 @@ The full format is documented below.
 
     :opt_param switch_override:
 
-        Specifies the name of a switch to be used to override the wire_switch of the segments in the ``to`` set. Can be used to create more complicated wire structures such as T and L shaped segments.
+        Specifies the name of a switch to be used to override the wire_switch of the segments in the ``to`` set. 
+        Can be used to create switch patterns where different switches are used for different types of connections. 
+        By using a zero-delay and zero-resistance switch one can also create T and L shaped wire segments.
         
-        **Default:** If no override is specified, the normal interconnect will be used. 
+        **Default:** If no override is specified, the usual wire_switch that drives the ``to`` wire will be used. 
 
     .. arch:tag:: <from type="string" switchpoint="int, int, int, ..."/>
 

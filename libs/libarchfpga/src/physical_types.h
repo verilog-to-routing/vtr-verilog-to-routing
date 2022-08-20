@@ -1689,6 +1689,7 @@ struct t_wireconn_inf {
     SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
     SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   //The desired to_switchpoint_set ordering
     int switch_override_indx = DEFAULT_SWITCH;                         // index in switch array of the switch used to override wire_switch of the 'to' set.
+                                                                       // DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
 
     std::string num_conns_formula; /* Specifies how many connections should be made for this wireconn.
                                     *
