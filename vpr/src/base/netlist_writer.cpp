@@ -961,15 +961,15 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        //All the cell instances
+        //All the cell instances (to an internal buffer for now)
+        std::stringstream instances_ss;
+
         size_t unconn_count = 0;
-        verilog_os_ << "\n";
-        verilog_os_ << indent(depth + 1) << "//Cell instances\n";
         for (auto& inst : cell_instances_) {
-            inst->print_verilog(verilog_os_, unconn_count, depth + 1);
+            inst->print_verilog(instances_ss, unconn_count, depth + 1);
         }
 
-        //Unconnected wires
+        //Unconnected wires declarations
         if (unconn_count) {
             verilog_os_ << "\n";
             verilog_os_ << indent(depth + 1) << "//Unconnected wires\n";
@@ -978,6 +978,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 verilog_os_ << indent(depth + 1) << "wire " << escape_verilog_identifier(name) << ";\n";
             }
         }
+
+        //All the cell instances
+        verilog_os_ << "\n";
+        verilog_os_ << indent(depth + 1) << "//Cell instances\n";
+        verilog_os_ << instances_ss.str();
 
         verilog_os_ << "\n";
         verilog_os_ << indent(depth) << "endmodule\n";
