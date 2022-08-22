@@ -22,6 +22,16 @@ double NocLink::get_bandwidth_usage(void) const {
 }
 
 //setters
+void NocLink::set_source_router(NocRouterId source) {
+    source_router = source;
+    return;
+}
+
+void NocLink::set_sink_router(NocRouterId sink) {
+    sink_router = sink;
+    return;
+}
+
 void NocLink::set_bandwidth_usage(double new_bandwidth_usage) {
     bandwidth_usage = new_bandwidth_usage;
 }
