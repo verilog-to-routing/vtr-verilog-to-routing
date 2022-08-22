@@ -33,6 +33,28 @@ The flow is depicted in the figure below.
 
 	# the environment variable VTR_ROOT is set by Odin-II.
 	# Feel free to specify file paths using "$env(VTR_ROOT)/ ..." 
+	# Read VTR baseline library first
+    read_verilog -nomem2reg $env(ODIN_TECHLIB)/../../vtr_flow/primitives.v
+    setattr -mod -set keep_hierarchy 1 single_port_ram
+    setattr -mod -set keep_hierarchy 1 dual_port_ram
+    
+    # Read the HDL file with pre-defined parer in the "run_yosys.sh" script
+    if {$env(PARSER) == "surelog" } {
+        puts "Using Yosys read_uhdm command"
+        plugin -i systemverilog;
+        yosys -import
+        read_uhdm -debug $env(TCL_CIRCUIT);
+    } elseif {$env(PARSER) == "yosys-plugin" } {
+        puts "Using Yosys read_systemverilog command"
+        plugin -i systemverilog;
+        yosys -import
+        read_systemverilog -debug $env(TCL_CIRCUIT)
+    } elseif {$env(PARSER) == "yosys" } {
+        puts "Using Yosys read_verilog command"
+        read_verilog -sv -nomem2reg -nolatches $env(TCL_CIRCUIT);
+    } else {
+        error "Invalid PARSER"
+    }
 
 	# Read the hardware decription Verilog
 	read_verilog -nomem2reg -nolatches PATH_TO_VERILOG_FILE.v;
@@ -54,7 +76,7 @@ The flow is depicted in the figure below.
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adff2dff.v;
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adffe2dff.v;
     # To resolve Yosys internal indexed part-select circuitry
-    techmap */t:$shift */t:$shiftx;
+    techmap */t:\$shift */t:\$shiftx;
 
 	## Utilizing the "memory_bram" command and the Verilog design provided at "$VTR_ROOT/ODIN_II/techlib/mem_map.v"
 	## we could map Yosys memory blocks to BRAMs and ROMs before the Odin-II partial mapping phase.
@@ -94,7 +116,7 @@ As shown in Algorithm 1, the Tcl script, including the step-by-step generic coar
 Utilizing these commands for the Yosys API inside the Odin-II codebase, the Yosys synthesizer performs the elaboration of the input digital design.
 The generic coarse-grained synthesis commands includes: 
 
-1. Parsing the hardware description Verilog files. The option ``-nomem2reg`` prevents Yosys from exploding implicit memories to an array of registers. The option ``-nolatches`` is used for both VTR primitives and input circuit design to avoid Yosys generating logic loops.
+1. Parsing the hardware description Verilog/SystemVerilog/UHDM files. The option ``-nomem2reg`` prevents Yosys from exploding implicit memories to an array of registers. The option ``-nolatches`` is used for both VTR primitives and input circuit design to avoid Yosys generating logic loops.
 2. Checking that the design cells match the libraries and detecting the top module using ``hierarchy``.
 3. Translating the processes to netlist components such as multiplexers, flip-flops, and latches, by the ``procs`` command.
 4. Performing extraction and optimization of finite state machines by the ``fsm`` command.

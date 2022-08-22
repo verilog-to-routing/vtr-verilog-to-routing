@@ -34,7 +34,12 @@ To ease this process, you can build Yosys+Odin-II with Odin-II in debug mode usi
 
 The second approach to build the VTR flow with the Yosys+Odin-II front-end is to use the main VTR Makefile. i.e., calling ``make`` in the `$VTR_ROOT` directory.
 In this approach, the compile flag ``-DODIN_USE_YOSYS=ON`` should be passed to the CMake parameters as follows: ``make CMAKE_PARAMS="-DODIN_USE_YOSYS=ON"``.
- 
+
+.. note::
+
+	To take advantage of Yosys System Verilog and UHDM plugins, you need to pass the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` compile flag to CMake paramters.
+    Using this compile flag, the `Yosys-F4PGA-Plugins <https://github.com/chipsalliance/yosys-f4pga-plugins>`_ and `Surelog <https://github.com/chipsalliance/Surelog>`_ repositories are cloned in the ``$VTR_ROOT/libs/EXTERNAL`` directory and then will be compiled and added as external plugins to the Yosys front-end.
+
 .. note::
 
 	Yosys uses Makefile as its build system. Since CMake provides portable, cross-platform build systems with many useful features, we provide a CMake wrapper to successfully embeds the Yosys library into the VTR flow.
@@ -51,20 +56,22 @@ Basic Usage
 
     ./odin_II --elaborator yosys [arguments]
 
-*Requires one and only one of `-c`, `-V` or `-b`*
+*Requires one and only one of `-c`, `-v`, `-s`, `-u` or `-b`*
 
 .. table::
 
-    ====  ==========================  =======================================================================
+    ====  ==========================  ===================================================================================================
     Arg   Following Argument          Description
-    ====  ==========================  =======================================================================
+    ====  ==========================  ===================================================================================================
     `-c`  XML Configuration File      an XML configuration file dictating the runtime parameters of odin
-    `-V`  Verilog HDL FIle            You may specify multiple verilog HDL files                        
-    `-b`  BLIF File                   You may specify multiple blif files                               
-    `-o`  BLIF output file            full output path and file name for the blif output file           
-    `-a`  architecture file           You may specify multiple verilog HDL files for synthesis          
+    `-v`  Verilog HDL File            You may specify multiple Verilog HDL files                        
+    `-s`  System Verilog HDL File     You may specify multiple System Verilog files                        
+    `-u`  UHDM File                   You may specify multiple UHDM files (require compiling with the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` flag)                        
+    `-b`  BLIF File                   You may specify multiple blif files (require compiling with the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` flag)                               
+    `-o`  BLIF Output File            full output path and file name for the blif output file           
+    `-a`  Architecture File           You may specify multiple verilog HDL files for synthesis          
     `-h`                              Print help   
-    ====  ==========================  =======================================================================
+    ====  ==========================  ===================================================================================================
 
 
 Example Usage
@@ -75,10 +82,12 @@ It is assumed that they are being performed in the Odin-II directory.
 
 .. code-block:: bash
 
-   ./odin_II --elaborator yosys -V <path/to/Verilog/File>
+   ./odin_II --elaborator yosys -v <path/to/Verilog/File>
+   ./odin_II --elaborator yosys -s <path/to/SystemVerilog/File>
+   ./odin_II --elaborator yosys -u <path/to/UHDM/File>
 
 
-Passes a Verilog HDL file to Yosys for elaboration, then Odin-II performs the partial mapping and optimization. 
+Passes a Verilog/SystemVerilog/UHDM HDL file to Yosys for elaboration, then Odin-II performs the partial mapping and optimization. 
 Warnings and errors may appear regarding the HDL code by Yosys.
 
 .. note::
@@ -87,7 +96,7 @@ Warnings and errors may appear regarding the HDL code by Yosys.
 
 .. code-block:: bash
 
-   ./odin_II --elaborator yosys -V <path/to/Verilog/File> -a <path/to/arch/file> -o output.blif
+   ./odin_II --elaborator yosys -v <path/to/Verilog/File> -a <path/to/arch/file> -o output.blif
 
 Passes a Verilog HDL file and architecture to Yosys+Odin-II, where it is synthesized.
 Yosys will use the HDL files to perform elaboration.

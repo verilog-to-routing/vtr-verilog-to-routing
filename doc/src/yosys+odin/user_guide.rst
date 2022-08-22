@@ -9,11 +9,13 @@ Synthesis Arguments
 
 .. table::
 
-    =======================   ==============================    =================================================================================================
+    =======================   ==============================    =====================================================================================================================================================================
              Arg                    Following Argument                                                          Description
-    =======================   ==============================    =================================================================================================
+    =======================   ==============================    =====================================================================================================================================================================
      `-c`                      XML Configuration File            XML runtime directives for the syntesizer such as the Verilog file, and parametrized synthesis
-     `-V`                      Verilog HDL FIle                  You may specify multiple Verilog HDL files for synthesis									   
+     `-v`                      Verilog HDL FIle                  You may specify multiple Verilog HDL files for synthesis									   
+     **`-s`**                  **SystemVerilog HDL FIle**        **You may specify multiple SystemVerilog HDL files for synthesis**									   
+     **`-u`**                  **UHDM FIle**                     **You may specify multiple UHDM files for synthesis**									   
      `-b`                      BLIF File                                                                               									
      **`-S/--tcl`**            **Tcl Script File**               **You may utilize additional commands for the Yosys elaborator**        						   
      `-o`                      BLIF Output File                  full output path and file name for the BLIF output file                           		
@@ -26,9 +28,8 @@ Synthesis Arguments
      **`--elaborator`**        **[odin (default), yosys]**       **Specify the tool that should perform the HDL elaboration**  				 	         
      **`--fflegalize`**                                          **Converts latches' sensitivity to the rising edge as required by VPR** 						 
      **`--show_yosys_log`**                                      **Showing the Yosys elaboration logs in the console window**           
-     **`--decode_names`**                                        **Enable extracting hierarchical information from Yosys coarse-grained BLIF file for signal naming \
-	 															   (the VTR flow scripts take advantage of this option by default)**
-    =======================   ==============================    =================================================================================================
+     **`--decode_names`**                                        **Enable extracting hierarchical information from Yosys coarse-grained BLIF file for signal naming (the VTR flow scripts take advantage of this option by default)**
+    =======================   ==============================    =====================================================================================================================================================================
 
 
 
@@ -37,16 +38,18 @@ Additional Examples using Odin-II with the Yosys elaborator
 
 .. code-block:: bash
 
-    ./odin_II --elaborator yosys -V <Path/to/Verilog/file> --fflegalize
+	./odin_II --elaborator yosys -v <path/to/Verilog/File> --fflegalize
+    ./odin_II --elaborator yosys -s <path/to/SystemVerilog/File> --fflegalize
+    ./odin_II --elaborator yosys -u <path/to/UHDM/File> --fflegalize
 
 
-Passes a Verilog file to Yosys for performing elaboration. 
+Passes a Verilog/SystemVerilog/UHDM file to Yosys for performing elaboration. 
 The BLIF elaboration and partial mapping phases will be executed on the generated netlist.
 However, all latches in the Yosys+Odin-II output file will be rising edge.
 
 .. code-block:: bash
 
-    ./odin_II --elaborator yosys -V <Path/to/Verilog/file> --decode_names
+    ./odin_II --elaborator yosys -v <Path/to/Verilog/file> --decode_names
 
 
 Performs the design elaboration by Yosys parsers and generates a coarse-grained netlist in BLIF.
@@ -82,6 +85,29 @@ Example of Tcl script for Yosys+Odin-II
 
 	# the environment variable VTR_ROOT is set by Odin-II.
 
+    # Read VTR baseline library first
+    read_verilog -nomem2reg $env(ODIN_TECHLIB)/../../vtr_flow/primitives.v
+    setattr -mod -set keep_hierarchy 1 single_port_ram
+    setattr -mod -set keep_hierarchy 1 dual_port_ram
+    
+    # Read the HDL file with pre-defined parer in the "run_yosys.sh" script
+    if {$env(PARSER) == "surelog" } {
+        puts "Using Yosys read_uhdm command"
+        plugin -i systemverilog;
+        yosys -import
+        read_uhdm -debug $env(TCL_CIRCUIT);
+    } elseif {$env(PARSER) == "yosys-plugin" } {
+        puts "Using Yosys read_systemverilog command"
+        plugin -i systemverilog;
+        yosys -import
+        read_systemverilog -debug $env(TCL_CIRCUIT)
+    } elseif {$env(PARSER) == "yosys" } {
+        puts "Using Yosys read_verilog command"
+        read_verilog -sv -nomem2reg -nolatches $env(TCL_CIRCUIT);
+    } else {
+        error "Invalid PARSER"
+    }
+
 	# Read the hardware decription Verilog
 	read_verilog -nomem2reg -nolatches PATH_TO_VERILOG_FILE.v;
 	# Check that cells match libraries and find top module
@@ -102,7 +128,7 @@ Example of Tcl script for Yosys+Odin-II
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adff2dff.v;
 	techmap -map $VTR_ROOT/ODIN_II/techlib/adffe2dff.v;
     # To resolve Yosys internal indexed part-select circuitry
-    techmap */t:$shift */t:$shiftx;
+    techmap */t:\$shift */t:\$shiftx;
 
 	## Utilizing the "memory_bram" command and the Verilog design provided at "$VTR_ROOT/ODIN_II/techlib/mem_map.v"
 	## we could map Yosys memory blocks to BRAMs and ROMs before the Odin-II partial mapping phase.
@@ -119,7 +145,7 @@ Example of Tcl script for Yosys+Odin-II
 	pmuxtree;
     # To possibly reduce words size
     wreduce;
-	# "undirven" to ensure there is no wire without drive
+	# "undriven" to ensure there is no wire without drive
     # "opt_muxtree" removes dead branches, "opt_expr" performs constant folding,
     # removes "undef" inputs from mux cells, and replaces muxes with buffers and inverters.
     # "-noff" a potential option to remove all sdff and etc. Only dff will remain
@@ -152,7 +178,7 @@ Example of .xml configuration file for `-c`
 	<config>
 		<inputs>
 			<!-- These are the output flags for the project -->
-			<!-- possible types: verilog, verilog_header and blif -->
+			<!-- possible types: [verilog, verilog_header, systemverilog, systemverilog_header, uhdm, blif] -->
 			<input_type>Verilog</input_type>
 			<!-- Way of specifying multiple files in a project -->
 			<input_path_and_name>PATH_TO_CIRCUIT.v</input_path_and_name>
@@ -198,7 +224,9 @@ Examples using input/output vector files
 
 .. code-block:: bash
 
-	./odin_II --elaborator yosys -V <Path/to/verilog/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
+	./odin_II --elaborator yosys -v <Path/to/Verilog/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
+	./odin_II --elaborator yosys -s <Path/to/SystemVerilog/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
+	./odin_II --elaborator yosys -u <Path/to/UHDM/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
 
 
 A mismatch error will arise if the output vector files do not match with the benchmark output vector, located in the `verilog` directory.
