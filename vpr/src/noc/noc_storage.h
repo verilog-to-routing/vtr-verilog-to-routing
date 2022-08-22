@@ -272,6 +272,27 @@ class NocStorage {
 
     // general utiliy functions
     /**
+     * @brief The link is removed from the outgoing vector of links for
+     * the source router. The link is not removed from the vector of all
+     * links as this will require a re-indexing of all link ids. Instead,
+     * the link is set to being invalid by. The link
+     * is still removed since it will be considered invalid when used 
+     * externally. THe link is identified by going through the vector 
+     * outgoing links of the supplied source router, for each outgoin link
+     * the sink router is compared the supplied sink router and the link to
+     * remove is identified if there is a match.
+     * If the link doesn't exist in the
+     * NoC then a warning message is printed and a boolean status is updated
+     * indicating that the link does not exist in the NoC.
+     * 
+     * @param src_router_id The source router of the traffic flow to delete
+     * @param sink_router_id The sink router of the traffic flow to delete
+     * @return true The link was succesfully removed
+     * @return false The link was not removed
+     */
+    bool remove_link(NocRouterId src_router_id, NocRouterId sink_router_id);
+
+    /**
      * @brief Asserts an internal flag which represents that the NoC
      * has been built. This means that no changes can be made to the
      * NoC (routers and links cannot be added or removed). This function
