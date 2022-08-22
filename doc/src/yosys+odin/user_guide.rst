@@ -80,11 +80,11 @@ Example of Tcl script for Yosys+Odin-II
 
 .. code-block:: tcl
  
-	# FILE: $VTR_ROOT/ODIN_II/regression_test/tools/synth.tcl #
-	yosys -import
-
-	# the environment variable VTR_ROOT is set by Odin-II.
-
+    # FILE: $VTR_ROOT/ODIN_II/regression_test/tools/synth.tcl #
+    yosys -import
+    
+    # the environment variable VTR_ROOT is set by Odin-II.
+    
     # Read VTR baseline library first
     read_verilog -nomem2reg $env(ODIN_TECHLIB)/../../vtr_flow/primitives.v
     setattr -mod -set keep_hierarchy 1 single_port_ram
@@ -92,71 +92,70 @@ Example of Tcl script for Yosys+Odin-II
     
     # Read the HDL file with pre-defined parer in the "run_yosys.sh" script
     if {$env(PARSER) == "surelog" } {
-        puts "Using Yosys read_uhdm command"
-        plugin -i systemverilog;
-        yosys -import
-        read_uhdm -debug $env(TCL_CIRCUIT);
+    	puts "Using Yosys read_uhdm command"
+    	plugin -i systemverilog;
+    	yosys -import
+    	read_uhdm -debug $env(TCL_CIRCUIT);
     } elseif {$env(PARSER) == "yosys-plugin" } {
-        puts "Using Yosys read_systemverilog command"
-        plugin -i systemverilog;
-        yosys -import
-        read_systemverilog -debug $env(TCL_CIRCUIT)
+    	puts "Using Yosys read_systemverilog command"
+    	plugin -i systemverilog;
+    	yosys -import
+    	read_systemverilog -debug $env(TCL_CIRCUIT)
     } elseif {$env(PARSER) == "yosys" } {
-        puts "Using Yosys read_verilog command"
-        read_verilog -sv -nomem2reg -nolatches $env(TCL_CIRCUIT);
+    	puts "Using Yosys read_verilog command"
+    	read_verilog -sv -nomem2reg -nolatches $env(TCL_CIRCUIT);
     } else {
-        error "Invalid PARSER"
+    	error "Invalid PARSER"
     }
-
-	# Read the hardware decription Verilog
-	read_verilog -nomem2reg -nolatches PATH_TO_VERILOG_FILE.v;
-	# Check that cells match libraries and find top module
-	hierarchy -check -auto-top;
-
-	# Make name convention more readable
-	autoname;
-	# Translate processes to netlist components such as MUXs, FFs and latches
-	procs; opt;
-	# Extraction and optimization of finite state machines
-	fsm; opt;
-	# Collects memories, their port and create multiport memory cells
-	memory_collect; memory_dff; opt;
-
-	# Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
-	check;
-	# resolve asynchronous dffs
-	techmap -map $VTR_ROOT/ODIN_II/techlib/adff2dff.v;
-	techmap -map $VTR_ROOT/ODIN_II/techlib/adffe2dff.v;
+    
+    # Read the hardware decription Verilog
+    read_verilog -nomem2reg -nolatches PATH_TO_VERILOG_FILE.v;
+    # Check that cells match libraries and find top module
+    hierarchy -check -auto-top;
+    
+    # Make name convention more readable
+    autoname;
+    # Translate processes to netlist components such as MUXs, FFs and latches
+    procs; opt;
+    # Extraction and optimization of finite state machines
+    fsm; opt;
+    # Collects memories, their port and create multiport memory cells
+    memory_collect; memory_dff; opt;
+    
+    # Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
+    check;
+    # resolve asynchronous dffs
+    techmap -map $VTR_ROOT/ODIN_II/techlib/adff2dff.v;
+    techmap -map $VTR_ROOT/ODIN_II/techlib/adffe2dff.v;
     # To resolve Yosys internal indexed part-select circuitry
     techmap */t:\$shift */t:\$shiftx;
-
-	## Utilizing the "memory_bram" command and the Verilog design provided at "$VTR_ROOT/ODIN_II/techlib/mem_map.v"
-	## we could map Yosys memory blocks to BRAMs and ROMs before the Odin-II partial mapping phase.
-	## However, Yosys complains about expression widths more than 24 bits.
-	## E.g. reg [63:0] memory [18:0] ==> ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
-	## Although we provided the required design files for this process (located in ODIN_II/techlib), we will handle
-	## memory blocks in the Odin-II BLIF elaborator and partial mapper. 
-	# memory_bram -rules $VTR_ROOT/ODIN_II/techlib/mem_rules.txt
-	# techmap -map $VTR_ROOT/ODIN_II/techlib/mem_map.v; 
-
-	# Transform the design into a new one with single top module
-	flatten;
-	# Transforms pmux into trees of regular multiplexers
-	pmuxtree;
+    
+    ## Utilizing the "memory_bram" command and the Verilog design provided at "$VTR_ROOT/ODIN_II/techlib/mem_map.v"
+    ## we could map Yosys memory blocks to BRAMs and ROMs before the Odin-II partial mapping phase.
+    ## However, Yosys complains about expression widths more than 24 bits.
+    ## E.g. reg [63:0] memory [18:0] ==> ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
+    ## Although we provided the required design files for this process (located in ODIN_II/techlib), we will handle
+    ## memory blocks in the Odin-II BLIF elaborator and partial mapper. 
+    # memory_bram -rules $VTR_ROOT/ODIN_II/techlib/mem_rules.txt
+    # techmap -map $VTR_ROOT/ODIN_II/techlib/mem_map.v; 
+    
+    # Transform the design into a new one with single top module
+    flatten;
+    # Transforms pmux into trees of regular multiplexers
+    pmuxtree;
     # To possibly reduce words size
     wreduce;
-	# "undriven" to ensure there is no wire without drive
+    # "undriven" to ensure there is no wire without drive
     # "opt_muxtree" removes dead branches, "opt_expr" performs constant folding,
     # removes "undef" inputs from mux cells, and replaces muxes with buffers and inverters.
     # "-noff" a potential option to remove all sdff and etc. Only dff will remain
-	opt -undriven -full; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;
-	# Make name convention more readable
-	autoname;
-	# Print statistics
-	stat;
-	# Output BLIF
-	write_blif -param -impltf TCL_BLIF;
-
+    opt -undriven -full; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;
+    # Make name convention more readable
+    autoname;
+    # Print statistics
+    stat;
+    # Output BLIF
+    write_blif -param -impltf TCL_BLIF;
 
 .. note::
 

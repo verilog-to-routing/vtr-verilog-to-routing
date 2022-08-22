@@ -188,7 +188,7 @@ Detailed Command-line Options
 
 .. option:: -adder_cin_global
     
-    Tells ODIN II to connect the first cin in an adder/subtractorchain to a global gnd/vdd net.
+    Tells ODIN II to connect the first cin in an adder/subtractor chain to a global gnd/vdd net.
 
 .. option:: -use_odin_simulation 
     
@@ -208,34 +208,37 @@ Detailed Command-line Options
 
 .. option:: -elaborator <ELABORATOR>
     
-    Specify the elaborator of the synthesis flow for ODIN II [odin, yosys]
+    Specifies the elaborator of the synthesis flow for ODIN II [odin, yosys]
 
     **Default:** odin
 
 .. option:: -top_module <TOP_MODULE>
-                    Specify the name of the module in the design that should be considered as top
+    
+    Specifies the name of the module in the design that should be considered as top
 
 .. option:: -coarsen
     
-    Notify ODIN II if the input BLIF is coarse-grain
+    Notifies ODIN II if the input BLIF is coarse-grain
     
     **Default:** False
 
 .. option:: -fflegalize
     
-    Make flip-flops rising edge for coarse-grain input BLIFs in the techmap (ODIN II synthesis flow generates rising edge FFs by default, should be used for Yosys+Odin-II)
+    Makes flip-flops rising edge for coarse-grain input BLIFs in the techmap (ODIN II synthesis flow generates rising edge FFs by default, should be used for Yosys+Odin-II)
     
     **Default:** False
 
 .. option:: -encode_names
     
-    Enable Odin-II utilization of operation-type-encoded naming style for Yosys coarse-grained RTLIL nodes
+    Enables Odin-II utilization of operation-type-encoded naming style for Yosys coarse-grained RTLIL nodes
     
     **Default:** False
 
 .. option:: -yosys_script <YOSYS_SCRIPT>
     
-    Supplies Yosys with a .ys script file (similar to Tcl script), including synthesis steps. (default: None)
+    Supplies Yosys with a .ys script file (similar to Tcl script), including synthesis steps.
+    
+    **Default:** None
 
 .. option:: -parser <PARSER>
 
@@ -246,16 +249,16 @@ Detailed Command-line Options
 
 .. note::
 
-	The ``-parser`` option is only available for the Yosys standalone front-end.
+    The ``-parser`` option is only available for the Yosys standalone front-end.
     On the other hand, the Yosys+Odin-II front-end automatically determine the Yosys HDL parser according to the input file extension.
     If the input HDL type is not supported by the Yosys conventional Verilog front-end (i.e., ``read_verilog -sv``) and the Yosys plugins are not installed, the Yosys+Odin-II flow results in failure.
 
 
 .. code-block:: bash
 
-./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
-./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
-./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -elaborator yosys -fflegalize
+    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
+    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
+    ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -elaborator yosys -fflegalize
 
 Passes a Verilog/SystemVerilog/UHDM file to Yosys for performing elaboration. 
 The BLIF elaboration and partial mapping phases will be executed on the generated netlist by Odin-II, and all latches in the Yosys+Odin-II output file will be rising edge.
@@ -263,8 +266,8 @@ Then ABC and VPR perform the default behaviour for the VTR flow, respectively.
 
 .. code-block:: bash
 
-./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -start yosys
-./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -start yosys
+    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -start yosys
+    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -start yosys
 
 Running the VTR flow with the default behaviour using the Yosys standalone front-end.
 The parser for these runs is considered the Yosys conventional Verilog/SystemVerilog parser (i.e., ``read_verilog -sv``), as the parser is not explicitly specified.

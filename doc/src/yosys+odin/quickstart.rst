@@ -37,7 +37,7 @@ In this approach, the compile flag ``-DODIN_USE_YOSYS=ON`` should be passed to t
 
 .. note::
 
-	To take advantage of Yosys System Verilog and UHDM plugins, you need to pass the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` compile flag to CMake paramters.
+    Compiling the VTR flow with the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` flag is required to build and install Yosys SystemVerilog and UHDM plugins.
     Using this compile flag, the `Yosys-F4PGA-Plugins <https://github.com/chipsalliance/yosys-f4pga-plugins>`_ and `Surelog <https://github.com/chipsalliance/Surelog>`_ repositories are cloned in the ``$VTR_ROOT/libs/EXTERNAL`` directory and then will be compiled and added as external plugins to the Yosys front-end.
 
 .. note::
