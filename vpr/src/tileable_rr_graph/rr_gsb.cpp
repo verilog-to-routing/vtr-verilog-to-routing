@@ -825,12 +825,10 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
         if (NUM_SIDES == side) {
             VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
             VTR_LOG("SRC node:\n");
-            VTR_LOG("Node type: %s\n", rr_graph.node_type_string(src_node));
-            VTR_LOG("Node coordinate: %d\n", rr_graph.node_coordinate_to_string(src_node).c_str());
+            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(src_node).c_str());
             VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(src_node));
             VTR_LOG("Channel node:\n");
-            VTR_LOG("Node type: %s\n", rr_graph.node_type_string(chan_node));
-            VTR_LOG("Node coordinate: %d\n", rr_graph.node_coordinate_to_string(chan_node).c_str());
+            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(chan_node).c_str());
             VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(chan_node));
         }
 
