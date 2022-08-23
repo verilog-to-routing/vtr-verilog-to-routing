@@ -17,7 +17,7 @@
 
 #include "rr_graph.h"
 #include "check_rr_graph.h"
-#include "check_rr_graph_obj.h"
+#include "get_parallel_segs.h"
 
 #include "rr_graph_builder_utils.h"
 #include "tileable_chan_details_builder.h"
