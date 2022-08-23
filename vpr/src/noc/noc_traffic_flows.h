@@ -87,7 +87,7 @@ class NocTrafficFlows {
      * 
      * This is done so that during placement when a router cluster block is 
      * moved then the traffic flows that need to be re-routed due to the moved
-     * block can quickly be found. 
+     * block can quickly be found.
      * 
      */
     std::unordered_map<ClusterBlockId, std::vector<NocTrafficFlowId>> traffic_flows_associated_to_router_blocks;
@@ -102,6 +102,17 @@ class NocTrafficFlows {
      * 
      */
     bool built_traffic_flows;
+
+    /**
+     * @brief Stores the routes that were found by the routing algorithm for
+     * all traffic flows within the NoC. This is initialized after all the
+     * traffic flows have been added. This datastructure should be used
+     * to store the path found whenever a traffic flow needs to be routed/
+     * re-routed. Also, this datastructure should be used to access the routed
+     * path of a traffic flow. 
+     * 
+     */
+    vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes;
 
     // private functions
 
@@ -163,6 +174,17 @@ class NocTrafficFlows {
      */
     int get_number_of_routers_used_in_traffic_flows(void);
 
+    /**
+     * @brief Gets the routed path of a traffic flow. The path
+     * returned can and is expected to be  modified externally.
+     * 
+     * @param traffic_flow_id A unique identifier that represents a 
+     * traffic flow.
+     * @return std::vector<NocLinkId>& A reference to the provided
+     * traffic flow's routed path.
+     */
+    std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
+
     // setters
 
     /**
@@ -198,7 +220,8 @@ class NocTrafficFlows {
      * @brief Indicates that the class has been fully constructed, meaning
      * that all the traffic flows have been added and cannot be added anymore.
      * This function should be called only after adding all the traffic flows
-     * provided by the user.
+     * provided by the user. Addiiotnally, creates the storage space for storing
+     * the routed paths for all traffic flows.
      * 
      */
     void finshed_noc_traffic_flows_setup(void);
