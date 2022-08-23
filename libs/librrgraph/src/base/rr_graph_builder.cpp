@@ -28,7 +28,7 @@ MetadataStorage<std::tuple<int, int, short>>& RRGraphBuilder::rr_edge_metadata()
     return rr_edge_metadata_;
 }
 
-vtr::vector<RRNodeId, std::vector<RREdgeId>> RRGraphBuilder::node_in_edge_storage() {
+vtr::vector<RRNodeId, std::vector<RREdgeId>>& RRGraphBuilder::node_in_edge_storage() {
     return node_in_edges_;
 }
 
