@@ -361,5 +361,50 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         REQUIRE(test_noc.remove_link(link_to_remove_src_router, link_to_remove_sink_router) == false);
     }
 }
+TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]"){
+
+    // The golden set of router ids that constain the location of each router
+    // The index represents the grid location (both x and y since they will be the same) and the id at the index is the specific router located at the grid location
+    std::vector<NocRouterId> golden_set;
+
+    // individual router parameters
+    int curr_router_id;
+    int router_grid_position_x;
+    int router_grid_position_y;
+
+    // testing datastructure
+    NocStorage test_noc;
+
+    NocRouterId converted_id;
+
+    // add all the routers to noc_storage and populate the golden router set
+    for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++) {
+        // determine the current router parameters
+        curr_router_id = router_number;
+        router_grid_position_x = router_number;
+        router_grid_position_y = router_number;
+
+        // add the current router_id to the golden vector (the id is determined similiar to how it is done in add_router()) 
+        // this vector is built so that the index represents the grid location of the curren router
+        golden_set.emplace_back((NocRouterId)router_number);
+
+        // add tje router to the noc
+        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
+    }
+
+    // now verify the test function by identifying all the routers using their grid locations
+    // the grid locations go from 0 to the total number of routers in the NoC
+    for (int grid_location = 0; grid_location < NUM_OF_ROUTERS; grid_location++){
+        // contains the grid location of a router block seen during placement
+        // we dont care about the subtile so give it a arbritary value
+        t_pl_loc placement_router_grid_location = t_pl_loc(grid_location, grid_location, -1);
+
+        NocRouterId found_router_at_grid_location = test_noc.get_router_at_grid_location(placement_router_grid_location);
+
+        // verify that the found router matches the expected result
+        REQUIRE(golden_set[grid_location] == found_router_at_grid_location);
+    }
+
+}
 
 } // namespace

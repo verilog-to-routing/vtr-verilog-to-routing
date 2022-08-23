@@ -78,6 +78,22 @@ class NocStorage {
     std::unordered_map<int, NocRouterId> router_id_conversion_table;
 
     /**
+     * @brief Associates the hard routers on the device to their grid
+     * location. During placement, when logical routers are moved to
+     * different hard routers, only the grid location of where the
+     * logical router was moved is known.
+     * Using this datastructure, the grid location can be used to
+     * identify the corresponding hard router block positioned at that grid 
+     * location.It is important to know the specific hard router block because 
+     * without it we cannot determine the starting/end points of the traffic
+     * flows associated to the moved logical router. We need this
+     * so that we can re-route all traffic flows and evaluate the
+     * the placement cost of the moved logical router block.
+     * 
+     */
+    std::unordered_map<int, NocRouterId> grid_location_to_router_id;
+
+    /**
      * @brief A flag that indicates whether the NoC has been built. If this
      * flag is true, then the NoC cannot be modified, meaning that routers and
      * links cannot be added or removed. The inteded use of this flag is to
@@ -213,6 +229,18 @@ class NocStorage {
      * @return A link (NocLink) that is identified by the given id.
      */
     NocLink& get_single_mutable_noc_link(NocLinkId id);
+
+    /**
+     * @brief Given a grid location of a hard router block on
+     * the FPGA device this function determines the id of the hard
+     * router block positioned on that grid location.
+     * 
+     * @param hard_router_location A struct that contains the grid location
+     * of an arbirtary hard router block on the FPGA.
+     * @return NocRouterId The hard router block   
+     * located at the given grid location. 
+     */
+    NocRouterId get_router_at_grid_location(const t_pl_loc& hard_router_location);
 
     // setters for the NoC
 
@@ -355,6 +383,24 @@ class NocStorage {
      * to the input link.
      */
     NocLinkId get_parallel_link(NocLinkId current_link) const;
+
+    /**
+     * @brief Generates a unique integer using the x and y coordinates of a 
+     * hard router block that can be used to identify it. This should be
+     * used to generate the keys for the 'grid_location_to_router_id'
+     * datastructure.
+     * 
+     * The key will be generated as follows:
+     * key = 10*y + x
+     * 
+     * @param grid_position_x The horizontal position on the FPGA of the phyical
+     * tile that this router represents.
+     * @param grid_position_y The vertical position on the FPGA of the phyical
+     * tile that this router represents. 
+     * @return int Represents a unique key that can be used to identify a
+     * hard router block.
+     */
+    int generate_router_key_from_grid_location(int grid_position_x, int grid_position_y);
 
     /**
      * @brief Writes out the NocStirage class infromation to a file. 
