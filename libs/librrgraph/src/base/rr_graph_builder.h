@@ -46,7 +46,7 @@ class RRGraphBuilder {
     /** @brief Return a writable object for the meta data on the edge */
     MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata();
     /** @brief Return a writable object fo the incoming edge storage */
-    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edge_storage();
+    vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edge_storage();
 
     /** @brief Return the size for rr_node_metadata */
     inline size_t rr_node_metadata_size() const {
