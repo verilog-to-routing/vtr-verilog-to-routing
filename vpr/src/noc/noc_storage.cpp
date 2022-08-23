@@ -48,6 +48,20 @@ NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
     return link_storage[id];
 }
 
+NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_location){
+
+    // get the key to identify the corresponding hard router block at the provided grid location
+    int router_key = generate_router_key_from_grid_location(hard_router_location.x, hard_router_location.y);
+
+    // get the hard router block id at the given grid location
+    auto hard_router_block = grid_location_to_router_id.find(router_key);
+    // verify whether a router hard block exists at this location
+    VTR_ASSERT(hard_router_block != grid_location_to_router_id.end());
+    
+    return hard_router_block->second;
+
+}
+
 // setters for the NoC
 
 void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y) {
@@ -63,6 +77,11 @@ void NocStorage::add_router(int id, int grid_position_x, int grid_posistion_y) {
      */
     NocRouterId converted_id((int)(router_storage.size() - 1));
     router_id_conversion_table.emplace(id, converted_id);
+
+    /* need to associate the current router with its grid position */
+    // get the key to identify the current router
+    int router_key = generate_router_key_from_grid_location(grid_position_x, grid_posistion_y);
+    grid_location_to_router_id.insert(std::pair<int, NocRouterId>(router_key, converted_id));
 
     return;
 }
@@ -188,6 +207,11 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     }
 
     return parallel_link;
+}
+
+int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y){
+    // calculate the key value
+    return (10 * grid_position_y + grid_position_x);
 }
 
 void NocStorage::echo_noc(char* file_name) const {
