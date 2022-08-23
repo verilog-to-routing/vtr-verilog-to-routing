@@ -372,7 +372,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                     router_opts,
                     arch->Directs, arch->num_directs,
                     &warnings,
-                    router_opts.flat_routing);
+                    is_flat);
 
     init_draw_coords(final);
 

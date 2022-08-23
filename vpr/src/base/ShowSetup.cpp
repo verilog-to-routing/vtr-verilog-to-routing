@@ -243,6 +243,13 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG_ERROR("Unknown router opt\n");
     }
 
+    VTR_LOG("RouterOpts.flat_routing: ");
+    if(RouterOpts.flat_routing) {
+        VTR_LOG("true\n");
+    } else {
+        VTR_LOG("false\n");
+    }
+
     if (DETAILED == RouterOpts.route_type) {
         VTR_LOG("RouterOpts.router_algorithm: ");
         switch (RouterOpts.router_algorithm) {
