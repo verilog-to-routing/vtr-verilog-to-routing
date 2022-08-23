@@ -201,7 +201,7 @@ void RRGraphBuilder::build_in_edges() {
     node_in_edges_.resize(node_storage_.size());
 
     for (const RRNodeId& src_node: vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(node_storage_.size()))) {
-        for (size_t iedge = size_t(node_storage_.first_edge(src_node)); iedge < size_t(node_storage_.last_edge(src_node)); iedge++) {
+        for (size_t iedge = size_t(node_storage_.first_edge(src_node)); iedge <= size_t(node_storage_.last_edge(src_node)); iedge++) {
             RRNodeId des_node = node_storage_.edge_sink_node(RREdgeId(iedge));
             node_in_edges_[des_node].push_back(RREdgeId(iedge));
         }
