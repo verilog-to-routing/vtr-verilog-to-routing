@@ -7,6 +7,7 @@ from collections import OrderedDict
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import vtr
+from vtr.yosys import YOSYS_PARSERS
 
 # supported input file type by Odin
 FILE_TYPES = {
@@ -15,6 +16,12 @@ FILE_TYPES = {
     ".sv": "systemverilog",
     ".svh": "systemverilog_header",
     ".blif": "blif",
+}
+
+YOSYS_ODIN_PARSER = {
+    YOSYS_PARSERS[0]: "-v",  # yosys (Yosys conventional Verilog parser)
+    YOSYS_PARSERS[1]: "-u",  # surelog (Yosys Surelog plugin)
+    YOSYS_PARSERS[2]: "-s",  # yosys-plugins (Yosys SystemVerilog plugin)
 }
 
 
@@ -199,6 +206,19 @@ def run(
         use_odin_simulation = True
         del odin_args["use_odin_simulation"]
 
+    # set the parser
+    odin_parser_arg = "-v"
+    if odin_args["elaborator"] == "yosys":
+        if odin_args["parser"] in YOSYS_PARSERS:
+            odin_parser_arg = YOSYS_ODIN_PARSER[odin_args["parser"]]
+        else:
+            raise vtr.VtrError(
+                "Invalid parser is specified for the Yosys elaborator, available parsers are [{}]".format(
+                    " ".join(str(x) for x in YOSYS_PARSERS)
+                )
+            )
+    del odin_args["parser"]
+
     for arg, value in odin_args.items():
         if isinstance(value, bool) and value:
             cmd += ["--" + arg]
@@ -214,7 +234,7 @@ def run(
         cmd += [
             "-a",
             architecture_file.name,
-            "-V",
+            odin_parser_arg,
             circuit_list,
             "-o",
             output_netlist.name,

@@ -34,6 +34,7 @@ from .abc import run, run_lec
 from .vpr import run, run_relax_w, cmp_full_vs_incr_sta, run_second_time
 from .odin import run
 from .yosys import run
+from .yosys import YOSYS_PARSERS
 from .ace import run
 from .error import *
 from .flow import run, VtrStage

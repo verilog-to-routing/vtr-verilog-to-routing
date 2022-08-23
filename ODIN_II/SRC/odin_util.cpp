@@ -138,7 +138,15 @@ void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_
                         error_message(UTIL, unknown_location, "%s", YOSYS_PLUGINS_NOT_COMPILED);
 #endif
                     }
-                    [[fallthrough]];
+                    if (file_type != type && type != file_type_e::_UHDM)
+                        error_message(UTIL, unknown_location,
+                                      "File (%s) has an invalid extension (%s), supposed to be a %s file { %s },\
+                                      please see ./odin --help",
+                                      file_name.c_str(),
+                                      file_ext_str.c_str(),
+                                      file_type_strmap.find(type)->second.c_str(),
+                                      file_extension_strmap.find(type)->second.c_str());
+                    break;
                 }
                 case (file_type_e::_BLIF): {
                     if (file_type != type)
