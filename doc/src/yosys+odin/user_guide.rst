@@ -13,9 +13,9 @@ Synthesis Arguments
              Arg                    Following Argument                                                          Description
     =======================   ==============================    =====================================================================================================================================================================
      `-c`                      XML Configuration File            XML runtime directives for the syntesizer such as the Verilog file, and parametrized synthesis
-     `-v`                      Verilog HDL FIle                  You may specify multiple Verilog HDL files for synthesis									   
-     **`-s`**                  **SystemVerilog HDL FIle**        **You may specify multiple SystemVerilog HDL files for synthesis**									   
-     **`-u`**                  **UHDM FIle**                     **You may specify multiple UHDM files for synthesis**									   
+     `-v`                      Verilog HDL File                  You may specify multiple Verilog HDL files for synthesis									   
+     **`-s`**                  **SystemVerilog HDL File**        **You may specify multiple SystemVerilog HDL files for synthesis**									   
+     **`-u`**                  **UHDM File**                     **You may specify multiple UHDM files for synthesis**									   
      `-b`                      BLIF File                                                                               									
      **`-S/--tcl`**            **Tcl Script File**               **You may utilize additional commands for the Yosys elaborator**        						   
      `-o`                      BLIF Output File                  full output path and file name for the BLIF output file                           		
@@ -38,8 +38,13 @@ Additional Examples using Odin-II with the Yosys elaborator
 
 .. code-block:: bash
 
-	./odin_II --elaborator yosys -v <path/to/Verilog/File> --fflegalize
+    # Elaborate the input file using Yosys convetional Verilog parser
+    ./odin_II --elaborator yosys -v <path/to/Verilog/File> --fflegalize
+
+    # Elaborate the input file using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys convetional Verilog parser 
     ./odin_II --elaborator yosys -s <path/to/SystemVerilog/File> --fflegalize
+
+    # Elaborate the input file using the Surelog plugin if installed, otherwise failure on the unsupported type
     ./odin_II --elaborator yosys -u <path/to/UHDM/File> --fflegalize
 
 
@@ -223,9 +228,14 @@ Examples using input/output vector files
 
 .. code-block:: bash
 
-	./odin_II --elaborator yosys -v <Path/to/Verilog/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
-	./odin_II --elaborator yosys -s <Path/to/SystemVerilog/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
-	./odin_II --elaborator yosys -u <Path/to/UHDM/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
+    # Elaborate the input file using Yosys convetional Verilog parser
+    ./odin_II --elaborator yosys -v <Path/to/Verilog/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
+
+    # Elaborate the input file using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys convetional Verilog parser 
+    ./odin_II --elaborator yosys -s <Path/to/SystemVerilog/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
+    
+    # Elaborate the input file using the Surelog plugin if installed, otherwise failure on the unsupported type
+    ./odin_II --elaborator yosys -u <Path/to/UHDM/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
 
 
 A mismatch error will arise if the output vector files do not match with the benchmark output vector, located in the `verilog` directory.

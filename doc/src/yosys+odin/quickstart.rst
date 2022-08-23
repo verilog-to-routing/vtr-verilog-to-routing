@@ -82,9 +82,16 @@ It is assumed that they are being performed in the Odin-II directory.
 
 .. code-block:: bash
 
-   ./odin_II --elaborator yosys -v <path/to/Verilog/File>
-   ./odin_II --elaborator yosys -s <path/to/SystemVerilog/File>
-   ./odin_II --elaborator yosys -u <path/to/UHDM/File>
+    # Elaborate the input file using Yosys convetional Verilog parser and then partial map the coarse-grained netlist using Odin-II
+    ./odin_II --elaborator yosys -v <path/to/Verilog/File>
+
+    # Elaborate the input file using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys convetional Verilog parser 
+    # and then partial map the coarse-grained netlist using Odin-II
+    ./odin_II --elaborator yosys -s <path/to/SystemVerilog/File>
+    
+    # Elaborate the input file using the Surelog plugin if installed, otherwise failure on the unsupported type. 
+    # If succeed, then Odin-II performs the partial mapping on the coarse-grained netlist
+    ./odin_II --elaborator yosys -u <path/to/UHDM/File>
 
 
 Passes a Verilog/SystemVerilog/UHDM HDL file to Yosys for elaboration, then Odin-II performs the partial mapping and optimization. 

@@ -60,6 +60,44 @@ For example::
 will run the VTR flow to map the circuit ``my_circuit.v`` onto the architecture ``my_arch.xml``; the arguments ``--pack`` and ``--place`` will be passed to VPR (since they are unrecognized arguments to ``run_vtr_flow.py``).
 They will cause VPR to perform only :ref:`packing and placement <general_options>`.
 
+.. code-block:: bash
+
+    # Using the Yosys conventional Verilog parser
+    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
+
+    # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
+    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
+    
+    # Using the Surelog plugin if installed, otherwise failure on the unsupported file type
+    ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -elaborator yosys -fflegalize
+
+Passes a Verilog/SystemVerilog/UHDM file to Yosys for performing elaboration. 
+The BLIF elaboration and partial mapping phases will be executed on the generated netlist by Odin-II, and all latches in the Yosys+Odin-II output file will be rising edge.
+Then ABC and VPR perform the default behaviour for the VTR flow, respectively.
+
+.. code-block:: bash
+
+    # Using the Yosys conventional Verilog parser
+    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -start yosys
+
+    # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
+    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -start yosys
+
+Running the VTR flow with the default configuration using the Yosys standalone front-end.
+The parser for these runs is considered the Yosys conventional Verilog/SystemVerilog parser (i.e., ``read_verilog -sv``), as the parser is not explicitly specified.
+
+.. code-block:: bash
+
+    # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
+    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -start yosys -parser yosys-plugin
+
+    # Using the Surelog plugin if installed, otherwise failure on the unsupported file type
+    ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -start yosys -parser surelog
+
+Running the default VTR flow using the Yosys standalone front-end.
+The Yosys HDL parser is considered as Yosys-SystemVerilog plugin (i.e., ``read_systemverilog``) and Yosys UHDM plugin (i.e., ``read_uhdm``), respectively.
+It is worth mentioning that utilizing Yosys plugins requires passing the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` compile flag to build and install the plugins for the Yosys front-end. 
+
 Detailed Command-line Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -186,10 +224,6 @@ Detailed Command-line Options
     additional parameters for ODIN II that are provided from within the 
     .xml file.
 
-.. option:: -adder_cin_global
-    
-    Tells ODIN II to connect the first cin in an adder/subtractor chain to a global gnd/vdd net.
-
 .. option:: -use_odin_simulation 
     
     Tells ODIN II to run simulation.
@@ -218,32 +252,32 @@ Detailed Command-line Options
 
 .. option:: -coarsen
     
-    Notifies ODIN II if the input BLIF is coarse-grain
+    Notifies ODIN II if the input BLIF is coarse-grained
     
     **Default:** False
 
 .. option:: -fflegalize
     
-    Makes flip-flops rising edge for coarse-grain input BLIFs in the techmap (ODIN II synthesis flow generates rising edge FFs by default, should be used for Yosys+Odin-II)
+    Makes flip-flops rising edge for coarse-grained input BLIFs in the partial technology mapping phase (ODIN II synthesis flow generates rising edge FFs by default, should be used for Yosys+Odin-II)
     
     **Default:** False
 
 .. option:: -encode_names
     
-    Enables Odin-II utilization of operation-type-encoded naming style for Yosys coarse-grained RTLIL nodes
+    Enables ODIN II utilization of operation-type-encoded naming style for Yosys coarse-grained RTLIL nodes
     
     **Default:** False
 
 .. option:: -yosys_script <YOSYS_SCRIPT>
     
-    Supplies Yosys with a .ys script file (similar to Tcl script), including synthesis steps.
+    Supplies Yosys with a .ys script file (similar to Tcl script), including the synthesis steps.
     
     **Default:** None
 
 .. option:: -parser <PARSER>
 
     Specify a parser for the Yosys synthesizer [yosys (Verilog-2005), surelog (UHDM), yosys-plugin (SystemVerilog)].
-    The script determine the parser based on the input file extension if this argument is not used.
+    The script considers the Yosys conventional Verilog parser if this argument is not used.
     
     **Default:** yosys
 
@@ -252,31 +286,3 @@ Detailed Command-line Options
     The ``-parser`` option is only available for the Yosys standalone front-end.
     On the other hand, the Yosys+Odin-II front-end automatically determine the Yosys HDL parser according to the input file extension.
     If the input HDL type is not supported by the Yosys conventional Verilog front-end (i.e., ``read_verilog -sv``) and the Yosys plugins are not installed, the Yosys+Odin-II flow results in failure.
-
-
-.. code-block:: bash
-
-    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
-    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -elaborator yosys -fflegalize
-    ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -elaborator yosys -fflegalize
-
-Passes a Verilog/SystemVerilog/UHDM file to Yosys for performing elaboration. 
-The BLIF elaboration and partial mapping phases will be executed on the generated netlist by Odin-II, and all latches in the Yosys+Odin-II output file will be rising edge.
-Then ABC and VPR perform the default behaviour for the VTR flow, respectively.
-
-.. code-block:: bash
-
-    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -start yosys
-    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -start yosys
-
-Running the VTR flow with the default behaviour using the Yosys standalone front-end.
-The parser for these runs is considered the Yosys conventional Verilog/SystemVerilog parser (i.e., ``read_verilog -sv``), as the parser is not explicitly specified.
-
-.. code-block:: bash
-
-./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -start yosys -parser yosys-plugin
-./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -start yosys -parser surelog
-
-Running the default VTR flow using the Yosys standalone front-end.
-In above cases, the Yosys HDL parser is considered as Yosys-SystemVerilog plugin (i.e., ``read_systemverilog``) and Yosys UHDM plugin (i.e., ``read_uhdm``), respectively.
-It is worth mentioning that utilizing Yosys plugins requires passing the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` compile flag to build and install the plugins for the Yosys frontend. 

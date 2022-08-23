@@ -54,4 +54,4 @@ To run the VTR flow with the Yosys front-end, you would need to run the `run_vtr
 
 .. note::
 
-    Please see `Run VTR Flow <https://docs.verilogtorouting.org/en/latest/vtr/run_vtr_flow/>`_ for advanced usage of the Yosys front-end with external plugins.
+    Please see `Run VTR Flow <https://docs.verilogtorouting.org/en/latest/vtr/run_vtr_flow/#advanced-usage>`_ for advanced usage of the Yosys front-end with external plugins.

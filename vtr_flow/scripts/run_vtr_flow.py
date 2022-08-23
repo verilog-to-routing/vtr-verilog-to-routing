@@ -384,8 +384,8 @@ def vtr_command_argparser(prog=None):
         default=None,
         dest="parser",
         help="Specify a parser for the Yosys synthesizer [yosys (Verilog-2005), surelog (UHDM), "
-        + "yosys-plugin (SystemVerilog)].The script determine the parser based on the input file"
-        + " extension if this argument is not used.",
+        + "yosys-plugin (SystemVerilog)]. The script considers the Yosys conventional Verilog"
+        + " parser if this argument is not used.",
     )
     #
     # VPR arguments
