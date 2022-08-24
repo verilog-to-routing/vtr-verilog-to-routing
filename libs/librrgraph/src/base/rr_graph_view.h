@@ -655,6 +655,11 @@ class RRGraphView {
         return (size_t(switch_id) < rr_switch_inf_.size());
     }
 
+    /** @brief Validate if all the fan-in edge lists are valid */
+    bool validate_in_edges() const;
+    /** @brief Count the number of incoming edges for all the nodes */
+    size_t in_edges_count() const;
+
     /* -- Internal data storage -- */
     /* Note: only read-only object or data structures are allowed!!! */
   private:
