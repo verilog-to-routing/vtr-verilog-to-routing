@@ -824,19 +824,21 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
         /* Must have valid side and index */
         if (NUM_SIDES == side) {
             VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
+            VTR_LOG("----------------------------------\n");
             VTR_LOG("SRC node:\n");
             VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(src_node).c_str());
             VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(src_node));
             VTR_LOG("Fan-out nodes:\n");
-            for (const auto& edge : rr_graph.edge_range(src_node)) {
-                VTR_LOG("%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(edge)));
+            for (const auto& temp_edge : rr_graph.edge_range(src_node)) {
+                VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
             }
+            VTR_LOG("\n----------------------------------\n");
             VTR_LOG("Channel node:\n");
             VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(chan_node).c_str());
             VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(chan_node));
             VTR_LOG("Fan-in nodes:\n");
-            for (const auto& edge : rr_graph.node_in_edges(chan_node)) {
-                VTR_LOG("%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(edge)));
+            for (const auto& temp_edge : rr_graph.node_in_edges(chan_node)) {
+                VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(temp_edge)).c_str());
             }
         }
 
