@@ -1,3 +1,4 @@
+#include "vtr_assert.h"
 #include "vtr_log.h"
 #include "rr_graph_builder.h"
 #include "vtr_time.h"
@@ -102,6 +103,7 @@ void RRGraphBuilder::clear_temp_storage() {
 void RRGraphBuilder::clear() {
     node_lookup_.clear();
     node_storage_.clear();
+    node_in_edges_.clear();
     rr_node_metadata_.clear();
     rr_edge_metadata_.clear();
     rr_segments_.clear();
@@ -200,10 +202,11 @@ void RRGraphBuilder::build_in_edges() {
     node_in_edges_.clear();
     node_in_edges_.resize(node_storage_.size());
 
-    for (const RRNodeId& src_node: vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(node_storage_.size()))) {
-        for (size_t iedge = size_t(node_storage_.first_edge(src_node)); iedge <= size_t(node_storage_.last_edge(src_node)); iedge++) {
-            RRNodeId des_node = node_storage_.edge_sink_node(RREdgeId(iedge));
-            node_in_edges_[des_node].push_back(RREdgeId(iedge));
+    for (RRNodeId src_node : vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(node_storage_.size()))) {
+        for (auto iedge : node_storage_.edges(src_node)) {
+            VTR_ASSERT(src_node == node_storage_.edge_source_node(node_storage_.edge_id(src_node, iedge)));
+            RRNodeId des_node = node_storage_.edge_sink_node(node_storage_.edge_id(src_node, iedge));
+            node_in_edges_[des_node].push_back(node_storage_.edge_id(src_node, iedge));
         }
     }
     is_incoming_edge_dirty_ = false;
@@ -212,7 +215,7 @@ void RRGraphBuilder::build_in_edges() {
 std::vector<RREdgeId> RRGraphBuilder::node_in_edges(RRNodeId node) const {
   VTR_ASSERT(size_t(node) < node_storage_.size());
   if (is_incoming_edge_dirty_) {
-    VTR_LOG_ERROR("Incoming edges are built yet in routing resource graph. Please call build_in_edges().");
+    VTR_LOG_ERROR("Incoming edges are not built yet in routing resource graph. Please call build_in_edges().");
     return std::vector<RREdgeId>();
   }
   if (node_in_edges_.empty()) {
