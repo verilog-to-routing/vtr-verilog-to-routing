@@ -94,7 +94,7 @@ def init_config_file(
     config_file.write(odin_config_full_path)
 
 
-# pylint: disable=too-many-arguments, too-many-locals, too-many-branches
+# pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
 def run(
     architecture_file,
     circuit_file,
@@ -213,9 +213,8 @@ def run(
             odin_parser_arg = YOSYS_ODIN_PARSER[odin_args["parser"]]
         else:
             raise vtr.VtrError(
-                "Invalid parser is specified for the Yosys elaborator, available parsers are [{}]".format(
-                    " ".join(str(x) for x in YOSYS_PARSERS)
-                )
+                "Invalid parser is specified for the Yosys elaborator,"
+                " available parsers are [{}]".format(" ".join(str(x) for x in YOSYS_PARSERS))
             )
     del odin_args["parser"]
 
@@ -270,4 +269,4 @@ def run(
         )
 
 
-# pylint: enable=too-many-arguments, too-many-locals, too-many-branches
+# pylint: enable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
