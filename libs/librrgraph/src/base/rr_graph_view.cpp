@@ -101,9 +101,9 @@ bool RRGraphView::validate_in_edges() const {
                 RRNodeId prev_edge_des_node = node_storage_.edge_source_node(next_edge);
                 des_fanin_nodes.push_back(prev_edge_des_node);
             }
-            if (des_fanin_nodes.end() == std::find(des_fanin_nodes.begin(), des_fanin_nodes.end(), des_node)) {
-                VTR_LOG_ERROR("Node '%s' does not appear in the fannout edges of Node '%s'\n",
-                              node_coordinate_to_string(des_node).c_str(), node_coordinate_to_string(curr_node).c_str());
+            if (des_fanin_nodes.end() == std::find(des_fanin_nodes.begin(), des_fanin_nodes.end(), curr_node)) {
+                VTR_LOG_ERROR("Node '%s' does not appear in the fan-in edges of Node '%s', while does drive it in its fan-out list\n",
+                              node_coordinate_to_string(curr_node).c_str(), node_coordinate_to_string(des_node).c_str());
                 num_err++;
             }
         }
@@ -118,8 +118,8 @@ bool RRGraphView::validate_in_edges() const {
                 src_fanout_nodes.push_back(prev_edge_des_node);
             }
             if (src_fanout_nodes.end() == std::find(src_fanout_nodes.begin(), src_fanout_nodes.end(), curr_node)) {
-                VTR_LOG_ERROR("Node '%s' does not appear in the fan-in edges of Node '%s'\n",
-                              node_coordinate_to_string(src_node).c_str(), node_coordinate_to_string(curr_node).c_str());
+                VTR_LOG_ERROR("Node '%s' does not appear in the fan-out edges of Node '%s', while does exist in its fan-in list\n",
+                              node_coordinate_to_string(curr_node).c_str(), node_coordinate_to_string(src_node).c_str());
                 num_err++;
             }
         }
