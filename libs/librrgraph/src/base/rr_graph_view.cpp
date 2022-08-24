@@ -91,6 +91,9 @@ bool RRGraphView::validate_in_edges() const {
      * - The sink node is in the fan-out edge list of the source node
      */
     for (RRNodeId curr_node : vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(node_storage_.size()))) {
+        /* curr_node ---> des_node 
+         *           <-?-            check if the incoming edge is correct or not
+         */
         for (auto iedge : node_storage_.edges(curr_node)) {
             RRNodeId des_node = node_storage_.edge_sink_node(node_storage_.edge_id(curr_node, iedge));
             std::vector<RRNodeId> des_fanin_nodes;
@@ -104,6 +107,9 @@ bool RRGraphView::validate_in_edges() const {
                 num_err++;
             }
         }
+        /* src_node -?-> curr_node
+         *          <---           check if the fan-out edge is correct or not
+         */
         for (auto iedge : node_in_edges(curr_node)) {
             RRNodeId src_node = node_storage_.edge_source_node(iedge);
             std::vector<RRNodeId> src_fanout_nodes;
