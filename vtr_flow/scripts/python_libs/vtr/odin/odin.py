@@ -53,6 +53,7 @@ def init_config_file(
     circuit_list,
     architecture_file,
     output_netlist,
+    odin_parser_arg,
     memory_addr_width,
     min_hard_mult_size,
     min_hard_adder_size,
@@ -63,6 +64,10 @@ def init_config_file(
     if file_extension not in FILE_TYPES:
         raise vtr.VtrError("Inavlid input file type '{}'".format(file_extension))
     input_file_type = FILE_TYPES[file_extension]
+
+    # Check if the user specifically requested for the UHDM parser
+    if odin_parser_arg == "-u":
+        input_file_type = "uhdm"
 
     # Update the config file
     vtr.file_replace(
@@ -184,11 +189,24 @@ def run(
     # Create a list showing all (.v) and (.vh) files
     circuit_list = create_circuits_list(circuit_file, include_files)
 
+    # set the parser
+    odin_parser_arg = "-v"
+    if odin_args["elaborator"] == "yosys":
+        if odin_args["parser"] in YOSYS_PARSERS:
+            odin_parser_arg = YOSYS_ODIN_PARSER[odin_args["parser"]]
+        else:
+            raise vtr.VtrError(
+                "Invalid parser is specified for the Yosys elaborator,"
+                " available parsers are [{}]".format(" ".join(str(x) for x in YOSYS_PARSERS))
+            )
+    del odin_args["parser"]
+
     init_config_file(
         odin_config_full_path,
         circuit_list,
         architecture_file.name,
         output_netlist.name,
+        odin_parser_arg,
         vtr.determine_memory_addr_width(str(architecture_file)),
         min_hard_mult_size,
         min_hard_adder_size,
@@ -205,18 +223,6 @@ def run(
     if "use_odin_simulation" in odin_args:
         use_odin_simulation = True
         del odin_args["use_odin_simulation"]
-
-    # set the parser
-    odin_parser_arg = "-v"
-    if odin_args["elaborator"] == "yosys":
-        if odin_args["parser"] in YOSYS_PARSERS:
-            odin_parser_arg = YOSYS_ODIN_PARSER[odin_args["parser"]]
-        else:
-            raise vtr.VtrError(
-                "Invalid parser is specified for the Yosys elaborator,"
-                " available parsers are [{}]".format(" ".join(str(x) for x in YOSYS_PARSERS))
-            )
-    del odin_args["parser"]
 
     for arg, value in odin_args.items():
         if isinstance(value, bool) and value:
