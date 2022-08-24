@@ -30,14 +30,14 @@ To build you may use the Makefile wrapper in the $VTR_ROOT/ODIN_II ``make build`
 
 *Requires one and only one of `-c`, `-v`, or `-b`
 
-| arg  | following argument     | Description                                                        |
+| arg  | following argument     | Description                                                                           |
 |------|---|---|
-| `-c` | XML Configuration File | an XML configuration file dictating the runtime parameters of odin |
-| `-v` | Verilog HDL FIle       | You may specify multiple verilog HDL files                         |
-| `-b` | BLIF File              | You may specify multiple blif files                                |
-| `-o` | BLIF output file    | full output path and file name for the blif output file  |
-| `-a` | architecture file   | You may specify multiple verilog HDL files for synthesis |
-| `-h` |                     | Print help                                               |
+| `-c` | XML Configuration File | an XML configuration file dictating the runtime parameters of odin                    |
+| `-v` | Verilog HDL File       | You may specify multiple space-separated verilog HDL files                            |
+| `-b` | BLIF File              | You may specify multiple space-separated blif files                                   |
+| `-o` | BLIF output file       | full output path and file name for the blif output file                               |
+| `-a` | architecture file      | You may not specify the architecture file, which results in pure soft logic synthesis |
+| `-h` |                        | Print help                                                                            |
 
 ## Example Usage
 

@@ -30,7 +30,7 @@ Building
 --------
 
 To build the VTR flow with the Yosys front-end you may use the VTR Makefile wrapper, by calling the ``make CMAKE_PARAMS="-DWITH_YOSYS=ON"`` command in the `$VTR_ROOT` directory.
-The compile flag ``-DWITH_YOSYS=ON`` should be passed to the CMake parameters to enable Yosys compilation process.
+The compile flag ``-DWITH_YOSYS=ON`` should be passed to the CMake parameters to enable the Yosys compilation process.
 
 .. note::
 

@@ -71,7 +71,7 @@ They will cause VPR to perform only :ref:`packing and placement <general_options
     # Using the Surelog plugin if installed, otherwise failure on the unsupported file type
     ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -elaborator yosys -fflegalize
 
-Passes a Verilog/SystemVerilog/UHDM file to Yosys for performing elaboration. 
+Passes a Verilog/SystemVerilog/UHDM file to Yosys to perform elaboration. 
 The BLIF elaboration and partial mapping phases will be executed on the generated netlist by Odin-II, and all latches in the Yosys+Odin-II output file will be rising edge.
 Then ABC and VPR perform the default behaviour for the VTR flow, respectively.
 
@@ -230,13 +230,13 @@ Detailed Command-line Options
 
 .. option:: -min_hard_mult_size <min_hard_mult_size>
     
-    Tells ODIN II the minimum multiplier size to be implemented using hard multiplier.
+    Tells ODIN II the minimum multiplier size (in bits) to be implemented using hard multiplier.
     
     **Default:** 3
 
 .. option:: -min_hard_adder_size <MIN_HARD_ADDER_SIZE>
     
-    Tells ODIN II the minimum adder size that should be implemented using hard adder.
+    Tells ODIN II the minimum adder size (in bits) that should be implemented using hard adder.
     
     **Default:** 1
 
@@ -252,10 +252,14 @@ Detailed Command-line Options
 
 .. option:: -coarsen
     
-    Notifies ODIN II if the input BLIF is coarse-grained
-    
+    Notifies ODIN II if the input BLIF is coarse-grained.
+
     **Default:** False
 
+.. note::
+
+    A coarse-grained BLIF file is defined as a BLIF file inclduing unmapped cells with the Yosys internal cell (listed `here <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/b913727959e22ae7a535ac8b907d0aaa9a3eda3d/ODIN_II/SRC/enum_str.cpp#L402-L494>`_) format which are represented by the ``.subckt`` tag in coarse-grained BLIF.
+    
 .. option:: -fflegalize
     
     Makes flip-flops rising edge for coarse-grained input BLIFs in the partial technology mapping phase (ODIN II synthesis flow generates rising edge FFs by default, should be used for Yosys+Odin-II)
@@ -264,8 +268,29 @@ Detailed Command-line Options
 
 .. option:: -encode_names
     
-    Enables ODIN II utilization of operation-type-encoded naming style for Yosys coarse-grained RTLIL nodes
+    Enables ODIN II utilization of operation-type-encoded naming style for Yosys coarse-grained RTLIL nodes.
     
+    .. code-block::
+
+        # example of a DFF subcircuit in the Yosys coarse-grained BLIF
+        .subckt $dff CLK=clk D=a Q=inst1.inst2.temp
+        .param CLK_POLARITY 1
+
+        .names inst1.inst2.temp o
+        1 1
+
+        # fine-grained BLIF file with enabled encode_names option for Odin-II partial mapper
+        .latch test^a test^inst1.inst2.temp^FF~0 re test^clk 3
+
+        .names test^inst1.inst2.temp^FF~0 test^o
+        1 1
+
+        # fine-grained BLIF file with disabled encode_names option for Odin-II partial mapper
+        .latch test^a test^$dff^FF~0 re test^clk 3
+
+        .names test^$dff^FF~0 test^o
+        1 1
+
     **Default:** False
 
 .. option:: -yosys_script <YOSYS_SCRIPT>
@@ -277,12 +302,14 @@ Detailed Command-line Options
 .. option:: -parser <PARSER>
 
     Specify a parser for the Yosys synthesizer [yosys (Verilog-2005), surelog (UHDM), yosys-plugin (SystemVerilog)].
-    The script considers the Yosys conventional Verilog parser if this argument is not used.
+    The script uses the Yosys conventional Verilog parser if this argument is not used.
     
     **Default:** yosys
 
 .. note::
 
-    The ``-parser`` option is only available for the Yosys standalone front-end.
-    On the other hand, the Yosys+Odin-II front-end automatically determine the Yosys HDL parser according to the input file extension.
-    If the input HDL type is not supported by the Yosys conventional Verilog front-end (i.e., ``read_verilog -sv``) and the Yosys plugins are not installed, the Yosys+Odin-II flow results in failure.
+    Universal Hardware Data Model (UHDM) is a complete modeling of the IEEE SystemVerilog Object Model with VPI Interface, Elaborator, Serialization, Visitor and Listener.
+    UHDM is used as a compiled interchange format in between SystemVerilog tools.
+    The ``yosys-plugins`` parser, which represents the ``read_systemverilog`` command, reads SystemVerilog files directly in Yosys.
+    It executes Surelog with provided filenames and converts them (in memory) into UHDM file. Then, this UHDM file is converted into Yosys AST. `[Yosys-SystemVerilog] <https://github.com/antmicro/yosys-systemverilog#usage>`_
+    On the other hand, the ``surelog`` parser, which uses the ``read_uhdm`` Yosys command, walks the design tree and converts its nodes into Yosys AST nodes using Surelog. `[UHDM-Yosys <https://github.com/chipsalliance/UHDM-integration-tests#uhdm-yosys>`_, `Surelog] <https://github.com/chipsalliance/Surelog#surelog>`_

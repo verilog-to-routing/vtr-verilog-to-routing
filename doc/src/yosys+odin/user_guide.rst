@@ -13,13 +13,13 @@ Synthesis Arguments
              Arg                    Following Argument                                                          Description
     =======================   ==============================    =====================================================================================================================================================================
      `-c`                      XML Configuration File            XML runtime directives for the syntesizer such as the Verilog file, and parametrized synthesis
-     `-v`                      Verilog HDL File                  You may specify multiple Verilog HDL files for synthesis									   
-     **`-s`**                  **SystemVerilog HDL File**        **You may specify multiple SystemVerilog HDL files for synthesis**									   
-     **`-u`**                  **UHDM File**                     **You may specify multiple UHDM files for synthesis**									   
-     `-b`                      BLIF File                                                                               									
+     `-v`                      Verilog HDL File                  You may specify multiple space-separated Verilog HDL files for synthesis									   
+     **`-s`**                  **SystemVerilog HDL File**        **You may specify multiple space-separated SystemVerilog HDL files for synthesis**									   
+     **`-u`**                  **UHDM File**                     **You may specify multiple space-separated UHDM files for synthesis**									   
+     `-b`                      BLIF File                         You may **not** specify multiple BLIF files as only single input BLIF file is accepted                                                      									
      **`-S/--tcl`**            **Tcl Script File**               **You may utilize additional commands for the Yosys elaborator**        						   
      `-o`                      BLIF Output File                  full output path and file name for the BLIF output file                           		
-     `-a`                      Architecture File                 You may specify multiple verilog HDL files for synthesis                        		       
+     `-a`                      Architecture File                 You may specify multiple space-separated verilog HDL files for synthesis                        		       
      `-G`                                                        Output netlist graph in GraphViz viewable .dot format. (net.dot, opens with dotty)  		   
      `-A`                                                        Output AST graph in in GraphViz viewable .dot format.                               		   
      `-W`                                                        Print all warnings. (Can be substantial.)                                           		   
@@ -38,17 +38,17 @@ Additional Examples using Odin-II with the Yosys elaborator
 
 .. code-block:: bash
 
-    # Elaborate the input file using Yosys convetional Verilog parser
+    # Elaborate the input file using Yosys conventional Verilog parser
     ./odin_II --elaborator yosys -v <path/to/Verilog/File> --fflegalize
 
-    # Elaborate the input file using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys convetional Verilog parser 
+    # Elaborate the input file using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser 
     ./odin_II --elaborator yosys -s <path/to/SystemVerilog/File> --fflegalize
 
     # Elaborate the input file using the Surelog plugin if installed, otherwise failure on the unsupported type
     ./odin_II --elaborator yosys -u <path/to/UHDM/File> --fflegalize
 
 
-Passes a Verilog/SystemVerilog/UHDM file to Yosys for performing elaboration. 
+Passes a Verilog/SystemVerilog/UHDM file to Yosys to perform elaboration. 
 The BLIF elaboration and partial mapping phases will be executed on the generated netlist.
 However, all latches in the Yosys+Odin-II output file will be rising edge.
 
@@ -181,7 +181,7 @@ Example of .xml configuration file for `-c`
 
 	<config>
 		<inputs>
-			<!-- These are the output flags for the project -->
+			<!-- These are the input flags for the project -->
 			<!-- possible types: [verilog, verilog_header, systemverilog, systemverilog_header, uhdm, blif] -->
 			<input_type>Verilog</input_type>
 			<!-- Way of specifying multiple files in a project -->
@@ -228,10 +228,10 @@ Examples using input/output vector files
 
 .. code-block:: bash
 
-    # Elaborate the input file using Yosys convetional Verilog parser
+    # Elaborate the input file using Yosys conventional Verilog parser
     ./odin_II --elaborator yosys -v <Path/to/Verilog/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
 
-    # Elaborate the input file using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys convetional Verilog parser 
+    # Elaborate the input file using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser 
     ./odin_II --elaborator yosys -s <Path/to/SystemVerilog/file> -t <Path/to/Input/Vector/File> -T <Path/to/Output/Vector/File>
     
     # Elaborate the input file using the Surelog plugin if installed, otherwise failure on the unsupported type

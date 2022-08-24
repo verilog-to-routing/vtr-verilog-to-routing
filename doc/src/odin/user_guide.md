@@ -4,15 +4,15 @@
 
 |  arg  | following argument      | Description                                            |
 |-------|:-----------------------:|------------------------------------------------------- |
-| `-c`  |  XML Configuration File | XML runtime directives for the syntesizer such as the verilog file, and parametrized synthesis |
-|  `-v` |  Verilog HDL FIle       | You may specify multiple verilog HDL files for synthesis|
-|  `-b` |  BLIF File              |                                                        |
-|  `-o` |  BLIF output file       | full output path and file name for the blif output file                              |
-|  `-a` |  architecture file      | You may specify multiple verilog HDL files for synthesis                             |
-|  `-G` |                         | Output netlist graph in GraphViz viewable .dot format. (net.dot, opens with dotty)  |
-|  `-A` |                         | Output AST graph in in GraphViz viewable .dot format.                               |
-|  `-W` |                         | Print all warnings. (Can be substantial.)                                           |
-|  `-h` |                         | Print help                                                                          |
+|  `-c` |  XML Configuration File | XML runtime directives for the syntesizer such as the verilog file, and parametrized synthesis |
+|  `-v` |  Verilog HDL File       | You may specify multiple space-separated verilog HDL files for synthesis                       |
+|  `-b` |  BLIF File              | You may **not** specify multiple BLIF files as only single input BLIF file is accepted         |
+|  `-o` |  BLIF output file       | full output path and file name for the BLIF output file                                        |
+|  `-a` |  architecture file      | You may specify multiple space-separated Verilog HDL files for synthesis                       |
+|  `-G` |                         | Output netlist graph in GraphViz viewable .dot format. (net.dot, opens with dotty)             |
+|  `-A` |                         | Output AST graph in in GraphViz viewable .dot format.                                          |
+|  `-W` |                         | Print all warnings. (Can be substantial.)                                                      |
+|  `-h` |                         | Print help                                                                                     |
 
 ## Simulation Arguments
 

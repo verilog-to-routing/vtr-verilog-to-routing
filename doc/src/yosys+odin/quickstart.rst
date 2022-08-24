@@ -64,12 +64,12 @@ Basic Usage
     Arg   Following Argument          Description
     ====  ==========================  ===================================================================================================
     `-c`  XML Configuration File      an XML configuration file dictating the runtime parameters of odin
-    `-v`  Verilog HDL File            You may specify multiple Verilog HDL files                        
-    `-s`  System Verilog HDL File     You may specify multiple System Verilog files                        
-    `-u`  UHDM File                   You may specify multiple UHDM files (require compiling with the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` flag)                        
-    `-b`  BLIF File                   You may specify multiple blif files (require compiling with the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` flag)                               
-    `-o`  BLIF Output File            full output path and file name for the blif output file           
-    `-a`  Architecture File           You may specify multiple verilog HDL files for synthesis          
+    `-v`  Verilog HDL File            You may specify multiple space-separated Verilog HDL files                        
+    `-s`  System Verilog HDL File     You may specify multiple space-separated System Verilog files                        
+    `-u`  UHDM File                   You may specify multiple space-separated UHDM files (require compiling with the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` flag)                        
+    `-b`  BLIF File                   You may specify multiple space-separated BLIF files (require compiling with the ``-DYOSYS_SV_UHDM_PLUGIN=ON`` flag)                               
+    `-o`  BLIF Output File            full output path and file name for the BLIF output file           
+    `-a`  Architecture File           VPR XML architecture file. You may not specify the architecture file, which results in pure soft logic synthesis           
     `-h`                              Print help   
     ====  ==========================  ===================================================================================================
 
@@ -80,12 +80,15 @@ Example Usage
 The following are simple command-line arguments and a description of what they do. 
 It is assumed that they are being performed in the Odin-II directory.
 
+The following commands pass a Verilog/SystemVerilog/UHDM HDL file to Yosys for elaboration, then Odin-II performs the partial mapping and optimization into pure soft logic. 
+Warnings and errors may appear regarding the HDL code by Yosys.
+
 .. code-block:: bash
 
-    # Elaborate the input file using Yosys convetional Verilog parser and then partial map the coarse-grained netlist using Odin-II
+    # Elaborate the input file using Yosys conventional Verilog parser and then partial map the coarse-grained netlist using Odin-II
     ./odin_II --elaborator yosys -v <path/to/Verilog/File>
 
-    # Elaborate the input file using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys convetional Verilog parser 
+    # Elaborate the input file using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser 
     # and then partial map the coarse-grained netlist using Odin-II
     ./odin_II --elaborator yosys -s <path/to/SystemVerilog/File>
     
@@ -94,32 +97,28 @@ It is assumed that they are being performed in the Odin-II directory.
     ./odin_II --elaborator yosys -u <path/to/UHDM/File>
 
 
-Passes a Verilog/SystemVerilog/UHDM HDL file to Yosys for elaboration, then Odin-II performs the partial mapping and optimization. 
-Warnings and errors may appear regarding the HDL code by Yosys.
-
 .. note::
 
     The entire log file of the Yosys elaboration for each run is outputted into a file called ``elaboration.yosys.log`` located in the same directory of the final output BLIF file.
+
+The following command passes a Verilog HDL file and architecture to Yosys+Odin-II, where it is synthesized.
+Yosys will use the HDL files to perform elaboration.
+Then, Odin-II will use the architecture to do partial technology mapping, and will output the BLIF in the current directory at ``./output.blif``.
+If the output BLIF file is not specified, ``default_out.blif`` is considered the output file name, again located in the current directory.
 
 .. code-block:: bash
 
    ./odin_II --elaborator yosys -v <path/to/Verilog/File> -a <path/to/arch/file> -o output.blif
 
-Passes a Verilog HDL file and architecture to Yosys+Odin-II, where it is synthesized.
-Yosys will use the HDL files to perform elaboration.
-Then, Odin-II will use the architecture to do partial technology mapping, and will output the BLIF in the current directory at ``./output.blif``.
-If the output BLIF file is not specified, ``default_out.blif`` is considered the output file name, again located in the current directory.
-
 .. note::
 	
 	Once the elaboration is fully executed, Yosys generates a coarse-grained BLIF file that the Odin-II BLIF reader will read to create a netlist. This file is named ``coarsen_netlist.yosys.blif`` located in the current directory.
 
+The following command passes a Tcl script file, including commands for the elaboration by Yosys, along with the architecture file.
 
 .. code-block:: bash
 
    ./odin_II -S <path/to/Tcl/File> -a <path/to/arch/file> -o myModel.blif
-
-Passes a Tcl script file, including commands for the elaboration by Yosys, along with the architecture file.
 
 .. note::
 
