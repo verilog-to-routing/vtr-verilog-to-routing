@@ -14,8 +14,6 @@
 //Forward declaration
 class t_rr_graph_storage;
 
-class RRGraph;
-
 struct rr_node_id_tag;
 struct rr_edge_id_tag;
 struct rr_indexed_data_id_tag;
