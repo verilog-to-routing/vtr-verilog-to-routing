@@ -10,7 +10,7 @@ endif
 
 # Yosys+Odin-II compile flags
 ifeq ($(_ELABORATOR), YOSYS)
-_YOSYS_COMPILE_FLAG="-DODIN_USE_YOSYS=ON"
+_YOSYS_COMPILE_FLAG="-DODIN_USE_YOSYS=ON -DYOSYS_SV_UHDM_PLUGIN=ON"
 endif
 
 ################
