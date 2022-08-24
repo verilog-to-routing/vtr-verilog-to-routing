@@ -827,9 +827,17 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
             VTR_LOG("SRC node:\n");
             VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(src_node).c_str());
             VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(src_node));
+            VTR_LOG("Fan-out nodes:\n");
+            for (const auto& edge : rr_graph.edge_range(src_node)) {
+                VTR_LOG("%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(edge)));
+            }
             VTR_LOG("Channel node:\n");
             VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(chan_node).c_str());
             VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(chan_node));
+            VTR_LOG("Fan-in nodes:\n");
+            for (const auto& edge : rr_graph.node_in_edges(chan_node)) {
+                VTR_LOG("%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(edge)));
+            }
         }
 
         VTR_ASSERT(NUM_SIDES != side);
