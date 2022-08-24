@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "rr_graph_view.h"
 #include "rr_node.h"
 #include "physical_types.h"
@@ -74,3 +75,54 @@ RRSegmentId RRGraphView::node_segment(RRNodeId node) const {
     RRIndexedDataId cost_index = node_cost_index(node);
     return RRSegmentId(rr_indexed_data_[cost_index].seg_index);
 }
+
+size_t RRGraphView::in_edges_count() const {
+    size_t edge_count = 0;
+    for (auto edge_list : node_in_edges_) {
+        edge_count += edge_list.size();
+    }
+    return edge_count;
+}
+
+bool RRGraphView::validate_in_edges() const {
+    size_t num_err = 0;
+    /* For each edge, validate that
+     * - The source node is in the fan-in edge list of the destination node
+     * - The sink node is in the fan-out edge list of the source node
+     */
+    for (RRNodeId curr_node : vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(node_storage_.size()))) {
+        for (auto iedge : node_storage_.edges(curr_node)) {
+            RRNodeId des_node = node_storage_.edge_sink_node(node_storage_.edge_id(curr_node, iedge));
+            std::vector<RRNodeId> des_fanin_nodes;
+            for (auto next_edge : node_in_edges(des_node)) {
+                RRNodeId prev_edge_des_node = node_storage_.edge_source_node(next_edge);
+                des_fanin_nodes.push_back(prev_edge_des_node);
+            }
+            if (des_fanin_nodes.end() == std::find(des_fanin_nodes.begin(), des_fanin_nodes.end(), des_node)) {
+                VTR_LOG_ERROR("Node '%s' does not appear in the fannout edges of Node '%s'\n",
+                              node_coordinate_to_string(des_node).c_str(), node_coordinate_to_string(curr_node).c_str());
+                num_err++;
+            }
+        }
+        for (auto iedge : node_in_edges(curr_node)) {
+            RRNodeId src_node = node_storage_.edge_source_node(iedge);
+            std::vector<RRNodeId> src_fanout_nodes;
+            for (auto prev_edge : node_storage_.edges(src_node)) {
+                RRNodeId prev_edge_des_node = node_storage_.edge_sink_node(node_storage_.edge_id(src_node, prev_edge));
+                src_fanout_nodes.push_back(prev_edge_des_node);
+            }
+            if (src_fanout_nodes.end() == std::find(src_fanout_nodes.begin(), src_fanout_nodes.end(), curr_node)) {
+                VTR_LOG_ERROR("Node '%s' does not appear in the fan-in edges of Node '%s'\n",
+                              node_coordinate_to_string(src_node).c_str(), node_coordinate_to_string(curr_node).c_str());
+                num_err++;
+            }
+        }
+    }
+    if (num_err) {
+      VTR_LOG_ERROR("Found %ld errors when validating incoming edges for routing resource graph\n", num_err);
+      return false;
+    }
+    return true;
+}
+
+
