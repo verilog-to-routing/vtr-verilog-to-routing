@@ -463,8 +463,7 @@ def find_task_dir(config, alt_tasks_dir=None):
         task_dir = Path(config.config_dir).parent
     else:
         task_dir = Path(alt_tasks_dir) / config.task_name
-        if not task_dir.exists():
-            task_dir.mkdir(parents=True)
+        task_dir.mkdir(parents=True, exist_ok=True)
     assert task_dir.is_dir
 
     return str(task_dir)
