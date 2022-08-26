@@ -302,13 +302,13 @@ def run_tasks(
             print("Elapsed time: {}".format(format_elapsed_time(datetime.now() - start)))
 
         if args.create_golden:
-            create_golden_results_for_tasks(configs)
+            create_golden_results_for_tasks(configs, args.alt_tasks_dir)
 
         if args.check_golden:
-            num_failed += check_golden_results_for_tasks(configs)
+            num_failed += check_golden_results_for_tasks(configs, args.alt_tasks_dir)
 
         if args.calc_geomean:
-            summarize_qor(configs)
+            summarize_qor(configs, args.alt_tasks_dir)
             calc_geomean(args, configs)
     # This option generates a shell script (vtr_flow.sh) for each architecture,
     # circuit, script_params
