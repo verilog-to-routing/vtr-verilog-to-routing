@@ -739,22 +739,12 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
                                                   rr_graph.node_ylow(rr_node_id),
                                                   chan_coordinate.x(),
                                                   chan_coordinate.y());
-            /* Update node look-up */
-            size_t xlow = std::min(rr_graph.node_xlow(rr_node_id), rr_graph.node_xhigh(rr_node_id));
-            size_t xhigh = std::max(rr_graph.node_xlow(rr_node_id), rr_graph.node_xhigh(rr_node_id));
-            size_t ylow = std::min(rr_graph.node_ylow(rr_node_id), rr_graph.node_yhigh(rr_node_id));
-            size_t yhigh = std::max(rr_graph.node_ylow(rr_node_id), rr_graph.node_yhigh(rr_node_id));
-            for (int ix = xlow; ix <= xhigh; ix++) {
-                for (int iy = ylow; iy <= yhigh; iy++) {
-                    rr_graph_builder.node_lookup().add_node(rr_node_id, ix, iy, rr_graph.node_type(rr_node_id), itrack);
-                }
-            }
 
             /* Do not update track_ids for length-1 wires, they should have only 1 track_id */
             if ((rr_graph.node_xhigh(rr_node_id) > rr_graph.node_xlow(rr_node_id))
                 || (rr_graph.node_yhigh(rr_node_id) > rr_graph.node_ylow(rr_node_id))) {
                 rr_node_track_ids[rr_node_id].push_back(itrack);
-                rr_graph_builder.set_node_track_num(rr_node_id, itrack);
+                rr_graph_builder.add_node_track_num(rr_node_id, chan_coordinate, itrack);
             }
             /* Finish here, go to next */
         }
@@ -788,7 +778,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
 
         /* Update track_ids */
         rr_node_track_ids[rr_node_id].push_back(itrack);
-        rr_graph_builder.set_node_track_num(rr_node_id, itrack);
+        rr_graph_builder.add_node_track_num(rr_node_id, chan_coordindate, itrack);
         /* Finish here, go to next */
     }
 }
@@ -1092,4 +1082,11 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
 
     reverse_dec_chan_rr_node_track_ids(rr_graph,
                                        rr_node_track_ids);
+
+    /* Update node look-up for CHANX and CHANY nodes */
+    for (const RRNodeId& rr_node_id : rr_graph.nodes()) {
+        if (CHANX == rr_graph.node_type(rr_node_id) || CHANY == rr_graph.node_type(rr_node_id)) {
+            rr_graph_builder.add_track_node_to_lookup(rr_node_id);
+        }
+    }
 }

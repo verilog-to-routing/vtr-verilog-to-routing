@@ -11,7 +11,8 @@ RRGraphView::RRGraphView(const t_rr_graph_storage& node_storage,
                          const std::vector<t_rr_rc_data>& rr_rc_data,
                          const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                          const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-                         const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges)
+                         const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges,
+                         const vtr::vector<RRNodeId, std::vector<short>>& node_ptc_nums)
     : node_storage_(node_storage)
     , node_lookup_(node_lookup)
     , rr_node_metadata_(rr_node_metadata)
@@ -20,7 +21,8 @@ RRGraphView::RRGraphView(const t_rr_graph_storage& node_storage,
     , rr_rc_data_(rr_rc_data)
     , rr_segments_(rr_segments)
     , rr_switch_inf_(rr_switch_inf) 
-    , node_in_edges_(node_in_edges) {
+    , node_in_edges_(node_in_edges)
+    , node_ptc_nums_(node_ptc_nums) {
 }
 
 std::vector<RREdgeId> RRGraphView::node_in_edges(RRNodeId node) const {
