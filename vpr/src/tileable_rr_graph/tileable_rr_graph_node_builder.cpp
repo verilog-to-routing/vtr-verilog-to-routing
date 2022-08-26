@@ -778,7 +778,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
 
         /* Update track_ids */
         rr_node_track_ids[rr_node_id].push_back(itrack);
-        rr_graph_builder.add_node_track_num(rr_node_id, chan_coordindate, itrack);
+        rr_graph_builder.add_node_track_num(rr_node_id, chan_coordinate, itrack);
         /* Finish here, go to next */
     }
 }
