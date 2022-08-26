@@ -95,6 +95,14 @@ def vtr_command_argparser(prog=None):
     )
 
     parser.add_argument(
+        "-temp_dir",
+        default=None,
+        metavar="TEMP_DIR",
+        dest="alt_tasks_dir",
+        help="Alternate directory to run the tasks in (will be created if non-existant)",
+    )
+
+    parser.add_argument(
         "-parse_qor",
         default=False,
         action="store_true",
@@ -151,13 +159,13 @@ def vtr_command_main(arg_list, prog=None):
         parse_tasks(configs, jobs, args.alt_tasks_dir)
 
         if args.create_golden:
-            create_golden_results_for_tasks(configs)
+            create_golden_results_for_tasks(configs, args.alt_tasks_dir)
 
         if args.check_golden:
-            num_failed += check_golden_results_for_tasks(configs)
+            num_failed += check_golden_results_for_tasks(configs, args.alt_tasks_dir)
 
         if args.calc_geomean:
-            summarize_qor(configs)
+            summarize_qor(configs, args.alt_tasks_dir)
             calc_geomean(args, configs)
 
     except CommandError as error:
@@ -261,18 +269,18 @@ def parse_files(config_jobs, run_dir, flow_metrics_basename=FIRST_PARSE_FILE):
                 )
 
 
-def create_golden_results_for_tasks(configs):
+def create_golden_results_for_tasks(configs, alt_tasks_dir=None):
     """Runs create_golden_results_for_task on all of the give configuration"""
 
     for config in configs:
-        create_golden_results_for_task(config)
+        create_golden_results_for_task(config, alt_tasks_dir)
 
 
-def create_golden_results_for_task(config):
+def create_golden_results_for_task(config, alt_tasks_dir=None):
     """
     Copies the latest task run's parse_results.txt into the config directory as golden_results.txt
     """
-    run_dir = find_latest_run_dir(config)
+    run_dir = find_latest_run_dir(config, alt_tasks_dir)
 
     task_results = str(PurePath(run_dir).joinpath(FIRST_PARSE_FILE))
     golden_results_filepath = str(PurePath(config.config_dir).joinpath("golden_results.txt"))
@@ -280,23 +288,23 @@ def create_golden_results_for_task(config):
     shutil.copy(task_results, golden_results_filepath)
 
 
-def check_golden_results_for_tasks(configs):
+def check_golden_results_for_tasks(configs, alt_tasks_dir=None):
     """runs check_golden_results_for_task on all the input configurations"""
     num_qor_failures = 0
 
     print("\nCalculating QoR results...")
     for config in configs:
-        num_qor_failures += check_golden_results_for_task(config)
+        num_qor_failures += check_golden_results_for_task(config, alt_tasks_dir)
 
     return num_qor_failures
 
 
-def check_golden_results_for_task(config):
+def check_golden_results_for_task(config, alt_tasks_dir=None):
     """
     Copies the latest task run's parse_results.txt into the config directory as golden_results.txt
     """
     num_qor_failures = 0
-    run_dir = find_latest_run_dir(config)
+    run_dir = find_latest_run_dir(config, alt_tasks_dir)
 
     if not config.pass_requirements_file:
         print(
@@ -460,33 +468,33 @@ def check_two_files(
 # pylint: enable=too-many-branches,too-many-locals
 
 
-def summarize_qor(configs):
+def summarize_qor(configs, alt_tasks_dir=None):
     """Summarize the Qor results"""
 
     first = True
-    task_path = Path(configs[0].config_dir).parent
-    if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file():
+    task_path = Path(find_task_dir(configs[0], alt_tasks_dir)) # Path(configs[0].config_dir).parent
+    if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file(): # ?? change logic if alt_tasks_dir ?? won't have task list, check config_dir.parent.parent?
         task_path = task_path.parent
     task_path = task_path / "task_summary"
     task_path.mkdir(exist_ok=True)
-    out_file = task_path / (str(Path(find_latest_run_dir(configs[0])).stem) + "_summary.txt")
+    out_file = task_path / (str(Path(find_latest_run_dir(configs[0], alt_tasks_dir)).stem) + "_summary.txt")
     with out_file.open("w+") as out:
         for config in configs:
-            with (Path(find_latest_run_dir(config)) / QOR_PARSE_FILE).open("r") as in_file:
+            with (Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE).open("r") as in_file:
                 headers = in_file.readline()
                 if first:
                     print("task_name \t{}".format(headers), file=out, end="")
                     first = False
                 for line in in_file:
                     print("{}\t{}".format(config.task_name, line), file=out, end="")
-            pretty_print_table(str(Path(find_latest_run_dir(config)) / QOR_PARSE_FILE))
+            pretty_print_table(str(Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE))
 
 
 def calc_geomean(args, configs):
     """caclulate and ouput the geomean values to the geomean file"""
     first = False
-    task_path = Path(configs[0].config_dir).parent
-    if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file():
+    task_path = Path(find_task_dir(configs[0], args.alt_tasks_dir)) # Path(configs[0].config_dir).parent
+    if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file(): # ?? change logic if alt_tasks_dir ?? won't have task list, check config_dir.parent.parent?
         task_path = task_path.parent
     out_file = task_path / "qor_geomean.txt"
     if not out_file.is_file():
@@ -494,7 +502,7 @@ def calc_geomean(args, configs):
     summary_file = (
         task_path
         / "task_summary"
-        / (str(Path(find_latest_run_dir(configs[0])).stem) + "_summary.txt")
+        / (str(Path(find_latest_run_dir(configs[0], args.alt_tasks_dir)).stem) + "_summary.txt")
     )
 
     with out_file.open("w" if first else "a") as out:
@@ -508,7 +516,7 @@ def calc_geomean(args, configs):
                 first = False
             lines = summary.readlines()
             print(
-                get_latest_run_number(str(Path(configs[0].config_dir).parent)),
+                get_latest_run_number(find_task_dir(configs[0], args.alt_tasks_dir)),
                 file=out,
                 end="\t",
             )
