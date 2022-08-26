@@ -33,6 +33,10 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>>& RRGraphBuilder::node_in_edge_stora
     return node_in_edges_;
 }
 
+vtr::vector<RRNodeId, std::vector<short>>& RRGraphBuilder::node_ptc_storage() {
+    return node_ptc_nums_;
+}
+
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     t_rr_type node_type = node_storage_.node_type(node);
     short node_ptc_num = node_storage_.node_ptc_num(node);
@@ -82,6 +86,7 @@ RRNodeId RRGraphBuilder::create_node(int x, int y, t_rr_type type, int ptc, e_si
         node_side = side;
     }
     node_storage_.emplace_back();
+    node_ptc_nums_.emplace_back();
     RRNodeId new_node = RRNodeId(node_storage_.size() - 1);
     node_storage_.set_node_type(new_node, type);
     node_storage_.set_node_coordinates(new_node, x, y, x, y);
@@ -104,6 +109,7 @@ void RRGraphBuilder::clear() {
     node_lookup_.clear();
     node_storage_.clear();
     node_in_edges_.clear();
+    node_ptc_nums_.clear();
     rr_node_metadata_.clear();
     rr_edge_metadata_.clear();
     rr_segments_.clear();
@@ -213,13 +219,62 @@ void RRGraphBuilder::build_in_edges() {
 }
 
 std::vector<RREdgeId> RRGraphBuilder::node_in_edges(RRNodeId node) const {
-  VTR_ASSERT(size_t(node) < node_storage_.size());
-  if (is_incoming_edge_dirty_) {
-    VTR_LOG_ERROR("Incoming edges are not built yet in routing resource graph. Please call build_in_edges().");
-    return std::vector<RREdgeId>();
-  }
-  if (node_in_edges_.empty()) {
-    return std::vector<RREdgeId>();
-  }
-  return node_in_edges_[node];
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    if (is_incoming_edge_dirty_) {
+        VTR_LOG_ERROR("Incoming edges are not built yet in routing resource graph. Please call build_in_edges().");
+        return std::vector<RREdgeId>();
+    }
+    if (node_in_edges_.empty()) {
+        return std::vector<RREdgeId>();
+    }
+    return node_in_edges_[node];
+}
+
+void RRGraphBuilder::add_node_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id) {
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    VTR_ASSERT_MSG(node_storage_.node_type(node) == CHANX || node_storage_.node_type(node) == CHANY, "Track number valid only for CHANX/CHANY RR nodes");
+
+    size_t node_length = std::abs(node_storage_.node_xhigh(node) - node_storage_.node_xlow(node))
+                       + std::abs(node_storage_.node_yhigh(node) - node_storage_.node_ylow(node));
+    if (node_length + 1 != node_ptc_nums_[node].size()) {
+        node_ptc_nums_[node].resize(node_length + 1);
+    }
+
+    size_t offset = node_offset.x() - node_storage_.node_xlow(node) + node_offset.y() - node_storage_.node_ylow(node);
+    VTR_ASSERT(offset < node_ptc_nums_[node].size());
+
+    node_ptc_nums_[node][offset] = track_id;
+}
+
+void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
+    /* Compute the track id based on the (x, y) coordinate */
+    size_t x_start = std::min(node_storage_.node_xlow(node), node_storage_.node_xhigh(node));
+    size_t y_start = std::min(node_storage_.node_ylow(node), node_storage_.node_yhigh(node));
+    std::vector<size_t> node_x(std::abs(node_storage_.node_xlow(node) - node_storage_.node_xhigh(node)) + 1);
+    std::vector<size_t> node_y(std::abs(node_storage_.node_ylow(node) - node_storage_.node_yhigh(node)) + 1);
+    
+    std::iota(node_x.begin(), node_x.end(), x_start);
+    std::iota(node_y.begin(), node_y.end(), y_start);
+    
+    VTR_ASSERT(size_t(std::max(node_storage_.node_xlow(node), node_storage_.node_xhigh(node))) == node_x.back());
+    VTR_ASSERT(size_t(std::max(node_storage_.node_ylow(node), node_storage_.node_yhigh(node))) == node_y.back());
+
+    size_t itype = node_storage_.node_type(node);
+
+    for (const size_t& x : node_x) {
+        for (const size_t& y : node_y) {
+            size_t ptc = node_storage_.node_ptc_num(node);
+            /* Routing channel nodes may have different ptc num 
+             * Find the track ids using the x/y offset  
+             * FIXME: Special case on assigning CHANX (x,y) should be changed to a natural way!
+             */
+            if (CHANX == node_storage_.node_type(node)) {
+                ptc = node_ptc_nums_[node][x - node_storage_.node_xlow(node)];
+                node_lookup_.add_node(node, y, x, CHANX, ptc); 
+            } else if (CHANY == node_storage_.node_type(node)) {
+                ptc = node_ptc_nums_[node][y - node_storage_.node_ylow(node)];
+                node_lookup_.add_node(node, x, y, CHANY, ptc); 
+            }
+        }
+    }
 }

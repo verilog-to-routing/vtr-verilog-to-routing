@@ -47,6 +47,8 @@ class RRGraphBuilder {
     MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata();
     /** @brief Return a writable object fo the incoming edge storage */
     vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edge_storage();
+    /** @brief Return a writable object of the node ptc storage (for tileable routing resource graph) */
+    vtr::vector<RRNodeId, std::vector<short>>& node_ptc_storage();
 
     /** @brief Return the size for rr_node_metadata */
     inline size_t rr_node_metadata_size() const {
@@ -229,8 +231,17 @@ class RRGraphBuilder {
         node_storage_.set_node_track_num(id, new_track_num);
     }
 
-    /** @brief set_ node_class_num() is designed for routing source and sinks, which are SOURCE and SINK nodes */
-    inline void set_node_class_num(RRNodeId id, int new_class_num) {
+    /** @brief Add a track id for a given node base on the offset in coordinate, applicable only to CHANX and CHANY nodes.
+     *         This API is used by tileable routing resource graph generator, which requires each routing track has a different
+     *         track id depending their location in FPGA fabric.
+     */
+    void add_node_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id);
+
+    /** @brief Update the node_lookup for a track node. This is applicable to tileable routing graph */
+    void add_track_node_to_lookup(RRNodeId node);
+
+    /** @brief set_node_class_num() is designed for routing source and sinks, which are SOURCE and SINK nodes */
+    inline void set_node_class_num(RRNodeId id, short new_class_num) {
         node_storage_.set_node_class_num(id, new_class_num);
     }
 
@@ -431,6 +442,25 @@ class RRGraphBuilder {
     /** A list of incoming edges for each routing resource node. This can be built optionally, as required by applications.
      *  By default, it is empty! Call build_in_edges() to construct it!!! */
     vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edges_;
+
+    /* Extra ptc number for each routing resource node. This is required by tileable routing resource graph.
+     * In a tileable routing architecture, routing tracks, e.g., CHANX and CHANY, follows a staggered organization.
+     * Hence, a routing track may appear in different routing channels, representing different ptc/track id.
+     * Here is an illustrative example of a X-direction routing track (CHANX) in INC direction, which is organized in staggered way.
+     *    
+     *  Coord(x,y) (1,0)   (2,0)   (3,0)     (4,0)       Another track (node)
+     *  ptc=0     ------>                              ------>
+     *                   \                            /
+     *  ptc=1             ------>                    /
+     *                           \                  /
+     *  ptc=2                     ------>          / 
+     *                                   \        /
+     *  ptc=3                             ------->
+     *           ^                               ^
+     *           |                               |
+     *     starting point                   ending point
+     */
+    vtr::vector<RRNodeId, std::vector<short>> node_ptc_nums_;
 
     /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
      *  e.g., node_lookup! */

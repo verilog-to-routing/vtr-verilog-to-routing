@@ -75,7 +75,8 @@ class RRGraphView {
                 const std::vector<t_rr_rc_data>& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                 const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-                const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges);
+                const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges,
+                const vtr::vector<RRNodeId, std::vector<short>>& node_ptc_nums);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the
@@ -705,6 +706,9 @@ class RRGraphView {
     /** A list of incoming edges for each routing resource node. This can be built optionally, as required by applications.
      *  By default, it is empty! Call build_in_edges() to construct it!!! */
     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges_;
+
+    /** A list of extra ptc numbers for each routing resource node. See details in RRGraphBuilder class */
+    const vtr::vector<RRNodeId, std::vector<short>>& node_ptc_nums_;
 };
 
 #endif
