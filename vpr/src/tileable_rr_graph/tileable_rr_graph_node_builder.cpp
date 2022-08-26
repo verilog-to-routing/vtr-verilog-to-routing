@@ -734,18 +734,6 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             VTR_ASSERT(chan_type == rr_graph.node_type(rr_node_id));
             VTR_ASSERT(chan_details.get_track_direction(itrack) == rr_graph.node_direction(rr_node_id));
 
-            /* Unset existing node coordinate in the lookup */
-            {
-                size_t xlow = std::min(rr_graph.node_xlow(rr_node_id), rr_graph.node_xhigh(rr_node_id));
-                size_t xhigh = std::max(rr_graph.node_xlow(rr_node_id), rr_graph.node_xhigh(rr_node_id));
-                size_t ylow = std::min(rr_graph.node_ylow(rr_node_id), rr_graph.node_yhigh(rr_node_id));
-                size_t yhigh = std::max(rr_graph.node_ylow(rr_node_id), rr_graph.node_yhigh(rr_node_id));
-                for (size_t ix = xlow; ix <= xhigh; ix++) {
-                    for (size_t iy = ylow; iy <= yhigh; iy++) {
-                        rr_graph_builder.node_lookup().add_node(RRNodeId::INVALID(), ix, iy, rr_graph.node_type(rr_node_id), rr_graph.node_track_num(rr_node_id));
-                    }
-                }
-            }
             /* set xhigh/yhigh and push changes to track_ids */
             rr_graph_builder.set_node_coordinates(rr_node_id, rr_graph.node_xlow(rr_node_id),
                                                   rr_graph.node_ylow(rr_node_id),
@@ -759,7 +747,12 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
                 size_t yhigh = std::max(rr_graph.node_ylow(rr_node_id), rr_graph.node_yhigh(rr_node_id));
                 for (size_t ix = xlow; ix <= xhigh; ix++) {
                     for (size_t iy = ylow; iy <= yhigh; iy++) {
-                        rr_graph_builder.node_lookup().add_node(rr_node_id, ix, iy, rr_graph.node_type(rr_node_id), rr_graph.node_track_num(rr_node_id));
+                        if (CHANX == rr_graph.node_type(rr_node_id)) {
+                            rr_graph_builder.node_lookup().add_node(rr_node_id, iy, ix, rr_graph.node_type(rr_node_id), rr_graph.node_track_num(rr_node_id));
+                        } else {
+                            VTR_ASSERT_SAFE(CHANY == rr_graph.node_type(rr_node_id));
+                            rr_graph_builder.node_lookup().add_node(rr_node_id, ix, iy, rr_graph.node_type(rr_node_id), rr_graph.node_track_num(rr_node_id));
+                        }
                     }
                 }
             }
