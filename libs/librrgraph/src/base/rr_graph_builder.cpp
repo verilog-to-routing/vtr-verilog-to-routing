@@ -232,6 +232,7 @@ std::vector<RREdgeId> RRGraphBuilder::node_in_edges(RRNodeId node) const {
 
 void RRGraphBuilder::add_node_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id) {
     VTR_ASSERT(size_t(node) < node_storage_.size());
+    VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
     VTR_ASSERT_MSG(node_storage_.node_type(node) == CHANX || node_storage_.node_type(node) == CHANY, "Track number valid only for CHANX/CHANY RR nodes");
 
     size_t node_length = std::abs(node_storage_.node_xhigh(node) - node_storage_.node_xlow(node))
@@ -247,6 +248,8 @@ void RRGraphBuilder::add_node_track_num(RRNodeId node, vtr::Point<size_t> node_o
 }
 
 void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
+    VTR_ASSERT_MSG(node_storage_.node_type(node) == CHANX || node_storage_.node_type(node) == CHANY, "Update track node look-up is only valid to CHANX/CHANY nodes");
+
     /* Compute the track id based on the (x, y) coordinate */
     size_t x_start = std::min(node_storage_.node_xlow(node), node_storage_.node_xhigh(node));
     size_t y_start = std::min(node_storage_.node_ylow(node), node_storage_.node_yhigh(node));
@@ -258,8 +261,6 @@ void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
     
     VTR_ASSERT(size_t(std::max(node_storage_.node_xlow(node), node_storage_.node_xhigh(node))) == node_x.back());
     VTR_ASSERT(size_t(std::max(node_storage_.node_ylow(node), node_storage_.node_yhigh(node))) == node_y.back());
-
-    size_t itype = node_storage_.node_type(node);
 
     for (const size_t& x : node_x) {
         for (const size_t& y : node_y) {
