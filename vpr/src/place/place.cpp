@@ -422,6 +422,7 @@ void try_place(const t_placer_opts& placer_opts,
                t_annealing_sched annealing_sched,
                const t_router_opts& router_opts,
                const t_analysis_opts& analysis_opts,
+               const t_noc_opts& noc_opts,
                t_chan_width_dist chan_width_dist,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
@@ -515,7 +516,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
-    initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str());
+    initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str(), noc_opts.noc);
 
 #ifdef ENABLE_ANALYTIC_PLACE
     /*
