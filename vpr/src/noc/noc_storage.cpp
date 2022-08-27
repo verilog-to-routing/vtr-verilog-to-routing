@@ -48,7 +48,7 @@ NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
     return link_storage[id];
 }
 
-NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_location){
+NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_location) const {
 
     // get the key to identify the corresponding hard router block at the provided grid location
     int router_key = generate_router_key_from_grid_location(hard_router_location.x, hard_router_location.y);
@@ -209,7 +209,7 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     return parallel_link;
 }
 
-int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y){
+int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y) const {
     // calculate the key value
     return (10 * grid_position_y + grid_position_x);
 }
