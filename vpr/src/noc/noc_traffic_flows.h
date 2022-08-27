@@ -137,6 +137,12 @@ class NocTrafficFlows {
     //getters
 
     /**
+     * @return int An integer that represents the number of unique traffic
+     * flows within the NoC. 
+     */
+    int get_number_of_traffic_flows(void);
+
+    /**
      * @brief Given a unique id of a traffic flow (t_noc_traffic_flow)
      * retrieve it from the vector of all traffic flows in the design. The
      * retrieved traffic flow cannot be modified but can be used to

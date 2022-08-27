@@ -9,6 +9,10 @@ NocTrafficFlows::NocTrafficFlows() {
 
 // getters for the traffic flows
 
+int NocTrafficFlows::get_number_of_traffic_flows(void){
+    return noc_traffic_flows.size();
+}
+
 const t_noc_traffic_flow& NocTrafficFlows::get_single_noc_traffic_flow(NocTrafficFlowId traffic_flow_id) const {
     return noc_traffic_flows[traffic_flow_id];
 }
@@ -71,6 +75,7 @@ void NocTrafficFlows::clear_traffic_flows(void) {
     // delete any information from internal datastructures
     noc_traffic_flows.clear();
     traffic_flows_associated_to_router_blocks.clear();
+    traffic_flow_routes.clear();
 
     // indicate that traffic flows need to be added again after clear
     built_traffic_flows = false;
