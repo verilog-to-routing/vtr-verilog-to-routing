@@ -2828,8 +2828,9 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
 
     //<switch_block> tag
     Cur = get_single_child(Node, "switch_block", loc_data);
-    expect_only_attributes(Cur, {"type", "fs"}, loc_data);
+    expect_only_attributes(Cur, {"type", "fs", "sub_type", "sub_fs"}, loc_data);
     Prop = get_attribute(Cur, "type", loc_data).value();
+    /* Parse attribute 'type', representing the major connectivity pattern for switch blocks */
     if (strcmp(Prop, "wilton") == 0) {
         arch->SBType = WILTON;
     } else if (strcmp(Prop, "universal") == 0) {
@@ -2843,9 +2844,31 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                        "Unknown property %s for switch block type x\n", Prop);
     }
+    /* Parse attribute 'sub_type', representing the minor connectivity pattern for switch blocks 
+     * If not specified, the 'sub_type' is the same as major type
+     * This option is only valid for tileable routing resource graph builder
+     * Note that sub_type does not support custom switch block pattern!!!
+     * If 'sub_type' is specified, the custom switch block for 'type' is not allowed! 
+     */
+    std::string sub_type_str = get_attribute(Cur, "sub_type", loc_data, BoolToReqOpt(false)).as_string("");
+    if (!sub_type_str.empty()) {
+        if (sub_type_str == std::string("wilton")) {
+            arch->SBSubType = WILTON;
+        } else if (sub_type_str == std::string("universal")) {
+            arch->SBSubType = UNIVERSAL;
+        } else if (sub_type_str == std::string("subset")) {
+            arch->SBSubType = SUBSET;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                           "Unknown property %s for switch block subtype x\n", sub_type_str.c_str());
+        }
+    } else {
+        arch->SBSubType = arch->SBType;
+    }
 
     ReqOpt CUSTOM_SWITCHBLOCK_REQD = BoolToReqOpt(!custom_switch_block);
     arch->Fs = get_attribute(Cur, "fs", loc_data, CUSTOM_SWITCHBLOCK_REQD).as_int(3);
+    arch->subFs = get_attribute(Cur, "sub_fs", loc_data, BoolToReqOpt(false)).as_int(arch->Fs);
 
     Cur = get_single_child(Node, "default_fc", loc_data, ReqOpt::OPTIONAL);
     if (Cur) {
