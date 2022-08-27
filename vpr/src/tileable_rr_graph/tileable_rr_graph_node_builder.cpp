@@ -703,7 +703,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             RRNodeId node = rr_graph_builder.create_node(chan_coordinate.x(), chan_coordinate.y(), chan_type, itrack);
 
             rr_graph_builder.set_node_direction(node, chan_details.get_track_direction(itrack));
-            rr_graph_builder.set_node_track_num(node, itrack);
+            rr_graph_builder.add_node_track_num(node, chan_coordinate, itrack);
             rr_node_track_ids[node].push_back(itrack);
 
             rr_graph_builder.set_node_capacity(node, 1);
