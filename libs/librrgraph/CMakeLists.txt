@@ -34,14 +34,19 @@ endif()
 target_compile_definitions(librrgraph PUBLIC ${INTERCHANGE_SCHEMA_HEADERS})
 
 # Unit tests
-#file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
-#add_executable(test_rr_graph ${TEST_SOURCES})
-#target_link_libraries(test_rr_graph
-#                      librrgraph)
+file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+add_executable(test_rr_graph ${TEST_SOURCES})
+target_link_libraries(test_rr_graph
+                     Catch2::Catch2WithMain
+                     librrgraph)
 
 # Run unit tests: comment out for now
-#add_test(NAME test_rr_graph COMMAND test_rr_graph --use-colour=yes)
+add_test(NAME test_rr_graph
+    COMMAND test_rr_graph --use-colour=yes
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
+    )
 
+#uxsdcxx generate
 add_custom_target(
     generate_rr_graph_serializers
     COMMAND ${CMAKE_COMMAND} -E remove_directory rr_graph_generate
