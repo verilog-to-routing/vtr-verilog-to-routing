@@ -28,11 +28,8 @@ enum class link_usage_update_state {
  * flows have been routed yet. This function should also only be used once as
  * its intended use is to initialize the routes for all the traffic flows.
  * 
- * @param place_ctx This is used to determine the locations where the logical
- * routers have been placed after initial placement.
- * 
  */
-void initial_noc_placement(PlacementContext& place_ctx);
+void initial_noc_placement(void);
 
 /**
  * @brief Determines the hard router block on the FPGA where a logical router 
