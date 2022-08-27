@@ -2962,12 +2962,20 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                             }
                         }
 
-                        int target_sub_tile = z + directs[i].sub_tile_offset;
-                        if (relative_ipin >= target_type->sub_tiles[target_sub_tile].num_phy_pins) continue;
+                        int target_cap = z + directs[i].sub_tile_offset;
+                        const t_sub_tile* target_sub_tile = nullptr;
+                        for (const auto& sub_tile : target_type->sub_tiles) {
+                            if (sub_tile.capacity.is_in_range(target_cap)) {
+                                target_sub_tile = &sub_tile;
+                                break;
+                            }
+                        }
+                        VTR_ASSERT(target_sub_tile != nullptr);
+                        if (relative_ipin >= target_sub_tile->num_phy_pins) continue;
 
                         //If this block has capacity > 1 then the pins of z position > 0 are offset
                         //by the number of pins per capacity instance
-                        int ipin = get_physical_pin_from_capacity_location(target_type, relative_ipin, target_sub_tile);
+                        int ipin = get_physical_pin_from_capacity_location(target_type, relative_ipin, target_cap);
 
                         /* Add new ipin edge to list of edges */
                         std::vector<RRNodeId> inodes;
