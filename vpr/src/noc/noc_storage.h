@@ -240,7 +240,7 @@ class NocStorage {
      * @return NocRouterId The hard router block   
      * located at the given grid location. 
      */
-    NocRouterId get_router_at_grid_location(const t_pl_loc& hard_router_location);
+    NocRouterId get_router_at_grid_location(const t_pl_loc& hard_router_location) const;
 
     // setters for the NoC
 
@@ -400,7 +400,7 @@ class NocStorage {
      * @return int Represents a unique key that can be used to identify a
      * hard router block.
      */
-    int generate_router_key_from_grid_location(int grid_position_x, int grid_position_y);
+    int generate_router_key_from_grid_location(int grid_position_x, int grid_position_y) const;
 
     /**
      * @brief Writes out the NocStirage class infromation to a file. 
