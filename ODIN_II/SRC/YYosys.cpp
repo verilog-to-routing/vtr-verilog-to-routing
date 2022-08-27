@@ -293,17 +293,20 @@ void YYosys::execute() {
 #    else
         run_pass(std::string("read_verilog -sv -nolatches " + aggregated_circuits));
 #    endif
-        // Check whether cells match libraries and find top module
+        /**
+         * Check the hierarchy for any unknown modules, and purge all modules (including blackboxes) that aren't used
+         * find top module, and run the Yosys basic coarse-grained synthesis steps such as proc, which translates processes
+         * to netlist components such as MUXs, FFs and latches or fsm, which extracts and optimizates finite state machines
+         * the option "-noalumacc" is to avoid Yosys transforms basic arithmetic operations into alu or macc
+         */
         if (global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED) {
             run_pass(std::string("hierarchy -check -top " + global_args.top_level_module_name.value() + " -purge_lib"));
+            run_pass(std::string("synth -run coarse -noalumacc -flatten -top " + global_args.top_level_module_name.value()));
         } else {
             run_pass(std::string("hierarchy -check -auto-top -purge_lib"));
+            run_pass(std::string("synth -run coarse -noalumacc -flatten -auto-top"));
         }
 
-        // Translate processes to netlist components such as MUXs, FFs and latches
-        run_pass(std::string("proc; opt;"));
-        // Extraction and optimization of finite state machines
-        run_pass(std::string("fsm; opt;"));
         // Collects memories, their port and create multiport memory cells
         run_pass(std::string("memory_collect; memory_dff; opt;"));
 
@@ -335,15 +338,21 @@ void YYosys::execute() {
 
         // Transform the design into a new one with single top module
         run_pass(std::string("flatten"));
+        // To possibly reduce word sizes by Yosys and fine-graining the basic operations
+        run_pass(std::string("wreduce; simplemap"));
+        // Turn all DFFs into simple latches
+        run_pass(std::string("dffunmap; opt -fast -noff;"));
+
+
         // Transforms PMUXes into trees of regular multiplexers
         run_pass(std::string("pmuxtree"));
         // To possibly reduce word sizes by Yosys
         run_pass(std::string("wreduce"));
         // "-undriven" to ensure there is no wire without drive
-        // -noff #potential option to remove all sdffXX and etc. Only dff will remain
+        // "-noff" option to remove all sdffXX and etc. Only dff will remain
         // "opt_muxtree" removes dead branches, "opt_expr" performs const folding and
         // removes "undef" from mux inputs and replace muxes with buffers and inverters
-        run_pass(std::string("opt -undriven -full; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;"));
+        run_pass(std::string("opt -undriven -full -noff; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;"));
         // Use a readable name convention
         run_pass(std::string("autoname"));
         // Print statistics
