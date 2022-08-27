@@ -1613,9 +1613,9 @@ void reduce_input_ports(nnode_t*& node, netlist_t* netlist) {
         int max = std::max(input_ports[0]->count, input_ports[1]->count);
 
         while (input_ports[0]->count < max)
-            add_pin_to_signal_list(input_ports[0], get_pad_pin(netlist));
+            add_pin_to_signal_list(input_ports[0], get_zero_pin(netlist));
         while (input_ports[1]->count < max)
-            add_pin_to_signal_list(input_ports[1], get_pad_pin(netlist));
+            add_pin_to_signal_list(input_ports[1], get_zero_pin(netlist));
     }
 
     /* creating a new node */
