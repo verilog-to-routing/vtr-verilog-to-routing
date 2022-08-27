@@ -2,7 +2,10 @@
 #include "noc_place_utils.h"
 
 
-void initial_noc_placement(PlacementContext& place_ctx){
+void initial_noc_placement(void){
+
+    // need to get placement information about where the router cluster blocks are palced on the device
+    const auto& place_ctx = g_vpr_ctx.placement();
 
     // need to update the link usages within after routing all the traffic flows
     // also need to route all the traffic flows ans store them
@@ -12,7 +15,7 @@ void initial_noc_placement(PlacementContext& place_ctx){
     NocTrafficFlows* noc_traffic_flows_storage = &noc_ctx.noc_traffic_flows_storage;
     NocRouting* noc_flows_router = noc_ctx.noc_flows_router;
 
-    vtr::vector_map<ClusterBlockId, t_block_loc>* placed_cluster_block_locations = &place_ctx.block_locs;
+    const vtr::vector_map<ClusterBlockId, t_block_loc>* placed_cluster_block_locations = &place_ctx.block_locs;
 
     /* We need all the traffic flow ids to be able to access them. The range
     of traffic flow ids go from 0 to the total number of traffic flows within
