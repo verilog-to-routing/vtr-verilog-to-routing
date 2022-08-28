@@ -2053,6 +2053,8 @@ hard_block_model* BLIF::Reader::create_hard_block_model(const char* name, operat
         case (BITWISE_OR):     //fallthrough
         case (BITWISE_NOT):    //fallthrough
         case (BITWISE_AND):    //fallthrough
+        case (BITWISE_XOR):    //fallthrough
+        case (BITWISE_XNOR):   //fallthrough
         case (LOGICAL_OR):     //fallthrough
         case (LOGICAL_XOR):    //fallthrough
         case (LOGICAL_AND):    //fallthrough

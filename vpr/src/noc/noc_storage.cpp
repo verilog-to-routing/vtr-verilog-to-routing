@@ -93,6 +93,50 @@ void NocStorage::set_noc_router_latency(double router_latency) {
     return;
 }
 
+bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_id) {
+    // This status variable is used to report externally whether the link was removed or not
+    bool link_removed_status = false;
+
+    // check if the src router for the link to remove exists (within the id ranges). Otherwise there is no point looking for the link
+    if ((size_t)src_router_id < router_storage.size()) {
+        // get all the outgoing links of the provided sourcer router
+        std::vector<NocLinkId>* source_router_outgoing_links = &router_link_list[src_router_id];
+
+        // keeps track of the position of each outgoing link for the provided src router. When the id of the link to remove is found, this index can be used to remove it from the ougoing link vector.
+        int outgoing_link_index = 0;
+
+        // go through each outgoing link of the source router and see if there is a link that also has the corresponding sink router.
+        // Save this link index and remove it
+        for (auto outgoing_link_id = source_router_outgoing_links->begin(); outgoing_link_id != source_router_outgoing_links->end(); outgoing_link_id++) {
+            // check to see if the current link id matches the id of the link to remove
+            if (link_storage[*outgoing_link_id].get_sink_router() == sink_router_id) {
+                // found the link we need to remove so we delete it here
+                //change the link to be invalid
+                link_storage[*outgoing_link_id].set_source_router(NocRouterId::INVALID());
+                link_storage[*outgoing_link_id].set_sink_router(NocRouterId::INVALID());
+                link_storage[*outgoing_link_id].set_bandwidth_usage(-1);
+
+                // removing this link as an outgoing link from the source router
+                source_router_outgoing_links->erase(source_router_outgoing_links->begin() + outgoing_link_index);
+
+                // indicate that the link to remove has been found and deleted
+                link_removed_status = true;
+
+                break;
+            }
+
+            outgoing_link_index++;
+        }
+    }
+
+    // if a link was not removed then throw warning message
+    if (!link_removed_status) {
+        VTR_LOG_WARN("No link could be found that has a source router with id: '%d' and sink router with id:'%d'.\n", (size_t)src_router_id, (size_t)sink_router_id);
+    }
+
+    return link_removed_status;
+}
+
 void NocStorage::finished_building_noc(void) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
     built_noc = true;
