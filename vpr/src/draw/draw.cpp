@@ -1179,7 +1179,7 @@ static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointe
     window = application.get_object(application.get_main_window_id().c_str());
 
     dialog = gtk_dialog_new_with_buttons(
-        "Test Dialog",
+        "Floorplanning Legend",
         (GtkWindow*)window,
         GTK_DIALOG_DESTROY_WITH_PARENT,
         ("CLOSE"),
