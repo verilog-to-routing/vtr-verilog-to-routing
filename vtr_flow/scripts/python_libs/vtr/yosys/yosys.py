@@ -13,7 +13,6 @@ FILE_TYPES = {
     ".vh": "Verilog",
     ".sv": "SystemVerilog",
     ".svh": "SystemVerilog",
-    ".uhdm": "UHDM",
     ".blif": "BLIF",
     ".aig": "aiger",
     ".json": "JSON",
@@ -31,26 +30,6 @@ YOSYS_LIB_FILES = {
 }
 
 YOSYS_PARSERS = ["yosys", "surelog", "yosys-plugin"]
-
-
-def get_input_file_type(circuit_list):
-    """Return the type of input files, should all be the same"""
-    file_type = FILE_TYPES[os.path.splitext(circuit_list[0])[1].lower()]
-    # Check the extensions of input files
-    for circuit in circuit_list:
-        local_file_type = FILE_TYPES[os.path.splitext(circuit)[1].lower()]
-        if local_file_type != file_type and local_file_type not in [
-            FILE_TYPES[".v"],
-            FILE_TYPES[".sv"],
-        ]:
-            raise vtr.VtrError(
-                "File ({circuit}) has different type than other input file, \
-                            all input files should have share a common type.".format(
-                    circuit=circuit
-                )
-            )
-
-    return file_type
 
 
 def create_circuits_list(main_circuit, include_files):
@@ -262,48 +241,16 @@ def run(
         min_hard_adder_size,
     )
 
-    # check if SystemVerilog/UHDM plugins are installed
-    yosys_bin = Path(vtr.paths.yosys_path / "bin")
-    surelog_exec_path = Path(yosys_bin / "surelog")
-    uhdm_dump_exec_path = Path(yosys_bin / "uhdm-dump")
-    uhdm_hier_exec_path = Path(yosys_bin / "uhdm-hier")
-
-    # get input file extension
-    input_file_type = get_input_file_type(circuit_list)
     # set the parser
-    if "parser" in yosys_args:
-        if yosys_args["parser"] in YOSYS_PARSERS:
-            os.environ["PARSER"] = yosys_args["parser"]
-            del yosys_args["parser"]
-        else:
-            raise vtr.VtrError(
-                "Invalid parser is specified for Yosys, available parsers are [{}]".format(
-                    " ".join(str(x) for x in YOSYS_PARSERS)
-                )
-            )
-    elif (
-        surelog_exec_path.is_file()
-        and uhdm_dump_exec_path.is_file()
-        and uhdm_hier_exec_path.is_file()
-    ):
-        os.environ["PARSER"] = {
-            FILE_TYPES[".v"]: "yosys",
-            FILE_TYPES[".sv"]: "yosys-plugin",
-            FILE_TYPES[".uhdm"]: "surelog",
-        }[input_file_type]
+    if yosys_args["parser"] in YOSYS_PARSERS:
+        os.environ["PARSER"] = yosys_args["parser"]
+        del yosys_args["parser"]
     else:
-        if input_file_type in [
-            FILE_TYPES[".v"],
-            FILE_TYPES[".vh"],
-            FILE_TYPES[".sv"],
-            FILE_TYPES[".svh"],
-        ]:
-            os.environ["PARSER"] = "yosys"
-        else:
-            raise vtr.VtrError(
-                "The VTR-Yosys parser has full support for Verilog and partial support \
-                for SystemVerilog. Please install Yosys-plugins to utilize other parsers."
+        raise vtr.VtrError(
+            "Invalid parser is specified for Yosys, available parsers are [{}]".format(
+                " ".join(str(x) for x in YOSYS_PARSERS)
             )
+        )
 
     cmd = [yosys_exec]
 

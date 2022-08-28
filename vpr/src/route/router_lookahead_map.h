@@ -8,7 +8,9 @@
 
 class MapLookahead : public RouterLookahead {
   public:
-    explicit MapLookahead(bool is_flat) : is_flat_(is_flat) {}
+    explicit MapLookahead(bool is_flat)
+        : is_flat_(is_flat) {}
+
   private:
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;

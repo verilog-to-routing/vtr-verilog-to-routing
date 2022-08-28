@@ -43,6 +43,7 @@ _YOSYS_EXEC="${VTR_DIR}/Yosys/bin/yosys"
 _SURELOG_EXEC="${VTR_DIR}/Yosys/bin/surelog"
 _UHDM_DUMP_EXEC="${VTR_DIR}/Yosys/bin/uhdm-dump"
 _UHDM_HIER_EXEC="${VTR_DIR}/Yosys/bin/uhdm-hier"
+_INPUT_TYPE=""
 _TEST_INPUT_LIST=()
 _INPUT_LIST=()
 _REGENERATE_BLIF="off"
@@ -167,11 +168,9 @@ function validate_input_file() {
     case $1 in
         -v|--verilog)
             if [ "_${extension}" == "_v" ] || [ "_${extension}" == "_vh" ]; then return; fi
-        ;;&-s|--systemverilog)
+        ;;&-s|--systemverilog|-u|--uhdm)
             if [ "_${extension}" == "_sv" ] || [ "_${extension}" == "_svh" ]; then return; fi
-        ;;&-u|--uhdm)
-            if [ "_${extension}" == "_uhdm" ]; then return; fi
-        ;;*)
+        ;;*)        
             echo "Invalid input type"
             _exit_with_code "-1"
     esac
@@ -242,8 +241,35 @@ function parse_args() {
 					shift
 
                 ;;-v|--verilog)
+                    _INPUT_TYPE="Verilog"
+                    # validate the input file type
+                    validate_input_file "$1" "$2"
+					# this is handled down stream
+					if [ "_$2" == "_" ]
+					then 
+						echo "empty argument for $1"
+						_exit_with_code "-1"
+					fi
+					# concat tests
+					_INPUT_LIST+=( "$2" )
+					shift
+
                 ;&-s|--systemverilog)
+                    _INPUT_TYPE="SystemVerilog"
+                    # validate the input file type
+                    validate_input_file "$1" "$2"
+					# this is handled down stream
+					if [ "_$2" == "_" ]
+					then 
+						echo "empty argument for $1"
+						_exit_with_code "-1"
+					fi
+					# concat tests
+					_INPUT_LIST+=( "$2" )
+					shift
+                        
                 ;&-u|--uhdm)
+                    _INPUT_TYPE="UHDM"
                     # validate the input file type
                     validate_input_file "$1" "$2"
 					# this is handled down stream
@@ -407,12 +433,10 @@ function run_single_hdl() {
         # to check the required path and files
         check "${OUTPUT_BLIF_PATH}" "${TCL_BLIF_NAME%.*}"
 
-        basename=$(basename "$circuit")
-        extension=$(echo ${basename##*.} | tr '[:upper:]' '[:lower:]')
-        case ${extension} in
-            v|vh)
+        case ${_INPUT_TYPE} in
+            Verilog)
                 export PARSER="yosys";
-            ;;sv|svh)
+            ;;SystemVerilog)
                 if [ -f "${_SURELOG_EXEC}" ] \
                 && [ -f "${_UHDM_DUMP_EXEC}" ] \
                 && [ -f "${_UHDM_HIER_EXEC}" ]
@@ -421,7 +445,7 @@ function run_single_hdl() {
                 else
                     export PARSER="yosys";
                 fi
-            ;;uhdm)
+            ;;UHDM)
                 if [ -f "${_SURELOG_EXEC}" ] \
                 && [ -f "${_UHDM_DUMP_EXEC}" ] \
                 && [ -f "${_UHDM_HIER_EXEC}" ]

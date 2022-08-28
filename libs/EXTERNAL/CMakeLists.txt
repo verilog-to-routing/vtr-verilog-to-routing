@@ -61,7 +61,6 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             LOG_BUILD ON
             LOG_UPDATE ON
             LOG_INSTALL ON
-            LOG_DOWNLOAD ON
             LOG_CONFIGURE ON
             LOG_OUTPUT_ON_FAILURE ON
             
@@ -93,7 +92,6 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             LOG_BUILD ON
             LOG_UPDATE ON
             LOG_INSTALL ON
-            LOG_DOWNLOAD ON
             LOG_CONFIGURE ON
             LOG_OUTPUT_ON_FAILURE ON
             
