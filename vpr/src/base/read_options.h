@@ -264,6 +264,7 @@ struct t_options {
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_input_handling;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
     argparse::ArgValue<std::string> write_timing_summary;
+    argparse::ArgValue<bool> skip_sync_clustering_and_routing_results;
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);
