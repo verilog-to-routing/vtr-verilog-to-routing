@@ -745,12 +745,10 @@ function odin_file_type_arg() {
 			echo "-v"
 		;;sv|svh)
 			echo "-s"
-		;;uhdm)
-			echo "-u"
 		;;blif)
 			echo "-b"
 		;;*)
-			echo "Invalid input file type (${extenstion}), supported file types are { .v .vh .sv .svh .uhdm .blif }"
+			echo "Invalid input file type (${extenstion}), supported file types are { .v .vh .sv .svh .blif }"
 			_exit_with_code "-1"
 
 	esac

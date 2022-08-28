@@ -40,6 +40,7 @@
 #include "setup_clocks.h"
 #include "setup_noc.h"
 #include "read_xml_noc_traffic_flows_file.h"
+#include "noc_routing_algorithm_creator.h"
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -527,6 +528,8 @@ void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
         setup_noc(arch);
         // read and store the noc traffic flow information
         read_xml_noc_traffic_flows_file(vpr_setup.NocOpts.noc_flows_file.c_str());
+        // create the NoC routing algorithm based on the user input
+        vpr_setup_noc_routing_algorithm(vpr_setup.NocOpts.noc_routing_algorithm);
 
 #ifndef NO_GRAPHICS
         // setup the graphics
@@ -536,6 +539,23 @@ void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
         draw_state->show_noc_button = true;
 #endif
     }
+}
+
+/**
+ * @brief Constructs a NoC routing algorithm that is identified by a user
+ * provided string. Then the newly created routing algorithm is stored
+ * inside the global NoC context.
+ * 
+ * @param noc_routing_algorithm_name A user provided string that identifies a 
+ * NoC routing algorithm
+ */
+void vpr_setup_noc_routing_algorithm(std::string noc_routing_algorithm_name) {
+    // Need to be abke to modify the NoC context, since we will be adding the
+    // newly created routing algorithm to it
+    auto& noc_ctx = g_vpr_ctx.mutable_noc();
+
+    noc_ctx.noc_flows_router = NocRoutingAlgorithmCreator().create_routing_algorithm(noc_routing_algorithm_name);
+    return;
 }
 
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -1137,6 +1157,13 @@ static void free_routing() {
     routing_ctx.net_status.clear();
     routing_ctx.route_bb.clear();
 }
+/**
+ * @brief handles the deletion of NoC related datastructures.
+ */
+static void free_noc() {
+    auto& noc_ctx = g_vpr_ctx.mutable_noc();
+    delete noc_ctx.noc_flows_router;
+}
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {
@@ -1148,6 +1175,7 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
     free_placement();
     free_routing();
     free_atoms();
+    free_noc();
 }
 
 void vpr_free_all(t_arch& Arch,
