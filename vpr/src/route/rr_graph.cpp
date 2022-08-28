@@ -2962,7 +2962,11 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                             }
                         }
 
+                        //directs[i].sub_tile_offset is added to from_capacity(z) to get the
+                        // target_capacity
                         int target_cap = z + directs[i].sub_tile_offset;
+
+                        // Iterate over all sub_tiles to get the sub_tile which the target_cap belongs to.
                         const t_sub_tile* target_sub_tile = nullptr;
                         for (const auto& sub_tile : target_type->sub_tiles) {
                             if (sub_tile.capacity.is_in_range(target_cap)) {
