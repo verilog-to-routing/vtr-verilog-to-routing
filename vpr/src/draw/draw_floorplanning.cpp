@@ -109,7 +109,7 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
 
         if (!name_drawn) {
             g->set_font_size(10);
-            std::string partition_name("Partition " + std::to_string(partitionID));
+            std::string partition_name = partition.get_name();
 
             g->set_color(partition_color, 230);
 
@@ -283,9 +283,10 @@ static GtkTreeModel* create_and_fill_model(void) {
 
     for (int partitionID = 0; partitionID < num_partitions; partitionID++) {
         auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
+        auto partition = constraints.get_partition((PartitionId)partitionID);
 
-        std::string partition_name("Partition " + std::to_string(partitionID)
-                                   + " ( " + std::to_string(atoms.size()) + "primitives)");
+        std::string partition_name(partition.get_name()
+                                   + " (" + std::to_string(atoms.size()) + " primitives)");
 
         GtkTreeIter iter, child_iter;
         gtk_tree_store_append(store, &iter, NULL);
