@@ -1269,7 +1269,7 @@ bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteSt
      *     for packer (default verbosity is set to 2 for compact logs)
      */
     if (route_status.success()) {
-        if (analysis.opts.skip_sync_clustering_and_routing_results) {
+        if (analysis_opts.skip_sync_clustering_and_routing_results) {
             sync_netlists_to_routing(g_vpr_ctx.device(),
                                      g_vpr_ctx.mutable_atom(),
                                      g_vpr_ctx.mutable_clustering(),
