@@ -1258,6 +1258,7 @@ struct t_analysis_opts {
     std::string write_timing_summary;
 
     e_timing_update_type timing_update_type;
+    bool skip_sync_clustering_and_routing_results = false;
 };
 
 // used to store NoC specific options, when supplied as an input by the user
