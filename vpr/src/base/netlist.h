@@ -443,8 +443,7 @@ class NetlistIdRemapper {
     vtr::vector_map<NetId, NetId> net_id_map_;
 };
 
-template<typename BlockId = ParentBlockId, typename PortId = ParentPortId,
-         typename PinId = ParentPinId, typename NetId = ParentNetId>
+template<typename BlockId = ParentBlockId, typename PortId = ParentPortId, typename PinId = ParentPinId, typename NetId = ParentNetId>
 class Netlist {
   public: //Public Types
     typedef typename vtr::vector_map<BlockId, BlockId>::const_iterator block_iterator;
@@ -1082,10 +1081,10 @@ class Netlist {
     //are called from this class in their respective non-impl() functions.
     virtual void shrink_to_fit_impl() {}
 
-    virtual bool validate_block_sizes_impl(size_t /*num_blocks*/) const {return true;}
-    virtual bool validate_port_sizes_impl(size_t /*num_ports*/) const {return true;}
-    virtual bool validate_pin_sizes_impl(size_t /*num_pins*/) const {return true;}
-    virtual bool validate_net_sizes_impl(size_t /*num_nets*/) const {return true;}
+    virtual bool validate_block_sizes_impl(size_t /*num_blocks*/) const { return true; }
+    virtual bool validate_port_sizes_impl(size_t /*num_ports*/) const { return true; }
+    virtual bool validate_pin_sizes_impl(size_t /*num_pins*/) const { return true; }
+    virtual bool validate_net_sizes_impl(size_t /*num_nets*/) const { return true; }
 
     virtual void clean_blocks_impl(const vtr::vector_map<BlockId, BlockId>& /*block_id_map*/) {}
     virtual void clean_ports_impl(const vtr::vector_map<PortId, PortId>& /*port_id_map*/) {}

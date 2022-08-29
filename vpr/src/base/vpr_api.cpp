@@ -396,12 +396,11 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         route_status = vpr_route_flow(vpr_setup, arch, is_flat);
     }
     { //Analysis
-        if(vpr_setup.RouterOpts.flat_routing) {
-            vpr_analysis_flow((const Netlist<>&) g_vpr_ctx.atom().nlist, vpr_setup, arch, route_status, is_flat);
+        if (vpr_setup.RouterOpts.flat_routing) {
+            vpr_analysis_flow((const Netlist<>&)g_vpr_ctx.atom().nlist, vpr_setup, arch, route_status, is_flat);
         } else {
-            vpr_analysis_flow((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist, vpr_setup, arch, route_status, is_flat);
+            vpr_analysis_flow((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, vpr_setup, arch, route_status, is_flat);
         }
-
     }
 
     //clean packing-placement data
@@ -777,7 +776,6 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_f
 
     RouteStatus route_status;
 
-
     const auto& router_opts = vpr_setup.RouterOpts;
     const auto& filename_opts = vpr_setup.FileNameOpts;
     const auto& device_ctx = g_vpr_ctx.device();
@@ -792,7 +790,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_f
         auto& cluster_ctx = g_vpr_ctx.clustering();
         NetPinsMatrix<float> net_delay;
 
-        if(is_flat) {
+        if (is_flat) {
             net_delay = make_net_pins_matrix<float>((const Netlist<>&)g_vpr_ctx.atom().nlist);
         } else {
             net_delay = make_net_pins_matrix<float>((const Netlist<>&)cluster_ctx.clb_nlist);
@@ -810,7 +808,6 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_f
         }
 
         if (router_opts.doRouting == STAGE_DO) {
-
             //Do the actual routing
             if (NO_FIXED_CHANNEL_WIDTH == chan_width) {
                 //Find minimum channel width
@@ -821,7 +818,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_f
             }
 
             //Save the routing in the .route file
-            if(is_flat) {
+            if (is_flat) {
                 print_route((const Netlist<>&)g_vpr_ctx.atom().nlist,
                             filename_opts.PlaceFile.c_str(),
                             filename_opts.RouteFile.c_str(),
@@ -850,7 +847,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_f
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            if(is_flat) {
+            if (is_flat) {
                 check_route((const Netlist<>&)g_vpr_ctx.atom().nlist,
                             router_opts.route_type,
                             router_opts.check_route,
@@ -876,7 +873,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_f
             //Otherwise, remind the user of this possible report option
             if (router_opts.generate_rr_node_overuse_report) {
                 VTR_LOG("See report_overused_nodes.rpt for a detailed report on the RR node overuse information.\n");
-                if(is_flat) {
+                if (is_flat) {
                     report_overused_nodes((const Netlist<>&)g_vpr_ctx.atom().nlist,
                                           rr_graph,
                                           is_flat);
@@ -923,8 +920,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               NetPinsMatrix<float>& net_delay,
                               bool is_flat) {
     // If flat-routing is enabled, rr_graph will be created from scratch anyway. Thus, there is no use to build lookahead here!
-    if(!is_flat)
-    {
+    if (!is_flat) {
         if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
             // Prime lookahead cache to avoid adding lookahead computation cost to
             // the routing timer.
@@ -943,7 +939,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when routing at fixed channel width (was %d)", fixed_channel_width);
     }
     bool status = false;
-    if(is_flat) {
+    if (is_flat) {
         status = try_route((const Netlist<>&)g_vpr_ctx.atom().nlist,
                            fixed_channel_width,
                            vpr_setup.RouterOpts,
@@ -960,7 +956,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                            is_flat);
 
     } else {
-         status = try_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
+        status = try_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
                            fixed_channel_width,
                            vpr_setup.RouterOpts,
                            vpr_setup.AnalysisOpts,
@@ -1391,7 +1387,7 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
      *   - Turn on verbose output when users require verbose output
      *     for packer (default verbosity is set to 2 for compact logs)
      */
-    if(!is_flat) {
+    if (!is_flat) {
         if (route_status.success()) {
             sync_netlists_to_routing(net_list,
                                      g_vpr_ctx.device(),

@@ -105,7 +105,7 @@ static void generic_compute_matrix_iterative_astar(
     const t_router_opts& router_opts,
     bool measure_directconnect,
     const std::set<std::string>& allowed_types,
-    bool is_flat);
+    bool /***/);
 
 static void generic_compute_matrix_dijkstra_expansion(
     RouterDelayProfiler& route_profiler,
@@ -174,7 +174,6 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
     init_placement_context();
 
     t_chan_width chan_width = setup_chan_width(router_opts, chan_width_dist);
-
 
     //TODO: is_flat flag should not be set here - It should be passed to the function.
     alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf,
@@ -514,13 +513,13 @@ static void generic_compute_matrix_dijkstra_expansion(
                             continue;
                         }
 
-//#ifdef VERBOSE
-//                        VTR_LOG("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
-//                                delay,
-//                                delta_x, delta_y,
-//                                source_x, source_y,
-//                                sink_x, sink_y);
-//#endif
+                        //#ifdef VERBOSE
+                        //                        VTR_LOG("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                        //                                delay,
+                        //                                delta_x, delta_y,
+                        //                                source_x, source_y,
+                        //                                sink_x, sink_y);
+                        //#endif
                         found_matrix[delta_x][delta_y] = true;
 
                         add_delay_to_matrix(&matrix, delta_x, delta_y, delays[size_t(sink_rr_node)]);
@@ -566,7 +565,7 @@ static void generic_compute_matrix_iterative_astar(
     const t_router_opts& router_opts,
     bool measure_directconnect,
     const std::set<std::string>& allowed_types,
-    bool is_flat) {
+    bool /***/) {
     //vtr::ScopedStartFinishTimer t(vtr::string_fmt("Profiling from (%d,%d)", source_x, source_y));
 
     int delta_x, delta_y;

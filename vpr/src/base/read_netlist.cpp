@@ -231,18 +231,17 @@ ClusteredNetlist read_netlist(const char* net_file,
     // Mark ignored and global atom nets
     /* We have to make set the following variables after the mapping between cluster nets and atom nets
      * is created
-    */
+     */
     const AtomNetlist atom_nlist = g_vpr_ctx.atom().nlist;
-    for(auto clb_net : clb_nlist.nets()) {
+    for (auto clb_net : clb_nlist.nets()) {
         AtomNetId atom_net = atom_ctx.lookup.atom_net(clb_net);
         VTR_ASSERT(atom_net != AtomNetId::INVALID());
-        if(clb_nlist.net_is_global(clb_net)) {
+        if (clb_nlist.net_is_global(clb_net)) {
             atom_ctx.nlist.set_net_is_global(atom_net, true);
         }
-        if(clb_nlist.net_is_ignored(clb_net)) {
+        if (clb_nlist.net_is_ignored(clb_net)) {
             atom_ctx.nlist.set_net_is_ignored(atom_net, true);
         }
-
     }
 
     /* load mapping between atom pins and pb_graph_pins */

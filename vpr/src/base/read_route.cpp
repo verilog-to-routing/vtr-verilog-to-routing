@@ -100,7 +100,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
 
     /*Allocate necessary routing structures*/
     alloc_and_load_rr_node_route_structs();
-    if(router_opts.flat_routing) {
+    if (router_opts.flat_routing) {
         init_route_structs((const Netlist<>&)g_vpr_ctx.atom().nlist,
                            router_opts.bb_factor,
                            router_opts.flat_routing);
@@ -129,11 +129,11 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     /*Correctly set up the clb opins*/
     BinaryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
-    if(!router_opts.flat_routing) {
+    if (!router_opts.flat_routing) {
         reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
                                    router_opts.acc_fac, false, router_opts.flat_routing);
     }
-    if(router_opts.flat_routing) {
+    if (router_opts.flat_routing) {
         recompute_occupancy_from_scratch((const Netlist<>&)g_vpr_ctx.atom().nlist,
                                          router_opts.flat_routing);
     } else {
@@ -141,17 +141,16 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
                                          router_opts.flat_routing);
     }
 
-
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
     OveruseInfo overuse_info(device_ctx.rr_graph.num_nodes());
     pathfinder_update_acc_cost_and_overuse_info(router_opts.acc_fac, overuse_info);
-    if(!router_opts.flat_routing) {
+    if (!router_opts.flat_routing) {
         reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
                                    router_opts.acc_fac, true, router_opts.flat_routing);
     }
 
     /* Finished loading in the routing, now check it*/
-    if(router_opts.flat_routing) {
+    if (router_opts.flat_routing) {
         recompute_occupancy_from_scratch((const Netlist<>&)g_vpr_ctx.atom().nlist,
                                          router_opts.flat_routing);
     } else {

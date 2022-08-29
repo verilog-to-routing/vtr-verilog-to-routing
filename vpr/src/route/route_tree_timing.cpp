@@ -70,9 +70,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node,
                                           bool force_prune,
                                           std::vector<int>* non_config_node_set_usage);
 
-static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt,
-                                               std::vector<int>* non_config_node_set_usage,
-                                               bool is_flat);
+static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt, std::vector<int>* non_config_node_set_usage, bool is_flat);
 
 static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node);
 
@@ -224,9 +222,7 @@ t_rt_node* init_route_tree_to_source(const ParentNetId& inet) {
  * is the heap pointer of the SINK that was reached, and target_net_pin_index
  * is the net pin index corresponding to the SINK that was reached. This routine
  * returns a pointer to the rt_node of the SINK that it adds to the routing.        */
-t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index,
-                             SpatialRouteTreeLookup* spatial_rt_lookup,
-                             bool is_flat) {
+t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat) {
     t_rt_node *start_of_new_subtree_rt_node, *sink_rt_node;
     t_rt_node *unbuffered_subtree_rt_root, *subtree_parent_rt_node;
     float Tdel_start;
@@ -751,7 +747,6 @@ void update_net_delays_from_route_tree(float* net_delay,
                                        NetPinTimingInvalidator* pin_timing_invalidator) {
     /* Goes through all the sinks of this net and copies their delay values from
      * the route_tree to the net_delay array.                                    */
-
 
     for (unsigned int isink = 1; isink < net_list.net_pins(inet).size(); isink++) {
         float new_delay = rt_node_of_sink[isink]->Tdel;

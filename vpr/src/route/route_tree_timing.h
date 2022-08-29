@@ -23,9 +23,7 @@ void free_route_tree(t_rt_node* rt_node);
 void print_route_tree(const t_rt_node* rt_node);
 void print_route_tree(const t_rt_node* rt_node, int depth);
 
-t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index,
-                             SpatialRouteTreeLookup* spatial_rt_lookup,
-                             bool is_flat);
+t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat);
 
 void update_net_delays_from_route_tree(float* net_delay,
                                        const Netlist<>& net_list,

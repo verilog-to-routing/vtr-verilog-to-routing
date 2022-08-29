@@ -170,17 +170,17 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         tatum::Time driver_clb_delay;
         tatum::Time sink_clb_delay;
 
-        if(is_flat_) {
+        if (is_flat_) {
             AtomNetId tmp_atom_net = atom_ctx.nlist.pin_net((AtomPinId&)src_pin);
             VTR_ASSERT(tmp_atom_net == atom_ctx.nlist.pin_net((AtomPinId&)sink_pin));
 
             AtomBlockId tmp_atom_src_block = atom_ctx.nlist.pin_block((AtomPinId&)src_pin);
             AtomBlockId tmp_atom_sink_block = atom_ctx.nlist.pin_block((AtomPinId&)sink_pin);
 
-            src_blk = (ParentBlockId&) tmp_atom_src_block;
-            sink_blk = (ParentBlockId&) tmp_atom_sink_block;
+            src_blk = (ParentBlockId&)tmp_atom_src_block;
+            sink_blk = (ParentBlockId&)tmp_atom_sink_block;
 
-            src_net = (ParentNetId&) tmp_atom_net;
+            src_net = (ParentNetId&)tmp_atom_net;
 
             driver_clb_delay = tatum::Time(0);
             sink_clb_delay = tatum::Time(0);
@@ -194,10 +194,10 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
             ClusterBlockId tmp_cluster_src_block = cluster_ctx.clb_nlist.pin_block((ClusterPinId&)src_pin);
             ClusterBlockId tmp_cluster_sink_block = cluster_ctx.clb_nlist.pin_block((ClusterPinId&)sink_pin);
 
-            src_blk = (ParentBlockId&) tmp_cluster_src_block;
-            sink_blk = (ParentBlockId&) tmp_cluster_sink_block;
+            src_blk = (ParentBlockId&)tmp_cluster_src_block;
+            sink_blk = (ParentBlockId&)tmp_cluster_sink_block;
 
-            src_net = (ParentNetId&) tmp_cluster_net;
+            src_net = (ParentNetId&)tmp_cluster_net;
 
             driver_clb_delay = delay_calc_.get_driver_clb_cached_delay(edge, delay_type);
             sink_clb_delay = delay_calc_.get_sink_clb_cached_delay(edge, delay_type);
@@ -214,10 +214,10 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         tatum::DelayComponent driver_component;
         //driver_component.inst_name = cluster_ctx.clb_nlist.block_name(src_blk);
         driver_component.type_name = "intra '";
-        if(is_flat_) {
+        if (is_flat_) {
             const t_pb* atom_pb = atom_ctx.lookup.atom_pb((AtomBlockId&)src_blk);
             driver_component.type_name += (std::string(atom_pb->name) + "(" + atom_pb->hierarchical_type_name() + ")");
-        } else{
+        } else {
             driver_component.type_name += cluster_ctx.clb_nlist.block_type((ClusterBlockId&)src_blk)->name;
         }
         driver_component.type_name += "' routing";
@@ -259,9 +259,9 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         tatum::DelayComponent sink_component;
         //sink_component.inst_name = cluster_ctx.clb_nlist.block_name(sink_blk);
         sink_component.type_name = "intra '";
-        if(is_flat_) {
+        if (is_flat_) {
             sink_component.type_name += atom_ctx.lookup.atom_pb((AtomBlockId&)sink_blk)->name;
-        } else{
+        } else {
             sink_component.type_name += cluster_ctx.clb_nlist.block_type((ClusterBlockId&)sink_blk)->name;
         }
         sink_component.type_name += "' routing";
@@ -287,17 +287,17 @@ void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<ta
      * which walks the route tree from the sink to the source. Along the way, we process each node 
      * and construct net_components that are added to the vector of components. */
 
-    t_rt_node* rt_root = traceback_to_route_tree(net_id, is_flat_);              //obtain the route tree from the traceback
-    load_new_subtree_R_upstream(rt_root);                              //load in the resistance values for the route
-    load_new_subtree_C_downstream(rt_root);                            //load in the capacitance values for the route tree
-    load_route_tree_Tdel(rt_root, 0.);                                 //load the time delay values for the route tree
+    t_rt_node* rt_root = traceback_to_route_tree(net_id, is_flat_); //obtain the route tree from the traceback
+    load_new_subtree_R_upstream(rt_root);                           //load in the resistance values for the route
+    load_new_subtree_C_downstream(rt_root);                         //load in the capacitance values for the route tree
+    load_route_tree_Tdel(rt_root, 0.);                              //load the time delay values for the route tree
     t_rt_node* rt_sink;
-    if(is_flat_) {
-        rt_sink = find_sink_rt_node((const Netlist<>&) g_vpr_ctx.atom().nlist, rt_root, net_id, (ParentPinId&)sink_pin); //find the sink matching sink_pin
+    if (is_flat_) {
+        rt_sink = find_sink_rt_node((const Netlist<>&)g_vpr_ctx.atom().nlist, rt_root, net_id, (ParentPinId&)sink_pin); //find the sink matching sink_pin
     } else {
-        rt_sink = find_sink_rt_node((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist, rt_root, net_id, (ParentPinId&)sink_pin); //find the sink matching sink_pin
+        rt_sink = find_sink_rt_node((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist, rt_root, net_id, (ParentPinId&)sink_pin); //find the sink matching sink_pin
     }
-    get_detailed_interconnect_components_helper(components, rt_sink);  //from sink, walk up to source and add net components
+    get_detailed_interconnect_components_helper(components, rt_sink); //from sink, walk up to source and add net components
     free_route_tree(rt_root);
 }
 

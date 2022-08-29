@@ -237,7 +237,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             AtomNetId atom_net = netlist_.pin_net(atom_sink_pin);
             VTR_ASSERT(atom_net != AtomNetId::INVALID());
 
-            if(is_flat_) {
+            if (is_flat_) {
                 sink_net_pin_index = netlist_.pin_net_index(atom_sink_pin);
 
                 tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)atom_net, 0, sink_net_pin_index));
@@ -274,7 +274,6 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                 //Either the atom source pin (in the same cluster), or a cluster input pin
                 ClusterNetId cluster_net_id = ClusterNetId::INVALID();
                 std::tie(cluster_net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
-
 
                 if (cluster_net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1 && sink_net_pin_index != -1) {
                     //Connection leaves the CLB
@@ -339,7 +338,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             //        since such delays are cached using edge_delay_cache_ and are handled earlier
             VTR_ASSERT(src_pin != ParentPinId::INVALID());
             VTR_ASSERT(sink_pin != ParentPinId::INVALID());
-            if(is_flat_) {
+            if (is_flat_) {
                 AtomNetId atom_src_net = g_vpr_ctx.atom().nlist.pin_net((AtomPinId&)src_pin);
                 VTR_ASSERT(atom_src_net == g_vpr_ctx.atom().nlist.pin_net((AtomPinId&)sink_pin));
                 sink_net_pin_index = g_vpr_ctx.atom().nlist.pin_net_index((AtomPinId&)sink_pin);

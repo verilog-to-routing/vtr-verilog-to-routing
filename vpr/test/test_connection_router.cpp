@@ -35,8 +35,7 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
 
-    const Netlist<>& net_list = is_flat ? (const Netlist<>&) g_vpr_ctx.atom().nlist :
-                                        (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     route_budgets budgeting_inf(net_list, is_flat);
 
     RouterStats router_stats;
@@ -122,8 +121,7 @@ TEST_CASE("connection_router", "[vpr]") {
     vpr_initialize_logging();
 
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
-    const Netlist<>& net_list = is_flat ? (const Netlist<>&) g_vpr_ctx.atom().nlist :
-                                        (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
     // Command line arguments
     const char* argv[] = {

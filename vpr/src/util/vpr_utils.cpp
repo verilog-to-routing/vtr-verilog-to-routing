@@ -528,14 +528,12 @@ t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
 }
 
 t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat) {
-    if(is_flat) {
+    if (is_flat) {
         return physical_tile_type(convert_to_atom_block_id(blk_id));
     } else {
         return physical_tile_type(convert_to_cluster_block_id(blk_id));
     }
 }
-
-
 
 int get_sub_tile_index(ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.placement();
@@ -618,7 +616,7 @@ t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
     auto cluster_blk = atom_look_up.atom_clb(atom_blk);
 
     auto atom_pb = atom_look_up.atom_pb(atom_blk);
-    if(atom_pb->is_root()) {
+    if (atom_pb->is_root()) {
         return get_class_range_for_block(cluster_blk);
     } else {
         t_physical_tile_type_ptr physical_tile;
@@ -636,7 +634,7 @@ t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
 }
 
 t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat) {
-    if(is_flat) {
+    if (is_flat) {
         return get_class_range_for_block(convert_to_atom_block_id(blk_id));
     } else {
         return get_class_range_for_block(convert_to_cluster_block_id(blk_id));
@@ -676,7 +674,7 @@ std::tuple<int, int> get_block_loc(const ParentBlockId& block_id, bool is_flat) 
     int j;
     auto& place_ctx = g_vpr_ctx.placement();
 
-    if(is_flat) {
+    if (is_flat) {
         AtomBlockId atom_block_id = convert_to_atom_block_id(block_id);
         auto& atom_look_up = g_vpr_ctx.atom().lookup;
         ClusterBlockId cluster_block_id = atom_look_up.atom_clb(atom_block_id);
@@ -700,7 +698,7 @@ int get_block_num_class(const ParentBlockId& block_id, bool is_flat) {
 int get_block_pin_class_num(const ParentBlockId& block_id, const ParentPinId& pin_id, bool is_flat) {
     int class_num;
 
-    if(is_flat) {
+    if (is_flat) {
         AtomPinId atom_pin_id = convert_to_atom_pin_id(pin_id);
         class_num = get_atom_pin_class_num(atom_pin_id);
     } else {
@@ -1447,12 +1445,12 @@ std::vector<int> get_pb_pins(t_physical_tile_type_ptr physical_type,
                              int rel_cap) {
     /* If pb is the root block, pins on the tile is returned */
     VTR_ASSERT(pb->pb_graph_node != nullptr);
-    if(pb->pb_graph_node->is_root()) {
-        int physical_pin_offset = (sub_tile->num_phy_pins/sub_tile->capacity.total())*rel_cap;
+    if (pb->pb_graph_node->is_root()) {
+        int physical_pin_offset = (sub_tile->num_phy_pins / sub_tile->capacity.total()) * rel_cap;
         std::vector<int> physical_pin_arr(logical_block->pb_type->num_pins);
         auto& pin_direct_maps = physical_type->tile_block_pin_directs_map.at(logical_block->index);
         auto pin_direct_map = pin_direct_maps.at(sub_tile->index);
-        for(int logical_pin_num = 0; logical_pin_num < logical_block->pb_type->num_pins; logical_pin_num++) {
+        for (int logical_pin_num = 0; logical_pin_num < logical_block->pb_type->num_pins; logical_pin_num++) {
             auto res = pin_direct_map.find(t_logical_pin(logical_pin_num));
             VTR_ASSERT(res != pin_direct_map.end());
             physical_pin_arr[logical_pin_num] = res->second.pin + physical_pin_offset;
@@ -2215,7 +2213,6 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
 
     return get_class_num_from_pin_physical_num(physical_type, pin_physical_num);
-
 }
 
 t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, const char* port_name) {
@@ -2307,19 +2304,17 @@ bool is_node_on_tile(t_physical_tile_type_ptr physical_tile,
     }
 }
 
-int get_rr_node_max_ptc (const RRGraphView& rr_graph_view,
+int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
                         RRNodeId node_id,
                         bool is_flat) {
     auto node_type = rr_graph_view.node_type(node_id);
 
-    VTR_ASSERT(node_type == IPIN || node_type == OPIN ||
-               node_type == SINK || node_type == SOURCE);
+    VTR_ASSERT(node_type == IPIN || node_type == OPIN || node_type == SINK || node_type == SOURCE);
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    auto physical_type=
-        device_ctx.grid[rr_graph_view.node_xlow(node_id)][rr_graph_view.node_ylow(node_id)].type;
+    auto physical_type = device_ctx.grid[rr_graph_view.node_xlow(node_id)][rr_graph_view.node_ylow(node_id)].type;
 
-    if(node_type == SINK || node_type == SOURCE) {
+    if (node_type == SINK || node_type == SOURCE) {
         return get_tile_class_max_ptc(physical_type, is_flat);
     } else {
         return get_tile_ipin_opin_max_ptc(physical_type, is_flat);
@@ -2337,18 +2332,17 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
     VTR_ASSERT(pin_type == DRIVER || pin_type == RECEIVER);
     t_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
-    if(is_pin_on_tile(physical_tile, pin_physical_num)){
+    if (is_pin_on_tile(physical_tile, pin_physical_num)) {
         for (int width = 0; width < physical_tile->width; ++width) {
             for (int height = 0; height < physical_tile->height; ++height) {
                 for (e_side side : SIDES) {
                     if (physical_tile->pinloc[width][height][side][pin_physical_num]) {
-                        node_id = rr_spatial_lookup.find_node(i+width, j+height, node_type, pin_physical_num, side);
-                        if(node_id != RRNodeId::INVALID())
+                        node_id = rr_spatial_lookup.find_node(i + width, j + height, node_type, pin_physical_num, side);
+                        if (node_id != RRNodeId::INVALID())
                             return node_id;
                     }
                 }
             }
-
         }
     } else {
         node_id = rr_spatial_lookup.find_node(i, j, node_type, pin_physical_num, e_side::TOP);
@@ -2363,8 +2357,6 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               const int i,
                               const int j,
                               int class_physical_num) {
-
-
     auto class_type = get_class_type_from_class_physical_num(physical_tile, class_physical_num);
     VTR_ASSERT(class_type == DRIVER || class_type == RECEIVER);
     t_rr_type node_type = (class_type == e_pin_type::DRIVER) ? t_rr_type::SOURCE : t_rr_type::SINK;
@@ -2377,14 +2369,11 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
     auto first_rr_type = rr_graph.node_type(node_first);
     auto second_rr_type = rr_graph.node_type(node_second);
 
-    if(first_rr_type == t_rr_type::CHANX || first_rr_type == t_rr_type::CHANY ||
-        second_rr_type == t_rr_type::CHANX || second_rr_type == t_rr_type::CHANY) {
+    if (first_rr_type == t_rr_type::CHANX || first_rr_type == t_rr_type::CHANY || second_rr_type == t_rr_type::CHANX || second_rr_type == t_rr_type::CHANY) {
         return false;
     } else {
-        VTR_ASSERT(first_rr_type == t_rr_type::IPIN || first_rr_type == t_rr_type::OPIN ||
-                   first_rr_type == t_rr_type::SINK || first_rr_type == t_rr_type::SOURCE);
-        VTR_ASSERT(second_rr_type == t_rr_type::IPIN || second_rr_type == t_rr_type::OPIN ||
-                   second_rr_type == t_rr_type::SINK || second_rr_type == t_rr_type::SOURCE);
+        VTR_ASSERT(first_rr_type == t_rr_type::IPIN || first_rr_type == t_rr_type::OPIN || first_rr_type == t_rr_type::SINK || first_rr_type == t_rr_type::SOURCE);
+        VTR_ASSERT(second_rr_type == t_rr_type::IPIN || second_rr_type == t_rr_type::OPIN || second_rr_type == t_rr_type::SINK || second_rr_type == t_rr_type::SOURCE);
         int first_x = rr_graph.node_xlow(node_first);
         int first_y = rr_graph.node_ylow(node_first);
         int sec_x = rr_graph.node_xlow(node_second);
@@ -2396,12 +2385,9 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
         int sec_root_x = sec_x - device_ctx.grid[sec_x][sec_y].width_offset;
         int sec_root_y = sec_y - device_ctx.grid[sec_x][sec_y].height_offset;
 
-        if(first_root_x == sec_root_x && first_root_y == sec_root_y)
+        if (first_root_x == sec_root_x && first_root_y == sec_root_y)
             return true;
         else
             return false;
-
-
     }
-
 }

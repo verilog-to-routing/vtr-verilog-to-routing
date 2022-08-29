@@ -105,7 +105,7 @@ class NetPinTimingInvalidator {
         timing_edges_.reserve(num_pins + 1);   //Lower bound
         for (ParentPinId pin_id : net_list.pins()) {
             pin_first_edge_.push_back(timing_edges_.size());
-            if(is_flat) {
+            if (is_flat) {
                 tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, convert_to_atom_pin_id(pin_id));
 
                 if (!tedge) {

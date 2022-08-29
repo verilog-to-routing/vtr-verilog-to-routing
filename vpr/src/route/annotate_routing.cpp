@@ -19,10 +19,10 @@
  * - Unmapped rr_node will use invalid ids 
  *******************************************************************/
 vtr::vector<RRNodeId, ParentNetId> annotate_rr_node_nets(const Netlist<>& net_list,
-                                                          const DeviceContext& device_ctx,
-                                                          const RoutingContext& routing_ctx,
-                                                          const bool& verbose,
-                                                          bool is_flat) {
+                                                         const DeviceContext& device_ctx,
+                                                         const RoutingContext& routing_ctx,
+                                                         const bool& verbose,
+                                                         bool is_flat) {
     size_t counter = 0;
     vtr::ScopedStartFinishTimer timer("Annotating rr_node with routed nets");
 

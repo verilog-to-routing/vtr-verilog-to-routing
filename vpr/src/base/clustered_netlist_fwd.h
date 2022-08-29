@@ -22,7 +22,6 @@ class ClusterBlockId : public ParentBlockId {
   public:
     static constexpr ClusterBlockId INVALID() { return ClusterBlockId(); }
     using ParentBlockId::ParentBlockId;
-
 };
 
 ///@brief A unique identifier for a net in the cluster netlist
@@ -31,8 +30,6 @@ class ClusterNetId : public ParentNetId {
   public:
     static constexpr ClusterNetId INVALID() { return ClusterNetId(); }
     using ParentNetId::ParentNetId;
-
-
 };
 
 ///@brief A unique identifier for a port in the cluster netlist
@@ -53,30 +50,34 @@ class ClusterPinId : public ParentPinId {
 
 ///@brief Specialize std::hash for StrongId's (needed for std::unordered_map-like containers)
 namespace std {
-template<> struct hash<ClusterBlockId> {
+template<>
+struct hash<ClusterBlockId> {
     std::hash<ParentBlockId> parent_hash;
     std::size_t operator()(const ClusterBlockId k) const noexcept {
         return parent_hash(k); //Hash with the underlying type
     }
 };
-template<> struct hash<ClusterNetId> {
+template<>
+struct hash<ClusterNetId> {
     std::hash<ParentNetId> parent_hash;
     std::size_t operator()(const ClusterNetId k) const noexcept {
         return parent_hash(k); //Hash with the underlying type
     }
 };
-template<> struct hash<ClusterPortId> {
+template<>
+struct hash<ClusterPortId> {
     std::hash<ParentPortId> parent_hash;
     std::size_t operator()(const ClusterPortId k) const noexcept {
         return parent_hash(k); //Hash with the underlying type
     }
 };
-template<> struct hash<ClusterPinId> {
+template<>
+struct hash<ClusterPinId> {
     std::hash<ParentPinId> parent_hash;
     std::size_t operator()(const ClusterPinId k) const noexcept {
         return parent_hash(k); //Hash with the underlying type
     }
 };
-}
+} // namespace std
 
 #endif

@@ -698,7 +698,7 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info,
                                         const ParentPinId& pin_id,
                                         bool is_flat) {
     float pin_crit = 0.;
-    if(is_flat) {
+    if (is_flat) {
         pin_crit = timing_info.setup_pin_criticality(convert_to_atom_pin_id(pin_id));
     } else {
         //There may be multiple atom netlist pins connected to this CLB pin

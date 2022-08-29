@@ -35,7 +35,7 @@ static void load_channel_occupancies(const Netlist<>& net_list,
 
 static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 
-static void get_channel_occupancy_stats(const Netlist<>& net_list, bool is_flat);
+static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/);
 
 /************************* Subroutine definitions ****************************/
 
@@ -144,7 +144,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
             max_segments = std::max(segments, max_segments);
         } else if (net_list.net_is_ignored(net_id)) {
             num_global_nets++;
-        } else if(!is_flat) {
+        } else if (!is_flat) {
             /* If flat_routing is enabled, we don't need to count the number of reserved opins*/
             num_clb_opins_reserved++;
         }
@@ -171,7 +171,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
 }
 
 ///@brief Determines how many tracks are used in each channel.
-static void get_channel_occupancy_stats(const Netlist<>& net_list, bool is_flat) {
+static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
     auto& device_ctx = g_vpr_ctx.device();
 
     auto chanx_occ = vtr::Matrix<int>({{

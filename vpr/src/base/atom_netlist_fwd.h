@@ -71,30 +71,34 @@ enum class AtomBlockType : char {
 
 ///@brief Specialize std::hash for StrongId's (needed for std::unordered_map-like containers)
 namespace std {
-template<> struct hash<AtomBlockId> {
+template<>
+struct hash<AtomBlockId> {
     std::hash<ParentBlockId> parent_hash;
     std::size_t operator()(const AtomBlockId k) const noexcept {
         return parent_hash(k); //Hash with the underlying type
     }
 };
-template<> struct hash<AtomNetId> {
+template<>
+struct hash<AtomNetId> {
     std::hash<ParentNetId> parent_hash;
     std::size_t operator()(const AtomNetId k) const noexcept {
         return parent_hash(k); //Hash with the underlying type
     }
 };
-template<> struct hash<AtomPortId> {
+template<>
+struct hash<AtomPortId> {
     std::hash<ParentPortId> parent_hash;
     std::size_t operator()(const AtomPortId k) const noexcept {
         return parent_hash(k); //Hash with the underlying type
     }
 };
-template<> struct hash<AtomPinId> {
+template<>
+struct hash<AtomPinId> {
     std::hash<ParentPinId> parent_hash;
     std::size_t operator()(const AtomPinId k) const noexcept {
         return parent_hash(k); //Hash with the underlying type
     }
 };
-}
+} // namespace std
 
 #endif

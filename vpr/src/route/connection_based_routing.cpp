@@ -8,9 +8,9 @@ Connection_based_routing_resources::Connection_based_routing_resources(const Net
                                                                        const vtr::vector<ParentNetId, std::vector<int>>& net_terminals,
                                                                        bool is_flat)
     : net_list_(net_list)
-    ,net_terminals_(net_terminals)
-    ,is_flat_(is_flat)
-    ,current_inet(NO_PREVIOUS)
+    , net_terminals_(net_terminals)
+    , is_flat_(is_flat)
+    , current_inet(NO_PREVIOUS)
     , // not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
     last_stable_critical_path_delay{0.0f}
     , critical_path_growth_tolerance{1.001f}
@@ -38,7 +38,7 @@ Connection_based_routing_resources::Connection_based_routing_resources(const Net
         auto& net_lower_bound_connection_delay = lower_bound_connection_delay[net_id];
         auto& net_forcible_reroute_connection_flag = forcible_reroute_connection_flag[net_id];
 
-        unsigned int num_pins = net_list_.net_pins(net_id).size();                     // not looking up on the SOURCE pin
+        unsigned int num_pins = net_list_.net_pins(net_id).size();                                 // not looking up on the SOURCE pin
         net_lower_bound_connection_delay.resize(num_pins, std::numeric_limits<float>::infinity()); // will be filled in after the 1st iteration's
         net_forcible_reroute_connection_flag.reserve(num_pins);                                    // all false to begin with
 
@@ -80,8 +80,6 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
                                                                       std::shared_ptr<const SetupTimingInfo> timing_info,
                                                                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                                                       NetPinsMatrix<float>& net_delay) {
-
-
     bool any_connection_rerouted = false; // true if any connection has been marked for rerouting
 
     for (auto net_id : net_list_.nets()) {

@@ -140,11 +140,11 @@ static bool check_hold(const t_router_opts& router_opts, float worst_neg_slack);
 
 struct more_sinks_than {
     const Netlist<>& net_list_;
-    more_sinks_than(const Netlist<>& net_list): net_list_(net_list) {}
+    more_sinks_than(const Netlist<>& net_list)
+        : net_list_(net_list) {}
     inline bool operator()(const ParentNetId& net_index1, const ParentNetId& net_index2) {
         return net_list_.net_sinks(net_index1).size() > net_list_.net_sinks(net_index2).size();
     }
-
 };
 
 static size_t calculate_wirelength_available();
@@ -239,37 +239,35 @@ bool try_timing_driven_route(const Netlist<>& net_list,
                              std::shared_ptr<RoutingDelayCalculator> delay_calc,
                              ScreenUpdatePriority first_iteration_priority,
                              bool is_flat) {
-
-        switch (router_opts.router_heap) {
-            case e_heap_type::BINARY_HEAP:
-                return try_timing_driven_route_tmpl<ConnectionRouter<BinaryHeap>>(
-                    net_list,
-                    router_opts,
-                    analysis_opts,
-                    segment_inf,
-                    net_delay,
-                    netlist_pin_lookup,
-                    timing_info,
-                    delay_calc,
-                    first_iteration_priority,
-                    is_flat);
-                break;
-            case e_heap_type::BUCKET_HEAP_APPROXIMATION:
-                return try_timing_driven_route_tmpl<ConnectionRouter<Bucket>>(
-                    net_list,
-                    router_opts,
-                    analysis_opts,
-                    segment_inf,
-                    net_delay,
-                    netlist_pin_lookup,
-                    timing_info,
-                    delay_calc,
-                    first_iteration_priority,
-                    is_flat);
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap type %d", router_opts.router_heap);
-        }
-
+    switch (router_opts.router_heap) {
+        case e_heap_type::BINARY_HEAP:
+            return try_timing_driven_route_tmpl<ConnectionRouter<BinaryHeap>>(
+                net_list,
+                router_opts,
+                analysis_opts,
+                segment_inf,
+                net_delay,
+                netlist_pin_lookup,
+                timing_info,
+                delay_calc,
+                first_iteration_priority,
+                is_flat);
+            break;
+        case e_heap_type::BUCKET_HEAP_APPROXIMATION:
+            return try_timing_driven_route_tmpl<ConnectionRouter<Bucket>>(
+                net_list,
+                router_opts,
+                analysis_opts,
+                segment_inf,
+                net_delay,
+                netlist_pin_lookup,
+                timing_info,
+                delay_calc,
+                first_iteration_priority,
+                is_flat);
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap type %d", router_opts.router_heap);
+    }
 }
 
 template<typename ConnectionRouter>
@@ -514,7 +512,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
         // Make sure any CLB OPINs used up by subblocks being hooked directly to them are reserved for that purpose
         bool rip_up_local_opins = (itry == 1 ? false : true);
-        if(!is_flat) {
+        if (!is_flat) {
             reserve_locally_used_opins(&small_heap, pres_fac,
                                        router_opts.acc_fac, rip_up_local_opins, is_flat);
         }
@@ -853,11 +851,12 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
     VTR_ASSERT(router_stats.heap_pops >= router_stats.intra_cluster_node_pops);
     size_t external_node_pushes = router_stats.heap_pushes - router_stats.intra_cluster_node_pushes;
     size_t external_node_pops = router_stats.heap_pops - router_stats.intra_cluster_node_pops;
-    VTR_LOG("Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu "
-            "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu ",
-            router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops,
-            router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops, external_node_pushes, external_node_pops);
-    for(int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
+    VTR_LOG(
+        "Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu "
+        "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu ",
+        router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops,
+        router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops, external_node_pushes, external_node_pops);
+    for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
         VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.inter_node_type_cnt_pushes[node_type_idx]);
         VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.inter_node_type_cnt_pops[node_type_idx]);
         VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.intra_node_type_cnt_pushes[node_type_idx]);
@@ -1000,7 +999,6 @@ int get_max_pins_per_net(const Netlist<>& net_list) {
         if (!net_list.net_is_ignored(net_id))
             max_pins_per_net = std::max(max_pins_per_net, (int)net_list.net_pins(net_id).size());
     }
-
 
     return (max_pins_per_net);
 }
@@ -1222,13 +1220,13 @@ bool timing_driven_route_net(ConnectionRouter& router,
         }
     }
 
-//    if (!net_list.net_is_ignored(net_id)) {
-//        for (unsigned ipin = 1; ipin < net_list.net_pins(net_id).size(); ++ipin) {
-//            if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK
-//                VTR_ASSERT(rr_graph.node_type(RRNodeId(rt_node_of_sink[ipin]->parent_node->parent_node->inode)) == OPIN);
-//            }
-//        }
-//    }
+    //    if (!net_list.net_is_ignored(net_id)) {
+    //        for (unsigned ipin = 1; ipin < net_list.net_pins(net_id).size(); ++ipin) {
+    //            if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK
+    //                VTR_ASSERT(rr_graph.node_type(RRNodeId(rt_node_of_sink[ipin]->parent_node->parent_node->inode)) == OPIN);
+    //            }
+    //        }
+    //    }
     VTR_ASSERT_MSG(g_vpr_ctx.routing().rr_node_route_inf[rt_root->inode].occ() <= rr_graph.node_capacity(RRNodeId(rt_root->inode)), "SOURCE should never be congested");
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
@@ -1750,7 +1748,6 @@ static size_t calculate_wirelength_available() {
 }
 
 static WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t available_wirelength) {
-
     size_t used_wirelength = 0;
     VTR_ASSERT(available_wirelength > 0);
 
@@ -1928,8 +1925,6 @@ size_t dynamic_update_bounding_boxes(const std::vector<ParentNetId>& updated_net
                                      int high_fanout_threshold) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-
 
     auto& grid = device_ctx.grid;
 
@@ -2176,7 +2171,6 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf,
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-
     std::vector<int> non_config_node_set_usage(device_ctx.rr_non_config_node_sets.size(), 0);
     for (auto net_id : net_list.nets()) {
         connections_inf.prepare_routing_for_net(net_id);
@@ -2243,24 +2237,19 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
     }
 }
 
-static void update_route_stats(RouterStats& router_stats, RouterStats& router_iteration_stats){
+static void update_route_stats(RouterStats& router_stats, RouterStats& router_iteration_stats) {
     router_stats.connections_routed += router_iteration_stats.connections_routed;
     router_stats.nets_routed += router_iteration_stats.nets_routed;
     router_stats.heap_pushes += router_iteration_stats.heap_pushes;
     router_stats.intra_cluster_node_pushes += router_iteration_stats.intra_cluster_node_pushes;
     router_stats.heap_pops += router_iteration_stats.heap_pops;
     router_stats.intra_cluster_node_pops += router_iteration_stats.intra_cluster_node_pops;
-    for(int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
-        router_stats.inter_node_type_cnt_pushes[node_type_idx] +=
-            router_iteration_stats.inter_node_type_cnt_pushes[node_type_idx];
-        router_stats.inter_node_type_cnt_pops[node_type_idx] +=
-            router_iteration_stats.inter_node_type_cnt_pops[node_type_idx];
-        router_stats.intra_node_type_cnt_pushes[node_type_idx] +=
-            router_iteration_stats.intra_node_type_cnt_pushes[node_type_idx];
-        router_stats.intra_node_type_cnt_pops[node_type_idx] +=
-            router_iteration_stats.intra_node_type_cnt_pops[node_type_idx];
+    for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
+        router_stats.inter_node_type_cnt_pushes[node_type_idx] += router_iteration_stats.inter_node_type_cnt_pushes[node_type_idx];
+        router_stats.inter_node_type_cnt_pops[node_type_idx] += router_iteration_stats.inter_node_type_cnt_pops[node_type_idx];
+        router_stats.intra_node_type_cnt_pushes[node_type_idx] += router_iteration_stats.intra_node_type_cnt_pushes[node_type_idx];
+        router_stats.intra_node_type_cnt_pops[node_type_idx] += router_iteration_stats.intra_node_type_cnt_pops[node_type_idx];
     }
-
 }
 
 static void init_route_stats(RouterStats& router_stats) {
@@ -2270,15 +2259,13 @@ static void init_route_stats(RouterStats& router_stats) {
     router_stats.heap_pops = 0;
     router_stats.intra_cluster_node_pushes = 0;
     router_stats.intra_cluster_node_pops = 0;
-    for(int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
+    for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
         router_stats.inter_node_type_cnt_pushes[node_type_idx] = 0;
         router_stats.inter_node_type_cnt_pops[node_type_idx] = 0;
         router_stats.intra_node_type_cnt_pushes[node_type_idx] = 0;
         router_stats.intra_node_type_cnt_pops[node_type_idx] = 0;
     }
 }
-
-
 
 #ifndef NO_GRAPHICS
 //updates router iteration information and checks for router iteration and net id breakpoints

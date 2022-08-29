@@ -138,7 +138,6 @@ class route_budgets {
     /*flag to reroute each net for hold violation*/
     std::map<ParentNetId, bool> should_reroute_for_hold;
     std::map<ParentNetId, int> hold_fac;
-
 };
 
 #endif /* ROUTE_BUDGETS_H */

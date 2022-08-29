@@ -208,9 +208,9 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
         }
 
         ClusterNetId cluster_equivalent_net_id = ClusterNetId::INVALID();
-        if(is_flat) {
+        if (is_flat) {
             cluster_equivalent_net_id = atom_ctx.lookup.clb_net(convert_to_atom_net_id(routing_net_id));
-            if(routing_net_id != ParentNetId::INVALID()) {
+            if (routing_net_id != ParentNetId::INVALID()) {
                 VTR_ASSERT(cluster_equivalent_net_id != ClusterNetId::INVALID());
             }
         } else {
@@ -1073,7 +1073,7 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
     for (const ParentBlockId& blk_id : net_list.blocks()) {
         /* We know the entrance to grid info and mapping results, do the fix-up for this block */
         ClusterBlockId clb_blk_id;
-        if(is_flat) {
+        if (is_flat) {
             clb_blk_id = atom_look_up.atom_clb(convert_to_atom_block_id(blk_id));
         } else {
             clb_blk_id = convert_to_cluster_block_id(blk_id);
@@ -1082,7 +1082,7 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
         vtr::Point<size_t> grid_coord(placement_ctx.block_locs[clb_blk_id].loc.x,
                                       placement_ctx.block_locs[clb_blk_id].loc.y);
 
-        if(seen_block_ids.insert(clb_blk_id).second) {
+        if (seen_block_ids.insert(clb_blk_id).second) {
             update_cluster_pin_with_post_routing_results(net_list,
                                                          atom_ctx,
                                                          device_ctx,
@@ -1102,8 +1102,6 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
                                                                     num_fixup,
                                                                     verbose);
         }
-
-
     }
 
     /* Print a short summary */

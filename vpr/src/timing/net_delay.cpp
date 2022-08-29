@@ -34,7 +34,6 @@ static std::unordered_map<int, float> ipin_to_Tdel_map;
 
 /*********************** Subroutines local to this module ********************/
 
-
 static void load_one_net_delay(const Netlist<>& net_list,
                                NetPinsMatrix<float>& net_delay,
                                ParentNetId net_id,
@@ -85,10 +84,10 @@ static void load_one_net_delay(const Netlist<>& net_list,
     }
 
     t_rt_node* rt_root = traceback_to_route_tree(net_id, is_flat); // obtain the root of the tree constructed from the traceback
-    load_new_subtree_R_upstream(rt_root);                 // load in the resistance values for the route tree
-    load_new_subtree_C_downstream(rt_root);               // load in the capacitance values for the route tree
-    load_route_tree_Tdel(rt_root, 0.);                    // load the time delay values for the route tree
-    load_one_net_delay_recurr(rt_root, net_id);           // recursively traverse the tree and load entries into the ipin_to_Tdel map
+    load_new_subtree_R_upstream(rt_root);                          // load in the resistance values for the route tree
+    load_new_subtree_C_downstream(rt_root);                        // load in the capacitance values for the route tree
+    load_route_tree_Tdel(rt_root, 0.);                             // load the time delay values for the route tree
+    load_one_net_delay_recurr(rt_root, net_id);                    // recursively traverse the tree and load entries into the ipin_to_Tdel map
 
     for (unsigned int ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
         auto itr = ipin_to_Tdel_map.find(ipin);

@@ -160,7 +160,6 @@ ClusterNetId ClusteredNetlist::create_net(const std::string name) {
 
     if (net_id == ClusterNetId::INVALID()) {
         net_id = Netlist::create_net(name);
-
     }
 
     VTR_ASSERT(validate_net_sizes());
@@ -273,7 +272,6 @@ bool ClusteredNetlist::validate_pin_sizes_impl(size_t num_pins) const {
 }
 
 bool ClusteredNetlist::validate_net_sizes_impl(size_t /* num_nets */) const {
-
     return true;
 }
 

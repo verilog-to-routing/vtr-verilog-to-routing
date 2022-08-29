@@ -18,7 +18,6 @@ extern bool f_router_debug;
 
 int get_max_pins_per_net(const Netlist<>& net_list);
 
-
 bool try_timing_driven_route(const Netlist<>& net_list,
                              const t_router_opts& router_opts,
                              const t_analysis_opts& analysis_opts,

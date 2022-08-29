@@ -28,7 +28,8 @@ class Connection_based_routing_resources {
 
   public:
     Connection_based_routing_resources(const Netlist<>& net_list,
-                                       const vtr::vector<ParentNetId, std::vector<int>>& net_terminals, bool is_flat);
+                                       const vtr::vector<ParentNetId, std::vector<int>>& net_terminals,
+                                       bool is_flat);
     // adding to the resources when they are reached during pruning
     // mark rr sink node as something that still needs to be reached
     void toreach_rr_sink(int rr_sink_node) { remaining_targets.push_back(rr_sink_node); }

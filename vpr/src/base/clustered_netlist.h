@@ -173,8 +173,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      * Nets
      */
 
-
-
   public: //Public Mutators
     /**
      * @brief Create or return an existing block in the netlist
@@ -212,8 +210,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      *   @param name  The unique name of the net
      */
     ClusterNetId create_net(const std::string name);
-
-
 
     /**
      * @brief Given a name of a block and vector of possible cluster blocks
@@ -344,7 +340,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     vtr::vector_map<ClusterPinId, int> pin_logical_index_;
 
     //Nets
-
 };
 
 #endif

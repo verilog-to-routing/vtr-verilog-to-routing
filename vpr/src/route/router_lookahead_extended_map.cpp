@@ -139,7 +139,9 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
                                                          device_ctx.grid,
                                                          device_ctx.rr_indexed_data,
                                                          size_t(from_node),
-                                                         is_flat_).c_str()).c_str());
+                                                         is_flat_)
+                                            .c_str())
+                            .c_str());
 }
 
 float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {

@@ -42,7 +42,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , rr_node_route_inf_(rr_node_route_inf.data(), rr_node_route_inf.size())
         , is_flat_(is_flat)
         , router_stats_(nullptr)
-        , router_debug_(false){
+        , router_debug_(false) {
         heap_.init_heap(grid);
         heap_.set_prune_limit(rr_nodes_.size(), kHeapPruneFactor * rr_nodes_.size());
     }

@@ -379,10 +379,9 @@ struct RoutingContext : public Context {
 
     vtr::vector<ParentNetId, std::unordered_set<int>> trace_nodes;
 
-
     vtr::vector<ParentNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 
-    vtr::vector<ParentNetId, uint8_t> is_clock_net;              /* [0..num_nets-1] */
+    vtr::vector<ParentNetId, uint8_t> is_clock_net; /* [0..num_nets-1] */
 
     vtr::vector<ParentBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 

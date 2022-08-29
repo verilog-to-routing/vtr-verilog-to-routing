@@ -91,14 +91,14 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable(t_trace* head, t
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth = 0);
 
 static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RRGraphView& rr_graph,
-                                                                  const Netlist<>& net_list,
-                                                                  bool is_flat);
+                                                                        const Netlist<>& net_list,
+                                                                        bool is_flat);
 
 //static vtr::vector<ClusterNetId, std::vector<int>> load_cluster_net_rr_terminals(const RRGraphView& rr_graph, const ClusteredNetlist& clb_nlist);
 
 static vtr::vector<ParentBlockId, std::vector<int>> load_rr_clb_sources(const RRGraphView& rr_graph,
-                                                                         const Netlist<>& net_list,
-                                                                         bool is_flat);
+                                                                        const Netlist<>& net_list,
+                                                                        bool is_flat);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
 static void adjust_one_rr_occ_and_acc_cost(int inode, int add_or_sub, float acc_fac);
@@ -107,7 +107,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
 
 static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
-                                                            bool is_flat);
+                                                           bool is_flat);
 
 static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat);
 
@@ -542,7 +542,6 @@ void init_route_structs(const Netlist<>& net_list, int bb_factor, bool is_flat) 
 t_trace* update_traceback(t_heap* hptr,
                           int target_net_pin_index,
                           ParentNetId net_id) {
-
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     auto& trace_nodes = route_ctx.trace_nodes[net_id];
@@ -774,7 +773,6 @@ void mark_ends(const Netlist<>& net_list, ParentNetId net_id) {
     unsigned int ipin;
     int inode;
 
-
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     for (ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
@@ -900,13 +898,13 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
             if (!net || (net && cluster_ctx.clb_nlist.net_sinks(net).size() == 0)) {
                 //There is no external net connected to this pin
+                auto port_eq = get_port_equivalency_from_pin_physical_num(type, clb_pin);
+                iclass = get_class_num_from_pin_physical_num(type, clb_pin);
 
-                iclass = type->pin_class[clb_pin];
-
-                if (type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE) {
+                if (port_eq == PortEquivalence::INSTANCE) {
                     //The pin is part of an instance equivalent class, hence we need to reserve a pin
 
-                    VTR_ASSERT(type->class_inf[iclass].type == DRIVER);
+                    VTR_ASSERT(get_pin_type_from_pin_physical_num(type, clb_pin) == DRIVER);
 
                     /* Check to make sure class is in same range as that assigned to block */
                     VTR_ASSERT(iclass >= class_range.low && iclass <= class_range.high);
@@ -1085,15 +1083,11 @@ static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RR
  * [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
  * The values for blocks that are padsare NOT valid.                        */
 static vtr::vector<ParentBlockId, std::vector<int>> load_rr_clb_sources(const RRGraphView& rr_graph,
-                                                                  const Netlist<>& net_list,
-                                                                  bool is_flat) {
+                                                                        const Netlist<>& net_list,
+                                                                        bool is_flat) {
     vtr::vector<ParentBlockId, std::vector<int>> rr_blk_source;
 
-
     t_rr_type rr_type;
-
-
-
 
     rr_blk_source.resize(net_list.blocks().size());
 
@@ -1127,7 +1121,7 @@ static vtr::vector<ParentBlockId, std::vector<int>> load_rr_clb_sources(const RR
 }
 
 static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
-                                                     bool is_flat) {
+                                                           bool is_flat) {
     vtr::vector<ParentNetId, uint8_t> is_clock_net;
 
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -1136,14 +1130,13 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
     is_clock_net.resize(net_list.nets().size());
     for (auto net_id : net_list.nets()) {
         std::size_t net_id_num = std::size_t(net_id);
-        if(is_flat) {
+        if (is_flat) {
             AtomNetId atom_net_id = AtomNetId(net_id_num);
             is_clock_net[net_id] = clock_nets.find(atom_net_id) != clock_nets.end();
         } else {
             ClusterNetId cluster_net_id = ClusterNetId(net_id_num);
             is_clock_net[net_id] = clock_nets.find(atom_ctx.lookup.atom_net(cluster_net_id)) != clock_nets.end();
         }
-
     }
 
     return is_clock_net;
@@ -1152,7 +1145,6 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
 vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
                                              int bb_factor) {
     vtr::vector<ParentNetId, t_bb> route_bb;
-
 
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -1298,7 +1290,7 @@ void free_trace_data(t_trace* tptr) {
 
 void print_route(const Netlist<>& net_list,
                  FILE* fp,
-                 const vtr::vector<ParentNetId,t_traceback>& tracebacks,
+                 const vtr::vector<ParentNetId, t_traceback>& tracebacks,
                  bool is_flat) {
     if (tracebacks.empty()) return; //Only if routing exists
 
@@ -1376,7 +1368,7 @@ void print_route(const Netlist<>& net_list,
                         ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[sub_tile_offset];
                         VTR_ASSERT(iblock);
                         const t_pb_graph_pin* pb_pin;
-                        if(is_pin_on_tile(physical_tile, pin_num)) {
+                        if (is_pin_on_tile(physical_tile, pin_num)) {
                             pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                         } else {
                             pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_num);
@@ -1490,7 +1482,8 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
                 if (num_local_opin == 0) continue;
-                VTR_ASSERT(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE);
+                auto port_eq = get_port_equivalency_from_class_physical_num(type, iclass);
+                VTR_ASSERT(port_eq == PortEquivalence::INSTANCE);
 
                 /* Always 0 for pads and for RECEIVER (IPIN) classes */
                 for (ipin = 0; ipin < num_local_opin; ipin++) {
@@ -1512,7 +1505,8 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
 
             if (num_local_opin == 0) continue;
 
-            VTR_ASSERT(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE);
+            auto class_eq = get_port_equivalency_from_class_physical_num(type, iclass);
+            VTR_ASSERT(class_eq == PortEquivalence::INSTANCE);
 
             //From the SRC node we walk through it's out going edges to collect the
             //OPIN nodes. We then push them onto a heap so the OPINs with lower
@@ -1721,17 +1715,17 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
             for (auto itr = range.first; itr != range.second; ++itr) {
                 auto net_id = itr->second;
                 VTR_LOG("    Used by net %s (%zu)\n", net_list.net_name(net_id).c_str(), size_t(net_id));
-                for(auto pin : net_list.net_pins(net_id)) {
+                for (auto pin : net_list.net_pins(net_id)) {
                     int x, y;
                     auto blk = net_list.pin_block(pin);
                     std::tie(x, y) = get_block_loc(blk, is_flat);
-                    if(x == node_x && y == node_y) {
-                        VTR_LOG("      Is in the same cluster: %s \n",  describe_rr_node(rr_graph, device_ctx.grid,
-                                                                                        device_ctx.rr_indexed_data, itr->first, is_flat).c_str());
+                    if (x == node_x && y == node_y) {
+                        VTR_LOG("      Is in the same cluster: %s \n", describe_rr_node(rr_graph, device_ctx.grid,
+                                                                                        device_ctx.rr_indexed_data, itr->first, is_flat)
+                                                                           .c_str());
                     }
                 }
             }
-
         }
     }
 }
@@ -1844,9 +1838,9 @@ std::string describe_unrouteable_connection(const int source_node, const int sin
         "Cannot route from %s (%s) to "
         "%s (%s) -- no possible path",
         rr_node_arch_name(source_node, is_flat).c_str(),
-            describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, source_node, is_flat).c_str(),
+        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, source_node, is_flat).c_str(),
         rr_node_arch_name(sink_node, is_flat).c_str(),
-            describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
+        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_node, is_flat).c_str());
 
     return msg;
 }
@@ -1858,8 +1852,8 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               float R_upstream,
                               const t_conn_cost_params cost_params,
                               bool is_flat) {
-    if(is_flat) {
-        if(node_in_same_physical_tile(from_node, to_node)) {
+    if (is_flat) {
+        if (node_in_same_physical_tile(from_node, to_node)) {
             return 0.0;
         } else {
             RRNodeId on_tile_from_node = get_connected_on_tile_node(rr_graph_view, from_node, is_flat);
@@ -1882,7 +1876,7 @@ static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRN
     int y_low = rr_graph_view.node_ylow(node_id);
     auto node_type = rr_graph_view.node_type(node_id);
 
-    if(is_node_on_tile(device_ctx.grid[x_low][y_low].type, node_type, rr_graph_view.node_ptc_num(node_id))) {
+    if (is_node_on_tile(device_ctx.grid[x_low][y_low].type, node_type, rr_graph_view.node_ptc_num(node_id))) {
         return node_id;
     } else {
         int max_ptc = get_rr_node_max_ptc(rr_graph_view,
@@ -1890,19 +1884,17 @@ static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRN
                                           is_flat);
         RRNodeId on_tile_node = RRNodeId::INVALID();
         int on_tile_ptc = 0;
-        while(on_tile_ptc < max_ptc) {
-            for(auto side : SIDES) {
-                on_tile_node =  device_ctx.rr_graph.node_lookup().find_node(x_low, y_low, node_type, on_tile_ptc, side);
-                if(on_tile_node != RRNodeId::INVALID())
+        while (on_tile_ptc < max_ptc) {
+            for (auto side : SIDES) {
+                on_tile_node = device_ctx.rr_graph.node_lookup().find_node(x_low, y_low, node_type, on_tile_ptc, side);
+                if (on_tile_node != RRNodeId::INVALID())
                     break;
             }
-            if(on_tile_node != RRNodeId::INVALID()) {
+            if (on_tile_node != RRNodeId::INVALID()) {
                 break;
             }
             on_tile_ptc++;
         }
         return on_tile_node;
     }
-
-
 }

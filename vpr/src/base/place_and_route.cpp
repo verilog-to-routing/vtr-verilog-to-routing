@@ -72,8 +72,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&) g_vpr_ctx.atom().nlist :
-                                               (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
     t_clb_opins_used saved_clb_opins_used_locally;
 

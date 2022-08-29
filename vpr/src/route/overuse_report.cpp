@@ -193,7 +193,6 @@ static void generate_node_to_net_lookup(const Netlist<>& net_list,
             rr_node_to_net_map[RRNodeId(inode)].insert(net_id);
         }
     }
-
 }
 
 ///@brief Print out information specific to IPIN/OPIN type rr nodes
@@ -213,8 +212,9 @@ static void report_overused_ipin_opin(std::ostream& os,
     t_physical_tile_type_ptr physical_tile = device_ctx.grid[grid_x][grid_y].type;
 
     os << "Pin physical number = " << rr_graph.node_pin_num(node_id) << '\n';
-    if(is_node_on_tile(physical_tile, rr_graph.node_type(node_id), rr_graph.node_ptc_num(node_id))) {
-        os << "On Tile Pin" << "\n";
+    if (is_node_on_tile(physical_tile, rr_graph.node_type(node_id), rr_graph.node_ptc_num(node_id))) {
+        os << "On Tile Pin"
+           << "\n";
     } else {
         auto pb_type_name = get_pb_graph_node_form_pin_physical_num(device_ctx.grid[grid_x][grid_y].type, rr_graph.node_ptc_num(node_id))->pb_type->name;
         auto pb_pin = get_pb_pin_from_pin_physical_num(device_ctx.grid[grid_x][grid_y].type, rr_graph.node_ptc_num(node_id));
@@ -303,20 +303,20 @@ static void report_congested_nets(const Netlist<>& net_list,
         os << "Net #" << inet << ": ";
         os << "Net ID = " << size_t(net_id) << ", ";
         os << "Net name = " << net_list.net_name(net_id) << ", ";
-        if(is_flat) {
+        if (is_flat) {
             AtomBlockId atom_blk_id = convert_to_atom_block_id(block_id);
             os << "Driving block name = " << atom_lookup.atom_pb(atom_blk_id)->name << ", ";
             os << "Driving block type = " << g_vpr_ctx.clustering().clb_nlist.block_type(atom_lookup.atom_clb(atom_blk_id))->name << '\n';
-        } else{
+        } else {
             ClusterBlockId clb_blk_id = convert_to_cluster_block_id(block_id);
             os << "Driving block name = " << g_vpr_ctx.clustering().clb_nlist.block_pb(clb_blk_id)->name << ", ";
             os << "Driving block type = " << g_vpr_ctx.clustering().clb_nlist.block_type(clb_blk_id)->name << '\n';
         }
 
-        if(report_sinks) {
-            for(auto sink_id : net_list.net_sinks(net_id)) {
+        if (report_sinks) {
+            for (auto sink_id : net_list.net_sinks(net_id)) {
                 ClusterBlockId cluster_block_id;
-                if(is_flat) {
+                if (is_flat) {
                     AtomBlockId atom_blk_id = convert_to_atom_block_id(net_list.pin_block(sink_id));
                     cluster_block_id = atom_lookup.atom_clb(convert_to_atom_block_id(atom_blk_id));
                 } else {
@@ -326,21 +326,20 @@ static void report_congested_nets(const Netlist<>& net_list,
                 auto physical_type = g_vpr_ctx.device().grid[x][y].type;
                 int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid[cluster_loc.loc.x][cluster_loc.loc.y].type->width;
                 int cluster_y = cluster_loc.loc.y - g_vpr_ctx.device().grid[cluster_loc.loc.x][cluster_loc.loc.y].type->height;
-                if(cluster_x == x && cluster_y == y) {
+                if (cluster_x == x && cluster_y == y) {
                     VTR_ASSERT(physical_type == g_vpr_ctx.device().grid[cluster_x][cluster_y].type);
-                    os << "Sink in the same location = " << "\n";
-                    if(is_flat) {
+                    os << "Sink in the same location = "
+                       << "\n";
+                    if (is_flat) {
                         auto pb_pin = atom_lookup.atom_pin_pb_graph_pin(convert_to_atom_pin_id(sink_id));
                         auto pb_net_list = atom_lookup.atom_pb(convert_to_atom_block_id(net_list.pin_block(sink_id)));
-                        os << "  " << "Pin Logical Num: " << pb_pin->pin_count_in_cluster << "  PB Type: " <<
-                            pb_pin->parent_node->pb_type->name <<  " Netlist PB: "<< pb_net_list->name <<
-                            " Parent PB Type: " << pb_net_list->parent_pb->pb_graph_node->pb_type->name <<
-                            "Parent Netlist PB : " << pb_net_list->parent_pb->name << "\n";
-                        os << "  " << "Hierarchical Type Name : " << pb_pin->parent_node->hierarchical_type_name() << "\n";
+                        os << "  "
+                           << "Pin Logical Num: " << pb_pin->pin_count_in_cluster << "  PB Type: " << pb_pin->parent_node->pb_type->name << " Netlist PB: " << pb_net_list->name << " Parent PB Type: " << pb_net_list->parent_pb->pb_graph_node->pb_type->name << "Parent Netlist PB : " << pb_net_list->parent_pb->name << "\n";
+                        os << "  "
+                           << "Hierarchical Type Name : " << pb_pin->parent_node->hierarchical_type_name() << "\n";
                     } else {
-                        os << "  " << g_vpr_ctx.placement().physical_pins[convert_to_cluster_pin_id(sink_id)] <<  "\n";
+                        os << "  " << g_vpr_ctx.placement().physical_pins[convert_to_cluster_pin_id(sink_id)] << "\n";
                     }
-
                 }
             }
         }
@@ -409,7 +408,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     VTR_LOG(" %7d", x);
 
     //Y_low
-    VTR_LOG(" %7d",y);
+    VTR_LOG(" %7d", y);
 
     //X_high
     VTR_LOG(" %7d", rr_graph.node_xhigh(node_id));
@@ -431,7 +430,7 @@ void print_block_pins_nets(std::ostream& os,
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     std::vector<int> physical_pins;
-    if(is_pin_on_tile(physical_type, pin_physical_num)) {
+    if (is_pin_on_tile(physical_type, pin_physical_num)) {
         physical_pins.resize(physical_type->num_pins);
         std::iota(physical_pins.begin(), physical_pins.end(), 0);
     } else {
@@ -444,29 +443,28 @@ void print_block_pins_nets(std::ostream& os,
         auto pb_graph_node = get_pb_pin_from_pin_physical_num(physical_type, pin_physical_num);
         VTR_ASSERT(pb_graph_node != nullptr);
         physical_pins = get_pb_graph_node_pins(physical_type,
-                                              sub_tile,
-                                              logical_block,
-                                              rel_cap,
-                                              pb_graph_node->parent_node);
+                                               sub_tile,
+                                               logical_block,
+                                               rel_cap,
+                                               pb_graph_node->parent_node);
     }
 
-    for(auto pin : physical_pins) {
+    for (auto pin : physical_pins) {
         t_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
         RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, root_x, root_y, pin);
         VTR_ASSERT(node_id != RRNodeId::INVALID());
         auto search_result = rr_node_to_net_map.find(node_id);
-        if(rr_type == t_rr_type::OPIN) {
+        if (rr_type == t_rr_type::OPIN) {
             os << "  OPIN - ";
         } else {
             VTR_ASSERT(rr_type == t_rr_type::IPIN);
             os << "  IPIN - ";
         }
-        os << "RRNodeId: " << size_t(node_id) <<
-            " - Physical Num: " << pin << "\n";
+        os << "RRNodeId: " << size_t(node_id) << " - Physical Num: " << pin << "\n";
         os << "  ";
-        if(search_result != rr_node_to_net_map.end()) {
+        if (search_result != rr_node_to_net_map.end()) {
             auto nets = search_result->second;
-            for(auto net : nets) {
+            for (auto net : nets) {
                 os << "  " << size_t(net);
             }
         } else {
@@ -474,6 +472,4 @@ void print_block_pins_nets(std::ostream& os,
         }
         os << "\n";
     }
-
-
 }

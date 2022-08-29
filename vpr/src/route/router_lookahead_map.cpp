@@ -348,7 +348,9 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                                              device_ctx.grid,
                                                              device_ctx.rr_indexed_data,
                                                              size_t(from_node),
-                                                             is_flat_).c_str()).c_str());
+                                                             is_flat_)
+                                                .c_str())
+                                .c_str());
 
     } else if (from_type == CHANX || from_type == CHANY) {
         VTR_ASSERT_SAFE(from_type == CHANX || from_type == CHANY);
@@ -375,7 +377,9 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                                              device_ctx.grid,
                                                              device_ctx.rr_indexed_data,
                                                              size_t(from_node),
-                                                             is_flat_).c_str()).c_str());
+                                                             is_flat_)
+                                                .c_str())
+                                .c_str());
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
@@ -618,7 +622,6 @@ static void run_dijkstra(RRNodeId start_node,
                          int start_y,
                          t_routing_cost_map& routing_cost_map,
                          t_dijkstra_data* data) {
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -679,7 +682,7 @@ static void run_dijkstra(RRNodeId start_node,
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
-                                       vtr::vector<RRNodeId,float>& node_visited_costs,
+                                       vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<PQ_Entry>& pq) {
     auto& device_ctx = g_vpr_ctx.device();

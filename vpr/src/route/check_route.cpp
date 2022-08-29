@@ -89,7 +89,7 @@ void check_route(const Netlist<>& net_list,
                   "Error in check_route -- routing resources are overused.\n");
     }
 
-    if(!is_flat) {
+    if (!is_flat) {
         check_locally_used_clb_opins(route_ctx.clb_opins_used_locally,
                                      route_type,
                                      is_flat);
@@ -235,7 +235,6 @@ static void check_source(const Netlist<>& net_list,
                          bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-
 
     t_rr_type rr_type = rr_graph.node_type(inode);
     if (rr_type != SOURCE) {
@@ -410,15 +409,14 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
 
         case IPIN:
             from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
-            if (is_flat){
+            if (is_flat) {
                 VTR_ASSERT(to_type == OPIN || to_type == IPIN || to_type == SINK);
             } else {
                 VTR_ASSERT(to_type == SINK);
             }
 
-
             //An IPIN should be contained within the bounding box of it's connected sink
-            if(to_type == SINK) {
+            if (to_type == SINK) {
                 if (from_xlow >= to_xlow
                     && from_ylow >= to_ylow
                     && from_xhigh <= to_xhigh
@@ -429,7 +427,6 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
                     iclass = get_class_num_from_pin_physical_num(from_grid_type, from_ptc);
                     if (iclass == to_ptc)
                         num_adj++;
-
                 }
             } else {
                 from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
@@ -440,7 +437,7 @@ static bool check_adjacent(int from_node, int to_node, bool is_flat) {
                 int to_root_x = to_xlow - device_ctx.grid[to_xlow][to_ylow].width_offset;
                 int to_root_y = to_ylow - device_ctx.grid[to_xlow][to_ylow].height_offset;
 
-                if(from_root_x == to_root_x && from_root_y == to_root_y) {
+                if (from_root_x == to_root_x && from_root_y == to_root_y) {
                     num_adj++;
                 }
             }
@@ -582,10 +579,10 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
     }
 
     /* We only need to reserve output pins if flat routing is not enabled */
-    if(!is_flat) {
+    if (!is_flat) {
         /* Now update the occupancy of each of the "locally used" OPINs on each CLB *
-     * (CLB outputs used up by being directly wired to subblocks used only      *
-     * locally).                                                                */
+         * (CLB outputs used up by being directly wired to subblocks used only      *
+         * locally).                                                                */
         for (auto blk_id : net_list.blocks()) {
             auto cluster_blk_id = convert_to_cluster_block_id(blk_id);
             for (iclass = 0; iclass < (int)physical_tile_type(cluster_blk_id)->class_inf.size(); iclass++) {
@@ -824,12 +821,14 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                                                                         device_ctx.grid,
                                                                         device_ctx.rr_indexed_data,
                                                                         missing_edge.from_node,
-                                                                        is_flat).c_str());
+                                                                        is_flat)
+                                                           .c_str());
                     msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
                                                                         device_ctx.grid,
                                                                         device_ctx.rr_indexed_data,
                                                                         missing_edge.to_node,
-                                                                        is_flat).c_str());
+                                                                        is_flat)
+                                                           .c_str());
                 }
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
@@ -846,7 +845,9 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
 // are children of a configurable node have at least one sink.
 class StubFinder {
   public:
-    StubFinder(const Netlist<>& net_list, bool is_flat) : net_list_(net_list), is_flat_(is_flat) {}
+    StubFinder(const Netlist<>& net_list, bool is_flat)
+        : net_list_(net_list)
+        , is_flat_(is_flat) {}
 
     // Checks specified net for stubs, return true if at least one stub is
     // found.
@@ -888,7 +889,8 @@ void check_net_for_stubs(const Netlist<>& net_list,
             msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph,
                                                                 device_ctx.grid,
                                                                 device_ctx.rr_indexed_data,
-                                                                inode, is_flat).c_str());
+                                                                inode, is_flat)
+                                                   .c_str());
         }
 
         VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());

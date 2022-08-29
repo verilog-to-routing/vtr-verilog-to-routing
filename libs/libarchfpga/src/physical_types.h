@@ -860,7 +860,7 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
-    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping; /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;         /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
     std::unordered_map<const t_pb_graph_pin*, int> pb_pin_to_class_logical_num_mapping; /* pb_pin_to_class_logical_num_mapping[pb_graph_pin ptr] -> class logical number */
     std::vector<t_class> logical_class_inf;                                             /* logical_class_inf[class_logical_number] -> class */
 

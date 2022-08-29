@@ -312,19 +312,21 @@ const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
 /** get information given class physical num **/
 std::tuple<const t_sub_tile*, int> get_sub_tile_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
 
-t_logical_block_type_ptr get_logical_block_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
+std::vector<int> get_pin_list_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
 
-e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
+PortEquivalence get_port_equivalency_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
 
-int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
+e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
 
-inline bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_physical_num){
+int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
+
+inline bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
     return (class_physical_num < (int)physical_tile->class_inf.size());
 }
 /** **/
 
 /** get classes under different blocks **/
-std::unordered_map<int, const t_class*>  get_pb_graph_node_num_class_pairs(t_physical_tile_type_ptr physical_tile,
+std::unordered_map<int, const t_class*> get_pb_graph_node_num_class_pairs(t_physical_tile_type_ptr physical_tile,
                                                                           const t_sub_tile* sub_tile,
                                                                           t_logical_block_type_ptr logical_block,
                                                                           int sub_tile_relative_cap,
@@ -351,12 +353,14 @@ const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr 
 
 t_pb_graph_pin* get_mutable_pb_pin_from_pin_physical_num(t_physical_tile_type* physical_tile, t_logical_block_type* logical_block, int physical_num);
 
+PortEquivalence get_port_equivalency_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
+
 e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
 int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
 
 inline bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num) {
-    return(physical_num < physical_tile->num_pins);
+    return (physical_num < physical_tile->num_pins);
 }
 
 std::vector<const t_pb_graph_pin*> get_pb_graph_node_pb_pins(const t_pb_graph_node* pb_graph_node);
@@ -380,9 +384,9 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                             const t_pb_graph_pin* pin);
 
 int get_edge_sw_idx(t_physical_tile_type_ptr physical_tile,
-                         t_logical_block_type_ptr logical_block,
-                         int from_pin_physical_num,
-                         int to_pin_physical_num);
+                    t_logical_block_type_ptr logical_block,
+                    int from_pin_physical_num,
+                    int to_pin_physical_num);
 
 const t_pb_graph_node* get_pb_graph_node_form_pin_physical_num(t_physical_tile_type_ptr physical_type,
                                                                int pin_physical_num);

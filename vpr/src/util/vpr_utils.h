@@ -80,7 +80,7 @@ inline ClusterBlockId convert_to_cluster_block_id(T id) {
 }
 
 template<typename T>
-inline AtomBlockId convert_to_atom_block_id(T id){
+inline AtomBlockId convert_to_atom_block_id(T id) {
     std::size_t id_num = std::size_t(id);
     AtomBlockId atom_block_id = AtomBlockId(id_num);
     return atom_block_id;
@@ -102,7 +102,7 @@ inline AtomPinId convert_to_atom_pin_id(T id) {
 
 inline ParentNetId get_cluster_net_parent_id(const AtomLookup& atom_look_up, ClusterNetId net_id, bool is_flat) {
     ParentNetId par_net_id;
-    if(is_flat) {
+    if (is_flat) {
         auto atom_net_id = atom_look_up.atom_net(net_id);
         VTR_ASSERT(atom_net_id != AtomNetId::INVALID());
         par_net_id = ParentNetId(size_t(atom_net_id));
@@ -259,7 +259,7 @@ bool is_node_on_tile(t_physical_tile_type_ptr physical_tile,
                      t_rr_type node_type,
                      int node_ptc);
 
-int get_rr_node_max_ptc (const RRGraphView& rr_graph_view,
+int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
                         RRNodeId node_id,
                         bool is_flat);
 

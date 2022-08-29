@@ -240,5 +240,3 @@ void push_back_node_with_info(
 
     heap->push_back(hptr);
 }
-
-

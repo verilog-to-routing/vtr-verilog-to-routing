@@ -14,7 +14,8 @@ static t_rt_node* setup_routing_resources_no_net(int source_node);
 RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
                                          const RouterLookahead* lookahead,
                                          bool is_flat)
-    : net_list_(net_list), router_(
+    : net_list_(net_list)
+    , router_(
           g_vpr_ctx.device().grid,
           *lookahead,
           g_vpr_ctx.device().rr_graph.rr_nodes(),
@@ -22,7 +23,8 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
           g_vpr_ctx.device().rr_rc_data,
           g_vpr_ctx.device().rr_graph.rr_switch(),
           g_vpr_ctx.mutable_routing().rr_node_route_inf,
-          is_flat), is_flat_(is_flat) {}
+          is_flat)
+    , is_flat_(is_flat) {}
 
 bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *

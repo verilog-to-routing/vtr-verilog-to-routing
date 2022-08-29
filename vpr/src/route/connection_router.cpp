@@ -19,20 +19,17 @@ inline static bool relevant_node_to_target(const RRGraphView* rr_graph,
     auto node_to_add_type = rr_graph->node_type(node_to_add);
     auto node_to_add_x_low = rr_graph->node_xlow(node_to_add);
     auto node_to_add_y_low = rr_graph->node_ylow(node_to_add);
-    if(node_to_add_type == t_rr_type::OPIN ||
-        node_to_add_type == t_rr_type::SOURCE ||
-        node_to_add_type == t_rr_type::CHANX ||
-        node_to_add_type == t_rr_type::CHANY) {
+    if (node_to_add_type == t_rr_type::OPIN || node_to_add_type == t_rr_type::SOURCE || node_to_add_type == t_rr_type::CHANX || node_to_add_type == t_rr_type::CHANY) {
         return true;
-    } else if(node_in_same_physical_tile(node_to_add, target_node)) {
+    } else if (node_in_same_physical_tile(node_to_add, target_node)) {
         VTR_ASSERT(node_to_add_type == IPIN);
         t_physical_tile_type_ptr physical_type = g_vpr_ctx.device().grid[node_to_add_x_low][node_to_add_y_low].type;
-        if(is_node_on_tile(physical_type,
+        if (is_node_on_tile(physical_type,
                             node_to_add_type,
-                            rr_graph->node_ptc_num(node_to_add))){
+                            rr_graph->node_ptc_num(node_to_add))) {
             return true;
         }
-        if(intra_tile_nodes_connected(physical_type,
+        if (intra_tile_nodes_connected(physical_type,
                                        rr_graph->node_ptc_num(node_to_add),
                                        rr_graph->node_ptc_num(target_node))) {
             return true;
@@ -244,7 +241,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
         auto cheap_type = rr_graph_->node_type(RRNodeId(cheapest->index));
         int cheapest_x_low = rr_graph_->node_xlow(RRNodeId(cheapest->index));
         int cheapest_y_low = rr_graph_->node_ylow(RRNodeId(cheapest->index));
-        if(is_node_on_tile(device_ctx.grid[cheapest_x_low][cheapest_y_low].type,
+        if (is_node_on_tile(device_ctx.grid[cheapest_x_low][cheapest_y_low].type,
                             cheap_type,
                             rr_graph_->node_ptc_num(RRNodeId(cheapest->index)))) {
             router_stats_->inter_node_type_cnt_pops[cheap_type]++;
@@ -252,7 +249,6 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
         } else {
             ++router_stats_->intra_cluster_node_pops;
             router_stats_->intra_node_type_cnt_pops[cheap_type]++;
-
         }
 
         int inode = cheapest->index;
@@ -267,11 +263,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
             if (rcv_path_manager.is_enabled()) {
                 rcv_path_manager.insert_backwards_path_into_traceback(cheapest->path_data, cheapest->cost, cheapest->backward_path_cost, route_ctx);
             }
-            VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(device_ctx.rr_graph,
-                                                                                               device_ctx.grid,
-                                                                                               device_ctx.rr_indexed_data,
-                                                                                               inode,
-                                                                                               is_flat_).c_str());
+            VTR_LOGV_DEBUG(router_debug_, "  Found target %8d (%s)\n", inode, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
             break;
         }
 
@@ -345,7 +337,7 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
         auto cheap_type = rr_graph_->node_type(RRNodeId(cheapest->index));
         int cheapest_x_low = rr_graph_->node_xlow(RRNodeId(cheapest->index));
         int cheapest_y_low = rr_graph_->node_ylow(RRNodeId(cheapest->index));
-        if(is_node_on_tile(g_vpr_ctx.device().grid[cheapest_x_low][cheapest_y_low].type,
+        if (is_node_on_tile(g_vpr_ctx.device().grid[cheapest_x_low][cheapest_y_low].type,
                             cheap_type,
                             rr_graph_->node_ptc_num(RRNodeId(cheapest->index)))) {
             router_stats_->inter_node_type_cnt_pops[cheap_type]++;
@@ -549,7 +541,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                to_xlow, to_ylow, to_xhigh, to_yhigh,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
                 return;
-            } if (is_flat_) {
+            }
+            if (is_flat_) {
                 if (node_in_same_physical_tile(to_node, RRNodeId(target_node))) {
                     t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid[to_xlow][to_ylow].type;
                     if (!is_node_on_tile(physical_tile, to_type, rr_graph_->node_ptc_num(to_node))) {
@@ -624,8 +617,6 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
 
     next.R_upstream = current->R_upstream;
 
-
-
     evaluate_timing_driven_node_costs(&next,
                                       cost_params,
                                       from_node,
@@ -645,7 +636,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
                                         device_ctx.grid,
                                         device_ctx.rr_indexed_data,
                                         to_node,
-                                        is_flat_).c_str());
+                                        is_flat_)
+                           .c_str());
         VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g\n", new_total_cost, new_back_cost);
         //Add node to the heap only if the cost via the current partial path is less than the
         //best known cost, since there is no reason for the router to expand more expensive paths.
@@ -675,9 +667,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         heap_.add_to_heap(next_ptr);
         ++router_stats_->heap_pushes;
         auto node_type = rr_graph_->node_type(RRNodeId(to_node));
-        t_physical_tile_type_ptr physical_type =
-            device_ctx.grid[rr_graph_->node_xlow(RRNodeId(to_node))][rr_graph_->node_ylow(RRNodeId(to_node))].type;
-        if(is_node_on_tile(physical_type,
+        t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph_->node_xlow(RRNodeId(to_node))][rr_graph_->node_ylow(RRNodeId(to_node))].type;
+        if (is_node_on_tile(physical_type,
                             node_type,
                             rr_graph_->node_ptc_num(RRNodeId(to_node)))) {
             router_stats_->inter_node_type_cnt_pushes[node_type]++;
@@ -687,11 +678,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
             router_stats_->intra_node_type_cnt_pushes[node_type]++;
         }
     } else {
-        VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(device_ctx.rr_graph,
-                                                                                                    device_ctx.grid,
-                                                                                                    device_ctx.rr_indexed_data,
-                                                                                                    to_node,
-                                                                                                    is_flat_).c_str());
+        VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str());
         VTR_LOGV_DEBUG(router_debug_, "        Prev Total Cost %g Prev back Cost %g \n", best_total_cost, best_back_cost);
         VTR_LOGV_DEBUG(router_debug_, "        New Total Cost %g New back Cost %g \n", new_total_cost, new_back_cost);
     }
@@ -930,8 +917,8 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node->re_expand) {
-        if(is_flat_) {
-            if(relevant_node_to_target(rr_graph_,
+        if (is_flat_) {
+            if (relevant_node_to_target(rr_graph_,
                                         RRNodeId(rt_node->inode),
                                         RRNodeId(target_node))) {
                 add_route_tree_node_to_heap(rt_node,
@@ -1004,9 +991,8 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
 
     ++router_stats_->heap_pushes;
     auto node_type = rr_graph_->node_type(RRNodeId(inode));
-    t_physical_tile_type_ptr physical_tile =
-        device_ctx.grid[rr_graph_->node_xlow(RRNodeId(inode))][rr_graph_->node_ylow(RRNodeId(inode))].type;
-    if(is_node_on_tile(physical_tile,
+    t_physical_tile_type_ptr physical_tile = device_ctx.grid[rr_graph_->node_xlow(RRNodeId(inode))][rr_graph_->node_ylow(RRNodeId(inode))].type;
+    if (is_node_on_tile(physical_tile,
                         rr_graph_->node_type(RRNodeId(inode)),
                         rr_graph_->node_ptc_num(RRNodeId(inode)))) {
         router_stats_->inter_node_type_cnt_pushes[node_type]++;
@@ -1077,7 +1063,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 if (!rt_node->re_expand) continue; //Some nodes (like IPINs) shouldn't be re-expanded
 
                 //Put the node onto the heap
-                if(relevant_node_to_target(rr_graph_, RRNodeId(rt_node->inode), RRNodeId(target_node))){
+                if (relevant_node_to_target(rr_graph_, RRNodeId(rt_node->inode), RRNodeId(target_node))) {
                     add_route_tree_node_to_heap(rt_node, target_node, cost_params);
                     //Update Bounding Box
                     RRNodeId node(rt_node->inode);
@@ -1164,5 +1150,3 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type he
                             heap_type);
     }
 }
-
-

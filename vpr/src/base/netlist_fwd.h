@@ -26,7 +26,6 @@ typedef vtr::StrongId<general_pin_id_tag> ParentPinId;
 //A unique identifier for a pin in the atom netlist
 typedef vtr::StrongId<general_net_id_tag> ParentNetId;
 
-
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 class Netlist;
 

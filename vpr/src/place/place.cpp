@@ -484,7 +484,7 @@ void try_place(const t_placer_opts& placer_opts,
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_delay_model(chan_width_dist,
-                                                          (const Netlist<>&) cluster_ctx.clb_nlist,
+                                                          (const Netlist<>&)cluster_ctx.clb_nlist,
                                                           placer_opts, router_opts, det_routing_arch, segment_inf,
                                                           directs, num_directs, is_flat);
 
@@ -563,7 +563,7 @@ void try_place(const t_placer_opts& placer_opts,
          * Initialize timing analysis
          */
         // For placement, we don't use flat-routing
-        placement_delay_calc = std::make_shared<PlacementDelayCalculator>( atom_ctx.nlist,
+        placement_delay_calc = std::make_shared<PlacementDelayCalculator>(atom_ctx.nlist,
                                                                           atom_ctx.lookup,
                                                                           p_timing_ctx.connection_delay,
                                                                           false);
@@ -832,11 +832,11 @@ void try_place(const t_placer_opts& placer_opts,
             update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT,
                           timing_info);
 
-//#ifdef VERBOSE
-//            if (getEchoEnabled()) {
-//                print_clb_placement("first_iteration_clb_placement.echo");
-//            }
-//#endif
+            //#ifdef VERBOSE
+            //            if (getEchoEnabled()) {
+            //                print_clb_placement("first_iteration_clb_placement.echo");
+            //            }
+            //#endif
         } while (state.outer_loop_update(stats.success_rate, costs, placer_opts,
                                          annealing_sched));
         /* Outer loop of the simmulated annealing ends */
@@ -919,11 +919,11 @@ void try_place(const t_placer_opts& placer_opts,
     // TODO:
     // 1. add some subroutine hierarchy!  Too big!
 
-//#ifdef VERBOSE
-//    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
-//        print_clb_placement(getEchoFileName(E_ECHO_END_CLB_PLACEMENT));
-//    }
-//#endif
+    //#ifdef VERBOSE
+    //    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
+    //        print_clb_placement(getEchoFileName(E_ECHO_END_CLB_PLACEMENT));
+    //    }
+    //#endif
 
     // Update physical pin values
     for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
