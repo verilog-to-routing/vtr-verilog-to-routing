@@ -36,8 +36,8 @@ int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void) {
     return traffic_flows_associated_to_router_blocks.size();
 }
 
-std::vector<NocLinkId>& NocTrafficFlows::get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id){
-    return traffic_flow_routes[traffic_flow_id];
+std::vector<NocLinkId>* NocTrafficFlows::get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id){
+    return &traffic_flow_routes[traffic_flow_id];
 }
 
 // setters for the traffic flows

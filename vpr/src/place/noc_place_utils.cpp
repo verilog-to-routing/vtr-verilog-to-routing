@@ -38,11 +38,11 @@ void initial_noc_placement(void){
         NocRouterId sink_router_block_id = get_router_block_id_where_cluster_block_is_placed(logical_sink_router_block_id, placed_cluster_block_locations, *noc_model);
 
         // route the current traffic flow
-        std::vector<NocLinkId> curr_traffic_flow_route = noc_traffic_flows_storage->get_mutable_traffic_flow_route(conv_traffic_flow_id);
-        noc_flows_router->route_flow(source_router_block_id, sink_router_block_id, curr_traffic_flow_route, *noc_model);
+        std::vector<NocLinkId>* curr_traffic_flow_route = noc_traffic_flows_storage->get_mutable_traffic_flow_route(conv_traffic_flow_id);
+        noc_flows_router->route_flow(source_router_block_id, sink_router_block_id, *curr_traffic_flow_route, *noc_model);
 
         // update the links used in the found traffic flow route
-        update_traffic_flow_link_usage(curr_traffic_flow_route, *noc_model, link_usage_update_state::increment, curr_traffic_flow.traffic_flow_bandwidth);
+        update_traffic_flow_link_usage(*curr_traffic_flow_route, *noc_model, link_usage_update_state::increment, curr_traffic_flow.traffic_flow_bandwidth);
 
     }
 
@@ -70,24 +70,24 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
     // go through the links within the traffic flow route and update their bandwidht usage
     for (auto& link_in_route_id : traffic_flow_route){
         
-        // get the link and its bandwidth so we can update it
-        NocLink link_in_route = noc_model.get_single_mutable_noc_link(link_in_route_id);
-        double curr_link_bandwidth = link_in_route.get_bandwidth_usage();
+        // get the link to update and its current bandwdith
+        NocLink* curr_link = noc_model.get_single_mutable_noc_link(link_in_route_id);
+        double curr_link_bandwidth = curr_link->get_bandwidth_usage();
 
         // update the link badnwidth based on the user provided state
         switch (how_to_update_links) {
             case link_usage_update_state::increment:
-                link_in_route.set_bandwidth_usage(curr_link_bandwidth + traffic_flow_bandwidth);
+                curr_link->set_bandwidth_usage(curr_link_bandwidth + traffic_flow_bandwidth);
                 break;
             case link_usage_update_state::decrement:
-                link_in_route.set_bandwidth_usage(curr_link_bandwidth - traffic_flow_bandwidth);
+                curr_link->set_bandwidth_usage(curr_link_bandwidth - traffic_flow_bandwidth);
                 break;
             default:
                 break;
         }
 
         // check that the bandwidth never goes to negative
-        VTR_ASSERT(link_in_route.get_bandwidth_usage() >= 0.0);
+        VTR_ASSERT(curr_link->get_bandwidth_usage() >= 0.0);
   
     }
 

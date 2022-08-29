@@ -151,6 +151,12 @@ class NocStorage {
     const vtr::vector<NocRouterId, NocRouter>& get_noc_routers(void) const;
 
     /**
+     * @return An integer representing the total number of routers within the
+     * NoC.
+     */
+    int get_number_of_noc_routers(void) const;
+
+    /**
      * @brief Get all the links in the NoC. The links themselves cannot
      * be modified. This function should be used when information on
      * every link is needed.
@@ -158,6 +164,12 @@ class NocStorage {
      * @return A vector of links. 
      */
     const vtr::vector<NocLinkId, NocLink>& get_noc_links(void) const;
+
+    /**
+     * @return An integer representing the total number of links within the
+     * NoC.
+     */
+    int get_number_of_noc_links(void) const;
 
     /**
      * @brief Get the maximum allowable bandwidth for a link
@@ -206,7 +218,7 @@ class NocStorage {
      * @param id A unique router identifier.
      * @return A router (NocRouter) that is identified by the given id.
      */
-    NocRouter& get_single_mutable_noc_router(NocRouterId id);
+    NocRouter* get_single_mutable_noc_router(NocRouterId id);
 
     // getters for links
 
@@ -228,7 +240,7 @@ class NocStorage {
      * @param id A unique link identifier.
      * @return A link (NocLink) that is identified by the given id.
      */
-    NocLink& get_single_mutable_noc_link(NocLinkId id);
+    NocLink* get_single_mutable_noc_link(NocLinkId id);
 
     /**
      * @brief Given a grid location of a hard router block on
