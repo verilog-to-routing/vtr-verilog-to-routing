@@ -2779,12 +2779,6 @@
         "test_name": "micro/bm_expr_all_mod/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "bm_expr_all_mod_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 520.8,
         "exec_time(ms)": 11631,
         "simulation_time(ms)": 6413.6,
@@ -2805,12 +2799,6 @@
         "test_name": "micro/bm_expr_all_mod/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "generated_blif": "bm_expr_all_mod_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 516.3,
         "exec_time(ms)": 10272,
         "simulation_time(ms)": 6279.3,
@@ -2830,12 +2818,6 @@
         "test_name": "micro/bm_expr_all_mod/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "generated_blif": "bm_expr_all_mod_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 519.3,
         "exec_time(ms)": 10622.9,
         "simulation_time(ms)": 6552.4,
@@ -2854,12 +2836,6 @@
     "micro/bm_expr_all_mod/no_arch": {
         "test_name": "micro/bm_expr_all_mod/no_arch",
         "generated_blif": "bm_expr_all_mod_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 515.9,
         "exec_time(ms)": 10221.6,
         "simulation_time(ms)": 6344.7,
@@ -3310,12 +3286,6 @@
         "test_name": "micro/bm_match1_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "bm_match1_str_arch_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 153.7,
         "exec_time(ms)": 1513.8,
         "simulation_time(ms)": 812.8,
@@ -3336,12 +3306,6 @@
         "test_name": "micro/bm_match1_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "generated_blif": "bm_match1_str_arch_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 266.2,
         "exec_time(ms)": 7266.8,
         "simulation_time(ms)": 3659.8,
@@ -3361,12 +3325,6 @@
         "test_name": "micro/bm_match1_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "generated_blif": "bm_match1_str_arch_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 153.2,
         "exec_time(ms)": 1515.8,
         "simulation_time(ms)": 812.9,
@@ -3386,12 +3344,6 @@
     "micro/bm_match1_str_arch/no_arch": {
         "test_name": "micro/bm_match1_str_arch/no_arch",
         "generated_blif": "bm_match1_str_arch_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 264.3,
         "exec_time(ms)": 7213.1,
         "simulation_time(ms)": 3604.5,
@@ -3564,12 +3516,6 @@
         "test_name": "micro/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "generated_blif": "bm_match4_str_arch_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 172.8,
         "exec_time(ms)": 2614.2,
         "simulation_time(ms)": 1201.7,
@@ -3591,12 +3537,6 @@
         "test_name": "micro/bm_match4_str_arch/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "generated_blif": "bm_match4_str_arch_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 188.9,
         "exec_time(ms)": 4203.8,
         "simulation_time(ms)": 2237.5,
@@ -3616,12 +3556,6 @@
         "test_name": "micro/bm_match4_str_arch/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "generated_blif": "bm_match4_str_arch_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 167.7,
         "exec_time(ms)": 2660.7,
         "simulation_time(ms)": 1193.2,
@@ -3641,12 +3575,6 @@
     "micro/bm_match4_str_arch/no_arch": {
         "test_name": "micro/bm_match4_str_arch/no_arch",
         "generated_blif": "bm_match4_str_arch_generated.blif",
-        "warnings": [
-            "[SIMULATION] Vector 0 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 1 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 2 equivalent but output vector has bits set when expecting don't care :",
-            "[SIMULATION] Vector 3 equivalent but output vector has bits set when expecting don't care :"
-        ],
         "max_rss(MiB)": 186.9,
         "exec_time(ms)": 4039,
         "simulation_time(ms)": 2137.4,
