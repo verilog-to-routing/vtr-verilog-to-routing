@@ -15,8 +15,16 @@ const vtr::vector<NocRouterId, NocRouter>& NocStorage::get_noc_routers(void) con
     return router_storage;
 }
 
+int NocStorage::get_number_of_noc_routers(void) const {
+    return router_storage.size();
+}
+
 const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links(void) const {
     return link_storage;
+}
+
+int NocStorage::get_number_of_noc_links(void) const {
+    return link_storage.size();
 }
 
 double NocStorage::get_noc_link_bandwidth(void) const {
@@ -35,8 +43,8 @@ const NocRouter& NocStorage::get_single_noc_router(NocRouterId id) const {
     return router_storage[id];
 }
 
-NocRouter& NocStorage::get_single_mutable_noc_router(NocRouterId id) {
-    return router_storage[id];
+NocRouter* NocStorage::get_single_mutable_noc_router(NocRouterId id) {
+    return &router_storage[id];
 }
 
 // get link properties
@@ -44,8 +52,8 @@ const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
     return link_storage[id];
 }
 
-NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
-    return link_storage[id];
+NocLink* NocStorage::get_single_mutable_noc_link(NocLinkId id) {
+    return &link_storage[id];
 }
 
 NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_location) const {
