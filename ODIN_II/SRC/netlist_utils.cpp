@@ -1903,7 +1903,7 @@ void equalize_input_ports_size(nnode_t*& node, uintptr_t traverse_mark_number, n
     /* no change is needed */
     if (port_a_size == port_y_size)
         return;
-    
+
     /**
      * INPUTS
      *  A: (width_a)

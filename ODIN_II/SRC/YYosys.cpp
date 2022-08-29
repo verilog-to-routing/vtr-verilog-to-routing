@@ -274,7 +274,7 @@ void YYosys::execute() {
         switch (configuration.input_file_type) {
             case (file_type_e::_VERILOG): // fallthrough
             case (file_type_e::_VERILOG_HEADER): {
-                    run_pass(std::string("read_verilog -sv -nolatches " + aggregated_circuits));
+                run_pass(std::string("read_verilog -sv -nolatches " + aggregated_circuits));
                 break;
             }
             case (file_type_e::_SYSTEM_VERILOG): {
@@ -293,12 +293,7 @@ void YYosys::execute() {
 #    else
         run_pass(std::string("read_verilog -sv -nolatches " + aggregated_circuits));
 #    endif
-        /* 
-         * Check whether cells match libraries, find top module, and run the Yosys basic coarse-grained synthesis steps
-         * such as proc: Translate processes to netlist components such as MUXs, FFs and latches
-         * or fsm: Extraction and optimization of finite state machines
-         * the option "-noalumacc" is to avoid Yosys transforms basic arithmetic operations into alu or macc
-        */
+        // Check whether cells match libraries and find top module
         if (global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED) {
             run_pass(std::string("hierarchy -check -top " + global_args.top_level_module_name.value() + " -purge_lib"));
         } else {
@@ -328,7 +323,6 @@ void YYosys::execute() {
          */
         run_pass(std::string("share; opt;"));
 
-
         // Use a readable name convention
         // [NOTE]: the 'autoname' process has a high memory footprint for giant netlists
         // we run it after basic optimization passes to reduce the overhead (see issue #2031)
@@ -353,7 +347,7 @@ void YYosys::execute() {
          *         initial implementation of Yosys+Odin-II, which did not use this pass
          */
         run_pass(std::string("techmap */t:$mem */t:$memrd */t:$add */t:$sub */t:$mul */t:$dffsr */t:$dffsre */t:$sr */t:$dlatch */t:$adlatch %% %n"));
-        
+
         // Collects memories, their port and create multiport memory cells
         run_pass(std::string("memory_collect; memory_dff;"));
         /**
@@ -373,7 +367,6 @@ void YYosys::execute() {
         run_pass(std::string("wreduce; simplemap */t:$dffsr */t:$dffsre */t:$sr */t:$dlatch */t:$adlatch %% %n;"));
         // Turn all DFFs into simple latches
         run_pass(std::string("dffunmap; opt -fast -noff;"));
-
 
         // Check the hierarchy for any unknown modules, and purge all modules (including blackboxes) that aren't used
         run_pass(std::string("hierarchy -check -purge_lib"));

@@ -1191,7 +1191,7 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
             /* Assumption that bit map is in order when read from blif */
             else if (line_count_bitmap == 2) {
                 /* LOGICAL_XOR */
-                if (((strcmp(bit_map[0], "01") == 0) && (strcmp(bit_map[1], "10") == 0)) || ((strcmp(bit_map[0], "10") == 0) && (strcmp(bit_map[1], "01") == 0)))  {
+                if (((strcmp(bit_map[0], "01") == 0) && (strcmp(bit_map[1], "10") == 0)) || ((strcmp(bit_map[0], "10") == 0) && (strcmp(bit_map[1], "01") == 0))) {
                     to_return = LOGICAL_XOR;
                 }
                 /* LOGICAL_XNOR */
@@ -1380,7 +1380,7 @@ void BLIF::Reader::create_latch_node_and_driver() {
         // to avoid concatenating the top module name to edge sentivity and init value inputs
         if (configuration.coarsen && (input_token_count == 3 || input_token_count == 5))
             names[input_token_count - 1] = resolve_signal_name_based_on_blif_type(nullptr, ptr);
-        else            
+        else
             names[input_token_count - 1] = resolve_signal_name_based_on_blif_type(blif_netlist->identifier, ptr);
     }
 
