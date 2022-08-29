@@ -311,9 +311,13 @@ std::tuple<const t_sub_tile*, int> get_sub_tile_from_class_physical_num(t_physic
 
 t_logical_block_type_ptr get_logical_block_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
 
-e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
+std::vector<int> get_pin_list_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
 
-int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
+PortEquivalence get_port_equivalency_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
+
+e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
+
+int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
 
 int get_pin_physical_num_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num, int pin_logical_num);
 
@@ -343,6 +347,8 @@ std::tuple<const t_sub_tile*, int> get_sub_tile_from_pin_physical_num(t_physical
 t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
 const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
+
+PortEquivalence get_port_equivalency_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
 
 e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 

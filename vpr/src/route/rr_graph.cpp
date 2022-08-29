@@ -1712,7 +1712,6 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
 
     auto type = grid[i][j].type;
     int num_class = (int)type->class_inf.size();
-    const std::vector<t_class>& class_inf = type->class_inf;
     int num_pins = type->num_pins;
     const std::vector<int>& pin_class = type->pin_class;
 
@@ -1724,7 +1723,8 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
     //int edges_created =0;
     for (int iclass = 0; iclass < num_class; ++iclass) {
         RRNodeId inode = RRNodeId::INVALID();
-        if (class_inf[iclass].type == DRIVER) { /* SOURCE */
+        auto class_type = get_class_type_from_class_physical_num(type, iclass);
+        if (class_type == DRIVER) { /* SOURCE */
             inode = rr_graph_builder.node_lookup().find_node(i, j, SOURCE, iclass);
             VTR_ASSERT(inode);
 
@@ -1733,8 +1733,8 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
             std::vector<RRNodeId> opin_nodes;
             for (int width_offset = 0; width_offset < type->width; ++width_offset) {
                 for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                    for (int ipin = 0; ipin < class_inf[iclass].num_pins; ++ipin) {
-                        int pin_num = class_inf[iclass].pinlist[ipin];
+                    auto pin_list = get_pin_list_from_class_physical_num(type, iclass);
+                    for (int pin_num : pin_list) {
                         std::vector<RRNodeId> physical_pins = rr_graph_builder.node_lookup().find_nodes_at_all_sides(i + width_offset, j + height_offset, OPIN, pin_num);
                         opin_nodes.insert(opin_nodes.end(), physical_pins.begin(), physical_pins.end());
                     }
@@ -1750,7 +1750,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
             rr_graph_builder.set_node_cost_index(inode, RRIndexedDataId(SOURCE_COST_INDEX));
             rr_graph_builder.set_node_type(inode, SOURCE);
         } else { /* SINK */
-            VTR_ASSERT(class_inf[iclass].type == RECEIVER);
+            VTR_ASSERT(class_type == RECEIVER);
             inode = rr_graph_builder.node_lookup().find_node(i, j, SINK, iclass);
 
             VTR_ASSERT(inode);
@@ -1770,7 +1770,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Things common to both SOURCEs and SINKs.   */
-        rr_graph_builder.set_node_capacity(inode, class_inf[iclass].num_pins);
+        rr_graph_builder.set_node_capacity(inode, get_class_num_pins_from_class_physical_num(type, iclass));
         rr_graph_builder.set_node_coordinates(inode, i, j, i + type->width - 1, j + type->height - 1);
         float R = 0.;
         float C = 0.;
@@ -1787,15 +1787,16 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                 for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                     if (type->pinloc[width_offset][height_offset][side][ipin]) {
                         RRNodeId inode = RRNodeId::INVALID();
-                        int iclass = pin_class[ipin];
+                        auto pin_type = get_pin_type_from_pin_physical_num(type, ipin);
+                        auto class_physical_num = get_class_num_from_pin_physical_num(type, ipin);
 
-                        if (class_inf[iclass].type == RECEIVER) {
+                        if (pin_type == RECEIVER) {
                             //Connect the input pin to the sink
                             inode = rr_graph_builder.node_lookup().find_node(i + width_offset, j + height_offset, IPIN, ipin, side);
 
                             /* Input pins are uniquified, we may not always find one */
                             if (inode) {
-                                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(i, j, SINK, iclass);
+                                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(i, j, SINK, class_physical_num);
 
                                 //Add info about the edge to be created
                                 rr_edges_to_create.emplace_back(inode, to_node, delayless_switch);
@@ -1804,7 +1805,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                                 rr_graph_builder.set_node_type(inode, IPIN);
                             }
                         } else {
-                            VTR_ASSERT(class_inf[iclass].type == DRIVER);
+                            VTR_ASSERT(pin_type == DRIVER);
                             //Initialize the output pin
                             // Note that we leave it's out-going edges unconnected (they will be hooked up to global routing later)
                             inode = rr_graph_builder.node_lookup().find_node(i + width_offset, j + height_offset, OPIN, ipin, side);

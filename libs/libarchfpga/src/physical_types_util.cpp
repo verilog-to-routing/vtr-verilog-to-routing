@@ -857,39 +857,48 @@ t_logical_block_type_ptr get_logical_block_from_class_physical_num(t_physical_ti
     return nullptr;
 }
 
-e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num) {
-    e_pin_type class_type;
-
-    bool is_on_tile = is_class_on_tile(physical_tile, physical_class_num);
-
-    if (!is_on_tile) {
-        auto logical_block = get_logical_block_from_class_physical_num(physical_tile, physical_class_num);
-        int class_logical_num = get_class_logical_num_from_class_physical_num(physical_tile, physical_class_num);
-        class_type = logical_block->logical_class_inf[class_logical_num].type;
-
+std::vector<int> get_pin_list_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
+    if(is_class_on_tile(physical_tile, class_physical_num)) {
+        const t_class& pin_class = physical_tile->class_inf[class_physical_num];
+        return pin_class.pinlist;
     } else {
-        VTR_ASSERT(is_on_tile == true);
-        class_type = physical_tile->class_inf[physical_class_num].type;
+        const t_class& pin_class = physical_tile->internal_class_inf.at(class_physical_num);
+        return pin_class.pinlist;
     }
-
-    return class_type;
 }
 
-int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num) {
-    int num_pins = -1;
-    bool is_on_tile = is_class_on_tile(physical_tile, physical_class_num);
+PortEquivalence get_port_equivalency_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
+    if(is_class_on_tile(physical_tile, class_physical_num)) {
+        const t_class& pin_class = physical_tile->class_inf[class_physical_num];
+        return pin_class.equivalence;
+    } else {
+        const t_class& pin_class = physical_tile->internal_class_inf.at(class_physical_num);
+        return pin_class.equivalence;
+    }
+}
 
-    if (!is_on_tile) {
-        auto logical_block = get_logical_block_from_class_physical_num(physical_tile, physical_class_num);
-        int class_logical_num = get_class_logical_num_from_class_physical_num(physical_tile, physical_class_num);
-        num_pins = logical_block->logical_class_inf[class_logical_num].num_pins;
+e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
+
+    if (is_class_on_tile(physical_tile, class_physical_num)) {
+        return physical_tile->class_inf[class_physical_num].type;
 
     } else {
-        VTR_ASSERT(is_on_tile == true);
-        num_pins = physical_tile->class_inf[physical_class_num].num_pins;
+        const t_class& pin_class = physical_tile->internal_class_inf.at(class_physical_num);
+        return pin_class.type;
     }
 
-    return num_pins;
+}
+
+int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
+
+    if (is_class_on_tile(physical_tile, class_physical_num)) {
+        return physical_tile->class_inf[class_physical_num].num_pins;
+
+    } else {
+        const t_class& pin_class = physical_tile->internal_class_inf.at(class_physical_num);
+        return pin_class.num_pins;
+    }
+
 }
 
 int get_pin_physical_num_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num, int pin_logical_num) {
@@ -1029,6 +1038,15 @@ const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr 
     return logical_block->pin_logical_num_to_pb_pin_mapping.at(logical_num);
 }
 
+PortEquivalence get_port_equivalency_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num) {
+    if(is_pin_on_tile(physical_tile, pin_physical_num)) {
+        const t_class& pin_class = physical_tile->class_inf[physical_tile->pin_class[pin_physical_num]];
+        return pin_class.equivalence;
+    } else {
+        const t_class& pin_class = physical_tile->internal_class_inf.at(physical_tile->internal_pin_class.at(pin_physical_num));
+        return pin_class.equivalence;
+    }
+}
 e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num) {
     if (is_pin_on_tile(physical_tile, pin_physical_num)) {
         const t_class& pin_class = physical_tile->class_inf[physical_tile->pin_class[pin_physical_num]];

@@ -872,13 +872,13 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
             if (!net || (net && cluster_ctx.clb_nlist.net_sinks(net).size() == 0)) {
                 //There is no external net connected to this pin
-
+                auto port_eq = get_port_equivalency_from_pin_physical_num(type, clb_pin);
                 iclass = type->pin_class[clb_pin];
 
-                if (type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE) {
+                if (port_eq == PortEquivalence::INSTANCE) {
                     //The pin is part of an instance equivalent class, hence we need to reserve a pin
 
-                    VTR_ASSERT(type->class_inf[iclass].type == DRIVER);
+                    VTR_ASSERT(get_pin_type_from_pin_physical_num(type, clb_pin) == DRIVER);
 
                     /* Check to make sure class is in same range as that assigned to block */
                     VTR_ASSERT(iclass >= class_range.low && iclass <= class_range.high);
@@ -1047,7 +1047,8 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const R
                 i = place_ctx.block_locs[blk_id].loc.x;
                 j = place_ctx.block_locs[blk_id].loc.y;
 
-                if (type->class_inf[iclass].type == DRIVER)
+                auto class_type = get_class_type_from_class_physical_num(type, iclass);
+                if (class_type == DRIVER)
                     rr_type = SOURCE;
                 else
                     rr_type = SINK;
@@ -1401,7 +1402,8 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
                 if (num_local_opin == 0) continue;
-                VTR_ASSERT(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE);
+                auto port_eq = get_port_equivalency_from_class_physical_num(type, iclass);
+                VTR_ASSERT(port_eq == PortEquivalence::INSTANCE);
 
                 /* Always 0 for pads and for RECEIVER (IPIN) classes */
                 for (ipin = 0; ipin < num_local_opin; ipin++) {
@@ -1423,7 +1425,8 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
 
             if (num_local_opin == 0) continue;
 
-            VTR_ASSERT(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE);
+            auto class_eq = get_port_equivalency_from_class_physical_num(type, iclass);
+            VTR_ASSERT(class_eq == PortEquivalence::INSTANCE);
 
             //From the SRC node we walk through it's out going edges to collect the
             //OPIN nodes. We then push them onto a heap so the OPINs with lower
