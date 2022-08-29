@@ -1890,16 +1890,6 @@ void equalize_input_ports_size(nnode_t*& node, uintptr_t traverse_mark_number, n
     oassert(node->traverse_visited == traverse_mark_number);
     oassert(node->num_input_port_sizes > 0 && node->num_input_port_sizes <= 2);
 
-    /**
-     * INPUTS
-     *  A: (width_a)
-     *  B: (width_b) [optional]
-     * OUTPUT
-     *  Y: width_y
-     */
-    /* removing extra pad pins based on the signedness of ports */
-    reduce_input_ports(node, netlist);
-
     int port_a_size = node->input_port_sizes[0];
     int port_b_size = -1;
     if (node->num_input_port_sizes == 2) {
@@ -1913,6 +1903,16 @@ void equalize_input_ports_size(nnode_t*& node, uintptr_t traverse_mark_number, n
     /* no change is needed */
     if (port_a_size == port_y_size)
         return;
+    
+    /**
+     * INPUTS
+     *  A: (width_a)
+     *  B: (width_b) [optional]
+     * OUTPUT
+     *  Y: width_y
+     */
+    /* removing extra pad pins based on the signedness of ports */
+    reduce_input_ports(node, netlist);
 
     /* creating the new node */
     nnode_t* new_node = (port_b_size == -1) ? make_1port_gate(node->type, port_a_size, port_y_size, node, traverse_mark_number)

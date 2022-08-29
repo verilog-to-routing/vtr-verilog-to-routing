@@ -273,8 +273,13 @@ void BLIF::Reader::hook_up_node(nnode_t* node) {
 
         nnet_t* output_net = (nnet_t*)output_nets_hash->get(input_pin->name);
 
-        if (!output_net)
-            error_message(PARSE_BLIF, my_location, "Error: Could not hook up the pin %s: not available.", input_pin->name);
+        if (!output_net) {
+            if (configuration.coarsen)
+                warning_message(PARSE_BLIF, my_location, "Warn: Could not hook up the pin %s: not available.", input_pin->name);
+            else
+                error_message(PARSE_BLIF, my_location, "Error: Could not hook up the pin %s: not available.", input_pin->name);
+            return;
+        }
 
         add_fanout_pin_to_net(output_net, input_pin);
     }
@@ -1186,16 +1191,12 @@ operation_list BLIF::Reader::read_bit_map_find_unknown_gate(int input_count, nno
             /* Assumption that bit map is in order when read from blif */
             else if (line_count_bitmap == 2) {
                 /* LOGICAL_XOR */
-                if ((strcmp(bit_map[0], "01") == 0) && (strcmp(bit_map[1], "10") == 0)) {
+                if (((strcmp(bit_map[0], "01") == 0) && (strcmp(bit_map[1], "10") == 0)) || ((strcmp(bit_map[0], "10") == 0) && (strcmp(bit_map[1], "01") == 0)))  {
                     to_return = LOGICAL_XOR;
                 }
                 /* LOGICAL_XNOR */
-                else if ((strcmp(bit_map[0], "00") == 0) && (strcmp(bit_map[1], "11") == 0)) {
+                else if (((strcmp(bit_map[0], "00") == 0) && (strcmp(bit_map[1], "11") == 0)) || ((strcmp(bit_map[0], "11") == 0) && (strcmp(bit_map[1], "00") == 0))) {
                     to_return = LOGICAL_XNOR;
-                }
-                /* LOGICAL_OR */
-                else if (((strcmp(bit_map[0], "10") == 0) && (strcmp(bit_map[1], "01") == 0)) || ((strcmp(bit_map[0], "01") == 0) && (strcmp(bit_map[1], "10") == 0))) {
-                    to_return = LOGICAL_OR;
                 }
                 /* SMUX_2 */
                 else if (((strcmp(bit_map[0], "01-") == 0) && (strcmp(bit_map[1], "1-1") == 0)) || ((strcmp(bit_map[0], "1-0") == 0) && (strcmp(bit_map[1], "-11") == 0))) {
