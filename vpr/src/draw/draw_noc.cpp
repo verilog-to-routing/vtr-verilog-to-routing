@@ -90,7 +90,7 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     }
 
     // get the list of links in the NoC
-    vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
+    const vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
 
     // store each links bandwidth usage
     double link_bandwidth_usage;
