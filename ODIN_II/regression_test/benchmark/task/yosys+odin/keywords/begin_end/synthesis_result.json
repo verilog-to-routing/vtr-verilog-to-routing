@@ -10,11 +10,11 @@
         "synthesis_time(ms)": 33.2,
         "Pi": 11,
         "Po": 3,
-        "logic element": 17,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 17,
-        "Total Node": 17
+        "logic element": 28,
+        "Longest Path": 9,
+        "Average Path": 7,
+        "Estimated LUTs": 28,
+        "Total Node": 28
     },
     "begin_end/negedge/no_arch": {
         "test_name": "begin_end/negedge/no_arch",
@@ -26,14 +26,14 @@
         "techmap_time(ms)": 0,
         "synthesis_time(ms)": 25.3,
         "Latch Drivers": 1,
-        "Pi": 2,
+        "Pi": 1,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 2,
         "latch": 1,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "begin_end/posedge/no_arch": {
         "test_name": "begin_end/posedge/no_arch",

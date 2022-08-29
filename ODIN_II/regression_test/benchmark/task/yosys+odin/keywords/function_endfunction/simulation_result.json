@@ -51,11 +51,11 @@
         "test_coverage(%)": 100,
         "Pi": 3,
         "Po": 1,
-        "logic element": 5,
-        "Longest Path": 6,
-        "Average Path": 6,
-        "Estimated LUTs": 5,
-        "Total Node": 5
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "function_endfunction/outside_port/no_arch": {
         "test_name": "function_endfunction/outside_port/no_arch",

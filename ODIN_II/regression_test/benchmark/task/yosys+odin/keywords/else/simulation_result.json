@@ -8,11 +8,11 @@
         "test_coverage(%)": 100,
         "Pi": 2,
         "Po": 2,
-        "logic element": 9,
-        "Longest Path": 7,
-        "Average Path": 5,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "logic element": 10,
+        "Longest Path": 9,
+        "Average Path": 6,
+        "Estimated LUTs": 10,
+        "Total Node": 10
     },
     "else/if_else/no_arch": {
         "test_name": "else/if_else/no_arch",
@@ -23,11 +23,11 @@
         "test_coverage(%)": 100,
         "Pi": 2,
         "Po": 1,
-        "logic element": 2,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "DEFAULT": {
         "test_name": "n/a",

@@ -8,11 +8,11 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 2,
-        "logic element": 6,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 6,
-        "Total Node": 6
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "nand/nand_wire/no_arch": {
         "test_name": "nand/nand_wire/no_arch",
@@ -23,11 +23,11 @@
         "test_coverage(%)": 100,
         "Pi": 2,
         "Po": 1,
-        "logic element": 3,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 3,
-        "Total Node": 3
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "nand/range_nand_int_wide/no_arch": {
         "test_name": "nand/range_nand_int_wide/no_arch",
@@ -38,11 +38,11 @@
         "test_coverage(%)": 98,
         "Pi": 64,
         "Po": 32,
-        "logic element": 96,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 96,
-        "Total Node": 96
+        "logic element": 64,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 64,
+        "Total Node": 64
     },
     "nand/range_nand_ultra_wide/no_arch": {
         "test_name": "nand/range_nand_ultra_wide/no_arch",
@@ -64,11 +64,11 @@
         "test_coverage(%)": 100,
         "Pi": 6,
         "Po": 3,
-        "logic element": 9,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "logic element": 6,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "DEFAULT": {
         "test_name": "n/a",

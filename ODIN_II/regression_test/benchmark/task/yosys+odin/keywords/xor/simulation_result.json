@@ -8,11 +8,11 @@
         "test_coverage(%)": 100,
         "Pi": 64,
         "Po": 32,
-        "logic element": 128,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 128,
-        "Total Node": 128
+        "logic element": 32,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 32,
+        "Total Node": 32
     },
     "xor/range_xor_ultra_wide/no_arch": {
         "test_name": "xor/range_xor_ultra_wide/no_arch",
@@ -23,11 +23,11 @@
         "test_coverage(%)": 99.9,
         "Pi": 512,
         "Po": 256,
-        "logic element": 1024,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "logic element": 256,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 256,
+        "Total Node": 256
     },
     "xor/range_xor_wide/no_arch": {
         "test_name": "xor/range_xor_wide/no_arch",
@@ -38,11 +38,11 @@
         "test_coverage(%)": 100,
         "Pi": 6,
         "Po": 3,
-        "logic element": 12,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 12,
-        "Total Node": 12
+        "logic element": 3,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
     },
     "xor/xor_indexed_port/no_arch": {
         "test_name": "xor/xor_indexed_port/no_arch",
@@ -53,11 +53,11 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 2,
-        "logic element": 8,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "xor/xor_wire/no_arch": {
         "test_name": "xor/xor_wire/no_arch",
@@ -68,11 +68,11 @@
         "test_coverage(%)": 100,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "DEFAULT": {
         "test_name": "n/a",

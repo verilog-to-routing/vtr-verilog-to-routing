@@ -8,11 +8,11 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 2,
-        "logic element": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "and/and_wire/no_arch": {
         "test_name": "and/and_wire/no_arch",
@@ -23,11 +23,11 @@
         "test_coverage(%)": 100,
         "Pi": 2,
         "Po": 1,
-        "logic element": 2,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "and/range_and_int_wide/no_arch": {
         "test_name": "and/range_and_int_wide/no_arch",
@@ -49,11 +49,11 @@
         "test_coverage(%)": 99.3,
         "Pi": 512,
         "Po": 256,
-        "logic element": 512,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 512,
-        "Total Node": 512
+        "logic element": 256,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 256,
+        "Total Node": 256
     },
     "and/range_and_wide/no_arch": {
         "test_name": "and/range_and_wide/no_arch",
@@ -64,11 +64,11 @@
         "test_coverage(%)": 100,
         "Pi": 6,
         "Po": 3,
-        "logic element": 6,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 6,
-        "Total Node": 6
+        "logic element": 3,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
     },
     "DEFAULT": {
         "test_name": "n/a",

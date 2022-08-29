@@ -21,11 +21,11 @@
         "exec_time(ms)": 6,
         "Pi": 2,
         "Po": 1,
-        "logic element": 2,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "wire/wire/no_arch": {
         "test_name": "wire/wire/no_arch",

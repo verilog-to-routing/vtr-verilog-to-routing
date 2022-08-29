@@ -24,12 +24,10 @@
         "Latch Drivers": 1,
         "Pi": 1,
         "Po": 1,
-        "logic element": 1,
         "latch": 1,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 2
     },
     "always/always_lone_asterisk/no_arch": {
         "test_name": "always/always_lone_asterisk/no_arch",
@@ -70,11 +68,11 @@
         "test_coverage(%)": 100,
         "Pi": 11,
         "Po": 3,
-        "logic element": 20,
-        "Longest Path": 7,
-        "Average Path": 6,
-        "Estimated LUTs": 20,
-        "Total Node": 20
+        "logic element": 28,
+        "Longest Path": 9,
+        "Average Path": 7,
+        "Estimated LUTs": 28,
+        "Total Node": 28
     },
     "always/posedge/no_arch": {
         "test_name": "always/posedge/no_arch",
@@ -86,12 +84,10 @@
         "Latch Drivers": 1,
         "Pi": 1,
         "Po": 1,
-        "logic element": 1,
         "latch": 1,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 2
     },
     "DEFAULT": {
         "test_name": "n/a",

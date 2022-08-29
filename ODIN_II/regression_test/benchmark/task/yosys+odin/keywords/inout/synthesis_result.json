@@ -8,10 +8,13 @@
         "optimization_time(ms)": 0,
         "techmap_time(ms)": 0.1,
         "synthesis_time(ms)": 25.6,
-        "Pi": 2,
+        "Pi": 3,
         "Po": 2,
-        "Longest Path": 2,
-        "Average Path": 2
+        "logic element": 2,
+        "Longest Path": 4,
+        "Average Path": 2,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "inout/inout_failure/no_arch": {
         "test_name": "inout/inout_failure/no_arch",

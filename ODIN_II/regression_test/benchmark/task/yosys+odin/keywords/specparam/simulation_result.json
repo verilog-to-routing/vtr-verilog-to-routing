@@ -5,14 +5,14 @@
         "max_rss(MiB)": 44.9,
         "exec_time(ms)": 6.6,
         "simulation_time(ms)": 0.3,
-        "test_coverage(%)": 66.7,
+        "test_coverage(%)": 75,
         "Pi": 2,
         "Po": 1,
-        "logic element": 2,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "specparam/specparam_inside/no_arch": {
         "test_name": "specparam/specparam_inside/no_arch",
@@ -20,14 +20,14 @@
         "max_rss(MiB)": 44.9,
         "exec_time(ms)": 6.8,
         "simulation_time(ms)": 0.3,
-        "test_coverage(%)": 66.7,
+        "test_coverage(%)": 75,
         "Pi": 2,
         "Po": 1,
-        "logic element": 2,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "specparam/specparam_outside/no_arch": {
         "test_name": "specparam/specparam_outside/no_arch",
@@ -35,14 +35,14 @@
         "max_rss(MiB)": 45,
         "exec_time(ms)": 6.6,
         "simulation_time(ms)": 0.3,
-        "test_coverage(%)": 66.7,
+        "test_coverage(%)": 75,
         "Pi": 2,
         "Po": 1,
-        "logic element": 2,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "DEFAULT": {
         "test_name": "n/a",

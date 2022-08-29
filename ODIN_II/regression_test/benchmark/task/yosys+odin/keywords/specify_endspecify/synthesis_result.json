@@ -10,11 +10,11 @@
         "synthesis_time(ms)": 23,
         "Pi": 2,
         "Po": 1,
-        "logic element": 3,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 3,
-        "Total Node": 3
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "specify_endspecify/specify_edge_sensitive/no_arch": {
         "test_name": "specify_endspecify/specify_edge_sensitive/no_arch",

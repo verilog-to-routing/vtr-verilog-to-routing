@@ -8,11 +8,11 @@
         "test_coverage(%)": 100,
         "Pi": 11,
         "Po": 3,
-        "logic element": 20,
-        "Longest Path": 7,
-        "Average Path": 6,
-        "Estimated LUTs": 20,
-        "Total Node": 20
+        "logic element": 28,
+        "Longest Path": 9,
+        "Average Path": 7,
+        "Estimated LUTs": 28,
+        "Total Node": 28
     },
     "begin_end/negedge/no_arch": {
         "test_name": "begin_end/negedge/no_arch",
@@ -22,14 +22,14 @@
         "simulation_time(ms)": 1.8,
         "test_coverage(%)": 100,
         "Latch Drivers": 1,
-        "Pi": 2,
+        "Pi": 1,
         "Po": 2,
-        "logic element": 5,
+        "logic element": 3,
         "latch": 1,
-        "Longest Path": 6,
-        "Average Path": 4,
-        "Estimated LUTs": 5,
-        "Total Node": 7
+        "Longest Path": 4,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 5
     },
     "begin_end/posedge/no_arch": {
         "test_name": "begin_end/posedge/no_arch",
@@ -41,12 +41,10 @@
         "Latch Drivers": 1,
         "Pi": 1,
         "Po": 1,
-        "logic element": 1,
         "latch": 1,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 2
     },
     "DEFAULT": {
         "test_name": "n/a",
