@@ -23,13 +23,6 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
-/**
- * @brief configures basic buttons
- * 
- * Sets up Window, Search, Save, and SearchType buttons. Buttons are 
- * created in glade main.ui file. Connects them to their cbk functions
- * @param app ezgl::application*
- */
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -51,12 +44,12 @@ void basic_button_setup(ezgl::application* app) {
     g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
 }
 
-/**
+/*
  * @brief sets up net related buttons and connects their signals
  * 
  * Sets up the toggle nets combo box, net alpha spin button, and max fanout
  * spin button which are created in main.ui file. Found in Net Settings dropdown
- * @param app 
+ * @param app ezgl::application ptr
  */
 void net_button_setup(ezgl::application* app) {
     //Toggle net signal connection
@@ -76,11 +69,11 @@ void net_button_setup(ezgl::application* app) {
     gtk_spin_button_set_range(max_fanout, 0., (double)get_max_fanout());
 }
 
-/**
+/*
  * @brief sets up block related buttons, connects their signals
  * 
  * Connects signals and sets init. values for blk internals spin button,
- * blk pin util combo box, and placement macros combo box created in
+ * blk pin util combo box,placement macros combo box, and noc combo bx created in
  * main.ui. Found in Block Settings dropdown
  * @param app 
  */
@@ -100,12 +93,23 @@ void block_button_setup(ezgl::application* app) {
     //Toggle Placement Macros
     GtkComboBoxText* placement_macros = GTK_COMBO_BOX_TEXT(app->get_object("TogglePlacementMacros"));
     g_signal_connect(placement_macros, "changed", G_CALLBACK(placement_macros_cbk), app);
+
+    //Toggle NoC Display (based on startup cmd --noc on)
+    if (!draw_state->show_noc_button) {
+        hide_widget("NocLabel", app);
+        hide_widget("ToggleNocBox", app);
+    } else {
+        GtkComboBoxText* toggleNocBox = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNocBox"));
+        g_signal_connect(toggleNocBox, "changed", G_CALLBACK(toggle_noc_cbk), app);
+    }
 }
 
-/**
+/*
  * @brief configures and connects signals/functions for routing buttons
  * 
- * @param app 
+ * Connects signals/sets default values for toggleRRButton, ToggleCongestion,
+ * ToggleCongestionCost, ToggleRoutingBBox, RoutingExpansionCost, ToggleRoutingUtil 
+ * buttons. 
  */
 void routing_button_setup(ezgl::application* app) {
     auto& route_ctx = g_vpr_ctx.routing();
@@ -136,9 +140,21 @@ void routing_button_setup(ezgl::application* app) {
     //Toggle Router Util
     GtkComboBoxText* toggle_router_util = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRoutingUtil"));
     g_signal_connect(toggle_router_util, "changed", G_CALLBACK(toggle_router_util_cbk), app);
+    show_widget("RoutingMenuButton", app);
 }
 
-/**
+/*
+ * @brief Loads required data for search autocomplete, sets up special completion fn
+ */
+void search_setup(ezgl::application* app) {
+    load_block_names(app);
+    load_net_names(app);
+    //Setting custom matching function for entry completion (searches whole string instead of start)
+    GtkEntryCompletion* wildcardComp = GTK_ENTRY_COMPLETION(app->get_object("Completion"));
+    gtk_entry_completion_set_match_func(wildcardComp, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
+}
+
+/*
  * @brief connects critical path button to its cbk fn
  * 
  * @param app ezgl application
@@ -146,9 +162,10 @@ void routing_button_setup(ezgl::application* app) {
 void crit_path_button_setup(ezgl::application* app) {
     GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
     g_signal_connect(toggle_crit_path, "changed", G_CALLBACK(toggle_crit_path_cbk), app);
+    show_widget("ToggleCritPath", app);
 }
 
-/**
+/*
  * @brief hides critical path button
  * 
  * @param app ezgl app
@@ -158,7 +175,7 @@ void hide_crit_path_button(ezgl::application* app) {
     hide_widget("ToggleCritPath", app);
 }
 
-/**
+/*
  * @brief Hides the widget with the given name
  * 
  * @param widgetName string of widget name in main.ui
@@ -167,6 +184,58 @@ void hide_crit_path_button(ezgl::application* app) {
 void hide_widget(std::string widgetName, ezgl::application* app) {
     GtkWidget* widget = GTK_WIDGET(app->get_object(widgetName.c_str()));
     gtk_widget_hide(widget);
+}
+
+/**
+ * @brief Hides the widget with the given name
+ */
+void show_widget(std::string widgetName, ezgl::application* app) {
+    GtkWidget* widget = GTK_WIDGET(app->get_object(widgetName.c_str()));
+    gtk_widget_show(widget);
+}
+
+/**
+ * @brief loads atom and cluster lvl names into gtk list store item used for completion
+ * 
+ * @param app ezgl application used for ui
+ */
+void load_block_names(ezgl::application* app) {
+    auto blockStorage = GTK_LIST_STORE(app->get_object("BlockNames"));
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
+    GtkTreeIter iter;
+    int i = 0;
+    for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
+        gtk_list_store_append(blockStorage, &iter);
+        gtk_list_store_set(blockStorage, &iter,
+                           0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
+        i++;
+    }
+    for (AtomBlockId id : atom_ctx.nlist.blocks()) {
+        gtk_list_store_append(blockStorage, &iter);
+        gtk_list_store_set(blockStorage, &iter,
+                           0, (atom_ctx.nlist.block_name(id)).c_str(), -1);
+        i++;
+    }
+}
+
+/*
+ * @brief loads atom net names into gtk list store item used for completion
+ * 
+ * @param app ezgl application used for ui
+ */
+void load_net_names(ezgl::application* app) {
+    auto netStorage = GTK_LIST_STORE(app->get_object("NetNames"));
+    auto& atom_ctx = g_vpr_ctx.atom();
+    GtkTreeIter iter;
+    //Loading net names
+    int i = 0;
+    for (AtomNetId id : atom_ctx.nlist.nets()) {
+        gtk_list_store_append(netStorage, &iter);
+        gtk_list_store_set(netStorage, &iter,
+                           0, (atom_ctx.nlist.net_name(id)).c_str(), -1);
+        i++;
+    }
 }
 
 #endif /* NO_GRAPHICS */

@@ -348,10 +348,10 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
         /* check for coarse-grain configuration */
         if (configuration.coarsen) {
             if (yosys_subckt_strmap.find(subcircuit_name) != yosys_subckt_strmap.end())
-                new_node->type = yosys_subckt_strmap[subcircuit_name];
+                new_node->type = yosys_subckt_strmap.at(subcircuit_name);
 
             if (new_node->type == NO_OP && yosys_subckt_strmap.find(subcircuit_stripped_name) != yosys_subckt_strmap.end())
-                new_node->type = yosys_subckt_strmap[subcircuit_stripped_name];
+                new_node->type = yosys_subckt_strmap.at(subcircuit_stripped_name);
 
             if (new_node->type == NO_OP) {
                 /* in case of weird names, need to add memories manually */
@@ -359,7 +359,7 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
                 char* yosys_subckt_str = NULL;
                 if ((yosys_subckt_str = retrieve_node_type_from_subckt_name(subcircuit_stripped_name)) != NULL) {
                     /* specify node type */
-                    new_node->type = yosys_subckt_strmap[yosys_subckt_str];
+                    new_node->type = yosys_subckt_strmap.at(yosys_subckt_str);
                 } else if ((sc_spot = sc_lookup_string(hard_block_names, subcircuit_stripped_name)) != -1) {
                     /* specify node type */
                     new_node->type = HARD_IP;
@@ -387,11 +387,14 @@ void BLIF::Reader::create_hard_block_nodes(hard_block_models* models) {
                                            : operation_list_END;
             }
         } else {
-            new_node->type = odin_subckt_strmap[subcircuit_name];
+            if (odin_subckt_strmap.find(subcircuit_name) != odin_subckt_strmap.end())
+                new_node->type = odin_subckt_strmap.at(subcircuit_name);
 
             /* check for subcircuit prefix prefix */
-            if (subcircuit_stripped_name && new_node->type == NO_OP)
-                new_node->type = odin_subckt_strmap[subcircuit_stripped_name];
+            if (subcircuit_stripped_name
+                && new_node->type == NO_OP
+                && odin_subckt_strmap.find(subcircuit_stripped_name) != odin_subckt_strmap.end())
+                new_node->type = odin_subckt_strmap.at(subcircuit_stripped_name);
 
             if (new_node->type == NO_OP)
                 new_node->type = MEMORY;
@@ -2050,6 +2053,8 @@ hard_block_model* BLIF::Reader::create_hard_block_model(const char* name, operat
         case (BITWISE_OR):     //fallthrough
         case (BITWISE_NOT):    //fallthrough
         case (BITWISE_AND):    //fallthrough
+        case (BITWISE_XOR):    //fallthrough
+        case (BITWISE_XNOR):   //fallthrough
         case (LOGICAL_OR):     //fallthrough
         case (LOGICAL_XOR):    //fallthrough
         case (LOGICAL_AND):    //fallthrough
@@ -2176,7 +2181,7 @@ void BLIF::Reader::hard_block_sensitivities(const char* subckt_name, nnode_t* ne
     char* buffer = NULL;
     attr_t* attributes = new_node->attributes;
     operation_list op = (yosys_subckt_strmap.find(subckt_name) != yosys_subckt_strmap.end())
-                            ? yosys_subckt_strmap[subckt_name]
+                            ? yosys_subckt_strmap.at(subckt_name)
                             : NO_OP;
 
     if (need_params(op)) {

@@ -142,10 +142,10 @@ def main():
 
         base, ext = os.path.splitext(csv)
         if ext == ".txt":
-            sep = "\t  "
+            sep = "\t"
         else:
             sep = ","
-        df = pd.read_csv(csv, sep=sep, engine="python")
+        df = pd.read_csv(csv, skipinitialspace=True, sep=sep, engine="python")
 
         avail_metrics.update(df.columns)  # Record available metrics
 

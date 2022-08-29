@@ -29,6 +29,7 @@
 #include "vpr_constraints.h"
 #include "noc_storage.h"
 #include "noc_traffic_flows.h"
+#include "noc_routing.h"
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -113,6 +114,9 @@ struct TimingContext : public Context {
     std::shared_ptr<tatum::TimingConstraints> constraints;
 
     t_timing_analysis_profile_info stats;
+
+    /* Represents whether or not VPR should fail if timing constraints aren't met. */
+    bool terminate_if_timing_fails = false;
 };
 
 namespace std {
@@ -459,7 +463,7 @@ struct NocContext : public Context {
      *
      * Contains all the routers and links that make up the NoC. The routers contain
      * information regarding the physical tile positions they represent. The links
-     * define the connections between every router  (ropology) and also metrics that describe its
+     * define the connections between every router (topology) and also metrics that describe its
      * "usage". 
      * 
      *
@@ -476,6 +480,15 @@ struct NocContext : public Context {
      * This is created from a user supplied .flows file.
      */
     NocTrafficFlows noc_traffic_flows_storage;
+
+    /**
+     * @brief Contains the packet routing algorithm used by the NoC.
+     * 
+     * This should be used to route traffic flows within the NoC.
+     * 
+     * This is created from a user supplied command line option "--noc_routing_algorithm"
+     */
+    NocRouting* noc_flows_router;
 };
 
 /**

@@ -15,8 +15,27 @@
 #################################################################
 yosys -import
 
+# Read the HDL file with pre-defined parser in the run_vtr_flow script
 # XXX (input circuit) is replaced with filename by the run_vtr_flow script
-read_verilog -sv -nolatches XXX
+if {$env(PARSER) == "surelog" } {
+	puts "Using Yosys read_uhdm command"
+	plugin -i systemverilog
+	yosys -import
+	read_uhdm -debug XXX
+} elseif {$env(PARSER) == "yosys-plugin" } {
+	puts "Using Yosys read_systemverilog command"
+	plugin -i systemverilog
+	yosys -import
+	read_systemverilog -debug XXX
+} elseif {$env(PARSER) == "yosys" } {
+	puts "Using Yosys read_verilog command"
+	read_verilog -sv -nolatches XXX
+} else {
+	error "Invalid PARSER"
+}
+
+# read the custom complex blocks in the architecture
+read_verilog -lib CCC
 
 # These commands follow the generic `synth'
 # command script inside Yosys
@@ -64,7 +83,7 @@ opt -full
 techmap 
 opt -fast
 
-# We read the definitions for all the VTR primitives
+# read the definitions for all the VTR primitives
 # as blackboxes
 read_verilog -lib TTT/adder.v
 read_verilog -lib TTT/multiply.v

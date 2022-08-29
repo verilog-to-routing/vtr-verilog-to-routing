@@ -1,0 +1,455 @@
+<!--
+  This architecture file is an approximation of the xilinx 7 series chip set. It's main purpose is to verify VPR's ability to
+  accommodate xilinx specific routing (i.e. differing wire lengths and frequencies in the horizontal/vertical directions, differing chanel widths,
+  and diagonal wire segments). Given that this architectures primary function is to test xilinx specific routing, the architecture includes only
+  a simplified version of the Xilinx CLB that excludes carry logic. f4pga/symbiflow's arch.timing.xml and VTR's k6_N10_40nm.xml were pulled from to create
+  this architecture description.
+
+  - 40 nm technology
+  - General purpose logic block excluding carry.
+  - Routing architecture: fc_in = 0.15, Fc_out = 0.1
+;
+  Authors: Xan Johnson, Joshua Fife, Jeff Goeders
+-->
+<architecture>
+  <!-- ODIN II specific config begins -->
+  <!--
+		 Given that basic LUTs, I/Os, and flip-flops already have special structures in
+     blif (.names, .input, .output, and .latch) that describe them and that this arch
+     contains CLB logic blocks only, no special models are needed for this architecture.
+	-->
+  <models/>
+  <tiles>
+    <tile name="io" area="0">
+      <sub_tile name="io" capacity="8">
+        <equivalent_sites>
+          <site pb_type="io" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="outpad" num_pins="1"/>
+        <output name="inpad" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+    <tile name="clb">
+      <sub_tile capacity="1" name="clb">
+        <!-- Sub Tile Inputs -->
+        <clock name="CLK" num_pins="1"/>
+        <input name="I" num_pins="56"/>
+        <output name="O" num_pins="24"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
+        </fc>
+        <equivalent_sites>
+          <site pb_type="clb" pin_mapping="direct">
+          </site>
+        </equivalent_sites>
+      </sub_tile>
+      <switchblock_locations pattern="all"/>
+    </tile>
+  </tiles>
+  <!-- ODIN II specific config ends -->
+
+  <!-- Physical descriptions begin -->
+  <layout>
+    <auto_layout aspect_ratio="1.0">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+    </auto_layout>
+  </layout>
+  <device>
+   <!-- The  values bellow (sizing and area) are pulled from the k6_N10_40nm arch. -->
+    <sizing R_minW_nmos="8926" R_minW_pmos="16067"/>
+    <area grid_logic_tile_area="0"/>
+
+    <!-- TODO: PR #1883 allows for different horizontal and vertical uniform channel widths (an attribute of Xilinx arches)
+    until that PR is merged, we give equal distributions here. -->
+    <chan_width_distr>
+      <x distr="uniform" peak="0.652632"/>
+      <y distr="uniform" peak="1.000000"/>
+    </chan_width_distr>
+    <switch_block type="wilton" fs="3"/>
+    <connection_block input_switch_name="ipin_cblock"/>
+  </device>
+
+  <switchlist>
+
+    <!--the following muxes for unidirectional wires are pulled from k6_N10_40nm -->
+    <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+    <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="7.247000e-11" mux_trans_size="1.222260" buf_size="auto"/>
+  </switchlist>
+
+  <segmentlist>
+		<!--- The following segment data is pulled from Table 1 of the NetCraker paper by Morten B. Petersen,
+    Stefan Nikolić and Mirjana Stojilović: see https://dl.acm.org/doi/10.1145/3431920.3439285. Frequencies
+    are calculated by dividing each wire segments count in the horizontal/vertical direction
+    by the total width/hight of the architecture -->
+
+    <!-- TODO: To more accurately approximate the seven series, support for both unidirectional and
+    bidirectional segments within the same segmentlist is needed. For now we declare all segments as
+    unidirectional -->
+
+    <!-- TODO: For proper timing, Xilinx specific values for Rmetal and Cmetal are required.
+    For now we approximate using the values given in the k6_N10_40nm arch -->
+
+		<segment axis="x" name="len1_x" freq="0.258064" length="1" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 1</sb>
+			<cb type="pattern">1</cb>
+		</segment>
+		<segment axis="y" name="len1_y" freq="0.168421" length="1" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 1</sb>
+			<cb type="pattern">1</cb>
+		</segment>
+
+		<segment axis="x" name="len2_x" freq="0.387096" length="2" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 1</sb>
+			<cb type="pattern">1 1</cb>
+		</segment>
+		<segment axis="y" name="len2_y" freq="0.084210" length="2" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 1</sb>
+			<cb type="pattern">1 1</cb>
+		</segment>
+
+		<segment axis="x" name="len4_x" freq="0.225807" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 1</cb>
+		</segment>
+		<segment axis="y" name="len4_y" freq="0.336842" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 1</cb>
+		</segment>
+
+    <!-- 12.5% of horizontal len4 wires have the following unique sb pattern -->
+    <segment axis="x" name="len4_stub" freq="0.032258" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 1 0 1</sb>
+			<cb type="pattern">1 0 0 1</cb>
+		</segment>
+
+
+		<!-- No length 6 horizontal chanels -->
+    <!-- VPR freaks out if this is not included -->
+    <segment axis="x" name="len6_x" freq="0.000000" length="6" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 1</cb>
+		</segment>
+		<segment axis="y" name="len6_y" freq="0.189475" length="6" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 1</cb>
+		</segment>
+
+    <!-- 25% of len6 vertical wires have a unique sb pattern -->
+    <segment axis="y" name="len6_stub" freq="0.063158" length="6" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 1 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 1</cb>
+		</segment>
+
+    <!-- TODO: In xilinx length 12 and 18 wires are bidirectional -->
+
+    <segment axis="x" name="len12_x" freq="0.096774" length="12" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+      <mux name="0"/>
+			<sb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 0 0 0 0 0 0 1</cb>
+		</segment>
+		<segment axis="y" name="len12_y" freq="0.063158" length="12" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 0 0 0 0 0 0 1</cb>
+		</segment>
+
+		<!-- No length 18 horizontal chanels -->
+    <!-- VPR freaks out if this is not included -->
+    <segment axis="x" name="len18_x" freq="0.000000" length="18" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1</cb>
+		</segment>
+
+		<segment axis="y" name="len18_y" freq="0.094736" length="18" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+			<mux name="0"/>
+			<sb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1</sb>
+			<cb type="pattern">1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1</cb>
+		</segment>
+
+
+
+  <!-- TODO: Support in VPR for diagonal wires is currently in the works.
+  Until full support for this feature is implemented, this part of the
+  Xilinx routing is excluded -->
+
+	</segmentlist>
+  <complexblocklist>
+    <!-- Define I/O pads begin -->
+    <!-- The structure of the IO from the k6_N10_40nm arch is
+    used here to approximate the seven series IO. Timing values
+    are changed to match the seven series.-->
+    <pb_type name="io">
+      <input name="outpad" num_pins="1"/>
+      <output name="inpad" num_pins="1"/>
+      <clock name="clock" num_pins="1"/>
+      <!-- IOs can operate as either inputs or outputs.
+		   Delays below are pulled from the IOBUF description
+       in f4pga/symbiflow's arch.timing.xml
+		   -->
+      <mode name="inpad">
+        <pb_type name="inpad" blif_model=".input" num_pb="1">
+          <output name="inpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct name="inpad" input="inpad.inpad" output="io.inpad">
+          <!-- delay bellow is pulled from f4pga/symbiflow's arch.timing architecture -->
+            <delay_constant max="10e-12" in_port="inpad.inpad" out_port="io.inpad"/>
+          </direct>
+        </interconnect>
+      </mode>
+      <mode name="outpad">
+        <pb_type name="outpad" blif_model=".output" num_pb="1">
+          <input name="outpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct name="outpad" input="io.outpad" output="outpad.outpad">
+          <!-- delay bellow is pulled from f4pga/symbiflow's arch.timing architecture -->
+            <delay_constant max="10e-12" in_port="io.outpad" out_port="outpad.outpad"/>
+          </direct>
+        </interconnect>
+      </mode>
+      <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
+      <!-- IOs go on the periphery of the FPGA, for consistency,
+			make it physically equivalent on all sides so that only one definition of I/Os is needed.
+		  -->
+      <!-- Place I/Os on the sides of the FPGA -->
+      <power method="ignore"/>
+    </pb_type>
+    <!-- Define I/O pads ends -->
+
+    <pb_type name="clb">
+      <clock name="CLK" num_pins="1"/>
+      <input name="I" num_pins="56"/>
+      <output name="O" num_pins="24"/>
+      <pb_type name="slice" num_pb="2">
+        <clock name="CLK" num_pins="1"/>
+        <input name="I" num_pins="28" />
+        <output name="O" num_pins="12"/>
+        <pb_type name="fle" num_pb="4">
+          <input name="in" num_pins="6"/>
+          <input name="inX" num_pins="1"/>
+          <output name="out" num_pins="1"/>
+          <output name="outMUX" num_pins="1"/>
+          <output name="outQ" num_pins="1"/>
+          <clock name="clk" num_pins="1"/>
+          <pb_type name="ALUT" num_pb="1">
+            <input name="A" num_pins="6"/>
+            <output name="O5" num_pins="1"/>
+            <output name="O6" num_pins="1"/>
+            <mode name="n2_lut5">
+              <pb_type name="lut5_mode" num_pb="1">
+                <input name="in" num_pins="5"/>
+                <output name="out" num_pins="1"/>
+                <pb_type name="lut5" blif_model=".names" num_pb="1" class="lut">
+                  <input name="in" num_pins="5" port_class="lut_in"/>
+                  <output name="out" num_pins="1" port_class="lut_out"/>
+                  <!-- LUT timing using delay matrix -->
+                  <!-- These are the physical delay inputs on a seven series LUT. these values are pulled from f4pga/symbiflow's arch file-->
+                  <delay_matrix in_port="lut5.in" out_port="lut5.out" type="max">
+                  1.5200000000000002e-10
+                  1.5200000000000002e-10
+                  1.5e-10
+                  1.5e-10
+                  1.18e-10
+                  </delay_matrix>
+                  <delay_matrix in_port="lut5.in" out_port="lut5.out" type="min">
+                  4.4e-11
+                  4.4e-11
+                  4.2000000000000004e-11
+                  4.6e-11
+                  4.8e-11
+                  </delay_matrix>
+                </pb_type>
+                <interconnect>
+                  <direct name="direct1" input="lut5_mode.in" output="lut5.in"/>
+                  <direct name="direct2" input="lut5.out" output="lut5_mode.out"/>
+                </interconnect>
+              </pb_type>
+              <interconnect>
+                <direct name="direct1" input="ALUT.A[4:0]" output="lut5_mode.in"/>
+                <direct name="direct3" input="lut5_mode.out" output="ALUT.O5"/>
+              </interconnect>
+            </mode>
+            <mode name="n1_lut6">
+              <pb_type name="lut6_mode" num_pb="1">
+                <input name="in" num_pins="6"/>
+                <output name="out" num_pins="1"/>
+                <pb_type name="lut6" blif_model=".names" num_pb="1" class="lut">
+                  <input name="in" num_pins="6" port_class="lut_in"/>
+                  <output name="out" num_pins="1" port_class="lut_out"/>
+                  <!-- LUT timing using delay matrix -->
+                  <!-- These are the physical delay inputs on a seven series LUT. these values are pulled from f4pga/symbiflow's arch file-->
+                  <delay_matrix in_port="lut6.in" out_port="lut6.out" type="max">
+                  1.6200000000000002e-10
+                  1.6200000000000002e-10
+                  1.6e-10
+                  1.6e-10
+                  1.6e-10
+                  1.28e-10
+                  </delay_matrix>
+                  <delay_matrix in_port="lut6.in" out_port="lut6.out" type="min">
+                  4.4e-11
+                  4.4e-11
+                  4.2000000000000004e-11
+                  4.6e-11
+                  4.5e-11
+                  4.8e-11
+                  </delay_matrix>
+                </pb_type>
+                <interconnect>
+                  <direct name="direct1" input="lut6_mode.in" output="lut6.in"/>
+                  <direct name="direct2" input="lut6.out" output="lut6_mode.out"/>
+                </interconnect>
+              </pb_type>
+              <interconnect>
+                <direct name="direct1" input="ALUT.A" output="lut6_mode.in"/>
+                <direct name="direct2" input="lut6_mode.out" output="ALUT.O6"/>
+              </interconnect>
+            </mode>
+          </pb_type>
+
+          <pb_type blif_model=".latch" name="FDSE" num_pb="2" class="flipflop">
+            <clock name="clk" num_pins="1" port_class="clock"/>
+            <input name="D" num_pins="1" port_class="D"/>
+            <output name="Q" num_pins="1" port_class="Q"/>
+            <T_setup clock="clk" port="FDSE.D" value="-4.6e-11"/>
+            <T_hold clock="clk" port="FDSE.D" value="1.81e-10"/>
+            <T_clock_to_Q clock="clk" max="3.03e-10" port="FDSE.Q" min="9.900000000000001e-11"/>
+          </pb_type>
+          <!-- The following interconnect matches that of the seven series.
+          Delays are pulled from the f4pga/symbiflow arch -->
+          <interconnect>
+            <mux name="AOUTMUX" input="ALUT.O5 ALUT.O6 FDSE[0].Q" output="fle.outMUX">
+              <delay_constant in_port="FDSE[0].Q" max="1.73e-10" out_port="fle.outMUX"/>
+              <delay_constant in_port="ALUT[0].O6" max="2.05e-10" out_port="fle.outMUX"/>
+              <delay_constant in_port="ALUT[0].O5" max="2.0300000000000002e-10" out_port="fle.outMUX"/>
+            </mux>
+            <mux name="FFMUX" input="ALUT.O5 fle.inX" output="FDSE[0].D">
+              <delay_constant in_port="fle.inX" max="2.0200000000000003e-10" out_port="FDSE[0].D"/>
+					    <delay_constant in_port="ALUT.O5" max="1.07e-10" out_port="FDSE[0].D"/>
+            </mux>
+            <mux name="A5FFMUX" input="ALUT.O5 ALUT.O6 fle.inX" output="FDSE[1].D">
+              <delay_constant in_port="fle.inX" max="2.14e-10" out_port="FDSE[1].D"/>
+              <delay_constant in_port="ALUT.O5" max="9.6e-11" out_port="FDSE[1].D"/>
+              <delay_constant in_port="ALUT.O6" max="1.07e-10" out_port="FDSE[1].D"/>
+            </mux>
+            <direct name="inputs" input="fle.in" output="ALUT.A"/>
+            <direct name="outA" input="ALUT.O6" output="fle.out"/>
+            <direct name="outQ" input="FDSE[1].Q" output="fle.outQ"/>
+            <complete name="clocks" input="fle.clk" output="FDSE[1:0].clk"/>
+          </interconnect>
+        </pb_type>
+
+        <interconnect>
+          <complete input="slice.CLK" name="CK" output="fle.clk"/>
+          <direct name="dir1" input="fle[0].outMUX" output="slice.O[0]"/>
+          <direct name="dir2" input="fle[0].out" output="slice.O[1]"/>
+          <direct name="dir3" input="fle[0].outQ" output="slice.O[2]"/>
+          <direct name="dir4" input="fle[1].outMUX" output="slice.O[3]"/>
+          <direct name="dir5" input="fle[1].out" output="slice.O[4]"/>
+          <direct name="dir6" input="fle[1].outQ" output="slice.O[5]"/>
+          <direct name="dir7" input="fle[2].outMUX" output="slice.O[6]"/>
+          <direct name="dir8" input="fle[2].out" output="slice.O[7]"/>
+          <direct name="dir9" input="fle[2].outQ" output="slice.O[8]"/>
+          <direct name="dir10" input="fle[3].outMUX" output="slice.O[9]"/>
+          <direct name="dir11" input="fle[3].out" output="slice.O[10]"/>
+          <direct name="dir12" input="fle[3].outQ" output="slice.O[11]"/>
+          <direct name="inA" input="slice.I[5:0]" output="fle[0].in"/>
+          <direct name="inB" input="slice.I[12:7]" output="fle[1].in"/>
+          <direct name="inC" input="slice.I[19:14]" output="fle[2].in"/>
+          <direct name="inD" input="slice.I[26:21]" output="fle[3].in"/>
+        </interconnect>
+      </pb_type>
+      <!-- Partial Crossbar with each input to the slice connected to 3 outputs from the same slice.
+      Values are taken from prjxray-db/artix7/tile_int_l -->
+      <interconnect>
+        <direct name="top_slice" input="clb.I[27:0]" output="slice[0].I"/>
+        <direct name="bottom_slice" input="clb.I[55:28]" output="slice[1].I"/>
+        <direct name="top_slice_O" input="slice[0].O" output="clb.O[0:11]"/>
+        <direct name="bottom_slice_O" input="slice[1].O" output="clb.O[12:23]"/>
+        <complete name="CLK" input="clb.CLK" output="slice.CLK"/>
+        <complete name="cross0" input="slice[0].O[6] slice[0].O[1] slice[1].O[2]" output="slice[1].I[2]"/>
+        <complete name="cross1" input="slice[1].O[6] slice[1].O[1] slice[0].O[2]" output="slice[0].I[2]"/>
+        <complete name="cross2" input="slice[1].O[9] slice[1].O[4] slice[0].O[5]" output="slice[0].I[1]"/>
+        <complete name="cross3" input="slice[0].O[9] slice[0].O[4] slice[1].O[5]" output="slice[1].I[1]"/>
+        <complete name="cross4" input="slice[0].O[0] slice[0].O[7] slice[1].O[8]" output="slice[0].I[5]"/>
+        <complete name="cross5" input="slice[1].O[0] slice[1].O[7] slice[0].O[8]" output="slice[1].I[5]"/>
+        <complete name="cross6" input="slice[1].O[3] slice[1].O[10] slice[0].O[11]" output="slice[1].I[0]"/>
+        <complete name="cross7" input="slice[0].O[3] slice[0].O[10] slice[1].O[11]" output="slice[0].I[1]"/>
+        <complete name="cross8" input="slice[0].O[6] slice[1].O[2] slice[0].O[1]" output="slice[0].I[4]"/>
+        <complete name="cross9" input="slice[1].O[6] slice[0].O[2] slice[1].O[1]" output="slice[1].I[4]"/>
+        <complete name="cross10" input="slice[1].O[9] slice[0].O[5] slice[1].O[4]" output="slice[1].I[3]"/>
+        <complete name="cross11" input="slice[0].O[9] slice[1].O[5] slice[0].O[4]" output="slice[0].I[3]"/>
+        <complete name="cross12" input="slice[0].O[0] slice[1].O[8] slice[0].O[7]" output="slice[0].I[12]"/>
+        <complete name="cross13" input="slice[1].O[0] slice[0].O[8] slice[1].O[7]" output="slice[0].I[12]"/>
+        <complete name="cross14" input="slice[1].O[3] slice[0].O[11] slice[1].O[10]" output="slice[1].I[7]"/>
+        <complete name="cross15" input="slice[0].O[3] slice[1].O[11] slice[0].O[10]" output="slice[0].I[7]"/>
+        <complete name="cross16" input="slice[0].O[6] slice[0].O[1] slice[1].O[2]" output="slice[1].I[9]"/>
+        <complete name="cross17" input="slice[1].O[6] slice[1].O[1] slice[0].O[2]" output="slice[0].I[9]"/>
+        <complete name="cross18" input="slice[1].O[9] slice[1].O[4] slice[0].O[5]" output="slice[0].I[8]"/>
+        <complete name="cross19" input="slice[0].O[9] slice[0].O[4] slice[1].O[5]" output="slice[1].I[8]"/>
+        <complete name="cross20" input="slice[0].O[0] slice[0].O[7] slice[1].O[8]" output="slice[1].I[15]"/>
+        <complete name="cross21" input="slice[1].O[0] slice[1].O[7] slice[0].O[8]" output="slice[1].I[17]"/>
+        <complete name="cross22" input="slice[1].O[3] slice[1].O[10] slice[0].O[11]" output="slice[0].I[16]"/>
+        <complete name="cross23" input="slice[0].O[3] slice[0].O[10] slice[1].O[11]" output="slice[1].I[16]"/>
+        <complete name="cross24" input="slice[0].O[6] slice[1].O[2] slice[0].O[1]" output="slice[0].I[11]"/>
+        <complete name="cross25" input="slice[1].O[6] slice[0].O[2] slice[1].O[1]" output="slice[1].I[11]"/>
+        <complete name="cross26" input="slice[1].O[9] slice[0].O[5] slice[1].O[4]" output="slice[1].I[10]"/>
+        <complete name="cross27" input="slice[0].O[9] slice[1].O[5] slice[0].O[4]" output="slice[0].I[10]"/>
+        <complete name="cross28" input="slice[0].O[0] slice[1].O[8] slice[0].O[7]" output="slice[0].I[17]"/>
+        <complete name="cross29" input="slice[1].O[0] slice[0].O[8] slice[1].O[7]" output="slice[0].I[15]"/>
+        <complete name="cross30" input="slice[1].O[3] slice[0].O[11] slice[1].O[10]" output="slice[1].I[18]"/>
+        <complete name="cross31" input="slice[0].O[3] slice[1].O[11] slice[0].O[10]" output="slice[0].I[18]"/>
+        <complete name="cross32" input="slice[0].O[6] slice[0].O[1] slice[1].O[2]" output="slice[0].I[14]"/>
+        <complete name="cross33" input="slice[1].O[6] slice[1].O[1] slice[0].O[2]" output="slice[1].I[14]"/>
+        <complete name="cross34" input="slice[1].O[9] slice[1].O[4] slice[0].O[5]" output="slice[1].I[19]"/>
+        <complete name="cross35" input="slice[0].O[9] slice[0].O[4] slice[1].O[5]" output="slice[0].I[19]"/>
+        <complete name="cross36" input="slice[0].O[0] slice[0].O[7] slice[1].O[8]" output="slice[1].I[22]"/>
+        <complete name="cross37" input="slice[1].O[0] slice[1].O[7] slice[0].O[8]" output="slice[1].I[24]"/>
+        <complete name="cross38" input="slice[1].O[3] slice[1].O[10] slice[0].O[11]" output="slice[0].I[23]"/>
+        <complete name="cross39" input="slice[0].O[3] slice[0].O[10] slice[1].O[11]" output="slice[1].I[23]"/>
+        <complete name="cross40" input="slice[0].O[6] slice[1].O[2] slice[0].O[1]" output="slice[0].I[21]"/>
+        <complete name="cross41" input="slice[1].O[6] slice[0].O[2] slice[1].O[1]" output="slice[1].I[21]"/>
+        <complete name="cross42" input="slice[1].O[9] slice[0].O[5] slice[1].O[4]" output="slice[1].I[26]"/>
+        <complete name="cross43" input="slice[0].O[9] slice[1].O[5] slice[0].O[4]" output="slice[0].I[26]"/>
+        <complete name="cross44" input="slice[0].O[0] slice[1].O[8] slice[0].O[7]" output="slice[0].I[24]"/>
+        <complete name="cross45" input="slice[1].O[0] slice[0].O[8] slice[1].O[7]" output="slice[0].I[22]"/>
+        <complete name="cross46" input="slice[1].O[3] slice[0].O[11] slice[1].O[10]" output="slice[1].I[25]"/>
+        <complete name="cross47" input="slice[0].O[3] slice[1].O[11] slice[0].O[10]" output="slice[0].I[25]"/>
+      </interconnect>
+    </pb_type>
+    <!-- Define general purpose logic block (CLB) ends -->
+  </complexblocklist>
+  <power>
+    <local_interconnect C_wire="2.5e-10"/>
+    <mux_transistor_size mux_transistor_size="3"/>
+    <FF_size FF_size="4"/>
+    <LUT_transistor_size LUT_transistor_size="4"/>
+  </power>
+  <clocks>
+    <clock buffer_size="auto" C_wire="2.5e-10"/>
+  </clocks>
+</architecture>

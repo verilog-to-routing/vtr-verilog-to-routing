@@ -69,6 +69,7 @@ struct t_options {
     argparse::ArgValue<std::string> disable_errors;
     argparse::ArgValue<std::string> suppress_warnings;
     argparse::ArgValue<bool> allow_dangling_combinational_nodes;
+    argparse::ArgValue<bool> terminate_if_timing_fails;
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;
@@ -141,6 +142,7 @@ struct t_options {
     /*NoC Options*/
     argparse::ArgValue<bool> noc;
     argparse::ArgValue<std::string> noc_flows_file;
+    argparse::ArgValue<std::string> noc_routing_algorithm;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;

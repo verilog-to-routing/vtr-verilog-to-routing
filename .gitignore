@@ -12,6 +12,7 @@ bin/
 CMakeCache.txt
 CMakeFiles
 build
+Yosys
 
 #
 #VTR Flow/Tasks
@@ -104,6 +105,11 @@ ODIN_II/usefull_tools/**/track_completed
 #Yosys exec dir
 #
 Yosys
+
+#
+#ArchFPGA exec dir
+#
+ArchFPGA
 
 #
 #Python

@@ -1557,7 +1557,7 @@
         "verilog": "macromudule_test.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "operators/macromudule_test/k6_N10_40nm": {
@@ -1566,7 +1566,7 @@
         "verilog": "macromudule_test.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "operators/macromudule_test/k6_N10_mem32K_40nm": {
@@ -1575,7 +1575,7 @@
         "verilog": "macromudule_test.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "operators/macromudule_test/no_arch": {
@@ -1583,7 +1583,7 @@
         "verilog": "macromudule_test.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "operators/minuscolon_6_bit/k6_frac_N10_frac_chain_mem32K_40nm": {

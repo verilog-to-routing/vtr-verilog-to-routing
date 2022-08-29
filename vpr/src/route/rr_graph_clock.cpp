@@ -4,7 +4,7 @@
 #include "rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_area.h"
-#include "rr_graph_util.h"
+#include "rr_graph_utils.h"
 #include "rr_graph_indexed_data.h"
 
 #include "vtr_assert.h"

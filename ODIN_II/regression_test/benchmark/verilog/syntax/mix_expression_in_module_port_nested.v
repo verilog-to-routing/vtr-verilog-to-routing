@@ -34,7 +34,7 @@ module third_module (in1, in2, out);
 endmodule
 
 /*
-	-V ~/Desktop/exin/module/mix_expression_in_module_port_nested.v -o ~/Desktop/exin/module/output.blif -G -A -t ~/Desktop/exin/module/mix_expression_in_module_port_nested_input -T ~/Desktop/exin/module/mix_expression_in_module_port_nested_output
+	-v ~/Desktop/exin/module/mix_expression_in_module_port_nested.v -o ~/Desktop/exin/module/output.blif -G -A -t ~/Desktop/exin/module/mix_expression_in_module_port_nested_input -T ~/Desktop/exin/module/mix_expression_in_module_port_nested_output
 {2{a[1}}, {2{b[0]}}
 
 1bd7a518e25b4c01fa587c919eb1439082ccdcd1

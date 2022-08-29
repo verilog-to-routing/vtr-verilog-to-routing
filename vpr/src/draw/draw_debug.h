@@ -1,4 +1,9 @@
-/** This file contains all functions reagrding the graphics related to the setting of place and route breakpoints **/
+/**
+ * @file draw_debug.h
+ * 
+ *  This file contains all functions regarding the graphics related to the setting of place and route breakpoints.
+ * Manages creation of new Gtk Windows with debug options on use of the "Debug" button.
+ */
 #ifndef DRAW_DEBUG_H
 #define DRAW_DEBUG_H
 

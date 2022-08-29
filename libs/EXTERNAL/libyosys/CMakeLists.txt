@@ -9,13 +9,10 @@ SET(YOSYS_EXEC ${CMAKE_CURRENT_SOURCE_DIR}/yosys)
 SET(BINARY_EXEC_FILE ${CMAKE_CURRENT_BINARY_DIR}/bin/yosys)
 SET(YOSYS_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 
-# handle make program with both ninja and unix style
-set(MAKE_PROGRAM "$(MAKE)")
 # handle cppflags to suppress yosys warning with both ninja and unix style
 set(CURRENT_CPPFLAGS "$(CPPFLAGS)-w")
 if(${CMAKE_GENERATOR} STREQUAL "Ninja")
-set(MAKE_PROGRAM "make")
-set(CURRENT_CPPFLAGS "-w")
+    set(CURRENT_CPPFLAGS "-w")
 endif()
 
 # how to build the result of the library
@@ -39,7 +36,10 @@ add_custom_target(yosys ALL DEPENDS ${LIB_FILE} ${BINARY_LIB_FILE})
 
 # create an library target out of the library compilation result
 add_library(libyosys SHARED IMPORTED GLOBAL)
-add_dependencies(libyosys yosys)
+
+# adding dependency to libarchfpga, as it is required
+# by VTR scripts for Yosys standalone frontend
+add_dependencies(libyosys yosys libarchfpga)
 
 # specify where the library is and where to find the headers
 set_target_properties(libyosys

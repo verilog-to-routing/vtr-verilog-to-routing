@@ -7,11 +7,6 @@ const char* ieee_std_STR[] = {
     "1364-2005",
 };
 
-const char* file_extension_supported_STR[] = {
-    ".v",
-    ".vh",
-};
-
 const char* edge_type_e_STR[] = {
     "UNDEFINED_SENSITIVITY",
     "FALLING_EDGE_SENSITIVITY",
@@ -213,16 +208,27 @@ const char* ids_STR[] = {
     "ids_END"};
 
 /* supported input/output file extensions */
-strmap<file_type_e> file_type_strmap({{"ilang", file_type_e::_ILANG},
-                                      {"verilog", file_type_e::_VERILOG},
-                                      {"verilog_header", file_type_e::_VERILOG_HEADER},
-                                      {"blif", file_type_e::_BLIF},
-                                      {"eblif", file_type_e::_EBLIF},
-                                      {"undef", file_type_e::_UNDEFINED}});
+extern const strbimap<file_type_e> file_extension_strmap({{".ilang", file_type_e::_ILANG},
+                                                          {".v", file_type_e::_VERILOG},
+                                                          {".vh", file_type_e::_VERILOG_HEADER},
+                                                          {".sv", file_type_e::_SYSTEM_VERILOG},
+                                                          {".svh", file_type_e::_SYSTEM_VERILOG_HEADER},
+                                                          {".blif", file_type_e::_BLIF},
+                                                          {".eblif", file_type_e::_EBLIF}});
+
+/* supported input/output file types */
+extern const strbimap<file_type_e> file_type_strmap({{"ilang", file_type_e::_ILANG},
+                                                     {"verilog", file_type_e::_VERILOG},
+                                                     {"verilog_header", file_type_e::_VERILOG_HEADER},
+                                                     {"systemverilog", file_type_e::_SYSTEM_VERILOG},
+                                                     {"systemverilog_header", file_type_e::_SYSTEM_VERILOG_HEADER},
+                                                     {"uhdm", file_type_e::_UHDM},
+                                                     {"blif", file_type_e::_BLIF},
+                                                     {"eblif", file_type_e::_EBLIF}});
 
 /* available elaborators for Odin-II techmap */
-strmap<elaborator_e> elaborator_strmap({{"odin", elaborator_e::_ODIN},
-                                        {"yosys", elaborator_e::_YOSYS}});
+extern const strmap<elaborator_e> elaborator_strmap({{"odin", elaborator_e::_ODIN},
+                                                     {"yosys", elaborator_e::_YOSYS}});
 
 /**
  * global hashmap of odin subckt types
@@ -232,10 +238,10 @@ strmap<elaborator_e> elaborator_strmap({{"odin", elaborator_e::_ODIN},
  *  FIRST_ELEMENT: model name showing in a blif file
  *  SECOND_ELEMENT: corresponding Odin-II cell type
  */
-strmap<operation_list> odin_subckt_strmap({{"multiply", MULTIPLY},
-                                           {"mult_", MULTIPLY},
-                                           {"adder", ADD},
-                                           {"sub", MINUS}});
+extern const strmap<operation_list> odin_subckt_strmap({{"multiply", MULTIPLY},
+                                                        {"mult_", MULTIPLY},
+                                                        {"adder", ADD},
+                                                        {"sub", MINUS}});
 
 /**
  * global hashmap of yosys subckt types
@@ -254,7 +260,7 @@ strmap<operation_list> odin_subckt_strmap({{"multiply", MULTIPLY},
  * in the BLIF Elaboration phase to make the new node compatible
  * with the Odin-II partial mapper.
  */
-strmap<operation_list> yosys_subckt_strmap({
+extern const strmap<operation_list> yosys_subckt_strmap({
     {"$_ANDNOT_", operation_list_END},
     {"$_AND_", operation_list_END},          // (A, B, Y)
     {"$_AOI3_", operation_list_END},         // (A, B, C, Y)

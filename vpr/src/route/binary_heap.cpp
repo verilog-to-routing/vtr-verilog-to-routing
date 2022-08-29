@@ -7,7 +7,7 @@ static size_t left(size_t i) { return i << 1; }
 static size_t right(size_t i) { return (i << 1) + 1; }
 
 BinaryHeap::BinaryHeap()
-    : heap_(nullptr)
+    : heap_()
     , heap_size_(0)
     , heap_tail_(0)
     , max_index_(std::numeric_limits<size_t>::max())
@@ -24,20 +24,15 @@ void BinaryHeap::free(t_heap* hptr) {
     storage_.free(hptr);
 }
 
-// Note: malloc()/free() must be used for the heap,
-//       or realloc() must be eliminated from add_to_heap()
-//       because there is no C++ equivalent.
 void BinaryHeap::init_heap(const DeviceGrid& grid) {
     size_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
-    if (heap_ == nullptr || heap_size_ < target_heap_size) {
-        if (heap_ != nullptr) {
+    if (heap_.empty() || heap_size_ < target_heap_size) {
+        if (!heap_.empty()) {
             // coverity[offset_free : Intentional]
-            vtr::free(heap_ + 1);
-            heap_ = nullptr;
+            heap_.clear();
         }
         heap_size_ = (grid.width() - 1) * (grid.height() - 1);
-        heap_ = (t_heap**)vtr::malloc(heap_size_ * sizeof(t_heap*));
-        heap_--; /* heap stores from [1..heap_size] */
+        heap_.resize(heap_size_ + 1); /* heap_size_ + 1 because heap stores from [1..heap_size] */
     }
     heap_tail_ = 1;
 }
@@ -143,12 +138,11 @@ void BinaryHeap::sift_up(size_t leaf, t_heap* const node) {
     heap_[leaf] = node;
 }
 
+//expands heap by "realloc"
 void BinaryHeap::expand_heap_if_full() {
     if (heap_tail_ > heap_size_) { /* Heap is full */
         heap_size_ *= 2;
-        heap_ = (t_heap**)vtr::realloc((void*)(heap_ + 1),
-                                       heap_size_ * sizeof(t_heap*));
-        heap_--; /* heap goes from [1..heap_size] */
+        heap_.resize(heap_size_ + 1);
     }
 }
 
@@ -162,7 +156,7 @@ void BinaryHeap::push_back(t_heap* const hptr) {
 }
 
 bool BinaryHeap::is_valid() const {
-    if (heap_ == nullptr) {
+    if (heap_.empty()) {
         return false;
     }
 
@@ -194,14 +188,14 @@ void BinaryHeap::invalidate_heap_entries(int sink_node, int ipin_node) {
 }
 
 void BinaryHeap::free_all_memory() {
-    if (heap_ != nullptr) {
+    if (!heap_.empty()) {
         empty_heap();
 
         // coverity[offset_free : Intentional]
-        vtr::free(heap_ + 1);
+        heap_.clear();
     }
 
-    heap_ = nullptr; /* Defensive coding:  crash hard if I use these. */
+    //  heap_ = nullptr; /* Defensive coding:  crash hard if I use these. */
 
     storage_.free_all_memory();
 }
