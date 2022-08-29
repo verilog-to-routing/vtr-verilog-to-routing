@@ -94,13 +94,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 7,
+        "logic element": 3,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 8,
+        "Longest Path": 6,
         "Average Path": 3,
-        "Estimated LUTs": 7,
-        "Total Node": 9
+        "Estimated LUTs": 3,
+        "Total Node": 5
     },
     "operators/binary_equal/k6_N10_40nm": {
         "test_name": "operators/binary_equal/k6_N10_40nm",
@@ -115,13 +115,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 7,
+        "logic element": 3,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 8,
+        "Longest Path": 6,
         "Average Path": 3,
-        "Estimated LUTs": 7,
-        "Total Node": 9
+        "Estimated LUTs": 3,
+        "Total Node": 5
     },
     "operators/binary_equal/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_equal/k6_N10_mem32K_40nm",
@@ -136,13 +136,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 7,
+        "logic element": 3,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 8,
+        "Longest Path": 6,
         "Average Path": 3,
-        "Estimated LUTs": 7,
-        "Total Node": 9
+        "Estimated LUTs": 3,
+        "Total Node": 5
     },
     "operators/binary_equal/no_arch": {
         "test_name": "operators/binary_equal/no_arch",
@@ -156,12 +156,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 7,
+        "logic element": 3,
         "latch": 1,
-        "Longest Path": 8,
+        "Longest Path": 6,
         "Average Path": 3,
-        "Estimated LUTs": 7,
-        "Total Node": 9
+        "Estimated LUTs": 3,
+        "Total Node": 5
     },
     "operators/binary_logical_and/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_and/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -176,13 +176,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_logical_and/k6_N10_40nm": {
         "test_name": "operators/binary_logical_and/k6_N10_40nm",
@@ -197,13 +197,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_logical_and/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_and/k6_N10_mem32K_40nm",
@@ -218,13 +218,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_logical_and/no_arch": {
         "test_name": "operators/binary_logical_and/no_arch",
@@ -238,12 +238,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_logical_equal/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_equal/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -340,13 +340,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 9,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 7,
+        "Longest Path": 11,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 9,
+        "Total Node": 11
     },
     "operators/binary_logical_greater_equal_than/k6_N10_40nm": {
         "test_name": "operators/binary_logical_greater_equal_than/k6_N10_40nm",
@@ -361,13 +361,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 9,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 7,
+        "Longest Path": 11,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 9,
+        "Total Node": 11
     },
     "operators/binary_logical_greater_equal_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_greater_equal_than/k6_N10_mem32K_40nm",
@@ -382,13 +382,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 9,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 7,
+        "Longest Path": 11,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 9,
+        "Total Node": 11
     },
     "operators/binary_logical_greater_equal_than/no_arch": {
         "test_name": "operators/binary_logical_greater_equal_than/no_arch",
@@ -402,12 +402,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 9,
         "latch": 1,
-        "Longest Path": 7,
+        "Longest Path": 11,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 9,
+        "Total Node": 11
     },
     "operators/binary_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -422,13 +422,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 8,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 6,
+        "Longest Path": 10,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 8,
+        "Total Node": 10
     },
     "operators/binary_logical_greater_than/k6_N10_40nm": {
         "test_name": "operators/binary_logical_greater_than/k6_N10_40nm",
@@ -443,13 +443,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 8,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 10,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 8,
+        "Total Node": 10
     },
     "operators/binary_logical_greater_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_greater_than/k6_N10_mem32K_40nm",
@@ -464,13 +464,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 8,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 10,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 8,
+        "Total Node": 10
     },
     "operators/binary_logical_greater_than/no_arch": {
         "test_name": "operators/binary_logical_greater_than/no_arch",
@@ -484,12 +484,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 8,
         "latch": 1,
-        "Longest Path": 6,
+        "Longest Path": 10,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 8,
+        "Total Node": 10
     },
     "operators/binary_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -504,13 +504,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 7,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 7,
+        "Longest Path": 9,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 7,
+        "Total Node": 9
     },
     "operators/binary_logical_less_equal_than/k6_N10_40nm": {
         "test_name": "operators/binary_logical_less_equal_than/k6_N10_40nm",
@@ -525,13 +525,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 7,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 7,
+        "Longest Path": 9,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 7,
+        "Total Node": 9
     },
     "operators/binary_logical_less_equal_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_less_equal_than/k6_N10_mem32K_40nm",
@@ -546,13 +546,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 7,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 7,
+        "Longest Path": 9,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 7,
+        "Total Node": 9
     },
     "operators/binary_logical_less_equal_than/no_arch": {
         "test_name": "operators/binary_logical_less_equal_than/no_arch",
@@ -566,12 +566,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 7,
         "latch": 1,
-        "Longest Path": 7,
+        "Longest Path": 9,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 7,
+        "Total Node": 9
     },
     "operators/binary_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -586,13 +586,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 6,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 6,
+        "Longest Path": 8,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 6,
+        "Total Node": 8
     },
     "operators/binary_logical_less_than/k6_N10_40nm": {
         "test_name": "operators/binary_logical_less_than/k6_N10_40nm",
@@ -607,13 +607,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 6,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 8,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 6,
+        "Total Node": 8
     },
     "operators/binary_logical_less_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_less_than/k6_N10_mem32K_40nm",
@@ -628,13 +628,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 6,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 8,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 6,
+        "Total Node": 8
     },
     "operators/binary_logical_less_than/no_arch": {
         "test_name": "operators/binary_logical_less_than/no_arch",
@@ -648,12 +648,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 6,
         "latch": 1,
-        "Longest Path": 6,
+        "Longest Path": 8,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 6,
+        "Total Node": 8
     },
     "operators/binary_logical_not_equal/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_not_equal/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -668,13 +668,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_logical_not_equal/k6_N10_40nm": {
         "test_name": "operators/binary_logical_not_equal/k6_N10_40nm",
@@ -689,13 +689,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_logical_not_equal/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_not_equal/k6_N10_mem32K_40nm",
@@ -710,13 +710,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_logical_not_equal/no_arch": {
         "test_name": "operators/binary_logical_not_equal/no_arch",
@@ -730,12 +730,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 3,
+        "logic element": 2,
         "latch": 1,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 3,
-        "Total Node": 5
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_logical_or/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_logical_or/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -750,13 +750,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_logical_or/k6_N10_40nm": {
         "test_name": "operators/binary_logical_or/k6_N10_40nm",
@@ -771,13 +771,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_logical_or/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_logical_or/k6_N10_mem32K_40nm",
@@ -792,13 +792,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_logical_or/no_arch": {
         "test_name": "operators/binary_logical_or/no_arch",
@@ -812,12 +812,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_nand/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_nand/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -996,13 +996,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 7,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 8,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 7,
-        "Total Node": 9
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_not_equal/k6_N10_40nm": {
         "test_name": "operators/binary_not_equal/k6_N10_40nm",
@@ -1017,13 +1017,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 7,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 8,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 7,
-        "Total Node": 9
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_not_equal/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_not_equal/k6_N10_mem32K_40nm",
@@ -1038,13 +1038,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 7,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 8,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 7,
-        "Total Node": 9
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_not_equal/no_arch": {
         "test_name": "operators/binary_not_equal/no_arch",
@@ -1058,12 +1058,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 7,
+        "logic element": 2,
         "latch": 1,
-        "Longest Path": 8,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 7,
-        "Total Node": 9
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_or/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_or/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1160,13 +1160,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 3,
         "latch": 1,
         "generic logic size": 4,
         "Longest Path": 6,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 3,
+        "Total Node": 5
     },
     "operators/binary_xnor/k6_N10_40nm": {
         "test_name": "operators/binary_xnor/k6_N10_40nm",
@@ -1181,13 +1181,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 3,
         "latch": 1,
         "generic logic size": 6,
         "Longest Path": 6,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 3,
+        "Total Node": 5
     },
     "operators/binary_xnor/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_xnor/k6_N10_mem32K_40nm",
@@ -1202,13 +1202,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 3,
         "latch": 1,
         "generic logic size": 6,
         "Longest Path": 6,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 3,
+        "Total Node": 5
     },
     "operators/binary_xnor/no_arch": {
         "test_name": "operators/binary_xnor/no_arch",
@@ -1222,12 +1222,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 3,
         "latch": 1,
         "Longest Path": 6,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 3,
+        "Total Node": 5
     },
     "operators/binary_xor/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/binary_xor/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1242,13 +1242,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_xor/k6_N10_40nm": {
         "test_name": "operators/binary_xor/k6_N10_40nm",
@@ -1263,13 +1263,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_xor/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_xor/k6_N10_mem32K_40nm",
@@ -1284,13 +1284,13 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/binary_xor/no_arch": {
         "test_name": "operators/binary_xor/no_arch",
@@ -1304,12 +1304,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 2,
-        "logic element": 4,
+        "logic element": 2,
         "latch": 1,
-        "Longest Path": 6,
+        "Longest Path": 5,
         "Average Path": 3,
-        "Estimated LUTs": 4,
-        "Total Node": 6
+        "Estimated LUTs": 2,
+        "Total Node": 4
     },
     "operators/clog2/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/clog2/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1405,12 +1405,12 @@
         "synthesis_time(ms)": 77.8,
         "Pi": 24,
         "Po": 72,
-        "logic element": 50,
+        "logic element": 58,
         "generic logic size": 4,
-        "Longest Path": 5,
-        "Average Path": 3,
-        "Estimated LUTs": 56,
-        "Total Node": 50
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 58,
+        "Total Node": 58
     },
     "operators/concat/k6_N10_40nm": {
         "test_name": "operators/concat/k6_N10_40nm",
@@ -1424,12 +1424,12 @@
         "synthesis_time(ms)": 86.1,
         "Pi": 24,
         "Po": 72,
-        "logic element": 50,
+        "logic element": 58,
         "generic logic size": 6,
-        "Longest Path": 5,
-        "Average Path": 3,
-        "Estimated LUTs": 55,
-        "Total Node": 50
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 58,
+        "Total Node": 58
     },
     "operators/concat/k6_N10_mem32K_40nm": {
         "test_name": "operators/concat/k6_N10_mem32K_40nm",
@@ -1443,12 +1443,12 @@
         "synthesis_time(ms)": 74.5,
         "Pi": 24,
         "Po": 72,
-        "logic element": 50,
+        "logic element": 58,
         "generic logic size": 6,
-        "Longest Path": 5,
-        "Average Path": 3,
-        "Estimated LUTs": 55,
-        "Total Node": 50
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 58,
+        "Total Node": 58
     },
     "operators/concat/no_arch": {
         "test_name": "operators/concat/no_arch",
@@ -1461,11 +1461,11 @@
         "synthesis_time(ms)": 78,
         "Pi": 24,
         "Po": 72,
-        "logic element": 50,
-        "Longest Path": 5,
-        "Average Path": 3,
-        "Estimated LUTs": 50,
-        "Total Node": 50
+        "logic element": 58,
+        "Longest Path": 8,
+        "Average Path": 4,
+        "Estimated LUTs": 58,
+        "Total Node": 58
     },
     "operators/eightbit_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/eightbit_arithmetic_power/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1746,12 +1746,12 @@
         "synthesis_time(ms)": 54.1,
         "Pi": 14,
         "Po": 8,
-        "logic element": 8,
+        "logic element": 7,
         "generic logic size": 4,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Estimated LUTs": 7,
+        "Total Node": 7
     },
     "operators/pluscolon_8_bit/k6_N10_40nm": {
         "test_name": "operators/pluscolon_8_bit/k6_N10_40nm",
@@ -1765,12 +1765,12 @@
         "synthesis_time(ms)": 57.8,
         "Pi": 14,
         "Po": 8,
-        "logic element": 8,
+        "logic element": 7,
         "generic logic size": 6,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Estimated LUTs": 7,
+        "Total Node": 7
     },
     "operators/pluscolon_8_bit/k6_N10_mem32K_40nm": {
         "test_name": "operators/pluscolon_8_bit/k6_N10_mem32K_40nm",
@@ -1784,12 +1784,12 @@
         "synthesis_time(ms)": 53.7,
         "Pi": 14,
         "Po": 8,
-        "logic element": 8,
+        "logic element": 7,
         "generic logic size": 6,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Estimated LUTs": 7,
+        "Total Node": 7
     },
     "operators/pluscolon_8_bit/no_arch": {
         "test_name": "operators/pluscolon_8_bit/no_arch",
@@ -1802,11 +1802,11 @@
         "synthesis_time(ms)": 54,
         "Pi": 14,
         "Po": 8,
-        "logic element": 8,
+        "logic element": 7,
         "Longest Path": 3,
         "Average Path": 3,
-        "Estimated LUTs": 8,
-        "Total Node": 8
+        "Estimated LUTs": 7,
+        "Total Node": 7
     },
     "operators/signed_16bits_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_16bits_asl_int_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3164,12 +3164,12 @@
         "synthesis_time(ms)": 83.3,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 4,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_asl_int_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asl_int_wide/k6_N10_40nm",
@@ -3183,12 +3183,12 @@
         "synthesis_time(ms)": 88.6,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_asl_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_int_wide/k6_N10_mem32K_40nm",
@@ -3202,12 +3202,12 @@
         "synthesis_time(ms)": 97.2,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_asl_int_wide/no_arch": {
         "test_name": "operators/signed_variable_asl_int_wide/no_arch",
@@ -3220,20 +3220,16 @@
         "synthesis_time(ms)": 87.5,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
-        "Longest Path": 34,
+        "logic element": 160,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "signed_variable_asl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 189.4,
         "exec_time(ms)": 326.2,
         "elaboration_time(ms)": 77.9,
@@ -3242,21 +3238,17 @@
         "synthesis_time(ms)": 208,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 4,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_asl_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asl_ultra_wide/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "signed_variable_asl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 172.1,
         "exec_time(ms)": 310,
         "elaboration_time(ms)": 106.2,
@@ -3265,21 +3257,17 @@
         "synthesis_time(ms)": 267.4,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_asl_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_ultra_wide/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "signed_variable_asl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 188.4,
         "exec_time(ms)": 332.8,
         "elaboration_time(ms)": 82,
@@ -3288,20 +3276,16 @@
         "synthesis_time(ms)": 200.7,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_asl_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_asl_ultra_wide/no_arch",
         "verilog": "signed_variable_asl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 169.1,
         "exec_time(ms)": 260.1,
         "elaboration_time(ms)": 101.4,
@@ -3310,11 +3294,11 @@
         "synthesis_time(ms)": 231.1,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "logic element": 455,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3328,12 +3312,12 @@
         "synthesis_time(ms)": 37.7,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 4,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_asl_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asl_wide/k6_N10_40nm",
@@ -3347,12 +3331,12 @@
         "synthesis_time(ms)": 47.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_asl_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_wide/k6_N10_mem32K_40nm",
@@ -3366,12 +3350,12 @@
         "synthesis_time(ms)": 48.7,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_asl_wide/no_arch": {
         "test_name": "operators/signed_variable_asl_wide/no_arch",
@@ -3384,11 +3368,11 @@
         "synthesis_time(ms)": 41.4,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
-        "Longest Path": 5,
+        "logic element": 6,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3550,12 +3534,12 @@
         "synthesis_time(ms)": 93.8,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 155,
         "generic logic size": 4,
-        "Longest Path": 34,
-        "Average Path": 5,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 155,
+        "Total Node": 155
     },
     "operators/signed_variable_asr_int_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asr_int_wide/k6_N10_40nm",
@@ -3569,12 +3553,12 @@
         "synthesis_time(ms)": 98.4,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 155,
         "generic logic size": 6,
-        "Longest Path": 34,
-        "Average Path": 5,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 155,
+        "Total Node": 155
     },
     "operators/signed_variable_asr_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_int_wide/k6_N10_mem32K_40nm",
@@ -3588,12 +3572,12 @@
         "synthesis_time(ms)": 103.9,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 155,
         "generic logic size": 6,
-        "Longest Path": 34,
-        "Average Path": 5,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 155,
+        "Total Node": 155
     },
     "operators/signed_variable_asr_int_wide/no_arch": {
         "test_name": "operators/signed_variable_asr_int_wide/no_arch",
@@ -3606,20 +3590,16 @@
         "synthesis_time(ms)": 78.6,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
-        "Longest Path": 34,
-        "Average Path": 5,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "logic element": 155,
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 155,
+        "Total Node": 155
     },
     "operators/signed_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "signed_variable_asr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 175.1,
         "exec_time(ms)": 300.6,
         "elaboration_time(ms)": 69.8,
@@ -3628,21 +3608,17 @@
         "synthesis_time(ms)": 189.9,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 448,
         "generic logic size": 4,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 448,
+        "Total Node": 448
     },
     "operators/signed_variable_asr_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asr_ultra_wide/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "signed_variable_asr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 157.8,
         "exec_time(ms)": 268.1,
         "elaboration_time(ms)": 118.5,
@@ -3651,21 +3627,17 @@
         "synthesis_time(ms)": 234.1,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 448,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 448,
+        "Total Node": 448
     },
     "operators/signed_variable_asr_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_ultra_wide/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "signed_variable_asr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 174.2,
         "exec_time(ms)": 344.8,
         "elaboration_time(ms)": 99.4,
@@ -3674,20 +3646,16 @@
         "synthesis_time(ms)": 218.9,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 448,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 448,
+        "Total Node": 448
     },
     "operators/signed_variable_asr_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_asr_ultra_wide/no_arch",
         "verilog": "signed_variable_asr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 155.1,
         "exec_time(ms)": 228.2,
         "elaboration_time(ms)": 82.7,
@@ -3696,11 +3664,11 @@
         "synthesis_time(ms)": 203.1,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "logic element": 448,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 448,
+        "Total Node": 448
     },
     "operators/signed_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3714,12 +3682,12 @@
         "synthesis_time(ms)": 48,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 4,
         "generic logic size": 4,
-        "Longest Path": 5,
-        "Average Path": 4,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Longest Path": 4,
+        "Average Path": 3,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asr_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asr_wide/k6_N10_40nm",
@@ -3733,12 +3701,12 @@
         "synthesis_time(ms)": 46.1,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 5,
-        "Average Path": 4,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Longest Path": 4,
+        "Average Path": 3,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asr_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_wide/k6_N10_mem32K_40nm",
@@ -3752,12 +3720,12 @@
         "synthesis_time(ms)": 53.2,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 4,
         "generic logic size": 6,
-        "Longest Path": 5,
-        "Average Path": 4,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Longest Path": 4,
+        "Average Path": 3,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asr_wide/no_arch": {
         "test_name": "operators/signed_variable_asr_wide/no_arch",
@@ -3770,11 +3738,11 @@
         "synthesis_time(ms)": 47.7,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
-        "Longest Path": 5,
-        "Average Path": 4,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 3,
+        "Estimated LUTs": 4,
+        "Total Node": 4
     },
     "operators/signed_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3786,14 +3754,11 @@
         "optimization_time(ms)": 0,
         "techmap_time(ms)": 0.1,
         "synthesis_time(ms)": 43.6,
-        "Pi": 2,
+        "Pi": 1,
         "Po": 1,
-        "logic element": 1,
         "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "operators/signed_variable_asr_wire/k6_N10_40nm": {
         "test_name": "operators/signed_variable_asr_wire/k6_N10_40nm",
@@ -3805,14 +3770,11 @@
         "optimization_time(ms)": 0,
         "techmap_time(ms)": 0.1,
         "synthesis_time(ms)": 50.4,
-        "Pi": 2,
+        "Pi": 1,
         "Po": 1,
-        "logic element": 1,
         "generic logic size": 6,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "operators/signed_variable_asr_wire/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_asr_wire/k6_N10_mem32K_40nm",
@@ -3824,14 +3786,11 @@
         "optimization_time(ms)": 0,
         "techmap_time(ms)": 0.1,
         "synthesis_time(ms)": 43.7,
-        "Pi": 2,
+        "Pi": 1,
         "Po": 1,
-        "logic element": 1,
         "generic logic size": 6,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "operators/signed_variable_asr_wire/no_arch": {
         "test_name": "operators/signed_variable_asr_wire/no_arch",
@@ -3842,13 +3801,10 @@
         "optimization_time(ms)": 0,
         "techmap_time(ms)": 0.1,
         "synthesis_time(ms)": 53.9,
-        "Pi": 2,
+        "Pi": 1,
         "Po": 1,
-        "logic element": 1,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "operators/signed_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_indexed/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -3936,12 +3892,12 @@
         "synthesis_time(ms)": 83,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 4,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_sl_int_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sl_int_wide/k6_N10_40nm",
@@ -3955,12 +3911,12 @@
         "synthesis_time(ms)": 72.7,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_sl_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_int_wide/k6_N10_mem32K_40nm",
@@ -3974,12 +3930,12 @@
         "synthesis_time(ms)": 95.9,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_sl_int_wide/no_arch": {
         "test_name": "operators/signed_variable_sl_int_wide/no_arch",
@@ -3992,20 +3948,16 @@
         "synthesis_time(ms)": 92.6,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
-        "Longest Path": 34,
+        "logic element": 160,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "signed_variable_sl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 189.4,
         "exec_time(ms)": 325.5,
         "elaboration_time(ms)": 81.9,
@@ -4014,21 +3966,17 @@
         "synthesis_time(ms)": 203.2,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 4,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_sl_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sl_ultra_wide/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "signed_variable_sl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 172.3,
         "exec_time(ms)": 263.5,
         "elaboration_time(ms)": 81,
@@ -4037,21 +3985,17 @@
         "synthesis_time(ms)": 227,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_sl_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_ultra_wide/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "signed_variable_sl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 188.7,
         "exec_time(ms)": 340.8,
         "elaboration_time(ms)": 89.3,
@@ -4060,20 +4004,16 @@
         "synthesis_time(ms)": 218.8,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_sl_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_sl_ultra_wide/no_arch",
         "verilog": "signed_variable_sl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 169.3,
         "exec_time(ms)": 225.5,
         "elaboration_time(ms)": 82.7,
@@ -4082,11 +4022,11 @@
         "synthesis_time(ms)": 198.1,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "logic element": 455,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4100,12 +4040,12 @@
         "synthesis_time(ms)": 64.5,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 4,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_sl_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sl_wide/k6_N10_40nm",
@@ -4119,12 +4059,12 @@
         "synthesis_time(ms)": 71.9,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_sl_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_wide/k6_N10_mem32K_40nm",
@@ -4138,12 +4078,12 @@
         "synthesis_time(ms)": 64,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_sl_wide/no_arch": {
         "test_name": "operators/signed_variable_sl_wide/no_arch",
@@ -4156,11 +4096,11 @@
         "synthesis_time(ms)": 46.8,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
-        "Longest Path": 5,
+        "logic element": 6,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4322,12 +4262,12 @@
         "synthesis_time(ms)": 96.2,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 4,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_sr_int_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sr_int_wide/k6_N10_40nm",
@@ -4341,12 +4281,12 @@
         "synthesis_time(ms)": 97.3,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_sr_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_int_wide/k6_N10_mem32K_40nm",
@@ -4360,12 +4300,12 @@
         "synthesis_time(ms)": 87.3,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_sr_int_wide/no_arch": {
         "test_name": "operators/signed_variable_sr_int_wide/no_arch",
@@ -4378,20 +4318,16 @@
         "synthesis_time(ms)": 90.7,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
-        "Longest Path": 34,
+        "logic element": 160,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/signed_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "signed_variable_sr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 189.4,
         "exec_time(ms)": 332.8,
         "elaboration_time(ms)": 76.8,
@@ -4400,21 +4336,17 @@
         "synthesis_time(ms)": 206.2,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 4,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_sr_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sr_ultra_wide/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "signed_variable_sr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 172,
         "exec_time(ms)": 264,
         "elaboration_time(ms)": 90.6,
@@ -4423,21 +4355,17 @@
         "synthesis_time(ms)": 225.2,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_sr_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_ultra_wide/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "signed_variable_sr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 188.6,
         "exec_time(ms)": 323.1,
         "elaboration_time(ms)": 74.1,
@@ -4446,20 +4374,16 @@
         "synthesis_time(ms)": 199.1,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_sr_ultra_wide/no_arch": {
         "test_name": "operators/signed_variable_sr_ultra_wide/no_arch",
         "verilog": "signed_variable_sr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 169.1,
         "exec_time(ms)": 261.2,
         "elaboration_time(ms)": 103.8,
@@ -4468,11 +4392,11 @@
         "synthesis_time(ms)": 232.1,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "logic element": 455,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/signed_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4486,12 +4410,12 @@
         "synthesis_time(ms)": 54.1,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 4,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_sr_wide/k6_N10_40nm": {
         "test_name": "operators/signed_variable_sr_wide/k6_N10_40nm",
@@ -4505,12 +4429,12 @@
         "synthesis_time(ms)": 56.9,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_sr_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_wide/k6_N10_mem32K_40nm",
@@ -4524,12 +4448,12 @@
         "synthesis_time(ms)": 47.1,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_sr_wide/no_arch": {
         "test_name": "operators/signed_variable_sr_wide/no_arch",
@@ -4542,11 +4466,11 @@
         "synthesis_time(ms)": 54.5,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
-        "Longest Path": 5,
+        "logic element": 6,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/signed_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/signed_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -4957,14 +4881,13 @@
         "Latch Drivers": 1,
         "Pi": 9,
         "Po": 9,
-        "logic element": 24,
+        "logic element": 337,
         "latch": 8,
-        "Adder": 19,
         "generic logic size": 4,
-        "Longest Path": 27,
-        "Average Path": 4,
-        "Estimated LUTs": 24,
-        "Total Node": 52
+        "Longest Path": 93,
+        "Average Path": 5,
+        "Estimated LUTs": 337,
+        "Total Node": 346
     },
     "operators/twobits_arithmetic_div/k6_N10_40nm": {
         "test_name": "operators/twobits_arithmetic_div/k6_N10_40nm",
@@ -4977,15 +4900,15 @@
         "techmap_time(ms)": 4.2,
         "synthesis_time(ms)": 69.4,
         "Latch Drivers": 1,
-        "Pi": 7,
+        "Pi": 9,
         "Po": 9,
-        "logic element": 107,
+        "logic element": 337,
         "latch": 8,
         "generic logic size": 6,
-        "Longest Path": 32,
-        "Average Path": 4,
-        "Estimated LUTs": 107,
-        "Total Node": 116
+        "Longest Path": 93,
+        "Average Path": 5,
+        "Estimated LUTs": 337,
+        "Total Node": 346
     },
     "operators/twobits_arithmetic_div/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_div/k6_N10_mem32K_40nm",
@@ -4998,15 +4921,15 @@
         "techmap_time(ms)": 3.4,
         "synthesis_time(ms)": 77.2,
         "Latch Drivers": 1,
-        "Pi": 7,
+        "Pi": 9,
         "Po": 9,
-        "logic element": 107,
+        "logic element": 337,
         "latch": 8,
         "generic logic size": 6,
-        "Longest Path": 32,
-        "Average Path": 4,
-        "Estimated LUTs": 107,
-        "Total Node": 116
+        "Longest Path": 93,
+        "Average Path": 5,
+        "Estimated LUTs": 337,
+        "Total Node": 346
     },
     "operators/twobits_arithmetic_div/no_arch": {
         "test_name": "operators/twobits_arithmetic_div/no_arch",
@@ -5018,14 +4941,14 @@
         "techmap_time(ms)": 4.2,
         "synthesis_time(ms)": 66.8,
         "Latch Drivers": 1,
-        "Pi": 7,
+        "Pi": 9,
         "Po": 9,
-        "logic element": 107,
+        "logic element": 337,
         "latch": 8,
-        "Longest Path": 32,
-        "Average Path": 4,
-        "Estimated LUTs": 107,
-        "Total Node": 116
+        "Longest Path": 93,
+        "Average Path": 5,
+        "Estimated LUTs": 337,
+        "Total Node": 346
     },
     "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5123,14 +5046,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 4,
-        "logic element": 9,
+        "logic element": 54,
         "latch": 3,
-        "Adder": 5,
         "generic logic size": 4,
-        "Longest Path": 12,
-        "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 18
+        "Longest Path": 29,
+        "Average Path": 4,
+        "Estimated LUTs": 54,
+        "Total Node": 58
     },
     "operators/twobits_arithmetic_mod/k6_N10_40nm": {
         "test_name": "operators/twobits_arithmetic_mod/k6_N10_40nm",
@@ -5145,13 +5067,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 4,
-        "logic element": 38,
+        "logic element": 54,
         "latch": 3,
         "generic logic size": 6,
-        "Longest Path": 17,
+        "Longest Path": 29,
         "Average Path": 4,
-        "Estimated LUTs": 38,
-        "Total Node": 42
+        "Estimated LUTs": 54,
+        "Total Node": 58
     },
     "operators/twobits_arithmetic_mod/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_mod/k6_N10_mem32K_40nm",
@@ -5166,13 +5088,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 4,
-        "logic element": 38,
+        "logic element": 54,
         "latch": 3,
         "generic logic size": 6,
-        "Longest Path": 17,
+        "Longest Path": 29,
         "Average Path": 4,
-        "Estimated LUTs": 38,
-        "Total Node": 42
+        "Estimated LUTs": 54,
+        "Total Node": 58
     },
     "operators/twobits_arithmetic_mod/no_arch": {
         "test_name": "operators/twobits_arithmetic_mod/no_arch",
@@ -5186,12 +5108,12 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 4,
-        "logic element": 38,
+        "logic element": 54,
         "latch": 3,
-        "Longest Path": 17,
+        "Longest Path": 29,
         "Average Path": 4,
-        "Estimated LUTs": 38,
-        "Total Node": 42
+        "Estimated LUTs": 54,
+        "Total Node": 58
     },
     "operators/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5457,13 +5379,12 @@
         "Latch Drivers": 1,
         "Pi": 3,
         "Po": 4,
-        "logic element": 5,
+        "logic element": 8,
         "latch": 3,
-        "Adder": 3,
         "generic logic size": 4,
         "Longest Path": 7,
         "Average Path": 3,
-        "Estimated LUTs": 5,
+        "Estimated LUTs": 8,
         "Total Node": 12
     },
     "operators/twobits_arithmetic_uminus/k6_N10_40nm": {
@@ -5540,13 +5461,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 10,
+        "logic element": 15,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 9,
+        "Longest Path": 13,
         "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 12
+        "Estimated LUTs": 15,
+        "Total Node": 17
     },
     "operators/twobits_logical_greater_equal_than/k6_N10_40nm": {
         "test_name": "operators/twobits_logical_greater_equal_than/k6_N10_40nm",
@@ -5561,13 +5482,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 10,
+        "logic element": 15,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 9,
+        "Longest Path": 13,
         "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 12
+        "Estimated LUTs": 15,
+        "Total Node": 17
     },
     "operators/twobits_logical_greater_equal_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_logical_greater_equal_than/k6_N10_mem32K_40nm",
@@ -5582,13 +5503,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 10,
+        "logic element": 15,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 9,
+        "Longest Path": 13,
         "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 12
+        "Estimated LUTs": 15,
+        "Total Node": 17
     },
     "operators/twobits_logical_greater_equal_than/no_arch": {
         "test_name": "operators/twobits_logical_greater_equal_than/no_arch",
@@ -5602,12 +5523,12 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 10,
+        "logic element": 15,
         "latch": 1,
-        "Longest Path": 9,
+        "Longest Path": 13,
         "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 12
+        "Estimated LUTs": 15,
+        "Total Node": 17
     },
     "operators/twobits_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_logical_greater_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5622,13 +5543,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 14,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 8,
+        "Longest Path": 12,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 14,
+        "Total Node": 16
     },
     "operators/twobits_logical_greater_than/k6_N10_40nm": {
         "test_name": "operators/twobits_logical_greater_than/k6_N10_40nm",
@@ -5643,13 +5564,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 14,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 8,
+        "Longest Path": 12,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 14,
+        "Total Node": 16
     },
     "operators/twobits_logical_greater_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_logical_greater_than/k6_N10_mem32K_40nm",
@@ -5664,13 +5585,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 14,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 8,
+        "Longest Path": 12,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 14,
+        "Total Node": 16
     },
     "operators/twobits_logical_greater_than/no_arch": {
         "test_name": "operators/twobits_logical_greater_than/no_arch",
@@ -5684,12 +5605,12 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 14,
         "latch": 1,
-        "Longest Path": 8,
+        "Longest Path": 12,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 14,
+        "Total Node": 16
     },
     "operators/twobits_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_logical_less_equal_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5704,13 +5625,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 10,
+        "logic element": 13,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 9,
+        "Longest Path": 11,
         "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 12
+        "Estimated LUTs": 13,
+        "Total Node": 15
     },
     "operators/twobits_logical_less_equal_than/k6_N10_40nm": {
         "test_name": "operators/twobits_logical_less_equal_than/k6_N10_40nm",
@@ -5725,13 +5646,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 10,
+        "logic element": 13,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 9,
+        "Longest Path": 11,
         "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 12
+        "Estimated LUTs": 13,
+        "Total Node": 15
     },
     "operators/twobits_logical_less_equal_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_logical_less_equal_than/k6_N10_mem32K_40nm",
@@ -5746,13 +5667,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 10,
+        "logic element": 13,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 9,
+        "Longest Path": 11,
         "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 12
+        "Estimated LUTs": 13,
+        "Total Node": 15
     },
     "operators/twobits_logical_less_equal_than/no_arch": {
         "test_name": "operators/twobits_logical_less_equal_than/no_arch",
@@ -5766,12 +5687,12 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 10,
+        "logic element": 13,
         "latch": 1,
-        "Longest Path": 9,
+        "Longest Path": 11,
         "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 12
+        "Estimated LUTs": 13,
+        "Total Node": 15
     },
     "operators/twobits_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/twobits_logical_less_than/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -5786,13 +5707,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 11,
         "latch": 1,
         "generic logic size": 4,
-        "Longest Path": 8,
+        "Longest Path": 10,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 11,
+        "Total Node": 13
     },
     "operators/twobits_logical_less_than/k6_N10_40nm": {
         "test_name": "operators/twobits_logical_less_than/k6_N10_40nm",
@@ -5807,13 +5728,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 11,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 8,
+        "Longest Path": 10,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 11,
+        "Total Node": 13
     },
     "operators/twobits_logical_less_than/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_logical_less_than/k6_N10_mem32K_40nm",
@@ -5828,13 +5749,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 11,
         "latch": 1,
         "generic logic size": 6,
-        "Longest Path": 8,
+        "Longest Path": 10,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 11,
+        "Total Node": 13
     },
     "operators/twobits_logical_less_than/no_arch": {
         "test_name": "operators/twobits_logical_less_than/no_arch",
@@ -5848,12 +5769,12 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 6,
+        "logic element": 11,
         "latch": 1,
-        "Longest Path": 8,
+        "Longest Path": 10,
         "Average Path": 3,
-        "Estimated LUTs": 6,
-        "Total Node": 8
+        "Estimated LUTs": 11,
+        "Total Node": 13
     },
     "operators/unary_bitwise_bufnode/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unary_bitwise_bufnode/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -7293,12 +7214,12 @@
         "synthesis_time(ms)": 80.3,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 4,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_asl_int_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asl_int_wide/k6_N10_40nm",
@@ -7312,12 +7233,12 @@
         "synthesis_time(ms)": 84,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_asl_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_int_wide/k6_N10_mem32K_40nm",
@@ -7331,12 +7252,12 @@
         "synthesis_time(ms)": 82.3,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_asl_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asl_int_wide/no_arch",
@@ -7349,20 +7270,16 @@
         "synthesis_time(ms)": 82.6,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
-        "Longest Path": 34,
+        "logic element": 160,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "unsigned_variable_asl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 189.2,
         "exec_time(ms)": 328.6,
         "elaboration_time(ms)": 74.4,
@@ -7371,21 +7288,17 @@
         "synthesis_time(ms)": 200.6,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 4,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_asl_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asl_ultra_wide/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "unsigned_variable_asl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 172.1,
         "exec_time(ms)": 225.9,
         "elaboration_time(ms)": 78,
@@ -7394,21 +7307,17 @@
         "synthesis_time(ms)": 191.5,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_asl_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_ultra_wide/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "unsigned_variable_asl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 188.5,
         "exec_time(ms)": 315,
         "elaboration_time(ms)": 73.7,
@@ -7417,20 +7326,16 @@
         "synthesis_time(ms)": 188.3,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_asl_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asl_ultra_wide/no_arch",
         "verilog": "unsigned_variable_asl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 169.3,
         "exec_time(ms)": 219.1,
         "elaboration_time(ms)": 78.2,
@@ -7439,11 +7344,11 @@
         "synthesis_time(ms)": 190.7,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "logic element": 455,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -7457,12 +7362,12 @@
         "synthesis_time(ms)": 46.2,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 4,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_asl_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asl_wide/k6_N10_40nm",
@@ -7476,12 +7381,12 @@
         "synthesis_time(ms)": 46.9,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_asl_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_wide/k6_N10_mem32K_40nm",
@@ -7495,12 +7400,12 @@
         "synthesis_time(ms)": 49.4,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_asl_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asl_wide/no_arch",
@@ -7513,11 +7418,11 @@
         "synthesis_time(ms)": 48.4,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
-        "Longest Path": 5,
+        "logic element": 6,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -7679,12 +7584,12 @@
         "synthesis_time(ms)": 77.2,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 4,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_asr_int_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asr_int_wide/k6_N10_40nm",
@@ -7698,12 +7603,12 @@
         "synthesis_time(ms)": 83.9,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_asr_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_int_wide/k6_N10_mem32K_40nm",
@@ -7717,12 +7622,12 @@
         "synthesis_time(ms)": 89.4,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_asr_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asr_int_wide/no_arch",
@@ -7735,20 +7640,16 @@
         "synthesis_time(ms)": 75.7,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
-        "Longest Path": 34,
+        "logic element": 160,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "unsigned_variable_asr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 189.4,
         "exec_time(ms)": 338.3,
         "elaboration_time(ms)": 95,
@@ -7757,21 +7658,17 @@
         "synthesis_time(ms)": 211.9,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 4,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_asr_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asr_ultra_wide/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "unsigned_variable_asr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 172,
         "exec_time(ms)": 218.7,
         "elaboration_time(ms)": 75,
@@ -7780,21 +7677,17 @@
         "synthesis_time(ms)": 186.2,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_asr_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_ultra_wide/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "unsigned_variable_asr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 188.4,
         "exec_time(ms)": 328.1,
         "elaboration_time(ms)": 83.5,
@@ -7803,20 +7696,16 @@
         "synthesis_time(ms)": 203.9,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_asr_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asr_ultra_wide/no_arch",
         "verilog": "unsigned_variable_asr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 169.2,
         "exec_time(ms)": 216.9,
         "elaboration_time(ms)": 65.9,
@@ -7825,11 +7714,11 @@
         "synthesis_time(ms)": 187.3,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "logic element": 455,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -7843,12 +7732,12 @@
         "synthesis_time(ms)": 44.9,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 4,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_asr_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_asr_wide/k6_N10_40nm",
@@ -7862,12 +7751,12 @@
         "synthesis_time(ms)": 45.9,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_asr_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_wide/k6_N10_mem32K_40nm",
@@ -7881,12 +7770,12 @@
         "synthesis_time(ms)": 45.3,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_asr_wide/no_arch": {
         "test_name": "operators/unsigned_variable_asr_wide/no_arch",
@@ -7899,11 +7788,11 @@
         "synthesis_time(ms)": 49.8,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
-        "Longest Path": 5,
+        "logic element": 6,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_asr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -8065,12 +7954,12 @@
         "synthesis_time(ms)": 79,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 4,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_sl_int_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sl_int_wide/k6_N10_40nm",
@@ -8084,12 +7973,12 @@
         "synthesis_time(ms)": 75.9,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_sl_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_int_wide/k6_N10_mem32K_40nm",
@@ -8103,12 +7992,12 @@
         "synthesis_time(ms)": 84.3,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_sl_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sl_int_wide/no_arch",
@@ -8121,20 +8010,16 @@
         "synthesis_time(ms)": 83.2,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
-        "Longest Path": 34,
+        "logic element": 160,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "unsigned_variable_sl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 189.4,
         "exec_time(ms)": 318.1,
         "elaboration_time(ms)": 76.1,
@@ -8143,21 +8028,17 @@
         "synthesis_time(ms)": 196.5,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 4,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_sl_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sl_ultra_wide/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "unsigned_variable_sl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 172.1,
         "exec_time(ms)": 226.1,
         "elaboration_time(ms)": 70.7,
@@ -8166,21 +8047,17 @@
         "synthesis_time(ms)": 189,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_sl_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_ultra_wide/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "unsigned_variable_sl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 188.6,
         "exec_time(ms)": 325.5,
         "elaboration_time(ms)": 79.1,
@@ -8189,20 +8066,16 @@
         "synthesis_time(ms)": 201.8,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_sl_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sl_ultra_wide/no_arch",
         "verilog": "unsigned_variable_sl_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 169.3,
         "exec_time(ms)": 224.7,
         "elaboration_time(ms)": 78.9,
@@ -8211,11 +8084,11 @@
         "synthesis_time(ms)": 196.2,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "logic element": 455,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -8229,12 +8102,12 @@
         "synthesis_time(ms)": 61,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 4,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_sl_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sl_wide/k6_N10_40nm",
@@ -8248,12 +8121,12 @@
         "synthesis_time(ms)": 55.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_sl_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_wide/k6_N10_mem32K_40nm",
@@ -8267,12 +8140,12 @@
         "synthesis_time(ms)": 49.1,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_sl_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sl_wide/no_arch",
@@ -8285,11 +8158,11 @@
         "synthesis_time(ms)": 54.7,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
-        "Longest Path": 5,
+        "logic element": 6,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sl_wire/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -8451,12 +8324,12 @@
         "synthesis_time(ms)": 82.8,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 4,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_sr_int_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sr_int_wide/k6_N10_40nm",
@@ -8470,12 +8343,12 @@
         "synthesis_time(ms)": 95.3,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_sr_int_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_int_wide/k6_N10_mem32K_40nm",
@@ -8489,12 +8362,12 @@
         "synthesis_time(ms)": 79.5,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
+        "logic element": 160,
         "generic logic size": 6,
-        "Longest Path": 34,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_sr_int_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sr_int_wide/no_arch",
@@ -8507,20 +8380,16 @@
         "synthesis_time(ms)": 80.2,
         "Pi": 37,
         "Po": 32,
-        "logic element": 1024,
-        "Longest Path": 34,
+        "logic element": 160,
+        "Longest Path": 7,
         "Average Path": 4,
-        "Estimated LUTs": 1024,
-        "Total Node": 1024
+        "Estimated LUTs": 160,
+        "Total Node": 160
     },
     "operators/unsigned_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_ultra_wide/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "unsigned_variable_sr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 189.2,
         "exec_time(ms)": 339.1,
         "elaboration_time(ms)": 80.9,
@@ -8529,21 +8398,17 @@
         "synthesis_time(ms)": 210.4,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 4,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_sr_ultra_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sr_ultra_wide/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "unsigned_variable_sr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 172.1,
         "exec_time(ms)": 249.1,
         "elaboration_time(ms)": 85.1,
@@ -8552,21 +8417,17 @@
         "synthesis_time(ms)": 212.8,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_sr_ultra_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_ultra_wide/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "unsigned_variable_sr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 188.6,
         "exec_time(ms)": 322.8,
         "elaboration_time(ms)": 72.4,
@@ -8575,20 +8436,16 @@
         "synthesis_time(ms)": 197,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
+        "logic element": 455,
         "generic logic size": 6,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_sr_ultra_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sr_ultra_wide/no_arch",
         "verilog": "unsigned_variable_sr_ultra_wide.v",
-        "warnings": [
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 63 [63]",
-            "[NETLIST] requesting a shift left that will overflow the maximum size of 64 [63]"
-        ],
         "max_rss(MiB)": 169.2,
         "exec_time(ms)": 232.2,
         "elaboration_time(ms)": 81.9,
@@ -8597,11 +8454,11 @@
         "synthesis_time(ms)": 204.1,
         "Pi": 72,
         "Po": 65,
-        "logic element": 4225,
-        "Longest Path": 67,
-        "Average Path": 5,
-        "Estimated LUTs": 4225,
-        "Total Node": 4225
+        "logic element": 455,
+        "Longest Path": 9,
+        "Average Path": 4,
+        "Estimated LUTs": 455,
+        "Total Node": 455
     },
     "operators/unsigned_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_wide/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -8615,12 +8472,12 @@
         "synthesis_time(ms)": 42.9,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 4,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_sr_wide/k6_N10_40nm": {
         "test_name": "operators/unsigned_variable_sr_wide/k6_N10_40nm",
@@ -8634,12 +8491,12 @@
         "synthesis_time(ms)": 48.6,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_sr_wide/k6_N10_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_wide/k6_N10_mem32K_40nm",
@@ -8653,12 +8510,12 @@
         "synthesis_time(ms)": 48.2,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
+        "logic element": 6,
         "generic logic size": 6,
-        "Longest Path": 5,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_sr_wide/no_arch": {
         "test_name": "operators/unsigned_variable_sr_wide/no_arch",
@@ -8671,11 +8528,11 @@
         "synthesis_time(ms)": 59.7,
         "Pi": 5,
         "Po": 3,
-        "logic element": 9,
-        "Longest Path": 5,
+        "logic element": 6,
+        "Longest Path": 4,
         "Average Path": 3,
-        "Estimated LUTs": 9,
-        "Total Node": 9
+        "Estimated LUTs": 6,
+        "Total Node": 6
     },
     "operators/unsigned_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "operators/unsigned_variable_sr_wire/k6_frac_N10_frac_chain_mem32K_40nm",
