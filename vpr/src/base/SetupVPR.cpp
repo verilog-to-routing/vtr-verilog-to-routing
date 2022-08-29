@@ -249,7 +249,7 @@ void SetupVPR(const t_options* Options,
 
     {
         vtr::ScopedStartFinishTimer t("Building complex block graph");
-        alloc_and_load_all_pb_graphs(PowerOpts->do_power);
+        alloc_and_load_all_pb_graphs(PowerOpts->do_power, RouterOpts->flat_routing);
         *PackerRRGraphs = alloc_and_load_all_lb_type_rr_graph();
     }
 

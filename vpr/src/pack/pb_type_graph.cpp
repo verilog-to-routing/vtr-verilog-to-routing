@@ -133,7 +133,7 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
 /**
  * Allocate memory into types and load the pb graph with interconnect edges
  */
-void alloc_and_load_all_pb_graphs(bool load_power_structures) {
+void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
     int errors;
     edges_head = nullptr;
     num_edges_head = nullptr;
@@ -148,8 +148,10 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
                                     type.pb_type, 0, load_power_structures, pin_count_in_cluster);
             type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
-            set_pins_logical_num(&type);
-            add_logical_classes(&type);
+            if(is_flat) {
+                set_pins_logical_num(&type);
+                add_logical_classes(&type);
+            }
         } else {
             type.pb_graph_head = nullptr;
             VTR_ASSERT(&type == device_ctx.EMPTY_LOGICAL_BLOCK_TYPE);
@@ -465,11 +467,6 @@ static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(
 }
 
 static void add_logical_classes(t_logical_block_type* logical_block) {
-    /* Since logical blocks are allocated using "alloc" command, data structures are not initialized properly.
-     * This is why we need to assign a new object to it. This won't be needed when logical blocks are allocated
-     * using "new" operator.
-     */
-    logical_block->pb_pin_to_class_logical_num_mapping = std::unordered_map<const t_pb_graph_pin*, int>();
 
     auto pb_graph_nodes = get_all_logical_block_pb_graph_nodes(logical_block);
     for (auto pb_graph_node : pb_graph_nodes) {
