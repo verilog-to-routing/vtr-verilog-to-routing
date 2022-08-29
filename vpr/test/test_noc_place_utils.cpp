@@ -19,7 +19,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]"){
     // setup random number generation
     std::random_device device;
     std::mt19937 rand_num_gen(device());
-    std::uniform_int_distribution<std::mt19937::result_type> dist(0,NUM_OF_LOGICAL_ROUTER_BLOCKS);
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0,NUM_OF_LOGICAL_ROUTER_BLOCKS-1);
     // this sets the range of possible bandwidths for a traffic flow
     std::uniform_int_distribution<std::mt19937::result_type> dist_2(0,1000);
 
@@ -133,13 +133,14 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]"){
     for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS; traffic_flow_number++){
         
         const t_noc_traffic_flow curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
-        std::vector<NocLinkId> traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
+        std::vector<NocLinkId>* traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
 
         // get the source and sink routers of this traffic flow
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, traffic_flow_route, noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, *traffic_flow_route, noc_ctx.noc_model);
+        
     }
 
     /* in the test function we will be routing all the traffic flows and then updating their link usages. So we will be generating a vector of all links
@@ -153,18 +154,18 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]"){
     for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS; traffic_flow_number++){
 
         const t_noc_traffic_flow curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
-        std::vector<NocLinkId> traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
+        std::vector<NocLinkId>* traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
 
-        for (auto& link:traffic_flow_route){
+        for (auto& link:*traffic_flow_route){
             golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
         }
 
-        traffic_flow_route.clear();
+        traffic_flow_route->clear();
 
     }
 
     // now call the test function
-    initial_noc_placement(place_ctx);    
+    initial_noc_placement();    
 
     // now verify the function by comparing the link bandwidths in the noc model (should have been updated by the test function) to the golden set 
     int number_of_links = golden_link_bandwidths.size();

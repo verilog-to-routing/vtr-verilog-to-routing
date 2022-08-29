@@ -186,10 +186,10 @@ class NocTrafficFlows {
      * 
      * @param traffic_flow_id A unique identifier that represents a 
      * traffic flow.
-     * @return std::vector<NocLinkId>& A reference to the provided
+     * @return std::vector<NocLinkId>* A reference to the provided
      * traffic flow's routed path.
      */
-    std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
+    std::vector<NocLinkId>* get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
 
     // setters
 
