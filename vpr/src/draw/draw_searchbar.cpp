@@ -105,7 +105,7 @@ ezgl::rectangle draw_get_rr_chan_bbox(int inode) {
 
 void draw_highlight_blocks_color(t_logical_block_type_ptr type,
                                  ClusterBlockId blk_id) {
-    int k, iclass;
+    int k;
     ClusterBlockId fanblk;
 
     t_draw_state* draw_state = get_draw_state_vars();

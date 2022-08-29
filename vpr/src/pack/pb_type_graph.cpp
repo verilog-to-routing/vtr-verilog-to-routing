@@ -148,7 +148,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
                                     type.pb_type, 0, load_power_structures, pin_count_in_cluster);
             type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
-            if(is_flat) {
+            if (is_flat) {
                 set_pins_logical_num(&type);
                 add_logical_classes(&type);
             }
@@ -467,7 +467,6 @@ static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(
 }
 
 static void add_logical_classes(t_logical_block_type* logical_block) {
-
     auto pb_graph_nodes = get_all_logical_block_pb_graph_nodes(logical_block);
     for (auto pb_graph_node : pb_graph_nodes) {
         /* There are three types of ports which can be defined for each block : Input - Output - Clock

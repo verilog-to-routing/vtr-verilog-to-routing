@@ -244,7 +244,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
     }
 
     VTR_LOG("RouterOpts.flat_routing: ");
-    if(RouterOpts.flat_routing) {
+    if (RouterOpts.flat_routing) {
         VTR_LOG("true\n");
     } else {
         VTR_LOG("false\n");
