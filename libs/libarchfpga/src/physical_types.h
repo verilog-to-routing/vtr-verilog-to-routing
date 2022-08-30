@@ -1365,7 +1365,7 @@ class t_pb_graph_edge {
     int* pack_pattern_indices;
     bool infer_pattern;
 
-    int switch_type_idx = OPEN;
+    int switch_type_idx = OPEN; /* architecture switch id of the edge - used when flat_routing is enabled*/
 
     // class member functions
   public:
