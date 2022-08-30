@@ -14,6 +14,8 @@
  *
  * This structure holds the following information on a pin:
  *   - sub_tile_index: index of the sub tile within the physical tile type containing this pin
+ *   - logical_block_index: index of the logical block which this pin in located in it.
+ *                          To retrieve the logical block -> device_ctx.logical_block_types[logical_block_index]
  *   - capacity_instance: sub tile instance containing this physical pin.
  *                        Each sub tile has a capacity field, which determines how many of its
  *                        instances are present in the belonging physical tile.
@@ -21,17 +23,19 @@
  *                          - The sub tile BUFG has a capacity of 4 within its belonging physical tile CLOCK_TILE.
  *                          - The capacity instance of a pin in the CLOCK_TILE identifies which of the 4 instances
  *                            the pin belongs to.
+ *   - pb_type_idx: If pin is located inside a cluster, it would belong to a pb_block.
  *   - port_index: Each sub tile has a set of ports with a variable number of pins. The port_index field identifies
  *                 which port the physical pin belongs to.
  *   - pin_index_in_port: Given that ports can have multiple pins, we need also a field to identify which one of the
  *                        multiple pins of the port corresponds to the physical pin.
+ *   - pin_physical_num: pin physical_number
  *
  */
 struct t_pin_inst_port {
     int sub_tile_index;      // Sub Tile index
-    int logical_block_index; // Logical block index
+    int logical_block_index; // Logical block index - valid if flat_routing is enabled
     int capacity_instance;   // within capacity
-    int pb_type_idx;
+    int pb_type_idx; // valid if flat_routing is enabled
     int port_index;        // Port index
     int pin_index_in_port; // Pin's index within the port
     int pin_physical_num;

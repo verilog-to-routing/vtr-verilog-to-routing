@@ -18,8 +18,6 @@ static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node);
 
 static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& grid, const t_rr_node& node);
 
-//static void check_intra_cluster_routing();
-
 static void check_rr_edge(const RRGraphView& rr_graph,
                           const DeviceGrid& grid,
                           const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
@@ -303,9 +301,6 @@ void check_rr_graph(const RRGraphView& rr_graph,
         }
     }
 
-//    if(is_flat) {
-//        check_intra_cluster_routing();
-//    }
 }
 
 static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const DeviceGrid& grid, RRNodeId inode) {
@@ -611,56 +606,3 @@ static void check_rr_edge(const RRGraphView& rr_graph,
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid switch type %d", switch_type);
     }
 }
-
-//static void check_intra_cluster_routing() {
-//    const auto& atom_net_list = g_vpr_ctx.atom().nlist;
-//    const auto& atom_look_up = g_vpr_ctx.atom().lookup;
-//    const auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
-//    const auto& placement_ctx = g_vpr_ctx.placement();
-//
-//    for(auto pin : atom_net_list.pins()) {
-//        auto atom_blk_id = atom_net_list.pin_block(pin);
-//        auto cluster_blk_id = atom_look_up.atom_clb(atom_blk_id);
-//        auto cluster_loc = placement_ctx.block_locs[cluster_blk_id];
-//        auto physical_type = physical_tile_type(cluster_blk_id);
-//        auto logical_block = cluster_net_list.block_type(cluster_blk_id);
-//        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID());
-//        auto clb_pb = cluster_net_list.block_pb(cluster_blk_id);
-//        auto pb_routes = clb_pb->pb_route;
-//        auto pb_pin = atom_look_up.atom_pin_pb_graph_pin(pin);
-//
-//        if(pb_pin->port->type== PORTS::IN_PORT) {
-//            int connected_pin = pb_pin->pin_count_in_cluster;
-//            int driving_pin = pb_routes[connected_pin].driver_pb_pin_id;
-//            VTR_ASSERT(pb_routes[connected_pin].sink_pb_pin_ids.size() == 0);
-//            while(driving_pin >= 0) {
-//                VTR_ASSERT(pins_connected(cluster_loc,
-//                                          physical_type,
-//                                          logical_block,
-//                                          driving_pin,
-//                                          connected_pin));
-//                connected_pin = driving_pin;
-//                driving_pin = pb_routes[connected_pin].driver_pb_pin_id;
-//
-//            }
-//        } else {
-//            std::list<int> pins;
-//            int driving_pin = pb_pin->pin_count_in_cluster;
-//            VTR_ASSERT(pb_routes[driving_pin].driver_pb_pin_id == OPEN);
-//            pins.emplace_back(driving_pin);
-//            do {
-//                driving_pin = pins.front();
-//                for(auto tmp_conn_pin : pb_routes[driving_pin].sink_pb_pin_ids) {
-//                    VTR_ASSERT(pins_connected(cluster_loc,
-//                                              physical_type,
-//                                              logical_block,
-//                                              driving_pin,
-//                                              tmp_conn_pin));
-//                    pins.emplace_back(tmp_conn_pin);
-//                }
-//                pins.pop_front();
-//            } while(!pins.empty());
-//        }
-//
-//    }
-//}

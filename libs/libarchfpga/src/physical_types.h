@@ -945,7 +945,7 @@ struct t_pb_type {
     t_pin_to_pin_annotation* annotations = nullptr; /* [0..num_annotations-1] */
     int num_annotations = 0;
 
-    int index_in_logical_block = 0;
+    int index_in_logical_block = 0; /* assign a unique id to each pb_type in a logical block */
 
     /* Power related members */
     t_pb_type_power* pb_type_power = nullptr;
@@ -1280,7 +1280,8 @@ class t_pb_graph_pin {
     float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
     t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
 
-    std::set<int> connected_sinks_ptc;
+    /* This member is used when flat-routing is enabled in order to prevent router from expanding to pins which don't lead to the desired sink */
+    std::set<int> connected_sinks_ptc; /* ptc numbers of sinks which are directly or indirectly connected to this pin */
 
     /* combinational timing information */
     int num_pin_timing = 0;                   /* Number of ipin to opin timing edges*/
@@ -1365,7 +1366,7 @@ class t_pb_graph_edge {
     int* pack_pattern_indices;
     bool infer_pattern;
 
-    int switch_type_idx = OPEN; /* architecture switch id of the edge - used when flat_routing is enabled*/
+    int switch_type_idx = OPEN; /* architecture switch id of the edge - used when flat_routing is enabled */
 
     // class member functions
   public:
