@@ -43,8 +43,8 @@ const NocRouter& NocStorage::get_single_noc_router(NocRouterId id) const {
     return router_storage[id];
 }
 
-NocRouter* NocStorage::get_single_mutable_noc_router(NocRouterId id) {
-    return &router_storage[id];
+NocRouter& NocStorage::get_single_mutable_noc_router(NocRouterId id) {
+    return router_storage[id];
 }
 
 // get link properties
@@ -52,8 +52,8 @@ const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
     return link_storage[id];
 }
 
-NocLink* NocStorage::get_single_mutable_noc_link(NocLinkId id) {
-    return &link_storage[id];
+NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
+    return link_storage[id];
 }
 
 NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_location) const {

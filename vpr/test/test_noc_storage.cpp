@@ -51,7 +51,7 @@ TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
         // get the converted router id and the corresponsing router to verify
         // no need to run a conversion, the router id mapping is 1 to 1
         converted_id = (NocRouterId)router_number;
-        NocRouter router_to_verify = test_noc.get_single_noc_router(converted_id);
+        const NocRouter& router_to_verify = test_noc.get_single_noc_router(converted_id);
 
         // compare all the router properties
         REQUIRE(golden_set[router_number].get_router_user_id() == router_to_verify.get_router_user_id());
@@ -98,7 +98,7 @@ TEST_CASE("test_router_id_conversion", "[vpr_noc]") {
     for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++) {
         // get the converted router id and the corresponsing router to verify
         converted_id = test_noc.convert_router_id(router_number);
-        NocRouter router_to_verify = test_noc.get_single_noc_router(converted_id);
+        const NocRouter& router_to_verify = test_noc.get_single_noc_router(converted_id);
 
         // compare all the router properties
         REQUIRE(golden_set[router_number].get_router_user_id() == router_to_verify.get_router_user_id());
@@ -165,15 +165,15 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
         // converting current link to the index used by the NocStorage class
         link_id = (NocLinkId)link_number;
         // using the link index, get it from the NoC
-        NocLink current_link_to_test = test_noc.get_single_noc_link(link_id);
+        const NocLink& current_link_to_test = test_noc.get_single_noc_link(link_id);
 
         // now get the source and sink routers of the test link
-        NocRouter test_link_source_router = test_noc.get_single_noc_router(current_link_to_test.get_source_router());
-        NocRouter test_link_sink_router = test_noc.get_single_noc_router(current_link_to_test.get_sink_router());
+        const NocRouter& test_link_source_router = test_noc.get_single_noc_router(current_link_to_test.get_source_router());
+        const NocRouter& test_link_sink_router = test_noc.get_single_noc_router(current_link_to_test.get_sink_router());
 
         // now get the source and sink routers of the golde link
-        NocRouter golden_link_source_router = test_noc.get_single_noc_router(golden_set[link_number].get_source_router());
-        NocRouter golden_link_sink_router = test_noc.get_single_noc_router(golden_set[link_number].get_sink_router());
+        const NocRouter& golden_link_source_router = test_noc.get_single_noc_router(golden_set[link_number].get_source_router());
+        const NocRouter& golden_link_sink_router = test_noc.get_single_noc_router(golden_set[link_number].get_sink_router());
 
         // verify the test link by checking that the source and sink routers match the golden reference link
         REQUIRE(golden_link_source_router.get_router_user_id() == test_link_source_router.get_router_user_id());
@@ -183,9 +183,6 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
 TEST_CASE("test_router_link_list", "[vpr_noc]") {
     // create a vector to store the golden links
     vtr::vector<NocRouterId, std::vector<NocLinkId>> golden_set;
-
-    // list of router connections returned from the NoC
-    std::vector<NocLinkId> router_links;
 
     golden_set.resize(NUM_OF_ROUTERS);
 
@@ -246,7 +243,7 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
         source = (NocRouterId)id;
 
         // get the router connections from the
-        router_links = test_noc.get_noc_router_connections(source);
+        const std::vector<NocLinkId>& router_links = test_noc.get_noc_router_connections(source);
 
         // get the size of the current router connection list
         connection_size = golden_set[source].size();
@@ -324,11 +321,11 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         // variable to keep track of whether the link was deleted from the vector outgoing links of its source router
         bool link_removed_from_outgoing_vector = true;
 
-        auto outgoing_links = test_noc.get_noc_router_connections(link_to_remove_src_router);
+        auto& outgoing_links = test_noc.get_noc_router_connections(link_to_remove_src_router);
         // go through all the outgoing links  of the source router in the link we removed and check that the link does not exis there as well.
         for (auto outgoing_link_id = outgoing_links.begin(); outgoing_link_id != outgoing_links.end(); outgoing_link_id++) {
             // get the current outgoing link
-            const NocLink curr_outgoing_link = test_noc.get_single_noc_link(*outgoing_link_id);
+            const NocLink& curr_outgoing_link = test_noc.get_single_noc_link(*outgoing_link_id);
 
             if ((curr_outgoing_link.get_source_router() == link_to_remove_src_router) && (curr_outgoing_link.get_sink_router() == link_to_remove_sink_router)) {
                 link_removed_from_outgoing_vector = false;
@@ -337,7 +334,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         }
 
         // verify that the link was set to be in invalid inside the vector of all links in the NoC
-        auto links_in_noc = test_noc.get_noc_links();
+        const auto& links_in_noc = test_noc.get_noc_links();
         // go through the links and make sure that none of them have the source and sink router of the link
         // that we removed. THe removed link should have the source and sink routers set to invalid values.
         for (auto single_link = links_in_noc.begin(); single_link != links_in_noc.end(); single_link++) {
