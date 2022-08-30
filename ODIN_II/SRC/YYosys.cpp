@@ -334,22 +334,16 @@ void YYosys::execute() {
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adff2dff.v"));
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adffe2dff.v"));
 
-        // Transform the design into a new one with single top module
-        run_pass(std::string("flatten"));
-        /* 
-         * Transforming all RTLIL components into LUTs except for memories, adders, subtractors, 
-         * multipliers, DFFs with set (VCC) and clear (GND) signals, and DFFs with the set (VCC),
-         * clear (GND), and enable signals The Odin-II partial mapper will perform the technology
-         * mapping for the above-mentioned circuits
-         * 
-         * [NOTE]: the purpose of using this pass is to keep the connectivity of internal signals  
-         *         in the coarse-grained BLIF file, as they were not properly connected in the 
-         *         initial implementation of Yosys+Odin-II, which did not use this pass
-         */
-        run_pass(std::string("techmap */t:$mem */t:$memrd */t:$add */t:$sub */t:$mul */t:$dffsr */t:$dffsre */t:$sr */t:$dlatch */t:$adlatch %% %n"));
+        // Yosys performs various optimizations on memories in the design. Then, it detects DFFs at
+        // memory read ports and merges them into the memory port. I.e. it consumes an asynchronous
+        // memory port and the flip-flops at its interface and yields a synchronous memory port.
+        // Afterwards, Yosys detects cases where an asynchronous read port is only connected via a mux
+        // tree to a write port with the same address. When such a connection is found, it is replaced
+        // with a new condition on an enable signal, allowing for removal of the read port. Finally 
+        // Yosys merges share-able memory ports into single memory ports and collects memories, their 
+        // port and create multiport memory cells.
+        run_pass(std::string("memory -nomap;"));
 
-        // Collects memories, their port and create multiport memory cells
-        run_pass(std::string("memory_collect; memory_dff;"));
         /**
          * convert yosys mem blocks to BRAMs / ROMs
          *
@@ -362,6 +356,22 @@ void YYosys::execute() {
          *  Yosys::run_pass(std::string("memory_bram -rules ", this->odin_techlib, "/mem_rules.txt"))
          *  Yosys::run_pass(std::string("techmap -map ", this->odin_techlib, "/mem_map.v"));
          */
+
+        /* 
+         * Transforming all RTLIL components into LUTs except for memories, adders, subtractors, 
+         * multipliers, DFFs with set (VCC) and clear (GND) signals, and DFFs with the set (VCC),
+         * clear (GND), and enable signals The Odin-II partial mapper will perform the technology
+         * mapping for the above-mentioned circuits
+         * 
+         * [NOTE]: the purpose of using this pass is to keep the connectivity of internal signals  
+         *         in the coarse-grained BLIF file, as they were not properly connected in the 
+         *         initial implementation of Yosys+Odin-II, which did not use this pass
+         */
+        run_pass(std::string("techmap -autoproc */t:$mem */t:$memrd */t:$add */t:$sub */t:$mul */t:$dffsr */t:$dffsre */t:$sr */t:$dlatch */t:$adlatch %% %n"));
+
+
+        // Transform the design into a new one with single top module
+        run_pass(std::string("flatten"));
 
         // To possibly reduce word sizes by Yosys and fine-graining the basic operations
         run_pass(std::string("wreduce; simplemap */t:$dffsr */t:$dffsre */t:$sr */t:$dlatch */t:$adlatch %% %n;"));
