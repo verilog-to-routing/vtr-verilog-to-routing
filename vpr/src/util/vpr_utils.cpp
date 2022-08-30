@@ -2288,7 +2288,7 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
     return primitives;
 }
 
-bool is_node_on_tile(t_physical_tile_type_ptr physical_tile,
+bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
                      t_rr_type node_type,
                      int node_ptc) {
     if (node_type == CHANX || node_type == CHANY) {

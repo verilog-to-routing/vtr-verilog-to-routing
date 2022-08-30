@@ -132,6 +132,11 @@ bool router_needs_lookahead(enum e_router_algorithm router_algorithm);
 
 std::string describe_unrouteable_connection(const int source_node, const int sink_node, bool is_flat);
 
+/* If flat_routing isn't enabled, this function would simply pass from_node and to_node to the router_lookahead.
+ * However, if flat_routing is enabled, we can not do the same. For the time being, router lookahead is not aware
+ * of internal nodes, thus if we pass an intra-cluster node to it, it would raise an error. Thus, we choose one
+ * node on the same tile of that internal node and pass it to the router lookahead.
+ */
 float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               const RRGraphView& rr_graph_view,
                               RRNodeId from_node,

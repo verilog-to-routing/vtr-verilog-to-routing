@@ -94,8 +94,6 @@ static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RR
                                                                         const Netlist<>& net_list,
                                                                         bool is_flat);
 
-//static vtr::vector<ClusterNetId, std::vector<int>> load_cluster_net_rr_terminals(const RRGraphView& rr_graph, const ClusteredNetlist& clb_nlist);
-
 static vtr::vector<ParentBlockId, std::vector<int>> load_rr_clb_sources(const RRGraphView& rr_graph,
                                                                         const Netlist<>& net_list,
                                                                         bool is_flat);
@@ -109,6 +107,9 @@ static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& t
 static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
                                                            bool is_flat);
 
+/* This function is used by get_cost_from_lookahead function. If the given node to the function belongs to one of the
+ * intra-cluster routing resources, it would return a node corresponds to a pin on the tile.
+*/
 static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat);
 
 /************************** Subroutine definitions ***************************/
@@ -1039,44 +1040,6 @@ static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RR
     return net_rr_terminals;
 }
 
-//static vtr::vector<ClusterNetId, std::vector<int>> load_cluster_net_rr_terminals(const RRGraphView& rr_graph, const ClusteredNetlist& clb_nlist) {
-//
-//    vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
-//
-//    auto& place_ctx = g_vpr_ctx.placement();
-//
-//    auto nets = clb_nlist.nets();
-//    net_rr_terminals.resize(nets.size());
-//
-//    for (auto net_id : clb_nlist.nets()) {
-//        auto net_pins = clb_nlist.net_pins(net_id);
-//        net_rr_terminals[net_id].resize(net_pins.size());
-//
-//        int pin_count = 0;
-//        for (auto pin_id : clb_nlist.net_pins(net_id)) {
-//            auto block_id = clb_nlist.pin_block(pin_id);
-//            int i = place_ctx.block_locs[block_id].loc.x;
-//            int j = place_ctx.block_locs[block_id].loc.y;
-//            auto type = physical_tile_type(block_id);
-//
-//            /* In the routing graph, each (x, y) location has unique pins on it
-//             * so when there is capacity, blocks are packed and their pin numbers
-//             * are offset to get their actual rr_node */
-//            int phys_pin = tile_pin_index(pin_id);
-//
-//            int iclass = type->pin_class[phys_pin];
-//
-//            RRNodeId inode = rr_graph.node_lookup().find_node(i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-//                                                              iclass);
-//            net_rr_terminals[net_id][pin_count] = size_t(inode);
-//            pin_count++;
-//        }
-//    }
-//
-//    return net_rr_terminals;
-//
-//}
-
 /* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
  * in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
  * they are used only to reserve pins for locally used OPINs in the router. *
@@ -1876,9 +1839,14 @@ static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRN
     int y_low = rr_graph_view.node_ylow(node_id);
     auto node_type = rr_graph_view.node_type(node_id);
 
-    if (is_node_on_tile(device_ctx.grid[x_low][y_low].type, node_type, rr_graph_view.node_ptc_num(node_id))) {
+    if (is_inter_cluster_node(device_ctx.grid[x_low][y_low].type, node_type, rr_graph_view.node_ptc_num(node_id))) {
+        /* if node is already on/out cluster, return itself*/
         return node_id;
     } else {
+        /* AM: For the time being, we return the first pin with valid RRNodeId on the tile. This approach is obviously flawed.
+         * I am now working on the lookahead, so it can accommodate the internal nodes. Until the lookahead gets fixed, we have to
+         * stick to the current approach.
+         */
         int max_ptc = get_rr_node_max_ptc(rr_graph_view,
                                           node_id,
                                           is_flat);

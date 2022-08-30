@@ -244,12 +244,12 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)].type;
     t_rr_type rr_type = rr_graph.node_type(current_node);
     //  TODO: These two assertions is only added for debugging flat-routing - it needs to be removed
-    VTR_ASSERT(is_node_on_tile(physical_type,
+    VTR_ASSERT(is_inter_cluster_node(physical_type,
                                rr_type,
                                rr_graph.node_ptc_num(current_node)));
 
     t_physical_tile_type_ptr target_physical_type = device_ctx.grid[rr_graph.node_xlow(target_node)][rr_graph.node_ylow(target_node)].type;
-    VTR_ASSERT(is_node_on_tile(target_physical_type,
+    VTR_ASSERT(is_inter_cluster_node(target_physical_type,
                                rr_graph.node_type(target_node),
                                rr_graph.node_ptc_num(target_node)));
 
@@ -694,7 +694,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
         // For the time being, we decide to not let the lookahead explore the node inside the clusters
         t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(child_node)][rr_graph.node_ylow(child_node)].type;
-        if (!is_node_on_tile(physical_type,
+        if (!is_inter_cluster_node(physical_type,
                              rr_graph.node_type(child_node),
                              rr_graph.node_ptc_num(child_node))) {
             continue;

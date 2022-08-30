@@ -24,7 +24,7 @@ inline static bool relevant_node_to_target(const RRGraphView* rr_graph,
     } else if (node_in_same_physical_tile(node_to_add, target_node)) {
         VTR_ASSERT(node_to_add_type == IPIN);
         t_physical_tile_type_ptr physical_type = g_vpr_ctx.device().grid[node_to_add_x_low][node_to_add_y_low].type;
-        if (is_node_on_tile(physical_type,
+        if (is_inter_cluster_node(physical_type,
                             node_to_add_type,
                             rr_graph->node_ptc_num(node_to_add))) {
             return true;
@@ -241,7 +241,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
         auto cheap_type = rr_graph_->node_type(RRNodeId(cheapest->index));
         int cheapest_x_low = rr_graph_->node_xlow(RRNodeId(cheapest->index));
         int cheapest_y_low = rr_graph_->node_ylow(RRNodeId(cheapest->index));
-        if (is_node_on_tile(device_ctx.grid[cheapest_x_low][cheapest_y_low].type,
+        if (is_inter_cluster_node(device_ctx.grid[cheapest_x_low][cheapest_y_low].type,
                             cheap_type,
                             rr_graph_->node_ptc_num(RRNodeId(cheapest->index)))) {
             router_stats_->inter_node_type_cnt_pops[cheap_type]++;
@@ -337,7 +337,7 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
         auto cheap_type = rr_graph_->node_type(RRNodeId(cheapest->index));
         int cheapest_x_low = rr_graph_->node_xlow(RRNodeId(cheapest->index));
         int cheapest_y_low = rr_graph_->node_ylow(RRNodeId(cheapest->index));
-        if (is_node_on_tile(g_vpr_ctx.device().grid[cheapest_x_low][cheapest_y_low].type,
+        if (is_inter_cluster_node(g_vpr_ctx.device().grid[cheapest_x_low][cheapest_y_low].type,
                             cheap_type,
                             rr_graph_->node_ptc_num(RRNodeId(cheapest->index)))) {
             router_stats_->inter_node_type_cnt_pops[cheap_type]++;
@@ -545,7 +545,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
             if (is_flat_) {
                 if (node_in_same_physical_tile(to_node, RRNodeId(target_node))) {
                     t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid[to_xlow][to_ylow].type;
-                    if (!is_node_on_tile(physical_tile, to_type, rr_graph_->node_ptc_num(to_node))) {
+                    if (!is_inter_cluster_node(physical_tile, to_type, rr_graph_->node_ptc_num(to_node))) {
                         auto to_ptc = rr_graph_->node_ptc_num(to_node);
 
                         auto target_type = rr_graph_->node_type(RRNodeId(target_node));
@@ -668,7 +668,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         ++router_stats_->heap_pushes;
         auto node_type = rr_graph_->node_type(RRNodeId(to_node));
         t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph_->node_xlow(RRNodeId(to_node))][rr_graph_->node_ylow(RRNodeId(to_node))].type;
-        if (is_node_on_tile(physical_type,
+        if (is_inter_cluster_node(physical_type,
                             node_type,
                             rr_graph_->node_ptc_num(RRNodeId(to_node)))) {
             router_stats_->inter_node_type_cnt_pushes[node_type]++;
@@ -992,7 +992,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     ++router_stats_->heap_pushes;
     auto node_type = rr_graph_->node_type(RRNodeId(inode));
     t_physical_tile_type_ptr physical_tile = device_ctx.grid[rr_graph_->node_xlow(RRNodeId(inode))][rr_graph_->node_ylow(RRNodeId(inode))].type;
-    if (is_node_on_tile(physical_tile,
+    if (is_inter_cluster_node(physical_tile,
                         rr_graph_->node_type(RRNodeId(inode)),
                         rr_graph_->node_ptc_num(RRNodeId(inode)))) {
         router_stats_->inter_node_type_cnt_pushes[node_type]++;
