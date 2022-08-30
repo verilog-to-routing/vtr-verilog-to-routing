@@ -79,7 +79,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]"){
         // since the indexes for the hard router blocks start from 0, we will just place the router clusters on hard router blocks with the same id //
         
         // start by creating the placement grid location for the current router cluster by getting the grid location of the hard router block it will be placed on
-        const NocRouter hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
+        const NocRouter& hard_router_block = noc_ctx.noc_model.get_single_noc_router((NocRouterId)cluster_block_number);
         t_block_loc current_cluster_block_location;
         current_cluster_block_location.is_fixed = true;
         current_cluster_block_location.loc = t_pl_loc(hard_router_block.get_router_grid_position_x(), hard_router_block.get_router_grid_position_y(), -1);
@@ -132,14 +132,14 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]"){
 
     for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS; traffic_flow_number++){
         
-        const t_noc_traffic_flow curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
-        std::vector<NocLinkId>* traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
+        const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
+        std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
 
         // get the source and sink routers of this traffic flow
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
         // route it
-        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, *traffic_flow_route, noc_ctx.noc_model);
+        routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, traffic_flow_route, noc_ctx.noc_model);
         
     }
 
@@ -153,14 +153,14 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]"){
     // now go through the routed traffic flows and update the bandwidths of the links. Once a traffic flow has been processsed, we need to clear it so that the test function can update it with the routes it finds
     for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS; traffic_flow_number++){
 
-        const t_noc_traffic_flow curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
-        std::vector<NocLinkId>* traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
+        const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
+        std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
 
-        for (auto& link:*traffic_flow_route){
+        for (auto& link:traffic_flow_route){
             golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
         }
 
-        traffic_flow_route->clear();
+        traffic_flow_route.clear();
 
     }
 
@@ -173,7 +173,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]"){
     for (int link_number = 0; link_number < number_of_links; link_number++){
 
         NocLinkId current_link_id = (NocLinkId)link_number;
-        const NocLink current_link = noc_ctx.noc_model.get_single_noc_link(current_link_id);
+        const NocLink& current_link = noc_ctx.noc_model.get_single_noc_link(current_link_id);
         
         REQUIRE(golden_link_bandwidths[current_link_id] == current_link.get_bandwidth_usage());
     }

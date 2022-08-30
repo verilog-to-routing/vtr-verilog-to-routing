@@ -14,7 +14,7 @@ void draw_noc(ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
 
     // vector of routers in the NoC
-    vtr::vector<NocRouterId, NocRouter> router_list = noc_ctx.noc_model.get_noc_routers();
+    const vtr::vector<NocRouterId, NocRouter>& router_list = noc_ctx.noc_model.get_noc_routers();
 
     // a vector of colors to use for the NoC links, determines the colors used when drawing each link
     vtr::vector<NocLinkId, ezgl::color> noc_link_colors;
@@ -90,7 +90,7 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     }
 
     // get the list of links in the NoC
-    const vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
+    const vtr::vector<NocLinkId, NocLink>& link_list = noc_ctx.noc_model.get_noc_links();
 
     // store each links bandwidth usage
     double link_bandwidth_usage;
@@ -215,10 +215,10 @@ void draw_noc_links(ezgl::renderer* g, t_logical_block_type_ptr noc_router_logic
     auto& noc_ctx = g_vpr_ctx.noc();
 
     // vector of routers in the NoC
-    vtr::vector<NocRouterId, NocRouter> router_list = noc_ctx.noc_model.get_noc_routers();
+    const vtr::vector<NocRouterId, NocRouter>& router_list = noc_ctx.noc_model.get_noc_routers();
 
     // get the links of the NoC
-    vtr::vector<NocLinkId, NocLink> link_list = noc_ctx.noc_model.get_noc_links();
+    const vtr::vector<NocLinkId, NocLink>& link_list = noc_ctx.noc_model.get_noc_links();
 
     // set the width of the link
     g->set_line_width(2);
