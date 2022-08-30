@@ -89,7 +89,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
         // check the traffic flows (make sure they are correct)
         for (int traffic_flow = 0; traffic_flow < size_of_traffic_flow_list; traffic_flow++) {
             curr_flow_id = (NocTrafficFlowId)traffic_flow;
-            t_noc_traffic_flow curr_traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(curr_flow_id);
+            const t_noc_traffic_flow& curr_traffic_flow = traffic_flow_storage.get_single_noc_traffic_flow(curr_flow_id);
 
             // make sure that the source and destination routers match the golden set
             REQUIRE(curr_traffic_flow.source_router_cluster_id == golden_traffic_flow_list[traffic_flow].source_router_cluster_id);

@@ -218,7 +218,7 @@ class NocStorage {
      * @param id A unique router identifier.
      * @return A router (NocRouter) that is identified by the given id.
      */
-    NocRouter* get_single_mutable_noc_router(NocRouterId id);
+    NocRouter& get_single_mutable_noc_router(NocRouterId id);
 
     // getters for links
 
@@ -240,7 +240,7 @@ class NocStorage {
      * @param id A unique link identifier.
      * @return A link (NocLink) that is identified by the given id.
      */
-    NocLink* get_single_mutable_noc_link(NocLinkId id);
+    NocLink& get_single_mutable_noc_link(NocLinkId id);
 
     /**
      * @brief Given a grid location of a hard router block on
