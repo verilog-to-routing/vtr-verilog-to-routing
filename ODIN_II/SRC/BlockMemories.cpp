@@ -1074,12 +1074,7 @@ static void create_nrmw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) 
     nnode_t* old_node = bram->node;
     int data_width = bram->node->attributes->DBITS;
     int addr_width = bram->node->attributes->ABITS;
-    int num_rd_ports = old_node->attributes->RD_PORTS;
     int num_wr_ports = old_node->attributes->WR_PORTS;
-
-    /* should have been resovled before this function */
-    oassert(num_rd_ports > 2);
-    oassert(num_wr_ports > 2);
 
     /* dual port ram signals */
     dp_ram_signals* signals = (dp_ram_signals*)vtr::calloc(1, sizeof(dp_ram_signals));
@@ -1706,9 +1701,20 @@ static void perform_optimization(block_memory_t* memory) {
  * @return last item outputs in the chain of cascaded signals
  */
 static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t* selectors, int desired_width, nnode_t* node, netlist_t* netlist) {
+    signal_list_t* return_value = NULL;
+
     /* check if cascade is needed */
     if (signalvar->count == desired_width) {
-        return (signalvar);
+        return_value = init_signal_list();
+        if (selectors->count == desired_width) {
+            for(int i = 0; i < signalvar->count; ++i)
+                add_pin_to_signal_list(return_value, selectors->pins[i]);
+        } else {
+            for(int i = 0; i < signalvar->count; ++i)
+                add_pin_to_signal_list(return_value, signalvar->pins[i]);
+        }
+
+        return (return_value);
     }
 
     /* validate signals list size */
@@ -1716,7 +1722,6 @@ static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t
 
     int i, j;
     int num_chunk = signalvar->count / desired_width;
-    signal_list_t* return_value = NULL;
     /* validate selector size */
     oassert(selectors->count == num_chunk);
 
