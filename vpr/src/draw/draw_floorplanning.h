@@ -12,7 +12,9 @@
 #    include "ezgl/application.hpp"
 #    include "ezgl/graphics.hpp"
 
+///@brief Iterates through all partitions described in the constraints file and highlights their respective partitions
 void highlight_all_regions(ezgl::renderer* g);
+
 void draw_constrained_atoms(ezgl::renderer* g);
 GtkWidget* setup_floorplanning_legend(GtkWidget* content_tree);
 void highlight_selected_partition(GtkWidget* widget);

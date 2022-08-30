@@ -75,8 +75,10 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
 #    define DEFAULT_HIGHLIGHT_ALPHA 30
 #    define CLICKED_HIGHLIGHT_ALPHA 100
 
+//Keeps track of how translucent each partition should be drawn on screen.
 static std::vector<int> highlight_alpha;
 
+//Helper function to highlight a partition
 static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
@@ -128,22 +130,26 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
     }
 }
 
+//Iterates through all partitions and draws each region of each partition
 void highlight_all_regions(ezgl::renderer* g) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
     auto num_partitions = constraints.get_num_partitions();
 
+    //keeps track of what alpha level each partition is
     if (highlight_alpha.empty()) {
         highlight_alpha.resize(num_partitions);
         std::fill(highlight_alpha.begin(), highlight_alpha.end(),
                   DEFAULT_HIGHLIGHT_ALPHA);
     }
 
+    //draws the partitions
     for (int partitionID = 0; partitionID < num_partitions; partitionID++) {
         highlight_partition(g, partitionID, highlight_alpha[partitionID]);
     }
 }
 
+// Draws atoms thatg're constrained to a partition in the colour of their respective partition.
 void draw_constrained_atoms(ezgl::renderer* g) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
@@ -168,6 +174,7 @@ void draw_constrained_atoms(ezgl::renderer* g) {
     }
 }
 
+//Recursive function to find where the constrained atom is and draws it
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::color color, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
@@ -239,7 +246,12 @@ enum {
     NUM_COLS
 };
 
+//HIghlights partition click on in the legend.
 void highlight_selected_partition(GtkWidget* widget) {
+    auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
+    auto constraints = floorplanning_ctx.constraints;
+    auto num_partitions = constraints.get_num_partitions();
+
     ezgl::renderer* g = application.get_renderer();
     GtkTreeIter iter;
     GtkTreeModel* model;
@@ -249,22 +261,28 @@ void highlight_selected_partition(GtkWidget* widget) {
         gtk_tree_model_get(model, &iter, COL_NAME, &row_value, -1);
 
         std::string row_value_str(row_value);
-        std::string partition("Partition ");
-        auto partitionID_exists = row_value_str.find(partition);
-        if (partitionID_exists != std::string::npos) {
-            std::string partitionID_str = row_value_str.erase(0, partition.length());
-            int partitionID = stoi(partitionID_str);
 
-            if (highlight_alpha.empty())
-                return;
+        //variable that represents the end of the partition's name in the row value
+        auto name_end = row_value_str.find('(');
+        if (name_end != std::string::npos) {
+            //Isolates the part of the row value that is the partition name
+            std::string partition_name = row_value_str.substr(0, name_end - 1);
 
-            if (highlight_alpha[partitionID] == CLICKED_HIGHLIGHT_ALPHA) {
-                highlight_alpha[partitionID] = DEFAULT_HIGHLIGHT_ALPHA;
-            } else {
-                highlight_alpha[partitionID] = CLICKED_HIGHLIGHT_ALPHA;
+            for (auto partitionID = 0; partitionID < num_partitions; partitionID++) {
+                if (constraints.get_partition((PartitionId)partitionID).get_name() == partition_name) {
+                    if (highlight_alpha.empty())
+                        return;
+
+                    if (highlight_alpha[partitionID] == CLICKED_HIGHLIGHT_ALPHA) {
+                        highlight_alpha[partitionID] = DEFAULT_HIGHLIGHT_ALPHA;
+                    } else {
+                        highlight_alpha[partitionID] = CLICKED_HIGHLIGHT_ALPHA;
+                    }
+
+                    highlight_partition(g, partitionID, highlight_alpha[partitionID]);
+                    break;
+                }
             }
-
-            highlight_partition(g, partitionID, highlight_alpha[partitionID]);
         }
 
         g_free(row_value);
@@ -273,6 +291,7 @@ void highlight_selected_partition(GtkWidget* widget) {
     application.refresh_drawing();
 }
 
+//Fills in the legend
 static GtkTreeModel* create_and_fill_model(void) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
