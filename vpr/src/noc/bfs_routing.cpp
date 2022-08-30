@@ -5,8 +5,8 @@
 BFSRouting::~BFSRouting() {}
 
 void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_id, std::vector<NocLinkId>& flow_route, const NocStorage& noc_model) {
-    const NocRouter src_router = noc_model.get_single_noc_router(src_router_id);
-    const NocRouter sink_router = noc_model.get_single_noc_router(sink_router_id);
+    const NocRouter& src_router = noc_model.get_single_noc_router(src_router_id);
+    const NocRouter& sink_router = noc_model.get_single_noc_router(sink_router_id);
 
     // destroy any previously stored route
     flow_route.clear();
@@ -53,7 +53,7 @@ void BFSRouting::route_flow(NocRouterId src_router_id, NocRouterId sink_router_i
         routers_to_process.pop();
 
         // get the links leaving the router currently being processed(these represent possible paths to explore in the NoC)
-        const std::vector<NocLinkId> outgoing_links = noc_model.get_noc_router_connections(processing_router);
+        const std::vector<NocLinkId>& outgoing_links = noc_model.get_noc_router_connections(processing_router);
 
         // go through the outgoing links of the current router and process the sink routers connected to these links
         for (auto link : outgoing_links) {

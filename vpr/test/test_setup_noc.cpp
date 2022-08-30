@@ -474,7 +474,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             noc_router_id = noc_model.convert_router_id(router_id);
 
             // get the router that we are testing from the NoC
-            NocRouter test_router = noc_model.get_single_noc_router(noc_router_id);
+            const NocRouter& test_router = noc_model.get_single_noc_router(noc_router_id);
 
             // now check that the proper physical router was assigned to
             REQUIRE(test_router.get_router_grid_position_x() == list_of_routers[router_id - 1].grid_width_position);
@@ -514,7 +514,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
             noc_router_id = noc_model.convert_router_id(router_id);
 
             // get the router that we are testing now from the NoC
-            NocRouter test_router = noc_model.get_single_noc_router(noc_router_id);
+            const NocRouter& test_router = noc_model.get_single_noc_router(noc_router_id);
 
             // now check that the proper physical router was assigned to
             REQUIRE(test_router.get_router_grid_position_x() == list_of_routers[router_id - 1].grid_width_position);
@@ -682,13 +682,13 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
 
         router_connection = noc_info.router_list[router_id - 1].connection_list.begin();
 
-        for (auto noc_link = noc_model.get_noc_router_connections(current_source_router_id).begin(); noc_link != noc_model.get_noc_router_connections(current_source_router_id).begin(); noc_link++) {
+        for (auto noc_link = noc_model.get_noc_router_connections(current_source_router_id).begin(); noc_link != noc_model.get_noc_router_connections(current_source_router_id).end(); noc_link++) {
             // get the connecting link
-            NocLink connecting_link = noc_model.get_single_noc_link(*noc_link);
+            const NocLink& connecting_link = noc_model.get_single_noc_link(*noc_link);
 
             // get the destination router
             current_destination_router_id = connecting_link.get_sink_router();
-            NocRouter current_destination_router = noc_model.get_single_noc_router(current_destination_router_id);
+            const NocRouter& current_destination_router = noc_model.get_single_noc_router(current_destination_router_id);
 
             REQUIRE((current_destination_router.get_router_user_id()) == (*router_connection));
 

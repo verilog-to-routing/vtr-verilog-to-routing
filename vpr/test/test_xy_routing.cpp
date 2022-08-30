@@ -20,7 +20,7 @@ void compare_routes(const std::vector<NocLink>& golden_path, const std::vector<N
 
     for (int link_index = 0; link_index < route_size; link_index++) {
         // get the current link we need to verify from the found route
-        const NocLink found_link = noc_model.get_single_noc_link(found_path[link_index]);
+        const NocLink& found_link = noc_model.get_single_noc_link(found_path[link_index]);
 
         // now compare the found link to the equivalent link in the golden route. We are just comparing the source and destination routers of the links. We want them to be the same.
         REQUIRE(found_link.get_source_router() == golden_path[link_index].get_source_router());
