@@ -74,8 +74,8 @@
         "architecture": "k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml",
         "verilog": "conv_layer.v",
         "warnings": [
-            "[PARSE_BLIF] Warn: Could not hook up the pin conv^u_matmul_4x4_systolic_3.u_systolic_data_setup.a_mem_access_$sdffe_Q_SRST_$logic_or_Y_B_$_OR__Y_B_$_AND__Y_A_$_AND__Y_B~3: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin conv^u_matmul_4x4_systolic_0.u_systolic_data_setup.a_mem_access_$sdffe_Q_SRST_$logic_or_Y_B_$_OR__Y_B_$_AND__Y_A_$_AND__Y_B~3: not available."
+            "[PARSE_BLIF] Warn: Could not hook up the pin conv^u_matmul_4x4_systolic_0.u_systolic_data_setup.a_mem_access_$sdffe_Q_SRST_$logic_or_Y_B_$_OR__Y_B_$_AND__Y_A_$_AND__Y_A~3: not available.",
+            "[PARSE_BLIF] Warn: Could not hook up the pin conv^u_matmul_4x4_systolic_3.u_systolic_data_setup.a_mem_access_$sdffe_Q_SRST_$logic_or_Y_B_$_OR__Y_B_$_AND__Y_A_$_AND__Y_A~3: not available."
         ],
         "max_rss(MiB)": 172.7,
         "exec_time(ms)": 10629.1,
@@ -92,7 +92,7 @@
         "Multiplier": 21,
         "Memory": 14,
         "generic logic size": 4,
-        "Longest Path": 168,
+        "Longest Path": 165,
         "Average Path": 2,
         "Estimated LUTs": 5472,
         "Total Node": 8810
@@ -242,29 +242,6 @@
         "test_name": "koios/spmv/k6FracN10LB_mem20K_complexDSP_customSB_22nm",
         "architecture": "k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml",
         "verilog": "spmv.v",
-        "warnings": [
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~1: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~2: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~3: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~4: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~5: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~6: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~7: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~9: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~10: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~11: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~12: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~13: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~14: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~15: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~17: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~18: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~19: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~20: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~21: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~22: not available.",
-            "[PARSE_BLIF] Warn: Could not hook up the pin spmv^bvb.val_full_shifted_$_MUX__Y_A_$_MUX__Y_A~23: not available."
-        ],
         "max_rss(MiB)": 622.3,
         "exec_time(ms)": 8816.9,
         "elaboration_time(ms)": 7419.6,
@@ -289,6 +266,9 @@
         "test_name": "koios/tpu_like.small/k6FracN10LB_mem20K_complexDSP_customSB_22nm",
         "architecture": "k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml",
         "verilog": "tpu_like.small.v",
+        "warnings": [
+            "[PARSE_BLIF] Warn: Could not hook up the pin top^u_activation.address_$mux_Y_A_$mux_Y_A_$mux_Y_A_$mux_Y_S_$logic_and_Y_A_$_OR__Y_B_$_OR__B_Y_$_AND__Y_A_$_AND__A_Y~3: not available."
+        ],
         "max_rss(MiB)": 173.4,
         "exec_time(ms)": 29434.1,
         "elaboration_time(ms)": 29279.9,
