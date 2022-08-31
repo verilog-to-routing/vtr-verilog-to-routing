@@ -164,7 +164,6 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        device_ctx.arch_switch_inf,
                        device_ctx.arch,
                        &mutable_device_ctx.chan_width,
-                       device_ctx.num_arch_switches,
                        kRrGraphFile,
                        device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,

@@ -373,7 +373,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
                            const std::vector<t_switchblock_inf> switchblocks,
-                           const int num_arch_switches,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
@@ -394,7 +393,6 @@ void create_rr_graph(const t_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
                      const t_chan_width nodes_per_chan,
-                     const int num_arch_switches,
                      t_det_routing_arch* det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
@@ -422,7 +420,6 @@ void create_rr_graph(const t_graph_type graph_type,
                          device_ctx.arch,
                          &mutable_device_ctx.chan_width,
                          router_opts.base_cost_type,
-                         num_arch_switches,
                          device_ctx.virtual_clock_network_root_idx,
                          &det_routing_arch->wire_to_rr_ipin_switch,
                          det_routing_arch->read_rr_graph_filename.c_str(),
@@ -453,7 +450,6 @@ void create_rr_graph(const t_graph_type graph_type,
                        det_routing_arch->switch_block_type,
                        det_routing_arch->Fs,
                        det_routing_arch->switchblocks,
-                       num_arch_switches,
                        segment_inf,
                        det_routing_arch->global_route_switch,
                        det_routing_arch->wire_to_arch_ipin_switch,
@@ -494,7 +490,6 @@ void create_rr_graph(const t_graph_type graph_type,
                        device_ctx.arch_switch_inf,
                        device_ctx.arch,
                        &mutable_device_ctx.chan_width,
-                       num_arch_switches,
                        det_routing_arch->write_rr_graph_filename.c_str(),
                        device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,
@@ -570,7 +565,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
                            const std::vector<t_switchblock_inf> switchblocks,
-                           const int num_arch_switches,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
                            const int wire_to_arch_ipin_switch,
@@ -924,10 +918,10 @@ static void build_rr_graph(const t_graph_type graph_type,
      * We will reset all the switches in the function
      *   alloc_and_load_rr_switch_inf()
      */
-    device_ctx.rr_graph_builder.reserve_switches(num_arch_switches);
+    device_ctx.rr_graph_builder.reserve_switches(device_ctx.arch_switch_inf.size());
     device_ctx.all_sw_inf.clear();
     // Create the switches
-    for (int iswitch = 0; iswitch < num_arch_switches; ++iswitch) {
+    for (int iswitch = 0; iswitch < (int)device_ctx.arch_switch_inf.size(); ++iswitch) {
         device_ctx.all_sw_inf.insert(std::make_pair(iswitch, device_ctx.arch_switch_inf[iswitch]));
         const t_rr_switch_inf& temp_rr_switch = create_rr_switch_from_arch_switch(iswitch, R_minW_nmos, R_minW_pmos);
         device_ctx.rr_graph_builder.add_rr_switch(temp_rr_switch);
@@ -1094,15 +1088,12 @@ static void alloc_and_load_rr_switch_inf(const int num_arch_switches, const floa
  * number of rr switches that were allocated */
 static void alloc_rr_switch_inf(t_arch_switch_fanin& arch_switch_fanins) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    /* allocate space for the rr_switch_inf array */
-    t_arch_switch_inf* all_switches = new t_arch_switch_inf[device_ctx.all_sw_inf.size()];
-    for (auto sw_inf : device_ctx.all_sw_inf) {
-        VTR_ASSERT(sw_inf.first < (int)device_ctx.all_sw_inf.size());
-        all_switches[sw_inf.first] = sw_inf.second;
+    std::vector<t_arch_switch_inf> all_sw_inf;
+    for(const auto& map_it: device_ctx.all_sw_inf) {
+        all_sw_inf.push_back(map_it.second);
     }
     size_t num_rr_switches = device_ctx.rr_graph_builder.count_rr_switches(
-        device_ctx.all_sw_inf.size(),
-        all_switches,
+        all_sw_inf,
         arch_switch_fanins);
     device_ctx.rr_graph_builder.resize_switches(num_rr_switches);
 }

@@ -286,8 +286,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
         std::vector<t_rr_rc_data>* rr_rc_data,
         const int virtual_clock_network_root_idx,
-        const size_t num_arch_switches,
-        const t_arch_switch_inf* arch_switch_inf,
+        const std::vector<t_arch_switch_inf>& arch_switch_inf,
         const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
         const std::vector<t_physical_tile_type>& physical_tile_types,
         const DeviceGrid& grid,
@@ -312,7 +311,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , read_edge_metadata_(read_edge_metadata)
         , echo_enabled_ (echo_enabled)
         , echo_file_name_ (echo_file_name)
-        , num_arch_switches_(num_arch_switches)
         , arch_switch_inf_(arch_switch_inf)
         , segment_inf_(segment_inf)
         , physical_tile_types_(physical_tile_types)
@@ -463,9 +461,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // If the switch name is not present in the architecture, generate an
         // error.
         bool found_arch_name = false;
-        for (size_t i = 0; i < num_arch_switches_; ++i) {
-            if (strcmp(name, arch_switch_inf_[i].name) == 0) {
-                name = arch_switch_inf_[i].name;
+        for (const auto& arch_sw_inf: arch_switch_inf_) {
+            if (strcmp(name, arch_sw_inf.name) == 0) {
+                name = arch_sw_inf.name;
                 found_arch_name = true;
                 break;
             }
@@ -1933,8 +1931,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     const bool echo_enabled_;
     const char* echo_file_name_;
 
-    const size_t num_arch_switches_;
-    const t_arch_switch_inf* arch_switch_inf_;
+    const std::vector<t_arch_switch_inf>& arch_switch_inf_;
     /*AA: The serializer does not support non-uniform Y & X directed channels yet. Will need to modify
      * the methods following routines:rr_graph_rr_nodes and init_node_segment according to the changes in 
      * rr_graph_indexed_data.cpp */

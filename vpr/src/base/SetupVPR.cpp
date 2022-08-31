@@ -311,15 +311,15 @@ static void SetupSwitches(const t_arch& Arch,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int switches_to_copy = NumArchSwitches;
-    device_ctx.num_arch_switches = NumArchSwitches;
+    int num_arch_switches = NumArchSwitches;
 
     RoutingArch->wire_to_arch_ipin_switch = find_ipin_cblock_switch_index(Arch);
 
     /* Depends on device_ctx.num_arch_switches */
-    RoutingArch->delayless_switch = device_ctx.num_arch_switches++;
+    RoutingArch->delayless_switch = num_arch_switches++;
 
     /* Alloc the list now that we know the final num_arch_switches value */
-    device_ctx.arch_switch_inf = new t_arch_switch_inf[device_ctx.num_arch_switches];
+    device_ctx.arch_switch_inf.resize(num_arch_switches);
     for (int iswitch = 0; iswitch < switches_to_copy; iswitch++) {
         device_ctx.arch_switch_inf[iswitch] = ArchSwitches[iswitch];
     }

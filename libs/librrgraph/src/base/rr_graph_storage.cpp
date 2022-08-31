@@ -394,8 +394,7 @@ void t_rr_graph_storage::init_fan_in() {
 }
 
 size_t t_rr_graph_storage::count_rr_switches(
-    size_t num_arch_switches,
-    t_arch_switch_inf* arch_switch_inf,
+    const std::vector<t_arch_switch_inf>& arch_switch_inf,
     t_arch_switch_fanin& arch_switch_fanins) {
     VTR_ASSERT(!partitioned_);
     VTR_ASSERT(!remapped_edges_);
@@ -415,7 +414,7 @@ size_t t_rr_graph_storage::count_rr_switches(
     //Collect the fan-in per switch type for each node in the graph
     //Record the unique switch type/fanin combinations
     std::vector<int> arch_switch_counts;
-    arch_switch_counts.resize(num_arch_switches, 0);
+    arch_switch_counts.resize(arch_switch_inf.size(), 0);
     auto first_edge = edge_dest_node_.begin();
     do {
         RRNodeId node = *first_edge;
@@ -439,7 +438,7 @@ size_t t_rr_graph_storage::count_rr_switches(
             }
 
             auto fanin = arch_switch_counts[iswitch];
-            VTR_ASSERT_SAFE(iswitch < num_arch_switches);
+            VTR_ASSERT_SAFE(iswitch < arch_switch_inf.size());
 
             if (arch_switch_inf[iswitch].fixed_Tdel()) {
                 //If delay is independent of fanin drop the unique fanin info

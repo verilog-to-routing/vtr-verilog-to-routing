@@ -557,8 +557,7 @@ class t_rr_graph_storage {
     //
     // init_fan_in does not need to be invoked before this method.
     size_t count_rr_switches(
-        size_t num_arch_switches,
-        t_arch_switch_inf* arch_switch_inf,
+        const std::vector<t_arch_switch_inf>& arch_switch_inf,
         t_arch_switch_fanin& arch_switch_fanins);
 
     // Maps arch_switch_inf indicies to rr_switch_inf indicies.

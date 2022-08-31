@@ -255,10 +255,9 @@ class RRGraphBuilder {
     /** @brief Counts the number of rr switches needed based on fan in to support mux
      * size dependent switch delays. */
     inline size_t count_rr_switches(
-        size_t num_arch_switches,
-        t_arch_switch_inf* arch_switch_inf,
+        const std::vector<t_arch_switch_inf>& arch_switch_inf,
         t_arch_switch_fanin& arch_switch_fanins) {
-        return node_storage_.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
+        return node_storage_.count_rr_switches(arch_switch_inf, arch_switch_fanins);
     }
 
     /** @brief Reserve the lists of nodes, edges, switches etc. to be memory efficient.

@@ -1976,7 +1976,7 @@ static int convert_switch_index(int* switch_index, int* fanin) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (int iswitch = 0; iswitch < device_ctx.num_arch_switches; iswitch++) {
+    for (int iswitch = 0; iswitch < (int)device_ctx.arch_switch_inf.size(); iswitch++) {
         for (auto itr = device_ctx.switch_fanin_remap[iswitch].begin(); itr != device_ctx.switch_fanin_remap[iswitch].end(); itr++) {
             if (itr->second == *switch_index) {
                 *switch_index = iswitch;
