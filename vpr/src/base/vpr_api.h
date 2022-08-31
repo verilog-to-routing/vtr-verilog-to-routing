@@ -68,10 +68,10 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch);
 /* Placement */
 
 ///@brief Perform, load or skip the placement stage
-bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch);
+bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch);
 
 ///@brief Perform placement
-void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch);
+void vpr_place(const Netlist<>& net_list,t_vpr_setup& vpr_setup, const t_arch& arch);
 
 ///@brief Loads a previous placement
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
@@ -79,10 +79,14 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
 /* Routing */
 
 ///@brief Perform, load or skip the routing stage
-RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat);
+RouteStatus vpr_route_flow(const Netlist<>& net_list,
+                           t_vpr_setup& vpr_setup,
+                           const t_arch& arch,
+                           bool is_flat);
 
 ///@brief Perform routing at a fixed channel width)
-RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
+RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
+                              t_vpr_setup& vpr_setup,
                               const t_arch& arch,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
@@ -91,7 +95,8 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               bool is_flat);
 
 ///@brief Perform routing to find the minimum channel width
-RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
+RouteStatus vpr_route_min_W(const Netlist<>& net_list,
+                            t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,

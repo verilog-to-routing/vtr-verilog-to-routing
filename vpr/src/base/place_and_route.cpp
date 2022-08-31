@@ -49,7 +49,9 @@ static float comp_width(t_chan* chan, float x, float separation);
  *        tracks per channel required to successfully route a circuit, and returns
  *        that minimum width_fac.
  */
-int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
+int binary_search_place_and_route(const Netlist<>& placement_net_list,
+                                  const Netlist<>& router_net_list,
+                                  const t_placer_opts& placer_opts_ref,
                                   const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
@@ -71,8 +73,6 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
     t_clb_opins_used saved_clb_opins_used_locally;
 
@@ -180,7 +180,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
 
         if (placer_opts.place_freq == PLACE_ALWAYS) {
             placer_opts.place_chan_width = current;
-            try_place(placer_opts,
+            try_place(placement_net_list,
+                      placer_opts,
                       annealing_sched,
                       router_opts,
                       analysis_opts,
@@ -326,7 +327,7 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                 break;
             if (placer_opts.place_freq == PLACE_ALWAYS) {
                 placer_opts.place_chan_width = current;
-                try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
+                try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts,
                           arch->Chans, det_routing_arch, segment_inf,
                           arch->Directs, arch->num_directs,
                           false);

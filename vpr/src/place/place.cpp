@@ -390,7 +390,8 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
-                                               const PlacementDelayCalculator& delay_calc);
+                                               const PlacementDelayCalculator& delay_calc,
+                                               bool is_flat);
 
 //calculate the agent's reward and the total process outcome
 static void calculate_reward_and_process_outcome(
@@ -418,7 +419,8 @@ static void print_placement_move_types_stats(
     const MoveTypeStat& move_type_stat);
 
 /*****************************************************************************/
-void try_place(const t_placer_opts& placer_opts,
+void try_place(const Netlist<>& net_list,
+               const t_placer_opts& placer_opts,
                t_annealing_sched annealing_sched,
                const t_router_opts& router_opts,
                const t_analysis_opts& analysis_opts,
@@ -473,7 +475,7 @@ void try_place(const t_placer_opts& placer_opts,
     manual_move_generator = std::make_unique<ManualMoveGenerator>();
 
     t_pl_blocks_to_be_moved blocks_affected(
-        cluster_ctx.clb_nlist.blocks().size());
+        net_list.blocks().size());
 
     /* init file scope variables */
     num_swap_rejected = 0;
@@ -483,10 +485,15 @@ void try_place(const t_placer_opts& placer_opts,
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
-        place_delay_model = alloc_lookups_and_delay_model(chan_width_dist,
-                                                          (const Netlist<>&)cluster_ctx.clb_nlist,
-                                                          placer_opts, router_opts, det_routing_arch, segment_inf,
-                                                          directs, num_directs, is_flat);
+        place_delay_model = alloc_lookups_and_delay_model(net_list,
+                                                          chan_width_dist,
+                                                          placer_opts,
+                                                          router_opts,
+                                                          det_routing_arch,
+                                                          segment_inf,
+                                                          directs,
+                                                          num_directs,
+                                                          is_flat);
 
         if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
             place_delay_model->dump_echo(
@@ -496,7 +503,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     int move_lim = 1;
     move_lim = (int)(annealing_sched.inner_num
-                     * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
+                     * pow(net_list.blocks().size(), 1.3333));
 
     //create the move generator based on the chosen strategy
     create_move_generators(move_generator, move_generator2, placer_opts, move_lim);
@@ -566,7 +573,7 @@ void try_place(const t_placer_opts& placer_opts,
         placement_delay_calc = std::make_shared<PlacementDelayCalculator>(atom_ctx.nlist,
                                                                           atom_ctx.lookup,
                                                                           p_timing_ctx.connection_delay,
-                                                                          false);
+                                                                          is_flat);
         placement_delay_calc->set_tsu_margin_relative(
             placer_opts.tsu_rel_margin);
         placement_delay_calc->set_tsu_margin_absolute(
@@ -581,12 +588,11 @@ void try_place(const t_placer_opts& placer_opts,
         placer_criticalities = std::make_unique<PlacerCriticalities>(
             cluster_ctx.clb_nlist, netlist_pin_lookup);
 
-        // During placement, we only use cluster netlist. Thus, the is_flat parameter should be set to false
         pin_timing_invalidator = std::make_unique<NetPinTimingInvalidator>(
-            (const Netlist<>&)cluster_ctx.clb_nlist, netlist_pin_lookup,
+            net_list, netlist_pin_lookup,
             atom_ctx.nlist, atom_ctx.lookup,
             *timing_info->timing_graph(),
-            false);
+            is_flat);
         //First time compute timing and costs, compute from scratch
         PlaceCritParams crit_params;
         crit_params.crit_exponent = first_crit_exponent;
@@ -959,7 +965,7 @@ void try_place(const t_placer_opts& placer_opts,
         }
 
         generate_post_place_timing_reports(placer_opts, analysis_opts,
-                                           *timing_info, *placement_delay_calc);
+                                           *timing_info, *placement_delay_calc, is_flat);
 
         /* Print critical path delay metrics */
         VTR_LOG("\n");
@@ -2880,13 +2886,13 @@ static void free_try_swap_arrays() {
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
                                                const SetupTimingInfo& timing_info,
-                                               const PlacementDelayCalculator& delay_calc) {
+                                               const PlacementDelayCalculator& delay_calc,
+                                               bool is_flat) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    // Since we are in placement stage, we use clustered netlist for timing analysis
     VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup,
-                                    *timing_ctx.graph, delay_calc, false);
+                                    *timing_ctx.graph, delay_calc, is_flat);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph,
