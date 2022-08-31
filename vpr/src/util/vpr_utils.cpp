@@ -2369,6 +2369,7 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
     auto first_rr_type = rr_graph.node_type(node_first);
     auto second_rr_type = rr_graph.node_type(node_second);
 
+    // If one of the given node's type is CHANX/Y nodes are definitely not in the same physical tile
     if (first_rr_type == t_rr_type::CHANX || first_rr_type == t_rr_type::CHANY || second_rr_type == t_rr_type::CHANX || second_rr_type == t_rr_type::CHANY) {
         return false;
     } else {
@@ -2379,12 +2380,14 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
         int sec_x = rr_graph.node_xlow(node_second);
         int sec_y = rr_graph.node_ylow(node_second);
 
+        // Get the root-location of the pin's block
         int first_root_x = first_x - device_ctx.grid[first_x][first_y].width_offset;
         int first_root_y = first_y - device_ctx.grid[first_x][first_y].height_offset;
 
         int sec_root_x = sec_x - device_ctx.grid[sec_x][sec_y].width_offset;
         int sec_root_y = sec_y - device_ctx.grid[sec_x][sec_y].height_offset;
 
+        // If the root-location of the nodes are similar, they should be located in the same tile
         if (first_root_x == sec_root_x && first_root_y == sec_root_y)
             return true;
         else

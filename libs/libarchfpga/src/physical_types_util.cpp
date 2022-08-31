@@ -586,7 +586,6 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
                 int index_in_port = pin_index - port.absolute_first_pin_index;
                 pin_name += port.name;
                 pin_name += "[" + std::to_string(index_in_port) + "]";
-                pin_name += " On Tile";
                 return pin_name;
             }
         }
@@ -596,7 +595,6 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
 
         pin_name += pb_graph_pin->port->name;
         pin_name += "[" + std::to_string(pb_graph_pin->pin_number) + "]";
-        pin_name += " Intra-Tile";
         return pin_name;
 
     }
@@ -1188,6 +1186,8 @@ int get_tile_ipin_opin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
 bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
                                 int pin_physical_num,
                                 int sink_physical_num) {
+    // We assume that pin_physical_num is not located on the root-block. The reason for this assumption is that we want to get the pb_graph_pin corresponding
+    // to pin_physical_pin, and we would not be able to that if the pin is on the root-block
     VTR_ASSERT(!is_pin_on_tile(physical_type, pin_physical_num));
 
     const t_pb_graph_pin* from_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_type, pin_physical_num);

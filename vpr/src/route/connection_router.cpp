@@ -542,6 +542,9 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
                 return;
             }
+            // If flat_routing is enabled, for the time being, we decided to prune the which are not directly/indirectly connected to the
+            // sink node
+            //TODO: Ideally, we should adapt lookahead to return a large cost for the pins which do not lead to the sink node
             if (is_flat_) {
                 if (node_in_same_physical_tile(to_node, RRNodeId(target_node))) {
                     t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid[to_xlow][to_ylow].type;

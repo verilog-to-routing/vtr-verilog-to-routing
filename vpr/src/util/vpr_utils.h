@@ -275,6 +275,7 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               const int j,
                               int class_physical_num);
 
+// Check whether the given nodes are in the same cluster
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second);
 
 #endif
