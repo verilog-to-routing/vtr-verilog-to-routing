@@ -339,8 +339,8 @@ void YYosys::execute() {
         // memory port and the flip-flops at its interface and yields a synchronous memory port.
         // Afterwards, Yosys detects cases where an asynchronous read port is only connected via a mux
         // tree to a write port with the same address. When such a connection is found, it is replaced
-        // with a new condition on an enable signal, allowing for removal of the read port. Finally 
-        // Yosys merges share-able memory ports into single memory ports and collects memories, their 
+        // with a new condition on an enable signal, allowing for removal of the read port. Finally
+        // Yosys merges share-able memory ports into single memory ports and collects memories, their
         // port and create multiport memory cells.
         run_pass(std::string("memory -nomap;"));
 
@@ -368,7 +368,6 @@ void YYosys::execute() {
          *         initial implementation of Yosys+Odin-II, which did not use this pass
          */
         run_pass(std::string("techmap -autoproc */t:$mem */t:$memrd */t:$add */t:$sub */t:$mul */t:$dffsr */t:$dffsre */t:$sr */t:$dlatch */t:$adlatch %% %n"));
-
 
         // Transform the design into a new one with single top module
         run_pass(std::string("flatten"));

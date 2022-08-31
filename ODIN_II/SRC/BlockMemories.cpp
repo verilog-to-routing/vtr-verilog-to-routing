@@ -1707,10 +1707,10 @@ static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t
     if (signalvar->count == desired_width) {
         return_value = init_signal_list();
         if (selectors->count == desired_width) {
-            for(int i = 0; i < signalvar->count; ++i)
+            for (int i = 0; i < signalvar->count; ++i)
                 add_pin_to_signal_list(return_value, selectors->pins[i]);
         } else {
-            for(int i = 0; i < signalvar->count; ++i)
+            for (int i = 0; i < signalvar->count; ++i)
                 add_pin_to_signal_list(return_value, signalvar->pins[i]);
         }
 
