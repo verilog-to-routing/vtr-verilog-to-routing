@@ -47,7 +47,7 @@
 
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::color color, ezgl::renderer* g);
 
-const std::vector<ezgl::color> kelly_max_contrast_colors = {
+const std::vector<ezgl::color> kelly_max_contrast_colors_no_black = {
     //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
     //ezgl::color(34, 34, 34),    //black: hard to differentiate between outline & primitive.
     ezgl::color(243, 195, 0),   //yellow
@@ -89,7 +89,7 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
     auto regions = partition_region.get_partition_region();
 
     bool name_drawn = false;
-    ezgl::color partition_color = kelly_max_contrast_colors[partitionID % (kelly_max_contrast_colors.size())];
+    ezgl::color partition_color = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
     g->set_color(partition_color, alpha);
 
     // The units of space in the constraints xml file will be refered to as "tile units"
@@ -149,7 +149,7 @@ void highlight_all_regions(ezgl::renderer* g) {
     }
 }
 
-// Draws atoms thatg're constrained to a partition in the colour of their respective partition.
+// Draws atoms that're constrained to a partition in the colour of their respective partition.
 void draw_constrained_atoms(ezgl::renderer* g) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
@@ -164,7 +164,7 @@ void draw_constrained_atoms(ezgl::renderer* g) {
             AtomBlockId const& const_atom = atoms[j];
             if (atom_ctx.lookup.atom_pb(const_atom) != nullptr) {
                 const t_pb* pb = atom_ctx.lookup.atom_pb(const_atom);
-                auto color = kelly_max_contrast_colors[partitionID % (kelly_max_contrast_colors.size())];
+                auto color = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
                 ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atoms[j]);
                 auto type = cluster_ctx.clb_nlist.block_type(clb_index);
 
@@ -246,7 +246,7 @@ enum {
     NUM_COLS
 };
 
-//HIghlights partition click on in the legend.
+//Highlights partition clicked on in the legend.
 void highlight_selected_partition(GtkWidget* widget) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto constraints = floorplanning_ctx.constraints;
