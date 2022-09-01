@@ -18,7 +18,13 @@ static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node);
 
 static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& grid, const t_rr_node& node);
 
-static void check_rr_edge(const RRGraphView& rr_graph, const DeviceGrid& grid, const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, int from_node, int from_edge, int to_node);
+static void check_rr_edge(const RRGraphView& rr_graph,
+                          const DeviceGrid& grid,
+                          const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                          int from_node,
+                          int from_edge,
+                          int to_node,
+                          bool is_flat);
 
 /************************ Subroutine definitions ****************************/
 
@@ -47,7 +53,8 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const DeviceGrid& grid,
                     const t_chan_width& chan_width,
                     const t_graph_type graph_type,
-                    const int virtual_clock_network_root_idx) {
+                    const int virtual_clock_network_root_idx,
+                    bool is_flat) {
     e_route_type route_type = DETAILED;
     if (graph_type == GRAPH_GLOBAL) {
         route_type = GLOBAL;
@@ -76,7 +83,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
         t_rr_type rr_type = rr_graph.node_type(rr_node);
         int num_edges = rr_graph.num_edges(RRNodeId(inode));
 
-        check_rr_node(rr_graph, rr_indexed_data, grid, chan_width, route_type, inode);
+        check_rr_node(rr_graph, rr_indexed_data, grid, chan_width, route_type, inode, is_flat);
 
         /* Check all the connectivity (edges, etc.) information.                    */
         edges.resize(0);
@@ -92,7 +99,13 @@ void check_rr_graph(const RRGraphView& rr_graph,
                                 inode, to_node);
             }
 
-            check_rr_edge(rr_graph, grid, rr_indexed_data, inode, iedge, to_node);
+            check_rr_edge(rr_graph,
+                          grid,
+                          rr_indexed_data,
+                          inode,
+                          iedge,
+                          to_node,
+                          is_flat);
 
             edges.emplace_back(to_node, iedge);
             total_edges_to_node[to_node]++;
@@ -144,7 +157,11 @@ void check_rr_graph(const RRGraphView& rr_graph,
             bool is_chan_to_chan = (rr_type == CHANX || rr_type == CHANY) && (to_rr_type == CHANY || to_rr_type == CHANX);
             bool is_chan_to_ipin = (rr_type == CHANX || rr_type == CHANY) && to_rr_type == IPIN;
             bool is_opin_to_chan = rr_type == OPIN && (to_rr_type == CHANX || to_rr_type == CHANY);
-            if (!(is_chan_to_chan || is_chan_to_ipin || is_opin_to_chan)) {
+            bool is_internal_edge = false;
+            if (is_flat) {
+                is_internal_edge = (rr_type == IPIN && to_rr_type == IPIN) || (rr_type == OPIN && to_rr_type == OPIN);
+            }
+            if (!(is_chan_to_chan || is_chan_to_ipin || is_opin_to_chan || is_internal_edge)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_graph: node %d (%s) connects to node %d (%s) %zu times - multi-connections only expected for CHAN<->CHAN, CHAN->IPIN, OPIN->CHAN.\n",
                           inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], num_edges_to_node);
@@ -210,6 +227,21 @@ void check_rr_graph(const RRGraphView& rr_graph,
     for (const RRNodeId& rr_node : rr_graph.nodes()) {
         size_t inode = (size_t)rr_node;
         t_rr_type rr_type = rr_graph.node_type(rr_node);
+        int ptc_num = rr_graph.node_ptc_num(rr_node);
+        int xlow = rr_graph.node_xlow(rr_node);
+        int ylow = rr_graph.node_ylow(rr_node);
+        t_physical_tile_type_ptr type = grid[xlow][ylow].type;
+        if (rr_type == IPIN || rr_type == OPIN) {
+            // #TODO: No edges are added for internal pins. However, they need to be checked somehow!
+            if (ptc_num >= type->num_pins) {
+                if(is_flat) {
+                    continue;
+                } else {
+                    VTR_LOG_ERROR("in check_rr_graph: node %d (%s) type: %s is internal node.\n",
+                                  inode, rr_graph.node_type_string(rr_node), rr_node_typename[rr_type]);
+                }
+            }
+        }
 
         if (rr_type != SOURCE) {
             if (total_edges_to_node[inode] < 1 && !rr_node_is_global_clb_ipin(rr_graph, grid, rr_node)) {
@@ -219,7 +251,6 @@ void check_rr_graph(const RRGraphView& rr_graph,
                  */
                 bool is_chain = false;
                 if (rr_type == IPIN) {
-                    t_physical_tile_type_ptr type = grid[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)].type;
                     for (const t_fc_specification& fc_spec : types[type->index].fc_specs) {
                         if (fc_spec.fc_value == 0 && fc_spec.seg_index == 0) {
                             is_chain = true;
@@ -292,15 +323,18 @@ void check_rr_node(const RRGraphView& rr_graph,
                    const DeviceGrid& grid,
                    const t_chan_width& chan_width,
                    const enum e_route_type route_type, 
-                   const int inode) {
+                   const int inode,
+                   bool is_flat) {
     /* This routine checks that the rr_node is inside the grid and has a valid
      * pin number, etc.
      */
 
+    //Make sure over-flow doesn't happen
+    VTR_ASSERT(inode >= 0);
     int xlow, ylow, xhigh, yhigh, ptc_num, capacity;
     t_rr_type rr_type;
     t_physical_tile_type_ptr type;
-    int nodes_per_chan, tracks_per_node, num_edges;
+    int nodes_per_chan, tracks_per_node;
     RRIndexedDataId cost_index;
     float C, R;
     RRNodeId rr_node = RRNodeId(inode);
@@ -391,46 +425,31 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     /* Check that it's capacities and such make sense. */
 
+    int class_max_ptc = get_tile_class_max_ptc(type, is_flat);
+    int pin_max_ptc = get_tile_ipin_opin_max_ptc(type, is_flat);
+    e_pin_type class_type = OPEN;
+    int class_num_pins = -1;
     switch (rr_type) {
         case SOURCE:
-            if (ptc_num >= (int)type->class_inf.size()
-                || type->class_inf[ptc_num].type != DRIVER) {
+        case SINK:
+            class_type = get_class_type_from_class_physical_num(type, ptc_num);
+            class_num_pins = get_class_num_pins_from_class_physical_num(type, ptc_num);
+            if (ptc_num >= class_max_ptc
+                || class_type != ((rr_type == SOURCE) ? DRIVER : RECEIVER)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
-            if (type->class_inf[ptc_num].num_pins != capacity) {
+            if (class_num_pins != capacity) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: inode %d (type %d) had a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
 
-        case SINK:
-            if (ptc_num >= (int)type->class_inf.size()
-                || type->class_inf[ptc_num].type != RECEIVER) {
-                VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
-            }
-            if (type->class_inf[ptc_num].num_pins != capacity) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
-            }
-            break;
-
         case OPIN:
-            if (ptc_num >= type->num_pins
-                || type->class_inf[type->pin_class[ptc_num]].type != DRIVER) {
-                VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
-            }
-            if (capacity != 1) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
-            }
-            break;
-
         case IPIN:
-            if (ptc_num >= type->num_pins
-                || type->class_inf[type->pin_class[ptc_num]].type != RECEIVER) {
+            class_type = get_pin_type_from_pin_physical_num(type, ptc_num);
+            if (ptc_num >= pin_max_ptc
+                || class_type != ((rr_type == OPIN) ? DRIVER : RECEIVER)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
@@ -441,32 +460,13 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case CHANX:
-            if (route_type == DETAILED) {
-                nodes_per_chan = chan_width.max;
-                tracks_per_node = 1;
-            } else {
-                nodes_per_chan = 1;
-                tracks_per_node = chan_width.x_list[ylow];
-            }
-
-            if (ptc_num >= nodes_per_chan) {
-                VPR_ERROR(VPR_ERROR_ROUTE,
-                          "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-            }
-
-            if (capacity != tracks_per_node) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
-            }
-            break;
-
         case CHANY:
             if (route_type == DETAILED) {
                 nodes_per_chan = chan_width.max;
                 tracks_per_node = 1;
             } else {
                 nodes_per_chan = 1;
-                tracks_per_node = chan_width.y_list[xlow];
+                tracks_per_node = ((rr_type == CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow]);
             }
 
             if (ptc_num >= nodes_per_chan) {
@@ -483,35 +483,6 @@ void check_rr_node(const RRGraphView& rr_graph,
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_rr_node: Unexpected segment type: %d\n", rr_type);
-    }
-
-    /* Check that the number of (out) edges is reasonable. */
-    num_edges = rr_graph.num_edges(RRNodeId(inode));
-
-    if (rr_type != SINK && rr_type != IPIN) {
-        if (num_edges <= 0) {
-            /* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
-             * If such a node was ever used in a final routing (not just in an rr_graph), other       *
-             * error checks in check_routing will catch it.                                           */
-
-            //Don't worry about disconnect PINs which have no adjacent channels (i.e. on the device perimeter)
-            bool check_for_out_edges = true;
-            if (rr_type == IPIN || rr_type == OPIN) {
-                if (!has_adjacent_channel(rr_graph, grid, rr_graph.rr_nodes()[inode])) {
-                    check_for_out_edges = false;
-                }
-            }
-
-            if (check_for_out_edges) {
-                std::string info = describe_rr_node(rr_graph, grid, rr_indexed_data, inode);
-                VTR_LOG_WARN("in check_rr_node: %s has no out-going edges.\n", info.c_str());
-            }
-        }
-    } else if (rr_type == SINK) { /* SINK -- remove this check if feedthroughs allowed */
-        if (num_edges != 0) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "in check_rr_node: node %d is a sink, but has %d edges.\n", inode, num_edges);
-        }
     }
 
     /* Check that the capacitance and resistance are reasonable. */
@@ -600,7 +571,13 @@ static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& 
     return true; //All other blocks will be surrounded on all sides by channels
 }
 
-static void check_rr_edge(const RRGraphView& rr_graph, const DeviceGrid& grid, const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, int from_node, int iedge, int to_node) {
+static void check_rr_edge(const RRGraphView& rr_graph,
+                          const DeviceGrid& grid,
+                          const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                          int from_node,
+                          int iedge,
+                          int to_node,
+                          bool is_flat) {
 
     //Check that to to_node's fan-in is correct, given the switch type
     int iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
@@ -614,7 +591,7 @@ static void check_rr_edge(const RRGraphView& rr_graph, const DeviceGrid& grid, c
                 std::string msg = "Non-configurable BUFFER type switch must have only one driver. ";
                 msg += vtr::string_fmt(" Actual fan-in was %d (expected 1).\n", to_fanin);
                 msg += "  Possible cause is complex block output pins connecting to:\n";
-                msg += "    " + describe_rr_node(rr_graph, grid, rr_indexed_data, to_node);
+                msg += "    " + describe_rr_node(rr_graph, grid, rr_indexed_data, to_node, is_flat);
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }

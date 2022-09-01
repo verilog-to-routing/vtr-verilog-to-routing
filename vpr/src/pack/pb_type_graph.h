@@ -16,7 +16,7 @@ const t_pb_graph_edge* get_edge_between_pins(
     const t_pb_graph_pin* driver_pin,
     const t_pb_graph_pin* pin);
 
-void alloc_and_load_all_pb_graphs(bool load_power_structures);
+void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat);
 void echo_pb_graph(char* filename);
 void free_pb_graph_edges();
 t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,

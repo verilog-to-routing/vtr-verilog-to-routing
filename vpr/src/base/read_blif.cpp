@@ -20,8 +20,6 @@
 #include <sstream>
 #include <unordered_set>
 #include <cctype> //std::isdigit
-#include <algorithm>
-#include <regex>
 
 #include "blifparse.hpp"
 #include "atom_netlist.h"
@@ -392,8 +390,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         bool is_valid = is_string_param(value) || is_binary_param(value) || is_real_param(value);
 
         if (!is_valid) {
-            std::string msg = "Incorrect parameter '" + name + "' value specification. Value '" + value + "' is not recognized as string, binary word or real number. Possible causes:\n\t* lack or inconsistency in quotes (string)\n\t* no dot '.' to separate integer and fractional part (real number)\n\t* use of characters other than '1' and '0' (binary word)";
-            parse_error(lineno_, ".param", msg);
+            parse_error(lineno_, ".param", "Incorrect parameter value specification");
         }
 
         curr_model().set_block_param(curr_block(), name, value);
@@ -722,15 +719,18 @@ bool is_binary_param(const std::string& param) {
 }
 
 bool is_real_param(const std::string& param) {
+    const std::string chars = "012345678.";
+
     /* Must be non-empty */
     if (param.empty()) {
         return false;
     }
 
-    /* The string must match the regular expression */
-    static const std::regex real_number_expr("[+-]?([0-9]*\\.[0-9]+)|([0-9]+\\.[0-9]*)");
-    if (!std::regex_match(param, real_number_expr)) {
-        return false;
+    /* The string mustn't contain any other chars that the expected ones */
+    for (size_t i = 0; i < param.length(); ++i) {
+        if (chars.find(param[i]) == std::string::npos) {
+            return false;
+        }
     }
 
     /* This is a real number param */
