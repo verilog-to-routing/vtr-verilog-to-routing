@@ -298,8 +298,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                   "Fundamental errors occurred when validating rr_graph object!\n");
     }
 
-    /* No clock network support yet */
-    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, device_ctx.chan_width, GRAPH_UNIDIR, OPEN);
+    /* No clock network support yet; Does not support flatten rr_graph yet */
+    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, device_ctx.chan_width, GRAPH_UNIDIR, OPEN, false);
 
     /************************************************************************
      * Free all temp stucts
