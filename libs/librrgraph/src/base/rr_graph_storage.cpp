@@ -591,35 +591,35 @@ const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
     return SIDE_STRING[NUM_SIDES];
 }
 
-void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, short new_ptc_num) {
+void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, int new_ptc_num) {
     node_ptc_[id].ptc_.pin_num = new_ptc_num; //TODO: eventually remove
 }
-void t_rr_graph_storage::set_node_pin_num(RRNodeId id, short new_pin_num) {
+void t_rr_graph_storage::set_node_pin_num(RRNodeId id, int new_pin_num) {
     if (node_type(id) != IPIN && node_type(id) != OPIN) {
         VTR_LOG_ERROR("Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.pin_num = new_pin_num;
 }
 
-void t_rr_graph_storage::set_node_track_num(RRNodeId id, short new_track_num) {
+void t_rr_graph_storage::set_node_track_num(RRNodeId id, int new_track_num) {
     if (node_type(id) != CHANX && node_type(id) != CHANY) {
         VTR_LOG_ERROR("Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.track_num = new_track_num;
 }
 
-void t_rr_graph_storage::set_node_class_num(RRNodeId id, short new_class_num) {
+void t_rr_graph_storage::set_node_class_num(RRNodeId id, int new_class_num) {
     if (node_type(id) != SOURCE && node_type(id) != SINK) {
         VTR_LOG_ERROR("Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.class_num = new_class_num;
 }
 
-short t_rr_graph_storage::node_ptc_num(RRNodeId id) const {
+int t_rr_graph_storage::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
 
-static short get_node_pin_num(
+static int get_node_pin_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
@@ -630,7 +630,7 @@ static short get_node_pin_num(
     return node_ptc[id].ptc_.pin_num;
 }
 
-static short get_node_track_num(
+static int get_node_track_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
@@ -641,7 +641,7 @@ static short get_node_track_num(
     return node_ptc[id].ptc_.track_num;
 }
 
-static short get_node_class_num(
+static int get_node_class_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
@@ -652,19 +652,19 @@ static short get_node_class_num(
     return node_ptc[id].ptc_.class_num;
 }
 
-short t_rr_graph_storage::node_pin_num(RRNodeId id) const {
+int t_rr_graph_storage::node_pin_num(RRNodeId id) const {
     return get_node_pin_num(
         vtr::make_const_array_view_id(node_storage_),
         vtr::make_const_array_view_id(node_ptc_),
         id);
 }
-short t_rr_graph_storage::node_track_num(RRNodeId id) const {
+int t_rr_graph_storage::node_track_num(RRNodeId id) const {
     return get_node_track_num(
         vtr::make_const_array_view_id(node_storage_),
         vtr::make_const_array_view_id(node_ptc_),
         id);
 }
-short t_rr_graph_storage::node_class_num(RRNodeId id) const {
+int t_rr_graph_storage::node_class_num(RRNodeId id) const {
     return get_node_class_num(
         vtr::make_const_array_view_id(node_storage_),
         vtr::make_const_array_view_id(node_ptc_),
@@ -731,16 +731,16 @@ void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     node_storage_[id].dir_side_.sides = static_cast<unsigned char>(side_bits.to_ulong());
 }
 
-short t_rr_graph_view::node_ptc_num(RRNodeId id) const {
+int t_rr_graph_view::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
-short t_rr_graph_view::node_pin_num(RRNodeId id) const {
+int t_rr_graph_view::node_pin_num(RRNodeId id) const {
     return get_node_pin_num(node_storage_, node_ptc_, id);
 }
-short t_rr_graph_view::node_track_num(RRNodeId id) const {
+int t_rr_graph_view::node_track_num(RRNodeId id) const {
     return get_node_track_num(node_storage_, node_ptc_, id);
 }
-short t_rr_graph_view::node_class_num(RRNodeId id) const {
+int t_rr_graph_view::node_class_num(RRNodeId id) const {
     return get_node_class_num(node_storage_, node_ptc_, id);
 }
 

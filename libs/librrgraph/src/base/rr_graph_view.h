@@ -366,25 +366,25 @@ class RRGraphView {
      * This API is very powerful and developers should not use it unless it is necessary, 
      * e.g the node type is unknown. If the node type is known, the more specific routines, `node_pin_num()`, 
      * `node_track_num()`and `node_class_num()`, for different types of nodes should be used.*/
-    inline short node_ptc_num(RRNodeId node) const {
+    inline int node_ptc_num(RRNodeId node) const {
         return node_storage_.node_ptc_num(node);
     }
 
     /** @brief Get the pin num of a routing resource node. This is designed for logic blocks, 
      * which are IPIN and OPIN nodes. This function is inlined for runtime optimization. */
-    inline short node_pin_num(RRNodeId node) const {
+    inline int node_pin_num(RRNodeId node) const {
         return node_storage_.node_pin_num(node);
     }
 
     /** @brief Get the track num of a routing resource node. This is designed for routing tracks, 
      * which are CHANX and CHANY nodes. This function is inlined for runtime optimization. */
-    inline short node_track_num(RRNodeId node) const {
+    inline int node_track_num(RRNodeId node) const {
         return node_storage_.node_track_num(node);
     }
 
     /** @brief Get the class num of a routing resource node. This is designed for routing source and sinks,
      *  which are SOURCE and SINK nodes. This function is inlined for runtime optimization. */
-    inline short node_class_num(RRNodeId node) const {
+    inline int node_class_num(RRNodeId node) const {
         return node_storage_.node_class_num(node);
     }
 

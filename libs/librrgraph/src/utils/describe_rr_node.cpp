@@ -8,7 +8,8 @@
 std::string describe_rr_node(const RRGraphView& rr_graph,
                              const DeviceGrid& grid,
                              const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                             int inode) {
+                             int inode,
+                             bool is_flat) {
 
     std::string msg = vtr::string_fmt("RR node: %d", inode);
 
@@ -29,7 +30,7 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
         }
     } else if (rr_graph.node_type(RRNodeId(inode)) == IPIN || rr_graph.node_type(RRNodeId(inode)) == OPIN) {
         auto type = grid[rr_graph.node_xlow(RRNodeId(inode))][rr_graph.node_ylow(RRNodeId(inode))].type;
-        std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(RRNodeId(inode)));
+        std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(RRNodeId(inode)), is_flat);
 
         msg += vtr::string_fmt(" pin: %d pin_name: %s",
                                rr_graph.node_pin_num(RRNodeId(inode)),
