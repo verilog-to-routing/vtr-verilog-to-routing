@@ -30,7 +30,8 @@ void create_rr_graph(const t_graph_type graph_type,
                      const t_router_opts& router_opts,
                      const t_direct_inf* directs,
                      const int num_directs,
-                     int* Warnings);
+                     int* Warnings,
+                     bool is_flat = false);
 
 void free_rr_graph();
 

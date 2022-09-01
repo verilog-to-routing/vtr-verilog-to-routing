@@ -336,6 +336,12 @@ t_src_opin_delays compute_router_src_opin_lookahead() {
                 const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.x(), sample_loc.y(), rr_type);
                 for (RRNodeId node_id : rr_nodes_at_loc) {
                     int ptc = rr_graph.node_ptc_num(node_id);
+                    // For the time being, we decide to not let the lookahead explore the node inside the clusters
+                    if (!is_node_on_tile(&device_ctx.physical_tile_types[itile],
+                                         rr_type,
+                                         ptc)) {
+                        continue;
+                    }
 
                     if (ptc >= int(src_opin_delays[itile].size())) {
                         src_opin_delays[itile].resize(ptc + 1); //Inefficient but functional...
@@ -499,6 +505,13 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
                 float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
+                // For the time being, we decide to not let the lookahead explore the node inside the clusters
+                t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)].type;
+                if (!is_node_on_tile(physical_type,
+                                     rr_graph.node_type(next_node),
+                                     rr_graph.node_ptc_num(next_node))) {
+                    continue;
+                }
 
                 t_pq_entry next;
                 next.congestion = curr.congestion + incr_cong; //Of current node

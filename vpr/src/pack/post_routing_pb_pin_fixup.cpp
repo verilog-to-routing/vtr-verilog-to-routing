@@ -119,14 +119,13 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
         int physical_pin = get_physical_pin_at_sub_tile_location(physical_tile, logical_block, sub_tile_z, pb_type_pin);
         VTR_ASSERT(physical_pin < physical_tile->num_pins);
 
-        auto pin_class = physical_tile->pin_class[physical_pin];
-        auto class_inf = physical_tile->class_inf[pin_class];
+        auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
 
         t_rr_type rr_node_type;
-        if (class_inf.type == DRIVER) {
+        if (pin_type == DRIVER) {
             rr_node_type = OPIN;
         } else {
-            VTR_ASSERT(class_inf.type == RECEIVER);
+            VTR_ASSERT(pin_type == RECEIVER);
             rr_node_type = IPIN;
         }
 
@@ -1032,7 +1031,8 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
                               ClusteringContext& clustering_ctx,
                               const PlacementContext& placement_ctx,
                               const RoutingContext& routing_ctx,
-                              const bool& verbose) {
+                              const bool& verbose,
+                              bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Synchronize the packed netlist to routing optimization");
 
     /* Reset the database for post-routing clb net mapping */
@@ -1043,7 +1043,8 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
     vtr::vector<RRNodeId, ClusterNetId> rr_node_nets = annotate_rr_node_nets(device_ctx,
                                                                              clustering_ctx,
                                                                              routing_ctx,
-                                                                             verbose);
+                                                                             verbose,
+                                                                             is_flat);
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
 

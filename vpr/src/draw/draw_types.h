@@ -257,6 +257,7 @@ struct t_draw_state {
     float pres_fac = 1.;
 
     ManualMovesState manual_moves_state;
+    bool is_flat = false;
 
     ///@brief Whether we are showing the NOC button
     bool show_noc_button = false;

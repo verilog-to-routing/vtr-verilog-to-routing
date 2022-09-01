@@ -9,13 +9,13 @@
 static int get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node, int* num_segs_ortho_dir_ptr);
 static int round_up(float x);
 
-static std::unique_ptr<RouterLookahead> make_router_lookahead_object(e_router_lookahead router_lookahead_type) {
+static std::unique_ptr<RouterLookahead> make_router_lookahead_object(e_router_lookahead router_lookahead_type, bool is_flat) {
     if (router_lookahead_type == e_router_lookahead::CLASSIC) {
         return std::make_unique<ClassicLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::MAP) {
-        return std::make_unique<MapLookahead>();
+        return std::make_unique<MapLookahead>(is_flat);
     } else if (router_lookahead_type == e_router_lookahead::EXTENDED_MAP) {
-        return std::make_unique<ExtendedMapLookahead>();
+        return std::make_unique<ExtendedMapLookahead>(is_flat);
     } else if (router_lookahead_type == e_router_lookahead::NO_OP) {
         return std::make_unique<NoOpLookahead>();
     }
@@ -28,8 +28,9 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(
     e_router_lookahead router_lookahead_type,
     std::string write_lookahead,
     std::string read_lookahead,
-    const std::vector<t_segment_inf>& segment_inf) {
-    std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(router_lookahead_type);
+    const std::vector<t_segment_inf>& segment_inf,
+    bool is_flat) {
+    std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(router_lookahead_type, is_flat);
 
     if (read_lookahead.empty()) {
         router_lookahead->compute(segment_inf);
@@ -195,7 +196,8 @@ const RouterLookahead* get_cached_router_lookahead(
     e_router_lookahead router_lookahead_type,
     std::string write_lookahead,
     std::string read_lookahead,
-    const std::vector<t_segment_inf>& segment_inf) {
+    const std::vector<t_segment_inf>& segment_inf,
+    bool is_flat) {
     auto& router_ctx = g_vpr_ctx.routing();
 
     auto cache_key = std::make_tuple(router_lookahead_type, read_lookahead, segment_inf);
@@ -214,6 +216,7 @@ const RouterLookahead* get_cached_router_lookahead(
                 router_lookahead_type,
                 write_lookahead,
                 read_lookahead,
-                segment_inf));
+                segment_inf,
+                is_flat));
     }
 }

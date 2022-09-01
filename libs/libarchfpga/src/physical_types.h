@@ -450,6 +450,10 @@ struct t_class {
 struct t_class_range {
     int low = 0;
     int high = 0;
+    // Returns the total number of classes
+    int total_num() const {
+        return high - low + 1;
+    }
 };
 
 enum e_power_wire_type {
@@ -613,11 +617,14 @@ struct t_physical_tile_type {
 
     std::vector<t_class> class_inf; /* [0..num_class-1] */
 
+    std::unordered_map<int, t_class> internal_class_inf;
+
     std::vector<int> pin_width_offset;  // [0..num_pins-1]
     std::vector<int> pin_height_offset; // [0..num_pins-1]
     std::vector<int> pin_class;         // [0..num_pins-1]
-    std::vector<bool> is_ignored_pin;   // [0..num_pins-1]
-    std::vector<bool> is_pin_global;    // [0..num_pins-1]
+    std::unordered_map<int, int> internal_pin_class;
+    std::vector<bool> is_ignored_pin; // [0..num_pins-1]
+    std::vector<bool> is_pin_global;  // [0..num_pins-1]
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -725,6 +732,9 @@ struct t_sub_tile {
                                ///>      indices ranging from 4 to 7.
     t_class_range class_range;
 
+    std::vector<std::unordered_map<t_logical_block_type_ptr, int>> starting_internal_class_idx;
+    std::vector<std::unordered_map<t_logical_block_type_ptr, int>> starting_internal_pin_idx;
+
     int num_phy_pins = 0;
 
     int index = -1;
@@ -818,6 +828,15 @@ struct t_physical_tile_port {
  * index: Keep track of type in array for easy access
  * physical_tile_index: index of the corresponding physical tile type
  *
+ * pin_logical_num_to_pb_pin_mapping: Contains all the pins, including pins on the root-level block and internal pins, in
+ * the logical block. The key of this map is the logical number of the pin, and the value is a pointer to the
+ * corresponding pb_graph_pin
+ *
+ * pb_pin_to_class_logical_num_mapping: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
+ * index to logical_class_inf.
+ *
+ * logical_class_inf: Contains all the classes inside the logical block. The index of each class is the logical number associate with the class.
+ *
  * A logical block is the implementation of a component's functionality of the FPGA device
  * and it identifies its logical behaviour and internal connections.
  *
@@ -839,6 +858,10 @@ struct t_logical_block_type {
 
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
+
+    std::unordered_map<int, const t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;   /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_to_class_logical_num_mapping; /* pb_pin_to_class_logical_num_mapping[pb_graph_pin ptr] -> class logical number */
+    std::vector<t_class> logical_class_inf;                                             /* logical_class_inf[class_logical_number] -> class */
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
@@ -1688,6 +1711,8 @@ struct t_wireconn_inf {
     std::vector<t_wire_switchpoints> to_switchpoint_set;               //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
     SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
     SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   //The desired to_switchpoint_set ordering
+    int switch_override_indx = DEFAULT_SWITCH;                         // index in switch array of the switch used to override wire_switch of the 'to' set.
+                                                                       // DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
 
     std::string num_conns_formula; /* Specifies how many connections should be made for this wireconn.
                                     *

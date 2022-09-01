@@ -59,9 +59,11 @@ constexpr int SUCCESS_EXIT_CODE = 0; //Everything OK
 constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
 constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
 
-static void do_one_route(int source_node, int sink_node,
-        const t_router_opts& router_opts,
-        const std::vector<t_segment_inf>& segment_inf) {
+static void do_one_route(int source_node,
+                         int sink_node,
+                         const t_router_opts& router_opts,
+                         const std::vector<t_segment_inf>& segment_inf,
+                         bool is_flat) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -95,7 +97,8 @@ static void do_one_route(int source_node, int sink_node,
             router_opts.lookahead_type,
             router_opts.write_router_lookahead,
             router_opts.read_router_lookahead,
-            segment_inf
+            segment_inf,
+            is_flat
             );
 
     ConnectionRouter<BinaryHeap> router(
@@ -105,7 +108,8 @@ static void do_one_route(int source_node, int sink_node,
             &device_ctx.rr_graph,
             device_ctx.rr_rc_data,
             device_ctx.rr_graph.rr_switch(),
-            g_vpr_ctx.mutable_routing().rr_node_route_inf);
+            g_vpr_ctx.mutable_routing().rr_node_route_inf,
+            is_flat);
     enable_router_debug(router_opts, ClusterNetId(), sink_node, 1, &router);
     bool found_path;
     t_heap cheapest;
@@ -136,8 +140,9 @@ static void do_one_route(int source_node, int sink_node,
 }
 
 static void profile_source(int source_rr_node,
-        const t_router_opts& router_opts,
-        const std::vector<t_segment_inf>& segment_inf) {
+                           const t_router_opts& router_opts,
+                           const std::vector<t_segment_inf>& segment_inf,
+                           bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Profiling source");
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
@@ -146,9 +151,9 @@ static void profile_source(int source_rr_node,
             router_opts.lookahead_type,
             router_opts.write_router_lookahead,
             router_opts.read_router_lookahead,
-            segment_inf
-            );
-    RouterDelayProfiler profiler(router_lookahead.get());
+            segment_inf,
+            is_flat);
+    RouterDelayProfiler profiler(router_lookahead.get(), is_flat);
 
     int start_x = 0;
     int end_x = grid.width() - 1;
@@ -299,6 +304,7 @@ int main(int argc, const char **argv) {
         t_chan_width chan_width = setup_chan_width(
                 vpr_setup.RouterOpts,
                 Arch.Chans);
+        bool is_flat = vpr_setup.RouterOpts.flat_routing;
         alloc_routing_structs(
                 chan_width,
                 vpr_setup.RouterOpts,
@@ -312,14 +318,15 @@ int main(int argc, const char **argv) {
             profile_source(
                 route_options.source_rr_node,
                 vpr_setup.RouterOpts,
-                vpr_setup.Segments
-                );
+                vpr_setup.Segments,
+                is_flat);
         } else {
             do_one_route(
                     route_options.source_rr_node, 
                     route_options.sink_rr_node,
                     vpr_setup.RouterOpts,
-                    vpr_setup.Segments);
+                    vpr_setup.Segments,
+                    is_flat);
         }
         free_routing_structs();
 
