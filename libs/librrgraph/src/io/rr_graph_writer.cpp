@@ -40,7 +40,8 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     const char* file_name,
                     const int virtual_clock_network_root_idx,
                     bool echo_enabled,
-                    const char* echo_file_name) {
+                    const char* echo_file_name,
+                    bool is_flat) {
 
     RrGraphSerializer reader(
         /*graph_type=*/t_graph_type(),
@@ -67,7 +68,8 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
         grid,
         &rr_graph_builder->rr_node_metadata(),
         &rr_graph_builder->rr_edge_metadata(),
-        &arch->strings);
+        &arch->strings,
+        is_flat);
 
     if (vtr::check_file_name_extension(file_name, ".xml")) {
         std::fstream fp;

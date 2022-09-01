@@ -105,7 +105,7 @@ ezgl::rectangle draw_get_rr_chan_bbox(int inode) {
 
 void draw_highlight_blocks_color(t_logical_block_type_ptr type,
                                  ClusterBlockId blk_id) {
-    int k, iclass;
+    int k;
     ClusterBlockId fanblk;
 
     t_draw_state* draw_state = get_draw_state_vars();
@@ -120,9 +120,9 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
         auto physical_tile = physical_tile_type(blk_id);
         int physical_pin = get_physical_pin(physical_tile, type, k);
 
-        iclass = physical_tile->pin_class[physical_pin];
+        auto class_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
 
-        if (physical_tile->class_inf[iclass].type == DRIVER) { /* Fanout */
+        if (class_type == DRIVER) { /* Fanout */
             if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;

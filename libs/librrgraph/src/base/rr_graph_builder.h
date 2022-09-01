@@ -176,22 +176,22 @@ class RRGraphBuilder {
      * e.g the node type is unknown. If the node type is known, the more specific routines, `set_node_pin_num()`,
      * `set_node_track_num()`and `set_node_class_num()`, for different types of nodes should be used.*/
 
-    inline void set_node_ptc_num(RRNodeId id, short new_ptc_num) {
+    inline void set_node_ptc_num(RRNodeId id, int new_ptc_num) {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
     }
 
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
-    inline void set_node_pin_num(RRNodeId id, short new_pin_num) {
+    inline void set_node_pin_num(RRNodeId id, int new_pin_num) {
         node_storage_.set_node_pin_num(id, new_pin_num);
     }
 
     /** @brief set_node_track_num() is designed for routing tracks, which are CHANX and CHANY nodes */
-    inline void set_node_track_num(RRNodeId id, short new_track_num) {
+    inline void set_node_track_num(RRNodeId id, int new_track_num) {
         node_storage_.set_node_track_num(id, new_track_num);
     }
 
     /** @brief set_ node_class_num() is designed for routing source and sinks, which are SOURCE and SINK nodes */
-    inline void set_node_class_num(RRNodeId id, short new_class_num) {
+    inline void set_node_class_num(RRNodeId id, int new_class_num) {
         node_storage_.set_node_class_num(id, new_class_num);
     }
 
@@ -307,6 +307,10 @@ class RRGraphBuilder {
      * have a complete rr-graph and not called often. */
     inline void init_fan_in() {
         node_storage_.init_fan_in();
+    }
+
+    inline void reset_partitioned_flat() {
+        node_storage_.partitioned_ = false;
     }
 
     /* -- Internal data storage -- */

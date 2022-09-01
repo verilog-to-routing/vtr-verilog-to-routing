@@ -26,6 +26,7 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     const char* file_name,
                     const int virtual_clock_network_root_idx,
                     bool echo_enabled,
-                    const char* echo_file_name);
+                    const char* echo_file_name,
+                    bool is_flat);
 
 #endif

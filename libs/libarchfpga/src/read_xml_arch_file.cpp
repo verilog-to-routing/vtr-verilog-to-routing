@@ -534,12 +534,12 @@ static void LoadPinLoc(pugi::xml_node Locations,
         std::vector<int> input_pins;
         std::vector<int> output_pins;
         for (int pin_num = 0; pin_num < type->num_pins; ++pin_num) {
-            int iclass = type->pin_class[pin_num];
+            auto class_type = get_pin_type_from_pin_physical_num(type, pin_num);
 
-            if (type->class_inf[iclass].type == RECEIVER) {
+            if (class_type == RECEIVER) {
                 input_pins.push_back(pin_num);
             } else {
-                VTR_ASSERT(type->class_inf[iclass].type == DRIVER);
+                VTR_ASSERT(class_type == DRIVER);
                 output_pins.push_back(pin_num);
             }
         }

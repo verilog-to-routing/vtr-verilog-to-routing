@@ -7,9 +7,14 @@
 #include "router_lookahead_map_utils.h"
 
 class MapLookahead : public RouterLookahead {
+  public:
+    explicit MapLookahead(bool is_flat)
+        : is_flat_(is_flat) {}
+
   private:
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
+    bool is_flat_;
 
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;

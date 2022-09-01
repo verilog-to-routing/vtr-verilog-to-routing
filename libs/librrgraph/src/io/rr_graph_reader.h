@@ -33,6 +33,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   bool read_edge_metadata,
                   bool do_check_rr_graph,
                   bool echo_enabled,
-                  const char* echo_file_name);
+                  const char* echo_file_name,
+                  bool is_flat);
 
 #endif /* RR_GRAPH_READER_H */

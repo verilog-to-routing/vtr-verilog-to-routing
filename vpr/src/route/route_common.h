@@ -116,14 +116,14 @@ void print_traceback(const t_trace* trace);
 
 void print_rr_node_route_inf();
 void print_rr_node_route_inf_dot();
-void print_invalid_routing_info();
+void print_invalid_routing_info(bool is_flat);
 
 t_trace* alloc_trace_data();
 void free_trace_data(t_trace* trace);
 
 bool router_needs_lookahead(enum e_router_algorithm router_algorithm);
 
-std::string describe_unrouteable_connection(const int source_node, const int sink_node);
+std::string describe_unrouteable_connection(const int source_node, const int sink_node, bool is_flat);
 
 /* Creates a new t_heap object to be placed on the heap, if the new cost    *
  * given is lower than the current path_cost to this channel segment.  The  *

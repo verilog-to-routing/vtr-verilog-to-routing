@@ -293,7 +293,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const DeviceGrid& grid,
         MetadataStorage<int>* rr_node_metadata,
         MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata,
-        vtr::string_internment* strings)
+        vtr::string_internment* strings,
+        bool is_flat)
         : wire_to_rr_ipin_switch_(wire_to_rr_ipin_switch)
         , chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
@@ -320,7 +321,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_edge_metadata_(rr_edge_metadata)
         , strings_(strings)
         , empty_(strings_->intern_string(vtr::string_view("")))
-        , report_error_(nullptr) {
+        , report_error_(nullptr)
+        , is_flat_(is_flat) {
         // Initialize internal data
         init_side_map();
     }
@@ -1615,7 +1617,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         read_rr_graph_filename_->assign(read_rr_graph_name_);
 
         if (do_check_rr_graph_) {
-            check_rr_graph(*rr_graph_, physical_tile_types_, *rr_indexed_data_, grid_, *chan_width_, graph_type_, virtual_clock_network_root_idx_);
+            check_rr_graph(*rr_graph_,
+                           physical_tile_types_,
+                           *rr_indexed_data_,
+                           grid_,
+                           *chan_width_,
+                           graph_type_,
+                           virtual_clock_network_root_idx_,
+                           is_flat_);
         }
     }
 
@@ -1937,4 +1946,5 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     vtr::string_internment* strings_;
     vtr::interned_string empty_;
     const std::function<void(const char*)>* report_error_;
+    bool is_flat_;
 };
