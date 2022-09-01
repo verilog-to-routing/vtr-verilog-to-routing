@@ -83,18 +83,32 @@ The flow is depicted in the figure below.
     # Use a readable name convention
     # [NOTE]: the 'autoname' process has a high memory footprint for giant netlists
     # we run it after basic optimization passes to reduce the overhead (see issue #2031)
-    autoname;
-    
+    autoname; 
+
     # Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
     check;
     # resolve asynchronous dffs
     techmap -map $env(ODIN_TECHLIB)/adff2dff.v;
     techmap -map $env(ODIN_TECHLIB)/adffe2dff.v;
     
-    # Transform the design into a new one with single top module
-    flatten;
+    # Yosys performs various optimizations on memories in the design. Then, it detects DFFs at
+    # memory read ports and merges them into the memory port. I.e. it consumes an asynchronous
+    # memory port and the flip-flops at its interface and yields a synchronous memory port.
+    # Afterwards, Yosys detects cases where an asynchronous read port is only connected via a mux
+    # tree to a write port with the same address. When such a connection is found, it is replaced
+    # with a new condition on an enable signal, allowing for removal of the read port. Finally
+    # Yosys merges share-able memory ports into single memory ports and collects memories, their
+    # port and create multiport memory cells.
+    memory -nomap;
     
-     
+    # convert mem block to bram/rom
+    
+    # [NOTE]: Yosys complains about expression width more than 24 bits.
+    # E.g. [63:0] memory [18:0] ==>  ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
+    # mem will be handled using Odin-II
+    # memory_bram -rules $env(ODIN_TECHLIB)/mem_rules.txt
+    # techmap -map $env(ODIN_TECHLIB)/mem_map.v; 
+    
     # Transforming all RTLIL components into LUTs except for memories, adders, subtractors, 
     # multipliers, DFFs with set (VCC) and clear (GND) signals, and DFFs with the set (VCC),
     # clear (GND), and enable signals The Odin-II partial mapper will perform the technology
@@ -105,16 +119,8 @@ The flow is depicted in the figure below.
     #         initial implementation of Yosys+Odin-II, which did not use this pass
     techmap */t:\$mem */t:\$memrd */t:\$add */t:\$sub */t:\$mul */t:\$dffsr */t:\$dffsre */t:\$sr */t:\$dlatch */t:\$adlatch %% %n;
     
-    # Collects memories, their port and create multiport memory cells
-    memory_collect; memory_dff;
-    
-    # convert mem block to bram/rom
-    
-    # [NOTE]: Yosys complains about expression width more than 24 bits.
-    # E.g. [63:0] memory [18:0] ==>  ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
-    # mem will be handled using Odin-II
-    # memory_bram -rules $env(ODIN_TECHLIB)/mem_rules.txt
-    # techmap -map $env(ODIN_TECHLIB)/mem_map.v; 
+    # Transform the design into a new one with single top module
+    flatten;
     
     # To possibly reduce word sizes by Yosys and fine-graining the basic operations
     wreduce; simplemap */t:\$dffsr */t:\$dffsre */t:\$sr */t:\$dlatch */t:\$adlatch %% %n;
@@ -163,7 +169,15 @@ This command removes some debugging information, such as the path to the source 
 
 After performing basic synthesis steps, the ``techmap`` command with the input ``adff2dff`` transforms DFFs with asynchronous reset to the synchronous form using the design provided by Yosys.
 The next command follows the same approach but with a modified version of the provided design file for DFFs with asynchronous reset and synchronous data enable signals.
-Afterwards, we again flatten the design and transform all RTLIL components into soft logic except for primary hard blocks and latches to postpone their technology mapping to the Odin-II partial mapping phase.
+
+Followed by the ``techmap`` command, Yosys performs various optimizations on memories in the design.
+Using the ``memory -nomap`` command, Yosys detects DFFs at memory read ports and merges them into the memory port.
+I.e. it consumes an asynchronous memory port and the flip-flops at its interface and yields a synchronous memory port.
+Yosys then detects cases where an asynchronous read port is only connected via a mux tree to a write port with the same address.
+When such a connection is found, it is replaced with a new condition on an enable signal, allowing for removal of the read port.
+Finally Yosys merges share-able memory ports into single memory ports and collects memories, their port and create multiport memory cells.
+
+Afterwards, Yosys transforms all RTLIL components into soft logic except for primary hard blocks and latches to postpone their technology mapping to the Odin-II partial mapping phase.
 These components include memories, adders, subtractors, multipliers, DFFs with set (VCC) and clear (GND) signals, and DFFs with the set (VCC), clear (GND), and enable signals.
     
 .. note::
@@ -173,9 +187,7 @@ These components include memories, adders, subtractors, multipliers, DFFs with s
     This solution is proposed to technology-map all primary components and keep the connectivity of the submodules with the top-module in the Yosys output BLIF file.
     It worth noting that Odin-II still receives the memories and arithmetic operations in the coarse-grained format so that it partially-maps them with architecture awareness.
 
-Followed by the ``techmap`` command, Yosys collects memories and their ports, then creates a multiport memory cell, by the ``memory_collect`` command.
-Converting asynchronous memory ports to synchronous ones by merging ports and the related DFFs at their interfaces, is performed using the ``memory_dff`` command.
-Then, the ``simplemap`` command is called to ensure about the connectivity of the technology-mapped components.
+Then, we again flatten the design and the ``simplemap`` command is called to ensure about the connectivity of the technology-mapped components.
 The given selection to the ``simplemap`` pass avoid mapping latches and DFFs with set/reset signals, as we want to postpone them for Odin-II partial mapping.
 The ``dffunmap`` command turns all types of complex DFFs, such as DFFs with enable and reset signals, into simple latches if there exist any in the design. 
 
