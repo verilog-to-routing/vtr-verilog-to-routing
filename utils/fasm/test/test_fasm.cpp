@@ -235,6 +235,7 @@ static std::string get_pin_feature (size_t inode) {
 }
 
 TEST_CASE("fasm_integration_test", "[fasm]") {
+    bool is_flat = false;
     {
         t_vpr_setup vpr_setup;
         t_arch arch;
@@ -294,7 +295,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                        kRrGraphFile,
                        device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,
-                       echo_file_name);
+                       echo_file_name,
+                       is_flat);
         vpr_free_all(arch, vpr_setup);
     }
 
@@ -331,7 +333,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                                  g_vpr_ctx.mutable_clustering(),
                                  g_vpr_ctx.placement(),
                                  g_vpr_ctx.routing(),
-                                 vpr_setup.PackerOpts.pack_verbosity > 2);
+                                 vpr_setup.PackerOpts.pack_verbosity > 2,
+                                 is_flat);
     }
 
     std::stringstream fasm_string;

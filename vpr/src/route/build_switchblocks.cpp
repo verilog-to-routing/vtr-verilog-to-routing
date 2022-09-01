@@ -983,7 +983,13 @@ static void compute_wireconn_connections(
             t_switchblock_edge sb_edge;
             sb_edge.from_wire = from_wire;
             sb_edge.to_wire = to_wire;
-            sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch();
+
+            // if the switch override has been set, use that. Otherwise use default
+            if (wireconn_ptr->switch_override_indx != DEFAULT_SWITCH) {
+                sb_edge.switch_ind = wireconn_ptr->switch_override_indx;
+            } else {
+                sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch();
+            }
             VTR_LOGV(verbose, "  make_conn: %d -> %d switch=%d\n", sb_edge.from_wire, sb_edge.to_wire, sb_edge.switch_ind);
 
             /* and now, finally, add this switchblock connection to the switchblock connections map */

@@ -19,13 +19,13 @@ struct cluster_pin_id_tag;
 ///@brief A unique identifier for a block/primitive in the atom netlist
 typedef vtr::StrongId<cluster_block_id_tag> ClusterBlockId;
 
-///@brief A unique identifier for a net in the atom netlist
+///@brief A unique identifier for a net in the cluster netlist
 typedef vtr::StrongId<cluster_net_id_tag> ClusterNetId;
 
-///@brief A unique identifier for a port in the atom netlist
+///@brief A unique identifier for a port in the cluster netlist
 typedef vtr::StrongId<cluster_port_id_tag> ClusterPortId;
 
-///@brief A unique identifier for a pin in the atom netlist
+///@brief A unique identifier for a pin in the cluster netlist
 typedef vtr::StrongId<cluster_pin_id_tag> ClusterPinId;
 
 #endif

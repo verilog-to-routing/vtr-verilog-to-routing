@@ -50,7 +50,12 @@ void init_draw_coords(float clb_width);
 /* Sets the static show_graphics and gr_automode variables to the    *
  * desired values.  They control if graphics are enabled and, if so, *
  * how often the user is prompted for input.                         */
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics, std::string graphics_commands);
+void init_graphics_state(bool show_graphics_val,
+                         int gr_automode_val,
+                         enum e_route_type route_type,
+                         bool save_graphics,
+                         std::string graphics_commands,
+                         bool is_flat);
 
 /* Allocates the structures needed to draw the placement and routing.*/
 void alloc_draw_structs(const t_arch* arch);

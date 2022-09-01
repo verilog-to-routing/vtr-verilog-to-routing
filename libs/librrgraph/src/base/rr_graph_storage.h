@@ -92,9 +92,9 @@ static_assert(alignof(t_rr_node_data) == 16, "Check t_rr_node_data size");
  *           Needed to properly draw.                                        */
 struct t_rr_node_ptc_data {
     union {
-        int16_t pin_num;
-        int16_t track_num;
-        int16_t class_num;
+        int pin_num;
+        int track_num;
+        int class_num;
     } ptc_;
 };
 
@@ -216,10 +216,10 @@ class t_rr_graph_storage {
     const char* node_side_string(RRNodeId id) const;
 
     /* PTC get methods */
-    short node_ptc_num(RRNodeId id) const;
-    short node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
-    short node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
-    short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_ptc_num(RRNodeId id) const;
+    int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
+    int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /* Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
     t_edge_size fan_in(RRNodeId id) const {
@@ -480,10 +480,10 @@ class t_rr_graph_storage {
                  const vtr::vector<RRNodeId, RRNodeId>& inverse_order);
 
     /* PTC set methods */
-    void set_node_ptc_num(RRNodeId id, short);
-    void set_node_pin_num(RRNodeId id, short);   //Same as set_ptc_num() by checks type() is consistent
-    void set_node_track_num(RRNodeId id, short); //Same as set_ptc_num() by checks type() is consistent
-    void set_node_class_num(RRNodeId id, short); //Same as set_ptc_num() by checks type() is consistent
+    void set_node_ptc_num(RRNodeId id, int);
+    void set_node_pin_num(RRNodeId id, int);   //Same as set_ptc_num() by checks type() is consistent
+    void set_node_track_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
+    void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
 
     void set_node_type(RRNodeId id, t_rr_type new_type);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
@@ -776,10 +776,10 @@ class t_rr_graph_view {
     }
 
     /* PTC get methods */
-    short node_ptc_num(RRNodeId id) const;
-    short node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
-    short node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
-    short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_ptc_num(RRNodeId id) const;
+    int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
+    int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /* Retrieve fan_in for RRNodeId. */
     t_edge_size fan_in(RRNodeId id) const {

@@ -1,18 +1,3 @@
-#
-############################################
-# Configuration file for running experiments
-##############################################
-
-# Path to directory of circuits to use
-circuits_dir=benchmarks/verilog
-
-# Path to directory of architectures to use
-archs_dir=arch/xilinx
-
-# Add circuits to list to sweep
-circuit_list_add=stereovision3.v
-
-# Add architectures to list to sweep
 arch_list_add=simple-7series.xml
 
 
@@ -25,4 +10,4 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-track_memory_usage 
+script_params=-track_memory_usage
