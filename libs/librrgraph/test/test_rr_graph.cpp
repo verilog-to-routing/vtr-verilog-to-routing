@@ -306,6 +306,9 @@ TEST_CASE("I/O Test_mult", "[librrgraph]"){
     
     //Create Chan Nodes
     create_rr_chan(&rr_graph_builder, rr_rc_data, chan_width, grid);
+
+    /*TODO: add edges to rr_edges_to_create for linking of opin_to_track, track_to_track, ipin_to_track.
+            May Need to modify create_rr_nodes and create_rr_chan.*/
     
     //Create Edges
     uniquify_edges(rr_edges_to_create);
@@ -398,7 +401,7 @@ DeviceGrid create_device_grid(const std::vector<t_grid_def>& grid_layouts,
     auto grid_priorities = vtr::Matrix<int>({width, height}, std::numeric_limits<int>::lowest());
     const auto& grid_def = grid_layouts[0];
 
-    //Initialize the device to all empty blocks
+    //Initialize all blocks in device to empty blocks
     t_physical_tile_type type_ = get_empty_physical_type();
     t_physical_tile_type_ptr empty_type = &type_;
     VTR_ASSERT(empty_type != nullptr);
@@ -702,8 +705,6 @@ void create_rr_chan(RRGraphBuilder* rr_graph_builder,
             }
         }
     }
-
-    //TODO: add edges to rr_edges_to_create for linking of opin_to_track, track_to_track, ipin_to_track
 }
 
 void create_rr_edges(RRGraphBuilder* rr_graph_builder, t_rr_edge_info_set* rr_edges_to_create){
