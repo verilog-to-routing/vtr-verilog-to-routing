@@ -168,7 +168,8 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        kRrGraphFile,
                        device_ctx.virtual_clock_network_root_idx,
                        echo_enabled,
-                       echo_file_name);
+                       echo_file_name,
+                       false);
         vpr_free_all(arch, vpr_setup);
 
         auto& atom_ctx = g_vpr_ctx.mutable_atom();

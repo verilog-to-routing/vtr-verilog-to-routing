@@ -2301,7 +2301,7 @@ The full format is documented below.
     Defined under the ``<switchfuncs>`` XML node, one or more ``<func...>`` entries is used to specify permutation functions that connect different sides of a switch block.
 
 
-.. arch:tag:: <wireconn num_conns="expr" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..." from_order="{fixed | shuffled}" to_order="{fixed | shuffled}"/>
+.. arch:tag:: <wireconn num_conns="expr" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..." from_order="{fixed | shuffled}" to_order="{fixed | shuffled}" switch_override="string"/>
 
     :req_param num_conns:
         Specifies how many connections should be created between the from_type/from_switchpoint set and the to_type/to_switchpoint set.
@@ -2400,6 +2400,14 @@ The full format is documented below.
         Specifies the order in which ``to_switchpoint``s are selected when creating edges.
 
         .. note:: See ``from_switchpoint_order`` for value descritpions.
+
+    :opt_param switch_override:
+
+        Specifies the name of a switch to be used to override the wire_switch of the segments in the ``to`` set. 
+        Can be used to create switch patterns where different switches are used for different types of connections. 
+        By using a zero-delay and zero-resistance switch one can also create T and L shaped wire segments.
+        
+        **Default:** If no override is specified, the usual wire_switch that drives the ``to`` wire will be used. 
 
     .. arch:tag:: <from type="string" switchpoint="int, int, int, ..."/>
 

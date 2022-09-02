@@ -12,7 +12,8 @@
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
 RouterDelayProfiler::RouterDelayProfiler(
-    const RouterLookahead* lookahead)
+    const RouterLookahead* lookahead,
+    bool is_flat)
     : router_(
           g_vpr_ctx.device().grid,
           *lookahead,
@@ -20,7 +21,8 @@ RouterDelayProfiler::RouterDelayProfiler(
           &g_vpr_ctx.device().rr_graph,
           g_vpr_ctx.device().rr_rc_data,
           g_vpr_ctx.device().rr_graph.rr_switch(),
-          g_vpr_ctx.mutable_routing().rr_node_route_inf) {}
+          g_vpr_ctx.mutable_routing().rr_node_route_inf,
+          is_flat) {}
 
 bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
@@ -96,7 +98,9 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 }
 
 //Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists
-std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts) {
+std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node,
+                                                          const t_router_opts& router_opts,
+                                                          bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& routing_ctx = g_vpr_ctx.mutable_routing();
 
@@ -117,7 +121,8 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
 
     auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
-                                                  /*segment_inf=*/{});
+                                                  /*segment_inf=*/{},
+                                                  is_flat);
     ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,
         *router_lookahead,
@@ -125,7 +130,8 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
         &g_vpr_ctx.device().rr_graph,
         device_ctx.rr_rc_data,
         device_ctx.rr_graph.rr_switch(),
-        routing_ctx.rr_node_route_inf);
+        routing_ctx.rr_node_route_inf,
+        is_flat);
     RouterStats router_stats;
 
     std::vector<t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(rt_root,
