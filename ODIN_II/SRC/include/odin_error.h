@@ -39,25 +39,30 @@ extern std::vector<std::pair<std::string, int>> include_file_names;
 extern int delayed_errors;
 extern const loc_t unknown_location;
 
-#ifdef ODIN_USE_YOSYS
+
+#define SYSTEMVERILOG_PARSER_ERROR \
+    "The SystemVerilog parser is provided within Yosys. " \
+    "Please use the Yosys elaborator to synthesize SystemVerilog files.\n"
+#define UHDM_PARSER_ERROR \
+    "The UHDM parser is provided within Yosys. " \
+    "Please use the Yosys elaborator to synthesize UHDM files.\n"
+
+#ifndef ODIN_USE_YOSYS
+#    define YOSYS_INSTALLATION_ERROR                              \
+        "It seems Yosys is not installed in the VTR repository. " \
+        "Please compile the VTR with (\" -DODIN_USE_YOSYS=ON \") flag.\n"
+#else
 #    define YOSYS_ELABORATION_ERROR             \
         "Yosys failed to perform elaboration, " \
         "Please look at the log file for the failure cause or pass \'--show_yosys_log\' to Odin-II to see the logs.\n"
 #    define YOSYS_FORK_ERROR \
         "Yosys child process failed to be created\n"
-#    define YOSYS_PLUGINS_WITH_ODIN_ERROR \
-        "Utilizing SystemVerilog/UHDM plugins requires activating the Yosys frontend.\
-        Please recompile the VTR project either with the \"WITH_YOSYS\" or \"ODIN_USE_YOSYS\" flag on."
-#else
-#    define YOSYS_INSTALLATION_ERROR                             \
-        "It seems Yosys is not installed in the VTR repository." \
-        " Please compile the VTR with (\" -DODIN_USE_YOSYS=ON \") flag.\n"
 #endif
 
 #ifndef YOSYS_SV_UHDM_PLUGIN
 #    define YOSYS_PLUGINS_NOT_COMPILED \
-        "SystemVerilog/UHDM plugins are not compiled.\
-        Please recompile the VTR project with the \"YOSYS_SV_UHDM_PLUGIN\" flag on."
+        "SystemVerilog/UHDM plugins are not compiled. " \
+        "Please recompile the VTR project with the \"YOSYS_SV_UHDM_PLUGIN\" flag on."
 #endif
 
 // causes an interrupt in GDB
