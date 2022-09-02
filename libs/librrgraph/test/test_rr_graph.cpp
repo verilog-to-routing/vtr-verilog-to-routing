@@ -510,6 +510,100 @@ t_rr_switch_inf create_rr_switches(t_arch_switch_inf* arch_switch_inf, int arch_
     return rr_switch_inf;
 }
 
+RRNodeId create_sink_src_node(RRGraphBuilder* rr_graph_builder,
+                          std::vector<t_rr_rc_data>& rr_rc_data,
+                          const e_rr_type node_type,
+                          const e_cost_indices node_cost,
+                          const int ptc,
+                          const int x_coord,
+                          const int y_coord){
+
+    rr_graph_builder->emplace_back();
+    auto node_id = RRNodeId(rr_graph_builder->rr_nodes().size() - 1);
+    
+    rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost));
+    rr_graph_builder->set_node_type(node_id, node_type);
+    rr_graph_builder->set_node_capacity(node_id, 1);
+    rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord, y_coord);
+    rr_graph_builder->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0.,0.,rr_rc_data)));
+    rr_graph_builder->set_node_class_num(node_id, ptc);
+
+    rr_graph_builder->node_lookup().add_node(node_id, x_coord, y_coord, node_type, ptc);
+
+    VTR_ASSERT(rr_graph_builder->node_lookup().find_node(x_coord, y_coord, node_type, ptc));
+
+    return node_id;
+}
+
+RRNodeId create_pin_node(RRGraphBuilder* rr_graph_builder,
+                          std::vector<t_rr_rc_data>& rr_rc_data,
+                          const e_rr_type node_type,
+                          const e_cost_indices node_cost,
+                          const e_side node_side,
+                          const int ptc,
+                          const int x_coord,
+                          const int y_coord){
+
+    rr_graph_builder->emplace_back();
+    auto node_id = RRNodeId(rr_graph_builder->rr_nodes().size() - 1);
+
+    rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost));
+    rr_graph_builder->set_node_type(node_id, node_type);      
+    rr_graph_builder->set_node_capacity(node_id, 1);
+    rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord, y_coord);
+    rr_graph_builder->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0.,0.,rr_rc_data)));
+
+    rr_graph_builder->set_node_pin_num(node_id, ptc);
+    rr_graph_builder->add_node_side(node_id, node_side);
+
+    rr_graph_builder->node_lookup().add_node(node_id, x_coord, y_coord, node_type, ptc, node_side);
+
+    VTR_ASSERT(rr_graph_builder->node_lookup().find_node(x_coord, y_coord, node_type, ptc, node_side));
+
+    return node_id;
+}
+
+RRNodeId create_chan_node(RRGraphBuilder* rr_graph_builder,
+                          std::vector<t_rr_rc_data>& rr_rc_data,
+                          const e_rr_type node_type,
+                          const e_cost_indices node_cost,
+                          const Direction direction,
+                          const int track,
+                          const int x_coord,
+                          const int y_coord,
+                          const int x_offset,
+                          const int y_offset){
+
+    rr_graph_builder->emplace_back();
+    auto node_id = RRNodeId(rr_graph_builder->rr_nodes().size() - 1);
+
+    if (node_type == CHANX) {
+        rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost));
+        rr_graph_builder->set_node_capacity(node_id, 1);
+        rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord + x_offset, y_coord);
+    } else {
+        VTR_ASSERT(node_type == CHANY);
+        rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost+1));
+        rr_graph_builder->set_node_capacity(node_id, 1);
+        rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord, y_coord + y_offset);
+    }
+
+    rr_graph_builder->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0.,0.,rr_rc_data)));
+    
+    rr_graph_builder->set_node_type(node_id, node_type);
+    rr_graph_builder->set_node_track_num(node_id, track);
+    rr_graph_builder->set_node_direction(node_id, direction);
+
+    rr_graph_builder->node_lookup().add_node(node_id, x_coord, y_coord, node_type, track);
+
+    if (node_type == CHANX) 
+        VTR_ASSERT(rr_graph_builder->node_lookup().find_node(y_coord, x_coord, node_type, track));
+    else
+        VTR_ASSERT(rr_graph_builder->node_lookup().find_node(x_coord, y_coord, node_type, track));
+
+    return node_id;
+}
+
 void create_rr_nodes(RRGraphBuilder* rr_graph_builder,
                      std::vector<t_rr_rc_data>& rr_rc_data,
                      t_rr_edge_info_set* rr_edges_to_create,
@@ -608,100 +702,8 @@ void create_rr_chan(RRGraphBuilder* rr_graph_builder,
             }
         }
     }
-}
 
-RRNodeId create_sink_src_node(RRGraphBuilder* rr_graph_builder,
-                          std::vector<t_rr_rc_data>& rr_rc_data,
-                          const e_rr_type node_type,
-                          const e_cost_indices node_cost,
-                          const int ptc,
-                          const int x_coord,
-                          const int y_coord){
-
-    rr_graph_builder->emplace_back();
-    auto node_id = RRNodeId(rr_graph_builder->rr_nodes().size() - 1);
-    
-    rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost));
-    rr_graph_builder->set_node_type(node_id, node_type);
-    rr_graph_builder->set_node_capacity(node_id, 1);
-    rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord, y_coord);
-    rr_graph_builder->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0.,0.,rr_rc_data)));
-    rr_graph_builder->set_node_class_num(node_id, ptc);
-
-    rr_graph_builder->node_lookup().add_node(node_id, x_coord, y_coord, node_type, ptc);
-
-    VTR_ASSERT(rr_graph_builder->node_lookup().find_node(x_coord, y_coord, node_type, ptc));
-
-    return node_id;
-}
-
-RRNodeId create_pin_node(RRGraphBuilder* rr_graph_builder,
-                          std::vector<t_rr_rc_data>& rr_rc_data,
-                          const e_rr_type node_type,
-                          const e_cost_indices node_cost,
-                          const e_side node_side,
-                          const int ptc,
-                          const int x_coord,
-                          const int y_coord){
-
-    rr_graph_builder->emplace_back();
-    auto node_id = RRNodeId(rr_graph_builder->rr_nodes().size() - 1);
-
-    rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost));
-    rr_graph_builder->set_node_type(node_id, node_type);      
-    rr_graph_builder->set_node_capacity(node_id, 1);
-    rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord, y_coord);
-    rr_graph_builder->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0.,0.,rr_rc_data)));
-
-    rr_graph_builder->set_node_pin_num(node_id, ptc);
-    rr_graph_builder->add_node_side(node_id, node_side);
-
-    rr_graph_builder->node_lookup().add_node(node_id, x_coord, y_coord, node_type, ptc, node_side);
-
-    VTR_ASSERT(rr_graph_builder->node_lookup().find_node(x_coord, y_coord, node_type, ptc, node_side));
-
-    return node_id;
-}
-
-RRNodeId create_chan_node(RRGraphBuilder* rr_graph_builder,
-                          std::vector<t_rr_rc_data>& rr_rc_data,
-                          const e_rr_type node_type,
-                          const e_cost_indices node_cost,
-                          const Direction direction,
-                          const int track,
-                          const int x_coord,
-                          const int y_coord,
-                          const int x_offset,
-                          const int y_offset){
-
-    rr_graph_builder->emplace_back();
-    auto node_id = RRNodeId(rr_graph_builder->rr_nodes().size() - 1);
-
-    if (node_type == CHANX) {
-        rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost));
-        rr_graph_builder->set_node_capacity(node_id, 1);
-        rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord + x_offset, y_coord);
-    } else {
-        VTR_ASSERT(node_type == CHANY);
-        rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost+1));
-        rr_graph_builder->set_node_capacity(node_id, 1);
-        rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord, y_coord + y_offset);
-    }
-
-    rr_graph_builder->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0.,0.,rr_rc_data)));
-    
-    rr_graph_builder->set_node_type(node_id, node_type);
-    rr_graph_builder->set_node_track_num(node_id, track);
-    rr_graph_builder->set_node_direction(node_id, direction);
-
-    rr_graph_builder->node_lookup().add_node(node_id, x_coord, y_coord, node_type, track);
-
-    if (node_type == CHANX) 
-        VTR_ASSERT(rr_graph_builder->node_lookup().find_node(y_coord, x_coord, node_type, track));
-    else
-        VTR_ASSERT(rr_graph_builder->node_lookup().find_node(x_coord, y_coord, node_type, track));
-
-    return node_id;
+    //TODO: add edges to rr_edges_to_create for linking of opin_to_track, track_to_track, ipin_to_track
 }
 
 void create_rr_edges(RRGraphBuilder* rr_graph_builder, t_rr_edge_info_set* rr_edges_to_create){
