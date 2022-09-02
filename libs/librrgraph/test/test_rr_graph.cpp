@@ -190,7 +190,8 @@ TEST_CASE("I/O Test_Base_10N", "[librrgraph]"){
                    kRrGraphFile1,
                    virtual_clock_network_root_idx,
                    echo_enabled,
-                   echo_file_name);
+                   echo_file_name,
+                   true);
     
     //New rr_graph_builder for I/O test
     RRGraphBuilder rr_graph_builder2 {};
@@ -217,7 +218,8 @@ TEST_CASE("I/O Test_Base_10N", "[librrgraph]"){
                 read_edge_metadata,
                 do_check_rr_graph,
                 echo_enabled,
-                echo_file_name);
+                echo_file_name,
+                true);
 
     //Write rrgraph
     write_rr_graph(&rr_graph_builder,
@@ -233,7 +235,8 @@ TEST_CASE("I/O Test_Base_10N", "[librrgraph]"){
                 kRrGraphFile2,
                 virtual_clock_network_root_idx,
                 echo_enabled,
-                echo_file_name);
+                echo_file_name,
+                true);
 }
 
 TEST_CASE("I/O Test_mult", "[librrgraph]"){
@@ -336,7 +339,8 @@ TEST_CASE("I/O Test_mult", "[librrgraph]"){
                    kRrGraphFile1,
                    virtual_clock_network_root_idx,
                    echo_enabled,
-                   echo_file_name);
+                   echo_file_name,
+                   true);
     
     //New rr_graph_builder for I/O test
     RRGraphBuilder rr_graph_builder2 {};
@@ -363,7 +367,8 @@ TEST_CASE("I/O Test_mult", "[librrgraph]"){
                 read_edge_metadata,
                 do_check_rr_graph,
                 echo_enabled,
-                echo_file_name);
+                echo_file_name,
+                true);
 
     //Write rrgraph
     write_rr_graph(&rr_graph_builder,
@@ -379,7 +384,8 @@ TEST_CASE("I/O Test_mult", "[librrgraph]"){
                 kRrGraphFile2,
                 virtual_clock_network_root_idx,
                 echo_enabled,
-                echo_file_name);
+                echo_file_name,
+                true);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 DeviceGrid create_device_grid(const std::vector<t_grid_def>& grid_layouts,
