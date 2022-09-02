@@ -13,41 +13,28 @@
 using vtr::FormulaParser;
 using vtr::t_formula_data;
 
-static constexpr const char kArchFile[] = "my_arch.xml";
-static constexpr const char kRrGraphFile1[] = "test_read_rrgraph.xml";
-static constexpr const char kRrGraphFile2[] = "test_write_rrgraph.xml";
-
-//////////////////////////////////////Function Declaration/////////////////////////////////////////////////////////
-
+////////////////////////////////////////////////////////////////////////////////////////////////////
 DeviceGrid create_device_grid(const std::vector<t_grid_def>& grid_layouts,
                            const size_t width,
                            const size_t height,
                            const std::vector<t_physical_tile_type>& physical_tile_types);
 
-void create_segments(RRGraphBuilder* rr_graph_builder,
-                    t_chan_width& nodes_per_chan,
-                    t_seg_details* seg_details_x,
-                    t_seg_details* seg_details_y,
-                    int& num_seg_details_x,
-                    int& num_seg_details_y,
-                    const std::vector<t_segment_inf>& segment_inf,
-                    const DeviceGrid& grid,
-                    const bool is_global_graph,
-                    const bool use_full_seg_groups,
-                    const e_directionality directionality);
-
-void create_channels(DeviceGrid& grid,
-                     t_chan_width* nodes_per_chan,
-                     t_chan_details& chan_details_x,
-                     t_chan_details& chan_details_y,
-                     const int num_seg_details_x,
-                     const int num_seg_details_y,
-                     const t_seg_details* seg_details_x,
-                     const t_seg_details* seg_details_y);
+t_chan_width init_channel(DeviceGrid grid, int chan_width_max, int x_max, int x_min, int y_max, int y_min, int info);
 
 t_rr_switch_inf create_rr_switches(t_arch_switch_inf* arch_switch_inf, int arch_switch_idx);
 
-void create_sink_src_node(RRGraphBuilder* rr_graph_builder,
+void create_rr_nodes(RRGraphBuilder* rr_graph_builder,
+                     std::vector<t_rr_rc_data>& rr_rc_data,
+                     t_rr_edge_info_set* rr_edges_to_create,
+                     const std::vector<t_physical_tile_type>& physical_tile_types,
+                     const DeviceGrid& grid);
+
+void create_rr_chan(RRGraphBuilder* rr_graph_builder,
+                    std::vector<t_rr_rc_data>& rr_rc_data,
+                    t_chan_width& nodes_per_chan,
+                    DeviceGrid& grid);
+
+RRNodeId create_sink_src_node(RRGraphBuilder* rr_graph_builder,
                           std::vector<t_rr_rc_data>& rr_rc_data,
                           const e_rr_type node_type,
                           const e_cost_indices node_cost,
@@ -55,7 +42,7 @@ void create_sink_src_node(RRGraphBuilder* rr_graph_builder,
                           const int x_coord,
                           const int y_coord);
 
-void create_pin_node(RRGraphBuilder* rr_graph_builder,
+RRNodeId create_pin_node(RRGraphBuilder* rr_graph_builder,
                           std::vector<t_rr_rc_data>& rr_rc_data,
                           const e_rr_type node_type,
                           const e_cost_indices node_cost,
@@ -64,7 +51,7 @@ void create_pin_node(RRGraphBuilder* rr_graph_builder,
                           const int x_coord,
                           const int y_coord);
 
-void create_chan_node(RRGraphBuilder* rr_graph_builder,
+RRNodeId create_chan_node(RRGraphBuilder* rr_graph_builder,
                           std::vector<t_rr_rc_data>& rr_rc_data,
                           const e_rr_type node_type,
                           const e_cost_indices node_cost,
@@ -75,26 +62,20 @@ void create_chan_node(RRGraphBuilder* rr_graph_builder,
                           const int x_offset,
                           const int y_offset);
 
-void create_rr_edges(RRGraphBuilder* rr_graph_builder);
+void create_rr_edges(RRGraphBuilder* rr_graph_builder, t_rr_edge_info_set* rr_edges_to_create);
 
-void create_rr_indexed_data(RRGraphBuilder* rr_graph_builder,
-                            RRGraphView* rr_graph,
+void create_rr_indexed_data(RRGraphView* rr_graph,
                             vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                             const DeviceGrid& grid,
                             const std::vector<t_segment_inf>& segment_inf,
                             const int wire_to_ipin_switch);
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void create_fanin_rr_switches(RRGraphBuilder* rr_graph_builder,
-                              t_arch_switch_inf* arch_switch_inf,
-                              t_arch_switch_fanin& arch_switch_fanins,
-                              std::vector<std::map<int, int>>& switch_fanin_remap,
-                              const size_t num_arch_switches);
+TEST_CASE("I/O Test_Base_10N", "[librrgraph]"){
+    static constexpr const char kArchFile[] = "test_arch_base.xml";
+    static constexpr const char kRrGraphFile1[] = "test_read_rrgraph_base.xml";
+    static constexpr const char kRrGraphFile2[] = "test_write_rrgraph_base.xml";
 
-t_chan_width init_channel(DeviceGrid grid, int chan_width_max, int x_max, int x_min, int y_max, int y_min, int info);
-
-//////////////////////////////////////Tests/////////////////////////////////////////////////////////
-
-TEST_CASE("I/O Test1", "[librrgraph]"){
     t_arch arch;
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
@@ -130,89 +111,72 @@ TEST_CASE("I/O Test1", "[librrgraph]"){
     RRGraphBuilder rr_graph_builder {};
     RRGraphView rr_graph {rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_graph_builder.rr_node_metadata(), rr_graph_builder.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch()};
 
-    VTR_LOG("Build Grid\n");
+    //Create Grid
     DeviceGrid grid = create_device_grid(arch.grid_layouts, arch.grid_layouts[0].width, arch.grid_layouts[0].height, physical_tile_types);
-    VTR_LOG("... Done\n");
 
+    //Init Chan_Width
     t_chan_width chan_width = init_channel(grid, 2, 2, 2, 2, 2, 5);
 
-    VTR_LOG("Build Segment\n");
-    int num_seg_details_x = 0;
-    int num_seg_details_y = 0;
-    t_seg_details* seg_details_x = nullptr;
-    t_seg_details* seg_details_y = nullptr;
-
-    create_segments(&rr_graph_builder,
-                    chan_width,
-                    seg_details_x,
-                    seg_details_y,
-                    num_seg_details_x,
-                    num_seg_details_y,
-                    segment_inf,
-                    grid,
-                    /*is_global_graph*/ false,
-                    /*use_full_seg_groups*/ false,
-                    UNI_DIRECTIONAL);
-    VTR_LOG("... Done\n");
-
-    // VTR_LOG("Build Channel\n");
-    // /* START CHAN_DETAILS */
-    // t_chan_details chan_details_x;
-    // t_chan_details chan_details_y;
-    // create_channels(grid,
-    //                 &chan_width,
-    //                 chan_details_x,
-    //                 chan_details_y,
-    //                 num_seg_details_x,
-    //                 num_seg_details_y,
-    //                 seg_details_x,
-    //                 seg_details_y);
-    // VTR_LOG("... Done\n");
-
-    VTR_LOG("Build Switch\n");
+    //Create Segment
+    size_t num_segments = segment_inf.size();
+    rr_graph_builder.reserve_segments(num_segments);
+    for (size_t iseg = 0; iseg < num_segments; ++iseg) {
+        rr_graph_builder.add_rr_segment(segment_inf[iseg]);
+    }
+    
+    //Create Switches
     rr_graph_builder.reserve_switches(num_arch_switches);
-    // Create the switches
-    for (int iswitch = 0; iswitch < num_arch_switches; ++iswitch) {
+    for (size_t iswitch = 0; iswitch < num_arch_switches; ++iswitch) {
         const t_rr_switch_inf& temp_rr_switch = create_rr_switches(arch_switch_inf, iswitch);
         rr_graph_builder.add_rr_switch(temp_rr_switch);
     }
-    VTR_LOG("... Done\n");
     
-    VTR_LOG("Build Node\n");
-    rr_graph_builder.reserve_nodes(6);
-    create_sink_src_node(&rr_graph_builder, rr_rc_data, SOURCE, SOURCE_COST_INDEX, 0, 0, 0);
-    create_pin_node(&rr_graph_builder, rr_rc_data, OPIN, OPIN_COST_INDEX, TOP, 0, 0, 0);
-    create_sink_src_node(&rr_graph_builder, rr_rc_data, SINK, SINK_COST_INDEX, 0, 1, 0);
-    create_pin_node(&rr_graph_builder, rr_rc_data, IPIN, IPIN_COST_INDEX, TOP, 0, 1, 0);
-    create_chan_node(&rr_graph_builder, rr_rc_data, CHANX, CHANX_COST_INDEX_START, Direction::INC, 0, 0, 0, 0, 0);
-    create_chan_node(&rr_graph_builder, rr_rc_data, CHANY, CHANX_COST_INDEX_START, Direction::DEC, 0, 0, 0, 0, 0);
-    VTR_LOG("... Done\n");
+    //Create Nodes
+    create_sink_src_node(&rr_graph_builder, rr_rc_data, SOURCE, SOURCE_COST_INDEX, 0, 0, 1);
+    create_sink_src_node(&rr_graph_builder, rr_rc_data, SINK, SINK_COST_INDEX, 1, 0, 1);
+    create_pin_node(&rr_graph_builder, rr_rc_data, OPIN, OPIN_COST_INDEX, RIGHT, 0, 0, 1);
+    create_pin_node(&rr_graph_builder, rr_rc_data, IPIN, IPIN_COST_INDEX, RIGHT, 1, 0, 1);
+    create_sink_src_node(&rr_graph_builder, rr_rc_data, SOURCE, SOURCE_COST_INDEX, 0, 1, 0);
+    create_sink_src_node(&rr_graph_builder, rr_rc_data, SINK, SINK_COST_INDEX, 1, 1, 0);
+    create_pin_node(&rr_graph_builder, rr_rc_data, OPIN, OPIN_COST_INDEX, TOP, 0, 1, 0);
+    create_pin_node(&rr_graph_builder, rr_rc_data, IPIN, IPIN_COST_INDEX, TOP, 1, 1, 0);
+    create_chan_node(&rr_graph_builder, rr_rc_data, CHANX, CHANX_COST_INDEX_START, Direction::INC, 0, 1, 0, 0, 0);
+    create_chan_node(&rr_graph_builder, rr_rc_data, CHANX, CHANX_COST_INDEX_START, Direction::DEC, 1, 1, 0, 0, 0);
+    create_chan_node(&rr_graph_builder, rr_rc_data, CHANY, CHANX_COST_INDEX_START, Direction::INC, 0, 0, 1, 0, 0);
+    create_chan_node(&rr_graph_builder, rr_rc_data, CHANY, CHANX_COST_INDEX_START, Direction::DEC, 1, 0, 1, 0, 0);
 
-    VTR_LOG("Build Edge\n");
-    rr_graph_builder.reserve_edges(5);
-    create_rr_edges(&rr_graph_builder);
-    VTR_LOG("... Done\n");
+    //Create Edges
+    t_rr_edge_info_set rr_edges_to_create;
+    rr_edges_to_create.emplace_back(RRNodeId(0), RRNodeId(2), 0);
+    rr_edges_to_create.emplace_back(RRNodeId(2), RRNodeId(11), 0);
+    rr_edges_to_create.emplace_back(RRNodeId(11), RRNodeId(8), 0);
+    rr_edges_to_create.emplace_back(RRNodeId(8), RRNodeId(7), 0);
+    rr_edges_to_create.emplace_back(RRNodeId(7), RRNodeId(5), 0);
 
-    VTR_LOG("Build Switches_Fanin\n");
+    rr_edges_to_create.emplace_back(RRNodeId(4), RRNodeId(6), 0);
+    rr_edges_to_create.emplace_back(RRNodeId(6), RRNodeId(9), 0);
+    rr_edges_to_create.emplace_back(RRNodeId(9), RRNodeId(10), 0);
+    rr_edges_to_create.emplace_back(RRNodeId(10), RRNodeId(3), 0);
+    rr_edges_to_create.emplace_back(RRNodeId(3), RRNodeId(1), 0);
+    
+    uniquify_edges(rr_edges_to_create);
+    create_rr_edges(&rr_graph_builder, &rr_edges_to_create);
+
+    //Create Fanin
     rr_graph_builder.init_fan_in();
     size_t num_rr_switches = rr_graph_builder.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
-    rr_graph_builder.resize_switches(num_rr_switches);
-    create_fanin_rr_switches(&rr_graph_builder, arch_switch_inf, arch_switch_fanins, switch_fanin_remap, num_arch_switches);
-    VTR_LOG("... Done\n");
+    rr_graph_builder.resize_switches(num_rr_switches);    
 
-    VTR_LOG("Edge/Switch remap\n");
+    //Edge/Switch Remap
     rr_graph_builder.remap_rr_node_switch_indices(arch_switch_fanins);
-    VTR_LOG("... Done\n");
 
-    VTR_LOG("Edge partition\n");
+    //Edge Partition
     rr_graph_builder.partition_edges();
-    VTR_LOG("... Done\n");
 
-    VTR_LOG("Build Indexed Data\n");
-    create_rr_indexed_data(&rr_graph_builder, &rr_graph, rr_indexed_data, grid, segment_inf, wire_to_rr_ipin_switch);
-    VTR_LOG("... Done\n");
+    //Create Indexed Data
+    create_rr_indexed_data(&rr_graph, rr_indexed_data, grid, segment_inf, wire_to_rr_ipin_switch);
 
-    VTR_LOG("Write RRGraph\n");
+    //Write drafted rrgraph test case
     write_rr_graph(&rr_graph_builder,
                    &rr_graph,
                    physical_tile_types,
@@ -227,11 +191,12 @@ TEST_CASE("I/O Test1", "[librrgraph]"){
                    virtual_clock_network_root_idx,
                    echo_enabled,
                    echo_file_name);
-    VTR_LOG("... Done\n");
-
+    
+    //New rr_graph_builder for I/O test
     RRGraphBuilder rr_graph_builder2 {};
     RRGraphView rr_graph2 {rr_graph_builder2.rr_nodes(), rr_graph_builder2.node_lookup(), rr_graph_builder2.rr_node_metadata(), rr_graph_builder2.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder2.rr_segments(), rr_graph_builder2.rr_switch()};
 
+    //Read drafted rrgraph
     load_rr_file(&rr_graph_builder2,
                 &rr_graph2,
                 physical_tile_types,
@@ -254,7 +219,7 @@ TEST_CASE("I/O Test1", "[librrgraph]"){
                 echo_enabled,
                 echo_file_name);
 
-    VTR_LOG("Write RRGraph\n");
+    //Write rrgraph
     write_rr_graph(&rr_graph_builder,
                 &rr_graph,
                 physical_tile_types,
@@ -269,88 +234,154 @@ TEST_CASE("I/O Test1", "[librrgraph]"){
                 virtual_clock_network_root_idx,
                 echo_enabled,
                 echo_file_name);
-    VTR_LOG("... Done\n");
 }
 
-// TEST_CASE("I/O Test2", "[librrgraph]"){
+TEST_CASE("I/O Test_mult", "[librrgraph]"){
+    static constexpr const char kArchFile[] = "test_arch.xml";
+    static constexpr const char kRrGraphFile1[] = "test_read_rrgraph.xml";
+    static constexpr const char kRrGraphFile2[] = "test_write_rrgraph.xml";
+
+    t_arch arch;
+    std::vector<t_physical_tile_type> physical_tile_types;
+    std::vector<t_logical_block_type> logical_block_types;
+
+    XmlReadArch(kArchFile, /*timing_enabled=*/false,
+                &arch, physical_tile_types, logical_block_types);
+
+    std::vector<t_segment_inf>& segment_inf = arch.Segments;
+    enum e_base_cost_type base_cost_type;
+
+    size_t num_arch_switches = arch.num_switches;
+    t_arch_switch_inf* arch_switch_inf = arch.Switches;
+    t_arch_switch_fanin arch_switch_fanins(num_arch_switches);
+    std::vector<std::map<int, int>> switch_fanin_remap;
+
+    int virtual_clock_network_root_idx{};
+    int wire_to_rr_ipin_switch = -1;
+
+    std::string read_rr_graph_filename = kRrGraphFile1;
+    char echo_file_name[] = "rr_indexed_data.echo";
+
+    bool echo_enabled = 1;
+    bool read_edge_metadata = 1;
+    bool do_check_rr_graph = 0;
     
-//     t_arch arch;
-//     std::vector<t_physical_tile_type> physical_tile_types;
-//     std::vector<t_logical_block_type> logical_block_types;
+    t_graph_type graph_type = GRAPH_UNIDIR;
 
-//     XmlReadArch(kArchFile, /*timing_enabled=*/false,
-//                 &arch, physical_tile_types, logical_block_types);
+    vtr::vector<RRIndexedDataId, t_rr_indexed_data> rr_indexed_data;
+    std::vector<t_rr_rc_data> rr_rc_data;
+
+    vtr::vector<RRIndexedDataId, short> seg_index;
+
+    RRGraphBuilder rr_graph_builder {};
+    RRGraphView rr_graph {rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_graph_builder.rr_node_metadata(), rr_graph_builder.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch()};
+
+    //Create Grid
+    DeviceGrid grid = create_device_grid(arch.grid_layouts, arch.grid_layouts[0].width, arch.grid_layouts[0].height, physical_tile_types);    
+
+    //Init Chan_Width
+    t_chan_width chan_width = init_channel(grid, 4, 4, 4, 4, 4, 4);
+
+    //Create Segment
+    size_t num_segments = segment_inf.size();
+    rr_graph_builder.reserve_segments(num_segments);
+    for (size_t iseg = 0; iseg < num_segments; ++iseg) {
+        rr_graph_builder.add_rr_segment(segment_inf[iseg]);
+    }
     
-//     std::vector<t_segment_inf>& segment_inf = arch.Segments;
-//     DeviceGrid grid = create_device_grid(arch.grid_layouts, arch.grid_layouts[0].width, arch.grid_layouts[0].height, physical_tile_types);
-//     enum e_base_cost_type base_cost_type;
-
-//     size_t num_arch_switches = arch.num_switches;
-//     t_arch_switch_inf* arch_switch_inf = arch.Switches;
-
-//     int virtual_clock_network_root_idx{};
-//     int wire_to_rr_ipin_switch={};
-
-//     std::string read_rr_graph_filename = kRrGraphFile1;
-//     char echo_file_name[] = "rr_indexed_data.echo";
-
-//     bool echo_enabled = 1;
-//     bool read_edge_metadata = 1;
-//     bool do_check_rr_graph = 0;
-
-//     t_graph_type graph_type = GRAPH_GLOBAL;
-//     t_chan_width chan_width;
-
-//     vtr::vector<RRIndexedDataId, t_rr_indexed_data> rr_indexed_data;
-//     std::vector<t_rr_rc_data> rr_rc_data;
-
-//     //Output
-//     RRGraphBuilder rr_graph_builder {};
-//     RRGraphView rr_graph {rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_graph_builder.rr_node_metadata(), rr_graph_builder.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch()};
-
-//     load_rr_file(&rr_graph_builder,
-//                 &rr_graph,
-//                 physical_tile_types,
-//                 segment_inf,
-//                 &rr_indexed_data,
-//                 &rr_rc_data,
-//                 grid,
-//                 arch_switch_inf,
-//                 graph_type,
-//                 &arch,
-//                 &chan_width,
-//                 base_cost_type,
-//                 num_arch_switches,
-//                 virtual_clock_network_root_idx,
-//                 &wire_to_rr_ipin_switch,
-//                 read_rr_graph_filename.c_str(),
-//                 &read_rr_graph_filename,
-//                 read_edge_metadata,
-//                 do_check_rr_graph,
-//                 echo_enabled,
-//                 echo_file_name);
-
-//     VTR_LOG("Write RRGraph\n");
-//     write_rr_graph(&rr_graph_builder,
-//                 &rr_graph,
-//                 physical_tile_types,
-//                 &rr_indexed_data,
-//                 &rr_rc_data,
-//                 grid,
-//                 arch_switch_inf,
-//                 &arch,
-//                 &chan_width,
-//                 num_arch_switches,
-//                 kRrGraphFile2,
-//                 virtual_clock_network_root_idx,
-//                 echo_enabled,
-//                 echo_file_name);
-//     VTR_LOG("... Done\n");
+    //Create Switches
+    rr_graph_builder.reserve_switches(num_arch_switches);
+    // Create the switches
+    for (size_t iswitch = 0; iswitch < num_arch_switches; ++iswitch) {
+        const t_rr_switch_inf& temp_rr_switch = create_rr_switches(arch_switch_inf, iswitch);
+        rr_graph_builder.add_rr_switch(temp_rr_switch);
+    }
     
-// }
+    //Create Nodes (SOURCE/SINK/IPIN/OPIN)
+    t_rr_edge_info_set rr_edges_to_create;
+    create_rr_nodes(&rr_graph_builder, rr_rc_data, &rr_edges_to_create, physical_tile_types, grid);
+    
+    //Create Chan Nodes
+    create_rr_chan(&rr_graph_builder, rr_rc_data, chan_width, grid);
+    
+    //Create Edges
+    uniquify_edges(rr_edges_to_create);
+    create_rr_edges(&rr_graph_builder, &rr_edges_to_create);
+    
+    //Create Fan_in
+    rr_graph_builder.init_fan_in();
+    size_t num_rr_switches = rr_graph_builder.count_rr_switches(num_arch_switches, arch_switch_inf, arch_switch_fanins);
+    rr_graph_builder.resize_switches(num_rr_switches);
+    
+    //Edge/Switch Remap
+    rr_graph_builder.remap_rr_node_switch_indices(arch_switch_fanins);
+    
+    //Edge Partition
+    rr_graph_builder.partition_edges();
+    
+    //Create Indexed Data
+    create_rr_indexed_data(&rr_graph, rr_indexed_data, grid, segment_inf, wire_to_rr_ipin_switch);
+    
+    //Write drafted rrgraph test case
+    write_rr_graph(&rr_graph_builder,
+                   &rr_graph,
+                   physical_tile_types,
+                   &rr_indexed_data,
+                   &rr_rc_data,
+                   grid,
+                   arch_switch_inf,
+                   &arch,
+                   &chan_width,
+                   num_arch_switches,
+                   kRrGraphFile1,
+                   virtual_clock_network_root_idx,
+                   echo_enabled,
+                   echo_file_name);
+    
+    //New rr_graph_builder for I/O test
+    RRGraphBuilder rr_graph_builder2 {};
+    RRGraphView rr_graph2 {rr_graph_builder2.rr_nodes(), rr_graph_builder2.node_lookup(), rr_graph_builder2.rr_node_metadata(), rr_graph_builder2.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder2.rr_segments(), rr_graph_builder2.rr_switch()};
 
-//////////////////////////////////////Function Definition/////////////////////////////////////////////////////////
+    //Read drafted rrgraph
+    load_rr_file(&rr_graph_builder2,
+                &rr_graph2,
+                physical_tile_types,
+                segment_inf,
+                &rr_indexed_data,
+                &rr_rc_data,
+                grid,
+                arch_switch_inf,
+                graph_type,
+                &arch,
+                &chan_width,
+                base_cost_type,
+                num_arch_switches,
+                virtual_clock_network_root_idx,
+                &wire_to_rr_ipin_switch,
+                read_rr_graph_filename.c_str(),
+                &read_rr_graph_filename,
+                read_edge_metadata,
+                do_check_rr_graph,
+                echo_enabled,
+                echo_file_name);
 
+    //Write rrgraph
+    write_rr_graph(&rr_graph_builder,
+                &rr_graph,
+                physical_tile_types,
+                &rr_indexed_data,
+                &rr_rc_data,
+                grid,
+                arch_switch_inf,
+                &arch,
+                &chan_width,
+                num_arch_switches,
+                kRrGraphFile2,
+                virtual_clock_network_root_idx,
+                echo_enabled,
+                echo_file_name);
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
 DeviceGrid create_device_grid(const std::vector<t_grid_def>& grid_layouts,
                               const size_t width,
                               const size_t height,
@@ -362,8 +393,8 @@ DeviceGrid create_device_grid(const std::vector<t_grid_def>& grid_layouts,
     const auto& grid_def = grid_layouts[0];
 
     //Initialize the device to all empty blocks
-    t_physical_tile_type type = get_empty_physical_type();
-    t_physical_tile_type_ptr empty_type = &type;
+    t_physical_tile_type type_ = get_empty_physical_type();
+    t_physical_tile_type_ptr empty_type = &type_;
     VTR_ASSERT(empty_type != nullptr);
 
     for (size_t x = 0; x < width; ++x) {
@@ -375,7 +406,6 @@ DeviceGrid create_device_grid(const std::vector<t_grid_def>& grid_layouts,
 
     //Fill in non-empty blocks
     for (const auto& grid_loc_def : grid_def.loc_defs) {
-        auto& meta = grid_loc_def.meta;
         for (const auto& tile_type : physical_tile_types) {
             if (tile_type.name == grid_loc_def.block_type) {
                 auto type = &tile_type;
@@ -385,19 +415,42 @@ DeviceGrid create_device_grid(const std::vector<t_grid_def>& grid_layouts,
                 vars.set_var_value("w", type->width);
                 vars.set_var_value("h", type->height);
 
-                size_t startx = p.parse_formula(grid_loc_def.x.start_expr, vars);
-                size_t starty = p.parse_formula(grid_loc_def.y.start_expr, vars);
-                for (size_t x = startx; x < startx + type->width; ++x){
-                    size_t x_offset = x - startx;
-                    for (size_t y = starty; y < starty + type->height; ++y) {
-                        size_t y_offset = y - starty;
-                        grid[x][y].type = type;
-                        grid[x][y].width_offset = x_offset;
-                        grid[x][y].height_offset = y_offset;
-                        grid[x][y].meta = meta;
+                //Load the x specification
+                auto& xspec = grid_loc_def.x;
+
+                size_t startx = p.parse_formula(xspec.start_expr, vars);
+                size_t endx = p.parse_formula(xspec.end_expr, vars);
+                size_t incrx = p.parse_formula(xspec.incr_expr, vars);
+                size_t repeatx = p.parse_formula(xspec.repeat_expr, vars);
+
+                //Load the y specification
+                auto& yspec = grid_loc_def.y;
+                size_t starty = p.parse_formula(yspec.start_expr, vars);
+                size_t endy = p.parse_formula(yspec.end_expr, vars);
+                size_t incry = p.parse_formula(yspec.incr_expr, vars);
+                size_t repeaty = p.parse_formula(yspec.repeat_expr, vars);
+
+                size_t x_end = 0;
+                for (size_t kx = 0; x_end < width; ++kx) { //Repeat in x direction
+                    size_t x_start = startx + kx * repeatx;
+                    x_end = endx + kx * repeatx;
+
+                    size_t y_end = 0;
+                    for (size_t ky = 0; y_end < height; ++ky) { //Repeat in y direction
+                        size_t y_start = starty + ky * repeaty;
+                        y_end = endy + ky * repeaty;
+
+                        size_t x_max = std::min(x_end, width - 1);
+                        size_t y_max = std::min(y_end, height - 1);
+
+                        //Fill in the region
+                        for (size_t x = x_start; x + (type->width - 1) <= x_max; x += incrx) {
+                            for (size_t y = y_start; y + (type->height - 1) <= y_max; y += incry) {
+                                set_grid_block_type(grid_loc_def.priority, type, x, y, grid, grid_priorities, grid_loc_def.meta);
+                            }
+                        }
                     }
                 }
-                break;
             }
         }
     }
@@ -409,6 +462,7 @@ t_chan_width init_channel(DeviceGrid grid, int chan_width_max, int x_max, int x_
 
     chan_width.max = chan_width_max;
     chan_width.max = x_min;
+    chan_width.x_min = x_min;
     chan_width.y_min = y_min;
     chan_width.x_max = x_max;
     chan_width.y_max = y_max;
@@ -423,76 +477,6 @@ t_chan_width init_channel(DeviceGrid grid, int chan_width_max, int x_max, int x_
     }
 
     return chan_width;
-}
-
-void create_segments(RRGraphBuilder* rr_graph_builder,
-                    t_chan_width& nodes_per_chan,
-                    t_seg_details* seg_details_x,
-                    t_seg_details* seg_details_y,
-                    int& num_seg_details_x,
-                    int& num_seg_details_y,
-                    const std::vector<t_segment_inf>& segment_inf,
-                    const DeviceGrid& grid,
-                    const bool is_global_graph,
-                    const bool use_full_seg_groups,
-                    const e_directionality directionality){
-
-    int max_chan_width_x = nodes_per_chan.x_max = (is_global_graph ? 1 : nodes_per_chan.x_max);
-    int max_chan_width_y = nodes_per_chan.y_max = (is_global_graph ? 1 : nodes_per_chan.y_max);
-
-    size_t num_segments = segment_inf.size();
-    rr_graph_builder->reserve_segments(num_segments);
-    for (size_t iseg = 0; iseg < num_segments; ++iseg) {
-        rr_graph_builder->add_rr_segment(segment_inf[iseg]);
-    }
-
-    t_unified_to_parallel_seg_index segment_index_map;
-    std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
-    std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS);
-
-    // seg_details_x = alloc_and_load_global_route_seg_details(0, &num_seg_details_x);
-    // seg_details_y = alloc_and_load_global_route_seg_details(0, &num_seg_details_y);
-
-    /* Setup segments including distrubuting tracks and staggering.
-        * If use_full_seg_groups is specified, max_chan_width may be
-        * changed. Warning should be singled to caller if this happens. */
-
-    /* Need to setup segments along x & y axis seperately, due to different 
-        * max_channel_widths and segment specifications. */
-
-    size_t max_dim = std::max(grid.width(), grid.height()) - 2; //-2 for no perim channels
-
-    /*Get x & y segments seperately*/
-    seg_details_x = alloc_and_load_seg_details(&max_chan_width_x,
-                                                max_dim, segment_inf_x,
-                                                use_full_seg_groups, directionality,
-                                                &num_seg_details_x);
-
-    seg_details_y = alloc_and_load_seg_details(&max_chan_width_y,
-                                                max_dim, segment_inf_y,
-                                                use_full_seg_groups, directionality,
-                                                &num_seg_details_y);
-
-}
-
-void create_channels(DeviceGrid& grid,
-                     t_chan_width* chan_width,
-                     t_chan_details& chan_details_x,
-                     t_chan_details& chan_details_y,
-                     const int num_seg_details_x,
-                     const int num_seg_details_y,
-                     const t_seg_details* seg_details_x,
-                     const t_seg_details* seg_details_y){
-
-    chan_details_x = init_chan_details(grid, chan_width,
-                                       num_seg_details_x, seg_details_x, X_AXIS);
-    chan_details_y = init_chan_details(grid, chan_width,
-                                       num_seg_details_y, seg_details_y, Y_AXIS);
-
-    /* Adjust segment start/end based on obstructed channels, if any */
-    adjust_chan_details(grid, chan_width,
-                        chan_details_x, chan_details_y);
-
 }
 
 t_rr_switch_inf create_rr_switches(t_arch_switch_inf* arch_switch_inf, int arch_switch_idx){
@@ -520,7 +504,107 @@ t_rr_switch_inf create_rr_switches(t_arch_switch_inf* arch_switch_inf, int arch_
     return rr_switch_inf;
 }
 
-void create_sink_src_node(RRGraphBuilder* rr_graph_builder,
+void create_rr_nodes(RRGraphBuilder* rr_graph_builder,
+                     std::vector<t_rr_rc_data>& rr_rc_data,
+                     t_rr_edge_info_set* rr_edges_to_create,
+                     const std::vector<t_physical_tile_type>& physical_tile_types,
+                     const DeviceGrid& grid){
+
+    for(size_t x=0; x<grid.height(); x++){
+        for(size_t y=0; y<grid.width(); y++){
+            for (const auto& tile_type : physical_tile_types) {
+                if(grid[x][y].type->name == tile_type.name){
+                    e_side side;
+                    if(x == 0){
+                        side = RIGHT;
+                    } else if(x == grid.height()-1){
+                        side = LEFT;
+                    } else if(y == 0){
+                        side = TOP;
+                    } else {
+                        side = BOTTOM;
+                    }
+
+                    if(tile_type.name != std::string("EMPTY")){
+                        std::vector<std::tuple<e_rr_type, RRNodeId>> pin_list;
+                        RRNodeId inode = RRNodeId::INVALID();
+                        rr_graph_builder->node_lookup().reserve_nodes(x,y,SINK,2*tile_type.capacity);
+                        rr_graph_builder->node_lookup().reserve_nodes(x,y,SOURCE,tile_type.num_output_pins);
+                        
+                        for(int i=0; i<tile_type.capacity; i++){
+                            inode = create_sink_src_node(rr_graph_builder, rr_rc_data, SINK, SINK_COST_INDEX, 0 + i*3, x, y);
+                            for(int j=0; j<tile_type.num_input_pins/tile_type.capacity;j++){
+                                pin_list.insert(pin_list.end(), std::make_tuple(SINK, RRNodeId(inode)));
+                            }
+                            inode = create_sink_src_node(rr_graph_builder, rr_rc_data, SOURCE, SOURCE_COST_INDEX, 1 + i*3, x, y);
+                            for(int j=0; j<tile_type.num_output_pins/tile_type.capacity;j++){
+                                pin_list.insert(pin_list.end(), std::make_tuple(SOURCE, RRNodeId(inode)));
+                            }
+                            inode = create_sink_src_node(rr_graph_builder, rr_rc_data, SINK, SINK_COST_INDEX, 2 + i*3, x, y);
+                            for(int j=0; j<tile_type.num_clock_pins/tile_type.capacity;j++){
+                                pin_list.insert(pin_list.end(), std::make_tuple(SINK, RRNodeId(inode)));
+                            }
+                        }
+
+                        if(tile_type.name == std::string("clb")){
+                            int dir_ipin[4] = {0};
+                            int dir_opin[4] = {0};
+                            for(std::vector<std::tuple<e_rr_type, RRNodeId>>::size_type ptc = 0; ptc<pin_list.size(); ptc++){
+                                auto& node_type = std::get<0>(pin_list[ptc]);
+                                if(node_type == SINK){
+                                    dir_ipin[ptc%4]++;
+                                } else if(node_type == SOURCE){
+                                    dir_opin[ptc%4]++;
+                                }
+                            }
+                            for(int i=0; i<NUM_SIDES;i++){
+                                rr_graph_builder->node_lookup().reserve_nodes(x, y, IPIN, dir_ipin[i], SIDES[i]);
+                                rr_graph_builder->node_lookup().reserve_nodes(x, y, OPIN, dir_ipin[i], SIDES[i]);
+                            }
+                        } else if(tile_type.name == std::string("io")){
+                            rr_graph_builder->node_lookup().reserve_nodes(x,y,IPIN,tile_type.num_input_pins+tile_type.num_clock_pins, side);
+                            rr_graph_builder->node_lookup().reserve_nodes(x,y,OPIN,tile_type.num_output_pins, side);
+                        }
+
+                        for(std::vector<std::tuple<e_rr_type, RRNodeId>>::size_type ptc = 0; ptc<pin_list.size(); ptc++){
+                            auto& node_type = std::get<0>(pin_list[ptc]);
+                            auto& node_id = std::get<1>(pin_list[ptc]);  
+                            if(node_type == SINK){
+                                rr_edges_to_create->emplace_back(create_pin_node(rr_graph_builder, rr_rc_data, IPIN, IPIN_COST_INDEX, (tile_type.name == std::string("io") ? side : SIDES[ptc%4]), ptc, x, y), node_id, 0);
+                            } else if(node_type == SOURCE)
+                                rr_edges_to_create->emplace_back(node_id, create_pin_node(rr_graph_builder, rr_rc_data, OPIN, OPIN_COST_INDEX, (tile_type.name == std::string("io") ? side : SIDES[ptc%4]), ptc, x, y), 0);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void create_rr_chan(RRGraphBuilder* rr_graph_builder,
+                    std::vector<t_rr_rc_data>& rr_rc_data,
+                    t_chan_width& nodes_per_chan,
+                    DeviceGrid& grid){
+    
+    for(size_t x=0; x<grid.width()-1; x++){
+        for(size_t y=0; y<grid.height()-1; y++){
+            if(x != 0){
+                rr_graph_builder->node_lookup().reserve_nodes(x, y, CHANX, nodes_per_chan.x_max);
+                for(int track=0;track<nodes_per_chan.x_max;track++){
+                    create_chan_node(rr_graph_builder, rr_rc_data, CHANX, CHANX_COST_INDEX_START, (track%2==0 ? Direction::INC : Direction::DEC), track, x, y, 0, 0);
+                }
+            }
+            if(y != 0){
+                rr_graph_builder->node_lookup().reserve_nodes(x, y, CHANY, nodes_per_chan.y_max);
+                for(int track=0;track<nodes_per_chan.y_max;track++){
+                    create_chan_node(rr_graph_builder, rr_rc_data, CHANY, CHANX_COST_INDEX_START, (track%2==0 ? Direction::INC : Direction::DEC), track, x, y, 0, 0);
+                }
+            }
+        }
+    }
+}
+
+RRNodeId create_sink_src_node(RRGraphBuilder* rr_graph_builder,
                           std::vector<t_rr_rc_data>& rr_rc_data,
                           const e_rr_type node_type,
                           const e_cost_indices node_cost,
@@ -539,9 +623,13 @@ void create_sink_src_node(RRGraphBuilder* rr_graph_builder,
     rr_graph_builder->set_node_class_num(node_id, ptc);
 
     rr_graph_builder->node_lookup().add_node(node_id, x_coord, y_coord, node_type, ptc);
+
+    VTR_ASSERT(rr_graph_builder->node_lookup().find_node(x_coord, y_coord, node_type, ptc));
+
+    return node_id;
 }
 
-void create_pin_node(RRGraphBuilder* rr_graph_builder,
+RRNodeId create_pin_node(RRGraphBuilder* rr_graph_builder,
                           std::vector<t_rr_rc_data>& rr_rc_data,
                           const e_rr_type node_type,
                           const e_cost_indices node_cost,
@@ -550,23 +638,26 @@ void create_pin_node(RRGraphBuilder* rr_graph_builder,
                           const int x_coord,
                           const int y_coord){
 
-        rr_graph_builder->emplace_back();
-        auto node_id = RRNodeId(rr_graph_builder->rr_nodes().size() - 1);
+    rr_graph_builder->emplace_back();
+    auto node_id = RRNodeId(rr_graph_builder->rr_nodes().size() - 1);
 
-        rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost));
-        rr_graph_builder->set_node_type(node_id, node_type);      
-        rr_graph_builder->set_node_capacity(node_id, 1);
-        rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord, y_coord);
-        rr_graph_builder->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0.,0.,rr_rc_data)));
+    rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost));
+    rr_graph_builder->set_node_type(node_id, node_type);      
+    rr_graph_builder->set_node_capacity(node_id, 1);
+    rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord, y_coord);
+    rr_graph_builder->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0.,0.,rr_rc_data)));
 
-        rr_graph_builder->set_node_pin_num(node_id, ptc);
-        rr_graph_builder->add_node_side(node_id, node_side);
+    rr_graph_builder->set_node_pin_num(node_id, ptc);
+    rr_graph_builder->add_node_side(node_id, node_side);
 
-        rr_graph_builder->node_lookup().add_node(node_id, x_coord, y_coord, node_type, ptc);
+    rr_graph_builder->node_lookup().add_node(node_id, x_coord, y_coord, node_type, ptc, node_side);
 
+    VTR_ASSERT(rr_graph_builder->node_lookup().find_node(x_coord, y_coord, node_type, ptc, node_side));
+
+    return node_id;
 }
 
-void create_chan_node(RRGraphBuilder* rr_graph_builder,
+RRNodeId create_chan_node(RRGraphBuilder* rr_graph_builder,
                           std::vector<t_rr_rc_data>& rr_rc_data,
                           const e_rr_type node_type,
                           const e_cost_indices node_cost,
@@ -577,81 +668,47 @@ void create_chan_node(RRGraphBuilder* rr_graph_builder,
                           const int x_offset,
                           const int y_offset){
 
-        rr_graph_builder->emplace_back();
-        auto node_id = RRNodeId(rr_graph_builder->rr_nodes().size() - 1);
+    rr_graph_builder->emplace_back();
+    auto node_id = RRNodeId(rr_graph_builder->rr_nodes().size() - 1);
 
-
-        if (node_type == CHANX) {
-            rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost));
-            rr_graph_builder->set_node_capacity(node_id, 1);
-            rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord + x_offset, y_coord);
-        } else {
-            VTR_ASSERT(node_type == CHANY);
-            rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost+1));
-            rr_graph_builder->set_node_capacity(node_id, 1);
-            rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord, y_coord + y_offset);
-        }
-
-        rr_graph_builder->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0.,0.,rr_rc_data)));
-        
-        rr_graph_builder->set_node_type(node_id, node_type);
-        rr_graph_builder->set_node_track_num(node_id, track);
-        rr_graph_builder->set_node_direction(node_id, direction);
-
-        rr_graph_builder->node_lookup().add_node(node_id, x_coord, y_coord, node_type, track);
-
-}
-
-void create_rr_edges(RRGraphBuilder* rr_graph_builder){
-    t_rr_edge_info_set rr_edges_to_create;
-    rr_edges_to_create.emplace_back(RRNodeId(0), RRNodeId(1), 0);
-    rr_edges_to_create.emplace_back(RRNodeId(1), RRNodeId(4), 0);
-    rr_edges_to_create.emplace_back(RRNodeId(4), RRNodeId(5), 0);
-    rr_edges_to_create.emplace_back(RRNodeId(5), RRNodeId(3), 0);
-    rr_edges_to_create.emplace_back(RRNodeId(3), RRNodeId(2), 0);
-    rr_graph_builder->alloc_and_load_edges(&rr_edges_to_create);
-}
-
-void create_fanin_rr_switches(RRGraphBuilder* rr_graph_builder,
-                              t_arch_switch_inf* arch_switch_inf,
-                              t_arch_switch_fanin& arch_switch_fanins,
-                              std::vector<std::map<int, int>>& switch_fanin_remap,
-                              const size_t num_arch_switches){
-    if (!switch_fanin_remap.empty()) {
-        // at this stage, we rebuild the rr_graph (probably in binary search)
-        // so old switch_fanin_remap is obsolete
-        switch_fanin_remap.clear();
+    if (node_type == CHANX) {
+        rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost));
+        rr_graph_builder->set_node_capacity(node_id, 1);
+        rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord + x_offset, y_coord);
+    } else {
+        VTR_ASSERT(node_type == CHANY);
+        rr_graph_builder->set_node_cost_index(node_id, RRIndexedDataId(node_cost+1));
+        rr_graph_builder->set_node_capacity(node_id, 1);
+        rr_graph_builder->set_node_coordinates(node_id, x_coord, y_coord, x_coord, y_coord + y_offset);
     }
 
-    switch_fanin_remap.resize(num_arch_switches);
-    for (int i_arch_switch = 0; i_arch_switch < num_arch_switches; i_arch_switch++) {
-        std::map<int, int>::iterator it;
-        for (auto fanin_rrswitch : arch_switch_fanins[i_arch_switch]) {
-            /* the fanin value is in it->first, and we'll need to set what index this i_arch_switch/fanin
-             * combination maps to (within rr_switch_inf) in it->second) */
-            int fanin;
-            int i_rr_switch;
-            std::tie(fanin, i_rr_switch) = fanin_rrswitch;
+    rr_graph_builder->set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(0.,0.,rr_rc_data)));
+    
+    rr_graph_builder->set_node_type(node_id, node_type);
+    rr_graph_builder->set_node_track_num(node_id, track);
+    rr_graph_builder->set_node_direction(node_id, direction);
 
-            // setup switch_fanin_remap, for future swich usage analysis
-            switch_fanin_remap[i_arch_switch][fanin] = i_rr_switch;
+    rr_graph_builder->node_lookup().add_node(node_id, x_coord, y_coord, node_type, track);
 
-            load_rr_switch_from_arch_switch(rr_graph_builder, arch_switch_inf, i_arch_switch, i_rr_switch, fanin, 8926, 16067);
-        }
-    }
+    if (node_type == CHANX) 
+        VTR_ASSERT(rr_graph_builder->node_lookup().find_node(y_coord, x_coord, node_type, track));
+    else
+        VTR_ASSERT(rr_graph_builder->node_lookup().find_node(x_coord, y_coord, node_type, track));
+
+    return node_id;
 }
 
-void create_rr_indexed_data(RRGraphBuilder* rr_graph_builder,
-                            RRGraphView* rr_graph,
+void create_rr_edges(RRGraphBuilder* rr_graph_builder, t_rr_edge_info_set* rr_edges_to_create){
+    rr_graph_builder->alloc_and_load_edges(rr_edges_to_create);
+}
+
+void create_rr_indexed_data(RRGraphView* rr_graph,
                             vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                             const DeviceGrid& grid,
                             const std::vector<t_segment_inf>& segment_inf,
                             const int wire_to_ipin_switch
                             ){
-
     int i, length, index;
-
-    VTR_LOG("segment_inf size: %d\n", segment_inf.size());
 
     t_unified_to_parallel_seg_index segment_index_map;
     std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
