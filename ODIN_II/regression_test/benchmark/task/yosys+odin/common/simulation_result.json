@@ -1543,13 +1543,13 @@
         "test_coverage(%)": 100,
         "Pi": 38,
         "Po": 24,
-        "logic element": 94,
+        "logic element": 107,
         "Memory": 8,
         "generic logic size": 4,
         "Longest Path": 11,
         "Average Path": 5,
-        "Estimated LUTs": 94,
-        "Total Node": 102
+        "Estimated LUTs": 107,
+        "Total Node": 115
     },
     "common/nrnw/no_arch": {
         "test_name": "common/nrnw/no_arch",
@@ -1561,12 +1561,12 @@
         "Latch Drivers": 1,
         "Pi": 37,
         "Po": 24,
-        "logic element": 574,
+        "logic element": 587,
         "latch": 128,
         "Longest Path": 18,
         "Average Path": 6,
-        "Estimated LUTs": 574,
-        "Total Node": 703
+        "Estimated LUTs": 587,
+        "Total Node": 716
     },
     "DEFAULT": {
         "test_name": "n/a",

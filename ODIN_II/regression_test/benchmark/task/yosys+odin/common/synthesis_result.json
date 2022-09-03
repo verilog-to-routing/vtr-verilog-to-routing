@@ -1227,13 +1227,13 @@
         "synthesis_time(ms)": 113.4,
         "Pi": 38,
         "Po": 24,
-        "logic element": 70,
+        "logic element": 83,
         "Memory": 8,
         "generic logic size": 4,
         "Longest Path": 10,
         "Average Path": 4,
-        "Estimated LUTs": 70,
-        "Total Node": 78
+        "Estimated LUTs": 83,
+        "Total Node": 91
     },
     "common/nrnw/no_arch": {
         "test_name": "common/nrnw/no_arch",
@@ -1246,12 +1246,12 @@
         "synthesis_time(ms)": 120,
         "Pi": 38,
         "Po": 24,
-        "logic element": 550,
+        "logic element": 563,
         "latch": 128,
         "Longest Path": 17,
         "Average Path": 5,
-        "Estimated LUTs": 550,
-        "Total Node": 678
+        "Estimated LUTs": 563,
+        "Total Node": 691
     },
     "common/pmux/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "common/pmux/k6_frac_N10_frac_chain_mem32K_40nm",
