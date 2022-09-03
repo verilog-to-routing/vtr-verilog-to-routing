@@ -97,9 +97,8 @@ The flow is depicted in the figure below.
     # Afterwards, Yosys detects cases where an asynchronous read port is only connected via a mux
     # tree to a write port with the same address. When such a connection is found, it is replaced
     # with a new condition on an enable signal, allowing for removal of the read port. Finally
-    # Yosys merges share-able memory ports into single memory ports and collects memories, their
-    # port and create multiport memory cells.
-    memory -nomap;
+    # Yosys collects memories, their port and create multiport memory cells.
+    opt_mem; memory_dff; opt_clean; opt_mem_feedback; opt_clean; memory_collect;
     
     # convert mem block to bram/rom
     
@@ -171,11 +170,11 @@ After performing basic synthesis steps, the ``techmap`` command with the input `
 The next command follows the same approach but with a modified version of the provided design file for DFFs with asynchronous reset and synchronous data enable signals.
 
 Followed by the ``techmap`` command, Yosys performs various optimizations on memories in the design.
-Using the ``memory -nomap`` command, Yosys detects DFFs at memory read ports and merges them into the memory port.
+Using the ``memory_dff`` commands, Yosys detects DFFs at memory read ports and merges them into the memory port.
 I.e. it consumes an asynchronous memory port and the flip-flops at its interface and yields a synchronous memory port.
 Yosys then detects cases where an asynchronous read port is only connected via a mux tree to a write port with the same address.
 When such a connection is found, it is replaced with a new condition on an enable signal, allowing for removal of the read port.
-Finally Yosys merges share-able memory ports into single memory ports and collects memories, their port and create multiport memory cells.
+Finally Yosys collects memories, their port and create multiport memory cells.
 
 Afterwards, Yosys transforms all RTLIL components into soft logic except for primary hard blocks and latches to postpone their technology mapping to the Odin-II partial mapping phase.
 These components include memories, adders, subtractors, multipliers, DFFs with set (VCC) and clear (GND) signals, and DFFs with the set (VCC), clear (GND), and enable signals.

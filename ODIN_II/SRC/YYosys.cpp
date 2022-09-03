@@ -340,9 +340,8 @@ void YYosys::execute() {
         // Afterwards, Yosys detects cases where an asynchronous read port is only connected via a mux
         // tree to a write port with the same address. When such a connection is found, it is replaced
         // with a new condition on an enable signal, allowing for removal of the read port. Finally
-        // Yosys merges share-able memory ports into single memory ports and collects memories, their
-        // port and create multiport memory cells.
-        run_pass(std::string("memory -nomap;"));
+        // Yosys collects memories, their port and create multiport memory cells.
+        run_pass(std::string("opt_mem; memory_dff; opt_clean; opt_mem_feedback; opt_clean; memory_collect;"));
 
         /**
          * convert yosys mem blocks to BRAMs / ROMs
