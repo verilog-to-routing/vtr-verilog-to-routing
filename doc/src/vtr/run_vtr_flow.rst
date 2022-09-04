@@ -309,7 +309,7 @@ Detailed Command-line Options
 .. note::
 
     Universal Hardware Data Model (UHDM) is a complete modeling of the IEEE SystemVerilog Object Model with VPI Interface, Elaborator, Serialization, Visitor and Listener.
-    UHDM is used as a compiled interchange format in between SystemVerilog tools.
+    UHDM is used as a compiled interchange format in between SystemVerilog tools. Typical inputs to the UHDM flow are files with ``.v`` or ``.sv`` extensions.
     The ``yosys-plugins`` parser, which represents the ``read_systemverilog`` command, reads SystemVerilog files directly in Yosys.
     It executes Surelog with provided filenames and converts them (in memory) into UHDM file. Then, this UHDM file is converted into Yosys AST. `[Yosys-SystemVerilog] <https://github.com/antmicro/yosys-systemverilog#usage>`_
     On the other hand, the ``surelog`` parser, which uses the ``read_uhdm`` Yosys command, walks the design tree and converts its nodes into Yosys AST nodes using Surelog. `[UHDM-Yosys <https://github.com/chipsalliance/UHDM-integration-tests#uhdm-yosys>`_, `Surelog] <https://github.com/chipsalliance/Surelog#surelog>`_
