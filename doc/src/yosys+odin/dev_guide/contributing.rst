@@ -27,11 +27,11 @@ The flow is depicted in the figure below.
 
 
 .. code-block:: tcl
-	
+
     yosys -import
     
     # the environment variable VTR_ROOT is set by Odin-II.
-    # Feel free to specify file paths using "$env(VTR_ROOT)/ ..."
+    # Feel free to specify file paths using "$env(VTR_ROOT)/ ..." 
     
     # Read VTR baseline library first
     read_verilog -nomem2reg $env(ODIN_TECHLIB)/../../vtr_flow/primitives.v
@@ -41,13 +41,13 @@ The flow is depicted in the figure below.
     # Read the HDL file with pre-defined parer in the "run_yosys.sh" script
     if {$env(PARSER) == "surelog" } {
     	puts "Using Yosys read_uhdm command"
-        plugin -i systemverilog;
-        yosys -import
+    	plugin -i systemverilog;
+    	yosys -import
     	read_uhdm -debug $env(TCL_CIRCUIT);
     } elseif {$env(PARSER) == "yosys-plugin" } {
     	puts "Using Yosys read_systemverilog command"
-        plugin -i systemverilog;
-        yosys -import
+    	plugin -i systemverilog;
+    	yosys -import
     	read_systemverilog -debug $env(TCL_CIRCUIT)
     } elseif {$env(PARSER) == "yosys" } {
     	puts "Using Yosys read_verilog command"
@@ -83,8 +83,8 @@ The flow is depicted in the figure below.
     # Use a readable name convention
     # [NOTE]: the 'autoname' process has a high memory footprint for giant netlists
     # we run it after basic optimization passes to reduce the overhead (see issue #2031)
-    autoname; 
-
+    autoname;     
+    
     # Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
     check;
     # resolve asynchronous dffs
@@ -140,8 +140,8 @@ The flow is depicted in the figure below.
     stat;
     
     write_blif -param -impltf $env(TCL_BLIF);
-
-
+    
+    
 **Algorithm 1** - The Yosys+Odin-II Tcl Script File
 
 
@@ -153,7 +153,7 @@ As shown in Algorithm 1, the Tcl script, including the step-by-step generic coar
 Utilizing these commands for the Yosys API inside the Odin-II codebase, the Yosys synthesizer performs the elaboration of the input digital design.
 The generic coarse-grained synthesis commands includes: 
 
-1. Parsing the hardware description Verilog files. The option ``-nomem2reg`` prevents Yosys from exploding implicit memories to an array of registers. The option ``-nolatches`` is used for both VTR primitives and input circuit design to avoid Yosys generating logic loops.
+1. Parsing the hardware description Verilog/SystemVerilog/UHDM files. The option ``-nomem2reg`` prevents Yosys from exploding implicit memories to an array of registers. The option ``-nolatches`` is used for both VTR primitives and input circuit design to avoid Yosys generating logic loops.
 2. Checking that the design cells match the libraries and detecting the top module using ``hierarchy``.
 3. Translating the processes to netlist components such as multiplexers, flip-flops, and latches, by the ``procs`` command.
 4. The ``flatten`` command generates a netlist with only one module, representing the HDL circuit design's top module.
