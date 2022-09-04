@@ -39,11 +39,10 @@ extern std::vector<std::pair<std::string, int>> include_file_names;
 extern int delayed_errors;
 extern const loc_t unknown_location;
 
-
-#define SYSTEMVERILOG_PARSER_ERROR \
+#define SYSTEMVERILOG_PARSER_ERROR                        \
     "The SystemVerilog parser is provided within Yosys. " \
     "Please use the Yosys elaborator to synthesize SystemVerilog files.\n"
-#define UHDM_PARSER_ERROR \
+#define UHDM_PARSER_ERROR                        \
     "The UHDM parser is provided within Yosys. " \
     "Please use the Yosys elaborator to synthesize UHDM files.\n"
 
@@ -60,7 +59,7 @@ extern const loc_t unknown_location;
 #endif
 
 #ifndef YOSYS_SV_UHDM_PLUGIN
-#    define YOSYS_PLUGINS_NOT_COMPILED \
+#    define YOSYS_PLUGINS_NOT_COMPILED                  \
         "SystemVerilog/UHDM plugins are not compiled. " \
         "Please recompile the VTR project with the \"YOSYS_SV_UHDM_PLUGIN\" flag on."
 #endif
