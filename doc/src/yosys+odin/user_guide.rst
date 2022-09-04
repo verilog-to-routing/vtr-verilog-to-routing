@@ -113,6 +113,7 @@ Example of Tcl script for Yosys+Odin-II
     	error "Invalid PARSER"
     }
     
+<<<<<<< HEAD
     # Check that cells match libraries and find top module
     hierarchy -check -auto-top -purge_lib;
     
@@ -187,6 +188,46 @@ Example of Tcl script for Yosys+Odin-II
     hierarchy -check -purge_lib;
     
     # "undirven" to ensure there is no wire without drive
+=======
+    # Read the hardware decription Verilog
+    read_verilog -nomem2reg -nolatches PATH_TO_VERILOG_FILE.v;
+    # Check that cells match libraries and find top module
+    hierarchy -check -auto-top;
+    
+    # Make name convention more readable
+    autoname;
+    # Translate processes to netlist components such as MUXs, FFs and latches
+    procs; opt;
+    # Extraction and optimization of finite state machines
+    fsm; opt;
+    # Collects memories, their port and create multiport memory cells
+    memory_collect; memory_dff; opt;
+    
+    # Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
+    check;
+    # resolve asynchronous dffs
+    techmap -map $VTR_ROOT/ODIN_II/techlib/adff2dff.v;
+    techmap -map $VTR_ROOT/ODIN_II/techlib/adffe2dff.v;
+    # To resolve Yosys internal indexed part-select circuitry
+    techmap */t:\$shift */t:\$shiftx;
+    
+    ## Utilizing the "memory_bram" command and the Verilog design provided at "$VTR_ROOT/ODIN_II/techlib/mem_map.v"
+    ## we could map Yosys memory blocks to BRAMs and ROMs before the Odin-II partial mapping phase.
+    ## However, Yosys complains about expression widths more than 24 bits.
+    ## E.g. reg [63:0] memory [18:0] ==> ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
+    ## Although we provided the required design files for this process (located in ODIN_II/techlib), we will handle
+    ## memory blocks in the Odin-II BLIF elaborator and partial mapper. 
+    # memory_bram -rules $VTR_ROOT/ODIN_II/techlib/mem_rules.txt
+    # techmap -map $VTR_ROOT/ODIN_II/techlib/mem_map.v; 
+    
+    # Transform the design into a new one with single top module
+    flatten;
+    # Transforms pmux into trees of regular multiplexers
+    pmuxtree;
+    # To possibly reduce words size
+    wreduce;
+    # "undriven" to ensure there is no wire without drive
+>>>>>>> 6eb8a0af6c2c18f8e675d6d9937f8cb9174f4a5e
     # "opt_muxtree" removes dead branches, "opt_expr" performs constant folding,
     # removes "undef" inputs from mux cells, and replaces muxes with buffers and inverters.
     # "-noff" a potential option to remove all sdff and etc. Only dff will remain
@@ -195,9 +236,14 @@ Example of Tcl script for Yosys+Odin-II
     autoname;
     # Print statistics
     stat;
+<<<<<<< HEAD
     
     write_blif -param -impltf $env(TCL_BLIF);
 
+=======
+    # Output BLIF
+    write_blif -param -impltf TCL_BLIF;
+>>>>>>> 6eb8a0af6c2c18f8e675d6d9937f8cb9174f4a5e
 
 .. note::
 
