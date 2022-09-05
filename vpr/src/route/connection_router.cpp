@@ -237,19 +237,11 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
         cheapest = heap_.get_heap_head();
-        ++router_stats_->heap_pops;
-        auto cheap_type = rr_graph_->node_type(RRNodeId(cheapest->index));
-        int cheapest_x_low = rr_graph_->node_xlow(RRNodeId(cheapest->index));
-        int cheapest_y_low = rr_graph_->node_ylow(RRNodeId(cheapest->index));
-        if (is_inter_cluster_node(device_ctx.grid[cheapest_x_low][cheapest_y_low].type,
-                            cheap_type,
-                            rr_graph_->node_ptc_num(RRNodeId(cheapest->index)))) {
-            router_stats_->inter_node_type_cnt_pops[cheap_type]++;
-
-        } else {
-            ++router_stats_->intra_cluster_node_pops;
-            router_stats_->intra_node_type_cnt_pops[cheap_type]++;
-        }
+        update_router_stats(device_ctx,
+                            rr_graph_,
+                            router_stats_,
+                            RRNodeId(cheapest->index),
+                            false);
 
         int inode = cheapest->index;
         VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
@@ -333,19 +325,11 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
     while (!heap_.is_empty_heap()) {
         // cheapest t_heap in current route tree to be expanded on
         t_heap* cheapest = heap_.get_heap_head();
-        ++router_stats_->heap_pops;
-        auto cheap_type = rr_graph_->node_type(RRNodeId(cheapest->index));
-        int cheapest_x_low = rr_graph_->node_xlow(RRNodeId(cheapest->index));
-        int cheapest_y_low = rr_graph_->node_ylow(RRNodeId(cheapest->index));
-        if (is_inter_cluster_node(g_vpr_ctx.device().grid[cheapest_x_low][cheapest_y_low].type,
-                            cheap_type,
-                            rr_graph_->node_ptc_num(RRNodeId(cheapest->index)))) {
-            router_stats_->inter_node_type_cnt_pops[cheap_type]++;
-
-        } else {
-            ++router_stats_->intra_cluster_node_pops;
-            router_stats_->intra_node_type_cnt_pops[cheap_type]++;
-        }
+        update_router_stats(g_vpr_ctx.device(),
+                            rr_graph_,
+                            router_stats_,
+                            RRNodeId(cheapest->index),
+                            false);
 
         int inode = cheapest->index;
         VTR_LOGV_DEBUG(router_debug_, "  Popping node %d (cost: %g)\n",
@@ -668,18 +652,12 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         }
 
         heap_.add_to_heap(next_ptr);
-        ++router_stats_->heap_pushes;
-        auto node_type = rr_graph_->node_type(RRNodeId(to_node));
-        t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph_->node_xlow(RRNodeId(to_node))][rr_graph_->node_ylow(RRNodeId(to_node))].type;
-        if (is_inter_cluster_node(physical_type,
-                            node_type,
-                            rr_graph_->node_ptc_num(RRNodeId(to_node)))) {
-            router_stats_->inter_node_type_cnt_pushes[node_type]++;
+        update_router_stats(device_ctx,
+                            rr_graph_,
+                            router_stats_,
+                            RRNodeId(to_node),
+                            true);
 
-        } else {
-            ++router_stats_->intra_cluster_node_pushes;
-            router_stats_->intra_node_type_cnt_pushes[node_type]++;
-        }
     } else {
         VTR_LOGV_DEBUG(router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat_).c_str());
         VTR_LOGV_DEBUG(router_debug_, "        Prev Total Cost %g Prev back Cost %g \n", best_total_cost, best_back_cost);
@@ -993,17 +971,11 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     }
 
     ++router_stats_->heap_pushes;
-    auto node_type = rr_graph_->node_type(RRNodeId(inode));
-    t_physical_tile_type_ptr physical_tile = device_ctx.grid[rr_graph_->node_xlow(RRNodeId(inode))][rr_graph_->node_ylow(RRNodeId(inode))].type;
-    if (is_inter_cluster_node(physical_tile,
-                        rr_graph_->node_type(RRNodeId(inode)),
-                        rr_graph_->node_ptc_num(RRNodeId(inode)))) {
-        router_stats_->inter_node_type_cnt_pushes[node_type]++;
-
-    } else {
-        ++router_stats_->intra_cluster_node_pushes;
-        router_stats_->intra_node_type_cnt_pushes[node_type]++;
-    }
+    update_router_stats(device_ctx,
+                        rr_graph_,
+                        router_stats_,
+                        RRNodeId(inode),
+                        true);
 }
 
 static t_bb adjust_highfanout_bounding_box(t_bb highfanout_bb) {
