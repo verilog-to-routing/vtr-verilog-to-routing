@@ -73,8 +73,7 @@ static void print_stats() {
         auto physical_tile = pick_physical_type(logical_block);
         for (ipin = 0; ipin < logical_block->pb_type->num_pins; ipin++) {
             int physical_pin = get_physical_pin(physical_tile, logical_block, ipin);
-            auto pin_class = physical_tile->pin_class[physical_pin];
-            auto pin_class_inf = physical_tile->class_inf[pin_class];
+            auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
 
             if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route.empty()) {
                 ClusterNetId clb_net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
@@ -83,9 +82,9 @@ static void print_stats() {
                     VTR_ASSERT(net_id);
                     nets_absorbed[net_id] = false;
 
-                    if (pin_class_inf.type == RECEIVER) {
+                    if (pin_type == RECEIVER) {
                         num_clb_inputs_used[logical_block->index]++;
-                    } else if (pin_class_inf.type == DRIVER) {
+                    } else if (pin_type == DRIVER) {
                         num_clb_outputs_used[logical_block->index]++;
                     }
                 }
@@ -98,9 +97,9 @@ static void print_stats() {
                     auto atom_net_id = pb->pb_route[pb_graph_pin_id].atom_net_id;
                     if (atom_net_id) {
                         nets_absorbed[atom_net_id] = false;
-                        if (pin_class_inf.type == RECEIVER) {
+                        if (pin_type == RECEIVER) {
                             num_clb_inputs_used[logical_block->index]++;
-                        } else if (pin_class_inf.type == DRIVER) {
+                        } else if (pin_type == DRIVER) {
                             num_clb_outputs_used[logical_block->index]++;
                         }
                     }

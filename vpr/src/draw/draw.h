@@ -1,3 +1,22 @@
+/**
+ * @file draw.h
+ * 
+ * The main drawing file. Contains the setup for ezgl application, ui setup, and graphis functions
+ * 
+ * This is VPR's main graphics application program. The program interacts with ezgl/graphics.hpp,
+ * which provides an API for displaying graphics on both X11 and Win32. The most important
+ * subroutine in this file is draw_main_canvas(), which is a callback function that will be called 
+ * whenever the screen needs to be updated. Then, draw_main_canvas() will decide what
+ * drawing subroutines to call depending on whether PLACEMENT or ROUTING is shown on screen.
+ * The initial_setup_X() functions link the menu button signals to the corresponding drawing functions. 
+ * As a note, looks into draw_global.c for understanding the data structures associated with drawing->
+ *
+ * Contains all functions that didn't fit in any other draw_*.cpp file.
+ * 
+ * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang, Sebastian Lievano
+ * Last updated: August 2022
+ */
+
 #ifndef DRAW_H
 #define DRAW_H
 
@@ -31,7 +50,12 @@ void init_draw_coords(float clb_width);
 /* Sets the static show_graphics and gr_automode variables to the    *
  * desired values.  They control if graphics are enabled and, if so, *
  * how often the user is prompted for input.                         */
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics, std::string graphics_commands);
+void init_graphics_state(bool show_graphics_val,
+                         int gr_automode_val,
+                         enum e_route_type route_type,
+                         bool save_graphics,
+                         std::string graphics_commands,
+                         bool is_flat);
 
 /* Allocates the structures needed to draw the placement and routing.*/
 void alloc_draw_structs(const t_arch* arch);

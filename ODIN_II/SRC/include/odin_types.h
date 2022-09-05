@@ -92,7 +92,7 @@ struct global_args_t {
     std::string current_path;
 
     argparse::ArgValue<std::string> config_file;
-    argparse::ArgValue<std::vector<std::string>> verilog_files;
+    argparse::ArgValue<std::vector<std::string>> input_files;
     argparse::ArgValue<std::string> blif_file;
     argparse::ArgValue<std::string> output_file;
     argparse::ArgValue<std::string> arch_file;   // Name of the FPGA architecture file
@@ -183,13 +183,18 @@ extern const char* ids_STR[];
 template<typename T>
 using strmap = std::unordered_map<std::string, T>;
 
+template<typename T>
+using strbimap = vtr::unordered_bimap<std::string, T>;
+
 enum file_type_e {
     _ILANG, /* not supported yet */
     _VERILOG,
     _VERILOG_HEADER,
+    _SYSTEM_VERILOG,        /* supported by the SystemVerilog/UHDM plugin for Yosys */
+    _SYSTEM_VERILOG_HEADER, /* supported by the SystemVerilog/UHDM plugin for Yosys */
+    _UHDM,                  /* supported by the SystemVerilog/UHDM plugin for Yosys */
     _BLIF,
-    _EBLIF,     /* not supported yet */
-    _UNDEFINED, /* EROOR */
+    _EBLIF, /* not supported yet */
     file_type_e_END
 };
 

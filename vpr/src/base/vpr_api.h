@@ -79,7 +79,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
 /* Routing */
 
 ///@brief Perform, load or skip the routing stage
-RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch);
+RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat);
 
 ///@brief Perform routing at a fixed channel width)
 RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
@@ -87,14 +87,16 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                              ClbNetPinsMatrix<float>& net_delay);
+                              ClbNetPinsMatrix<float>& net_delay,
+                              bool is_flat);
 
 ///@brief Perform routing to find the minimum channel width
 RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                            ClbNetPinsMatrix<float>& net_delay);
+                            ClbNetPinsMatrix<float>& net_delay,
+                            bool is_flat);
 
 ///@brief Loads a previous routing
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
@@ -106,10 +108,10 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
 /* Analysis */
 
 ///@brief Perform or skips the analysis stage
-bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status);
+bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status, bool is_flat);
 
 ///@brief Perform post-implementation analysis
-void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status);
+void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status, bool is_flat);
 
 /* Device creating */
 
@@ -122,12 +124,13 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 ///@brief Create routing graph at specified channel width
 void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width);
 
-void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
+void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat);
 void vpr_close_graphics(const t_vpr_setup& vpr_setup);
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch);
 
 void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch);
+void vpr_setup_noc_routing_algorithm(std::string noc_routing_algorithm_name);
 
 void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
 void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);

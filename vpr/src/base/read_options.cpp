@@ -1475,6 +1475,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.terminate_if_timing_fails, "--terminate_if_timing_fails")
+        .help(
+            "During final timing analysis after routing, if a negative slack anywhere is returned and this option is set, \n"
+            "VPR_FATAL_ERROR is called and processing ends.")
+        .default_value("off");
+
     auto& file_grp = parser.add_argument_group("file options");
 
     file_grp.add_argument<e_arch_format, ParseArchFormat>(args.arch_format, "--arch_format")
@@ -2296,6 +2302,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument(args.flat_routing, "--flat_routing")
+        .help("Enable VPR's flat routing (routing the nets from the source primitive to the destination primitive)")
+        .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
@@ -2627,6 +2638,15 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "XML file containing the list of traffic flows within the NoC (communication between routers)."
             "This is required if the --noc option is turned on.")
         .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<std::string>(args.noc_routing_algorithm, "--noc_routing_algorithm")
+        .help(
+            "Controls the algorithm used by the NoC to route packets.\n"
+            "* xy_routing: Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
+            "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links.\n"
+            "This can be used with any NoC topology\n")
+        .default_value("bfs_routing")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     return parser;

@@ -1,0 +1,42 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/system_verilog/hdmi
+includes_dir=benchmarks/system_verilog/hdmi
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+include_list_add=src/audio_clock_regeneration_packet.sv
+include_list_add=src/source_product_description_info_frame.sv
+include_list_add=src/auxiliary_video_information_info_frame.sv
+include_list_add=src/tmds_channel.sv
+include_list_add=src/audio_sample_packet.sv
+include_list_add=src/audio_info_frame.sv
+include_list_add=src/packet_assembler.sv
+include_list_add=src/serializer.sv
+include_list_add=src/packet_picker.sv
+include_list_add=src/hdmi.sv
+
+# Add circuits to list to sweep
+circuit_list_add=top/top.sv
+
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+#Script parameters
+script_params=-track_memory_usage -crit_path_router_iterations 100 -start yosys -parser yosys-plugin

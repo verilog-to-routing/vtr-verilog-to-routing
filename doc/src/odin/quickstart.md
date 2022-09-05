@@ -28,16 +28,16 @@ To build you may use the Makefile wrapper in the $VTR_ROOT/ODIN_II ``make build`
 
 ./odin_II [arguments]
 
-*Requires one and only one of `-c`, `-V`, or `-b`
+*Requires one and only one of `-c`, `-v`, or `-b`
 
-| arg  | following argument     | Description                                                        |
+| arg  | following argument     | Description                                                                           |
 |------|---|---|
-| `-c` | XML Configuration File | an XML configuration file dictating the runtime parameters of odin |
-| `-V` | Verilog HDL FIle       | You may specify multiple verilog HDL files                         |
-| `-b` | BLIF File              | You may specify multiple blif files                                |
-| `-o` | BLIF output file    | full output path and file name for the blif output file  |
-| `-a` | architecture file   | You may specify multiple verilog HDL files for synthesis |
-| `-h` |                     | Print help                                               |
+| `-c` | XML Configuration File | an XML configuration file dictating the runtime parameters of odin                    |
+| `-v` | Verilog HDL File       | You may specify multiple space-separated verilog HDL files                            |
+| `-b` | BLIF File              | You may specify multiple space-separated blif files                                   |
+| `-o` | BLIF output file       | full output path and file name for the blif output file                               |
+| `-a` | architecture file      | You may not specify the architecture file, which results in pure soft logic synthesis |
+| `-h` |                        | Print help                                                                            |
 
 ## Example Usage
 
@@ -45,7 +45,7 @@ The following are simple command-line arguments and a description of what they d
 It is assumed that they are being performed in the Odin_II directory.
 
 ```bash
-   ./odin_II -V <path/to/verilog/File>
+   ./odin_II -v <path/to/verilog/File>
 ```
 
 Passes a verilog HDL file to Odin II where it is synthesized. 
@@ -58,7 +58,7 @@ Warnings and errors may appear regarding the HDL code.
 Passes a blif file to Odin II where it is synthesized.
 
 ```bash
-   ./odin_II -V <path/to/verilog/File> -a <path/to/arch/file> -o myModel.blif
+   ./odin_II -v <path/to/verilog/File> -a <path/to/arch/file> -o myModel.blif
 ```
 
 Passes a verilog HDL file and and architecture to Odin II where it is synthesized. 

@@ -8,15 +8,8 @@
 
 #include "device_grid.h"
 #include "vpr_types.h"
-
-enum e_graph_type {
-    GRAPH_GLOBAL, /* One node per channel with wire capacity > 1 and full connectivity */
-    GRAPH_BIDIR,  /* Detailed bidirectional graph */
-    GRAPH_UNIDIR, /* Detailed unidir graph, untilable */
-    /* RESEARCH TODO: Get this option debugged */
-    GRAPH_UNIDIR_TILEABLE /* Detail unidir graph with wire groups multiples of 2*L */
-};
-typedef enum e_graph_type t_graph_type;
+#include "rr_graph_type.h"
+#include "describe_rr_node.h"
 
 /* Warnings about the routing graph that can be returned.
  * This is to avoid output messages during a value sweep */
@@ -37,12 +30,10 @@ void create_rr_graph(const t_graph_type graph_type,
                      const t_router_opts& router_opts,
                      const t_direct_inf* directs,
                      const int num_directs,
-                     int* Warnings);
+                     int* Warnings,
+                     bool is_flat = false);
 
 void free_rr_graph();
-
-//Returns a brief one-line summary of an RR node
-std::string describe_rr_node(int inode);
 
 t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
                                                   const float R_minW_nmos,

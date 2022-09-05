@@ -34,7 +34,8 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(t_chan_width_dist
                                                                t_det_routing_arch* det_routing_arch,
                                                                std::vector<t_segment_inf>& segment_inf,
                                                                const t_direct_inf* directs,
-                                                               const int num_directs);
+                                                               const int num_directs,
+                                                               bool is_flat);
 
 ///@brief Returns the delay of one point to point connection.
 float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, ClusterNetId net_id, int ipin);
@@ -83,9 +84,11 @@ class PlaceDelayModel {
 ///@brief A simple delay model based on the distance (delta) between block locations.
 class DeltaDelayModel : public PlaceDelayModel {
   public:
-    DeltaDelayModel() {}
-    DeltaDelayModel(vtr::Matrix<float> delta_delays)
-        : delays_(std::move(delta_delays)) {}
+    DeltaDelayModel(bool is_flat)
+        : is_flat_(is_flat) {}
+    DeltaDelayModel(vtr::Matrix<float> delta_delays, bool is_flat)
+        : delays_(std::move(delta_delays))
+        , is_flat_(is_flat) {}
 
     void compute(
         RouterDelayProfiler& router,
@@ -103,10 +106,13 @@ class DeltaDelayModel : public PlaceDelayModel {
 
   private:
     vtr::Matrix<float> delays_;
+    bool is_flat_;
 };
 
 class OverrideDelayModel : public PlaceDelayModel {
   public:
+    OverrideDelayModel(bool is_flat)
+        : is_flat_(is_flat) {}
     void compute(
         RouterDelayProfiler& route_profiler,
         const t_placer_opts& placer_opts,
@@ -126,6 +132,7 @@ class OverrideDelayModel : public PlaceDelayModel {
 
   private:
     std::unique_ptr<DeltaDelayModel> base_delay_model_;
+    bool is_flat_;
 
     void compute_override_delay_model(RouterDelayProfiler& router,
                                       const t_router_opts& router_opts);

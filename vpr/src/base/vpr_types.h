@@ -45,6 +45,8 @@
 #include "vtr_dynamic_bitset.h"
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
+#include "rr_graph_cost.h"
+#include "rr_graph_type.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -1114,25 +1116,12 @@ struct t_placer_opts {
  * and abort routings deemed unroutable                                     *
  * write_rr_graph_name: stores the file name of the output rr graph         *
  * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
-enum e_route_type {
-    GLOBAL,
-    DETAILED
-};
 
 enum e_router_algorithm {
     BREADTH_FIRST,
     TIMING_DRIVEN,
 };
 
-enum e_base_cost_type {
-    DELAY_NORMALIZED,
-    DELAY_NORMALIZED_LENGTH,
-    DELAY_NORMALIZED_FREQUENCY,
-    DELAY_NORMALIZED_LENGTH_FREQUENCY,
-    DELAY_NORMALIZED_LENGTH_BOUNDED,
-    DEMAND_ONLY,
-    DEMAND_ONLY_NORMALIZED_LENGTH
-};
 enum e_routing_failure_predictor {
     OFF,
     SAFE,
@@ -1246,6 +1235,8 @@ struct t_router_opts {
     size_t max_logged_overused_rr_nodes;
     bool generate_rr_node_overuse_report;
 
+    bool flat_routing;
+
     // Options related to rr_node reordering, for testing and possible cache optimization
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
@@ -1271,8 +1262,9 @@ struct t_analysis_opts {
 
 // used to store NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
-    bool noc;                   ///<options to turn on hard NoC modeling & optimization
-    std::string noc_flows_file; ///<name of the file that contains all the traffic flow information in the NoC
+    bool noc;                          ///<options to turn on hard NoC modeling & optimization
+    std::string noc_flows_file;        ///<name of the file that contains all the traffic flow information in the NoC
+    std::string noc_routing_algorithm; ///<controls the routing algorithm used to route packets within the NoC
 };
 
 /**
@@ -1595,15 +1587,6 @@ struct t_non_configurable_rr_sets {
 
 #define NO_PREVIOUS -1
 
-///@brief Index of the SOURCE, SINK, OPIN, IPIN, etc. member of device_ctx.rr_indexed_data.
-enum e_cost_indices {
-    SOURCE_COST_INDEX = 0,
-    SINK_COST_INDEX,
-    OPIN_COST_INDEX,
-    IPIN_COST_INDEX,
-    CHANX_COST_INDEX_START
-};
-
 ///@brief Power estimation options
 struct t_power_opts {
     bool do_power; ///<Perform power estimation?
@@ -1620,15 +1603,6 @@ struct t_power_opts {
  * @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
  * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
  */
-struct t_chan_width {
-    int max = 0;
-    int x_max = 0;
-    int y_max = 0;
-    int x_min = 0;
-    int y_min = 0;
-    std::vector<int> x_list;
-    std::vector<int> y_list;
-};
 
 ///@brief Type to store our list of token to enum pairings
 struct t_TokenPair {

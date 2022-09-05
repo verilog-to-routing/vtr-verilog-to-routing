@@ -40,6 +40,7 @@
 #include "setup_clocks.h"
 #include "setup_noc.h"
 #include "read_xml_noc_traffic_flows_file.h"
+#include "noc_routing_algorithm_creator.h"
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -73,6 +74,7 @@
 #include "vpr_constraints_reader.h"
 #include "place_constraints.h"
 #include "place_util.h"
+#include "timing_fail_error.h"
 
 #include "vpr_constraints_writer.h"
 
@@ -342,6 +344,9 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
             vtr::ScopedStartFinishTimer t("Load Timing Constraints");
             timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph);
         }
+        {
+            set_terminate_if_timing_fails(options->terminate_if_timing_fails);
+        }
     }
 
     //Initialize vpr floorplanning constraints
@@ -374,7 +379,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     vpr_create_device(vpr_setup, arch);
 
-    vpr_init_graphics(vpr_setup, arch);
+    // For the time being, we don't have flat_routing enabled for graphics
+    vpr_init_graphics(vpr_setup, arch, false);
     { //Place
         bool place_success = vpr_place_flow(vpr_setup, arch);
 
@@ -383,12 +389,13 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
             return false; //Unimplementable
         }
     }
+    bool is_flat = vpr_setup.RouterOpts.flat_routing;
     RouteStatus route_status;
     { //Route
-        route_status = vpr_route_flow(vpr_setup, arch);
+        route_status = vpr_route_flow(vpr_setup, arch, is_flat);
     }
     { //Analysis
-        vpr_analysis_flow(vpr_setup, arch, route_status);
+        vpr_analysis_flow(vpr_setup, arch, route_status, is_flat);
     }
 
     //clean packing-placement data
@@ -523,6 +530,8 @@ void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
         setup_noc(arch);
         // read and store the noc traffic flow information
         read_xml_noc_traffic_flows_file(vpr_setup.NocOpts.noc_flows_file.c_str());
+        // create the NoC routing algorithm based on the user input
+        vpr_setup_noc_routing_algorithm(vpr_setup.NocOpts.noc_routing_algorithm);
 
 #ifndef NO_GRAPHICS
         // setup the graphics
@@ -532,6 +541,23 @@ void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
         draw_state->show_noc_button = true;
 #endif
     }
+}
+
+/**
+ * @brief Constructs a NoC routing algorithm that is identified by a user
+ * provided string. Then the newly created routing algorithm is stored
+ * inside the global NoC context.
+ * 
+ * @param noc_routing_algorithm_name A user provided string that identifies a 
+ * NoC routing algorithm
+ */
+void vpr_setup_noc_routing_algorithm(std::string noc_routing_algorithm_name) {
+    // Need to be abke to modify the NoC context, since we will be adding the
+    // newly created routing algorithm to it
+    auto& noc_ctx = g_vpr_ctx.mutable_noc();
+
+    noc_ctx.noc_flows_router = NocRoutingAlgorithmCreator().create_routing_algorithm(noc_routing_algorithm_name);
+    return;
 }
 
 bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -687,6 +713,7 @@ bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    bool is_flat = false;
     if (placer_needs_lookahead(vpr_setup)) {
         // Prime lookahead cache to avoid adding lookahead computation cost to
         // the placer timer.
@@ -694,7 +721,8 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
             vpr_setup.RouterOpts.lookahead_type,
             vpr_setup.RouterOpts.write_router_lookahead,
             vpr_setup.RouterOpts.read_router_lookahead,
-            vpr_setup.Segments);
+            vpr_setup.Segments,
+            is_flat);
     }
 
     try_place(vpr_setup.PlacerOpts,
@@ -705,7 +733,8 @@ void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
               arch.Directs,
-              arch.num_directs);
+              arch.num_directs,
+              is_flat);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -732,7 +761,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     place_ctx.pl_macros = alloc_and_load_placement_macros(arch.Directs, arch.num_directs);
 }
 
-RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
+RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat) {
     VTR_LOG("\n");
 
     RouteStatus route_status;
@@ -767,10 +796,10 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             //Do the actual routing
             if (NO_FIXED_CHANNEL_WIDTH == chan_width) {
                 //Find minimum channel width
-                route_status = vpr_route_min_W(vpr_setup, arch, timing_info, routing_delay_calc, net_delay);
+                route_status = vpr_route_min_W(vpr_setup, arch, timing_info, routing_delay_calc, net_delay, is_flat);
             } else {
                 //Route at specified channel width
-                route_status = vpr_route_fixed_W(vpr_setup, arch, chan_width, timing_info, routing_delay_calc, net_delay);
+                route_status = vpr_route_fixed_W(vpr_setup, arch, chan_width, timing_info, routing_delay_calc, net_delay, is_flat);
             }
 
             //Save the routing in the .route file
@@ -787,7 +816,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            check_route(router_opts.route_type, router_opts.check_route);
+            check_route(router_opts.route_type, router_opts.check_route, is_flat);
             get_serial_num();
 
             //Update status
@@ -837,15 +866,20 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                              ClbNetPinsMatrix<float>& net_delay) {
-    if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
-        // Prime lookahead cache to avoid adding lookahead computation cost to
-        // the routing timer.
-        get_cached_router_lookahead(
-            vpr_setup.RouterOpts.lookahead_type,
-            vpr_setup.RouterOpts.write_router_lookahead,
-            vpr_setup.RouterOpts.read_router_lookahead,
-            vpr_setup.Segments);
+                              ClbNetPinsMatrix<float>& net_delay,
+                              bool is_flat) {
+    // If flat-routing is enabled, rr_graph will be created from scratch anyway. Thus, there is no use to build lookahead here!
+    if (!is_flat) {
+        if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
+            // Prime lookahead cache to avoid adding lookahead computation cost to
+            // the routing timer.
+            get_cached_router_lookahead(
+                vpr_setup.RouterOpts.lookahead_type,
+                vpr_setup.RouterOpts.write_router_lookahead,
+                vpr_setup.RouterOpts.read_router_lookahead,
+                vpr_setup.Segments,
+                is_flat);
+        }
     }
 
     vtr::ScopedStartFinishTimer timer("Routing");
@@ -864,7 +898,8 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                             delay_calc,
                             arch.Chans,
                             arch.Directs, arch.num_directs,
-                            ScreenUpdatePriority::MAJOR);
+                            ScreenUpdatePriority::MAJOR,
+                            is_flat);
 
     return RouteStatus(status, fixed_channel_width);
 }
@@ -873,7 +908,8 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                            ClbNetPinsMatrix<float>& net_delay) {
+                            ClbNetPinsMatrix<float>& net_delay,
+                            bool is_flat) {
     // Note that lookahead cache is not primed here because
     // binary_search_place_and_route will change the channel width, and result
     // in the lookahead cache being recomputed.
@@ -892,7 +928,8 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                                               vpr_setup.Segments,
                                               net_delay,
                                               timing_info,
-                                              delay_calc);
+                                              delay_calc,
+                                              is_flat);
 
     bool status = (min_W > 0);
     return RouteStatus(status, min_W);
@@ -961,11 +998,11 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     init_draw_coords(chan_width_fac);
 }
 
-void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
+void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat) {
     /* Startup X graphics */
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
-                        vpr_setup.GraphicsCommands);
+                        vpr_setup.GraphicsCommands, is_flat);
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
         alloc_draw_structs(&arch);
 }
@@ -1019,8 +1056,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
         VTR_ASSERT_MSG(Fc >= 0 && Fc <= 1., "Fc should be fractional");
 
         for (int ipin : fc_spec.pins) {
-            int iclass = type->pin_class[ipin];
-            e_pin_type pin_type = type->class_inf[iclass].type;
+            e_pin_type pin_type = get_pin_type_from_pin_physical_num(type, ipin);
 
             if (pin_type == DRIVER) {
                 Fc_out = std::max(Fc, Fc_out);
@@ -1130,6 +1166,13 @@ static void free_routing() {
     routing_ctx.net_status.clear();
     routing_ctx.route_bb.clear();
 }
+/**
+ * @brief handles the deletion of NoC related datastructures.
+ */
+static void free_noc() {
+    auto& noc_ctx = g_vpr_ctx.mutable_noc();
+    delete noc_ctx.noc_flows_router;
+}
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {
@@ -1141,6 +1184,7 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
     free_placement();
     free_routing();
     free_atoms();
+    free_noc();
 }
 
 void vpr_free_all(t_arch& Arch,
@@ -1235,7 +1279,7 @@ void vpr_show_setup(const t_vpr_setup& vpr_setup) {
     ShowSetup(vpr_setup);
 }
 
-bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status) {
+bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status, bool is_flat) {
     auto& analysis_opts = vpr_setup.AnalysisOpts;
 
     if (analysis_opts.doAnalysis == STAGE_SKIP) return true; //Skipped
@@ -1266,7 +1310,8 @@ bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteSt
                                  g_vpr_ctx.mutable_clustering(),
                                  g_vpr_ctx.placement(),
                                  g_vpr_ctx.routing(),
-                                 vpr_setup.PackerOpts.pack_verbosity > 2);
+                                 vpr_setup.PackerOpts.pack_verbosity > 2,
+                                 is_flat);
 
         std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
         write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
@@ -1277,12 +1322,12 @@ bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteSt
     }
     VTR_LOG("\n");
 
-    vpr_analysis(vpr_setup, Arch, route_status);
+    vpr_analysis(vpr_setup, Arch, route_status, is_flat);
 
     return true;
 }
 
-void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status) {
+void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status, bool is_flat) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -1298,7 +1343,8 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
                   vpr_setup.RoutingArch.R_minW_pmos,
                   Arch.grid_logic_tile_area,
                   vpr_setup.RoutingArch.directionality,
-                  vpr_setup.RoutingArch.wire_to_rr_ipin_switch);
+                  vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
+                  is_flat);
 
     if (vpr_setup.TimingEnabled) {
         //Load the net delays

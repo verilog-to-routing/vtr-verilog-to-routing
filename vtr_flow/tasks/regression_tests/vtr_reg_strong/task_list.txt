@@ -80,3 +80,5 @@ regression_tests/vtr_reg_strong/strong_verify_rr_graph_bin
 regression_tests/vtr_reg_strong/strong_verify_rr_graph_titan
 regression_tests/vtr_reg_strong/koios
 regression_tests/vtr_reg_strong/koios_no_complex_dsp
+regression_tests/vtr_reg_strong/strong_timing_fail
+regression_tests/vtr_reg_strong/strong_timing_no_fail

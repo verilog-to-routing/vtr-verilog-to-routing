@@ -734,6 +734,26 @@ function populate_arg_from_file() {
 	fi
 
 }
+function odin_file_type_arg() {
+	###############################
+	# return Odin-II arg specified 
+	# by the input file extension
+	basename=$(basename "$1")
+	extension=$(echo ${basename##*.} | tr '[:upper:]' '[:lower:]')
+	case ${extension} in
+		v|vh)
+			echo "-v"
+		;;sv|svh)
+			echo "-s"
+		;;blif)
+			echo "-b"
+		;;*)
+			echo "Invalid input file type (${extenstion}), supported file types are { .v .vh .sv .svh .blif }"
+			_exit_with_code "-1"
+
+	esac
+}
+
 
 function header() {
 	echo " ========= $*"
@@ -946,8 +966,7 @@ function sim() {
 	do
 		circuits_dir=$(dirname "${circuit}")
 		circuit_file=$(basename "${circuit}")
-		input_verilog_file=""
-		input_blif_file=""
+		input_file=""
         generated_blif_file=""
 
 		case "${circuit_file}" in
@@ -960,7 +979,7 @@ function sim() {
                     techmap_pass="false"
                 ;;
                 *)
-                    input_blif_file="${circuit}"
+                    input_file="${circuit}"
                     techmap_pass="true"
                 ;;
                 esac
@@ -969,9 +988,9 @@ function sim() {
 				_synthesis="on"
 				if [ ${_concat_circuit_list} == "on" ]
 				then
-					input_verilog_file="${circuit_list_temp}"
+					input_file="${circuit_list_temp}"
 				else
-					input_verilog_file="${circuit}"
+					input_file="${circuit}"
 				fi
 			;;
 		esac
@@ -1065,9 +1084,9 @@ function sim() {
 					synthesis_command="${ODIN_EXEC}
 										${_synthesis_params}
 										${arch_cmd}
-										-V ${input_verilog_file}
+										$(odin_file_type_arg ${input_file}) ${input_file}
 										-o ${generated_blif_file}
-										-sim_dir ${DIR}"
+										--sim_dir ${DIR}"
 
 					_echo_args "${wrapper_command}"	\
 						> "${DIR}/${synthesis_wrapper_file_name}"
@@ -1112,9 +1131,9 @@ function sim() {
 					techmap_command="${ODIN_EXEC}
 										${_techmap_params}
 										${arch_cmd}
-										-b ${input_blif_file}
+										$(odin_file_type_arg ${input_file}) ${input_file}
 										-o ${generated_blif_file}
-										-sim_dir ${DIR}"
+										--sim_dir ${DIR}"
 
                     
 					_echo_args "${wrapper_command}"	\
@@ -1157,8 +1176,8 @@ function sim() {
 					simulation_command="${ODIN_EXEC}
 											${_simulation_params}
 											${arch_cmd}
-											-b ${sim_blif_file}
-											-sim_dir ${DIR} "
+											$(odin_file_type_arg ${sim_blif_file}) ${sim_blif_file}
+											--sim_dir ${DIR} "
 
 					simulation_wrapper_file_name="${simulation_wrapper_generate_io_file_name}"
 

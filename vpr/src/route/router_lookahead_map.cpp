@@ -234,8 +234,17 @@ static void print_router_cost_map(const t_routing_cost_map& router_cost_map);
 float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-
+    t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)].type;
     t_rr_type rr_type = rr_graph.node_type(current_node);
+    //  TODO: These two assertions is only added for debugging flat-routing - it needs to be removed
+    VTR_ASSERT(is_node_on_tile(physical_type,
+                               rr_type,
+                               rr_graph.node_ptc_num(current_node)));
+
+    t_physical_tile_type_ptr target_physical_type = device_ctx.grid[rr_graph.node_xlow(target_node)][rr_graph.node_ylow(target_node)].type;
+    VTR_ASSERT(is_node_on_tile(target_physical_type,
+                               rr_graph.node_type(target_node),
+                               rr_graph.node_ptc_num(target_node)));
 
     if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         float delay_cost, cong_cost;
@@ -328,7 +337,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
                                             rr_node_arch_name(size_t(from_node)).c_str(),
-                                            describe_rr_node(size_t(from_node)).c_str())
+                                            describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, size_t(from_node), is_flat_).c_str())
                                 .c_str());
 
     } else if (from_type == CHANX || from_type == CHANY) {
@@ -352,7 +361,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
                                             rr_node_arch_name(size_t(from_node)).c_str(),
-                                            describe_rr_node(size_t(from_node)).c_str())
+                                            describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, size_t(from_node), is_flat_).c_str())
                                 .c_str());
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
@@ -628,7 +637,7 @@ static void run_dijkstra(RRNodeId start_node, int start_x, int start_y, t_routin
             continue;
         }
 
-        //VTR_LOG("Expanding with delay=%10.3g cong=%10.3g (%s)\n", current.delay, current.congestion_upstream, describe_rr_node(curr_node).c_str());
+        //VTR_LOG("Expanding with delay=%10.3g cong=%10.3g (%s)\n", current.delay, current.congestion_upstream, describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, curr_node).c_str());
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
         if (rr_graph.node_type(curr_node) == IPIN) {
@@ -659,6 +668,13 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNode
 
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
+        // For the time being, we decide to not let the lookahead explore the node inside the clusters
+        t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(child_node)][rr_graph.node_ylow(child_node)].type;
+        if (!is_node_on_tile(physical_type,
+                             rr_graph.node_type(child_node),
+                             rr_graph.node_ptc_num(child_node))) {
+            continue;
+        }
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
 
         if (rr_graph.node_type(child_node) == SINK) return;

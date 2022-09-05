@@ -379,6 +379,14 @@ def vtr_command_argparser(prog=None):
         help="Supplies Yosys with a .ys script file (similar to Tcl script)"
         + ", including synthesis steps.",
     )
+    yosys.add_argument(
+        "-parser",
+        default="yosys",
+        dest="parser",
+        help="Specify a parser for the Yosys synthesizer [yosys (Verilog-2005), surelog (UHDM), "
+        + "yosys-plugin (SystemVerilog)]. The script used the Yosys conventional Verilog"
+        + " parser if this argument is not specified.",
+    )
     #
     # VPR arguments
     #
@@ -547,7 +555,7 @@ def vtr_command_main(arg_list, prog=None):
             vpr_args=vpr_args,
             abc_args=process_abc_args(args),
             odin_args=process_odin_args(args),
-            yosys_args=process_yosys_args(),
+            yosys_args=process_yosys_args(args),
             keep_intermediate_files=args.keep_intermediate_files,
             keep_result_files=args.keep_result_files,
             min_hard_mult_size=args.min_hard_mult_size,
@@ -678,6 +686,7 @@ def process_odin_args(args):
     Finds arguments needed in the ODIN stage of the flow
     """
     odin_args = OrderedDict()
+    odin_args["parser"] = args.parser
     odin_args["adder_type"] = args.adder_type
     odin_args["top_module"] = args.top_module
     odin_args["elaborator"] = args.elaborator
@@ -701,11 +710,12 @@ def process_odin_args(args):
     return odin_args
 
 
-def process_yosys_args():
+def process_yosys_args(args):
     """
     Finds arguments needed in the YOSYS stage of the flow
     """
     yosys_args = OrderedDict()
+    yosys_args["parser"] = args.parser
 
     return yosys_args
 

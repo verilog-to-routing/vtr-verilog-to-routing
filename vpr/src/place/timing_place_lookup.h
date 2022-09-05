@@ -8,7 +8,8 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
                                                            std::vector<t_segment_inf>& segment_inf,
                                                            t_chan_width_dist chan_width_dist,
                                                            const t_direct_inf* directs,
-                                                           const int num_directs);
+                                                           const int num_directs,
+                                                           bool is_flat);
 
 std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_ptr type);
 bool directconnect_exists(int src_rr_node, int sink_rr_node);
