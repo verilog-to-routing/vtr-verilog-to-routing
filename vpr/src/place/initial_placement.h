@@ -4,6 +4,23 @@
 #include "vpr_types.h"
 
 /**
+ * @brief Used to assign each block a score for how difficult it is to place. 
+ * The higher numbers indicate a block is expected to be more difficult to place.
+ * Hence, initial placement tries to place blocks with higher scores earlier.
+ */
+struct t_block_score {
+    int macro_size = 0; //How many members does the macro have, if the block is part of one - this value is zero if the block is not in a macro
+
+    //The number of tiles NOT covered by the block's floorplan constraints.
+    int tiles_outside_of_floorplan_constraints = 0;
+
+    //The number of initial placement iterations that the block was unplaced.
+    int failed_to_place_in_prev_attempts;
+
+    int number_of_placed_connections = 0;
+};
+
+/**
  * @brief keeps track of available empty locations of a specific block type during initial placement.
  * Used to densly place macros that failed to be placed in the first initial placement iteration (random placement)
  */
@@ -39,5 +56,5 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
  * 
  * @return true if the block gets placed, false if not.
  */
-bool place_one_block(const ClusterBlockId& blk_id, enum e_pad_loc_type pad_loc_type, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid);
+bool place_one_block(const ClusterBlockId& blk_id, enum e_pad_loc_type pad_loc_type, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid, vtr::vector<ClusterBlockId, t_block_score>* block_scores);
 #endif
