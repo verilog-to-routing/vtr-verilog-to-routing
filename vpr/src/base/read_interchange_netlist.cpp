@@ -15,6 +15,7 @@
 #include <unordered_set>
 #include <zlib.h>
 #include <iostream>
+#include <sstream>
 
 #include "LogicalNetlist.capnp.h"
 #include "capnp/serialize.h"
