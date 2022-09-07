@@ -196,6 +196,9 @@ struct t_draw_state {
     ///@brief Boolean that toggles block names
     bool draw_block_text = true;
 
+    ///@brief Boolean that toggles showing partitions
+    bool draw_partitions = false;
+
     ///@brief integer value for net max fanout
     int draw_net_max_fanout = std::numeric_limits<int>::max();
 
