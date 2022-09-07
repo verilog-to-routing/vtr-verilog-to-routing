@@ -61,7 +61,7 @@ size_t RRGSB::get_max_chan_width() const {
     return max_chan_width;
 }
 
-const RRGSB::RRChan& chan(const e_side& chan_side) const {
+const RRChan& RRGSB::chan(const e_side& chan_side) const {
     return chan_node_[size_t(chan_side)];
 }
 
