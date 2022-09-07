@@ -66,36 +66,6 @@ RRSegmentId RRChan::get_node_segment(const size_t& track_num) const {
     return node_segments_[track_num];
 }
 
-/* evaluate if two RRChan is mirror to each other */
-bool RRChan::is_mirror(const RRGraphView& rr_graph, const RRChan& cand) const {
-    /* If any following element does not match, it is not mirror */
-    /* 1. type  */
-    if (this->get_type() != cand.get_type()) {
-        return false;
-    }
-    /* 2. track_width  */
-    if (this->get_chan_width() != cand.get_chan_width()) {
-        return false;
-    }
-    /* 3. for each node */
-    for (size_t inode = 0; inode < this->get_chan_width(); ++inode) {
-        /* 3.1 check node type */
-        if (rr_graph.node_type(this->get_node(inode)) != rr_graph.node_type(cand.get_node(inode))) {
-            return false;
-        }
-        /* 3.2 check node directionality */
-        if (rr_graph.node_direction(this->get_node(inode)) != rr_graph.node_direction(cand.get_node(inode))) {
-            return false;
-        }
-        /* 3.3 check node segment */
-        if (this->get_node_segment(inode) != cand.get_node_segment(inode)) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 /* Get a list of segments used in this routing channel */
 std::vector<RRSegmentId> RRChan::get_segment_ids() const {
     std::vector<RRSegmentId> seg_list;
