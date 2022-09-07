@@ -206,8 +206,11 @@ t_wire_cost_map f_wire_cost_map;
 /******** File-Scope Functions ********/
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y);
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
-static void compute_tiles_lookahead(const t_det_routing_arch& det_routing_arch, const DeviceContext& device_ctx);
-static void compute_tile_lookahead(const t_physical_tile_type& physical_tile,
+static void compute_tiles_lookahead(std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_ipin_delays>& inter_tile_pin_primitive_pin_delay,
+                                    const t_det_routing_arch& det_routing_arch,
+                                    const DeviceContext& device_ctx);
+static void compute_tile_lookahead(std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_ipin_delays>& inter_tile_pin_primitive_pin_delay,
+                                   const t_physical_tile_type& physical_tile,
                                    const t_det_routing_arch& det_routing_arch,
                                    const int delayless_switch);
 
@@ -405,7 +408,9 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 
     if(is_flat_) {
-        compute_tiles_lookahead(det_routing_arch_, g_vpr_ctx.device());
+        compute_tiles_lookahead(inter_tile_pin_primitive_pin_delay,
+                                det_routing_arch_,
+                                g_vpr_ctx.device());
     }
 
 }
@@ -1161,7 +1166,9 @@ static void print_router_cost_map(const t_routing_cost_map& router_cost_map) {
     }
 }
 
-static void compute_tiles_lookahead(const t_det_routing_arch& det_routing_arch, const DeviceContext& device_ctx) {
+static void compute_tiles_lookahead(std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_ipin_delays>& inter_tile_pin_primitive_pin_delay,
+                                    const t_det_routing_arch& det_routing_arch,
+                                    const DeviceContext& device_ctx) {
     vtr::ScopedStartFinishTimer timer("Computing tile lookahead");
     const auto& tiles = device_ctx.physical_tile_types;
 
@@ -1170,13 +1177,17 @@ static void compute_tiles_lookahead(const t_det_routing_arch& det_routing_arch, 
             continue;
         }
         //TODO: The sw_id of the delayless switch should be somehow passed to this function - The current approach is not safe
-        compute_tile_lookahead(tile, det_routing_arch, (int)device_ctx.arch_switch_inf.size()-1);
+        compute_tile_lookahead(inter_tile_pin_primitive_pin_delay,
+                               tile,
+                               det_routing_arch,
+                               (int)device_ctx.arch_switch_inf.size()-1);
     }
 }
 
-void compute_tile_lookahead(const t_physical_tile_type& physical_tile,
-                            const t_det_routing_arch& det_routing_arch,
-                            const int delayless_switch) {
+static void compute_tile_lookahead(std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_ipin_delays>& inter_tile_pin_primitive_pin_delay,
+                                   const t_physical_tile_type& physical_tile,
+                                   const t_det_routing_arch& det_routing_arch,
+                                   const int delayless_switch) {
     RRGraphBuilder rr_graph_builder;
     int x = 1;
     int y = 1;
@@ -1196,13 +1207,15 @@ void compute_tile_lookahead(const t_physical_tile_type& physical_tile,
                          rr_graph_builder.rr_segments(),
                          rr_graph_builder.rr_switch()};
 
-    util::compute_intra_tile_dijkstra(rr_graph,
-                                      &physical_tile,
-                                      x,
-                                      y);
+    util::t_ipin_primitive_ipin_delays pin_delays = util::compute_intra_tile_dijkstra(rr_graph,
+                                                                                      &physical_tile,
+                                                                                      x,
+                                                                                      y);
+
+    auto insert_res = inter_tile_pin_primitive_pin_delay.insert(std::make_pair(&physical_tile, pin_delays));
+    VTR_ASSERT(insert_res.second);
 
     rr_graph_builder.clear();
-
 }
 
 //
