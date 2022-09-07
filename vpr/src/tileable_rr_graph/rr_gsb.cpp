@@ -61,6 +61,10 @@ size_t RRGSB::get_max_chan_width() const {
     return max_chan_width;
 }
 
+const RRGSB::RRChan& chan(const e_side& chan_side) const {
+    return chan_node_[size_t(chan_side)];
+}
+
 /* Get the number of routing tracks of a X/Y-direction CB */
 size_t RRGSB::get_cb_chan_width(const t_rr_type& cb_type) const {
     return get_chan_width(get_cb_chan_side(cb_type));
