@@ -447,8 +447,6 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     place_ctx.block_locs[blk_id].loc.y = location.y;
     place_ctx.block_locs[blk_id].loc.sub_tile = location.sub_tile;
 
-    
-
     //Check if block is at an illegal location
     auto physical_tile = device_ctx.grid[location.x][location.y].type;
     auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
@@ -466,7 +464,6 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     place_ctx.grid_blocks[location.x][location.y].usage++;
 
     place_sync_external_block_connections(blk_id);
-
 }
 
 bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality) {

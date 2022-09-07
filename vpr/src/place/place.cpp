@@ -721,7 +721,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     /* Set the temperature high so essentially all swaps will be accepted   */
     /* when trying to determine the starting temp for placement inner loop. */
-    first_t = HUGE_POSITIVE_FLOAT;
+    first_t = EPSILON;
 
     t_annealing_state state(annealing_sched, first_t, first_rlim,
                             first_move_lim, first_crit_exponent);
@@ -1254,7 +1254,7 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
 
     /* Set the initial temperature to 20 times the standard of deviation */
     /* so that the initial temperature adjusts according to the circuit */
-    return (20. * std_dev);
+    return (10. * std_dev);
 }
 
 static void update_move_nets(int num_nets_affected) {
