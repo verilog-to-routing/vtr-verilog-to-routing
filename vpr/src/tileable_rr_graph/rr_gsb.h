@@ -67,6 +67,9 @@ class RRGSB {
     /* Get the number of routing tracks of a X/Y-direction CB */
     size_t get_cb_chan_width(const t_rr_type& cb_type) const;
 
+    /* Return read-only object of the routing channels with a given side */
+    const RRChan& chan(const e_side& chan_side) const;
+
     /* Get the sides of CB ipins in the array */
     std::vector<enum e_side> get_cb_ipin_sides(const t_rr_type& cb_type) const;
 
