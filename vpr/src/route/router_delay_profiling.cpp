@@ -121,7 +121,11 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node,
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
     /* This function is called during placement. Thus, the flat routing option should be disabled. */
-    auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
+    //TODO: Placement is run with is_flat=false. However, since is_flat is passed, det_routing_arch should
+    //be also passed
+    VTR_ASSERT(is_flat == false);
+    t_det_routing_arch det_routing_arch;
+    auto router_lookahead = make_router_lookahead(det_routing_arch, e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
                                                   /*segment_inf=*/{},
                                                   is_flat);

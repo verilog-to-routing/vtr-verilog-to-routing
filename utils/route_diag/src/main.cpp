@@ -60,6 +60,7 @@ constexpr int ERROR_EXIT_CODE = 1; //Something went wrong internally
 constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g. SIGINT/ctr-C)
 
 static void do_one_route(const Netlist<>& net_list,
+                         const t_det_routing_arch& det_routing_arch,
                          int source_node,
                          int sink_node,
                          const t_router_opts& router_opts,
@@ -94,12 +95,12 @@ static void do_one_route(const Netlist<>& net_list,
 
 
     RouterStats router_stats;
-    auto router_lookahead = make_router_lookahead(
-            router_opts.lookahead_type,
-            router_opts.write_router_lookahead,
-            router_opts.read_router_lookahead,
-            segment_inf,
-            is_flat);
+    auto router_lookahead = make_router_lookahead(det_routing_arch,
+                                                  router_opts.lookahead_type,
+                                                  router_opts.write_router_lookahead,
+                                                  router_opts.read_router_lookahead,
+                                                  segment_inf,
+                                                  is_flat);
 
     ConnectionRouter<BinaryHeap> router(
             device_ctx.grid,
@@ -140,6 +141,7 @@ static void do_one_route(const Netlist<>& net_list,
 }
 
 static void profile_source(const Netlist<>& net_list,
+                           const t_det_routing_arch& det_routing_arch,
                            int source_rr_node,
                            const t_router_opts& router_opts,
                            const std::vector<t_segment_inf>& segment_inf,
@@ -148,12 +150,12 @@ static void profile_source(const Netlist<>& net_list,
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
 
-    auto router_lookahead = make_router_lookahead(
-            router_opts.lookahead_type,
-            router_opts.write_router_lookahead,
-            router_opts.read_router_lookahead,
-            segment_inf,
-            is_flat);
+    auto router_lookahead = make_router_lookahead(det_routing_arch,
+                                                  router_opts.lookahead_type,
+                                                  router_opts.write_router_lookahead,
+                                                  router_opts.read_router_lookahead,
+                                                  segment_inf,
+                                                  is_flat);
     RouterDelayProfiler profiler(net_list, router_lookahead.get(), is_flat);
 
     int start_x = 0;
@@ -322,12 +324,14 @@ int main(int argc, const char **argv) {
 
         if(route_options.profile_source) {
             profile_source(net_list,
+                           vpr_setup.RoutingArch,
                            route_options.source_rr_node,
                            vpr_setup.RouterOpts,
                            vpr_setup.Segments,
                            is_flat);
         } else {
             do_one_route(net_list,
+                         vpr_setup.RoutingArch,
                          route_options.source_rr_node,
                          route_options.sink_rr_node,
                          vpr_setup.RouterOpts,

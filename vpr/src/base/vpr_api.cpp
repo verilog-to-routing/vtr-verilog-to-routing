@@ -727,6 +727,7 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
         // the placer timer.
         // Flat_routing is disabled in placement
         get_cached_router_lookahead(
+            vpr_setup.RoutingArch,
             vpr_setup.RouterOpts.lookahead_type,
             vpr_setup.RouterOpts.write_router_lookahead,
             vpr_setup.RouterOpts.read_router_lookahead,
@@ -904,6 +905,7 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
             // Prime lookahead cache to avoid adding lookahead computation cost to
             // the routing timer.
             get_cached_router_lookahead(
+                vpr_setup.RoutingArch,
                 vpr_setup.RouterOpts.lookahead_type,
                 vpr_setup.RouterOpts.write_router_lookahead,
                 vpr_setup.RouterOpts.read_router_lookahead,

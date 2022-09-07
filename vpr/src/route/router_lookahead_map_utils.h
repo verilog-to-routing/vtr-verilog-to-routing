@@ -270,6 +270,9 @@ struct t_reachable_wire_inf {
 // as the lookahead expected cost.
 typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin_delays;
 
+//[from_pin][target_pin]->cost
+typedef std::vector<std::map<int, Cost_Entry>> t_ipin_primitive_ipin_delays;
+
 //[0..device_ctx.physical_tile_types.size()-1][0..max_ptc-1]
 // ^                                           ^
 // |                                           |
@@ -283,6 +286,11 @@ typedef std::vector<std::vector<t_reachable_wire_inf>> t_chan_ipins_delays;
 
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat);
 t_chan_ipins_delays compute_router_chan_ipin_lookahead();
+
+t_ipin_primitive_ipin_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
+                                                         t_physical_tile_type_ptr physical_tile,
+                                                         int x,
+                                                         int y);
 
 } // namespace util
 

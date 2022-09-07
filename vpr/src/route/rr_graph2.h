@@ -29,6 +29,12 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_details& chan_details_y,
                                     bool is_flat);
 
+void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                         const t_physical_tile_type& physical_tile,
+                                         int x,
+                                         int y,
+                                         int* num_rr_nodes);
+
 void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
                                                   int x,

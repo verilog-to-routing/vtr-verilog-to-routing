@@ -195,6 +195,12 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const enum e_clock_modeling clock_modeling,
                                                                   bool is_flat);
 
+static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                         const t_physical_tile_type& physical_tile,
+                                         int x,
+                                         int y,
+                                         const int delayless_switch);
+
 static float pattern_fmod(float a, float b);
 static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
                                                   const std::vector<t_pin_loc>& pin_locations,
@@ -232,22 +238,30 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
  * - Connect the IPIN/OPINs on tile to their corresponding SINK/SRC pins
  */
 static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
+                                   const RRGraphView& rr_graph,
                                    const int i,
                                    const int j,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    const int delayless_switch,
-                                   const DeviceGrid& grid);
+                                   t_physical_tile_type_ptr physical_type_ptr);
 
 /*
  * Initializing intra-tile IPIN/OPINs and intra-tile SINK/SRC pins
  * - Connect the intra-tile IPIN/OPINs to their corresponding SINK/SRC pins
  */
-static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
+static void build_cluster_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
                                                  const int i,
                                                  const int j,
                                                  t_rr_edge_info_set& rr_edges_to_create,
                                                  const int delayless_switch,
-                                                 const DeviceGrid& grid);
+                                                 t_physical_tile_type_ptr physical_type_ptr);
+
+static void build_tile_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
+                                               const int i,
+                                               const int j,
+                                               t_rr_edge_info_set& rr_edges_to_create,
+                                               const int delayless_switch,
+                                               t_physical_tile_type_ptr physical_type_ptr);
 
 /*
  * Initialize intra-tile SINK/SRC, and connect them to their respective IPIN/OPIN
@@ -276,13 +290,20 @@ static void add_internal_rr_ipin_and_opin(RRGraphBuilder& rr_graph_builder,
 /*
  * Create the connection between intra-tile pins
  */
-static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
+static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                           const DeviceGrid& grid,
                                           int& num_edges);
+
+static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                          t_rr_edge_info_set& rr_edges_to_create,
+                                          const t_physical_tile_type& physical_tile,
+                                          int i,
+                                          int j);
+
 /*
  * Build the internal edges of blocks inside the given location
  */
-static void build_internal_edges(RRGraphBuilder& rr_graph_builder,
+static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                  ClusterBlockId cluster_blk_id,
                                  const int i,
                                  const int j,
@@ -327,17 +348,29 @@ void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder,
                           const t_rr_edge_info_set& rr_edges_to_create);
 
-static void alloc_and_load_rr_switch_inf(const int num_arch_switches,
+static void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
+                                         std::vector<std::map<int, int>>& switch_fanin_remap,
+                                         const std::map<int, t_arch_switch_inf> arch_sw_inf,
                                          const float R_minW_nmos,
                                          const float R_minW_pmos,
                                          const int wire_to_arch_ipin_switch,
                                          int* wire_to_rr_ipin_switch);
 
-static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin);
+static void remap_rr_node_switch_indices(RRGraphBuilder& rr_graph_builder,
+                                         const t_arch_switch_fanin& switch_fanin);
 
-static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, const t_arch_switch_fanin& switch_fanin);
+static void load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
+                               std::vector<std::map<int, int>>& switch_fanin_remap,
+                               const std::map<int, t_arch_switch_inf>& arch_sw_inf,
+                               const float R_minW_nmos,
+                               const float R_minW_pmos,
+                               const t_arch_switch_fanin& arch_switch_fanins);
 
-static void alloc_rr_switch_inf(t_arch_switch_fanin& switch_fanin);
+
+
+static void alloc_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
+                                t_arch_switch_fanin& arch_switch_fanins,
+                                const std::map<int, t_arch_switch_inf>& arch_sw_map);
 
 static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                                const std::vector<t_segment_inf>& segment_inf_x,
@@ -498,23 +531,23 @@ void create_rr_graph(const t_graph_type graph_type,
     }
 }
 
-static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
+static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                           const DeviceGrid& grid,
                                           int& num_edges) {
     /* This function should be called if placement is done! */
 
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
     t_rr_edge_info_set rr_edges_to_create;
 
-    device_ctx.rr_graph_builder.rr_nodes().edges_read_ = false;
+//    device_ctx.rr_graph_builder.rr_nodes().edges_read_ = false;
     for (auto cluster_blk_id : cluster_net_list.blocks()) {
         auto block_loc = place_ctx.block_locs[cluster_blk_id].loc;
         int i = block_loc.x;
         int j = block_loc.y;
         int cap = block_loc.sub_tile;
-        build_internal_edges(rr_graph_builder,
+        build_cluster_internal_edges(rr_graph_builder,
                              cluster_blk_id,
                              i,
                              j,
@@ -528,6 +561,44 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
         num_edges += rr_edges_to_create.size();
         rr_edges_to_create.clear();
     }
+}
+
+static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                          t_rr_edge_info_set& rr_edges_to_create,
+                                          const t_physical_tile_type& physical_tile,
+                                          int i,
+                                          int j) {
+
+    for(const auto& pin_class_pair : physical_tile.internal_pin_class) {
+        auto pin_physical_num = pin_class_pair.first;
+        auto pb_pin = get_pb_pin_from_pin_physical_num(&physical_tile, pin_physical_num);
+        if(pb_pin->is_root_block_pin()){
+            continue;
+        }
+        auto pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
+                                                 &physical_tile,
+                                                 i,
+                                                 j,
+                                                 pin_physical_num);
+        VTR_ASSERT(pin_rr_node_id != RRNodeId::INVALID());
+        auto logical_block = get_logical_block_from_pin_physical_num(&physical_tile, pin_physical_num);
+        auto driving_pins = get_physical_pin_driving_pins(&physical_tile, logical_block, pin_physical_num);
+        for(auto driving_pin : driving_pins) {
+            auto driving_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
+                                                          &physical_tile,
+                                                          i,
+                                                          j,
+                                                          driving_pin);
+            VTR_ASSERT(driving_pin_node_id != RRNodeId::INVALID());
+            int sw_idx = get_edge_sw_idx(&physical_tile,
+                                         logical_block,
+                                         driving_pin,
+                                         pin_physical_num);
+            VTR_ASSERT(sw_idx != -1);
+            rr_edges_to_create.emplace_back(driving_pin_node_id, pin_rr_node_id, sw_idx);
+        }
+    }
+
 }
 
 void print_rr_graph_stats() {
@@ -984,7 +1055,13 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
-    alloc_and_load_rr_switch_inf(device_ctx.all_sw_inf.size(), R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
+    alloc_and_load_rr_switch_inf(g_vpr_ctx.mutable_device().rr_graph_builder,
+                                 g_vpr_ctx.mutable_device().switch_fanin_remap,
+                                 device_ctx.all_sw_inf,
+                                 R_minW_nmos,
+                                 R_minW_pmos,
+                                 wire_to_arch_ipin_switch,
+                                 wire_to_rr_ipin_switch);
 
     //Partition the rr graph edges for efficient access to configurable/non-configurable
     //edge subsets. Must be done after RR switches have been allocated
@@ -1025,6 +1102,42 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 }
 
+void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
+                         const t_det_routing_arch& det_routing_arch,
+                         const t_physical_tile_type& physical_tile,
+                         int x,
+                         int y,
+                         const int delayless_switch) {
+    int num_rr_nodes = 0;
+    alloc_and_load_tile_rr_node_indices(rr_graph_builder,
+                                        physical_tile,
+                                        x,
+                                        y,
+                                        &num_rr_nodes);
+    rr_graph_builder.resize_nodes(num_rr_nodes);
+
+
+    alloc_and_load_tile_rr_graph(rr_graph_builder,
+                                 physical_tile,
+                                 x,
+                                 y,
+                                 delayless_switch);
+
+    std::vector<std::map<int, int>> switch_fanin_remap;
+    int dummy_int;
+    alloc_and_load_rr_switch_inf(rr_graph_builder,
+                                 switch_fanin_remap,
+                                 g_vpr_ctx.device().all_sw_inf,
+                                 det_routing_arch.R_minW_nmos,
+                                 det_routing_arch.R_minW_pmos,
+                                 det_routing_arch.wire_to_arch_ipin_switch,
+                                 &dummy_int);
+    VTR_ASSERT(dummy_int == OPEN);
+    rr_graph_builder.partition_edges();
+
+
+}
+
 /* Allocates and loads the global rr_switch_inf array based on the global
  * arch_switch_inf array and the fan-ins used by the rr nodes.
  * Also changes switch indices of rr_nodes to index into rr_switch_inf
@@ -1042,7 +1155,13 @@ static void build_rr_graph(const t_graph_type graph_type,
  * and count how many different fan-ins exist for each arch switch.
  * Then we create these rr switches and update the switch indices
  * of rr_nodes to index into the rr_switch_inf array. */
-static void alloc_and_load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, const int wire_to_arch_ipin_switch, int* wire_to_rr_ipin_switch) {
+static void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
+                                         std::vector<std::map<int, int>>& switch_fanin_remap,
+                                         const std::map<int, t_arch_switch_inf> arch_sw_inf,
+                                         const float R_minW_nmos,
+                                         const float R_minW_pmos,
+                                         const int wire_to_arch_ipin_switch,
+                                         int* wire_to_rr_ipin_switch) {
     /* we will potentially be creating a couple of versions of each arch switch where
      * each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
      * with this expanded list of switches.
@@ -1050,18 +1169,26 @@ static void alloc_and_load_rr_switch_inf(const int num_arch_switches, const floa
      * To do this we will use arch_switch_fanins, which is indexed as:
      *      arch_switch_fanins[i_arch_switch][fanin] -> new_switch_id
      */
-    t_arch_switch_fanin arch_switch_fanins(num_arch_switches);
+    t_arch_switch_fanin arch_switch_fanins(arch_sw_inf.size());
 
     /* Determine what the different fan-ins are for each arch switch, and also
      * how many entries the rr_switch_inf array should have */
-    alloc_rr_switch_inf(arch_switch_fanins);
+    alloc_rr_switch_inf(rr_graph_builder,
+                        arch_switch_fanins,
+                        arch_sw_inf);
 
     /* create the rr switches. also keep track of, for each arch switch, what index of the rr_switch_inf
      * array each version of its fanin has been mapped to */
-    load_rr_switch_inf(num_arch_switches, R_minW_nmos, R_minW_pmos, arch_switch_fanins);
+    load_rr_switch_inf(rr_graph_builder,
+                       switch_fanin_remap,
+                       arch_sw_inf,
+                       R_minW_nmos,
+                       R_minW_pmos,
+                       arch_switch_fanins);
 
     /* next, walk through rr nodes again and remap their switch indices to rr_switch_inf */
-    remap_rr_node_switch_indices(arch_switch_fanins);
+    remap_rr_node_switch_indices(rr_graph_builder,
+                                 arch_switch_fanins);
 
     /* now we need to set the wire_to_rr_ipin_switch variable which points the detailed routing architecture
      * to the representative ipin cblock switch. currently we're not allowing the specification of an ipin cblock switch
@@ -1086,33 +1213,39 @@ static void alloc_and_load_rr_switch_inf(const int num_arch_switches, const floa
 
 /* Allocates space for the global device_ctx.rr_switch_inf variable and returns the
  * number of rr switches that were allocated */
-static void alloc_rr_switch_inf(t_arch_switch_fanin& arch_switch_fanins) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    std::vector<t_arch_switch_inf> all_sw_inf;
-    for(const auto& map_it: device_ctx.all_sw_inf) {
-        all_sw_inf.push_back(map_it.second);
+static void alloc_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
+                                t_arch_switch_fanin& arch_switch_fanins,
+                                const std::map<int, t_arch_switch_inf>& arch_sw_map) {
+    std::vector<t_arch_switch_inf> all_sw_inf(arch_sw_map.size());
+    for(const auto& map_it: arch_sw_map) {
+        all_sw_inf[map_it.first] = map_it.second;
     }
-    size_t num_rr_switches = device_ctx.rr_graph_builder.count_rr_switches(
+    size_t num_rr_switches = rr_graph_builder.count_rr_switches(
         all_sw_inf,
         arch_switch_fanins);
-    device_ctx.rr_graph_builder.resize_switches(num_rr_switches);
+    rr_graph_builder.resize_switches(num_rr_switches);
 }
 
 /* load the global device_ctx.rr_switch_inf variable. also keep track of, for each arch switch, what
  * index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
-static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_nmos, const float R_minW_pmos, const t_arch_switch_fanin& arch_switch_fanins) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+static void load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
+                               std::vector<std::map<int, int>>& switch_fanin_remap,
+                               const std::map<int, t_arch_switch_inf>& arch_sw_inf,
+                               const float R_minW_nmos,
+                               const float R_minW_pmos,
+                               const t_arch_switch_fanin& arch_switch_fanins) {
 
-    if (!device_ctx.switch_fanin_remap.empty()) {
+    if (!switch_fanin_remap.empty()) {
         // at this stage, we rebuild the rr_graph (probably in binary search)
         // so old device_ctx.switch_fanin_remap is obsolete
-        device_ctx.switch_fanin_remap.clear();
+        switch_fanin_remap.clear();
     }
 
-    device_ctx.switch_fanin_remap.resize(num_arch_switches);
-    for (int i_arch_switch = 0; i_arch_switch < num_arch_switches; i_arch_switch++) {
+    switch_fanin_remap.resize(arch_sw_inf.size());
+    for (const auto& arch_sw_pair : arch_sw_inf) {
+        int arch_sw_id = arch_sw_pair.first;
         std::map<int, int>::iterator it;
-        for (auto fanin_rrswitch : arch_switch_fanins[i_arch_switch]) {
+        for (auto fanin_rrswitch : arch_switch_fanins[arch_sw_id]) {
             /* the fanin value is in it->first, and we'll need to set what index this i_arch_switch/fanin
              * combination maps to (within rr_switch_inf) in it->second) */
             int fanin;
@@ -1120,9 +1253,15 @@ static void load_rr_switch_inf(const int num_arch_switches, const float R_minW_n
             std::tie(fanin, i_rr_switch) = fanin_rrswitch;
 
             // setup device_ctx.switch_fanin_remap, for future swich usage analysis
-            device_ctx.switch_fanin_remap[i_arch_switch][fanin] = i_rr_switch;
+            switch_fanin_remap[arch_sw_id][fanin] = i_rr_switch;
 
-            load_rr_switch_from_arch_switch(i_arch_switch, i_rr_switch, fanin, R_minW_nmos, R_minW_pmos);
+            load_rr_switch_from_arch_switch(rr_graph_builder,
+                                            arch_sw_inf,
+                                            arch_sw_id,
+                                            i_rr_switch,
+                                            fanin,
+                                            R_minW_nmos,
+                                            R_minW_pmos);
         }
     }
 }
@@ -1164,45 +1303,45 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
     return rr_switch_inf;
 }
 /* This function is same as create_rr_switch_from_arch_switch() in terms of functionality. It is tuned for clients functions in routing resource graph builder */
-void load_rr_switch_from_arch_switch(int arch_switch_idx,
+void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
+                                     const std::map<int, t_arch_switch_inf>& arch_sw_inf,
+                                     int arch_switch_idx,
                                      int rr_switch_idx,
                                      int fanin,
                                      const float R_minW_nmos,
                                      const float R_minW_pmos) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
 
     /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
      * rr switch should be */
-    double rr_switch_Tdel = device_ctx.all_sw_inf[arch_switch_idx].Tdel(fanin);
+    double rr_switch_Tdel = arch_sw_inf.at(arch_switch_idx).Tdel(fanin);
 
     /* copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value */
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].set_type(device_ctx.all_sw_inf.at(arch_switch_idx).type());
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].R = device_ctx.all_sw_inf.at(arch_switch_idx).R;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cin = device_ctx.all_sw_inf.at(arch_switch_idx).Cin;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cinternal = device_ctx.all_sw_inf.at(arch_switch_idx).Cinternal;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cout = device_ctx.all_sw_inf.at(arch_switch_idx).Cout;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Tdel = rr_switch_Tdel;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].mux_trans_size = device_ctx.all_sw_inf.at(arch_switch_idx).mux_trans_size;
-    if (device_ctx.all_sw_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
+    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].set_type(arch_sw_inf.at(arch_switch_idx).type());
+    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].R = arch_sw_inf.at(arch_switch_idx).R;
+    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cin = arch_sw_inf.at(arch_switch_idx).Cin;
+    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cinternal = arch_sw_inf.at(arch_switch_idx).Cinternal;
+    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cout = arch_sw_inf.at(arch_switch_idx).Cout;
+    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Tdel = rr_switch_Tdel;
+    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].mux_trans_size = arch_sw_inf.at(arch_switch_idx).mux_trans_size;
+    if (arch_sw_inf.at(arch_switch_idx).buf_size_type == BufferSize::AUTO) {
         //Size based on resistance
-        device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = trans_per_buf(device_ctx.all_sw_inf.at(arch_switch_idx).R, R_minW_nmos, R_minW_pmos);
+        rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = trans_per_buf(arch_sw_inf.at(arch_switch_idx).R, R_minW_nmos, R_minW_pmos);
     } else {
-        VTR_ASSERT(device_ctx.all_sw_inf[arch_switch_idx].buf_size_type == BufferSize::ABSOLUTE);
+        VTR_ASSERT(arch_sw_inf.at(arch_switch_idx).buf_size_type == BufferSize::ABSOLUTE);
         //Use the specified size
-        device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = device_ctx.all_sw_inf.at(arch_switch_idx).buf_size;
+        rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = arch_sw_inf.at(arch_switch_idx).buf_size;
     }
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].name = device_ctx.all_sw_inf.at(arch_switch_idx).name;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_type = device_ctx.all_sw_inf.at(arch_switch_idx).power_buffer_type;
-    device_ctx.rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_size = device_ctx.all_sw_inf.at(arch_switch_idx).power_buffer_size;
+    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].name = arch_sw_inf.at(arch_switch_idx).name;
+    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_type = arch_sw_inf.at(arch_switch_idx).power_buffer_type;
+    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_size = arch_sw_inf.at(arch_switch_idx).power_buffer_size;
 }
 
 /* switch indices of each rr_node original point into the global device_ctx.arch_switch_inf array.
  * now we want to remap these indices to point into the global device_ctx.rr_switch_inf array
  * which contains switch info at different fan-in values */
-static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    device_ctx.rr_graph_builder.remap_rr_node_switch_indices(switch_fanin);
+static void remap_rr_node_switch_indices(RRGraphBuilder& rr_graph_builder,
+                                         const t_arch_switch_fanin& switch_fanin) {
+    rr_graph_builder.remap_rr_node_switch_indices(switch_fanin);
 }
 
 static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
@@ -1474,28 +1613,31 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     /* Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs. */
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
-            build_rr_sinks_sources(rr_graph_builder,
-                                   i,
-                                   j,
-                                   rr_edges_to_create,
-                                   delayless_switch,
-                                   grid);
+            if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
+                build_rr_sinks_sources(rr_graph_builder,
+                                       rr_graph,
+                                       i,
+                                       j,
+                                       rr_edges_to_create,
+                                       delayless_switch,
+                                       grid[i][j].type);
 
-            if (is_flat) {
-                // Initialize intra-tile IPIN/OPIN - SINK/SRC and connect intra-cluster IPIN/OPINs to SINK/SRC
-                build_internal_rr_sinks_sources_flat(rr_graph_builder,
-                                                     i,
-                                                     j,
-                                                     rr_edges_to_create,
-                                                     delayless_switch,
-                                                     grid);
+                if (is_flat) {
+                    // Initialize intra-tile IPIN/OPIN - SINK/SRC and connect intra-cluster IPIN/OPINs to SINK/SRC
+                    build_cluster_internal_rr_sinks_sources_flat(rr_graph_builder,
+                                                                 i,
+                                                                 j,
+                                                                 rr_edges_to_create,
+                                                                 delayless_switch,
+                                                                 grid[i][j].type);
+                }
+
+                //Create the actual SOURCE->OPIN, IPIN->SINK edges
+                uniquify_edges(rr_edges_to_create);
+                alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+                num_edges += rr_edges_to_create.size();
+                rr_edges_to_create.clear();
             }
-
-            //Create the actual SOURCE->OPIN, IPIN->SINK edges
-            uniquify_edges(rr_edges_to_create);
-            alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-            num_edges += rr_edges_to_create.size();
-            rr_edges_to_create.clear();
         }
     }
 
@@ -1534,7 +1676,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
     if (is_flat) {
         // Add intra-tile edges
-        add_intra_tile_edges_rr_graph(rr_graph_builder,
+        add_intra_cluster_edges_rr_graph(rr_graph_builder,
                                       grid,
                                       num_edges);
     }
@@ -1603,6 +1745,62 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     rr_graph_builder.init_fan_in();
 
     return update_chan_width;
+}
+
+static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                         const t_physical_tile_type& physical_tile,
+                                         int x,
+                                         int y,
+                                         const int delayless_switch) {
+    t_rr_edge_info_set rr_edges_to_create;
+    RRGraphView rr_graph{rr_graph_builder.rr_nodes(),
+                         rr_graph_builder.node_lookup(),
+                         rr_graph_builder.rr_node_metadata(),
+                         rr_graph_builder.rr_edge_metadata(),
+                         g_vpr_ctx.device().rr_indexed_data,
+                         g_vpr_ctx.device().rr_rc_data,
+                         rr_graph_builder.rr_segments(),
+                         rr_graph_builder.rr_switch()};
+
+
+    /* Connection SINKS and SOURCES to their pins - Initializing IPINs/OPINs. */
+    build_rr_sinks_sources(rr_graph_builder,
+                           rr_graph,
+                           x,
+                           y,
+                           rr_edges_to_create,
+                           delayless_switch,
+                           &physical_tile);
+
+    uniquify_edges(rr_edges_to_create);
+    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+    rr_edges_to_create.clear();
+
+    build_tile_internal_rr_sinks_sources_flat(rr_graph_builder,
+                                              x,
+                                              y,
+                                              rr_edges_to_create,
+                                              delayless_switch,
+                                              &physical_tile);
+
+    //Create the actual SOURCE->OPIN, IPIN->SINK edges
+    uniquify_edges(rr_edges_to_create);
+    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+    rr_edges_to_create.clear();
+
+    add_intra_tile_edges_rr_graph(rr_graph_builder,
+                                  rr_edges_to_create,
+                                  physical_tile,
+                                  x,
+                                  y);
+
+    uniquify_edges(rr_edges_to_create);
+    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+    rr_edges_to_create.clear();
+
+
+    rr_graph_builder.init_fan_in();
+
 }
 
 static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
@@ -1691,42 +1889,36 @@ void free_rr_graph() {
 }
 
 static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
+                                   const RRGraphView& rr_graph,
                                    const int i,
                                    const int j,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    const int delayless_switch,
-                                   const DeviceGrid& grid) {
+                                   t_physical_tile_type_ptr physical_type_ptr) {
     /* Loads IPIN, SINK, SOURCE, and OPIN.
      * Loads IPIN to SINK edges, and SOURCE to OPIN edges */
 
-    /* Since we share nodes within a large block, only
-     * start tile can initialize sinks, sources, and pins */
-    if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0)
-        return;
+    int num_class = (int)physical_type_ptr->class_inf.size();
+    int num_pins = physical_type_ptr->num_pins;
 
-    auto type = grid[i][j].type;
-    int num_class = (int)type->class_inf.size();
-    int num_pins = type->num_pins;
 
-    auto& device_ctx = g_vpr_ctx.device();
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
-    const auto& rr_graph = device_ctx.rr_graph;
 
     /* SINK and SOURCE-to-OPIN edges */
     //int edges_created =0;
     for (int iclass = 0; iclass < num_class; ++iclass) {
         RRNodeId inode = RRNodeId::INVALID();
-        auto class_type = get_class_type_from_class_physical_num(type, iclass);
+        auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, iclass);
         if (class_type == DRIVER) { /* SOURCE */
             inode = rr_graph_builder.node_lookup().find_node(i, j, SOURCE, iclass);
-            VTR_ASSERT(inode);
+            VTR_ASSERT(inode != RRNodeId::INVALID());
 
             //Retrieve all the physical OPINs associated with this source, this includes
             //those at different grid tiles of this block
             std::vector<RRNodeId> opin_nodes;
-            for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-                for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                    auto pin_list = get_pin_list_from_class_physical_num(type, iclass);
+            for (int width_offset = 0; width_offset < physical_type_ptr->width; ++width_offset) {
+                for (int height_offset = 0; height_offset < physical_type_ptr->height; ++height_offset) {
+                    auto pin_list = get_pin_list_from_class_physical_num(physical_type_ptr, iclass);
                     for (int pin_num : pin_list) {
                         std::vector<RRNodeId> physical_pins = rr_graph_builder.node_lookup().find_nodes_at_all_sides(i + width_offset, j + height_offset, OPIN, pin_num);
                         opin_nodes.insert(opin_nodes.end(), physical_pins.begin(), physical_pins.end());
@@ -1737,6 +1929,8 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
             //Connect the SOURCE to each OPIN
             //edges_created += opin_nodes.size();
             for (size_t iedge = 0; iedge < opin_nodes.size(); ++iedge) {
+                RRNodeId opin_node = opin_nodes[iedge];
+                VTR_ASSERT(opin_node != RRNodeId::INVALID());
                 rr_edges_to_create.emplace_back(inode, opin_nodes[iedge], delayless_switch);
             }
 
@@ -1763,8 +1957,8 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Things common to both SOURCEs and SINKs.   */
-        rr_graph_builder.set_node_capacity(inode, get_class_num_pins_from_class_physical_num(type, iclass));
-        rr_graph_builder.set_node_coordinates(inode, i, j, i + type->width - 1, j + type->height - 1);
+        rr_graph_builder.set_node_capacity(inode, get_class_num_pins_from_class_physical_num(physical_type_ptr, iclass));
+        rr_graph_builder.set_node_coordinates(inode, i, j, i + physical_type_ptr->width - 1, j + physical_type_ptr->height - 1);
         float R = 0.;
         float C = 0.;
         rr_graph_builder.set_node_rc_index(inode, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
@@ -1776,20 +1970,21 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
     //and hook-up the IPINs to sinks.
     for (int ipin = 0; ipin < num_pins; ++ipin) {
         for (e_side side : SIDES) {
-            for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-                for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                    if (type->pinloc[width_offset][height_offset][side][ipin]) {
+            for (int width_offset = 0; width_offset < physical_type_ptr->width; ++width_offset) {
+                for (int height_offset = 0; height_offset < physical_type_ptr->height; ++height_offset) {
+                    if (physical_type_ptr->pinloc[width_offset][height_offset][side][ipin]) {
                         RRNodeId inode = RRNodeId::INVALID();
-                        auto pin_type = get_pin_type_from_pin_physical_num(type, ipin);
-                        auto class_physical_num = get_class_num_from_pin_physical_num(type, ipin);
+                        auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, ipin);
+                        auto class_physical_num = get_class_num_from_pin_physical_num(physical_type_ptr, ipin);
 
                         if (pin_type == RECEIVER) {
                             //Connect the input pin to the sink
                             inode = rr_graph_builder.node_lookup().find_node(i + width_offset, j + height_offset, IPIN, ipin, side);
 
                             /* Input pins are uniquified, we may not always find one */
-                            if (inode) {
+                            if (inode != RRNodeId::INVALID()) {
                                 RRNodeId to_node = rr_graph_builder.node_lookup().find_node(i, j, SINK, class_physical_num);
+                                VTR_ASSERT(to_node != RRNodeId::INVALID());
 
                                 //Add info about the edge to be created
                                 rr_edges_to_create.emplace_back(inode, to_node, delayless_switch);
@@ -1804,7 +1999,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
                             inode = rr_graph_builder.node_lookup().find_node(i + width_offset, j + height_offset, OPIN, ipin, side);
 
                             /* Output pins may not exist on some sides, we may not always find one */
-                            if (inode) {
+                            if (inode != RRNodeId::INVALID()) {
                                 //Initially left unconnected
                                 rr_graph_builder.set_node_cost_index(inode, RRIndexedDataId(OPIN_COST_INDEX));
                                 rr_graph_builder.set_node_type(inode, OPIN);
@@ -1829,7 +2024,7 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
 
                             // Sanity check
                             VTR_ASSERT(rr_graph.is_node_on_specific_side(RRNodeId(inode), side));
-                            VTR_ASSERT(type->pinloc[width_offset][height_offset][side][rr_graph.node_pin_num(RRNodeId(inode))]);
+                            VTR_ASSERT(physical_type_ptr->pinloc[width_offset][height_offset][side][rr_graph.node_pin_num(RRNodeId(inode))]);
                         }
                     }
                 }
@@ -1838,26 +2033,20 @@ static void build_rr_sinks_sources(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
+static void build_cluster_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
                                                  const int i,
                                                  const int j,
                                                  t_rr_edge_info_set& rr_edges_to_create,
                                                  const int delayless_switch,
-                                                 const DeviceGrid& grid) {
+                                                 t_physical_tile_type_ptr physical_type_ptr) {
     /* Loads IPIN, SINK, SOURCE, and OPIN.
      * Loads IPIN to SINK edges, and SOURCE to OPIN edges */
 
-    /* Since we share nodes within a large block, only
-     * start tile can initialize sinks, sources, and pins */
-    if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0)
-        return;
     auto& place_ctx = g_vpr_ctx.placement();
-    auto physical_tile = grid[i][j].type;
 
-    auto type = grid[i][j].type;
     auto grid_block = place_ctx.grid_blocks[i][j];
     //iterate over different sub tiles inside a tile
-    for (int abs_cap = 0; abs_cap < type->capacity; abs_cap++) {
+    for (int abs_cap = 0; abs_cap < physical_type_ptr->capacity; abs_cap++) {
         if (grid_block.subtile_empty(abs_cap)) {
             continue;
         }
@@ -1872,11 +2061,11 @@ static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builde
             /* Add the IPIN->SINK and SRC->OPIN edges */
             /* We assume that the physical number of internal classes is higher than the number of
              * classes on the border of the tile */
-            VTR_ASSERT(class_id >= (int)type->class_inf.size());
+            VTR_ASSERT(class_id >= (int)physical_type_ptr->class_inf.size());
             add_internal_rr_class(class_inf,
                                   class_id,
                                   rr_graph_builder,
-                                  physical_tile,
+                                  physical_type_ptr,
                                   i,
                                   j,
                                   rr_edges_to_create,
@@ -1887,9 +2076,9 @@ static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builde
         for (auto pin : pins) {
             /* We assume that the physical number of an internal pin is higher that the number of
              * pins on the border of the tile */
-            VTR_ASSERT(pin >= type->num_pins);
+            VTR_ASSERT(pin >= physical_type_ptr->num_pins);
             add_internal_rr_ipin_and_opin(rr_graph_builder,
-                                          physical_tile,
+                                          physical_type_ptr,
                                           pin,
                                           i,
                                           j,
@@ -1898,6 +2087,141 @@ static void build_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builde
                                           e_side::TOP /* We assume that internal pins are located at the TOP */);
         }
     }
+}
+
+static void build_tile_internal_rr_sinks_sources_flat(RRGraphBuilder& rr_graph_builder,
+                                                      const int i,
+                                                      const int j,
+                                                      t_rr_edge_info_set& rr_edges_to_create,
+                                                      const int delayless_switch,
+                                                      t_physical_tile_type_ptr physical_type_ptr) {
+
+    /* Loads IPIN, SINK, SOURCE, and OPIN.
+     * Loads IPIN to SINK edges, and SOURCE to OPIN edges */
+
+    /* SINK and SOURCE-to-OPIN edges */
+    //int edges_created =0;
+    for (const auto& class_pair : physical_type_ptr->internal_class_inf) {
+        int class_physical_num = class_pair.first;
+        auto pin_list = get_pin_list_from_class_physical_num(physical_type_ptr, class_physical_num);
+        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_type_ptr, pin_list[0]);
+        if(pb_pin->is_root_block_pin()) {
+            continue;
+        }
+
+        RRNodeId inode = RRNodeId::INVALID();
+        auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_physical_num);
+        if (class_type == DRIVER) { /* SOURCE */
+            inode = rr_graph_builder.node_lookup().find_node(i, j, SOURCE, class_physical_num);
+            VTR_ASSERT(inode);
+
+            //Retrieve all the physical OPINs associated with this source, this includes
+            //those at different grid tiles of this block
+            std::vector<RRNodeId> opin_nodes;
+            for (int pin_num : pin_list) {
+                RRNodeId physical_pin_node_id = rr_graph_builder.node_lookup().find_node(i, j, OPIN, pin_num, e_side::TOP);
+                VTR_ASSERT(physical_pin_node_id != RRNodeId::INVALID());
+                opin_nodes.push_back(physical_pin_node_id);
+            }
+
+            //Connect the SOURCE to each OPIN
+            //edges_created += opin_nodes.size();
+            for (auto opin_node : opin_nodes) {
+                rr_edges_to_create.emplace_back(inode, opin_node, delayless_switch);
+            }
+
+            rr_graph_builder.set_node_cost_index(inode, RRIndexedDataId(SOURCE_COST_INDEX));
+            rr_graph_builder.set_node_type(inode, SOURCE);
+        } else { /* SINK */
+            VTR_ASSERT(class_type == RECEIVER);
+            inode = rr_graph_builder.node_lookup().find_node(i, j, SINK, class_physical_num);
+
+            VTR_ASSERT(inode);
+
+            /* NOTE:  To allow route throughs through clbs, change the lines below to  *
+             * make an edge from the input SINK to the output SOURCE.  Do for just the *
+             * special case of INPUTS = class 0 and OUTPUTS = class 1 and see what it  *
+             * leads to.  If route throughs are allowed, you may want to increase the  *
+             * base cost of OPINs and/or SOURCES, so they aren't used excessively.      */
+
+            /* TODO: The casting will be removed when RRGraphBuilder has the following APIs:
+             * - set_node_cost_index(RRNodeId, int);
+             * - set_node_type(RRNodeId, t_rr_type);
+             */
+            rr_graph_builder.set_node_cost_index(inode, RRIndexedDataId(SINK_COST_INDEX));
+            rr_graph_builder.set_node_type(inode, SINK);
+        }
+
+        /* Things common to both SOURCEs and SINKs.   */
+        rr_graph_builder.set_node_capacity(inode, get_class_num_pins_from_class_physical_num(physical_type_ptr, class_physical_num));
+        rr_graph_builder.set_node_coordinates(inode, i, j, i + physical_type_ptr->width - 1, j + physical_type_ptr->height - 1);
+        float R = 0.;
+        float C = 0.;
+        rr_graph_builder.set_node_rc_index(inode, NodeRCIndex(find_create_rr_rc_data(R, C, g_vpr_ctx.mutable_device().rr_rc_data)));
+        rr_graph_builder.set_node_class_num(inode, class_physical_num);
+    }
+
+    /* Connect IPINS to SINKS and initialize OPINS */
+    //We loop through all the pin locations on the block to initialize the IPINs/OPINs,
+    //and hook-up the IPINs to sinks.
+    for (const auto& pin_pair : physical_type_ptr->internal_pin_class){
+        auto pin_physical_num = pin_pair.first;
+        auto class_physical_num = pin_pair.second;
+        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_type_ptr, pin_physical_num);
+        if(pb_pin->is_root_block_pin()) {
+            continue;
+        }
+
+        RRNodeId node_id = RRNodeId::INVALID();
+        auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_physical_num);
+        VTR_ASSERT(class_physical_num == get_class_num_from_pin_physical_num(physical_type_ptr, pin_physical_num));
+
+        if (pin_type == RECEIVER) {
+            //Connect the input pin to the sink
+            node_id = rr_graph_builder.node_lookup().find_node(i, j, IPIN, pin_physical_num, e_side::TOP);
+            VTR_ASSERT(node_id != RRNodeId::INVALID());
+
+            /* Input pins are uniquified, we may not always find one */
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(i, j, SINK, class_physical_num);
+
+            //Add info about the edge to be created
+            rr_edges_to_create.emplace_back(node_id, to_node, delayless_switch);
+            //edges_created ++;
+            rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(IPIN_COST_INDEX));
+            rr_graph_builder.set_node_type(node_id, IPIN);
+        } else {
+            VTR_ASSERT(pin_type == DRIVER);
+            //Initialize the output pin
+            // Note that we leave it's out-going edges unconnected (they will be hooked up to global routing later)
+            node_id = rr_graph_builder.node_lookup().find_node(i , j , OPIN, pin_physical_num, e_side::TOP);
+            VTR_ASSERT(node_id != RRNodeId::INVALID());
+
+            /* Output pins may not exist on some sides, we may not always find one */
+            if (node_id) {
+                //Initially left unconnected
+                rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(OPIN_COST_INDEX));
+                rr_graph_builder.set_node_type(node_id, OPIN);
+            }
+        }
+        VTR_ASSERT(node_id != RRNodeId::INVALID());
+        /* Common to both DRIVERs and RECEIVERs */
+        rr_graph_builder.set_node_capacity(node_id, 1);
+        float R = 0.;
+        float C = 0.;
+        rr_graph_builder.set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(R, C, g_vpr_ctx.mutable_device().rr_rc_data)));
+        rr_graph_builder.set_node_pin_num(node_id, pin_physical_num);
+
+        //Note that we store the grid tile location and side where the pin is located,
+        //which greatly simplifies the drawing code
+        //For those pins located on multiple sides, we save the rr node index
+        //for the pin on all sides at which it exists
+        //As such, multipler driver problem can be avoided.
+        rr_graph_builder.set_node_coordinates(node_id, i, j, i, j);
+        rr_graph_builder.add_node_side(node_id, e_side::TOP);
+
+
+    }
+
 }
 
 static void add_internal_rr_class(const t_class* class_inf,
@@ -2000,7 +2324,7 @@ static void add_internal_rr_ipin_and_opin(RRGraphBuilder& rr_graph_builder,
         VTR_ASSERT(physical_tile->pinloc[width_offset][height_offset][side][rr_graph.node_pin_num(RRNodeId(pin_node_id))]);
 }
 
-static void build_internal_edges(RRGraphBuilder& rr_graph_builder,
+static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                  ClusterBlockId cluster_blk_id,
                                  const int i,
                                  const int j,

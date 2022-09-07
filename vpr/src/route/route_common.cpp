@@ -332,6 +332,7 @@ bool try_route(const Netlist<>& net_list,
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, intra_lb_pb_pin_lookup);
         success = try_timing_driven_route(net_list,
+                                          *det_routing_arch,
                                           router_opts,
                                           analysis_opts,
                                           segment_inf,

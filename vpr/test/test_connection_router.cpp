@@ -14,7 +14,11 @@ static constexpr int kMaxHops = 10;
 namespace {
 
 // Route from source_node to sink_node, returning either the delay, or infinity if unroutable.
-static float do_one_route(int source_node, int sink_node, const t_router_opts& router_opts, const std::vector<t_segment_inf>& segment_inf) {
+static float do_one_route(int source_node,
+                          int sink_node,
+                          const t_det_routing_arch& det_routing_arch,
+                          const t_router_opts& router_opts,
+                          const std::vector<t_segment_inf>& segment_inf) {
     bool is_flat = router_opts.flat_routing;
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -39,12 +43,12 @@ static float do_one_route(int source_node, int sink_node, const t_router_opts& r
     route_budgets budgeting_inf(net_list, is_flat);
 
     RouterStats router_stats;
-    auto router_lookahead = make_router_lookahead(
-        router_opts.lookahead_type,
-        router_opts.write_router_lookahead,
-        router_opts.read_router_lookahead,
-        segment_inf,
-        is_flat);
+    auto router_lookahead = make_router_lookahead(det_routing_arch,
+                                                  router_opts.lookahead_type,
+                                                  router_opts.write_router_lookahead,
+                                                  router_opts.read_router_lookahead,
+                                                  segment_inf,
+                                                  is_flat);
 
     ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,
@@ -164,11 +168,11 @@ TEST_CASE("connection_router", "[vpr]") {
     REQUIRE(hops >= 3);
 
     // Find the route
-    float delay = do_one_route(
-        source_rr_node,
-        sink_rr_node,
-        vpr_setup.RouterOpts,
-        vpr_setup.Segments);
+    float delay = do_one_route(source_rr_node,
+                               sink_rr_node,
+                               vpr_setup.RoutingArch,
+                               vpr_setup.RouterOpts,
+                               vpr_setup.Segments);
 
     // Check that a route was found
     REQUIRE(delay < std::numeric_limits<float>::infinity());

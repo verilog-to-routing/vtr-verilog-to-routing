@@ -218,6 +218,7 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id);
 // selection of core router algorithm's, specifically the router heap.
 template<typename ConnectionRouter>
 static bool try_timing_driven_route_tmpl(const Netlist<>& netlist,
+                                         const t_det_routing_arch& det_routing_arch,
                                          const t_router_opts& router_opts,
                                          const t_analysis_opts& analysis_opts,
                                          const std::vector<t_segment_inf>& segment_inf,
@@ -230,6 +231,7 @@ static bool try_timing_driven_route_tmpl(const Netlist<>& netlist,
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(const Netlist<>& net_list,
+                             const t_det_routing_arch& det_routing_arch,
                              const t_router_opts& router_opts,
                              const t_analysis_opts& analysis_opts,
                              const std::vector<t_segment_inf>& segment_inf,
@@ -241,30 +243,30 @@ bool try_timing_driven_route(const Netlist<>& net_list,
                              bool is_flat) {
     switch (router_opts.router_heap) {
         case e_heap_type::BINARY_HEAP:
-            return try_timing_driven_route_tmpl<ConnectionRouter<BinaryHeap>>(
-                net_list,
-                router_opts,
-                analysis_opts,
-                segment_inf,
-                net_delay,
-                netlist_pin_lookup,
-                timing_info,
-                delay_calc,
-                first_iteration_priority,
-                is_flat);
+            return try_timing_driven_route_tmpl<ConnectionRouter<BinaryHeap>>(net_list,
+                                                                              det_routing_arch,
+                                                                              router_opts,
+                                                                              analysis_opts,
+                                                                              segment_inf,
+                                                                              net_delay,
+                                                                              netlist_pin_lookup,
+                                                                              timing_info,
+                                                                              delay_calc,
+                                                                              first_iteration_priority,
+                                                                              is_flat);
             break;
         case e_heap_type::BUCKET_HEAP_APPROXIMATION:
-            return try_timing_driven_route_tmpl<ConnectionRouter<Bucket>>(
-                net_list,
-                router_opts,
-                analysis_opts,
-                segment_inf,
-                net_delay,
-                netlist_pin_lookup,
-                timing_info,
-                delay_calc,
-                first_iteration_priority,
-                is_flat);
+            return try_timing_driven_route_tmpl<ConnectionRouter<Bucket>>(net_list,
+                                                                          det_routing_arch,
+                                                                          router_opts,
+                                                                          analysis_opts,
+                                                                          segment_inf,
+                                                                          net_delay,
+                                                                          netlist_pin_lookup,
+                                                                          timing_info,
+                                                                          delay_calc,
+                                                                          first_iteration_priority,
+                                                                          is_flat);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap type %d", router_opts.router_heap);
     }
@@ -272,6 +274,7 @@ bool try_timing_driven_route(const Netlist<>& net_list,
 
 template<typename ConnectionRouter>
 bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
+                                  const t_det_routing_arch& det_routing_arch,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
                                   const std::vector<t_segment_inf>& segment_inf,
@@ -330,12 +333,12 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
     route_budgets budgeting_inf(net_list, is_flat);
 
-    const auto* router_lookahead = get_cached_router_lookahead(
-        router_opts.lookahead_type,
-        router_opts.write_router_lookahead,
-        router_opts.read_router_lookahead,
-        segment_inf,
-        is_flat);
+    const auto* router_lookahead = get_cached_router_lookahead(det_routing_arch,
+                                                               router_opts.lookahead_type,
+                                                               router_opts.write_router_lookahead,
+                                                               router_opts.read_router_lookahead,
+                                                               segment_inf,
+                                                               is_flat);
 
     /*
      * Routing parameters

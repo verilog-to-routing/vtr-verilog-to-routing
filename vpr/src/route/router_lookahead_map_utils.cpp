@@ -24,6 +24,11 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 
 static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> start);
 
+static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
+                                    util::t_ipin_primitive_ipin_delays& pin_delays,
+                                    t_physical_tile_type_ptr physical_tile,
+                                    RRNodeId starting_node_id);
+
 // Constants needed to reduce the bounding box when expanding CHAN wires to reach the IPINs.
 // These are used when finding all the delays to get to the IPINs of all the different tile types
 // of the device.
@@ -418,6 +423,57 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
     return chan_ipins_delays;
 }
 
+t_ipin_primitive_ipin_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
+                                                         t_physical_tile_type_ptr physical_tile,
+                                                         int x,
+                                                         int y) {
+
+    t_ipin_primitive_ipin_delays pin_delays;
+    pin_delays.resize(physical_tile->num_pins + physical_tile->internal_pin_class.size());
+    std::vector<RRNodeId> tile_pins_node_id;
+    tile_pins_node_id.reserve(physical_tile->num_pins + physical_tile->internal_pin_class.size());
+
+    for(int pin_physical_num = 0; pin_physical_num < physical_tile->num_pins; pin_physical_num++) {
+        e_side node_side = e_side::NUM_SIDES;
+        int x_tile = -1;
+        int y_tile = -1;
+        for (int width = 0; width < physical_tile->width; width++) {
+            for (int height = 0; height < physical_tile->height; height++) {
+                for (auto side : SIDES) {
+                    if (physical_tile->pinloc[width][height][side][pin_physical_num]) {
+                        x_tile = x + width;
+                        y_tile = y + height;
+                        node_side = side;
+                    }
+                }
+            }
+        }
+        VTR_ASSERT(node_side != e_side::NUM_SIDES);
+        auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
+        auto rr_type = (pin_type == e_pin_type::RECEIVER) ? t_rr_type::IPIN : t_rr_type::OPIN;
+        RRNodeId pin_node_id = rr_graph.node_lookup().find_node(x_tile, y_tile, rr_type, pin_physical_num, node_side);
+        VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
+        tile_pins_node_id.push_back(pin_node_id);
+    }
+    for(const auto& pin_class_pair : physical_tile->internal_pin_class) {
+        int pin_physical_num = pin_class_pair.first;
+        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_physical_num);
+        if(pb_pin->is_root_block_pin()) {
+            continue;
+        }
+        auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
+        auto rr_type = (pin_type == e_pin_type::RECEIVER) ? t_rr_type::IPIN : t_rr_type::OPIN;
+        RRNodeId pin_node_id = rr_graph.node_lookup().find_node(x, y, rr_type, pin_physical_num, e_side::TOP);
+        VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
+        tile_pins_node_id.push_back(pin_node_id);
+    }
+    for(auto rr_node_id : tile_pins_node_id) {
+        run_intra_tile_dijkstra(rr_graph, pin_delays, physical_tile, rr_node_id);
+    }
+
+    return pin_delays;
+}
+
 } // namespace util
 
 static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_delays& src_opin_delays) {
@@ -658,4 +714,82 @@ static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr:
     //VTR_LOG("Next: %d,%d\n", loc.x(), loc.y());
 
     return loc;
+}
+
+static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
+                                    util::t_ipin_primitive_ipin_delays& pin_delays,
+                                    t_physical_tile_type_ptr physical_tile,
+                                    RRNodeId starting_node_id) {
+
+    // device_ctx should not be used to access rr_graph, since the graph get from device_ctx is not the intra-tile graph
+    const auto& device_ctx = g_vpr_ctx.device();
+    vtr::vector<RRNodeId, bool> node_expanded;
+    node_expanded.resize(rr_graph.num_nodes());
+    std::fill(node_expanded.begin(), node_expanded.end(), false);
+
+    struct t_pq_entry {
+        float delay;
+        float congestion;
+        RRNodeId node;
+
+        bool operator<(const t_pq_entry& rhs) const {
+            return this->delay < rhs.delay;
+        }
+    };
+
+    std::priority_queue<t_pq_entry> pq;
+
+    t_pq_entry root;
+    root.congestion = 0.;
+    root.delay = 0.;
+    root.node = starting_node_id;
+
+    int root_ptc = rr_graph.node_ptc_num(root.node);
+    pq.push(root);
+
+    while(!pq.empty()) {
+        t_pq_entry curr = pq.top();
+        pq.pop();
+        if(node_expanded[curr.node]) {
+            continue;
+        } else{
+            node_expanded[curr.node] = true;
+        }
+        auto curr_type = rr_graph.node_type(curr.node);
+        VTR_ASSERT(curr_type != t_rr_type::CHANX && curr_type != t_rr_type::CHANY);
+        if(curr_type != SINK) {
+            auto cost_index = rr_graph.node_cost_index(curr.node);
+            float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
+
+            for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
+                int iswitch = rr_graph.rr_nodes().edge_switch(edge);
+                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
+
+                RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
+
+                t_pq_entry next;
+                next.congestion = curr.congestion + incr_cong; //Of current node
+                next.delay = curr.delay + incr_delay;          //To reach next node
+                next.node = next_node;
+
+                int next_ptc = rr_graph.node_ptc_num(next_node);
+                if(pin_delays[root_ptc].find(next_ptc) == pin_delays[root_ptc].end() ||
+                    pin_delays[root_ptc].at(next_ptc).delay > next.delay) {
+                    pq.push(next);
+                }
+            }
+        } else {
+            auto pin_list = get_pin_list_from_class_physical_num(physical_tile, rr_graph.node_ptc_num(curr.node));
+            if(!is_pin_on_tile(physical_tile, pin_list[0]) && get_pb_pin_from_pin_physical_num(physical_tile, pin_list[0])->is_primitive_pin()){
+                int curr_ptc = rr_graph.node_ptc_num(curr.node);
+                if(pin_delays[root_ptc].find(curr_ptc) == pin_delays[root_ptc].end()){
+                    pin_delays[root_ptc].insert(std::make_pair(curr_ptc, util::Cost_Entry(curr.delay, curr.congestion)));
+                } else if(pin_delays[root_ptc].at(curr_ptc).delay > curr.delay){
+                    pin_delays[root_ptc][curr_ptc] = util::Cost_Entry(curr.delay, curr.congestion);
+                }
+            }
+        }
+    }
+
+
 }

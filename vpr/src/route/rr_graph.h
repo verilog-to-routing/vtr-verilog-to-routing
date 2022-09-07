@@ -32,13 +32,22 @@ void create_rr_graph(const t_graph_type graph_type,
                      int* Warnings,
                      bool is_flat);
 
+void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
+                         const t_det_routing_arch& det_routing_arch,
+                         const t_physical_tile_type& physical_tile,
+                         int x,
+                         int y,
+                         const int delayless_switch);
+
 void free_rr_graph();
 
 t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
                                                   const float R_minW_nmos,
                                                   const float R_minW_pmos);
 // Sets the spec for the rr_switch based on the arch switch
-void load_rr_switch_from_arch_switch(int arch_switch_idx,
+void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
+                                     const std::map<int, t_arch_switch_inf>& arch_sw_inf,
+                                     int arch_switch_idx,
                                      int rr_switch_idx,
                                      int fanin,
                                      const float R_minW_nmos,
