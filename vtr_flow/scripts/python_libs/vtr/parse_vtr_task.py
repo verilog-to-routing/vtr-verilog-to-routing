@@ -4,17 +4,6 @@
 Parse one or more task provided
 """
 
-from pathlib import Path
-from pathlib import PurePath
-import sys
-import argparse
-import textwrap
-import shutil
-from datetime import datetime
-from contextlib import redirect_stdout
-
-# pylint: disable=wrong-import-position
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vtr import (
     load_list_file,
     RawDefaultHelpFormatter,
@@ -33,6 +22,17 @@ from vtr import (
     create_jobs,
     paths,
 )
+from pathlib import Path
+from pathlib import PurePath
+import sys
+import argparse
+import textwrap
+import shutil
+from datetime import datetime
+from contextlib import redirect_stdout
+
+# pylint: disable=wrong-import-position
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # pylint: enable=wrong-import-position
 
@@ -150,9 +150,11 @@ def vtr_command_main(arg_list, prog=None):
         for list_file in args.list_file:
             task_names += load_list_file(list_file)
 
-        config_files = [find_task_config_file(task_name) for task_name in task_names]
+        config_files = [find_task_config_file(
+            task_name) for task_name in task_names]
 
-        configs = [load_task_config(config_file) for config_file in config_files]
+        configs = [load_task_config(config_file)
+                   for config_file in config_files]
         num_failed = 0
 
         jobs = create_jobs(args, configs, after_run=True)
@@ -162,7 +164,8 @@ def vtr_command_main(arg_list, prog=None):
             create_golden_results_for_tasks(configs, args.alt_tasks_dir)
 
         if args.check_golden:
-            num_failed += check_golden_results_for_tasks(configs, args.alt_tasks_dir)
+            num_failed += check_golden_results_for_tasks(
+                configs, args.alt_tasks_dir)
 
         if args.calc_geomean:
             summarize_qor(configs, args.alt_tasks_dir)
@@ -191,7 +194,8 @@ def parse_tasks(configs, jobs, alt_tasks_dir=None):
     Parse the selection of tasks specified in configs and associated jobs
     """
     for config in configs:
-        config_jobs = [job for job in jobs if job.task_name() == config.task_name]
+        config_jobs = [job for job in jobs if job.task_name() ==
+                       config.task_name]
         parse_task(config, config_jobs, alt_tasks_dir=alt_tasks_dir)
 
 
@@ -208,7 +212,8 @@ def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE, alt_
     max_arch_len = len("architecture")
     max_circuit_len = len("circuit")
     for job in config_jobs:
-        work_dir = job.work_dir(get_latest_run_dir(find_task_dir(config, alt_tasks_dir)))
+        work_dir = job.work_dir(get_latest_run_dir(
+            find_task_dir(config, alt_tasks_dir)))
         if job.parse_command():
             parse_filepath = str(PurePath(work_dir) / flow_metrics_basename)
             with open(parse_filepath, "w+") as parse_file:
@@ -237,7 +242,8 @@ def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE, alt_
 
 def parse_files(config_jobs, run_dir, flow_metrics_basename=FIRST_PARSE_FILE):
     """Parse the result files from the give jobs"""
-    task_parse_results_filepath = str(PurePath(run_dir) / flow_metrics_basename)
+    task_parse_results_filepath = str(
+        PurePath(run_dir) / flow_metrics_basename)
     with open(task_parse_results_filepath, "w") as out_f:
 
         # Start the header
@@ -249,7 +255,8 @@ def parse_files(config_jobs, run_dir, flow_metrics_basename=FIRST_PARSE_FILE):
             # The job results file is basically the same format,
             # but excludes the architecture and circuit fields,
             # which we prefix to each line of the task result file
-            job_parse_results_filepath = Path(job.work_dir(run_dir)) / flow_metrics_basename
+            job_parse_results_filepath = Path(
+                job.work_dir(run_dir)) / flow_metrics_basename
             if job_parse_results_filepath.exists():
                 with open(job_parse_results_filepath) as in_f:
                     lines = in_f.readlines()
@@ -283,7 +290,8 @@ def create_golden_results_for_task(config, alt_tasks_dir=None):
     run_dir = find_latest_run_dir(config, alt_tasks_dir)
 
     task_results = str(PurePath(run_dir).joinpath(FIRST_PARSE_FILE))
-    golden_results_filepath = str(PurePath(config.config_dir).joinpath("golden_results.txt"))
+    golden_results_filepath = str(
+        PurePath(config.config_dir).joinpath("golden_results.txt"))
 
     shutil.copy(task_results, golden_results_filepath)
 
@@ -294,7 +302,8 @@ def check_golden_results_for_tasks(configs, alt_tasks_dir=None):
 
     print("\nCalculating QoR results...")
     for config in configs:
-        num_qor_failures += check_golden_results_for_task(config, alt_tasks_dir)
+        num_qor_failures += check_golden_results_for_task(
+            config, alt_tasks_dir)
 
     return num_qor_failures
 
@@ -317,11 +326,13 @@ def check_golden_results_for_task(config, alt_tasks_dir=None):
         # Load the pass requirements file
 
         # Load the task's parse results
-        task_results_filepath = str(PurePath(run_dir).joinpath(FIRST_PARSE_FILE))
+        task_results_filepath = str(
+            PurePath(run_dir).joinpath(FIRST_PARSE_FILE))
 
         # Load the golden reference
         if config.second_parse_file:
-            second_results_filepath = str(PurePath(run_dir).joinpath(SECOND_PARSE_FILE))
+            second_results_filepath = str(
+                PurePath(run_dir).joinpath(SECOND_PARSE_FILE))
             num_qor_failures = check_two_files(
                 config,
                 task_results_filepath,
@@ -342,7 +353,8 @@ def check_golden_results_for_task(config, alt_tasks_dir=None):
         pretty_print_table(task_results_filepath)
 
     if num_qor_failures == 0:
-        print("{}...[Pass]".format("/".join(str((Path(config.config_dir).parent)).split("/")[-3:])))
+        print("{}...[Pass]".format(
+            "/".join(str((Path(config.config_dir).parent)).split("/")[-3:])))
 
     return num_qor_failures
 
@@ -378,7 +390,8 @@ def check_two_files(
 
     # Verify that all params and pass requirement metric are included in both the result files
     # We do not worry about non-pass_requriements elements being different or missing
-    pass_req_filepath = str(paths.pass_requirements_path / config.pass_requirements_file)
+    pass_req_filepath = str(
+        paths.pass_requirements_path / config.pass_requirements_file)
     pass_requirements = load_pass_requirements(pass_req_filepath)
 
     for metric in pass_requirements.keys():
@@ -388,7 +401,8 @@ def check_two_files(
         ) in first_results.all_metrics().items():
             if metric not in result:
                 raise InspectError(
-                    "Required metric '{}' missing from {} results".format(metric, first_name),
+                    "Required metric '{}' missing from {} results".format(
+                        metric, first_name),
                     first_results_filepath,
                 )
 
@@ -398,7 +412,8 @@ def check_two_files(
         ) in second_results.all_metrics().items():
             if metric not in result:
                 raise InspectError(
-                    "Required metric '{}' missing from {} results".format(metric, second_name),
+                    "Required metric '{}' missing from {} results".format(
+                        metric, second_name),
                     second_results_filepath,
                 )
 
@@ -437,11 +452,13 @@ def check_two_files(
         for metric in pass_requirements.keys():
 
             if not metric in second_metrics:
-                print("Warning: Metric {} missing from {} results".format(metric, second_name))
+                print("Warning: Metric {} missing from {} results".format(
+                    metric, second_name))
                 continue
 
             if not metric in first_metrics:
-                print("Warning: Metric {} missing from {} results".format(metric, first_name))
+                print("Warning: Metric {} missing from {} results".format(
+                    metric, first_name))
                 continue
 
             try:
@@ -456,11 +473,13 @@ def check_two_files(
                 if first_fail:
                     print(
                         "\n{}...[Fail]".format(
-                            "/".join(str((Path(config.config_dir).parent)).split("/")[-3:])
+                            "/".join(str((Path(config.config_dir).parent)
+                                         ).split("/")[-3:])
                         )
                     )
                     first_fail = False
-                print("[Fail]\n{}/{}/{} {} {}".format(arch, circuit, script_params, metric, reason))
+                print("[Fail]\n{}/{}/{} {} {}".format(arch,
+                      circuit, script_params, metric, reason))
                 num_qor_failures += 1
     return num_qor_failures
 
@@ -472,12 +491,14 @@ def summarize_qor(configs, alt_tasks_dir=None):
     """Summarize the Qor results"""
 
     first = True
-    task_path = Path(find_task_dir(configs[0], alt_tasks_dir)) # Path(configs[0].config_dir).parent
-    if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file(): # ?? change logic if alt_tasks_dir ?? won't have task list, check config_dir.parent.parent?
+    task_path = Path(find_task_dir(configs[0], alt_tasks_dir))
+    if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file():
         task_path = task_path.parent
     task_path = task_path / "task_summary"
     task_path.mkdir(exist_ok=True)
-    out_file = task_path / (str(Path(find_latest_run_dir(configs[0], alt_tasks_dir)).stem) + "_summary.txt")
+    out_file = task_path / \
+        (str(Path(find_latest_run_dir(
+            configs[0], alt_tasks_dir)).stem) + "_summary.txt")
     with out_file.open("w+") as out:
         for config in configs:
             with (Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE).open("r") as in_file:
@@ -486,15 +507,17 @@ def summarize_qor(configs, alt_tasks_dir=None):
                     print("task_name \t{}".format(headers), file=out, end="")
                     first = False
                 for line in in_file:
-                    print("{}\t{}".format(config.task_name, line), file=out, end="")
-            pretty_print_table(str(Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE))
+                    print("{}\t{}".format(config.task_name, line),
+                          file=out, end="")
+            pretty_print_table(
+                str(Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE))
 
 
 def calc_geomean(args, configs):
     """caclulate and ouput the geomean values to the geomean file"""
     first = False
-    task_path = Path(find_task_dir(configs[0], args.alt_tasks_dir)) # Path(configs[0].config_dir).parent
-    if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file(): # ?? change logic if alt_tasks_dir ?? won't have task list, check config_dir.parent.parent?
+    task_path = Path(find_task_dir(configs[0], args.alt_tasks_dir))
+    if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file():
         task_path = task_path.parent
     out_file = task_path / "qor_geomean.txt"
     if not out_file.is_file():
@@ -516,7 +539,8 @@ def calc_geomean(args, configs):
                 first = False
             lines = summary.readlines()
             print(
-                get_latest_run_number(find_task_dir(configs[0], args.alt_tasks_dir)),
+                get_latest_run_number(find_task_dir(
+                    configs[0], args.alt_tasks_dir)),
                 file=out,
                 end="\t",
             )
@@ -566,7 +590,8 @@ def find_latest_run_dir(config, alt_tasks_dir=None):
 
     if not run_dir:
         raise InspectError(
-            "Failed to find run directory for task '{}' in '{}'".format(config.task_name, task_dir)
+            "Failed to find run directory for task '{}' in '{}'".format(
+                config.task_name, task_dir)
         )
 
     assert Path(run_dir).is_dir()
