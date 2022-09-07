@@ -1,1 +1,6 @@
+regression_tests/vtr_reg_yosys_odin/f4pga_button_controller/
+regression_tests/vtr_reg_yosys_odin/f4pga_pulse_width_led/
+regression_tests/vtr_reg_yosys_odin/f4pga_timer/
+# regression_tests/vtr_reg_yosys_odin/hdmi/  # commented as the current Yosys SystemVerilog plugin fails for this benchmark
+# regression_tests/vtr_reg_yosys_odin/FX68K/  # commented as the current Yosys SystemVerilog plugin fails for this benchmark
 regression_tests/vtr_reg_yosys_odin/vtr_benchmarks/

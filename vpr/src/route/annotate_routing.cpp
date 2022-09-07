@@ -21,7 +21,8 @@
 vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& device_ctx,
                                                           const ClusteringContext& clustering_ctx,
                                                           const RoutingContext& routing_ctx,
-                                                          const bool& verbose) {
+                                                          const bool& verbose,
+                                                          bool is_flat) {
     size_t counter = 0;
     vtr::ScopedStartFinishTimer timer("Annotating rr_node with routed nets");
 
@@ -59,7 +60,12 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
                                     clustering_ctx.clb_nlist.net_name(net_id).c_str(),
                                     clustering_ctx.clb_nlist.net_name(rr_node_nets[rr_node]).c_str(),
                                     size_t(rr_node),
-                                    describe_rr_node((int)size_t(rr_node)).c_str());
+                                    describe_rr_node(rr_graph,
+                                                     device_ctx.grid,
+                                                     device_ctx.rr_indexed_data,
+                                                     (int)size_t(rr_node),
+                                                     is_flat)
+                                        .c_str());
                 } else {
                     rr_node_nets[rr_node] = net_id;
                 }

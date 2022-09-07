@@ -7,14 +7,21 @@ from collections import OrderedDict
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import vtr
+from vtr.yosys import YOSYS_PARSERS
 
 # supported input file type by Odin
 FILE_TYPES = {
     ".v": "verilog",
-    ".vh": "verilog",
-    ".sv": "verilog",
-    ".svh": "verilog",
+    ".vh": "verilog_header",
+    ".sv": "systemverilog",
+    ".svh": "systemverilog_header",
     ".blif": "blif",
+}
+
+YOSYS_ODIN_PARSER = {
+    YOSYS_PARSERS[0]: "-v",  # yosys (Yosys conventional Verilog parser)
+    YOSYS_PARSERS[1]: "-u",  # surelog (Yosys Surelog plugin)
+    YOSYS_PARSERS[2]: "-s",  # yosys-plugins (Yosys SystemVerilog plugin)
 }
 
 
@@ -25,6 +32,12 @@ def create_circuits_list(main_circuit, include_files):
     if include_files:
         # Verify that files are Paths or convert them to Paths + check that they exist
         for include in include_files:
+            file_extension = os.path.splitext(include)[-1]
+            # if the include file is not in the supported HDLs, we drop it
+            # NOTE: the include file is already copied to the temp folder
+            if file_extension not in FILE_TYPES:
+                continue
+
             include_file = vtr.verify_file(include, "Circuit")
             circuit_list.append(include_file.name)
 
@@ -40,6 +53,7 @@ def init_config_file(
     circuit_list,
     architecture_file,
     output_netlist,
+    odin_parser_arg,
     memory_addr_width,
     min_hard_mult_size,
     min_hard_adder_size,
@@ -50,6 +64,10 @@ def init_config_file(
     if file_extension not in FILE_TYPES:
         raise vtr.VtrError("Inavlid input file type '{}'".format(file_extension))
     input_file_type = FILE_TYPES[file_extension]
+
+    # Check if the user specifically requested for the UHDM parser
+    if odin_parser_arg == "-u":
+        input_file_type = "uhdm"
 
     # Update the config file
     vtr.file_replace(
@@ -81,7 +99,7 @@ def init_config_file(
     config_file.write(odin_config_full_path)
 
 
-# pylint: disable=too-many-arguments, too-many-locals
+# pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
 def run(
     architecture_file,
     circuit_file,
@@ -108,6 +126,9 @@ def run(
 
         circuit_file :
             Circuit file to optimize
+
+        include_files :
+            list of header files
 
         output_netlist :
             File name to output the resulting circuit to
@@ -168,11 +189,24 @@ def run(
     # Create a list showing all (.v) and (.vh) files
     circuit_list = create_circuits_list(circuit_file, include_files)
 
+    # set the parser
+    odin_parser_arg = "-v"
+    if odin_args["elaborator"] == "yosys":
+        if odin_args["parser"] in YOSYS_PARSERS:
+            odin_parser_arg = YOSYS_ODIN_PARSER[odin_args["parser"]]
+        else:
+            raise vtr.VtrError(
+                "Invalid parser is specified for the Yosys elaborator,"
+                " available parsers are [{}]".format(" ".join(str(x) for x in YOSYS_PARSERS))
+            )
+    del odin_args["parser"]
+
     init_config_file(
         odin_config_full_path,
         circuit_list,
         architecture_file.name,
         output_netlist.name,
+        odin_parser_arg,
         vtr.determine_memory_addr_width(str(architecture_file)),
         min_hard_mult_size,
         min_hard_adder_size,
@@ -180,6 +214,11 @@ def run(
 
     cmd = [odin_exec]
     use_odin_simulation = False
+
+    # handling the Odin-II decode_name flag for Yosys coarse-grained BLIFs
+    if not odin_args["encode_names"]:
+        odin_args["decode_names"] = True
+    del odin_args["encode_names"]
 
     if "use_odin_simulation" in odin_args:
         use_odin_simulation = True
@@ -200,7 +239,7 @@ def run(
         cmd += [
             "-a",
             architecture_file.name,
-            "-V",
+            odin_parser_arg,
             circuit_list,
             "-o",
             output_netlist.name,
@@ -221,7 +260,7 @@ def run(
             output_netlist.name,
             "-a",
             architecture_file.name,
-            "-sim_dir",
+            "--sim_dir",
             str(sim_dir),
             "-g",
             "100",
@@ -236,4 +275,4 @@ def run(
         )
 
 
-# pylint: enable=too-many-arguments, too-many-locals
+# pylint: enable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements

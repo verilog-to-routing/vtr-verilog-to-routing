@@ -104,7 +104,7 @@ void read_inputs(pugi::xml_node a_node, config_t* config, const pugiutil::loc_da
 
     child = get_single_child(a_node, "input_type", loc_data, OPTIONAL);
     if (child != NULL) {
-        config->input_file_type = file_type_strmap[child.child_value()];
+        config->input_file_type = file_type_strmap.find(string_to_lower(child.child_value()))->second;
     }
 
     child = get_first_child(a_node, "input_path_and_name", loc_data, OPTIONAL);
@@ -123,7 +123,7 @@ void read_outputs(pugi::xml_node a_node, config_t* config, const pugiutil::loc_d
 
     child = get_single_child(a_node, "output_type", loc_data, OPTIONAL);
     if (child != NULL) {
-        config->output_file_type = file_type_strmap[child.child_value()];
+        config->output_file_type = file_type_strmap.find(string_to_lower(child.child_value()))->second;
     }
 
     child = get_single_child(a_node, "output_path_and_name", loc_data, OPTIONAL);

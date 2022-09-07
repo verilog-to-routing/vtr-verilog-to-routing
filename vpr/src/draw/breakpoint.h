@@ -1,3 +1,21 @@
+/**
+ * @file breakpoint.h
+ * 
+ * @brief Declaration of breakpoint class, as well as some related functions.
+ * 
+ * This file holds the declaration of the breakpoint class, and also some of the breakpoint related functions.
+ * 
+ * This class holds the definiton of type Breakpoint as well as all related functions. 
+ * Breakpoints can be set through the GUI anytime during placement or routing. Breakpoints can also be activated, 
+ * deactivated, and deleted. Each breakpoint has a type (BT_MOVE_NUM, BT_TEMP_NUM, BT_FROM_BLOCK, BT_ROUTER_ITER, BT_ROUTE_NET_ID, BT_EXPRESSION) and holds the 
+ * values for corresponding to its type, as well as a boolean variable to activate and deactivate a breakpoint. It should be noted that each breakpoint can only have one type and hold one value corresponding to that type. 
+ * More complicated breakpoints are set using an expression. (e.g move_num > 3 && block_id == 11) 
+ * Breakpoints can be create using 3 constructors, the default contructor that doesn't identify the type and sets a breakpoint that is never reached, 
+ * a constructor that takes in the type and an int value, and lastly a constructor that takes in the type and the sting that holds the expression. 
+ * (e.g Breakpoint(BT_MOVE_NUM, 4) or Breakpoint(BT_EXPRESSION, "move_num += 3")) The == operator has also been provided which returns true when two 
+ * breakpoints have the same type, and the same value corresponding to the type.
+ */
+
 #ifndef BREAKPOINT_H
 #define BREAKPOINT_H
 
@@ -6,9 +24,6 @@
 
 #include "move_transactions.h"
 #include "vtr_expr_eval.h"
-
-/**This class holds the definiton of type Breakpoint as well as al realted functions. Breakpoints can be set through the GUI anytime during placement or routing. Breakpoints can also be activated, deactivated, and deleted. Each breakpoint has a type (BT_MOVE_NUM, BT_TEMP_NUM, BT_FROM_BLOCK, BT_ROUTER_ITER, BT_ROUTE_NET_ID, BT_EXPRESSION) and holds the values for corresponding to its type, as well as a boolean variable to activate and deactivate a breakpoint. It should be noted that each breakpoint can only have one type and hold one value corresponding to that type. More complicated breakpoints are set using an expression. (e.g move_num > 3 && block_id == 11) 
- * Breakpoints can be create using 3 constructors, the default contructor that doesn't identify the type and sets a breakopint that is never reached, a constructor that takes in the type and an int value, and lastly a constructor that takes in the type and the sting that holds the expression. (e.g Breakpoint(BT_MOVE_NUM, 4) or Breakpoint(BT_EXPRESSION, "move_num += 3")) The == operator has also been provided which returns true when two breakpoints have the same type, and the same value corresponding to the type.**/
 
 typedef enum breakpoint_types {
     BT_MOVE_NUM,

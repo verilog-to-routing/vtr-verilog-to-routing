@@ -28,16 +28,14 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !defined(CAPNP_HEADER_WARNINGS)
-#pragma GCC system_header
-#endif
-
 #include <kj/common.h>
 #include <kj/memory.h>
 #include "common.h"
 #include "blob.h"
 #include "endian.h"
 #include <kj/windows-sanity.h>  // work-around macro conflict with `VOID`
+
+CAPNP_BEGIN_HEADER
 
 #if (defined(__mips__) || defined(__hppa__)) && !defined(CAPNP_CANONICALIZE_NAN)
 #define CAPNP_CANONICALIZE_NAN 1
@@ -60,9 +58,7 @@
 
 namespace capnp {
 
-#if !CAPNP_LITE
 class ClientHook;
-#endif  // !CAPNP_LITE
 
 namespace _ {  // private
 
@@ -314,15 +310,12 @@ inline double unmask<double>(uint64_t value, uint64_t mask) {
 
 class CapTableReader {
 public:
-#if !CAPNP_LITE
   virtual kj::Maybe<kj::Own<ClientHook>> extractCap(uint index) = 0;
   // Extract the capability at the given index.  If the index is invalid, returns null.
-#endif  // !CAPNP_LITE
 };
 
 class CapTableBuilder: public CapTableReader {
 public:
-#if !CAPNP_LITE
   virtual uint injectCap(kj::Own<ClientHook>&& cap) = 0;
   // Add the capability to the message and return its index.  If the same ClientHook is injected
   // twice, this may return the same index both times, but in this case dropCap() needs to be
@@ -330,7 +323,6 @@ public:
 
   virtual void dropCap(uint index) = 0;
   // Remove a capability injected earlier.  Called when the pointer is overwritten or zero'd out.
-#endif  // !CAPNP_LITE
 };
 
 // -------------------------------------------------------------------
@@ -1271,3 +1263,5 @@ inline OrphanBuilder& OrphanBuilder::operator=(OrphanBuilder&& other) {
 
 }  // namespace _ (private)
 }  // namespace capnp
+
+CAPNP_END_HEADER

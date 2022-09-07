@@ -12,6 +12,7 @@ FILE_TYPES = {
     ".v": "Verilog",
     ".vh": "Verilog",
     ".sv": "SystemVerilog",
+    ".svh": "SystemVerilog",
     ".blif": "BLIF",
     ".aig": "aiger",
     ".json": "JSON",
@@ -25,16 +26,25 @@ YOSYS_LIB_FILES = {
     "DPRAM": "dual_port_ram.v",
     "SPRAMR": "spram_rename.v",
     "DPRAMR": "dpram_rename.v",
+    "DSPBB": "arch_dsps.v",
 }
+
+YOSYS_PARSERS = ["yosys", "surelog", "yosys-plugin"]
 
 
 def create_circuits_list(main_circuit, include_files):
-    """Create a list of all (.v) and (.vh) files"""
+    """Create a list of supported HDL files"""
     circuit_list = []
     # Check include files exist
     if include_files:
         # Verify that files are Paths or convert them to Paths + check that they exist
         for include in include_files:
+            file_extension = os.path.splitext(include)[-1]
+            # if the include file is not in the supported HDLs, we drop it
+            # NOTE: the include file is already copied to the temp folder
+            if file_extension not in FILE_TYPES:
+                continue
+
             include_file = vtr.verify_file(include, "Circuit")
             circuit_list.append(include_file.name)
 
@@ -52,6 +62,7 @@ def init_script_file(
     yosys_dpram_full_path,
     yosys_spram_rename_full_path,
     yosys_dpram_rename_full_path,
+    architecture_dsp_full_path,
     circuit_list,
     output_netlist,
     memory_addr_width,
@@ -69,12 +80,13 @@ def init_script_file(
     vtr.file_replace(
         yosys_script_full_path,
         {
-            "XXX": circuit_list[0],
-            "YYY": "./" + YOSYS_LIB_FILES["YSMDL"],
-            "SSS": "./" + YOSYS_LIB_FILES["SPRAM"],
-            "DDD": "./" + YOSYS_LIB_FILES["DPRAM"],
-            "SSR": "./" + YOSYS_LIB_FILES["SPRAMR"],
-            "DDR": "./" + YOSYS_LIB_FILES["DPRAMR"],
+            "XXX": "{}".format(" ".join(str(s) for s in circuit_list)),
+            "YYY": yosys_models_full_path,
+            "SSS": yosys_spram_full_path,
+            "DDD": yosys_dpram_full_path,
+            "SSR": yosys_spram_rename_full_path,
+            "DDR": yosys_dpram_rename_full_path,
+            "CCC": architecture_dsp_full_path,
             "TTT": str(vtr.paths.yosys_lib_path),
             "ZZZ": output_netlist,
         },
@@ -93,7 +105,7 @@ def init_script_file(
     vtr.file_replace(yosys_dpram_rename_full_path, {"PPP": memory_addr_width})
 
 
-# pylint: disable=too-many-arguments, too-many-locals
+# pylint: disable=too-many-arguments, too-many-locals, too-many-statements, too-many-branches
 def run(
     architecture_file,
     circuit_file,
@@ -120,6 +132,9 @@ def run(
 
         circuit_file :
             Circuit file to optimize
+
+        include_files :
+            list of header files
 
         output_netlist :
             File name to output the resulting circuit to
@@ -165,14 +180,14 @@ def run(
         yosys_base_script = str(Path(yosys_script).resolve())
 
     # Copy the script file
-    yosys_script = "synthesis.ys"
+    yosys_script = "synthesis.tcl"
     yosys_script_full_path = str(temp_dir / yosys_script)
     shutil.copyfile(yosys_base_script, yosys_script_full_path)
 
     # Copy the yosys models file
     yosys_models = YOSYS_LIB_FILES["YSMDL"]
     yosys_base_models = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["YSMDL"])
-    yosys_models_full_path = str(temp_dir / yosys_models)
+    yosys_models_full_path = str(vtr.paths.scripts_path / temp_dir / yosys_models)
     shutil.copyfile(yosys_base_models, yosys_models_full_path)
 
     # Copy the VTR memory blocks file
@@ -184,14 +199,29 @@ def run(
     yosys_base_dpram = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["DPRAM"])
     yosys_base_spram_rename = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["SPRAMR"])
     yosys_base_dpram_rename = str(vtr.paths.yosys_lib_path / YOSYS_LIB_FILES["DPRAMR"])
-    yosys_spram_full_path = str(temp_dir / yosys_spram)
-    yosys_dpram_full_path = str(temp_dir / yosys_dpram)
-    yosys_spram_rename_full_path = str(temp_dir / yosys_spram_rename)
-    yosys_dpram_rename_full_path = str(temp_dir / yosys_dpram_rename)
+    yosys_spram_full_path = str(vtr.paths.scripts_path / temp_dir / yosys_spram)
+    yosys_dpram_full_path = str(vtr.paths.scripts_path / temp_dir / yosys_dpram)
+    yosys_spram_rename_full_path = str(vtr.paths.scripts_path / temp_dir / yosys_spram_rename)
+    yosys_dpram_rename_full_path = str(vtr.paths.scripts_path / temp_dir / yosys_dpram_rename)
     shutil.copyfile(yosys_base_spram, yosys_spram_full_path)
     shutil.copyfile(yosys_base_dpram, yosys_dpram_full_path)
     shutil.copyfile(yosys_base_spram_rename, yosys_spram_rename_full_path)
     shutil.copyfile(yosys_base_dpram_rename, yosys_dpram_rename_full_path)
+
+    write_arch_bb_exec = str(vtr.paths.write_arch_bb_exe_path)
+    architecture_dsp_full_path = str(vtr.paths.scripts_path / temp_dir / YOSYS_LIB_FILES["DSPBB"])
+
+    # executing write_arch_bb to extract the black box definitions of the given arch file
+    command_runner.run_system_command(
+        [
+            write_arch_bb_exec,
+            str(vtr.paths.scripts_path / architecture_file),
+            architecture_dsp_full_path,
+        ],
+        temp_dir=temp_dir,
+        log_filename="write_arch_bb.log",
+        indent_depth=1,
+    )
 
     # Create a list showing all (.v) and (.vh) files
     circuit_list = create_circuits_list(circuit_file, include_files)
@@ -203,12 +233,24 @@ def run(
         yosys_dpram_full_path,
         yosys_spram_rename_full_path,
         yosys_dpram_rename_full_path,
+        architecture_dsp_full_path,
         circuit_list,
         output_netlist.name,
         vtr.determine_memory_addr_width(str(architecture_file)),
         min_hard_mult_size,
         min_hard_adder_size,
     )
+
+    # set the parser
+    if yosys_args["parser"] in YOSYS_PARSERS:
+        os.environ["PARSER"] = yosys_args["parser"]
+        del yosys_args["parser"]
+    else:
+        raise vtr.VtrError(
+            "Invalid parser is specified for Yosys, available parsers are [{}]".format(
+                " ".join(str(x) for x in YOSYS_PARSERS)
+            )
+        )
 
     cmd = [yosys_exec]
 
@@ -220,11 +262,11 @@ def run(
         else:
             pass
 
-    cmd += ["-s", yosys_script]
+    cmd += ["-c", yosys_script]
 
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1
     )
 
 
-# pylint: enable=too-many-arguments, too-many-locals
+# pylint: enable=too-many-arguments, too-many-locals, too-many-statements, too-many-branches

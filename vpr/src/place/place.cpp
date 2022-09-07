@@ -426,7 +426,8 @@ void try_place(const t_placer_opts& placer_opts,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_direct_inf* directs,
-               int num_directs) {
+               int num_directs,
+               bool is_flat) {
     /* Does almost all the work of placing a circuit.  Width_fac gives the   *
      * width of the widest channel.  Place_cost_exp says what exponent the   *
      * width should be taken to when calculating costs.  This allows a       *
@@ -484,7 +485,7 @@ void try_place(const t_placer_opts& placer_opts,
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_delay_model(chan_width_dist,
                                                           placer_opts, router_opts, det_routing_arch, segment_inf,
-                                                          directs, num_directs);
+                                                          directs, num_directs, is_flat);
 
         if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
             place_delay_model->dump_echo(

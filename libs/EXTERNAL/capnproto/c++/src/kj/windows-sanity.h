@@ -36,7 +36,7 @@
 // windows-sanity.h, we can be sure that no conflicts will occur regardless of in what order the
 // application chooses to include these headers vs. windows.h.
 
-#if !_WIN32
+#if !_WIN32 && !__CYGWIN__
 
 // Not on Windows. Tell the compiler never to try to include this again.
 #pragma once
@@ -50,8 +50,11 @@
 
 namespace win32 {
   const auto ERROR_ = ERROR;
+
+#ifdef ERROR  // This could be absent if e.g. NOGDI was used.
 #undef ERROR
   const auto ERROR = ERROR_;
+#endif
 
   typedef VOID VOID_;
 #undef VOID

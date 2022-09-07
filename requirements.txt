@@ -4,3 +4,5 @@ psutil
 # Python linter and formatter
 black==20.8b1
 pylint==2.7.4
+# Surelog
+orderedmultidict

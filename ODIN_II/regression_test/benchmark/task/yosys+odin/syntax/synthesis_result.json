@@ -201,7 +201,7 @@
         "verilog": "basic_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/basic_expression_in_function_port/no_arch": {
@@ -209,7 +209,7 @@
         "verilog": "basic_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/basic_expression_in_module_port/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -255,7 +255,7 @@
         "verilog": "basic_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/basic_expression_in_task_port/no_arch": {
@@ -263,7 +263,7 @@
         "verilog": "basic_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bitwise_op_expression_in_function_port/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -272,7 +272,7 @@
         "verilog": "bitwise_op_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bitwise_op_expression_in_function_port/no_arch": {
@@ -280,7 +280,7 @@
         "verilog": "bitwise_op_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bitwise_op_expression_in_module_port/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -326,7 +326,7 @@
         "verilog": "bitwise_op_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bitwise_op_expression_in_task_port/no_arch": {
@@ -334,7 +334,7 @@
         "verilog": "bitwise_op_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bm_dag5_mod/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -610,7 +610,7 @@
         "verilog": "bm_function_1.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bm_function_1/no_arch": {
@@ -618,7 +618,7 @@
         "verilog": "bm_function_1.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bm_function_2/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -627,7 +627,7 @@
         "verilog": "bm_function_2.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bm_function_2/no_arch": {
@@ -635,7 +635,7 @@
         "verilog": "bm_function_2.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/bm_jk_rtl/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -904,7 +904,7 @@
         "verilog": "conditional_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/conditional_expression_in_function_port/no_arch": {
@@ -912,7 +912,7 @@
         "verilog": "conditional_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/conditional_expression_in_module_port/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -958,7 +958,7 @@
         "verilog": "conditional_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/conditional_expression_in_task_port/no_arch": {
@@ -966,7 +966,7 @@
         "verilog": "conditional_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/constant_module_inst/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1011,7 +1011,7 @@
         "verilog": "deassign.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/deassign/no_arch": {
@@ -1019,7 +1019,7 @@
         "verilog": "deassign.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/delay_syntax/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1187,7 +1187,7 @@
         "verilog": "fir_scu_rtl_restructured_for_cmm_exp.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/fir_scu_rtl_restructured_for_cmm_exp/no_arch": {
@@ -1195,7 +1195,7 @@
         "verilog": "fir_scu_rtl_restructured_for_cmm_exp.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/flip_flop_enable/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1769,7 +1769,7 @@
         "verilog": "instantiated_by_name_function_invalid_1.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_function_invalid_1/no_arch": {
@@ -1777,7 +1777,7 @@
         "verilog": "instantiated_by_name_function_invalid_1.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_function_invalid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1786,7 +1786,7 @@
         "verilog": "instantiated_by_name_function_invalid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_function_invalid/no_arch": {
@@ -1794,7 +1794,7 @@
         "verilog": "instantiated_by_name_function_invalid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_function_valid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1803,7 +1803,7 @@
         "verilog": "instantiated_by_name_function_valid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ],
         "max_rss(MiB)": 66.2,
         "exec_time(ms)": 164.4,
@@ -1817,7 +1817,7 @@
         "verilog": "instantiated_by_name_function_valid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ],
         "max_rss(MiB)": 45.9,
         "exec_time(ms)": 74.5,
@@ -1832,7 +1832,7 @@
         "verilog": "instantiated_by_name_task_invalid_1.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_task_invalid_1/no_arch": {
@@ -1840,7 +1840,7 @@
         "verilog": "instantiated_by_name_task_invalid_1.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_task_invalid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1849,7 +1849,7 @@
         "verilog": "instantiated_by_name_task_invalid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_task_invalid/no_arch": {
@@ -1857,7 +1857,7 @@
         "verilog": "instantiated_by_name_task_invalid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiated_by_name_task_valid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1866,7 +1866,7 @@
         "verilog": "instantiated_by_name_task_valid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ],
         "max_rss(MiB)": 60.1,
         "exec_time(ms)": 153.6,
@@ -1880,7 +1880,7 @@
         "verilog": "instantiated_by_name_task_valid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ],
         "max_rss(MiB)": 39.4,
         "exec_time(ms)": 53,
@@ -1895,7 +1895,7 @@
         "verilog": "instantiating_by_name_invalid_1.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_invalid_1/no_arch": {
@@ -1903,7 +1903,7 @@
         "verilog": "instantiating_by_name_invalid_1.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_invalid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1912,7 +1912,7 @@
         "verilog": "instantiating_by_name_invalid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_invalid_mix_ports/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1921,7 +1921,7 @@
         "verilog": "instantiating_by_name_invalid_mix_ports.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_invalid_mix_ports/no_arch": {
@@ -1929,7 +1929,7 @@
         "verilog": "instantiating_by_name_invalid_mix_ports.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_invalid/no_arch": {
@@ -1937,7 +1937,7 @@
         "verilog": "instantiating_by_name_invalid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/instantiating_by_name_valid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1946,7 +1946,7 @@
         "verilog": "instantiating_by_name_valid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ],
         "max_rss(MiB)": 64.3,
         "exec_time(ms)": 161.1,
@@ -1960,7 +1960,7 @@
         "verilog": "instantiating_by_name_valid.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ],
         "max_rss(MiB)": 43.7,
         "exec_time(ms)": 84.9,
@@ -2051,7 +2051,7 @@
         "verilog": "matrix_multiplication.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/matrix_multiplication/no_arch": {
@@ -2059,7 +2059,7 @@
         "verilog": "matrix_multiplication.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/memlooptesting/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2151,7 +2151,7 @@
         "verilog": "mix_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/mix_expression_in_function_port/no_arch": {
@@ -2159,7 +2159,7 @@
         "verilog": "mix_expression_in_function_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/mix_expression_in_module_port/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2242,7 +2242,7 @@
         "verilog": "mix_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/mix_expression_in_task_port/no_arch": {
@@ -2250,7 +2250,7 @@
         "verilog": "mix_expression_in_task_port.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/multi_assignment/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2620,7 +2620,7 @@
         "verilog": "preprocessor_complex_define.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/preprocessor_complex_define/no_arch": {
@@ -2628,7 +2628,7 @@
         "verilog": "preprocessor_complex_define.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/preprocessor_define/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2637,7 +2637,7 @@
         "verilog": "preprocessor_define.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/preprocessor_define/no_arch": {
@@ -2645,7 +2645,7 @@
         "verilog": "preprocessor_define.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/preprocessor_define_with_comment/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2654,7 +2654,7 @@
         "verilog": "preprocessor_define_with_comment.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/preprocessor_define_with_comment/no_arch": {
@@ -2662,7 +2662,7 @@
         "verilog": "preprocessor_define_with_comment.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -3045,7 +3045,7 @@
         "verilog": "top_and.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/top_and/no_arch": {
@@ -3053,7 +3053,7 @@
         "verilog": "top_and.v",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "syntax/unconnected_input/k6_frac_N10_frac_chain_mem32K_40nm": {

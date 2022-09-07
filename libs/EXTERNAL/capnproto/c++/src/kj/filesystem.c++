@@ -622,7 +622,7 @@ Own<const Directory> Directory::openSubdir(PathPtr path, WriteMode mode) const {
 void Directory::symlink(PathPtr linkpath, StringPtr content, WriteMode mode) const {
   if (!trySymlink(linkpath, content, mode)) {
     if (has(mode, WriteMode::CREATE)) {
-      KJ_FAIL_REQUIRE("path already exsits", linkpath) { break; }
+      KJ_FAIL_REQUIRE("path already exists", linkpath) { break; }
     } else {
       // Shouldn't happen.
       KJ_FAIL_ASSERT("symlink() returned null despite no preconditions", linkpath) { break; }
@@ -912,7 +912,9 @@ private:
             "InMemoryFile cannot resize the file backing store while memory mappings exist.");
 
         auto newBytes = heapArray<byte>(kj::max(capacity, bytes.size() * 2));
-        memcpy(newBytes.begin(), bytes.begin(), size);
+        if (size > 0) {  // placate ubsan; bytes.begin() might be null
+          memcpy(newBytes.begin(), bytes.begin(), size);
+        }
         memset(newBytes.begin() + size, 0, newBytes.size() - size);
         bytes = kj::mv(newBytes);
       }
@@ -1511,7 +1513,7 @@ private:
               entry.set(kj::mv(copy));
             } else {
               if (mode == TransferMode::MOVE) {
-                KJ_ASSERT(fromDirectory.tryRemove(fromPath), "could't move node", fromPath) {
+                KJ_ASSERT(fromDirectory.tryRemove(fromPath), "couldn't move node", fromPath) {
                   return false;
                 }
               }
@@ -1543,7 +1545,7 @@ private:
               entry.set(kj::mv(copy));
             } else {
               if (mode == TransferMode::MOVE) {
-                KJ_ASSERT(fromDirectory.tryRemove(fromPath), "could't move node", fromPath) {
+                KJ_ASSERT(fromDirectory.tryRemove(fromPath), "couldn't move node", fromPath) {
                   return false;
                 }
               }
@@ -1560,7 +1562,7 @@ private:
             // Since symlinks are immutable, we can implement LINK the same as COPY.
             entry.init(SymlinkNode { lastModified.orDefault(clock.now()), kj::mv(*content) });
             if (mode == TransferMode::MOVE) {
-              KJ_ASSERT(fromDirectory.tryRemove(fromPath), "could't move node", fromPath) {
+              KJ_ASSERT(fromDirectory.tryRemove(fromPath), "couldn't move node", fromPath) {
                 return false;
               }
             }

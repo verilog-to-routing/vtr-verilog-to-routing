@@ -50,6 +50,7 @@
 #include "hard_blocks.h"
 #include "memories.h"
 #include "BlockMemories.hpp"
+#include "BitwiseOps.hpp"
 #include "LogicalOps.hpp"
 #include "memories.h"
 #include "adders.h"
@@ -72,6 +73,7 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
 
 void blif_elaborate_node(nnode_t* node, short traverse_mark_number, netlist_t* netlist);
 
+static void resolve_bitwise_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_logical_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_shift_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 static void resolve_case_equal_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
@@ -200,6 +202,19 @@ void depth_first_traverse_blif_elaborate(nnode_t* node, uintptr_t traverse_mark_
  *--------------------------------------------------------------------*/
 void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlist) {
     switch (node->type) {
+        case BITWISE_NOT:  //fallthrough
+        case BITWISE_AND:  //fallthrough
+        case BITWISE_OR:   //fallthrough
+        case BITWISE_NAND: //fallthrough
+        case BITWISE_NOR:  //fallthrough
+        case BITWISE_XNOR: //fallthrough
+        case BITWISE_XOR: {
+            /** 
+             * make sure they have only two inputs and a single output pin for partial mapping phase 
+             */
+            resolve_bitwise_nodes(node, traverse_number, netlist);
+            break;
+        }
         case GTE:           //fallthrough
         case LTE:           //fallthrough
         case GT:            //fallthrough
@@ -296,20 +311,13 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
             resolve_memory_nodes(node, traverse_number, netlist);
             break;
         }
-        case GND_NODE:     //fallthrough
-        case VCC_NODE:     //fallthrough
-        case PAD_NODE:     //fallthrough
-        case INPUT_NODE:   //fallthrough
-        case OUTPUT_NODE:  //fallthrough
-        case HARD_IP:      //fallthrough
-        case BUF_NODE:     //fallthrough
-        case BITWISE_NOT:  //fallthrough
-        case BITWISE_AND:  //fallthrough
-        case BITWISE_OR:   //fallthrough
-        case BITWISE_NAND: //fallthrough
-        case BITWISE_NOR:  //fallthrough
-        case BITWISE_XNOR: //fallthrough
-        case BITWISE_XOR: {
+        case GND_NODE:    //fallthrough
+        case VCC_NODE:    //fallthrough
+        case PAD_NODE:    //fallthrough
+        case INPUT_NODE:  //fallthrough
+        case OUTPUT_NODE: //fallthrough
+        case HARD_IP:     //fallthrough
+        case BUF_NODE: {
             /* some are already resolved for this phase */
             break;
         }
@@ -320,6 +328,45 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         default:
             error_message(BLIF_ELABORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);
             break;
+    }
+}
+
+/**
+ * (function: resolve_bitwise_nodes)
+ * 
+ * @brief resolving the bitwise nodes by decoding them into 2-1 nodes
+ * 
+ * @param node pointing to a bitwise node 
+ * @param traverse_mark_number unique traversal mark for blif elaboration pass
+ * @param netlist pointer to the current netlist file
+ */
+static void resolve_bitwise_nodes(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    switch (node->type) {
+        case BITWISE_XNOR: //fallthrough
+        case BITWISE_XOR: {
+            /**
+             * decode bitwise nodes into nodes with 2 input and 1 output
+             * only for reduction operation
+             */
+            if (node->num_output_pins == 1)
+                decode_bitwise_nodes(node, traverse_mark_number, netlist);
+            break;
+        }
+        case BITWISE_NOT:  //fallthrough
+        case BITWISE_AND:  //fallthrough
+        case BITWISE_OR:   //fallthrough
+        case BITWISE_NAND: //fallthrough
+        case BITWISE_NOR: {
+            /* to be handled in partial map */
+            break;
+        }
+        default: {
+            error_message(BLIF_ELABORATION, node->loc,
+                          "The node(%s) type is not among Odin's bitwise types [BITWISE_NOT, BITWISE_AND, BITWISE_OR, BITWISE_NAND, BITWISE_NOR, BITWISE_XNOR, BITWISE_XOR]\n", node->name);
+            break;
+        }
     }
 }
 

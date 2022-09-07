@@ -31,7 +31,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const RRGraphView* rr_graph,
         const std::vector<t_rr_rc_data>& rr_rc_data,
         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-        std::vector<t_rr_node_route_inf>& rr_node_route_inf)
+        std::vector<t_rr_node_route_inf>& rr_node_route_inf,
+        bool is_flat)
         : grid_(grid)
         , router_lookahead_(router_lookahead)
         , rr_nodes_(rr_nodes.view())
@@ -39,6 +40,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , rr_rc_data_(rr_rc_data.data(), rr_rc_data.size())
         , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
         , rr_node_route_inf_(rr_node_route_inf.data(), rr_node_route_inf.size())
+        , is_flat_(is_flat)
         , router_stats_(nullptr)
         , router_debug_(false) {
         heap_.init_heap(grid);
@@ -252,6 +254,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     vtr::array_view<const t_rr_rc_data> rr_rc_data_;
     vtr::array_view<const t_rr_switch_inf> rr_switch_inf_;
     vtr::array_view<t_rr_node_route_inf> rr_node_route_inf_;
+    bool is_flat_;
     std::vector<int> modified_rr_node_inf_;
     RouterStats* router_stats_;
     HeapImplementation heap_;
@@ -270,6 +273,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
     const RRGraphView* rr_graph,
     const std::vector<t_rr_rc_data>& rr_rc_data,
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-    std::vector<t_rr_node_route_inf>& rr_node_route_inf);
+    std::vector<t_rr_node_route_inf>& rr_node_route_inf,
+    bool is_flat);
 
 #endif /* _CONNECTION_ROUTER_H */

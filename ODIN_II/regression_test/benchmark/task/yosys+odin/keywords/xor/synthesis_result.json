@@ -55,7 +55,7 @@
         "verilog": "replicate_xor_int_wide.vh",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "xor/replicate_xor_ultra_wide/no_arch": {
@@ -63,7 +63,7 @@
         "verilog": "replicate_xor_ultra_wide.vh",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "xor/replicate_xor_wide/no_arch": {
@@ -71,7 +71,7 @@
         "verilog": "replicate_xor_wide.vh",
         "exit": 134,
         "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
+            "[PARSE_TO_AST] Yosys exited with status 1 - Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
         ]
     },
     "xor/xor_indexed_port/no_arch": {

@@ -450,6 +450,10 @@ struct t_class {
 struct t_class_range {
     int low = 0;
     int high = 0;
+    // Returns the total number of classes
+    int total_num() const {
+        return high - low + 1;
+    }
 };
 
 enum e_power_wire_type {
@@ -613,11 +617,14 @@ struct t_physical_tile_type {
 
     std::vector<t_class> class_inf; /* [0..num_class-1] */
 
+    std::unordered_map<int, t_class> internal_class_inf;
+
     std::vector<int> pin_width_offset;  // [0..num_pins-1]
     std::vector<int> pin_height_offset; // [0..num_pins-1]
     std::vector<int> pin_class;         // [0..num_pins-1]
-    std::vector<bool> is_ignored_pin;   // [0..num_pins-1]
-    std::vector<bool> is_pin_global;    // [0..num_pins-1]
+    std::unordered_map<int, int> internal_pin_class;
+    std::vector<bool> is_ignored_pin; // [0..num_pins-1]
+    std::vector<bool> is_pin_global;  // [0..num_pins-1]
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -725,6 +732,9 @@ struct t_sub_tile {
                                ///>      indices ranging from 4 to 7.
     t_class_range class_range;
 
+    std::vector<std::unordered_map<t_logical_block_type_ptr, int>> starting_internal_class_idx;
+    std::vector<std::unordered_map<t_logical_block_type_ptr, int>> starting_internal_pin_idx;
+
     int num_phy_pins = 0;
 
     int index = -1;
@@ -818,6 +828,15 @@ struct t_physical_tile_port {
  * index: Keep track of type in array for easy access
  * physical_tile_index: index of the corresponding physical tile type
  *
+ * pin_logical_num_to_pb_pin_mapping: Contains all the pins, including pins on the root-level block and internal pins, in
+ * the logical block. The key of this map is the logical number of the pin, and the value is a pointer to the
+ * corresponding pb_graph_pin
+ *
+ * pb_pin_to_class_logical_num_mapping: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
+ * index to logical_class_inf.
+ *
+ * logical_class_inf: Contains all the classes inside the logical block. The index of each class is the logical number associate with the class.
+ *
  * A logical block is the implementation of a component's functionality of the FPGA device
  * and it identifies its logical behaviour and internal connections.
  *
@@ -839,6 +858,10 @@ struct t_logical_block_type {
 
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
+
+    std::unordered_map<int, const t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;   /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_to_class_logical_num_mapping; /* pb_pin_to_class_logical_num_mapping[pb_graph_pin ptr] -> class logical number */
+    std::vector<t_class> logical_class_inf;                                             /* logical_class_inf[class_logical_number] -> class */
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
@@ -1235,9 +1258,9 @@ class t_pb_graph_pin {
   public:
     t_port* port = nullptr;
     int pin_number = 0;
-    t_pb_graph_edge** input_edges = nullptr; /* [0..num_input_edges] */
+    std::vector<t_pb_graph_edge*> input_edges; /* [0..num_input_edges] */
     int num_input_edges = 0;
-    t_pb_graph_edge** output_edges = nullptr; /* [0..num_output_edges] */
+    std::vector<t_pb_graph_edge*> output_edges; /* [0..num_output_edges] */
     int num_output_edges = 0;
 
     t_pb_graph_node* parent_node = nullptr;
@@ -1256,9 +1279,9 @@ class t_pb_graph_pin {
 
     /* combinational timing information */
     int num_pin_timing = 0;                   /* Number of ipin to opin timing edges*/
-    t_pb_graph_pin** pin_timing = nullptr;    /* timing edge sink pins  [0..num_pin_timing-1]*/
-    float* pin_timing_del_max = nullptr;      /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
-    float* pin_timing_del_min = nullptr;      /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
+    std::vector<t_pb_graph_pin*> pin_timing;  /* timing edge sink pins  [0..num_pin_timing-1]*/
+    std::vector<float> pin_timing_del_max;    /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
+    std::vector<float> pin_timing_del_min;    /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
     int num_pin_timing_del_max_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_max_annotated-1]
     int num_pin_timing_del_min_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_min_annotated-1]
 
@@ -1333,7 +1356,7 @@ class t_pb_graph_edge {
 
     /* pack pattern info */
     int num_pack_patterns;
-    const char** pack_pattern_names;
+    std::vector<const char*> pack_pattern_names;
     int* pack_pattern_indices;
     bool infer_pattern;
 
@@ -1688,6 +1711,8 @@ struct t_wireconn_inf {
     std::vector<t_wire_switchpoints> to_switchpoint_set;               //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
     SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
     SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   //The desired to_switchpoint_set ordering
+    int switch_override_indx = DEFAULT_SWITCH;                         // index in switch array of the switch used to override wire_switch of the 'to' set.
+                                                                       // DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
 
     std::string num_conns_formula; /* Specifies how many connections should be made for this wireconn.
                                     *
@@ -1791,6 +1816,43 @@ struct t_lut_element {
     }
 };
 
+/**
+ * Represents a Network-on-chip(NoC) Router data type. It is used
+ * to store individual router information when parsing the arch file.
+ * */
+struct t_router {
+    /** A unique id provided by the user to identify a router. Must be a positive value*/
+    int id = -1;
+
+    /** A value representing the approximate horizontal position on the FPGA device where the router
+     * tile is located*/
+    double device_x_position = -1;
+    /** A value representing the approximate vertical position on the FPGA device where the router
+     * tile is located*/
+    double device_y_position = -1;
+
+    /** A list of router ids that are connected to the current router*/
+    std::vector<int> connection_list;
+};
+
+/**
+ * Network-on-chip(NoC) data type used to store the network properties
+ * when parsing the arh file. This is used when building the dedicated on-chip
+ * network during the device creation.
+ * */
+struct t_noc_inf {
+    double link_bandwidth; /*!< The maximum bandwidth supported in the NoC. This value is the same for all links. units in bps*/
+    double link_latency;   /*!< The worst case latency seen when traversing a link. This value is the same for all links. units in seconds*/
+    double router_latency; /*!< The worst case latency seen when traversing a router. This value is the same for all routers, units in seconds*/
+
+    /** A list of all routers in the NoC*/
+    std::vector<t_router> router_list;
+
+    /** Represents the name of a router tile on the FPGA device. This should match the name used in the arch file when
+     * describing a NoC router tile within the FPGA device*/
+    std::string noc_router_tile_name;
+};
+
 /*   Detailed routing architecture */
 struct t_arch {
     mutable vtr::string_internment strings;
@@ -1851,6 +1913,9 @@ struct t_arch {
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 
     t_clock_arch_spec clock_arch; // Clock related data types
+
+    // if we have an embedded NoC in the architecture, then we store it here
+    t_noc_inf* noc = nullptr;
 };
 
 #endif

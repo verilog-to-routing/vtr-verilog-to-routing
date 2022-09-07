@@ -1475,6 +1475,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.terminate_if_timing_fails, "--terminate_if_timing_fails")
+        .help(
+            "During final timing analysis after routing, if a negative slack anywhere is returned and this option is set, \n"
+            "VPR_FATAL_ERROR is called and processing ends.")
+        .default_value("off");
+
     auto& file_grp = parser.add_argument_group("file options");
 
     file_grp.add_argument<e_arch_format, ParseArchFormat>(args.arch_format, "--arch_format")
@@ -2296,6 +2302,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument(args.flat_routing, "--flat_routing")
+        .help("Enable VPR's flat routing (routing the nets from the source primitive to the destination primitive)")
+        .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
@@ -2612,6 +2623,32 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help("Signal activities file for all nets (see documentation).")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    auto& noc_grp = parser.add_argument_group("noc options");
+
+    noc_grp.add_argument<bool, ParseOnOff>(args.noc, "--noc")
+        .help(
+            "Enables a NoC-driven placer that optimizes the placement of routers on the NoC."
+            "Also enables an option in the graphical display that can be used to display the NoC on the FPGA."
+            "This should be on only when the FPGA device contains a NoC and the provided netlist connects to the NoC.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<std::string>(args.noc_flows_file, "--noc_flows_file")
+        .help(
+            "XML file containing the list of traffic flows within the NoC (communication between routers)."
+            "This is required if the --noc option is turned on.")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<std::string>(args.noc_routing_algorithm, "--noc_routing_algorithm")
+        .help(
+            "Controls the algorithm used by the NoC to route packets.\n"
+            "* xy_routing: Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
+            "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links.\n"
+            "This can be used with any NoC topology\n")
+        .default_value("bfs_routing")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     return parser;
 }
 
@@ -2793,7 +2830,7 @@ void set_conditional_defaults(t_options& args) {
 
 bool verify_args(const t_options& args) {
     /*
-     * Check for conflicting paramaters
+     * Check for conflicting paramaters or dependencies where one parameter set requires another parameter to be included
      */
     if (args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
         && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
@@ -2814,6 +2851,20 @@ bool verify_args(const t_options& args) {
                         "%s option value 'lookahead' is not compatible with %s 'classic'\n",
                         args.router_initial_timing.argument_name().c_str(),
                         args.router_lookahead_type.argument_name().c_str());
+    }
+
+    /**
+     * @brief If the user provided the "--noc" command line option, then there
+     * must be a NoC in the FPGA and the netlist must include NoC routers.
+     * Therefore, the user must also provide a noc traffic flows file to
+     * describe the communication within the NoC. We ensure that a noc traffic
+     * flows file is provided when the "--noc" option is used. If it is not
+     * provided, we throw an error.
+     * 
+     */
+    if (args.noc.provenance() == Provenance::SPECIFIED && args.noc_flows_file.provenance() != Provenance::SPECIFIED) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "--noc_flows_file option must be specified if --noc is turned on.\n");
     }
 
     return true;

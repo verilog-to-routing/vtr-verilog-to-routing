@@ -587,6 +587,9 @@ struct TestGenerics(Foo, Bar) {
   }
 }
 
+struct BoxedText { text @0 :Text; }
+using BrandedAlias = TestGenerics(BoxedText, Text);
+
 struct TestGenericsWrapper(Foo, Bar) {
   value @0 :TestGenerics(Foo, Bar);
 }
@@ -760,7 +763,6 @@ struct TestAnyPointerConstants {
   anyStructAsStruct @1 :AnyStruct;
   anyKindAsList @2 :AnyPointer;
   anyListAsList @3 :AnyList;
-
 }
 
 const anyPointerConstants :TestAnyPointerConstants = (
@@ -769,6 +771,11 @@ const anyPointerConstants :TestAnyPointerConstants = (
   anyKindAsList = TestConstants.int32ListConst,
   anyListAsList = TestConstants.int32ListConst,
 );
+
+struct TestListOfAny {
+  capList @0 :List(Capability);
+  #listList @1 :List(AnyList); # TODO(0.10): Make List(AnyList) work correctly in C++ generated code.
+}
 
 interface TestInterface {
   foo @0 (i :UInt32, j :Bool) -> (x :Text);
@@ -788,6 +795,9 @@ interface TestPipeline {
   getCap @0 (n: UInt32, inCap :TestInterface) -> (s: Text, outBox :Box);
   testPointers @1 (cap :TestInterface, obj :AnyPointer, list :List(TestInterface)) -> ();
   getAnyCap @2 (n: UInt32, inCap :Capability) -> (s: Text, outBox :AnyBox);
+
+  getCapPipelineOnly @3 () -> (outBox :Box);
+  # Never returns, but uses setPipeline() to make the pipeline work.
 
   struct Box {
     cap @0 :TestInterface;
@@ -816,6 +826,13 @@ interface TestTailCallee {
 
 interface TestTailCaller {
   foo @0 (i :Int32, callee :TestTailCallee) -> TestTailCallee.TailResult;
+}
+
+interface TestStreaming {
+  doStreamI @0 (i :UInt32) -> stream;
+  doStreamJ @1 (j :UInt32) -> stream;
+  finishStream @2 () -> (totalI :UInt32, totalJ :UInt32);
+  # Test streaming. finishStream() returns the totals of the values streamed to the other calls.
 }
 
 interface TestHandle {}
@@ -860,6 +877,13 @@ interface TestMoreStuff extends(TestCallOrder) {
 
   getEnormousString @11 () -> (str :Text);
   # Attempts to return an 100MB string. Should always fail.
+
+  writeToFd @13 (fdCap1 :TestInterface, fdCap2 :TestInterface)
+             -> (fdCap3 :TestInterface, secondFdPresent :Bool);
+  # Expects fdCap1 and fdCap2 wrap socket file descriptors. Writes "foo" to the first and "bar" to
+  # the second. Also creates a socketpair, writes "baz" to one end, and returns the other end.
+
+  throwException @14 ();
 }
 
 interface TestMembrane {

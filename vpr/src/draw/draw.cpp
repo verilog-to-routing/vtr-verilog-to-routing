@@ -8,8 +8,8 @@
  * As a note, looks into draw_global.c for understanding the data structures associated with drawing->
  *
  * Contains all functions that didn't fit in any other draw_*.cpp file.
- * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang
- * Last updated: June 2019
+ * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang, Sebastian Lievano
+ * Last updated: August 2022
  */
 
 #include <cstdio>
@@ -20,6 +20,7 @@
 #include <sstream>
 #include <array>
 #include <iostream>
+#include <time.h>
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -55,7 +56,12 @@
 #include "route_common.h"
 #include "breakpoint.h"
 #include "manual_moves.h"
+#include "draw_noc.h"
+#include "draw_floorplanning.h"
+
 #include "move_utils.h"
+#include "ui_setup.h"
+#include "buttons.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    include "move_utils.h"
@@ -91,8 +97,6 @@
 #    define NEW_BLK_LOC_COLOR blk_GREEN
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
-/********************** Subroutines local to this module ********************/
-
 void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name);
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y);
 void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, double y);
@@ -104,6 +108,7 @@ static float get_router_expansion_cost(const t_rr_node_route_inf node_inf,
 static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_main_canvas(ezgl::renderer* g);
+static void default_setup(ezgl::application* app);
 static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
                                                   bool is_new_window);
 static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
@@ -118,12 +123,11 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
 static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
     ezgl::application* app,
     bool is_new_window);
-static void toggle_window_mode(GtkWidget* /*widget*/,
-                               ezgl::application* /*app*/);
 static void setup_default_ezgl_callbacks(ezgl::application* app);
 static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void run_graphics_commands(std::string commands);
 
@@ -177,7 +181,12 @@ std::string rr_highlight_message;
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics, std::string graphics_commands) {
+void init_graphics_state(bool show_graphics_val,
+                         int gr_automode_val,
+                         enum e_route_type route_type,
+                         bool save_graphics,
+                         std::string graphics_commands,
+                         bool is_flat) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -191,6 +200,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
     draw_state->graphics_commands = graphics_commands;
+    draw_state->is_flat = is_flat;
 
 #else
     //Suppress unused parameter warnings
@@ -252,6 +262,13 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     draw_logical_connections(g);
 
+    draw_noc(g);
+
+    if (draw_state->draw_partitions) {
+        highlight_all_regions(g);
+        draw_constrained_atoms(g);
+    }
+
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
@@ -267,48 +284,35 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 }
 
+/**
+ * @brief Default setup function, connects signals/sets up ui created in main.ui file
+ * 
+ * To minimize code repetition, this function sets up all buttons that ALWAYS get set up.
+ * If you want to add to the initial setup functions, and your new setup function will always be called, 
+ * please put it here instead of writing it 5 independent times. Thanks!
+ * @param app ezgl application
+ */
+static void default_setup(ezgl::application* app) {
+    basic_button_setup(app);
+    net_button_setup(app);
+    block_button_setup(app);
+    search_setup(app);
+}
+
+// Initial Setup functions run default setup if they are a new window. Then, they will run
+// the specific hiding/showing functions that separate them from the other init. setup functions
+
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_PLACEMENT */
 static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
                                                   bool is_new_window) {
-    if (!is_new_window)
-        return;
+    if (is_new_window)
+        default_setup(app);
 
-    //button to enter window_mode, created in main.ui
-    GtkButton* window = (GtkButton*)app->get_object("Window");
-    gtk_button_set_label(window, "Window");
-    g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
-
-    //button to search, created in main.ui
-    GtkButton* search = (GtkButton*)app->get_object("Search");
-    gtk_button_set_label(search, "Search");
-    g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
-
-    //button for save graphcis, created in main.ui
-    GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
-    g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box),
-                     app);
-
-    //combo box for search type, created in main.ui
-    GObject* search_type = (GObject*)app->get_object("SearchType");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID"); // index 0
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "Block Name");                                // index 1
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");   // index 2
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name"); // index 3
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "RR Node ID"); // index 4
-    //Important to have default option set, or else user can search w. no selected type which can cause crash
-    gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
-    g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
-    load_block_names(app);
-    button_for_toggle_nets();
-    button_for_net_max_fanout();
-    button_for_net_alpha();
-    button_for_toggle_blk_internal();
-    button_for_toggle_block_pin_util();
-    button_for_toggle_placement_macros();
+    //Hiding unused functionality
+    hide_widget("RoutingMenuButton", app);
+    hide_crit_path_button(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -317,8 +321,14 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
 static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
     ezgl::application* app,
     bool is_new_window) {
-    initial_setup_NO_PICTURE_to_PLACEMENT(app, is_new_window);
-    button_for_toggle_crit_path();
+    if (is_new_window)
+        default_setup(app);
+
+    //Showing given functionality
+    crit_path_button_setup(app);
+
+    //Hiding unused routing menu
+    hide_widget("RoutingMenuButton", app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -326,13 +336,11 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
  * PLACEMENT_to_ROUTING */
 static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
                                                bool is_new_window) {
-    initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(app, is_new_window);
-    button_for_toggle_rr();
-    button_for_toggle_congestion();
-    button_for_toggle_congestion_cost();
-    button_for_toggle_routing_bounding_box();
-    button_for_toggle_routing_util();
-    button_for_toggle_router_expansion_costs();
+    if (is_new_window)
+        default_setup(app);
+
+    routing_button_setup(app);
+    hide_crit_path_button(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -340,20 +348,12 @@ static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
  * ROUTING_to_PLACEMENT */
 static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
                                                bool is_new_window) {
-    initial_setup_PLACEMENT_to_ROUTING(app, is_new_window);
-    std::string toggle_rr = "toggle_rr";
-    std::string toggle_congestion = "toggle_congestion";
-    std::string toggle_routing_congestion_cost = "toggle_routing_congestion_cost";
-    std::string toggle_routing_bounding_box = "toggle_routing_bounding_box";
-    std::string toggle_routing_util = "toggle_rr";
-    std::string toggle_router_expansion_costs = "toggle_router_expansion_costs";
+    if (is_new_window)
+        default_setup(app);
 
-    delete_button(toggle_rr.c_str());
-    delete_button(toggle_congestion.c_str());
-    delete_button(toggle_routing_congestion_cost.c_str());
-    delete_button(toggle_routing_bounding_box.c_str());
-    delete_button(toggle_routing_util.c_str());
-    delete_button(toggle_router_expansion_costs.c_str());
+    //Hiding unused functionality
+    hide_widget("RoutingMenuButton", app);
+    hide_crit_path_button(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -361,46 +361,11 @@ static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
  * NO_PICTURE_to_ROUTING */
 static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
                                                 bool is_new_window) {
-    if (!is_new_window)
-        return;
+    if (is_new_window)
+        default_setup(app);
 
-    GtkButton* window = (GtkButton*)app->get_object("Window");
-    gtk_button_set_label(window, "Window");
-    g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
-
-    GtkButton* search = (GtkButton*)app->get_object("Search");
-    gtk_button_set_label(search, "Search");
-    g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
-
-    GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
-    g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box),
-                     app);
-
-    GObject* search_type = (GObject*)app->get_object("SearchType");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Block ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "Block Name");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net ID");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "Net Name");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type),
-                                   "RR Node ID");
-    //Important to have default option set, or else user can search w. no selected type which can cause crash
-    gtk_combo_box_set_active((GtkComboBox*)search_type, 0); // default set to Block ID which has an index 0
-    g_signal_connect(search_type, "changed", G_CALLBACK(search_type_changed), app);
-    load_block_names(app);
-
-    button_for_toggle_nets();
-    button_for_net_max_fanout();
-    button_for_net_alpha();
-    button_for_toggle_blk_internal();
-    button_for_toggle_block_pin_util();
-    button_for_toggle_placement_macros();
-    button_for_toggle_rr();
-    button_for_toggle_congestion();
-    button_for_toggle_congestion_cost();
-    button_for_toggle_routing_bounding_box();
-    button_for_toggle_routing_util();
-    button_for_toggle_router_expansion_costs();
+    routing_button_setup(app);
+    hide_crit_path_button(app);
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -409,8 +374,11 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
 static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
     ezgl::application* app,
     bool is_new_window) {
-    initial_setup_NO_PICTURE_to_ROUTING(app, is_new_window);
-    button_for_toggle_crit_path();
+    if (is_new_window)
+        default_setup(app);
+
+    routing_button_setup(app);
+    crit_path_button_setup(app);
 }
 #endif //NO_GRAPHICS
 
@@ -420,7 +388,6 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     /* Updates the screen if the user has requested graphics.  The priority  *
      * value controls whether or not the Proceed button must be clicked to   *
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
-
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (!draw_state->show_graphics)
@@ -527,8 +494,8 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 }
 
 #ifndef NO_GRAPHICS
-static void toggle_window_mode(GtkWidget* /*widget*/,
-                               ezgl::application* /*app*/) {
+void toggle_window_mode(GtkWidget* /*widget*/,
+                        ezgl::application* /*app*/) {
     window_mode = true;
 }
 
@@ -557,8 +524,7 @@ void alloc_draw_structs(const t_arch* arch) {
 
     /* Space is allocated for draw_rr_node but not initialized because we do *
      * not yet know information about the routing resources.				  */
-    draw_state->draw_rr_node = (t_draw_rr_node*)vtr::malloc(
-        device_ctx.rr_graph.num_nodes() * sizeof(t_draw_rr_node));
+    draw_state->draw_rr_node.resize(device_ctx.rr_graph.num_nodes());
 
     draw_state->arch_info = arch;
 
@@ -575,7 +541,6 @@ void free_draw_structs() {
      *
      * For safety, set all the array pointers to NULL in case any data
      * structure gets freed twice.													 */
-    t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     if (draw_coords != nullptr) {
@@ -585,10 +550,6 @@ void free_draw_structs() {
         draw_coords->tile_y = nullptr;
     }
 
-    if (draw_state != nullptr) {
-        free(draw_state->draw_rr_node);
-        draw_state->draw_rr_node = nullptr;
-    }
 #else
     ;
 #endif /* NO_GRAPHICS */
@@ -610,9 +571,7 @@ void init_draw_coords(float width_val) {
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
     if (rr_graph.num_nodes() != 0) {
-        draw_state->draw_rr_node = (t_draw_rr_node*)vtr::realloc(
-            draw_state->draw_rr_node,
-            (rr_graph.num_nodes()) * sizeof(t_draw_rr_node));
+        draw_state->draw_rr_node.resize(rr_graph.num_nodes());
         /*FIXME: the type cast should be eliminated by making draw_rr_node adapt RRNodeId */
         for (const RRNodeId& rr_id : rr_graph.nodes()) {
             draw_state->draw_rr_node[(size_t)rr_id].color = DEFAULT_RR_NODE_COLOR;
@@ -711,19 +670,36 @@ bool draw_if_net_highlighted(ClusterNetId inet) {
     if (draw_state->net_color[inet] != DEFAULT_RR_NODE_COLOR) {
         return true;
     }
-
     return false;
 }
 
-#    if defined(X11) && !defined(__MINGW32__)
-void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name) {
-    //VTR_LOG("Key press %c (%d)\n", key_pressed, keysym);
+/**
+ * @brief cbk function for key press
+ * 
+ * At the moment, only does something if user is currently typing in searchBar and
+ * hits enter, at which point it runs autocomplete
+ */
+void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_name) {
     std::string key(key_name);
+    GtkWidget* searchBar = GTK_WIDGET(app->get_object("TextInput"));
+    std::string text(gtk_entry_get_text(GTK_ENTRY(searchBar)));
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (gtk_widget_is_focus(searchBar)) {
+        if (key == "Return" || key == "Tab") {
+            enable_autocomplete(app);
+            gtk_editable_set_position(GTK_EDITABLE(searchBar), text.length());
+            return;
+        }
+    }
+    if (draw_state->justEnabled) {
+        draw_state->justEnabled = false;
+    } else {
+        gtk_entry_set_completion(GTK_ENTRY(searchBar), nullptr);
+    }
+    if (key == "Escape") {
+        deselect_all();
+    }
 }
-#    else
-void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* /*key_name*/) {
-}
-#    endif
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
     //  std::cout << "User clicked the ";
@@ -821,7 +797,8 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
         if (hit_node != OPEN) {
             //Update message
 
-            std::string info = describe_rr_node(hit_node);
+            const auto& device_ctx = g_vpr_ctx.device();
+            std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
             std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
             app->update_message(msg.c_str());
         } else {
@@ -1134,6 +1111,10 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect Debug Button
     GObject* debugger = app->get_object("debugButton");
     g_signal_connect(debugger, "clicked", G_CALLBACK(draw_debug_window), NULL);
+
+    // Connect Draw Partitions Checkbox
+    GObject* draw_partitions = app->get_object("drawPartitions");
+    g_signal_connect(draw_partitions, "toggled", G_CALLBACK(set_draw_partitions), app);
 }
 
 // Callback function for Block Outline checkbox
@@ -1174,6 +1155,76 @@ static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer 
         draw_state->clip_routing_util = true;
     else
         draw_state->clip_routing_util = false;
+
+    //redraw
+    application.update_message(draw_state->default_message);
+    application.refresh_drawing();
+}
+
+static void on_dialog_response(GtkDialog* dialog, gint response_id, gpointer /* user_data*/) {
+    switch (response_id) {
+        case GTK_RESPONSE_ACCEPT:
+            std::cout << "GTK_RESPONSE_ACCEPT ";
+            break;
+        case GTK_RESPONSE_DELETE_EVENT:
+            std::cout << "GTK_RESPONSE_DELETE_EVENT (i.e. ’X’ button) ";
+            break;
+        case GTK_RESPONSE_REJECT:
+            std::cout << "GTK_RESPONSE_REJECT ";
+            break;
+        default:
+            std::cout << "UNKNOWN ";
+            break;
+    }
+
+    gtk_widget_destroy(GTK_WIDGET(dialog));
+}
+
+// Callback function for Draw Partitions checkbox
+static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    GObject* window;
+    GtkWidget* dialog;
+
+    window = application.get_object(application.get_main_window_id().c_str());
+
+    dialog = gtk_dialog_new_with_buttons(
+        "Floorplanning Legend",
+        (GtkWindow*)window,
+        GTK_DIALOG_DESTROY_WITH_PARENT,
+        ("CLOSE"),
+        GTK_RESPONSE_ACCEPT,
+        NULL);
+
+    GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    GtkWidget* content_tree = gtk_tree_view_new();
+    content_tree = setup_floorplanning_legend(content_tree);
+
+    gtk_container_add(GTK_CONTAINER(content_area), content_tree);
+
+    GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(content_tree));
+    g_signal_connect(selection,
+                     "changed",
+                     G_CALLBACK(highlight_selected_partition),
+                     NULL);
+
+    // assign corresponding bool value to draw_state->draw_partitions
+    if (gtk_toggle_button_get_active((GtkToggleButton*)widget)) {
+        gtk_widget_show_all(dialog);
+
+        g_signal_connect(
+            GTK_DIALOG(dialog),
+            "response",
+            G_CALLBACK(on_dialog_response),
+            NULL);
+
+        draw_state->draw_partitions = true;
+
+    } else {
+        gtk_widget_destroy(GTK_WIDGET(dialog));
+        draw_state->draw_partitions = false;
+    }
 
     //redraw
     application.update_message(draw_state->default_message);
@@ -1378,6 +1429,28 @@ ezgl::color lighten_color(ezgl::color color, float amount) {
     hsl.l = std::max(0., std::min(MAX_LUMINANCE, hsl.l + amount));
 
     return hsl2color(hsl);
+}
+/**
+ * @brief Returns the max fanout
+ * 
+ * @return size_t 
+ */
+size_t get_max_fanout() {
+    //find maximum fanout
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+    size_t max_fanout = 0;
+    for (ClusterNetId net_id : clb_nlist.nets())
+        max_fanout = std::max(max_fanout, clb_nlist.net_sinks(net_id).size());
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& atom_nlist = atom_ctx.nlist;
+    size_t max_fanout2 = 0;
+    for (AtomNetId net_id : atom_nlist.nets())
+        max_fanout2 = std::max(max_fanout2, atom_nlist.net_sinks(net_id).size());
+
+    size_t max = std::max(max_fanout2, max_fanout);
+    return max;
 }
 
 #endif /* NO_GRAPHICS */

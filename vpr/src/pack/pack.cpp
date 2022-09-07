@@ -42,7 +42,7 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_model* library_models,
               float interc_delay,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
-    auto& helper_ctx = g_vpr_ctx.mutable_helper();
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
 
     std::unordered_set<AtomNetId> is_clock;
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
@@ -113,10 +113,10 @@ bool try_pack(t_packer_opts* packer_opts,
         VTR_LOG("Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
     }
 
-    t_ext_pin_util_targets target_external_pin_util = parse_target_external_pin_util(packer_opts->target_external_pin_util);
+    helper_ctx.target_external_pin_util = parse_target_external_pin_util(packer_opts->target_external_pin_util);
     t_pack_high_fanout_thresholds high_fanout_thresholds = parse_high_fanout_thresholds(packer_opts->high_fanout_threshold);
 
-    VTR_LOG("Packing with pin utilization targets: %s\n", target_external_pin_util_to_string(target_external_pin_util).c_str());
+    VTR_LOG("Packing with pin utilization targets: %s\n", target_external_pin_util_to_string(helper_ctx.target_external_pin_util).c_str());
     VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds_to_string(high_fanout_thresholds).c_str());
 
     bool allow_unrelated_clustering = false;
@@ -149,7 +149,7 @@ bool try_pack(t_packer_opts* packer_opts,
             allow_unrelated_clustering,
             balance_block_type_util,
             lb_type_rr_graphs,
-            target_external_pin_util,
+            helper_ctx.target_external_pin_util,
             high_fanout_thresholds,
             attraction_groups,
             floorplan_regions_overfull,
@@ -211,7 +211,7 @@ bool try_pack(t_packer_opts* packer_opts,
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 attraction_groups.set_att_group_pulls(4);
                 t_ext_pin_util pin_util(1.0, 1.0);
-                target_external_pin_util.set_block_pin_util("clb", pin_util);
+                helper_ctx.target_external_pin_util.set_block_pin_util("clb", pin_util);
             }
 
         } else {

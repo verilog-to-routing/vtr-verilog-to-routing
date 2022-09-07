@@ -22,25 +22,35 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !KJ_HEADER_WARNINGS
-#pragma GCC system_header
-#endif
-
 #include "time.h"
 #include "async.h"
 
+KJ_BEGIN_HEADER
+
 namespace kj {
 
-class Timer {
+class Timer: public MonotonicClock {
   // Interface to time and timer functionality.
   //
   // Each `Timer` may have a different origin, and some `Timer`s may in fact tick at a different
   // rate than real time (e.g. a `Timer` could represent CPU time consumed by a thread).  However,
   // all `Timer`s are monotonic: time will never appear to move backwards, even if the calendar
   // date as tracked by the system is manually modified.
+  //
+  // That said, the `Timer` returned by `kj::setupAsyncIo().provider->getTimer()` in particular is
+  // guaranteed to be synchronized with the `MonotonicClock` returned by
+  // `systemPreciseMonotonicClock()` (or, more precisely, is updated to match that clock whenever
+  // the loop waits).
+  //
+  // Note that the value returned by `Timer::now()` only changes each time the
+  // event loop waits for I/O from the system. While the event loop is actively
+  // running, the time stays constant. This is intended to make behavior more
+  // deterministic and reproducible. However, if you need up-to-the-cycle
+  // accurate time, then `Timer::now()` is not appropriate. Instead, use
+  // `systemPreciseMonotonicClock()` directly in this case.
 
 public:
-  virtual TimePoint now() = 0;
+  virtual TimePoint now() const = 0;
   // Returns the current value of a clock that moves steadily forward, independent of any
   // changes in the wall clock. The value is updated every time the event loop waits,
   // and is constant in-between waits.
@@ -99,7 +109,7 @@ public:
   // Set the time to `time` and fire any at() events that have been passed.
 
   // implements Timer ----------------------------------------------------------
-  TimePoint now() override;
+  TimePoint now() const override;
   Promise<void> atTime(TimePoint time) override;
   Promise<void> afterDelay(Duration delay) override;
 
@@ -127,6 +137,8 @@ Promise<T> Timer::timeoutAfter(Duration delay, Promise<T>&& promise) {
   }));
 }
 
-inline TimePoint TimerImpl::now() { return time; }
+inline TimePoint TimerImpl::now() const { return time; }
 
 }  // namespace kj
+
+KJ_END_HEADER

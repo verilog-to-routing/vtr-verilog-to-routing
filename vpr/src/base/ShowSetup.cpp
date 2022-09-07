@@ -20,6 +20,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
                            const t_annealing_sched& AnnealSched);
 static void ShowRouterOpts(const t_router_opts& RouterOpts);
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
+static void ShowNocOpts(const t_noc_opts& NocOpts);
 
 static void ShowAnnealSched(const t_annealing_sched& AnnealSched);
 
@@ -60,6 +61,9 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     }
     if (vpr_setup.AnalysisOpts.doAnalysis) {
         ShowAnalysisOpts(vpr_setup.AnalysisOpts);
+    }
+    if (vpr_setup.NocOpts.noc) {
+        ShowNocOpts(vpr_setup.NocOpts);
     }
 }
 
@@ -134,14 +138,13 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
         if (is_io_type(physical_tile)) {
             for (j = 0; j < logical_block->pb_type->num_pins; j++) {
                 int physical_pin = get_physical_pin(physical_tile, logical_block, j);
-                auto pin_class = physical_tile->pin_class[physical_pin];
-                auto class_inf = physical_tile->class_inf[pin_class];
 
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
-                    if (class_inf.type == DRIVER) {
+                    auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
+                    if (pin_type == DRIVER) {
                         L_num_p_inputs++;
                     } else {
-                        VTR_ASSERT(class_inf.type == RECEIVER);
+                        VTR_ASSERT(pin_type == RECEIVER);
                         L_num_p_outputs++;
                     }
                 }
@@ -238,6 +241,13 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             break;
         default:
             VTR_LOG_ERROR("Unknown router opt\n");
+    }
+
+    VTR_LOG("RouterOpts.flat_routing: ");
+    if (RouterOpts.flat_routing) {
+        VTR_LOG("true\n");
+    } else {
+        VTR_LOG("false\n");
     }
 
     if (DETAILED == RouterOpts.route_type) {
@@ -762,5 +772,11 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
     VTR_LOG("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.target_external_pin_util: %s", vtr::join(PackerOpts.target_external_pin_util, " ").c_str());
     VTR_LOG("\n");
+    VTR_LOG("\n");
+}
+
+static void ShowNocOpts(const t_noc_opts& NocOpts) {
+    VTR_LOG("NocOpts.noc_flows_file: %s\n", NocOpts.noc_flows_file.c_str());
+    VTR_LOG("NocOpts.noc_routing_algorithm: %s\n", NocOpts.noc_routing_algorithm.c_str());
     VTR_LOG("\n");
 }

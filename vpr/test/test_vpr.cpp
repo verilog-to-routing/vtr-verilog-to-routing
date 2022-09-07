@@ -6,6 +6,7 @@
 #include "rr_graph_writer.h"
 #include "arch_util.h"
 #include "vpr_api.h"
+#include "echo_files.h"
 #include <cstring>
 #include <vector>
 
@@ -134,7 +135,11 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         vpr_create_device(vpr_setup, arch);
 
         const auto& device_ctx = g_vpr_ctx.device();
+        auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
         const auto& rr_graph = device_ctx.rr_graph;
+        auto& rr_graph_builder = mutable_device_ctx.rr_graph_builder;
+        bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
+        const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
 
         for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
             if ((rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY) && rr_graph.num_edges(inode) > 0) {
@@ -147,10 +152,24 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         sink_inode = size_t(rr_graph.edge_sink_node(RRNodeId(src_inode), 0));
         switch_id = rr_graph.edge_switch(RRNodeId(src_inode), 0);
 
-        vpr::add_rr_node_metadata(src_inode, vtr::string_view("node"), vtr::string_view("test node"));
-        vpr::add_rr_edge_metadata(src_inode, sink_inode, switch_id, vtr::string_view("edge"), vtr::string_view("test edge"));
+        vpr::add_rr_node_metadata(rr_graph_builder.rr_node_metadata(), src_inode, vtr::string_view("node"), vtr::string_view("test node"), device_ctx.arch);
+        vpr::add_rr_edge_metadata(rr_graph_builder.rr_edge_metadata(), src_inode, sink_inode, switch_id, vtr::string_view("edge"), vtr::string_view("test edge"), device_ctx.arch);
 
-        write_rr_graph(kRrGraphFile);
+        write_rr_graph(&mutable_device_ctx.rr_graph_builder,
+                       &mutable_device_ctx.rr_graph,
+                       device_ctx.physical_tile_types,
+                       &mutable_device_ctx.rr_indexed_data,
+                       &mutable_device_ctx.rr_rc_data,
+                       device_ctx.grid,
+                       device_ctx.arch_switch_inf,
+                       device_ctx.arch,
+                       &mutable_device_ctx.chan_width,
+                       device_ctx.num_arch_switches,
+                       kRrGraphFile,
+                       device_ctx.virtual_clock_network_root_idx,
+                       echo_enabled,
+                       echo_file_name,
+                       false);
         vpr_free_all(arch, vpr_setup);
 
         auto& atom_ctx = g_vpr_ctx.mutable_atom();
