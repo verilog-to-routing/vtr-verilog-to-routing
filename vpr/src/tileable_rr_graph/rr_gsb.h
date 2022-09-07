@@ -117,9 +117,6 @@ class RRGSB {
     bool is_sb_node_exist_opposite_side(const RRGraphView& rr_graph, const RRNodeId& node, const e_side& node_side) const;
 
   public: /* Accessors: to identify mirrors */
-    /* check if the candidate SB is a mirror of the current one */
-    bool is_cb_mirror(const RRGraphView& rr_graph, const RRGSB& cand, const t_rr_type& cb_type) const;
-
     /* check if the connect block exists in the GSB */
     bool is_cb_exist(const t_rr_type& cb_type) const;
 
@@ -133,37 +130,7 @@ class RRGSB {
      * on being a mirror of the current one
      */
     bool is_sb_mirrorable(const RRGraphView& rr_graph, const RRGSB& cand) const;
-
-    /* check if all the routing segments of a side of candidate SB is a mirror of the current one */
-    bool is_sb_side_segment_mirror(const RRGraphView& rr_graph, const RRGSB& cand, const e_side& side, const RRSegmentId& seg_id) const;
-
-    /* check if a side of candidate SB is a mirror of the current one
-     * Check the specified side of two switch blocks:
-     * 1. Number of channel/opin/ipin rr_nodes are same
-     * For channel rr_nodes
-     * 2. check if their track_ids (ptc_num) are same
-     * 3. Check if the switches (ids) are same
-     * For opin/ipin rr_nodes,
-     * 4. check if their parent type_descriptors same,
-     * 5. check if pin class id and pin id are same
-     * If all above are satisfied, the side of the two switch blocks are mirrors!
-     */
-    bool is_sb_side_mirror(const RRGraphView& rr_graph, const RRGSB& cand, const e_side& side) const;
-
-    /* check if the candidate SB is a mirror of the current one
-     * Idenify mirror Switch blocks
-     * Check each two switch blocks:
-     * 1. Number of channel/opin/ipin rr_nodes are same
-     * For channel rr_nodes
-     * 2. check if their track_ids (ptc_num) are same
-     * 3. Check if the switches (ids) are same
-     * For opin/ipin rr_nodes,
-     * 4. check if their parent type_descriptors same,
-     * 5. check if pin class id and pin id are same
-     * If all above are satisfied, the two switch blocks are mirrors!
-     */
-    bool is_sb_mirror(const RRGraphView& rr_graph, const RRGSB& cand) const;
-
+    
   public:                                                                 /* Cooridinator conversion and output  */
     size_t get_x() const;                                                 /* get the x coordinate of this switch block */
     size_t get_y() const;                                                 /* get the y coordinate of this switch block */
@@ -230,17 +197,6 @@ class RRGSB {
                                  const size_t& track_id);
 
   private: /* internal functions */
-    bool is_sb_node_mirror(const RRGraphView& rr_graph,
-                           const RRGSB& cand,
-                           const e_side& node_side,
-                           const size_t& track_id) const;
-
-    bool is_cb_node_mirror(const RRGraphView& rr_graph,
-                           const RRGSB& cand,
-                           const t_rr_type& cb_type,
-                           const e_side& node_side,
-                           const size_t& node_id) const;
-
     size_t get_track_id_first_short_connection(const RRGraphView& rr_graph, const e_side& node_side) const;
 
   private: /* internal validators */
