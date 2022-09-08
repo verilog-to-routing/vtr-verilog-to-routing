@@ -65,6 +65,8 @@
 #include "re_cluster_util.h"
 #include "cluster_placement.h"
 
+#include "noc_place_utils.h"
+
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
  * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
@@ -278,6 +280,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               PlacerCriticalities* criticalities,
                               PlacerSetupSlacks* setup_slacks,
                               const t_placer_opts& placer_opts,
+                              const t_noc_opts& noc_opts,
                               MoveTypeStat& move_type_stat,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
@@ -297,7 +300,7 @@ static int check_placement_consistency();
 static int check_block_placement_consistency();
 static int check_macro_placement_consistency();
 
-static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t_annealing_sched annealing_sched, const PlaceDelayModel* delay_model, PlacerCriticalities* criticalities, PlacerSetupSlacks* setup_slacks, SetupTimingInfo* timing_info, MoveGenerator& move_generator, ManualMoveGenerator& manual_move_generator, ClusteredPinTimingInvalidator* pin_timing_invalidator, t_pl_blocks_to_be_moved& blocks_affected, const t_placer_opts& placer_opts, MoveTypeStat& move_type_stat);
+static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t_annealing_sched annealing_sched, const PlaceDelayModel* delay_model, PlacerCriticalities* criticalities, PlacerSetupSlacks* setup_slacks, SetupTimingInfo* timing_info, MoveGenerator& move_generator, ManualMoveGenerator& manual_move_generator, ClusteredPinTimingInvalidator* pin_timing_invalidator, t_pl_blocks_to_be_moved& blocks_affected, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts, MoveTypeStat& move_type_stat);
 
 static int count_connections();
 
@@ -366,6 +369,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
 
 static void placement_inner_loop(const t_annealing_state* state,
                                  const t_placer_opts& placer_opts,
+                                 const t_noc_opts& noc_opts,
                                  int inner_recompute_limit,
                                  t_placer_statistics* stats,
                                  t_placer_costs* costs,
@@ -732,7 +736,7 @@ void try_place(const t_placer_opts& placer_opts,
                          place_delay_model.get(), placer_criticalities.get(),
                          placer_setup_slacks.get(), timing_info.get(), *move_generator,
                          *manual_move_generator, pin_timing_invalidator.get(),
-                         blocks_affected, placer_opts, move_type_stat);
+                         blocks_affected, placer_opts, noc_opts, move_type_stat);
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(
@@ -795,7 +799,8 @@ void try_place(const t_placer_opts& placer_opts,
                                           agent_state, placer_opts, false, current_move_generator);
 
             //do a complete inner loop iteration
-            placement_inner_loop(&state, placer_opts, inner_recompute_limit,
+            placement_inner_loop(&state, placer_opts, noc_opts,
+                                 inner_recompute_limit,
                                  &stats, &costs, &moves_since_cost_recompute,
                                  pin_timing_invalidator.get(), place_delay_model.get(),
                                  placer_criticalities.get(), placer_setup_slacks.get(),
@@ -858,7 +863,8 @@ void try_place(const t_placer_opts& placer_opts,
 
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
-        placement_inner_loop(&state, placer_opts, quench_recompute_limit,
+        placement_inner_loop(&state, placer_opts, noc_opts,
+                             quench_recompute_limit,
                              &stats, &costs, &moves_since_cost_recompute,
                              pin_timing_invalidator.get(), place_delay_model.get(),
                              placer_criticalities.get(), placer_setup_slacks.get(),
@@ -1034,6 +1040,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
 /* Function which contains the inner loop of the simulated annealing */
 static void placement_inner_loop(const t_annealing_state* state,
                                  const t_placer_opts& placer_opts,
+                                 const t_noc_opts& noc_opts,
                                  int inner_recompute_limit,
                                  t_placer_statistics* stats,
                                  t_placer_costs* costs,
@@ -1064,7 +1071,7 @@ static void placement_inner_loop(const t_annealing_state* state,
         e_move_result swap_result = try_swap(state, costs, move_generator,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
-                                             placer_opts, move_type_stat, place_algorithm, timing_bb_factor, manual_move_enabled);
+                                             placer_opts, noc_opts,move_type_stat, place_algorithm, timing_bb_factor, manual_move_enabled);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1189,7 +1196,7 @@ static int count_connections() {
 }
 
 ///@brief Find the starting temperature for the annealing loop.
-static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t_annealing_sched annealing_sched, const PlaceDelayModel* delay_model, PlacerCriticalities* criticalities, PlacerSetupSlacks* setup_slacks, SetupTimingInfo* timing_info, MoveGenerator& move_generator, ManualMoveGenerator& manual_move_generator, ClusteredPinTimingInvalidator* pin_timing_invalidator, t_pl_blocks_to_be_moved& blocks_affected, const t_placer_opts& placer_opts, MoveTypeStat& move_type_stat) {
+static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t_annealing_sched annealing_sched, const PlaceDelayModel* delay_model, PlacerCriticalities* criticalities, PlacerSetupSlacks* setup_slacks, SetupTimingInfo* timing_info, MoveGenerator& move_generator, ManualMoveGenerator& manual_move_generator, ClusteredPinTimingInvalidator* pin_timing_invalidator, t_pl_blocks_to_be_moved& blocks_affected, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts, MoveTypeStat& move_type_stat) {
     if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
     }
@@ -1221,7 +1228,7 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
         e_move_result swap_result = try_swap(state, costs, move_generator,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
-                                             placer_opts, move_type_stat, placer_opts.place_algorithm,
+                                             placer_opts, noc_opts,move_type_stat, placer_opts.place_algorithm,
                                              REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled);
 
         if (swap_result == ACCEPTED) {
@@ -1316,6 +1323,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                               PlacerCriticalities* criticalities,
                               PlacerSetupSlacks* setup_slacks,
                               const t_placer_opts& placer_opts,
+                              const t_noc_opts& noc_opts,
                               MoveTypeStat& move_type_stat,
                               const t_place_algorithm& place_algorithm,
                               float timing_bb_factor,
@@ -1448,6 +1456,11 @@ static e_move_result try_swap(const t_annealing_state* state,
             delta_c = bb_delta_c;
         }
 
+        /* Update the NoC datastructure and costs*/
+        if (noc_opts.noc) {
+            find_affected_noc_routers_and_update_noc_costs(blocks_affected);
+        }
+
         /* 1 -> move accepted, 0 -> rejected. */
         move_outcome = assess_swap(delta_c, state->t);
 
@@ -1535,6 +1548,12 @@ static e_move_result try_swap(const t_annealing_state* state,
                 /* Unstage the values stored in proposed_* data structures */
                 revert_td_cost(blocks_affected);
             }
+
+            /* Revert the traffic flow routes within the NoC*/
+            if (noc_opts.noc) {
+                revert_noc_traffic_flow_routes(blocks_affected);
+            }
+
         }
 
         move_outcome_stats.delta_cost_norm = delta_c;
