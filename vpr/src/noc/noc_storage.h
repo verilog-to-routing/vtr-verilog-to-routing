@@ -105,7 +105,7 @@ class NocStorage {
     bool built_noc;
 
     /**
-     * @brief Represents the maximum allowed bandwidth for the links in the NoC (in Gbps)
+     * @brief Represents the maximum allowed bandwidth for the links in the NoC (in bps)
      */
     double noc_link_bandwidth;
 
