@@ -110,7 +110,7 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
 /* This function is used by get_cost_from_lookahead function. If the given node to the function belongs to one of the
  * intra-cluster routing resources, it would return a node corresponds to a pin on the tile.
 */
-static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat);
+//static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat);
 
 /************************** Subroutine definitions ***************************/
 
@@ -1808,28 +1808,31 @@ std::string describe_unrouteable_connection(const int source_node, const int sin
 }
 
 float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
-                              const RRGraphView& rr_graph_view,
+                              const RRGraphView& /*rr_graph_view*/,
                               RRNodeId from_node,
                               RRNodeId to_node,
                               float R_upstream,
                               const t_conn_cost_params cost_params,
-                              bool is_flat) {
-    if (is_flat) {
-        if (node_in_same_physical_tile(from_node, to_node)) {
-            return 0.0;
-        } else {
-            RRNodeId on_tile_from_node = get_connected_on_tile_node(rr_graph_view, from_node, is_flat);
-            RRNodeId on_tile_to_node = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
-            VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
-            VTR_ASSERT(on_tile_to_node != RRNodeId::INVALID());
-            return router_lookahead.get_expected_cost(on_tile_from_node,
-                                                      on_tile_to_node,
-                                                      cost_params,
-                                                      R_upstream);
-        }
-    } else {
-        return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
-    }
+                              bool /*is_flat*/) {
+
+    return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
+
+//    if (is_flat) {
+//        if (node_in_same_physical_tile(from_node, to_node)) {
+//            return 0.0;
+//        } else {
+//            RRNodeId on_tile_from_node = get_connected_on_tile_node(rr_graph_view, from_node, is_flat);
+//            RRNodeId on_tile_to_node = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
+//            VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
+//            VTR_ASSERT(on_tile_to_node != RRNodeId::INVALID());
+//            return router_lookahead.get_expected_cost(on_tile_from_node,
+//                                                      on_tile_to_node,
+//                                                      cost_params,
+//                                                      R_upstream);
+//        }
+//    } else {
+//        return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
+//    }
 }
 
 void update_router_stats(const DeviceContext& device_ctx,
@@ -1869,36 +1872,36 @@ void update_router_stats(const DeviceContext& device_ctx,
 
 }
 
-static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat) {
-    auto& device_ctx = g_vpr_ctx.device();
-    int x_low = rr_graph_view.node_xlow(node_id);
-    int y_low = rr_graph_view.node_ylow(node_id);
-    auto node_type = rr_graph_view.node_type(node_id);
-
-    if (is_inter_cluster_node(device_ctx.grid[x_low][y_low].type, node_type, rr_graph_view.node_ptc_num(node_id))) {
-        /* if node is already on/out cluster, return itself*/
-        return node_id;
-    } else {
-        /* AM: For the time being, we return the first pin with valid RRNodeId on the tile. This approach is obviously flawed.
-         * I am now working on the lookahead, so it can accommodate the internal nodes. Until the lookahead gets fixed, we have to
-         * stick to the current approach.
-         */
-        int max_ptc = get_rr_node_max_ptc(rr_graph_view,
-                                          node_id,
-                                          is_flat);
-        RRNodeId on_tile_node = RRNodeId::INVALID();
-        int on_tile_ptc = 0;
-        while (on_tile_ptc < max_ptc) {
-            for (auto side : SIDES) {
-                on_tile_node = device_ctx.rr_graph.node_lookup().find_node(x_low, y_low, node_type, on_tile_ptc, side);
-                if (on_tile_node != RRNodeId::INVALID())
-                    break;
-            }
-            if (on_tile_node != RRNodeId::INVALID()) {
-                break;
-            }
-            on_tile_ptc++;
-        }
-        return on_tile_node;
-    }
-}
+//static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat) {
+//    auto& device_ctx = g_vpr_ctx.device();
+//    int x_low = rr_graph_view.node_xlow(node_id);
+//    int y_low = rr_graph_view.node_ylow(node_id);
+//    auto node_type = rr_graph_view.node_type(node_id);
+//
+//    if (is_inter_cluster_node(device_ctx.grid[x_low][y_low].type, node_type, rr_graph_view.node_ptc_num(node_id))) {
+//        /* if node is already on/out cluster, return itself*/
+//        return node_id;
+//    } else {
+//        /* AM: For the time being, we return the first pin with valid RRNodeId on the tile. This approach is obviously flawed.
+//         * I am now working on the lookahead, so it can accommodate the internal nodes. Until the lookahead gets fixed, we have to
+//         * stick to the current approach.
+//         */
+//        int max_ptc = get_rr_node_max_ptc(rr_graph_view,
+//                                          node_id,
+//                                          is_flat);
+//        RRNodeId on_tile_node = RRNodeId::INVALID();
+//        int on_tile_ptc = 0;
+//        while (on_tile_ptc < max_ptc) {
+//            for (auto side : SIDES) {
+//                on_tile_node = device_ctx.rr_graph.node_lookup().find_node(x_low, y_low, node_type, on_tile_ptc, side);
+//                if (on_tile_node != RRNodeId::INVALID())
+//                    break;
+//            }
+//            if (on_tile_node != RRNodeId::INVALID()) {
+//                break;
+//            }
+//            on_tile_ptc++;
+//        }
+//        return on_tile_node;
+//    }
+//}

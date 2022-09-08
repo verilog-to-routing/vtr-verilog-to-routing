@@ -207,12 +207,18 @@ t_wire_cost_map f_wire_cost_map;
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y);
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
 static void compute_tiles_lookahead(std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_ipin_delays>& inter_tile_pin_primitive_pin_delay,
+                                    std::map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                     const t_det_routing_arch& det_routing_arch,
                                     const DeviceContext& device_ctx);
+
 static void compute_tile_lookahead(std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_ipin_delays>& inter_tile_pin_primitive_pin_delay,
                                    const t_physical_tile_type& physical_tile,
                                    const t_det_routing_arch& det_routing_arch,
                                    const int delayless_switch);
+
+static void store_min_cost_to_sinks(std::map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
+                                    t_physical_tile_type_ptr physical_tile,
+                                    const std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_ipin_delays>& inter_tile_pin_primitive_pin_delay);
 
 /* returns index of a node from which to start routing */
 static RRNodeId get_start_node(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
@@ -248,28 +254,53 @@ static void print_router_cost_map(const t_routing_cost_map& router_cost_map);
 float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)].type;
-    t_rr_type rr_type = rr_graph.node_type(current_node);
-    //  TODO: These two assertions is only added for debugging flat-routing - it needs to be removed
-    VTR_ASSERT(is_inter_cluster_node(physical_type,
-                               rr_type,
-                               rr_graph.node_ptc_num(current_node)));
 
-    t_physical_tile_type_ptr target_physical_type = device_ctx.grid[rr_graph.node_xlow(target_node)][rr_graph.node_ylow(target_node)].type;
-    VTR_ASSERT(is_inter_cluster_node(target_physical_type,
-                               rr_graph.node_type(target_node),
-                               rr_graph.node_ptc_num(target_node)));
+    t_physical_tile_type_ptr from_physical_type =
+        device_ctx.grid[rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)].type;
+    t_rr_type from_rr_type = rr_graph.node_type(current_node);
+    int from_node_ptc_num = rr_graph.node_ptc_num(current_node);
 
-    if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
+    t_physical_tile_type_ptr to_physical_type =
+        device_ctx.grid[rr_graph.node_xlow(target_node)][rr_graph.node_ylow(target_node)].type;
+    t_rr_type to_rr_type = rr_graph.node_type(target_node);
+    int to_node_ptc_num = rr_graph.node_ptc_num(target_node);
+    VTR_ASSERT(to_rr_type == t_rr_type::SINK);
+
+
+    if(is_inter_cluster_node(from_physical_type,
+                              from_rr_type,
+                              from_node_ptc_num)) {
         float delay_cost, cong_cost;
+        float delay_offset = 0.;
+        float cong_offset = 0.;
 
         // Get the total cost using the combined delay and congestion costs
         std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
-        return delay_cost + cong_cost;
-    } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
-        return (device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
-    } else { /* Change this if you want to investigate route-throughs */
-        return (0.);
+        if(is_flat_) {
+            delay_offset = tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
+            cong_offset = tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
+        }
+        return delay_cost + cong_cost + delay_offset + cong_offset;
+    } else {
+        VTR_ASSERT(is_flat_);
+//        float delay_cost, cong_cost;
+//        if(node_in_same_physical_tile(current_node, target_node)){
+//            const auto& pin_delays  = inter_tile_pin_primitive_pin_delay.at(from_physical_type)[from_node_ptc_num];
+//            auto pin_delay_itr = pin_delays.find(rr_graph.node_ptc_num(target_node));
+//            if(pin_delay_itr == pin_delays.end()) {
+//                delay_cost = std::numeric_limits<float>::max() / 1e12;
+//                cong_cost = std::numeric_limits<float>::max() / 1e12;
+//            } else {
+//                delay_cost = pin_delay_itr->second.delay;
+//                cong_cost = pin_delay_itr->second.congestion;
+//            }
+//        } else {
+//            delay_cost = 0.;
+//            cong_cost = 0.;
+//        }
+//        return delay_cost + cong_cost;
+        return 0.0;
+
     }
 }
 
@@ -409,6 +440,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
 
     if(is_flat_) {
         compute_tiles_lookahead(inter_tile_pin_primitive_pin_delay,
+                                tile_min_cost,
                                 det_routing_arch_,
                                 g_vpr_ctx.device());
     }
@@ -1167,6 +1199,7 @@ static void print_router_cost_map(const t_routing_cost_map& router_cost_map) {
 }
 
 static void compute_tiles_lookahead(std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_ipin_delays>& inter_tile_pin_primitive_pin_delay,
+                                    std::map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                     const t_det_routing_arch& det_routing_arch,
                                     const DeviceContext& device_ctx) {
     vtr::ScopedStartFinishTimer timer("Computing tile lookahead");
@@ -1181,6 +1214,9 @@ static void compute_tiles_lookahead(std::map<t_physical_tile_type_ptr, util::t_i
                                tile,
                                det_routing_arch,
                                (int)device_ctx.arch_switch_inf.size()-1);
+        store_min_cost_to_sinks(tile_min_cost,
+                                &tile,
+                                inter_tile_pin_primitive_pin_delay);
     }
 }
 
@@ -1216,6 +1252,48 @@ static void compute_tile_lookahead(std::map<t_physical_tile_type_ptr, util::t_ip
     VTR_ASSERT(insert_res.second);
 
     rr_graph_builder.clear();
+}
+
+static void store_min_cost_to_sinks(std::map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
+                                    t_physical_tile_type_ptr physical_tile,
+                                    const std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_ipin_delays>& inter_tile_pin_primitive_pin_delay) {
+    std::unordered_set<int> primitive_sinks;
+    const auto& tile_pin_delays = inter_tile_pin_primitive_pin_delay.at(physical_tile);
+    std::unordered_map<int, util::Cost_Entry> min_cost_map;
+
+    for(const auto& class_pair : physical_tile->internal_class_inf) {
+        int class_physical_num = class_pair.first;
+        const auto& class_inf = class_pair.second;
+        if(class_inf.type != e_pin_type::RECEIVER) {
+            continue;
+        }
+        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, class_inf.pinlist[0]);
+        if(pb_pin->is_primitive_pin()){
+            auto insert_res = primitive_sinks.insert(class_physical_num);
+            VTR_ASSERT(insert_res.second);
+        }
+    }
+
+    for(int primitive_sink : primitive_sinks) {
+        auto min_cost = util::Cost_Entry(std::numeric_limits<float>::max() / 1e12,
+                                         std::numeric_limits<float>::max() / 1e12);
+
+        for(int pin_physical_num = 0; pin_physical_num < physical_tile->num_pins; pin_physical_num++) {
+            const auto& pin_delays = tile_pin_delays[pin_physical_num];
+            if(pin_delays.find(primitive_sink) != pin_delays.end()) {
+                auto pin_cost = pin_delays.at(primitive_sink);
+                if(pin_cost.delay < min_cost.delay) {
+                    min_cost = pin_cost;
+                }
+            }
+        }
+        auto insert_res= min_cost_map.insert(std::make_pair(primitive_sink, min_cost));
+        VTR_ASSERT(insert_res.second);
+    }
+
+    auto insert_res = tile_min_cost.insert(std::make_pair(physical_tile, min_cost_map));
+    VTR_ASSERT(insert_res.second);
+
 }
 
 //

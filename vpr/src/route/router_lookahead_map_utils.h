@@ -270,8 +270,8 @@ struct t_reachable_wire_inf {
 // as the lookahead expected cost.
 typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin_delays;
 
-//[from_pin][target_pin]->cost
-typedef std::vector<std::map<int, Cost_Entry>> t_ipin_primitive_ipin_delays;
+//[from pin ptc num][target src ptc num]->cost
+typedef std::vector<std::unordered_map<int, Cost_Entry>> t_ipin_primitive_ipin_delays;
 
 //[0..device_ctx.physical_tile_types.size()-1][0..max_ptc-1]
 // ^                                           ^
