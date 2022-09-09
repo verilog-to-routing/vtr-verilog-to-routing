@@ -615,10 +615,10 @@ static void LoadPinLoc(pugi::xml_node Locations,
                                                                            token.c_str(),
                                                                            loc_data);
                             /* Get the offset in the capacity range */
-                            auto capacity_range = ProcessInstanceString<t_physical_tile_type_ptr>(Locations,
-                                                                                                  &sub_tile,
-                                                                                                  token.c_str(),
-                                                                                                  loc_data);
+                            auto capacity_range = ProcessInstanceString<t_sub_tile*>(Locations,
+                                                                                     &sub_tile,
+                                                                                     token.c_str(),
+                                                                                     loc_data);
                             VTR_ASSERT(0 <= capacity_range.first && capacity_range.second < sub_tile_capacity);
                             for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
                                 VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
@@ -3506,7 +3506,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         for (int iinst = 0; iinst < PhysicalTileType->capacity; ++iinst) {
             for (const auto& port : SubTile->ports) {
                 for (int ipin = 0; ipin < port.num_pins; ++ipin) {
-                    if (!port_pins_with_specified_locations[port.name].count(ipin)) {
+                    if (!port_pins_with_specified_locations[iinst][port.name].count(ipin)) {
                         //Missing
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                        "Pin '%s[%d].%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
