@@ -819,6 +819,7 @@ void alloc_and_load_pb_stats(t_pb* pb, const int feasible_block_array_size) {
     for (int i = 0; i < feasible_block_array_size; i++)
         pb->pb_stats->feasible_blocks[i] = nullptr;
 
+
     pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 
     pb->pb_stats->pulled_from_atom_groups = 0;

@@ -321,12 +321,6 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
 
     /* get a single number for channel width. 
      * AA: Note that this needs be changed to support different horizontal and vertical channels. Future action item ... */
-
-    int channel_width = nodes_per_chan->max;
-    if (nodes_per_chan->max != nodes_per_chan->x_min || nodes_per_chan->max != nodes_per_chan->y_min) {
-        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Custom switch blocks currently support consistent channel widths only.");
-    }
-
     /* sparse array that will contain switch block connections */
     t_sb_connection_map* sb_conns = new t_sb_connection_map;
 
@@ -370,8 +364,6 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
 
 #else
 
-    //channel_width is only used in FAST_SB_COMPUTATION, do below so it doesn't throw a compile warning.
-    (void)channel_width;
     /******** slow switch block computation method; computes switchblocks at each coordinate ********/
     /* iterate over all the switchblocks specified in the architecture */
     for (int i_sb = 0; i_sb < (int)switchblocks.size(); i_sb++) {
