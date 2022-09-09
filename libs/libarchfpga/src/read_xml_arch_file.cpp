@@ -768,7 +768,7 @@ static std::pair<int, int> ProcessInstanceString(pugi::xml_node Locations,
     token = tokens[token_index];
 
     int first_inst = 0;
-    int last_inst = type->capacity - 1;
+    int last_inst = type->capacity.total() - 1;
 
     /* If there is a dot, such as io.input[0:3], it indicates the full range of the capacity, the default value should be returned */
     if (token.type == TOKEN_DOT) {
