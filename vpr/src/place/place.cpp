@@ -1254,7 +1254,7 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
 
     /* Set the initial temperature to 20 times the standard of deviation */
     /* so that the initial temperature adjusts according to the circuit */
-    return (10. * std_dev);
+    return (5. * std_dev);
 }
 
 static void update_move_nets(int num_nets_affected) {
