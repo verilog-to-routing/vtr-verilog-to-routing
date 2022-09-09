@@ -123,6 +123,11 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                                             T type,
                                             const char* pin_loc_string,
                                             const pugiutil::loc_data& loc_data);
+template<typename T>
+static std::pair<int, int> ProcessInstanceString(pugi::xml_node Locations,
+                                                 T type,
+                                                 const char* pin_loc_string,
+                                                 const pugiutil::loc_data& loc_data);
 
 /* Process XML hierarchy */
 static void ProcessTiles(pugi::xml_node Node,
@@ -741,6 +746,99 @@ static void LoadPinLoc(pugi::xml_node Locations,
     }
 }
 
+/* Parse the string to extract instance range, e.g., io[4:7] -> (4, 7)
+ * If no instance range is explicitly defined, we assume the range of type capacity, i.e., (0, capacity - 1) */
+template<typename T>
+static std::pair<int, int> ProcessInstanceString(pugi::xml_node Locations,
+                                                 T type,
+                                                 const char* pin_loc_string,
+                                                 const pugiutil::loc_data& loc_data) {
+    int num_tokens;
+    auto tokens = GetTokensFromString(pin_loc_string, &num_tokens);
+
+    int token_index = 0;
+    auto token = tokens[token_index];
+
+    if (token.type != TOKEN_STRING || 0 != strcmp(token.data, type->name)) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "Wrong physical type name of the port: %s\n", pin_loc_string);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    int first_inst = 0;
+    int last_inst = type->capacity - 1;
+
+    /* If there is a dot, such as io.input[0:3], it indicates the full range of the capacity, the default value should be returned */
+    if (token.type == TOKEN_DOT) {
+        freeTokens(tokens, num_tokens);
+        return std::make_pair(first_inst, last_inst);
+    }
+
+    /* If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here. */
+    if (token.type != TOKEN_OPEN_SQUARE_BRACKET) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No open square bracket present: %s\n", pin_loc_string);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_INT) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No integer to indicate least significant instance index: %s\n", pin_loc_string);
+    }
+
+    first_inst = vtr::atoi(token.data);
+
+    token_index++;
+    token = tokens[token_index];
+
+    // Single pin is specified
+    if (token.type != TOKEN_COLON) {
+        if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                           "No closing bracket: %s\n", pin_loc_string);
+        }
+
+        token_index++;
+
+        if (token_index != num_tokens) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                           "instance of pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
+        }
+
+        freeTokens(tokens, num_tokens);
+        return std::make_pair(first_inst, first_inst);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_INT) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No integer to indicate most significant instance index: %s\n", pin_loc_string);
+    }
+
+    last_inst = vtr::atoi(token.data);
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No closed square bracket: %s\n", pin_loc_string);
+    }
+
+    if (first_inst > last_inst) {
+        std::swap(first_inst, last_inst);
+    }
+
+    freeTokens(tokens, num_tokens);
+    return std::make_pair(first_inst, last_inst);
+}
+
 template<typename T>
 static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                                             T type,
@@ -759,6 +857,20 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
 
     token_index++;
     token = tokens[token_index];
+
+    /* If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here. */
+    if (token.type == TOKEN_OPEN_SQUARE_BRACKET) {
+        while (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+            token_index++;
+            token = tokens[token_index];
+            if (token_index == num_tokens) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                               "Found an open '[' but miss close ']' of the port: %s\n", pin_loc_string);
+            }
+        }
+        token_index++;
+        token = tokens[token_index];
+    }
 
     if (token.type != TOKEN_DOT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
