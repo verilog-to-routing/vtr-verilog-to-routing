@@ -270,14 +270,14 @@ static bool find_centroid_neighbor(t_pl_loc centroid, t_logical_block_type_ptr b
     return legal;
 }
 
-static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_loc& centroid, vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
+static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_loc& centroid) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int x, y, ipin;
+    int x, y;
     float acc_weight = 0;
     float acc_x = 0;
     float acc_y = 0;
-    float weight = 1;
+
     ClusterBlockId b_from = pl_macro.members.at(0).blk_index;
     std::vector<ClusterBlockId> connected_blocks_to_update;
 
@@ -298,7 +298,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
 
         //if the pin is driver iterate over all the sinks
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
-            if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            if (cluster_ctx.clb_nlist.net_is_ignored(net_id) || cluster_ctx.clb_nlist.net_is_global(net_id)) {
                 continue;
             }
             for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
@@ -306,42 +306,33 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
                  * This case rarely happens but causes QoR degradation */
                 if (pin_id == sink_pin_id)
                     continue;
-                ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin_id);
-                // //sara_TODO: delete testing..
+
                 if (!is_block_placed(cluster_ctx.clb_nlist.pin_block(sink_pin_id))) {
-                    //only check
-                    // block_scores[cluster_ctx.clb_nlist.pin_block(sink_pin_id)].num_of_placed_connections++;
                     connected_blocks_to_update.push_back(cluster_ctx.clb_nlist.pin_block(sink_pin_id));
                     continue;
                 }
-                //end of testing
 
                 get_coordinate_of_pin(sink_pin_id, x, y);
 
-                acc_x += x * weight;
-                acc_y += y * weight;
-                acc_weight += weight;
+                acc_x += x;
+                acc_y += y;
+                acc_weight++;
             }
         }
 
         //else the pin is sink --> only care about its driver
         else {
-            ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-
             ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
-            //sara_TODO: delete testing..
             if (!is_block_placed(cluster_ctx.clb_nlist.pin_block(source_pin))) {
-                // block_scores[cluster_ctx.clb_nlist.pin_block(source_pin)].num_of_placed_connections++;
                 connected_blocks_to_update.push_back(cluster_ctx.clb_nlist.pin_block(source_pin));
                 continue;
             }
-            //end of testing
 
             get_coordinate_of_pin(source_pin, x, y);
 
-            acc_x += x * weight;
-            acc_y += y * weight;
-            acc_weight += weight;
+            acc_x += x;
+            acc_y += y;
+            acc_weight++;
         }
     }
 
@@ -355,7 +346,8 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
 static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
     t_pl_loc centroid_loc(OPEN, OPEN, OPEN);
     std::vector<ClusterBlockId> unplaced_blocks_to_update_their_score;
-    unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, block_scores);
+
+    unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc);
 
     //no suggestion was available for this block type
     if (!is_loc_on_chip(centroid_loc.x, centroid_loc.y)) {
@@ -367,33 +359,35 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
     if (!is_loc_legal(centroid_loc, pr, block_type)) {
         find_centroid_neighbor(centroid_loc, block_type, centroid_loc.x, centroid_loc.y);
     }
+
     //no neighbor were found that meet all out requirements, should be placed with random placement
     if (!is_loc_on_chip(centroid_loc.x, centroid_loc.y) || !pr.is_loc_in_part_reg(centroid_loc) || !is_loc_legal(centroid_loc, pr, block_type)) {
         return false;
     }
 
-    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     auto& grid = g_vpr_ctx.device().grid;
     auto to_type = grid[centroid_loc.x][centroid_loc.y].type;
 
-    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
-    centroid_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
     auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    centroid_loc.sub_tile = 0;
+
+    for (int subtile = 0; subtile < to_type->capacity; subtile++) {
+        if (place_ctx.grid_blocks[centroid_loc.x][centroid_loc.y].blocks[subtile] == EMPTY_BLOCK_ID) {
+            centroid_loc.sub_tile = subtile;
+        }
+    }
 
     VTR_ASSERT(device_ctx.grid[centroid_loc.x][centroid_loc.y].width_offset == 0);
     VTR_ASSERT(device_ctx.grid[centroid_loc.x][centroid_loc.y].height_offset == 0);
 
     bool legal = false;
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     legal = try_place_macro(pl_macro, centroid_loc);
 
     if (legal) {
-        if (is_io_type(device_ctx.grid[centroid_loc.x][centroid_loc.y].type) && pad_loc_type == RANDOM) {
-            for (unsigned int i = 0; i < pl_macro.members.size(); i++) {
-                place_ctx.block_locs[pl_macro.members[i].blk_index].is_fixed = true;
-            }
-        }
+        fix_IO_block_types(pl_macro, centroid_loc, pad_loc_type);
 
         for (auto blk_id : unplaced_blocks_to_update_their_score) {
             block_scores[blk_id].number_of_placed_connections++;
@@ -822,8 +816,8 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
     auto blocks = cluster_ctx.clb_nlist.blocks();
-
     int number_of_unplaced_blks_in_curr_itr;
+
     //keep tracks of which block types can not be placed in each iteration
     std::unordered_set<int> unplaced_blk_type_in_curr_itr;
 
@@ -831,8 +825,12 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
     std::vector<ClusterBlockId> sorted_blocks = sort_blocks(block_scores);
 
     auto criteria = [&block_scores, &cluster_ctx](const ClusterBlockId& lhs, const ClusterBlockId& rhs) {
-        int lhs_score = 10 * block_scores[lhs].macro_size + block_scores[lhs].number_of_placed_connections + block_scores[lhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[lhs].failed_to_place_in_prev_attempts;
-        int rhs_score = 10 * block_scores[rhs].macro_size + block_scores[rhs].number_of_placed_connections + block_scores[rhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[rhs].failed_to_place_in_prev_attempts;
+        char* lhs_type = cluster_ctx.clb_nlist.block_type(lhs)->name;
+        char* rhs_type = cluster_ctx.clb_nlist.block_type(rhs)->name;
+
+        int lhs_score = 10 * block_scores[lhs].macro_size + block_scores[lhs].number_of_placed_connections + block_scores[lhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[lhs].failed_to_place_in_prev_attempts + (strcmp(lhs_type, "io"));
+        int rhs_score = 10 * block_scores[rhs].macro_size + block_scores[rhs].number_of_placed_connections + block_scores[rhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[rhs].failed_to_place_in_prev_attempts + (strcmp(rhs_type, "io"));
+
         return lhs_score < rhs_score;
     };
 
@@ -859,6 +857,7 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
         if (update_heap_freq == 0) { //if update_heap_freq is zero, update heap after each block get placed
             update_heap_freq++;
         }
+
         int placed_block_count = 0;
 
         std::vector<ClusterBlockId> heap_blocks(blocks.begin(), blocks.end());
