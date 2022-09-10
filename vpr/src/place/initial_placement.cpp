@@ -298,7 +298,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
 
         //if the pin is driver iterate over all the sinks
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
-            if (cluster_ctx.clb_nlist.net_is_ignored(net_id) || cluster_ctx.clb_nlist.net_is_global(net_id)) {
+            if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
                 continue;
             }
             for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
@@ -825,11 +825,9 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
     std::vector<ClusterBlockId> sorted_blocks = sort_blocks(block_scores);
 
     auto criteria = [&block_scores, &cluster_ctx](const ClusterBlockId& lhs, const ClusterBlockId& rhs) {
-        char* lhs_type = cluster_ctx.clb_nlist.block_type(lhs)->name;
-        char* rhs_type = cluster_ctx.clb_nlist.block_type(rhs)->name;
-
-        int lhs_score = 10 * block_scores[lhs].macro_size + block_scores[lhs].number_of_placed_connections + block_scores[lhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[lhs].failed_to_place_in_prev_attempts + (strcmp(lhs_type, "io"));
-        int rhs_score = 10 * block_scores[rhs].macro_size + block_scores[rhs].number_of_placed_connections + block_scores[rhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[rhs].failed_to_place_in_prev_attempts + (strcmp(rhs_type, "io"));
+        
+        int lhs_score = 10 * block_scores[lhs].macro_size + block_scores[lhs].number_of_placed_connections + block_scores[lhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[lhs].failed_to_place_in_prev_attempts;
+        int rhs_score = 10 * block_scores[rhs].macro_size + block_scores[rhs].number_of_placed_connections + block_scores[rhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[rhs].failed_to_place_in_prev_attempts;
 
         return lhs_score < rhs_score;
     };
