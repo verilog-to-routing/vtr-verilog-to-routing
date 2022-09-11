@@ -25,7 +25,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> start);
 
 static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
-                                    util::t_ipin_primitive_ipin_delays& pin_delays,
+                                    util::t_ipin_primitive_sink_delays& pin_delays,
                                     t_physical_tile_type_ptr physical_tile,
                                     RRNodeId starting_node_id);
 
@@ -423,12 +423,11 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
     return chan_ipins_delays;
 }
 
-t_ipin_primitive_ipin_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
+t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                                          t_physical_tile_type_ptr physical_tile,
                                                          int x,
                                                          int y) {
-
-    t_ipin_primitive_ipin_delays pin_delays;
+    t_ipin_primitive_sink_delays pin_delays;
     pin_delays.resize(physical_tile->num_pins + physical_tile->internal_pin_class.size());
     std::vector<RRNodeId> tile_pins_node_id;
     tile_pins_node_id.reserve(physical_tile->num_pins + physical_tile->internal_pin_class.size());
@@ -437,6 +436,7 @@ t_ipin_primitive_ipin_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
         e_side node_side = e_side::NUM_SIDES;
         int x_tile = -1;
         int y_tile = -1;
+        bool is_found = false;
         for (int width = 0; width < physical_tile->width; width++) {
             for (int height = 0; height < physical_tile->height; height++) {
                 for (auto side : SIDES) {
@@ -444,11 +444,19 @@ t_ipin_primitive_ipin_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
                         x_tile = x + width;
                         y_tile = y + height;
                         node_side = side;
+                        is_found = true;
+                        break;
                     }
                 }
+                if(is_found){
+                    break;
+                }
+            }
+            if(is_found){
+                break;
             }
         }
-        VTR_ASSERT(node_side != e_side::NUM_SIDES);
+        VTR_ASSERT(is_found);
         auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
         auto rr_type = (pin_type == e_pin_type::RECEIVER) ? t_rr_type::IPIN : t_rr_type::OPIN;
         RRNodeId pin_node_id = rr_graph.node_lookup().find_node(x_tile, y_tile, rr_type, pin_physical_num, node_side);
@@ -717,15 +725,21 @@ static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr:
 }
 
 static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
-                                    util::t_ipin_primitive_ipin_delays& pin_delays,
+                                    util::t_ipin_primitive_sink_delays& pin_delays,
                                     t_physical_tile_type_ptr physical_tile,
                                     RRNodeId starting_node_id) {
 
     // device_ctx should not be used to access rr_graph, since the graph get from device_ctx is not the intra-tile graph
     const auto& device_ctx = g_vpr_ctx.device();
+
     vtr::vector<RRNodeId, bool> node_expanded;
     node_expanded.resize(rr_graph.num_nodes());
     std::fill(node_expanded.begin(), node_expanded.end(), false);
+
+    vtr::vector<RRNodeId, float> node_seen_cost;
+    node_seen_cost.resize(rr_graph.num_nodes());
+    std::fill(node_seen_cost.begin(), node_seen_cost.end(), -1.);
+
 
     struct t_pq_entry {
         float delay;
@@ -745,6 +759,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
     root.node = starting_node_id;
 
     int root_ptc = rr_graph.node_ptc_num(root.node);
+    std::unordered_map<int, util::Cost_Entry>& starting_pin_delay_map = pin_delays.at(root_ptc);
     pq.push(root);
 
     while(!pq.empty()) {
@@ -772,9 +787,9 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                 next.delay = curr.delay + incr_delay;          //To reach next node
                 next.node = next_node;
 
-                int next_ptc = rr_graph.node_ptc_num(next_node);
-                if(pin_delays[root_ptc].find(next_ptc) == pin_delays[root_ptc].end() ||
-                    pin_delays[root_ptc].at(next_ptc).delay > next.delay) {
+                if(node_seen_cost[next_node] < 0. ||
+                    node_seen_cost[next_node] > next.delay) {
+                    node_seen_cost[next_node] = next.delay;
                     pq.push(next);
                 }
             }
@@ -782,10 +797,9 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
             auto pin_list = get_pin_list_from_class_physical_num(physical_tile, rr_graph.node_ptc_num(curr.node));
             if(!is_pin_on_tile(physical_tile, pin_list[0]) && get_pb_pin_from_pin_physical_num(physical_tile, pin_list[0])->is_primitive_pin()){
                 int curr_ptc = rr_graph.node_ptc_num(curr.node);
-                if(pin_delays[root_ptc].find(curr_ptc) == pin_delays[root_ptc].end()){
-                    pin_delays[root_ptc].insert(std::make_pair(curr_ptc, util::Cost_Entry(curr.delay, curr.congestion)));
-                } else if(pin_delays[root_ptc].at(curr_ptc).delay > curr.delay){
-                    pin_delays[root_ptc][curr_ptc] = util::Cost_Entry(curr.delay, curr.congestion);
+                if(starting_pin_delay_map.find(curr_ptc) == starting_pin_delay_map.end() ||
+                    starting_pin_delay_map.at(curr_ptc).delay > curr.delay){
+                    starting_pin_delay_map[curr_ptc] = util::Cost_Entry(curr.delay, curr.congestion);
                 }
             }
         }

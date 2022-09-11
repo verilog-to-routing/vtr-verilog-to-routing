@@ -24,11 +24,6 @@ inline static bool relevant_node_to_target(const RRGraphView* rr_graph,
     } else if (node_in_same_physical_tile(node_to_add, target_node)) {
         VTR_ASSERT(node_to_add_type == IPIN);
         t_physical_tile_type_ptr physical_type = g_vpr_ctx.device().grid[node_to_add_x_low][node_to_add_y_low].type;
-        if (is_inter_cluster_node(physical_type,
-                            node_to_add_type,
-                            rr_graph->node_ptc_num(node_to_add))) {
-            return true;
-        }
         if (intra_tile_nodes_connected(physical_type,
                                        rr_graph->node_ptc_num(node_to_add),
                                        rr_graph->node_ptc_num(target_node))) {
@@ -532,25 +527,23 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
             if (is_flat_) {
                 if (node_in_same_physical_tile(to_node, RRNodeId(target_node))) {
                     t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid[to_xlow][to_ylow].type;
-                    if (!is_inter_cluster_node(physical_tile, to_type, rr_graph_->node_ptc_num(to_node))) {
-                        auto to_ptc = rr_graph_->node_ptc_num(to_node);
+                    auto to_ptc = rr_graph_->node_ptc_num(to_node);
 
-                        auto target_type = rr_graph_->node_type(RRNodeId(target_node));
-                        auto target_ptc = rr_graph_->node_ptc_num(RRNodeId(target_node));
-                        VTR_ASSERT(target_type == t_rr_type::SINK);
-                        if (!intra_tile_nodes_connected(g_vpr_ctx.device().grid[to_xlow][to_ylow].type,
-                                                        to_ptc,
-                                                        target_ptc)) {
-                            VTR_LOGV_DEBUG(router_debug_,
-                                           "      Internal Pruned expansion of node %d edge %zu -> %d"
-                                           " (to node is IPIN at %d,%dx%d,%d[%s] which does not"
-                                           " lead to target block %d,%dx%d,%d[%s])\n",
-                                           from_node, size_t(from_edge), to_node_int,
-                                           to_xlow, to_ylow, to_xhigh, to_yhigh, block_type_pin_index_to_name(physical_tile, to_ptc, is_flat_).c_str(),
-                                           target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax,
-                                           get_class_block_name(physical_tile, target_ptc).c_str());
-                            return;
-                        }
+                    auto target_type = rr_graph_->node_type(RRNodeId(target_node));
+                    auto target_ptc = rr_graph_->node_ptc_num(RRNodeId(target_node));
+                    VTR_ASSERT(target_type == t_rr_type::SINK);
+                    if (!intra_tile_nodes_connected(g_vpr_ctx.device().grid[to_xlow][to_ylow].type,
+                                                    to_ptc,
+                                                    target_ptc)) {
+                        VTR_LOGV_DEBUG(router_debug_,
+                                       "      Internal Pruned expansion of node %d edge %zu -> %d"
+                                       " (to node is IPIN at %d,%dx%d,%d[%s] which does not"
+                                       " lead to target block %d,%dx%d,%d[%s])\n",
+                                       from_node, size_t(from_edge), to_node_int,
+                                       to_xlow, to_ylow, to_xhigh, to_yhigh, block_type_pin_index_to_name(physical_tile, to_ptc, is_flat_).c_str(),
+                                       target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax,
+                                       get_class_block_name(physical_tile, target_ptc).c_str());
+                        return;
                     }
                 }
             }

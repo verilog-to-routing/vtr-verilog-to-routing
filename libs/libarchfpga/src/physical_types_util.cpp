@@ -1186,18 +1186,32 @@ int get_tile_ipin_opin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
 bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
                                 int pin_physical_num,
                                 int sink_physical_num) {
-    // We assume that pin_physical_num is not located on the root-block. The reason for this assumption is that we want to get the pb_graph_pin corresponding
-    // to pin_physical_pin, and we would not be able to that if the pin is on the root-block
-    VTR_ASSERT(!is_pin_on_tile(physical_type, pin_physical_num));
+    if(is_pin_on_tile(physical_type, pin_physical_num)) {
+        const t_sub_tile* from_sub_tile;
+        int from_sub_tile_rel_cap;
+        std::tie(from_sub_tile, from_sub_tile_rel_cap) =
+            get_sub_tile_from_pin_physical_num(physical_type, pin_physical_num);
+        VTR_ASSERT(from_sub_tile != nullptr && from_sub_tile_rel_cap != OPEN);
 
-    const t_pb_graph_pin* from_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_type, pin_physical_num);
+        const t_sub_tile* to_sub_tile;
+        int to_sub_tile_rel_cap;
+        std::tie(to_sub_tile, to_sub_tile_rel_cap) =
+            get_sub_tile_from_class_physical_num(physical_type, sink_physical_num);
+        VTR_ASSERT(to_sub_tile != nullptr && to_sub_tile_rel_cap != OPEN);
 
-    auto res = from_pb_graph_pin->connected_sinks_ptc.find(sink_physical_num);
+        return (from_sub_tile_rel_cap == to_sub_tile_rel_cap) && (from_sub_tile == to_sub_tile);
 
-    if (res == from_pb_graph_pin->connected_sinks_ptc.end()) {
-        return false;
+
     } else {
-        return true;
+        const t_pb_graph_pin* from_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_type, pin_physical_num);
+
+        auto res = from_pb_graph_pin->connected_sinks_ptc.find(sink_physical_num);
+
+        if (res == from_pb_graph_pin->connected_sinks_ptc.end()) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }
 /* */
