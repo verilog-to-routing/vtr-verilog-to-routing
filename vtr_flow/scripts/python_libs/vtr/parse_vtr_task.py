@@ -477,17 +477,23 @@ def summarize_qor(configs, alt_tasks_dir=None):
         task_path = task_path.parent
     task_path = task_path / "task_summary"
     task_path.mkdir(exist_ok=True)
-    out_file = task_path / (str(Path(find_latest_run_dir(configs[0], alt_tasks_dir)).stem) + "_summary.txt")
+    out_file = task_path / (
+        str(Path(find_latest_run_dir(configs[0], alt_tasks_dir)).stem) + "_summary.txt"
+    )
     with out_file.open("w+") as out:
         for config in configs:
-            with (Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE).open("r") as in_file:
+            with (
+                Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE
+            ).open("r") as in_file:
                 headers = in_file.readline()
                 if first:
                     print("task_name \t{}".format(headers), file=out, end="")
                     first = False
                 for line in in_file:
                     print("{}\t{}".format(config.task_name, line), file=out, end="")
-            pretty_print_table(str(Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE))
+            pretty_print_table(
+                str(Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE)
+            )
 
 
 def calc_geomean(args, configs):
