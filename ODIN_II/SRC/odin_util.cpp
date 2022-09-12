@@ -125,9 +125,9 @@ void report_frontend_elaborator() {
 #ifndef ODIN_USE_YOSYS
                 error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
 #else
-#ifndef YOSYS_SV_UHDM_PLUGIN
+#    ifndef YOSYS_SV_UHDM_PLUGIN
                 error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_PLUGINS_NOT_COMPILED);
-#endif
+#    endif
 #endif
             }
             printf("Using the Yosys elaborator with the Surelog parser for UHDM\n");
