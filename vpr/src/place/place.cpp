@@ -61,8 +61,6 @@
 
 #include "clustered_netlist_utils.h"
 
-#include "re_cluster.h"
-#include "re_cluster_util.h"
 #include "cluster_placement.h"
 
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
