@@ -375,7 +375,9 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
 
     for (int subtile = 0; subtile < to_type->capacity; subtile++) {
         if (place_ctx.grid_blocks[centroid_loc.x][centroid_loc.y].blocks[subtile] == EMPTY_BLOCK_ID) {
-            centroid_loc.sub_tile = subtile;
+            if(is_sub_tile_compatible(to_type,block_type,subtile)){
+                centroid_loc.sub_tile = subtile;
+            }
         }
     }
 
