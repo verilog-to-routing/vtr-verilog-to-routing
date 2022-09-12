@@ -71,9 +71,6 @@ static bool place_macro(int macros_max_num_tries, t_pl_macro pl_macro, enum e_pa
  */
 static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores();
 
-//Sort the blocks according to how difficult they are to place, prior to initial placement
-static std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
-
 /**
  * @brief Tries to find y coordinate for macro head location based on macro direction
  *   
@@ -126,6 +123,54 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
 static inline void fix_IO_block_types(t_pl_macro pl_macro, t_pl_loc loc, enum e_pad_loc_type pad_loc_type);
 
 /**
+ * @brief  Determine whether a specific block can be placed in a specific location.
+ *  
+ *   @param loc The location at which the block is placed.
+ *   @param pr The PartitionRegion of the macro - represents its floorplanning constraints, is the size of the whole chip if the macro is not
+ *   constrained.
+ *   @param block_type Logical block type of the block.
+ * 
+ * @return True if the location is legal for the block, false otherwise.
+ */
+static bool is_loc_legal(t_pl_loc loc, PartitionRegion& pr, t_logical_block_type_ptr block_type);
+
+/**
+ * @brief Calculates a centroid location for a block based on its placed connections.
+ *
+ *   @param pl_macro The macro to be placed.
+ *   @param centroid specified location (x,y,subtile) for the pl_macro head member.
+ *
+ * @return a vector of block connections that are not placed yet to update their scores later.
+ */
+static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_loc& centroid);
+
+/**
+ * @brief  Tries to find a nearest location to the centroid location if calculated centroid location is not legal or is occupied.
+ *
+ *   @param centroid_loc Calculated location in try_centroid_placement function for the block.
+ *   @param block_type Logical block type of the macro blocks.
+ *   @param cx_to x-axis of nearest location to the centroid location.
+ *   @param cy_to y-axis of nearest location to the centroid location.
+ *
+ * @return true if the function can find any location near the centroid one, false otherwise.
+ */
+static bool find_centroid_neighbor(t_pl_loc centroid_loc, t_logical_block_type_ptr block_type, int& cx_to, int& cy_to);
+
+/**
+ * @brief  tries to place a macro at a centroid location of its placed connections.
+ *
+ *   @param pl_macro The macro to be placed.
+ *   @param pr The PartitionRegion of the macro - represents its floorplanning constraints, is the size of the whole chip if the macro is not
+ *   constrained.
+ *   @param block_type Logical block type of the macro blocks.
+ *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
+ *   @param block_scores After placing current blocks, block_scores for its unplaced connections must be increased. 
+ *
+ * @return true if the macro gets placed, false if not.
+ */
+static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, vtr::vector<ClusterBlockId, t_block_score>& block_scores);
+
+/**
  * @brief  tries to place a macro at a random location
  *
  *   @param pl_macro The macro to be placed.
@@ -165,14 +210,6 @@ static bool try_exhaustive_placement(t_pl_macro pl_macro, PartitionRegion& pr, t
  * @return true if the macro gets placed, false if not.
  */
 static bool try_dense_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_logical_block_type_ptr block_type, enum e_pad_loc_type pad_loc_type, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid);
-
-/**
- * @brief Print all blocks based on how hard they are to place; Blocks with higher scores will be printed first. 
- *   
- *   @param sorted_blocks List of all blocks in desecending order of their scores.
- *   @param block_scores scores assigned to each blocks based on how difficult they are to place.
- */
-void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores);
 
 /**
  * @brief Tries for MAX_INIT_PLACE_ATTEMPTS times to place all blocks considering their floorplanning constraints and the device size
@@ -239,12 +276,12 @@ static bool is_loc_legal(t_pl_loc loc, PartitionRegion& pr, t_logical_block_type
     return legal;
 }
 
-static bool find_centroid_neighbor(t_pl_loc centroid, t_logical_block_type_ptr block_type, int& cx_to, int& cy_to) {
+static bool find_centroid_neighbor(t_pl_loc centroid_loc, t_logical_block_type_ptr block_type, int& cx_to, int& cy_to) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
 
     //Determine centroid location in the compressed space of the current block
-    int cx_centroid = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, centroid.x);
-    int cy_centroid = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, centroid.y);
+    int cx_centroid = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, centroid_loc.x);
+    int cy_centroid = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, centroid_loc.y);
 
     //Determine rlim in each direction
     int first_rlim = 15;
@@ -298,16 +335,17 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
 
         //if the pin is driver iterate over all the sinks
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
+            //continue on ignored nets
             if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
                 continue;
             }
             for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-                /* Ignore if one of the sinks is the block itself      *
-                 * This case rarely happens but causes QoR degradation */
+                /* Ignore if one of the sinks is the block itself*/
                 if (pin_id == sink_pin_id)
                     continue;
 
                 if (!is_block_placed(cluster_ctx.clb_nlist.pin_block(sink_pin_id))) {
+                    //add unplaced block to connected_blocks_to_update vector to update its score later.
                     connected_blocks_to_update.push_back(cluster_ctx.clb_nlist.pin_block(sink_pin_id));
                     continue;
                 }
@@ -324,6 +362,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
         else {
             ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
             if (!is_block_placed(cluster_ctx.clb_nlist.pin_block(source_pin))) {
+                //add unplaced block to connected_blocks_to_update vector to update its score later.
                 connected_blocks_to_update.push_back(cluster_ctx.clb_nlist.pin_block(source_pin));
                 continue;
             }
@@ -375,7 +414,7 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
 
     for (int subtile = 0; subtile < to_type->capacity; subtile++) {
         if (place_ctx.grid_blocks[centroid_loc.x][centroid_loc.y].blocks[subtile] == EMPTY_BLOCK_ID) {
-            if(is_sub_tile_compatible(to_type,block_type,subtile)){
+            if (is_sub_tile_compatible(to_type, block_type, subtile)) {
                 centroid_loc.sub_tile = subtile;
             }
         }
@@ -391,6 +430,7 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
     if (legal) {
         fix_IO_block_types(pl_macro, centroid_loc, pad_loc_type);
 
+        //after placing the current block, its connections' score must be updated.
         for (auto blk_id : unplaced_blocks_to_update_their_score) {
             block_scores[blk_id].number_of_placed_connections++;
         }
@@ -778,41 +818,6 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     return block_scores;
 }
 
-static std::vector<ClusterBlockId> sort_blocks(const vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    auto blocks = cluster_ctx.clb_nlist.blocks();
-
-    std::vector<ClusterBlockId> sorted_blocks(blocks.begin(), blocks.end());
-
-    /*
-     * The criteria considers blocks that belong to a macro or to a floorplan region more difficult to place.
-     * The bigger the macro, and/or the tighter the floorplan constraint, the earlier the block will be in
-     * the list of sorted blocks.
-     * The tiles_outside_of_floorplan_constraints will dominate the criteria, since the number of tiles will
-     * likely be significantly bigger than the macro size. This is okay since the floorplan constraints give
-     * a more accurate picture of how difficult a block is to place.
-     */
-    auto criteria = [block_scores](ClusterBlockId lhs, ClusterBlockId rhs) {
-        int lhs_score = 10 * block_scores[lhs].macro_size + block_scores[lhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[lhs].failed_to_place_in_prev_attempts;
-        int rhs_score = 10 * block_scores[rhs].macro_size + block_scores[rhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[rhs].failed_to_place_in_prev_attempts;
-
-        return lhs_score > rhs_score;
-    };
-
-    std::stable_sort(sorted_blocks.begin(), sorted_blocks.end(), criteria);
-    //print_sorted_blocks(sorted_blocks, block_scores);
-
-    return sorted_blocks;
-}
-
-void print_sorted_blocks(const std::vector<ClusterBlockId>& sorted_blocks, const vtr::vector<ClusterBlockId, t_block_score>& block_scores) {
-    VTR_LOG("\nPrinting sorted blocks: \n");
-    for (unsigned int i = 0; i < sorted_blocks.size(); i++) {
-        VTR_LOG("Block_Id: %zu, Macro size: %d, Num tiles outside floorplan constraints: %d\n", sorted_blocks[i], block_scores[sorted_blocks[i]].macro_size, block_scores[sorted_blocks[i]].tiles_outside_of_floorplan_constraints);
-    }
-}
-
 static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_scores, enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -827,7 +832,6 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
     std::vector<ClusterBlockId> sorted_blocks = sort_blocks(block_scores);
 
     auto criteria = [&block_scores, &cluster_ctx](const ClusterBlockId& lhs, const ClusterBlockId& rhs) {
-        
         int lhs_score = 10 * block_scores[lhs].macro_size + block_scores[lhs].number_of_placed_connections + block_scores[lhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[lhs].failed_to_place_in_prev_attempts;
         int rhs_score = 10 * block_scores[rhs].macro_size + block_scores[rhs].number_of_placed_connections + block_scores[rhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[rhs].failed_to_place_in_prev_attempts;
 
@@ -853,6 +857,7 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
 
         number_of_unplaced_blks_in_curr_itr = 0;
 
+        //calculate heap update frequency based on number of blocks in the design
         int update_heap_freq = blocks.size() / 100;
         if (update_heap_freq == 0) { //if update_heap_freq is zero, update heap after each block get placed
             update_heap_freq++;
@@ -870,8 +875,10 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
 
             auto blk_id_type = cluster_ctx.clb_nlist.block_type(blk_id);
             placed_block_count++;
+
             bool block_placed = place_one_block(blk_id, pad_loc_type, &blk_types_empty_locs_in_grid[blk_id_type->index], &block_scores);
 
+            //update heap based on update_heap_freq calculated above
             if (placed_block_count % (update_heap_freq) == 0) {
                 std::make_heap(heap_blocks.begin(), heap_blocks.end(), criteria);
                 placed_block_count = 0;

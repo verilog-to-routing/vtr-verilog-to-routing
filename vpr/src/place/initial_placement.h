@@ -17,6 +17,7 @@ struct t_block_score {
     //The number of initial placement iterations that the block was unplaced.
     int failed_to_place_in_prev_attempts;
 
+    //The number of placed block during initial placement that are connected to the this block.
     int number_of_placed_connections = 0;
 };
 
