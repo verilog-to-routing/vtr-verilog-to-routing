@@ -828,9 +828,6 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
     //keep tracks of which block types can not be placed in each iteration
     std::unordered_set<int> unplaced_blk_type_in_curr_itr;
 
-    //Sort blocks and placement macros according to how difficult they are to place
-    std::vector<ClusterBlockId> sorted_blocks = sort_blocks(block_scores);
-
     auto criteria = [&block_scores, &cluster_ctx](const ClusterBlockId& lhs, const ClusterBlockId& rhs) {
         int lhs_score = 10 * block_scores[lhs].macro_size + block_scores[lhs].number_of_placed_connections + block_scores[lhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[lhs].failed_to_place_in_prev_attempts;
         int rhs_score = 10 * block_scores[rhs].macro_size + block_scores[rhs].number_of_placed_connections + block_scores[rhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[rhs].failed_to_place_in_prev_attempts;
