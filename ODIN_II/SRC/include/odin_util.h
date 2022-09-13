@@ -12,7 +12,7 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t
 std::string get_file_extension(std::string input_file);
 std::string get_directory(std::string input_file);
 void create_directory(std::string path);
-void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_e type);
+void report_frontend_elaborator();
 void assert_supported_file_extension(std::string input_file, loc_t loc);
 FILE* open_file(const char* file_name, const char* open_type);
 void get_current_path();
