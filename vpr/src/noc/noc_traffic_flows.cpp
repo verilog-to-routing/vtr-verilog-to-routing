@@ -9,7 +9,7 @@ NocTrafficFlows::NocTrafficFlows() {
 
 // getters for the traffic flows
 
-int NocTrafficFlows::get_number_of_traffic_flows(void){
+int NocTrafficFlows::get_number_of_traffic_flows (void) const{
     return noc_traffic_flows.size();
 }
 
@@ -17,7 +17,7 @@ const t_noc_traffic_flow& NocTrafficFlows::get_single_noc_traffic_flow(NocTraffi
     return noc_traffic_flows[traffic_flow_id];
 }
 
-const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) {
+const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) const {
     const std::vector<NocTrafficFlowId>* associated_traffic_flows_ref = nullptr;
 
     // get a reference to the traffic flows that have the current router as a source or sink
@@ -34,6 +34,10 @@ const std::vector<NocTrafficFlowId>* NocTrafficFlows::get_traffic_flows_associat
 
 int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void) {
     return traffic_flows_associated_to_router_blocks.size();
+}
+
+const std::vector<NocLinkId>& NocTrafficFlows::get_traffic_flow_route(NocTrafficFlowId traffic_flow_id) const{
+    return traffic_flow_routes[traffic_flow_id];
 }
 
 std::vector<NocLinkId>& NocTrafficFlows::get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id){
