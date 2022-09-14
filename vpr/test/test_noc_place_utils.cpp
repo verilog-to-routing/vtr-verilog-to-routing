@@ -329,6 +329,9 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
         }
     }
 
+    // initialize noc placement structs
+    allocate_and_load_noc_placement_structs();
+
     // datastructure that keeps track of moved blocks during placement
     t_pl_blocks_to_be_moved blocks_affected(NUM_OF_LOGICAL_ROUTER_BLOCKS);
 
@@ -419,8 +422,11 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
             }
         }
 
+        double delta_aggr_band_cost = 0.;
+        double delta_aggr_laten_cost = 0.;
+
         // call the test function
-        find_affected_noc_routers_and_update_noc_costs(blocks_affected);
+        find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_aggr_laten_cost);
 
         // clear the affected blocks
         clear_move_blocks(blocks_affected);
@@ -510,8 +516,11 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
         }
     }
 
+    double delta_aggr_band_cost = 0.;
+    double delta_aggr_laten_cost = 0.;
+
     // call the test function
-    find_affected_noc_routers_and_update_noc_costs(blocks_affected);
+    find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_aggr_laten_cost);
 
     // now verify the function by comparing the link bandwidths in the noc model (should have been updated by the test function) to the golden set
     int number_of_links = golden_link_bandwidths.size();
