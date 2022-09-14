@@ -69,7 +69,7 @@ void t_placer_costs::update_norm_factors() {
         VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
         //cost = bb_cost; //The cost value should be identical to the wirelength cost
         cost = 1;
-        bb_cost_norm = 1/bb_cost;
+        bb_cost_norm = 1 / bb_cost;
     }
 }
 

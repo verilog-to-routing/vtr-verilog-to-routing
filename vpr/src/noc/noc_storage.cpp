@@ -57,7 +57,6 @@ NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
 }
 
 NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_location) const {
-
     // get the key to identify the corresponding hard router block at the provided grid location
     int router_key = generate_router_key_from_grid_location(hard_router_location.x, hard_router_location.y);
 
@@ -65,9 +64,8 @@ NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_
     auto hard_router_block = grid_location_to_router_id.find(router_key);
     // verify whether a router hard block exists at this location
     VTR_ASSERT(hard_router_block != grid_location_to_router_id.end());
-    
-    return hard_router_block->second;
 
+    return hard_router_block->second;
 }
 
 // setters for the NoC
