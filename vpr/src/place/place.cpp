@@ -626,12 +626,14 @@ void try_place(const t_placer_opts& placer_opts,
 
         /* Total cost is the same as wirelength cost */
         costs.bb_cost = comp_bb_cost(NORMAL);
-        costs.cost = costs.bb_cost;
+        costs.bb_cost_norm = 1 / costs.bb_cost;
+        costs.cost = 1;
+        //costs.cost = costs.bb_cost;
 
         /* Timing cost and normalization factors are not used */
         costs.timing_cost = INVALID_COST;
         costs.timing_cost_norm = INVALID_COST;
-        costs.bb_cost_norm = INVALID_COST;
+        //costs.bb_cost_norm = INVALID_COST;
 
         /* Other initializations */
         outer_crit_iter_count = 0;
@@ -1483,7 +1485,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
             /* Get the setup slack analysis cost */
             //TODO: calculate a weighted average of the slack cost and wiring cost
-            delta_c = analyze_setup_slack_cost(setup_slacks);
+            delta_c = analyze_setup_slack_cost(setup_slacks)*costs->timing_cost_norm;
         } else if (place_algorithm == CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
              * addition to `timing_tradeoff`, we normalize the cost values */
@@ -1492,7 +1494,7 @@ static e_move_result try_swap(const t_annealing_state* state,
                             * costs->timing_cost_norm;
         } else {
             VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
-            delta_c = bb_delta_c;
+            delta_c = bb_delta_c*costs->bb_cost_norm;
         }
 
         int number_of_affected_noc_traffic_flows = 0;
