@@ -9,7 +9,7 @@ NocTrafficFlows::NocTrafficFlows() {
 
 // getters for the traffic flows
 
-int NocTrafficFlows::get_number_of_traffic_flows (void) const{
+int NocTrafficFlows::get_number_of_traffic_flows(void) const {
     return noc_traffic_flows.size();
 }
 
@@ -36,11 +36,11 @@ int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows(void) {
     return traffic_flows_associated_to_router_blocks.size();
 }
 
-const std::vector<NocLinkId>& NocTrafficFlows::get_traffic_flow_route(NocTrafficFlowId traffic_flow_id) const{
+const std::vector<NocLinkId>& NocTrafficFlows::get_traffic_flow_route(NocTrafficFlowId traffic_flow_id) const {
     return traffic_flow_routes[traffic_flow_id];
 }
 
-std::vector<NocLinkId>& NocTrafficFlows::get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id){
+std::vector<NocLinkId>& NocTrafficFlows::get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id) {
     return traffic_flow_routes[traffic_flow_id];
 }
 
@@ -71,7 +71,7 @@ void NocTrafficFlows::finshed_noc_traffic_flows_setup(void) {
     // create the storage space for all the traffic flow routes
     int number_of_traffic_flows = noc_traffic_flows.size();
     traffic_flow_routes.resize(number_of_traffic_flows);
-    
+
     return;
 }
 
