@@ -53,7 +53,7 @@ class t_placer_costs {
     double noc_aggregate_bandwidth_cost = 0.;
     double noc_aggregate_bandwidth_cost_norm = 0.;
     double noc_latency_cost = 0.;
-    double noc_latency_cost_norm = 0.;    
+    double noc_latency_cost_norm = 0.;
 
   public: //Constructor
     t_placer_costs(t_place_algorithm algo)

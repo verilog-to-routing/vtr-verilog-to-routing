@@ -518,7 +518,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     init_chan(width_fac, chan_width_dist, graph_directionality);
 
-    alloc_and_load_placement_structs(placer_opts.place_cost_exp,            placer_opts,                     noc_opts, directs, num_directs);
+    alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts, noc_opts, directs, num_directs);
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
@@ -641,7 +641,7 @@ void try_place(const t_placer_opts& placer_opts,
         first_crit_exponent = 0;
     }
 
-    if (noc_opts.noc){
+    if (noc_opts.noc) {
         // get the costs associated with the NoC
         costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
         costs.noc_latency_cost = comp_noc_latency_cost();
@@ -1083,7 +1083,7 @@ static void placement_inner_loop(const t_annealing_state* state,
         e_move_result swap_result = try_swap(state, costs, move_generator,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
-                                             placer_opts, noc_opts,move_type_stat, place_algorithm, timing_bb_factor, manual_move_enabled);
+                                             placer_opts, noc_opts, move_type_stat, place_algorithm, timing_bb_factor, manual_move_enabled);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1192,7 +1192,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
         costs->cost = new_bb_cost;
     }
 
-    if (noc_opts.noc){
+    if (noc_opts.noc) {
         double new_noc_aggregate_bandwidth_cost = 0.;
         double new_noc_latency_cost = 0.;
         recompute_noc_costs(&new_noc_aggregate_bandwidth_cost, &new_noc_latency_cost);
@@ -1217,7 +1217,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                 new_noc_latency_cost, costs->noc_latency_cost, ERROR_TOL);
             VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
         }
-        costs->noc_latency_cost = new_noc_latency_cost; 
+        costs->noc_latency_cost = new_noc_latency_cost;
     }
 }
 
@@ -1269,7 +1269,7 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
         e_move_result swap_result = try_swap(state, costs, move_generator,
                                              manual_move_generator, timing_info, pin_timing_invalidator,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
-                                             placer_opts, noc_opts,move_type_stat, placer_opts.place_algorithm,
+                                             placer_opts, noc_opts, move_type_stat, placer_opts.place_algorithm,
                                              REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled);
 
         if (swap_result == ACCEPTED) {
@@ -1485,7 +1485,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
             /* Get the setup slack analysis cost */
             //TODO: calculate a weighted average of the slack cost and wiring cost
-            delta_c = analyze_setup_slack_cost(setup_slacks)*costs->timing_cost_norm;
+            delta_c = analyze_setup_slack_cost(setup_slacks) * costs->timing_cost_norm;
         } else if (place_algorithm == CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
              * addition to `timing_tradeoff`, we normalize the cost values */
@@ -1494,15 +1494,14 @@ static e_move_result try_swap(const t_annealing_state* state,
                             * costs->timing_cost_norm;
         } else {
             VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
-            delta_c = bb_delta_c*costs->bb_cost_norm;
+            delta_c = bb_delta_c * costs->bb_cost_norm;
         }
 
         int number_of_affected_noc_traffic_flows = 0;
+        double noc_aggregate_bandwidth_delta_c = 0; // change in the NoC aggregate bandwidth cost
+        double noc_latency_delta_c = 0;             // change in the NoC latency cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
-            double noc_aggregate_bandwidth_delta_c = 0; // change in the NoC aggregate bandwidth cost
-            double noc_latency_delta_c = 0; // change in the NoC latency cost
-            
             number_of_affected_noc_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c);
 
             // calculate delta cost
@@ -1551,8 +1550,11 @@ static e_move_result try_swap(const t_annealing_state* state,
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
 
-            if (noc_opts.noc){
-                commit_noc_costs(number_of_affected_noc_traffic_flows);     
+            if (noc_opts.noc) {
+                commit_noc_costs(number_of_affected_noc_traffic_flows);
+
+                costs->noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
+                costs->noc_latency_cost += noc_latency_delta_c;
             }
 
             ++move_type_stat.accepted_moves[(int)move_type];
@@ -1604,7 +1606,6 @@ static e_move_result try_swap(const t_annealing_state* state,
             if (noc_opts.noc) {
                 revert_noc_traffic_flow_routes(blocks_affected);
             }
-
         }
 
         move_outcome_stats.delta_cost_norm = delta_c;
@@ -2173,7 +2174,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
 
-    if (noc_opts.noc){
+    if (noc_opts.noc) {
         allocate_and_load_noc_placement_structs();
     }
 }
@@ -2207,7 +2208,7 @@ static void free_placement_structs(const t_placer_opts& placer_opts, const t_noc
 
     free_try_swap_structs();
 
-    if (noc_opts.noc){
+    if (noc_opts.noc) {
         free_noc_placement_structs();
     }
 }
@@ -2772,8 +2773,8 @@ static void check_place(const t_placer_costs& costs,
                                    place_algorithm);
     error += check_placement_floorplanning();
 
-     // check the NoC costs during placement if the user is using the NoC supported flow
-    if (noc_opts.noc){
+    // check the NoC costs during placement if the user is using the NoC supported flow
+    if (noc_opts.noc) {
         error += check_noc_placement_costs(costs, ERROR_TOL);
     }
 
