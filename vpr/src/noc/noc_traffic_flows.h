@@ -140,7 +140,7 @@ class NocTrafficFlows {
      * @return int An integer that represents the number of unique traffic
      * flows within the NoC. 
      */
-    int get_number_of_traffic_flows(void);
+    int get_number_of_traffic_flows (void) const;
 
     /**
      * @brief Given a unique id of a traffic flow (t_noc_traffic_flow)
@@ -168,7 +168,7 @@ class NocTrafficFlows {
      * flows that have the input router block parameter as the source or sink
      * in the flow.
      */
-    const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id);
+    const std::vector<NocTrafficFlowId>* get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) const;
 
     /**
      * @brief Gets the number of unique router blocks in the
@@ -179,6 +179,17 @@ class NocTrafficFlows {
      * the traffic flows provided by the user.
      */
     int get_number_of_routers_used_in_traffic_flows(void);
+
+    /**
+     * @brief Gets the routed path of traffic flow. THis cannot be
+     * modified externally.
+     * 
+     * @param traffic_flow_id A unique identifier that represents a 
+     * traffic flow.
+     * @return std::vector<NocLinkId>& A reference to the provided
+     * traffic flow's routed path.
+     */
+    const std::vector<NocLinkId>& get_traffic_flow_route(NocTrafficFlowId traffic_flow_id) const;
 
     /**
      * @brief Gets the routed path of a traffic flow. The path
