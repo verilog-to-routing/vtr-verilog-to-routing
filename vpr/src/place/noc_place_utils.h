@@ -6,6 +6,7 @@
 #include "place_util.h"
 #include "vtr_assert.h"
 #include "move_transactions.h"
+#include "vtr_log.h"
 
 
 /* Defines how the links found in a traffic flow are updated in terms
@@ -53,7 +54,9 @@ void initial_noc_placement(void);
  * the moved blocks, their previous locations and their new locations
  * after being moved.
  */
-void find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected);
+int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c);
+
+void commit_noc_costs(int number_of_affected_traffic_flows);
 
 /**
  * @brief Routes a given traffic flow within the NoC based on where the
@@ -118,7 +121,7 @@ void update_traffic_flow_link_usage(const std::vector<NocLinkId>& traffic_flow_r
  * @param updated_traffic_flows Keeps track of traffic flows that have been
  * re-routed. Used to prevent re-rouitng the same traffic flow multiple times.
  */
-void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting* noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows); 
+void re_route_associated_traffic_flows(ClusterBlockId moved_router_block_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting* noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations, std::unordered_set<NocTrafficFlowId>& updated_traffic_flows, int& number_of_affected_traffic_flows); 
 
 /**
  * @brief Used to re-route all the traffic flows associated to logical
@@ -151,6 +154,47 @@ void revert_noc_traffic_flow_routes(const t_pl_blocks_to_be_moved& blocks_affect
 void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& noc_traffic_flows_storage, NocStorage& noc_model, NocRouting* noc_flows_router, const vtr::vector_map<ClusterBlockId, t_block_loc>& placed_cluster_block_locations);
 
 /**
+ * @brief 
+ * 
+ * @param new_noc_aggregate_bandwidth_cost 
+ * @param new_noc_latency_cost 
+ */
+void recompute_noc_costs(double *new_noc_aggregate_bandwidth_cost, double *new_noc_latency_cost);
+
+/**
+ * @brief Calculates the aggregate bandwidth of each traffic flow in the NoC
+ * and initializes local variables that keep track of the traffic flow 
+ * aggregate bandwidths cost.
+ * Then the total aggregate bandwidth cost is determines by summing up all
+ * the individual traffic flow aggregate bandwidths.
+ * 
+ * This should be used after initial placement to determine the starting
+ * aggregate bandwdith cost of the NoC.
+ * 
+ * @return double The aggregate bandwidth cost of the NoC.
+ */
+double comp_noc_aggregate_bandwidth_cost(void);
+
+/**
+ * @brief Calculates the latency of each traffic flow in the NoC
+ * and initializes local variables that keep track of the traffic flow
+ * latency costs. Then the total latency cost is determined by summing up all
+ * the individual traffic flow latencies.
+ * 
+ * This should be used after initial placement to determine the starting latency
+ * cost of the NoC.
+ * 
+ * @return double The latency cost of the NoC.
+ */
+double comp_noc_latency_cost(void);
+
+/**
+ * @brief 
+ * 
+ */
+int check_noc_placement_costs(const t_placer_costs& costs, double error_tolerance);
+
+/**
  * @brief Determines the aggregate bandwidth of a routed traffic flow.
  * Aggregate bandwidth is calculated as the number of links in a traffic
  * flow multiplied by the bandwidth of the traffic flow.
@@ -160,7 +204,7 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
  * @param traffic_flow_bandwidth Bandwidth of the traffic flow.
  * @return double The aggregate bandwidth of the traffic flow.
  */
-double calculate_traffic_flow_aggregate_bandwidth(std::vector<NocLinkId> traffic_flow_route, double traffic_flow_bandwidth);
+double calculate_traffic_flow_aggregate_bandwidth(const std::vector<NocLinkId>& traffic_flow_route, double traffic_flow_bandwidth);
 
 /**
  * @brief Determiens the latency of a routed traffic flow. Latency is
@@ -173,7 +217,13 @@ double calculate_traffic_flow_aggregate_bandwidth(std::vector<NocLinkId> traffic
  * @param noc_link_latency The latency of a link in the NoC.
  * @return double The latency of a traffic flow.
  */
-double calculate_traffic_flow_latency(std::vector<NocLinkId> traffic_flow_route, double noc_router_latency, double noc_link_latency);
+double calculate_traffic_flow_latency(const std::vector<NocLinkId>& traffic_flow_route, double noc_router_latency, double noc_link_latency);
+
+void allocate_and_load_noc_placement_structs(void);
+
+void free_noc_placement_structs(void);
+
+
 
 
 
