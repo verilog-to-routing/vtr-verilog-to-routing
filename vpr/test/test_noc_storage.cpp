@@ -358,8 +358,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         REQUIRE(test_noc.remove_link(link_to_remove_src_router, link_to_remove_sink_router) == false);
     }
 }
-TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]"){
-
+TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
     // The golden set of router ids that constain the location of each router
     // The index represents the grid location (both x and y since they will be the same) and the id at the index is the specific router located at the grid location
     std::vector<NocRouterId> golden_set;
@@ -381,7 +380,7 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]"){
         router_grid_position_x = router_number;
         router_grid_position_y = router_number;
 
-        // add the current router_id to the golden vector (the id is determined similiar to how it is done in add_router()) 
+        // add the current router_id to the golden vector (the id is determined similiar to how it is done in add_router())
         // this vector is built so that the index represents the grid location of the curren router
         golden_set.emplace_back((NocRouterId)router_number);
 
@@ -391,7 +390,7 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]"){
 
     // now verify the test function by identifying all the routers using their grid locations
     // the grid locations go from 0 to the total number of routers in the NoC
-    for (int grid_location = 0; grid_location < NUM_OF_ROUTERS; grid_location++){
+    for (int grid_location = 0; grid_location < NUM_OF_ROUTERS; grid_location++) {
         // contains the grid location of a router block seen during placement
         // we dont care about the subtile so give it a arbritary value
         t_pl_loc placement_router_grid_location = t_pl_loc(grid_location, grid_location, -1);
@@ -401,7 +400,6 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]"){
         // verify that the found router matches the expected result
         REQUIRE(golden_set[grid_location] == found_router_at_grid_location);
     }
-
 }
 
 } // namespace
