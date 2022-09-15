@@ -7,11 +7,11 @@
 #include "bfs_routing.h"
 
 // test parameters
-#define NUM_OF_ROUTERS 100
-#define MESH_TOPOLOGY_SIZE 10            // this should be the square root of NUM_OF_ROUTERS
-#define NUM_OF_LOGICAL_ROUTER_BLOCKS 100 // should be less than or equal to NUM_OF_ROUTERS
-#define NUM_OF_TRAFFIC_FLOWS 100         // this should be less than or equal to the NUM_OF_LOGICAL_ROUTER_BLOCKS
-#define NUM_OF_PLACEMENT_MOVES 10000
+#define NUM_OF_ROUTERS_NOC_PLACE_UTILS_TEST 100
+#define MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST 10            // this should be the square root of NUM_OF_ROUTERS
+#define NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST 100 // should be less than or equal to NUM_OF_ROUTERS
+#define NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST 100         // this should be less than or equal to the NUM_OF_LOGICAL_ROUTER_BLOCKS
+#define NUM_OF_PLACEMENT_MOVES_NOC_PLACE_UTILS_TEST 10000
 
 namespace {
 
@@ -19,13 +19,19 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     // setup random number generation
     std::random_device device;
     std::mt19937 rand_num_gen(device());
-    std::uniform_int_distribution<std::mt19937::result_type> dist(0, NUM_OF_LOGICAL_ROUTER_BLOCKS - 1);
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0, NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 1);
     // this sets the range of possible bandwidths for a traffic flow
     std::uniform_int_distribution<std::mt19937::result_type> dist_2(0, 1000);
 
     // get global datastructures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    // start by deleting any global datastructures (this is so that we dont have corruption from previous tests)
+    noc_ctx.noc_model.clear_noc();
+    noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
+    delete noc_ctx.noc_flows_router;
+    place_ctx.block_locs.clear();
 
     // individual router parameters
     int curr_router_id;
@@ -36,11 +42,11 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
 
     // start by creating the routers
     // add all the routers to noc_storage and populate the golden router set
-    for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++) {
+    for (int router_number = 0; router_number < NUM_OF_ROUTERS_NOC_PLACE_UTILS_TEST; router_number++) {
         // determine the current router parameters
         curr_router_id = router_number;
-        router_grid_position_x = router_number % MESH_TOPOLOGY_SIZE;
-        router_grid_position_y = router_number / MESH_TOPOLOGY_SIZE;
+        router_grid_position_x = router_number % MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST;
+        router_grid_position_y = router_number / MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST;
 
         id_of_all_hard_routers_in_device.push_back(router_number);
 
@@ -51,29 +57,29 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
 
     // now add the links, this will generate a mesh topology with the size being MESH_TOPOLOGY_SIZE
-    for (int i = 0; i < MESH_TOPOLOGY_SIZE; i++) {
-        for (int j = 0; j < MESH_TOPOLOGY_SIZE; j++) {
+    for (int i = 0; i < MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST; i++) {
+        for (int j = 0; j < MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE) + j) - 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1));
             }
             // add a link to the top of the router if there exists another router there
-            if ((i + 1) <= MESH_TOPOLOGY_SIZE - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE) + j) + MESH_TOPOLOGY_SIZE));
+            if ((i + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
             }
             // add a link to the right of the router if there exists another router there
-            if ((j + 1) <= MESH_TOPOLOGY_SIZE - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE) + j) + 1));
+            if ((j + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1));
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE) + j) - MESH_TOPOLOGY_SIZE));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
             }
         }
     }
 
     // now we need to create router cluster blocks and assing them to placed at a router hard block
-    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS; cluster_block_number++) {
+    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
         // since the indexes for the hard router blocks start from 0, we will just place the router clusters on hard router blocks with the same id //
 
         // start by creating the placement grid location for the current router cluster by getting the grid location of the hard router block it will be placed on
@@ -93,7 +99,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     int number_of_created_traffic_flows = 0;
 
     // now create a random number of traffic flows
-    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS; cluster_block_number++) {
+    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
         // the current cluster block number will act as the source router
         // and we will choose a random router to act as the sink router
 
@@ -114,7 +120,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         number_of_created_traffic_flows++;
 
         // exit when we have created the required number of traffic flows
-        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS) {
+        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) {
             break;
         }
     }
@@ -125,7 +131,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     NocRouting* routing_algorithm = new XYRouting();
     noc_ctx.noc_flows_router = routing_algorithm;
 
-    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS; traffic_flow_number++) {
+    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
         std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
 
@@ -144,7 +150,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     golden_link_bandwidths.resize(noc_ctx.noc_model.get_noc_links().size(), 0.0);
 
     // now go through the routed traffic flows and update the bandwidths of the links. Once a traffic flow has been processsed, we need to clear it so that the test function can update it with the routes it finds
-    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS; traffic_flow_number++) {
+    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
         std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
 
@@ -167,13 +173,6 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
 
         REQUIRE(golden_link_bandwidths[current_link_id] == current_link.get_bandwidth_usage());
     }
-
-    // now clear all the datastructures used in this test
-    noc_ctx.noc_model.clear_noc();
-    place_ctx.block_locs.clear();
-    noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
-    delete routing_algorithm;
-    noc_ctx.noc_flows_router = nullptr;
 }
 
 // need to add tets that checks whether this works properly when one router or two routers involved in a move dont have traffic flows associated with them
@@ -182,13 +181,19 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
     // setup random number generation
     std::random_device device;
     std::mt19937 rand_num_gen(device());
-    std::uniform_int_distribution<std::mt19937::result_type> dist(0, NUM_OF_LOGICAL_ROUTER_BLOCKS - 1);
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0, NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 1);
     // this sets the range of possible bandwidths for a traffic flow
     std::uniform_int_distribution<std::mt19937::result_type> dist_2(0, 1000);
 
     // get global datastructures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    // start by deleting any global datastructures (this is so that we dont have corruption from previous tests)
+    noc_ctx.noc_model.clear_noc();
+    noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
+    delete noc_ctx.noc_flows_router;
+    place_ctx.block_locs.clear();
 
     // individual router parameters
     int curr_router_id;
@@ -200,11 +205,11 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
 
     // start by creating the routers
     // add all the routers to noc_storage and populate the golden router set
-    for (int router_number = 0; router_number < NUM_OF_ROUTERS; router_number++) {
+    for (int router_number = 0; router_number < NUM_OF_ROUTERS_NOC_PLACE_UTILS_TEST; router_number++) {
         // determine the current router parameters
         curr_router_id = router_number;
-        router_grid_position_x = router_number % MESH_TOPOLOGY_SIZE;
-        router_grid_position_y = router_number / MESH_TOPOLOGY_SIZE;
+        router_grid_position_x = router_number % MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST;
+        router_grid_position_y = router_number / MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST;
 
         // add the router to the noc
         noc_ctx.noc_model.add_router(curr_router_id, router_grid_position_x, router_grid_position_y);
@@ -213,29 +218,29 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
     noc_ctx.noc_model.make_room_for_noc_router_link_list();
 
     // now add the links, this will generate a mesh topology with the size being MESH_TOPOLOGY_SIZE
-    for (int i = 0; i < MESH_TOPOLOGY_SIZE; i++) {
-        for (int j = 0; j < MESH_TOPOLOGY_SIZE; j++) {
+    for (int i = 0; i < MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST; i++) {
+        for (int j = 0; j < MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE) + j) - 1));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - 1));
             }
             // add a link to the top of the router if there exists another router there
-            if ((i + 1) <= MESH_TOPOLOGY_SIZE - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE) + j) + MESH_TOPOLOGY_SIZE));
+            if ((i + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
             }
             // add a link to the right of the router if there exists another router there
-            if ((j + 1) <= MESH_TOPOLOGY_SIZE - 1) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE) + j) + 1));
+            if ((j + 1) <= MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST - 1) {
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) + 1));
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE) + j) - MESH_TOPOLOGY_SIZE));
+                noc_ctx.noc_model.add_link((NocRouterId)((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j), (NocRouterId)(((i * MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST) + j) - MESH_TOPOLOGY_SIZE_NOC_PLACE_UTILS_TEST));
             }
         }
     }
 
     // now we need to create router cluster blocks and assing them to placed at a router hard block as an initial position
-    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS; cluster_block_number++) {
+    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
         // since the indexes for the hard router blocks start from 0, we will just place the router clusters on hard router blocks with the same id //
 
         // start by creating the placement grid location for the current router cluster by getting the grid location of the hard router block it will be placed on
@@ -257,7 +262,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
     int number_of_created_traffic_flows = 0;
 
     // now create a random number of traffic flows
-    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS; cluster_block_number++) {
+    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
         // the current cluster block number will act as the source router
         // and we will choose a random router to act as the sink router
 
@@ -278,7 +283,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
         number_of_created_traffic_flows++;
 
         // exit when we have created the required number of traffic flows
-        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS) {
+        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) {
             break;
         }
     }
@@ -294,7 +299,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
     golden_traffic_flow_routes.resize(noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows());
 
     // we need to route all the traffic flows based on their initial positions
-    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS; traffic_flow_number++) {
+    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
         std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
 
@@ -316,7 +321,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
     golden_link_bandwidths.resize(noc_ctx.noc_model.get_noc_links().size(), 0.0);
 
     // now store update the bandwidths used by all the links based on the initial traffic flow routes
-    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS; traffic_flow_number++) {
+    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
         std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route((NocTrafficFlowId)traffic_flow_number);
 
@@ -333,7 +338,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
     allocate_and_load_noc_placement_structs();
 
     // datastructure that keeps track of moved blocks during placement
-    t_pl_blocks_to_be_moved blocks_affected(NUM_OF_LOGICAL_ROUTER_BLOCKS);
+    t_pl_blocks_to_be_moved blocks_affected(NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST);
 
     // datastructure that keeps track of all the traffic flows that have been re-routed
     std::unordered_set<NocTrafficFlowId> routed_traffic_flows;
@@ -344,7 +349,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
      * flows and then the bandwidth usages of the links. Then we call
      * the test function and then move onto the next iteration.
      */
-    for (int iteration_number = 0; iteration_number < NUM_OF_PLACEMENT_MOVES; iteration_number++) {
+    for (int iteration_number = 0; iteration_number < NUM_OF_PLACEMENT_MOVES_NOC_PLACE_UTILS_TEST; iteration_number++) {
         // get the two cluster blocks to swap first
         ClusterBlockId swap_router_block_one = (ClusterBlockId)dist(rand_num_gen);
         ClusterBlockId swap_router_block_two;
@@ -530,12 +535,5 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
 
         REQUIRE(golden_link_bandwidths[current_link_id] == current_link.get_bandwidth_usage());
     }
-
-    // now clear all the datastructures used in this test
-    noc_ctx.noc_model.clear_noc();
-    place_ctx.block_locs.clear();
-    noc_ctx.noc_traffic_flows_storage.clear_traffic_flows();
-    delete routing_algorithm;
-    noc_ctx.noc_flows_router = nullptr;
 }
 } // namespace
