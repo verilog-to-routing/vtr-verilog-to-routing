@@ -539,8 +539,9 @@ def vtr_command_main(arg_list, prog=None):
         if args.sdc_file:
             vpr_args["sdc_file"] = get_sdc_file(args.sdc_file, prog)
         if args.read_vpr_constraints:
-            vpr_args["read_vpr_constraints"] = \
-                get_read_vpr_constraints(args.read_vpr_constraints, prog)
+            vpr_args["read_vpr_constraints"] = get_read_vpr_constraints(
+                args.read_vpr_constraints, prog
+            )
 
         print(
             args.name
