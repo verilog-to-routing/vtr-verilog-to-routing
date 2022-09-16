@@ -539,7 +539,8 @@ def vtr_command_main(arg_list, prog=None):
         if args.sdc_file:
             vpr_args["sdc_file"] = get_sdc_file(args.sdc_file, prog)
         if args.read_vpr_constraints:
-            vpr_args["read_vpr_constraints"] = get_read_vpr_constraints(args.read_vpr_constraints, prog)
+            vpr_args["read_vpr_constraints"] = \
+                get_read_vpr_constraints(args.read_vpr_constraints, prog)
 
         print(
             args.name
@@ -754,6 +755,7 @@ def get_sdc_file(sdc_file, prog):
             sdc_file = Path(prog).parent.parent / sdc_file
 
     return str(vtr.verify_file(sdc_file, "sdc file"))
+
 
 def get_read_vpr_constraints(read_vpr_constraints, prog):
     """
