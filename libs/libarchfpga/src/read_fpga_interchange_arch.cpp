@@ -8,6 +8,7 @@
 #include <string>
 #include <string.h>
 #include <zlib.h>
+#include <sstream>
 
 #include "vtr_assert.h"
 #include "vtr_digest.h"

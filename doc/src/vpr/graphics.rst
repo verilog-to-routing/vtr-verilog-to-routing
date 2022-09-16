@@ -182,6 +182,11 @@ Button Description Table
 |                   |                   |                              |                              |
 |                   |                   |                              |                              |
 +-------------------+-------------------+------------------------------+------------------------------+
+| Draw Partitions   | Placement/Routing | Visualizes placement         |                              |
+|                   |                   | constraints                  |                              |
+|                   |                   |                              |                              |
+|                   |                   |                              |                              |
++-------------------+-------------------+------------------------------+------------------------------+
 | Place Macros      | Placement/Routing | Visualizes placement macros  |                              |
 |                   |                   |                              |                              |
 |                   |                   |                              |                              |

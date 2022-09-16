@@ -92,80 +92,56 @@ void create_directory(std::string path) {
 }
 
 /**
- * @brief assert all input files have valid type and extenstion
- * 
- * @param name_list list of input files
- * @param type the type to be checked with
+ * @brief report the frontend elaborator and its parser
  */
-void assert_valid_file_extenstion(std::vector<std::string> name_list, file_type_e type) {
-    for (auto file_name : name_list) {
-        // lookup the file type string from file extension map
-        auto file_ext_str = string_to_lower(get_file_extension(file_name));
-        auto file_ext_it = file_extension_strmap.find(file_ext_str);
-
-        // Unsupported file types should be already check.
-        // However, we double-check here
-        if (file_ext_it == file_extension_strmap.end()) {
-            assert_supported_file_extension(file_name, unknown_location);
-        } else {
-            file_type_e file_type = file_ext_it->second;
-            // Check if the file_name extension matches with type
-            switch (type) {
-                case (file_type_e::_VERILOG): // fallthrough
-                case (file_type_e::_VERILOG_HEADER): {
-                    if (file_type != file_type_e::_VERILOG && file_type != file_type_e::_VERILOG_HEADER)
-                        error_message(UTIL, unknown_location,
-                                      "File (%s) has an invalid extension (%s), supposed to be a %s or %s file { %s, %s },\
-                                      please see ./odin --help",
-                                      file_name.c_str(),
-                                      file_ext_str.c_str(),
-                                      file_type_strmap.find(file_type_e::_VERILOG)->second.c_str(),
-                                      file_type_strmap.find(file_type_e::_VERILOG_HEADER)->second.c_str(),
-                                      file_extension_strmap.find(file_type_e::_VERILOG)->second.c_str(),
-                                      file_extension_strmap.find(file_type_e::_VERILOG_HEADER)->second.c_str());
-                    break;
-                }
-                case (file_type_e::_SYSTEM_VERILOG): //fallthrough
-                case (file_type_e::_UHDM): {
-                    if (configuration.elaborator_type != elaborator_e::_YOSYS) {
-#ifndef ODIN_USE_YOSYS
-                        error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
-#else
-                        error_message(UTIL, unknown_location, "%s", YOSYS_PLUGINS_WITH_ODIN_ERROR);
-#endif
-                    } else {
-#ifndef YOSYS_SV_UHDM_PLUGIN
-                        error_message(UTIL, unknown_location, "%s", YOSYS_PLUGINS_NOT_COMPILED);
-#endif
-                    }
-                    if (file_type != type && type != file_type_e::_UHDM)
-                        error_message(UTIL, unknown_location,
-                                      "File (%s) has an invalid extension (%s), supposed to be a %s file { %s },\
-                                      please see ./odin --help",
-                                      file_name.c_str(),
-                                      file_ext_str.c_str(),
-                                      file_type_strmap.find(type)->second.c_str(),
-                                      file_extension_strmap.find(type)->second.c_str());
-                    break;
-                }
-                case (file_type_e::_BLIF): {
-                    if (file_type != type)
-                        error_message(UTIL, unknown_location,
-                                      "File (%s) has an invalid extension (%s), supposed to be a %s file { %s },\
-                                      please see ./odin --help",
-                                      file_name.c_str(),
-                                      file_ext_str.c_str(),
-                                      file_type_strmap.find(type)->second.c_str(),
-                                      file_extension_strmap.find(type)->second.c_str());
-                    break;
-                }
-                case (file_type_e::_EBLIF): //fallthrough
-                case (file_type_e::_ILANG): // fallthrough
-                default: {
-                    assert_supported_file_extension(file_name, unknown_location);
-                    break;
-                }
+void report_frontend_elaborator() {
+    // Check if the file_name extension matches with type
+    switch (configuration.input_file_type) {
+        case (file_type_e::_VERILOG): // fallthrough
+        case (file_type_e::_VERILOG_HEADER): {
+            if (configuration.elaborator_type == elaborator_e::_ODIN) {
+                printf("Using the ODIN_II parser for elaboration\n");
+            } else if (configuration.elaborator_type == elaborator_e::_YOSYS) {
+                printf("Using the Yosys elaborator with it's conventional Verilog/SystemVerilog parser\n");
             }
+            break;
+        }
+        case (file_type_e::_SYSTEM_VERILOG): {
+            if (configuration.elaborator_type != elaborator_e::_YOSYS) {
+                error_message(PARSE_ARGS, unknown_location, "%s", SYSTEMVERILOG_PARSER_ERROR);
+            }
+#ifndef YOSYS_SV_UHDM_PLUGIN
+            printf("Using the Yosys elaborator with it's conventional Verilog/SystemVerilog parser\n");
+#else
+            printf("Using the Yosys elaborator with the Yosys-F4PGA-Plugin parser for SystemVerilog\n");
+#endif
+            break;
+        }
+        case (file_type_e::_UHDM): {
+            if (configuration.elaborator_type != elaborator_e::_YOSYS) {
+                error_message(PARSE_ARGS, unknown_location, "%s", UHDM_PARSER_ERROR);
+
+            } else if (configuration.elaborator_type == elaborator_e::_YOSYS) {
+#ifndef ODIN_USE_YOSYS
+                error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
+#else
+#    ifndef YOSYS_SV_UHDM_PLUGIN
+                error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_PLUGINS_NOT_COMPILED);
+#    endif
+#endif
+            }
+            printf("Using the Yosys elaborator with the Surelog parser for UHDM\n");
+            break;
+        }
+        case (file_type_e::_BLIF): {
+            printf("Using the ODIN_II BLIF parser\n");
+            break;
+        }
+        case (file_type_e::_EBLIF): //fallthrough
+        case (file_type_e::_ILANG): //fallthrough
+        default: {
+            error_message(UTIL, unknown_location, "%s", "Invalid file type");
+            break;
         }
     }
 }

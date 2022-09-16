@@ -14,5 +14,5 @@ Odin II is used for logic synthesis and elaboration, converting a subset of the 
   * [Regression Tool](../doc/src/odin/dev_guide/verify_script)
   * [Validating Tests](../doc/src/odin/dev_guide/testing)
 
-Maintained by: [sdamghan](https://github.com/sdamghan)
+Maintained by:  [Ph.D. - alirezazd](https://github.com/alirezazd) and [M.Sc. - poname](https://github.com/poname)
 Owned by: [KennethKent](https://github.com/kennethkent)
