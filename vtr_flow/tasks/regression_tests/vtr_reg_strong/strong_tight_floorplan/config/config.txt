@@ -3,7 +3,7 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/titan_blif
+circuits_dir=tasks/regression_tests/vtr_reg_strong/strong_tight_floorplan
 
 # Path to directory of architectures to use
 archs_dir=tasks/regression_tests/vtr_reg_strong/strong_tight_floorplan
