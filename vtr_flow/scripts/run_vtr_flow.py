@@ -438,6 +438,9 @@ def vtr_command_argparser(prog=None):
         "-sdc_file", default=None, type=str, help="Path to SDC timing constraints file."
     )
     vpr.add_argument(
+        "-read_vpr_constraints", default=None, type=str, help="Path to vpr constraints file."
+    )
+    vpr.add_argument(
         "-check_incremental_sta_consistency",
         default=False,
         action="store_true",
@@ -535,6 +538,8 @@ def vtr_command_main(arg_list, prog=None):
         vpr_args = process_vpr_args(args, prog, temp_dir, vpr_args)
         if args.sdc_file:
             vpr_args["sdc_file"] = get_sdc_file(args.sdc_file, prog)
+        if args.read_vpr_constraints:
+            vpr_args["read_vpr_constraints"] = get_read_vpr_constraints(args.read_vpr_constraints, prog)
 
         print(
             args.name
@@ -749,6 +754,18 @@ def get_sdc_file(sdc_file, prog):
             sdc_file = Path(prog).parent.parent / sdc_file
 
     return str(vtr.verify_file(sdc_file, "sdc file"))
+
+def get_read_vpr_constraints(read_vpr_constraints, prog):
+    """
+    takes in the read_vpr_constraints and returns a path to that file if it exists.
+    """
+    if not Path(read_vpr_constraints).exists():
+        if read_vpr_constraints.startswith("/"):
+            read_vpr_constraints = Path(str(Path(prog).parent.parent) + read_vpr_constraints)
+        else:
+            read_vpr_constraints = Path(prog).parent.parent / read_vpr_constraints
+
+    return str(vtr.verify_file(read_vpr_constraints, "vpr constraint file"))
 
 
 def except_vtr_error(error, expect_fail, verbose):
