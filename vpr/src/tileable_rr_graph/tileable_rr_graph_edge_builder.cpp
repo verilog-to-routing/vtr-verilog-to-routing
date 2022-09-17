@@ -24,7 +24,7 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
                                            const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                            const DeviceGrid& grids,
                                            size_t& num_edges_to_create) {
-    size_t& edge_count = 0;
+    size_t edge_count = 0;
     for (const RRNodeId& node : rr_graph.nodes()) {
         /* Bypass all the non OPIN nodes */
         if (OPIN != rr_graph.node_type(node)) {
@@ -60,7 +60,7 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
                                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                          const DeviceGrid& grids,
                                          size_t& num_edges_to_create) {
-    size_t& edge_count = 0;
+    size_t edge_count = 0;
     for (const RRNodeId& node : rr_graph.nodes()) {
         /* Bypass all the non IPIN nodes */
         if (IPIN != rr_graph.node_type(node)) {
