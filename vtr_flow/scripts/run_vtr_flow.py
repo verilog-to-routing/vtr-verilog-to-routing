@@ -751,7 +751,7 @@ def get_sdc_file(sdc_file, prog):
     """
     # if not Path(sdc_file).exists():
     if sdc_file.startswith("/"):
-        # FIXME should be started with "./" because if the developer use "/" as the
+        # discuss later: should be started with "./" because if the developer use "/" as the
         # start char, the developer usually give the absolute path of the file
         sdc_file = Path(str(Path(prog).parent.parent) + sdc_file)
     else:
@@ -766,7 +766,7 @@ def get_read_vpr_constraints(read_vpr_constraints, prog):
     """
     # if not Path(read_vpr_constraints).exists():
     if read_vpr_constraints.startswith("/"):
-        # FIXME should be started with "./" because if the developer use "/" as the
+        # discuss later: should be started with "./" because if the developer use "/" as the
         # start char, the developer usually give the absolute path of the file
         read_vpr_constraints = Path(str(Path(prog).parent.parent) + read_vpr_constraints)
     else:
