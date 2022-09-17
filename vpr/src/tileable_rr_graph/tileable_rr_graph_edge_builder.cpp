@@ -22,7 +22,8 @@
 void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
                                            RRGraphBuilder& rr_graph_builder,
                                            const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                           const DeviceGrid& grids) {
+                                           const DeviceGrid& grids,
+                                           size_t& num_edges_to_create) {
     for (const RRNodeId& node : rr_graph.nodes()) {
         /* Bypass all the non OPIN nodes */
         if (OPIN != rr_graph.node_type(node)) {
@@ -41,6 +42,7 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
 
         /* add edges to the src_node */
         rr_graph_builder.create_edge(src_node, node, rr_node_driver_switches[node]);
+        num_edges_to_create++;
     }
     /* Allocate edges for all the source nodes */
     rr_graph_builder.build_edges();
@@ -53,7 +55,8 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
 void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
                                          RRGraphBuilder& rr_graph_builder,
                                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                         const DeviceGrid& grids) {
+                                         const DeviceGrid& grids,
+                                         size_t& num_edges_to_create) {
     for (const RRNodeId& node : rr_graph.nodes()) {
         /* Bypass all the non IPIN nodes */
         if (IPIN != rr_graph.node_type(node)) {
@@ -72,6 +75,7 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
 
         /* add edges to connect the IPIN node to SINK nodes */
         rr_graph_builder.create_edge(node, sink_node, rr_node_driver_switches[sink_node]);
+        num_edges_to_create++;
     }
     /* Allocate edges for all the source nodes */
     rr_graph_builder.build_edges();
@@ -100,9 +104,10 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const e_switch_block_type& sb_subtype,
                           const int& subFs,
                           const bool& wire_opposite_side) {
+    size_t num_edges_to_create = 0;
     /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
-    build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids);
-    build_rr_graph_edges_for_sink_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids);
+    build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, num_edges_to_create);
+    build_rr_graph_edges_for_sink_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, num_edges_to_create);
 
     vtr::Point<size_t> gsb_range(grids.width() - 2, grids.height() - 2);
 
@@ -134,11 +139,12 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
             /* Build edges for a GSB */
             build_edges_for_one_tileable_rr_gsb(rr_graph_builder, rr_gsb,
                                                 track2ipin_map, opin2track_map,
-                                                sb_conn, rr_node_driver_switches);
+                                                sb_conn, rr_node_driver_switches, num_edges_to_create);
             /* Finish this GSB, go to the next*/
             rr_graph_builder.build_edges(false);
         }
     }
+    VTR_LOG("Number of edges to create: %ld\n", num_edges_to_create);
 }
 
 /************************************************************************
