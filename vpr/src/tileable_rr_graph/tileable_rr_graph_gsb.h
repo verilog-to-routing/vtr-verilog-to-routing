@@ -51,7 +51,8 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
                                          const t_track2pin_map& track2ipin_map,
                                          const t_pin2track_map& opin2track_map,
                                          const t_track2track_map& track2track_map,
-                                         const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches);
+                                         const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                         size_t& num_edges);
 
 t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
                                             const RRGSB& rr_gsb,

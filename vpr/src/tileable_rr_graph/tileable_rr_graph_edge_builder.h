@@ -44,11 +44,13 @@ void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
 void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
                                            RRGraphBuilder& rr_graph_builder,
                                            const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                           const DeviceGrid& grids);
+                                           const DeviceGrid& grids,
+                                           size_t& num_edges_to_create);
 
 void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
                                          RRGraphBuilder& rr_graph_builder,
                                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                         const DeviceGrid& grids);
+                                         const DeviceGrid& grids,
+                                         size_t& num_edges_to_create);
 
 #endif
