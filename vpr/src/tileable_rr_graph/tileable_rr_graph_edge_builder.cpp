@@ -24,6 +24,7 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
                                            const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                            const DeviceGrid& grids,
                                            size_t& num_edges_to_create) {
+    size_t& edge_count = 0;
     for (const RRNodeId& node : rr_graph.nodes()) {
         /* Bypass all the non OPIN nodes */
         if (OPIN != rr_graph.node_type(node)) {
@@ -42,10 +43,12 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
 
         /* add edges to the src_node */
         rr_graph_builder.create_edge(src_node, node, rr_node_driver_switches[node]);
-        num_edges_to_create++;
+        edge_count++;
     }
     /* Allocate edges for all the source nodes */
     rr_graph_builder.build_edges();
+    VTR_LOG("Number of edges to create for source nodes: %ld\n", edge_count);
+    num_edges_to_create += edge_count;
 }
 
 /************************************************************************
@@ -57,6 +60,7 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
                                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                          const DeviceGrid& grids,
                                          size_t& num_edges_to_create) {
+    size_t& edge_count = 0;
     for (const RRNodeId& node : rr_graph.nodes()) {
         /* Bypass all the non IPIN nodes */
         if (IPIN != rr_graph.node_type(node)) {
@@ -75,10 +79,12 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
 
         /* add edges to connect the IPIN node to SINK nodes */
         rr_graph_builder.create_edge(node, sink_node, rr_node_driver_switches[sink_node]);
-        num_edges_to_create++;
+        edge_count++;
     }
     /* Allocate edges for all the source nodes */
     rr_graph_builder.build_edges();
+    VTR_LOG("Number of edges to create for sink nodes: %ld\n", edge_count);
+    num_edges_to_create += edge_count;
 }
 
 /************************************************************************
