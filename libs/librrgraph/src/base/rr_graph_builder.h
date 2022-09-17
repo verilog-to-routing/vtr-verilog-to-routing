@@ -261,7 +261,7 @@ class RRGraphBuilder {
     /** @brief Allocate and build actual edges in storage. 
      *  Once called, the cached edges will be uniquified and added to routing resource nodes, 
      * while the cache will be empty once build-up is accomplished */
-    void build_edges();
+    void build_edges(const bool& uniquify = true);
 
     /** @brief Allocate and build incoming edges for each node. 
      *  By default, no incoming edges are kept in storage, to be memory efficient */

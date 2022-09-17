@@ -195,9 +195,11 @@ void RRGraphBuilder::create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_sw
     is_incoming_edge_dirty_ = true;
 }
 
-void RRGraphBuilder::build_edges() {
+void RRGraphBuilder::build_edges(const bool& uniquify) {
     std::sort(edges_to_build_.begin(), edges_to_build_.end());
-    edges_to_build_.erase(std::unique(edges_to_build_.begin(), edges_to_build_.end()), edges_to_build_.end());
+    if (uniquify) {
+        edges_to_build_.erase(std::unique(edges_to_build_.begin(), edges_to_build_.end()), edges_to_build_.end());
+    }
     alloc_and_load_edges(&edges_to_build_);
     edges_to_build_.clear(); 
     is_edge_dirty_ = false;

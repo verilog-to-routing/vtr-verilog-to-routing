@@ -136,7 +136,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                                                 track2ipin_map, opin2track_map,
                                                 sb_conn, rr_node_driver_switches);
             /* Finish this GSB, go to the next*/
-            rr_graph_builder.build_edges();
+            rr_graph_builder.build_edges(false);
         }
     }
 }
