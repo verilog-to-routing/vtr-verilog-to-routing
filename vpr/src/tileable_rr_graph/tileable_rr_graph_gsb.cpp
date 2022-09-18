@@ -374,6 +374,8 @@ static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
                     /* to_track should be OUT_PORT */
                     VTR_ASSERT(OUT_PORT == rr_gsb.get_chan_node_direction(to_side, to_track_index));
 
+                    VTR_LOG("Consider a connection from pass tracks %d on side %s to track node %ld on side %s\n", from_track_index, SIDE_STRING[from_side], size_t(to_track_node), SIDE_STRING[to_side]);
+
                     /* Check if the to_track_node is already in the list ! */
                     std::vector<RRNodeId>::iterator it = std::find(track2track_map[from_side_index][from_track_index].begin(),
                                                                    track2track_map[from_side_index][from_track_index].end(),
@@ -383,6 +385,7 @@ static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
                     }
                     /* Clear, we should add to the list */
                     track2track_map[from_side_index][from_track_index].push_back(to_track_node);
+                    VTR_LOG("Built a connection from pass tracks %d on side %s to track node %ld on side %s\n", from_track_index, SIDE_STRING[from_side], size_t(to_track_node), SIDE_STRING[to_side]);
                 }
             }
         }
@@ -519,6 +522,9 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
     /* Currently, I use the same Switch Block pattern for the passing tracks and end tracks,
      * TODO: This can be improved with different patterns!
      */
+    for (e_side curr_side : SIDES) {
+        VTR_LOG("Number of pass tracks %d on side %s\n", pass_tracks[size_t(curr_side)].size(), SIDE_STRING[curr_side]);
+    }
     build_gsb_one_group_track_to_track_map(rr_graph, rr_gsb,
                                            sb_subtype, subFs,
                                            wire_opposite_side, /* Pass tracks may not be wired to start tracks */
