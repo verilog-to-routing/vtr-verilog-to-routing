@@ -749,13 +749,13 @@ def get_sdc_file(sdc_file, prog):
     """
     takes in the sdc_file and returns a path to that file if it exists.
     """
-    # if not Path(sdc_file).exists():
-    if sdc_file.startswith("/"):
-        # discuss later: should be started with "./" because if the developer use "/" as the
-        # start char, the developer usually give the absolute path of the file
-        sdc_file = Path(str(Path(prog).parent.parent) + sdc_file)
-    else:
-        sdc_file = Path(prog).parent.parent / sdc_file
+     if not Path(sdc_file).exists():
+        if sdc_file.startswith("/"):
+            # discuss later: should be started with "./" because if the developer use "/" as the
+            # start char, the developer usually give the absolute path of the file
+            sdc_file = Path(str(Path(prog).parent.parent) + sdc_file)
+        else:
+            sdc_file = Path(prog).parent.parent / sdc_file
 
     return str(vtr.verify_file(sdc_file, "sdc file"))
 
