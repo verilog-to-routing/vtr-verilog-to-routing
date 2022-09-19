@@ -46,7 +46,7 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
         edge_count++;
     }
     /* Allocate edges for all the source nodes */
-    rr_graph_builder.build_edges(false);
+    rr_graph_builder.build_edges(true);
     VTR_LOG("Number of edges to create for source nodes: %ld\n", edge_count);
     num_edges_to_create += edge_count;
 }
@@ -82,7 +82,7 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
         edge_count++;
     }
     /* Allocate edges for all the source nodes */
-    rr_graph_builder.build_edges(false);
+    rr_graph_builder.build_edges(true);
     VTR_LOG("Number of edges to create for sink nodes: %ld\n", edge_count);
     num_edges_to_create += edge_count;
 }
@@ -147,7 +147,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                                                 track2ipin_map, opin2track_map,
                                                 sb_conn, rr_node_driver_switches, num_edges_to_create);
             /* Finish this GSB, go to the next*/
-            rr_graph_builder.build_edges(false);
+            rr_graph_builder.build_edges(true);
         }
     }
     VTR_LOG("Number of edges to create: %ld\n", num_edges_to_create);
