@@ -1442,5 +1442,5 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
         }
     }
     /* Build actual edges */
-    rr_graph_builder.build_edges();
+    rr_graph_builder.build_edges(false);
 }
