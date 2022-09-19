@@ -628,12 +628,10 @@ void try_place(const t_placer_opts& placer_opts,
         costs.bb_cost = comp_bb_cost(NORMAL);
         costs.bb_cost_norm = 1 / costs.bb_cost;
         costs.cost = 1;
-        //costs.cost = costs.bb_cost;
 
         /* Timing cost and normalization factors are not used */
         costs.timing_cost = INVALID_COST;
         costs.timing_cost_norm = INVALID_COST;
-        //costs.bb_cost_norm = INVALID_COST;
 
         /* Other initializations */
         outer_crit_iter_count = 0;
@@ -1019,31 +1017,30 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           PlacerSetupSlacks* setup_slacks,
                                           ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                           SetupTimingInfo* timing_info) {
-    if (!placer_opts.place_algorithm.is_timing_driven()) {
-        return;
-    }
-
-    /*at each temperature change we update these values to be used     */
-    /*for normalizing the tradeoff between timing and wirelength (bb)  */
-    if (*outer_crit_iter_count >= placer_opts.recompute_crit_iter
-        || placer_opts.inner_loop_recompute_divider != 0) {
+    if (placer_opts.place_algorithm.is_timing_driven()) {
+    
+        /*at each temperature change we update these values to be used     */
+        /*for normalizing the tradeoff between timing and wirelength (bb)  */
+        if (*outer_crit_iter_count >= placer_opts.recompute_crit_iter
+            || placer_opts.inner_loop_recompute_divider != 0) {
 #ifdef VERBOSE
-        VTR_LOG("Outer loop recompute criticalities\n");
+            VTR_LOG("Outer loop recompute criticalities\n");
 #endif
-        num_connections = std::max(num_connections, 1); //Avoid division by zero
-        VTR_ASSERT(num_connections > 0);
+            num_connections = std::max(num_connections, 1); //Avoid division by zero
+            VTR_ASSERT(num_connections > 0);
 
-        PlaceCritParams crit_params;
-        crit_params.crit_exponent = crit_exponent;
-        crit_params.crit_limit = placer_opts.place_crit_limit;
+            PlaceCritParams crit_params;
+            crit_params.crit_exponent = crit_exponent;
+            crit_params.crit_limit = placer_opts.place_crit_limit;
 
-        //Update all timing related classes
-        perform_full_timing_update(crit_params, delay_model, criticalities,
-                                   setup_slacks, pin_timing_invalidator, timing_info, costs);
+            //Update all timing related classes
+            perform_full_timing_update(crit_params, delay_model, criticalities,
+                                    setup_slacks, pin_timing_invalidator, timing_info, costs);
 
-        *outer_crit_iter_count = 0;
+            *outer_crit_iter_count = 0;
+        }
+        (*outer_crit_iter_count)++;
     }
-    (*outer_crit_iter_count)++;
 
     /* Update the cost normalization factors */
     costs->update_norm_factors();
@@ -1189,7 +1186,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
     } else {
         VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
 
-        costs->cost = new_bb_cost;
+        costs->cost = new_bb_cost*costs->bb_cost_norm;
     }
 
     if (noc_opts.noc) {
