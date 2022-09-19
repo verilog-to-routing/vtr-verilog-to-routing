@@ -182,6 +182,8 @@ class RRGSB {
 
     /* Sort all the incoming edges for routing channel rr_node */
     void sort_chan_node_in_edges(const RRGraphView& rr_graph);
+    /* Sort all the incoming edges for input pin rr_node */
+    void sort_ipin_node_in_edges(const RRGraphView& rr_graph);
 
   public: /* Mutators: cleaners */
     void clear();
@@ -203,6 +205,11 @@ class RRGSB {
     void sort_chan_node_in_edges(const RRGraphView& rr_graph,
                                  const e_side& chan_side,
                                  const size_t& track_id);
+
+    /* Sort all the incoming edges for one input pin rr_node */
+    void sort_ipin_node_in_edges(const RRGraphView& rr_graph,
+                                 const e_side& chan_side,
+                                 const size_t& ipin_id);
 
   private: /* internal functions */
     size_t get_track_id_first_short_connection(const RRGraphView& rr_graph, const e_side& node_side) const;

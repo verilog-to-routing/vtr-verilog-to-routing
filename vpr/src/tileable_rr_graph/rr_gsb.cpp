@@ -855,8 +855,8 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
             }
             VTR_LOG("\n----------------------------------\n");
             VTR_LOG("Channel node:\n");
-            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(chan_node).c_str());
-            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(chan_node));
+            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(ipin_node).c_str());
+            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(ipin_node));
             VTR_LOG("Fan-in nodes:\n");
             for (const auto& temp_edge : rr_graph.node_in_edges(ipin_node)) {
                 VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(temp_edge)).c_str());
@@ -893,7 +893,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph) {
 
     for (size_t side = 0; side < get_num_sides(); ++side) {
         SideManager side_manager(side);
-        ipin_node_in_edges_[side].resize(ipin_node_[side].get_chan_width());
+        ipin_node_in_edges_[side].resize(ipin_node_[side].size());
         for (size_t ipin_id = 0; ipin_id < ipin_node_[side].size(); ++ipin_id) {
             sort_ipin_node_in_edges(rr_graph, side_manager.get_side(), ipin_id);
         }
