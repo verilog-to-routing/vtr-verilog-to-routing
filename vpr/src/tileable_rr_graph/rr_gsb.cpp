@@ -879,10 +879,10 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
 
     /* Store the sorted edge */
     for (size_t side = 0; side < get_num_sides(); ++side) {
-        for (size_t iipin = 0; iipin < ipin_node_[side].size(); ++iipin) {
+        for (size_t itrack = 0; itrack < chan_node_[side].get_chan_width(); ++itrack) {
             if ((0 < from_track_edge_map.count(side))
-                && (0 < from_track_edge_map.at(side).count(ipin_id))) {
-                ipin_node_in_edges_[size_t(ipin_side)][ipin_id].push_back(from_track_edge_map[side][iipin]);
+                && (0 < from_track_edge_map.at(side).count(itrack))) {
+                ipin_node_in_edges_[size_t(ipin_side)][ipin_id].push_back(from_track_edge_map[side][itrack]);
             }
         }
     }
