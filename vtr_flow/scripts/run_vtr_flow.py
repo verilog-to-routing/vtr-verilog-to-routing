@@ -749,7 +749,7 @@ def get_sdc_file(sdc_file, prog):
     """
     takes in the sdc_file and returns a path to that file if it exists.
     """
-     if not Path(sdc_file).exists():
+    if not Path(sdc_file).exists():
         if sdc_file.startswith("/"):
             # discuss later: should be started with "./" because if the developer use "/" as the
             # start char, the developer usually give the absolute path of the file
