@@ -91,6 +91,11 @@ class RRGSB {
                                                  const e_side& side,
                                                  const size_t& track_id) const;
 
+    /* get all the sorted incoming edges for a IPIN rr_node at a given side and ipin_id */
+    std::vector<RREdgeId> get_ipin_node_in_edges(const RRGraphView& rr_graph,
+                                                 const e_side& side,
+                                                 const size_t& ipin_id) const;
+
     /* get the segment id of a channel rr_node */
     RRSegmentId get_chan_node_segment(const e_side& side, const size_t& track_id) const;
 
@@ -235,6 +240,8 @@ class RRGSB {
      *   [chan_side][chan_node][edge_id_in_gsb_context]
      */
     std::vector<std::vector<std::vector<RREdgeId>>> chan_node_in_edges_;
+    /* Sequence of edge ids for each input pin node. Same rules applied as the channel nodes */
+    std::vector<std::vector<std::vector<RREdgeId>>> ipin_node_in_edges_;
 
     /* Logic Block Inputs data */
     std::vector<std::vector<RRNodeId>> ipin_node_;
