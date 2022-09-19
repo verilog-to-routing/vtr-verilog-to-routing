@@ -838,9 +838,14 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
     for (const RREdgeId& edge : rr_graph.node_in_edges(ipin_node)) {
         /* We care the source node of this edge, and it should be an input of the GSB!!! */
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
+        /* The driver routing channel node can be either an input or an output to the GSB.
+         * Just try to find a qualified one. */
         e_side side = NUM_SIDES;
         int index = 0;
         get_node_side_and_index(rr_graph, src_node, IN_PORT, side, index);
+        if (NUM_SIDES == side || OPEN == index) {  
+            get_node_side_and_index(rr_graph, src_node, OUT_PORT, side, index);
+        }
 
         /* Must have valid side and index */
         if (NUM_SIDES == side) {
@@ -854,7 +859,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                 VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
             }
             VTR_LOG("\n----------------------------------\n");
-            VTR_LOG("Channel node:\n");
+            VTR_LOG("IPIN node:\n");
             VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(ipin_node).c_str());
             VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(ipin_node));
             VTR_LOG("Fan-in nodes:\n");
