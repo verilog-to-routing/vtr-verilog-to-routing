@@ -34,7 +34,7 @@ void create_rr_graph(const t_graph_type graph_type,
 
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                          const t_det_routing_arch& det_routing_arch,
-                         const t_physical_tile_type& physical_tile,
+                         t_physical_tile_type_ptr physical_tile,
                          int x,
                          int y,
                          const int delayless_switch);

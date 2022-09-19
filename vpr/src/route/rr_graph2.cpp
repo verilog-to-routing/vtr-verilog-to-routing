@@ -1321,7 +1321,7 @@ static void add_intra_cluster_src_sink_spatial_lookup(RRGraphBuilder& rr_graph_b
 
 //    device_ctx.rr_graph_builder.rr_nodes().edges_read_ = false;
 
-    auto cluster_internal_classes = get_cluster_internal_class_pairs(cluster_blk_id);
+    auto cluster_internal_classes = get_cluster_internal_primitive_class_pairs(cluster_blk_id);
     for (auto class_pair : cluster_internal_classes) {
         int class_num = class_pair.first;
         VTR_ASSERT(class_num >= 0);
@@ -2019,14 +2019,14 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
 }
 
 void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                         const t_physical_tile_type& physical_tile,
+                                         t_physical_tile_type_ptr physical_tile,
                                          int x,
                                          int y,
                                          int* num_rr_nodes) {
     std::vector<e_side> wanted_sides {TOP, BOTTOM, LEFT, RIGHT};
-    add_tile_sink_src_spatial_lookup(rr_graph_builder, &physical_tile, x, y, num_rr_nodes);
-    add_tile_pins_spatial_lookup(rr_graph_builder, &physical_tile, x, y, num_rr_nodes, wanted_sides);
-    alloc_and_load_intra_tile_rr_node_indices(rr_graph_builder, &physical_tile, x, y, num_rr_nodes);
+    add_tile_sink_src_spatial_lookup(rr_graph_builder, physical_tile, x, y, num_rr_nodes);
+    add_tile_pins_spatial_lookup(rr_graph_builder, physical_tile, x, y, num_rr_nodes, wanted_sides);
+    alloc_and_load_intra_tile_rr_node_indices(rr_graph_builder, physical_tile, x, y, num_rr_nodes);
 }
 
 static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,

@@ -794,7 +794,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                 }
             }
         } else {
-            auto pin_list = get_pin_list_from_class_physical_num(physical_tile, rr_graph.node_ptc_num(curr.node));
+            const auto& pin_list = get_pin_list_from_class_physical_num(physical_tile, rr_graph.node_ptc_num(curr.node));
             if(!is_pin_on_tile(physical_tile, pin_list[0]) && get_pb_pin_from_pin_physical_num(physical_tile, pin_list[0])->is_primitive_pin()){
                 int curr_ptc = rr_graph.node_ptc_num(curr.node);
                 if(starting_pin_delay_map.find(curr_ptc) == starting_pin_delay_map.end() ||

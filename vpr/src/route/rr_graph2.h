@@ -30,7 +30,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     bool is_flat);
 
 void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                         const t_physical_tile_type& physical_tile,
+                                         t_physical_tile_type_ptr physical_tile,
                                          int x,
                                          int y,
                                          int* num_rr_nodes);

@@ -212,7 +212,7 @@ static void compute_tiles_lookahead(std::map<t_physical_tile_type_ptr, util::t_i
                                     const DeviceContext& device_ctx);
 
 static void compute_tile_lookahead(std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
-                                   const t_physical_tile_type& physical_tile,
+                                   t_physical_tile_type_ptr physical_tile,
                                    const t_det_routing_arch& det_routing_arch,
                                    const int delayless_switch);
 
@@ -1262,7 +1262,7 @@ static void compute_tiles_lookahead(std::map<t_physical_tile_type_ptr, util::t_i
         }
         //TODO: The sw_id of the delayless switch should be somehow passed to this function - The current approach is not safe
         compute_tile_lookahead(inter_tile_pin_primitive_pin_delay,
-                               tile,
+                               &tile,
                                det_routing_arch,
                                (int)device_ctx.arch_switch_inf.size()-1);
         store_min_cost_to_sinks(tile_min_cost,
@@ -1272,7 +1272,7 @@ static void compute_tiles_lookahead(std::map<t_physical_tile_type_ptr, util::t_i
 }
 
 static void compute_tile_lookahead(std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay,
-                                   const t_physical_tile_type& physical_tile,
+                                   t_physical_tile_type_ptr physical_tile,
                                    const t_det_routing_arch& det_routing_arch,
                                    const int delayless_switch) {
     RRGraphBuilder rr_graph_builder;
@@ -1295,11 +1295,11 @@ static void compute_tile_lookahead(std::map<t_physical_tile_type_ptr, util::t_ip
                          rr_graph_builder.rr_switch()};
 
     util::t_ipin_primitive_sink_delays pin_delays = util::compute_intra_tile_dijkstra(rr_graph,
-                                                                                      &physical_tile,
+                                                                                      physical_tile,
                                                                                       x,
                                                                                       y);
 
-    auto insert_res = inter_tile_pin_primitive_pin_delay.insert(std::make_pair(&physical_tile, pin_delays));
+    auto insert_res = inter_tile_pin_primitive_pin_delay.insert(std::make_pair(physical_tile, pin_delays));
     VTR_ASSERT(insert_res.second);
 
     rr_graph_builder.clear();

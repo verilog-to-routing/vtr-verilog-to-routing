@@ -769,7 +769,7 @@ std::tuple<const t_sub_tile*, int> get_sub_tile_from_class_physical_num(t_physic
     return std::make_tuple(nullptr, -1);
 }
 
-std::vector<int> get_pin_list_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
+const std::vector<int>& get_pin_list_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
     if (is_class_on_tile(physical_tile, class_physical_num)) {
         const t_class& pin_class = physical_tile->class_inf[class_physical_num];
         return pin_class.pinlist;
@@ -869,6 +869,29 @@ t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr ph
     return class_range;
 }
 
+std::vector<int> get_tile_classes(t_physical_tile_type_ptr physical_type) {
+    std::vector<int> classes(physical_type->class_inf.size());
+    std::iota(classes.begin(), classes.end(), 0);
+
+    return classes;
+}
+
+std::vector<int> get_flat_tile_classes(t_physical_tile_type_ptr physical_type) {
+    std::vector<int> class_num_vec;
+    size_t num_classes = physical_type->class_inf.size() + physical_type->internal_class_inf.size();
+    class_num_vec.reserve(num_classes);
+
+    auto tile_class = get_tile_classes(physical_type);
+    class_num_vec.insert(class_num_vec.end(), tile_class.begin(), tile_class.end());
+
+    for(const auto& internal_class_pair : physical_type->internal_class_inf){
+        class_num_vec.push_back(internal_class_pair.first);
+    }
+
+    VTR_ASSERT(class_num_vec.size() == num_classes);
+    return class_num_vec;
+}
+
 /** **/
 int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
     if (is_flat) {
@@ -956,6 +979,33 @@ e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_
         const t_class& pin_class = physical_tile->internal_class_inf.at(physical_tile->internal_pin_class.at(pin_physical_num));
         return pin_class.type;
     }
+}
+
+std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coordinates(t_physical_tile_type_ptr physical_type,
+                                                                                        int pin_physical_num) {
+    std::vector<int> x_vec;
+    std::vector<int> y_vec;
+    std::vector<e_side> side_vec;
+    if (is_pin_on_tile(physical_type, pin_physical_num)) {
+        for (e_side side : SIDES) {
+            for (int width = 0; width < physical_type->width; ++width) {
+                for (int height = 0; height < physical_type->height; ++height) {
+                    if (physical_type->pinloc[width][height][side][pin_physical_num]) {
+                        x_vec.push_back(width);
+                        y_vec.push_back(height);
+                        side_vec.push_back(side);
+                    }
+                }
+            }
+        }
+    } else {
+        x_vec.push_back(0);
+        y_vec.push_back(0);
+        side_vec.push_back(e_side::TOP);
+    }
+
+    return std::make_tuple(x_vec, y_vec, side_vec);
+
 }
 
 int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num) {
@@ -1056,6 +1106,30 @@ std::vector<int> get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
     return pins_num;
 }
 
+std::vector<int> get_tile_pins(t_physical_tile_type_ptr physical_tile) {
+    std::vector<int> tile_pins(physical_tile->num_pins);
+    std::iota(tile_pins.begin(), tile_pins.end(), 0);
+
+    return tile_pins;
+}
+
+std::vector<int> get_flat_tile_pins(t_physical_tile_type_ptr physical_type) {
+    std::vector<int> pin_num_vec;
+    size_t num_pins = physical_type->num_pins + physical_type->internal_pin_class.size();
+    pin_num_vec.reserve(num_pins);
+
+    auto tile_pins = get_tile_pins(physical_type);
+    pin_num_vec.insert(pin_num_vec.end(), tile_pins.begin(), tile_pins.end());
+
+    for(const auto& internal_pin_class_pair : physical_type->internal_pin_class) {
+        pin_num_vec.push_back(internal_pin_class_pair.first);
+    }
+
+    VTR_ASSERT(pin_num_vec.size() == num_pins);
+    return pin_num_vec;
+
+}
+
 std::vector<int> get_physical_pin_driving_pins(t_physical_tile_type_ptr physical_type,
                                                t_logical_block_type_ptr logical_block,
                                                int pin_physical_num) {
@@ -1101,7 +1175,7 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
     return pin_physical_num;
 }
 
-int get_edge_sw_idx(t_physical_tile_type_ptr physical_tile,
+int get_edge_sw_arch_idx(t_physical_tile_type_ptr physical_tile,
                     t_logical_block_type_ptr logical_block,
                     int from_pin_physical_num,
                     int to_pin_physical_num) {

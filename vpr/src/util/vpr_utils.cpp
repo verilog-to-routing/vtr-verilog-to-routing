@@ -1364,7 +1364,7 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     return std::make_tuple(physical_type, sub_tile, rel_cap, logical_block);
 }
 
-std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(ClusterBlockId cluster_block_id) {
+std::unordered_map<int, const t_class*> get_cluster_internal_primitive_class_pairs(ClusterBlockId cluster_block_id) {
     std::unordered_map<int, const t_class*> internal_num_class_pairs;
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
@@ -1385,15 +1385,16 @@ std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(Cluster
     while (!internal_pbs.empty()) {
         pb = internal_pbs.front();
         internal_pbs.pop_front();
-
-        auto pb_graph_node_num_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
-                                                                               sub_tile,
-                                                                               logical_block,
-                                                                               rel_cap,
-                                                                               pb->pb_graph_node);
-        for (auto& class_pair : pb_graph_node_num_class_pairs) {
-            auto insert_res = internal_num_class_pairs.insert(std::make_pair(class_pair.first, class_pair.second));
-            VTR_ASSERT(insert_res.second == true);
+        if(pb->is_primitive()) {
+            auto pb_graph_node_num_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
+                                                                                   sub_tile,
+                                                                                   logical_block,
+                                                                                   rel_cap,
+                                                                                   pb->pb_graph_node);
+            for (auto& class_pair : pb_graph_node_num_class_pairs) {
+                auto insert_res = internal_num_class_pairs.insert(std::make_pair(class_pair.first, class_pair.second));
+                VTR_ASSERT(insert_res.second == true);
+            }
         }
 
         add_child_to_list(internal_pbs, pb);
@@ -2326,30 +2327,18 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             const int i,
                             const int j,
                             int pin_physical_num) {
-    RRNodeId node_id = RRNodeId::INVALID();
     VTR_ASSERT(g_vpr_ctx.device().grid[i][j].height_offset == 0);
     VTR_ASSERT(g_vpr_ctx.device().grid[i][j].width_offset == 0);
-    e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
-    VTR_ASSERT(pin_type == DRIVER || pin_type == RECEIVER);
+    auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
     t_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
-    if (is_pin_on_tile(physical_tile, pin_physical_num)) {
-        for (int width = 0; width < physical_tile->width; ++width) {
-            for (int height = 0; height < physical_tile->height; ++height) {
-                for (e_side side : SIDES) {
-                    if (physical_tile->pinloc[width][height][side][pin_physical_num]) {
-                        node_id = rr_spatial_lookup.find_node(i + width, j + height, node_type, pin_physical_num, side);
-                        if (node_id != RRNodeId::INVALID())
-                            return node_id;
-                    }
-                }
-            }
-        }
-    } else {
-        node_id = rr_spatial_lookup.find_node(i, j, node_type, pin_physical_num, e_side::TOP);
-        return node_id;
-    }
-
-    return RRNodeId::INVALID();
+    auto pin_coordinates = get_pin_coordinates(physical_tile, pin_physical_num);
+    VTR_ASSERT(!std::get<0>(pin_coordinates).empty());
+    RRNodeId node_id = rr_spatial_lookup.find_node(i+std::get<0>(pin_coordinates)[0],
+                                                    j+std::get<1>(pin_coordinates)[0],
+                                                        node_type,
+                                                            pin_physical_num,
+                                                                std::get<2>(pin_coordinates)[0]);
+    return node_id;
 }
 
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,

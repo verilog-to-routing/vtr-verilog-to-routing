@@ -185,7 +185,7 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
 
 std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
 
-std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(ClusterBlockId cluster_block_id);
+std::unordered_map<int, const t_class*> get_cluster_internal_primitive_class_pairs(ClusterBlockId cluster_block_id);
 
 std::vector<int> get_cluster_internal_ipin_opin(ClusterBlockId cluster_blk_id);
 
