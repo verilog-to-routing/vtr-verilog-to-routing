@@ -2828,6 +2828,8 @@ void free_rr_graph() {
 
     device_ctx.rr_graph_builder.clear();
 
+    device_ctx.rr_node_track_ids.clear();
+
     device_ctx.rr_indexed_data.clear();
 
     device_ctx.switch_fanin_remap.clear();

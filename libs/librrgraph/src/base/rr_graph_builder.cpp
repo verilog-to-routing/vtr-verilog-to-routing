@@ -112,7 +112,9 @@ void RRGraphBuilder::clear() {
     node_ptc_nums_.clear();
     rr_node_metadata_.clear();
     rr_edge_metadata_.clear();
+    segment_ids_.clear();
     rr_segments_.clear();
+    switch_ids_.clear();
     rr_switch_inf_.clear();
     edges_to_build_.clear();
     is_edge_dirty_ = true;
