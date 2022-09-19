@@ -842,10 +842,10 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
         /* The driver routing channel node can be either an input or an output to the GSB.
          * Just try to find a qualified one. */
-        int index = 0;
-        get_node_index(rr_graph, src_node, chan_side, IN_PORT);
+        int index = OPEN;
+        index = get_node_index(rr_graph, src_node, chan_side, IN_PORT);
         if (OPEN == index) {  
-            get_node_index(rr_graph, src_node, chan_side, OUT_PORT);
+            index = get_node_index(rr_graph, src_node, chan_side, OUT_PORT);
         }
 
         /* Must have valid side and index */
