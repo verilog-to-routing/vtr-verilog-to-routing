@@ -18,6 +18,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
     std::string sink_router_nanme = "test_2";
     double traffic_flow_bandwidth = 200;
     double traffic_flow_latency = 10;
+    int traffic_flow_priority = 1;
     ClusterBlockId source_router_id;
     ClusterBlockId sink_router_id;
     NocTrafficFlowId curr_flow_id;
@@ -72,7 +73,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
                 sink_router_id = (ClusterBlockId)second_router;
 
                 // create and add the traffic flow
-                traffic_flow_storage.create_noc_traffic_flow(source_router_name, sink_router_nanme, source_router_id, sink_router_id, traffic_flow_bandwidth, traffic_flow_latency);
+                traffic_flow_storage.create_noc_traffic_flow(source_router_name, sink_router_nanme, source_router_id, sink_router_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
             }
         }
 
