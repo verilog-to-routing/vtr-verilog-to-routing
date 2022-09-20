@@ -67,18 +67,45 @@ TEST_CASE("test_verify_traffic_flow_properties", "[vpr_noc_traffic_flows_parser]
     pugi::xml_node test;
     pugiutil::loc_data test_location;
 
-    SECTION("Test case where the noc traffic flow properties are illegal") {
-        double test_traffic_flow_bandwidth = 1.5;
+    SECTION("Test case where the noc traffic flow bandwidth is illegal") {
+        // illegal value
+        double test_traffic_flow_bandwidth = -1.5;
+        // legal values
+        double test_max_traffic_flow_latency = 0.000000000006;
+        int test_traffic_flow_priority = 19;
+
+        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location), "The traffic flow bandwidth and latency constraints need to be positive values.");
+    }
+    SECTION("Test case where the noc traffic flow latency constraint is illegal") {
         // illegal value
         double test_max_traffic_flow_latency = -1.5;
-
-        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test, test_location), "The traffic flow bandwidth and latency constraints need to be positive values.");
-    }
-    SECTION("Test case where the noc traffic flows properties are legal") {
+        // legal values
         double test_traffic_flow_bandwidth = 1.5;
-        double test_max_traffic_flow_latency = 1.5;
+        int test_traffic_flow_priority = 2;
 
-        REQUIRE_NOTHROW(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test, test_location));
+        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location), "The traffic flow bandwidth and latency constraints need to be positive values.");
+    }
+    SECTION("Test case where the noc traffic flow priority is illegal") {
+        // illegal value
+        double test_traffic_flow_priority = 0;
+        // legal values
+        double test_max_traffic_flow_latency = 1.5;
+        int test_traffic_flow_bandwidth = 45;
+
+        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location), "The traffic flow bandwidth and latency constraints need to be positive values.");
+
+        // now check the case where the traffic flow priority is negative
+        // illegal value
+        int test_traffic_flow_priority = -5;
+        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location), "The traffic flow bandwidth and latency constraints need to be positive values.");    
+    }
+    SECTION("Test case where the traffic flow parameters are legal") {
+        // legal values
+        double test_traffic_flow_bandwidth = 57.7;
+        double test_max_traffic_flow_latency = 100;
+        int test_traffic_flow_priority = 100;
+
+        REQUIRE_NOTHROW(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location));
     }
 }
 TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]") {
@@ -356,9 +383,10 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
     // need to add the physical type of the router to the list of physical tiles that match to the router logical block
     router_block.equivalent_tiles.push_back(noc_router_ref);
 
-    // define arbritary values for traffic flow bandwidths and latency
+    // define arbritary values for traffic flow bandwidths, latency and priority
     double traffic_flow_bandwidth = 0.0;
     double traffic_flow_latency = 0.0;
+    int traffic_flow_priority = 1;
 
     // start by creating a set of router blocks in the design and add them to the clustered netlist
 
@@ -376,11 +404,11 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
 
     SECTION("Test case when all router blocks in the design have an associated traffic flow") {
         // create a number of traffic flows that include all router blocks in the design
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_one, router_two, router_block_one_id, router_block_two_id, traffic_flow_bandwidth, traffic_flow_latency);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_one, router_two, router_block_one_id, router_block_two_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
 
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_two, router_three, router_block_two_id, router_block_three_id, traffic_flow_bandwidth, traffic_flow_latency);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_two, router_three, router_block_two_id, router_block_three_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
 
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_three, router_one, router_block_three_id, router_block_one_id, traffic_flow_bandwidth, traffic_flow_latency);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_three, router_one, router_block_three_id, router_block_one_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
 
         // now check to see whether all router blocks in the design have an associated traffic flow (this is the function tested here)
         // we expect this to pass
@@ -394,9 +422,9 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
     }
     SECTION("Test case where some router blocks in the design do not have an associated traffic flow") {
         // create a number of traffic flows that includes router_one and router_twp but does not include router_three
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_one, router_two, router_block_one_id, router_block_two_id, traffic_flow_bandwidth, traffic_flow_latency);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_one, router_two, router_block_one_id, router_block_two_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
 
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_two, router_one, router_block_two_id, router_block_one_id, traffic_flow_bandwidth, traffic_flow_latency);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(router_two, router_one, router_block_two_id, router_block_one_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
 
         // now check to see whether all router blocks in the design have an associated traffic flow (this is the function tested here)
         // we expect this fail

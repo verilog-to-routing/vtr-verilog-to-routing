@@ -60,14 +60,18 @@ struct t_noc_traffic_flow {
     /** The maximum allowable time to transmit data between thw two routers, in seconds. This parameter will be used to evaluate a router traffic flow.*/
     double max_traffic_flow_latency;
 
+    /** Indicates the importance of the traffic flow. Higher priority traffic flows will have more importance and will be more likely to have their latency reduced and constriants met.*/
+    int traffic_flow_priority;
+
     /** Constructor initializes all variables*/
-    t_noc_traffic_flow(std::string source_router_name, std::string sink_router_name, ClusterBlockId source_router_id, ClusterBlockId sink_router_id, double flow_bandwidth, double max_flow_latency)
+    t_noc_traffic_flow(std::string source_router_name, std::string sink_router_name, ClusterBlockId source_router_id, ClusterBlockId sink_router_id, double flow_bandwidth, double max_flow_latency, int flow_priority)
         : source_router_module_name(source_router_name)
         , sink_router_module_name(sink_router_name)
         , source_router_cluster_id(source_router_id)
         , sink_router_cluster_id(sink_router_id)
         , traffic_flow_bandwidth(flow_bandwidth)
-        , max_traffic_flow_latency(max_flow_latency) {}
+        , max_traffic_flow_latency(max_flow_latency)
+        , traffic_flow_priority(flow_priority) {}
 };
 
 class NocTrafficFlows {
@@ -228,8 +232,9 @@ class NocTrafficFlows {
      * @param traffic_flow_latency The maximum allowable delay between
      * transmitting data at the source router and having it received
      * at the sink router.
+     * @param traffic_flow_priority The importance of a given traffic flow.
      */
-    void create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency);
+    void create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority);
 
     //utility functions
 
