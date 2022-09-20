@@ -34,9 +34,13 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <float.h>
 
 // identifier when an integer conversion failed while reading an attribute value in an xml file
 constexpr int NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE = -1;
+
+// defines the prirority of a traffic flow when not specified by a user
+constexpr int DEFAULT_TRAFFIC_FLOW_PRIORITY = 1;
 
 /**
  * @brief Parse an xml '.flows' file that contains a number of traffic
@@ -76,6 +80,35 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file);
 void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles);
 
 /**
+ * @brief Retrieves the user provided maximum allowed latency for the traffic
+ * flow currently being processed. If a maxmum latency is not provided, then 
+ * it is set to DOUBLE_MAX to indicate that there are no constraints on the
+ * latency. Finally, if the provided maximu latency was negative or a not a
+ * number, then an error is thrown.
+ * 
+ * @param single_flow_tag A xml tag that contains the traffic flow information.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file.
+ * @return double The maximum allowable latency for the currently processed
+ * traffic flow.
+ */
+double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+
+/**
+ * @brief Retrieves the user provided priority for the traffic flow currently
+ * being processed. If a priority was not provided then its set to a default 
+ * value of 1 (it has an equal weighting to all other traffic flows). Finally,
+ * if the provided weighting was not an integer or grater than 0, then an
+ * error is thrown. 
+ * 
+ * @param single_flow_tag A xml tag that contains the traffic flow information.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file.
+ * @return int The priority for the currently processed traffic flow.
+ */
+int get_traffic_flow_priority(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+
+/**
  * @brief Checks to see that the two router module names provided in the 
  *        traffic flow description are not empty and they dont have the
  *        same names. The two routers cant be the exact same since a router
@@ -106,7 +139,7 @@ void verify_traffic_flow_router_modules(std::string source_router_name, std::str
  * @param loc_data Contains location data about the current line in the xml
  *                 file. Passed in for error logging.
  */
-void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, int traffic_flow_priority, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
 
 /**
  * @brief Given a router module name in the design, retrieve the
