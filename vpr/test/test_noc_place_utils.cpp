@@ -97,6 +97,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     std::string sink_traffic_flow_name = "test_2";
     double traffic_flow_latency = 10.0;
     int number_of_created_traffic_flows = 0;
+    int traffic_flow_priority = 1;
 
     // now create a random number of traffic flows
     for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
@@ -115,7 +116,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         double traffic_flow_bandwidth_usage = (double)dist_2(rand_num_gen);
 
         // create and add the traffic flow
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name, source_router_for_traffic_flow, sink_router_for_traffic_flow, traffic_flow_bandwidth_usage, traffic_flow_latency);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name, source_router_for_traffic_flow, sink_router_for_traffic_flow, traffic_flow_bandwidth_usage, traffic_flow_latency, traffic_flow_priority);
 
         number_of_created_traffic_flows++;
 
@@ -260,6 +261,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
     std::string sink_traffic_flow_name = "test_2";
     double traffic_flow_latency = 10.0;
     int number_of_created_traffic_flows = 0;
+    int traffic_flow_priority = 1;
 
     // now create a random number of traffic flows
     for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
@@ -278,7 +280,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs", "[noc_place_uti
         double traffic_flow_bandwidth_usage = (double)dist_2(rand_num_gen);
 
         // create and add the traffic flow
-        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name, source_router_for_traffic_flow, sink_router_for_traffic_flow, traffic_flow_bandwidth_usage, traffic_flow_latency);
+        noc_ctx.noc_traffic_flows_storage.create_noc_traffic_flow(source_traffic_flow_name, sink_traffic_flow_name, source_router_for_traffic_flow, sink_router_for_traffic_flow, traffic_flow_bandwidth_usage, traffic_flow_latency, traffic_flow_priority);
 
         number_of_created_traffic_flows++;
 
