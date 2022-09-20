@@ -2331,13 +2331,22 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     VTR_ASSERT(g_vpr_ctx.device().grid[i][j].width_offset == 0);
     auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
     t_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
-    auto pin_coordinates = get_pin_coordinates(physical_tile, pin_physical_num);
-    VTR_ASSERT(!std::get<0>(pin_coordinates).empty());
-    RRNodeId node_id = rr_spatial_lookup.find_node(i+std::get<0>(pin_coordinates)[0],
-                                                    j+std::get<1>(pin_coordinates)[0],
-                                                        node_type,
-                                                            pin_physical_num,
-                                                                std::get<2>(pin_coordinates)[0]);
+    std::vector<int> x_offset;
+    std::vector<int> y_offset;
+    std::vector<e_side> pin_sides;
+    std::tie(x_offset, y_offset, pin_sides)  = get_pin_coordinates(physical_tile, pin_physical_num, std::vector<e_side>(SIDES.begin(), SIDES.end()));
+    VTR_ASSERT(!x_offset.empty());
+    RRNodeId node_id = RRNodeId::INVALID();
+    for(int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
+        node_id = rr_spatial_lookup.find_node(i+x_offset[coord_idx],
+                                                j+y_offset[coord_idx],
+                                                    node_type,
+                                                        pin_physical_num,
+                                                            pin_sides[coord_idx]);
+        if(node_id != RRNodeId::INVALID())
+            break;
+
+    }
     return node_id;
 }
 
@@ -2382,4 +2391,78 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
         else
             return false;
     }
+}
+
+std::vector<int> get_cluster_primitive_classes_at_loc(const int i,
+                                                      const int j,
+                                                      t_physical_tile_type_ptr physical_type) {
+    std::vector<int> class_num_vec;
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    auto grid_block = place_ctx.grid_blocks[i][j];
+
+    //Reserve memory space for the vector
+    int num_primitive_class = 0;
+
+    for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
+        if (grid_block.subtile_empty(abs_cap)) {
+            continue;
+        }
+        auto cluster_blk_id = grid_block.blocks[abs_cap];
+        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
+
+        auto primitive_class_pairs = get_cluster_internal_primitive_class_pairs(cluster_blk_id);
+        num_primitive_class += (int)primitive_class_pairs.size();
+    }
+
+    class_num_vec.reserve(num_primitive_class);
+
+    //iterate over different sub tiles inside a tile
+    for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
+        if (grid_block.subtile_empty(abs_cap)) {
+            continue;
+        }
+        auto cluster_blk_id = grid_block.blocks[abs_cap];
+        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
+
+        auto primitive_class_pairs = get_cluster_internal_primitive_class_pairs(cluster_blk_id);
+        /* Initialize SINK/SOURCE nodes and connect them to their respective pins */
+        for (auto class_pair : primitive_class_pairs) {
+            int class_num = class_pair.first;
+            class_num_vec.push_back(class_num);
+        }
+    }
+
+    VTR_ASSERT((int)class_num_vec.size() == num_primitive_class);
+    return class_num_vec;
+}
+
+std::vector<int> get_cluster_pins_at_loc(const int i,
+                                         const int j,
+                                         t_physical_tile_type_ptr physical_type) {
+    std::vector<int> pin_num_vec;
+    pin_num_vec.reserve(physical_type->num_pins + (int)physical_type->internal_pin_class.size());
+
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    auto grid_block = place_ctx.grid_blocks[i][j];
+
+    for(int pin_num = 0; pin_num < physical_type->num_pins; pin_num++) {
+        pin_num_vec.push_back(pin_num);
+    }
+
+    for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
+        if (grid_block.subtile_empty(abs_cap)) {
+            continue;
+        }
+        auto cluster_blk_id = grid_block.blocks[abs_cap];
+        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
+        auto internal_pins = get_cluster_internal_ipin_opin(cluster_blk_id);
+        for(int pin_num : internal_pins) {
+            pin_num_vec.push_back(pin_num);
+        }
+    }
+
+    pin_num_vec.shrink_to_fit();
+    return pin_num_vec;
 }

@@ -982,12 +982,13 @@ e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_
 }
 
 std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coordinates(t_physical_tile_type_ptr physical_type,
-                                                                                        int pin_physical_num) {
+                                                                                        int pin_physical_num,
+                                                                                        const std::vector<e_side>& sides) {
     std::vector<int> x_vec;
     std::vector<int> y_vec;
     std::vector<e_side> side_vec;
     if (is_pin_on_tile(physical_type, pin_physical_num)) {
-        for (e_side side : SIDES) {
+        for (e_side side : sides) {
             for (int width = 0; width < physical_type->width; ++width) {
                 for (int height = 0; height < physical_type->height; ++height) {
                     if (physical_type->pinloc[width][height][side][pin_physical_num]) {

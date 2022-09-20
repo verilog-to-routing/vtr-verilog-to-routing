@@ -220,6 +220,12 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
     } /* End for all rr_nodes */
 
+    // AM: For the time being, if is_flat is enabled, we don't have proper tests to check whether a node should have an incoming
+    // edge or not
+    if(is_flat) {
+        return;
+    }
+
     /* I built a list of how many edges went to everything in the code above -- *
      * now I check that everything is reachable.                                */
     bool is_fringe_warning_sent = false;
@@ -234,12 +240,8 @@ void check_rr_graph(const RRGraphView& rr_graph,
         if (rr_type == IPIN || rr_type == OPIN) {
             // #TODO: No edges are added for internal pins. However, they need to be checked somehow!
             if (ptc_num >= type->num_pins) {
-                if(is_flat) {
-                    continue;
-                } else {
-                    VTR_LOG_ERROR("in check_rr_graph: node %d (%s) type: %s is internal node.\n",
-                                  inode, rr_graph.node_type_string(rr_node), rr_node_typename[rr_type]);
-                }
+                VTR_LOG_ERROR("in check_rr_graph: node %d (%s) type: %s is internal node.\n",
+                              inode, rr_graph.node_type_string(rr_node), rr_node_typename[rr_type]);
             }
         }
 

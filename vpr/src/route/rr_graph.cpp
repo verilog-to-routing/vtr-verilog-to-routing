@@ -365,14 +365,6 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
 
 static void process_non_config_sets();
 
-static std::vector<int> get_cluster_primitive_classes_at_loc(const int i,
-                                                             const int j,
-                                                             t_physical_tile_type_ptr physical_type);
-
-static std::vector<int> get_cluster_pins_at_loc(const int i,
-                                                const int j,
-                                                t_physical_tile_type_ptr physical_type);
-
 static void build_rr_graph(const t_graph_type graph_type,
                            const std::vector<t_physical_tile_type>& types,
                            const DeviceGrid& grid,
@@ -1662,7 +1654,10 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         add_intra_cluster_edges_rr_graph(rr_graph_builder,
                                          rr_edges_to_create,
                                          grid);
+        uniquify_edges(rr_edges_to_create);
+        alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
         num_edges += rr_edges_to_create.size();
+        rr_edges_to_create.clear();
     }
 
     VTR_LOG("Number of intra-cluster edges: %d\n", num_edges);
@@ -1770,46 +1765,52 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                               const int j,
                               t_physical_tile_type_ptr physical_type) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
-
+    const auto& node_lookup = rr_graph_builder.node_lookup();
     for(auto pin_num : pin_num_vec) {
         e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_type, pin_num);
         VTR_ASSERT(pin_type == DRIVER || pin_type == RECEIVER);
-        const auto& pin_coordinates = get_pin_coordinates(physical_type, pin_num);
-        VTR_ASSERT(!std::get<0>(pin_coordinates).empty());
-        RRNodeId pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
-                                                  physical_type,
-                                                  i,
-                                                  j,
-                                                  pin_num);
-        VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
+        std::vector<int> x_offset_vec;
+        std::vector<int> y_offset_vec;
+        std::vector<e_side> pin_sides_vec;
+        std::tie(x_offset_vec, y_offset_vec, pin_sides_vec) = get_pin_coordinates(physical_type, pin_num, std::vector<e_side>(SIDES.begin(), SIDES.end()));
+        VTR_ASSERT(!pin_sides_vec.empty());
+        for(int pin_coord = 0; pin_coord < (int)pin_sides_vec.size(); pin_coord++) {
+            int x_offset = x_offset_vec[pin_coord];
+            int y_offset = y_offset_vec[pin_coord];
+            e_side pin_side = pin_sides_vec[pin_coord];
+            auto node_type = (pin_type==DRIVER) ? OPIN : IPIN;
+            RRNodeId node_id = node_lookup.find_node(i+x_offset,
+                                                     j+y_offset,
+                                                     node_type,
+                                                     pin_num,
+                                                     pin_side);
+            if(node_id != RRNodeId::INVALID()) {
+                if (pin_type == RECEIVER) {
+                    rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(IPIN_COST_INDEX));
+                } else {
+                    VTR_ASSERT(pin_type == DRIVER);
+                    rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(OPIN_COST_INDEX));
+                }
 
-        if (pin_type == RECEIVER) {
-            rr_graph_builder.set_node_cost_index(pin_node_id, RRIndexedDataId(IPIN_COST_INDEX));
-            rr_graph_builder.set_node_type(pin_node_id, IPIN);
-        } else {
-            VTR_ASSERT(pin_type == DRIVER);
-            rr_graph_builder.set_node_cost_index(pin_node_id, RRIndexedDataId(OPIN_COST_INDEX));
-            rr_graph_builder.set_node_type(pin_node_id, OPIN);
-        }
+                rr_graph_builder.set_node_type(node_id, node_type);
+                rr_graph_builder.set_node_capacity(node_id, 1);
+                float R = 0.;
+                float C = 0.;
+                rr_graph_builder.set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
+                rr_graph_builder.set_node_pin_num(node_id, pin_num);
+                //Note that we store the grid tile location and side where the pin is located,
+                //which greatly simplifies the drawing code
+                //For those pins located on multiple sides, we save the rr node index
+                //for the pin on all sides at which it exists
+                //As such, multipler driver problem can be avoided.
+                rr_graph_builder.set_node_coordinates(node_id,
+                                                      i + x_offset,
+                                                      j + y_offset,
+                                                      i + x_offset,
+                                                      j + y_offset);
+                rr_graph_builder.add_node_side(node_id, pin_side);
 
-        rr_graph_builder.set_node_capacity(pin_node_id, 1);
-        float R = 0.;
-        float C = 0.;
-        rr_graph_builder.set_node_rc_index(pin_node_id, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
-        rr_graph_builder.set_node_pin_num(pin_node_id, pin_num);
-
-        //Note that we store the grid tile location and side where the pin is located,
-        //which greatly simplifies the drawing code
-        //For those pins located on multiple sides, we save the rr node index
-        //for the pin on all sides at which it exists
-        //As such, multipler driver problem can be avoided.
-        rr_graph_builder.set_node_coordinates(pin_node_id,
-                                              i + std::get<0>(pin_coordinates)[0],
-                                              j + std::get<1>(pin_coordinates)[0],
-                                              i + std::get<0>(pin_coordinates)[0],
-                                              j + std::get<1>(pin_coordinates)[0]);
-        for(auto pin_side : std::get<2>(pin_coordinates)) {
-            rr_graph_builder.add_node_side(pin_node_id, pin_side);
+            }
         }
     }
 
@@ -1826,8 +1827,10 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
         const auto& pin_list = get_pin_list_from_class_physical_num(physical_type_ptr, class_num);
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
         RRNodeId class_rr_node_id = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, i, j, class_num);
+        VTR_ASSERT(class_rr_node_id != RRNodeId::INVALID());
         for(auto pin_num : pin_list) {
             RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, i, j, pin_num);
+            VTR_ASSERT(pin_rr_node_id != RRNodeId::INVALID());
             auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
             if(class_type == DRIVER) {
                 VTR_ASSERT(pin_type == DRIVER);
@@ -1877,11 +1880,6 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
     alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
     rr_edges_to_create.clear();
 
-    //Create the actual SOURCE->OPIN, IPIN->SINK edges
-    uniquify_edges(rr_edges_to_create);
-    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-    rr_edges_to_create.clear();
-
     add_intra_tile_edges_rr_graph(rr_graph_builder,
                                   rr_edges_to_create,
                                   physical_tile,
@@ -1894,6 +1892,8 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
 
 
     rr_graph_builder.init_fan_in();
+
+    rr_graph_builder.rr_nodes().shrink_to_fit();
 
 }
 
@@ -3722,77 +3722,4 @@ static void process_non_config_sets() {
     EdgeGroups groups;
     create_edge_groups(&groups);
     groups.set_device_context(device_ctx);
-}
-static std::vector<int> get_cluster_primitive_classes_at_loc(const int i,
-                                                             const int j,
-                                                             t_physical_tile_type_ptr physical_type) {
-    std::vector<int> class_num_vec;
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    auto grid_block = place_ctx.grid_blocks[i][j];
-
-    //Reserve memory space for the vector
-    int num_primitive_class = 0;
-
-    for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
-        if (grid_block.subtile_empty(abs_cap)) {
-            continue;
-        }
-        auto cluster_blk_id = grid_block.blocks[abs_cap];
-        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
-
-        auto primitive_class_pairs = get_cluster_internal_primitive_class_pairs(cluster_blk_id);
-        num_primitive_class += (int)primitive_class_pairs.size();
-    }
-
-    class_num_vec.reserve(num_primitive_class);
-
-    //iterate over different sub tiles inside a tile
-    for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
-        if (grid_block.subtile_empty(abs_cap)) {
-            continue;
-        }
-        auto cluster_blk_id = grid_block.blocks[abs_cap];
-        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
-
-        auto primitive_class_pairs = get_cluster_internal_primitive_class_pairs(cluster_blk_id);
-        /* Initialize SINK/SOURCE nodes and connect them to their respective pins */
-        for (auto class_pair : primitive_class_pairs) {
-            int class_num = class_pair.first;
-            class_num_vec.push_back(class_num);
-        }
-    }
-
-    VTR_ASSERT(class_num_vec.size() == (int)num_primitive_class);
-    return class_num_vec;
-}
-
-static std::vector<int> get_cluster_pins_at_loc(const int i,
-                                                const int j,
-                                                t_physical_tile_type_ptr physical_type) {
-    std::vector<int> pin_num_vec;
-    pin_num_vec.reserve(physical_type->num_pins + (int)physical_type->internal_pin_class.size());
-
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    auto grid_block = place_ctx.grid_blocks[i][j];
-
-    for(int pin_num = 0; pin_num < physical_type->num_pins; pin_num++) {
-        pin_num_vec.push_back(pin_num);
-    }
-
-    for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
-        if (grid_block.subtile_empty(abs_cap)) {
-            continue;
-        }
-        auto cluster_blk_id = grid_block.blocks[abs_cap];
-        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
-        auto internal_pins = get_cluster_internal_ipin_opin(cluster_blk_id);
-        for(int pin_num : internal_pins) {
-            pin_num_vec.push_back(pin_num);
-        }
-    }
-
-    pin_num_vec.shrink_to_fit();
-    return pin_num_vec;
 }
