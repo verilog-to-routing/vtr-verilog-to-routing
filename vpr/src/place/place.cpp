@@ -350,6 +350,8 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   t_pl_blocks_to_be_moved& blocks_affected,
                                   double& delta_timing_cost);
 
+static void update_placement_cost_normalization_factors(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
+
 static double get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
 
 static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_edges);
@@ -359,6 +361,7 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr);
 static void free_try_swap_arrays();
 
 static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
+                                          const t_noc_opts& noc_opts,
                                           t_placer_costs* costs,
                                           int num_connections,
                                           float crit_exponent,
@@ -644,7 +647,8 @@ void try_place(const t_placer_opts& placer_opts,
         costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
         costs.noc_latency_cost = comp_noc_latency_cost();
 
-        // normalize
+        // initialize all the noc normalization factors
+        update_noc_normalization_factors(costs, placer_opts);
     }
 
     //Sanity check that initial placement is legal
@@ -784,7 +788,7 @@ void try_place(const t_placer_opts& placer_opts,
         do {
             vtr::Timer temperature_timer;
 
-            outer_loop_update_timing_info(placer_opts, &costs, num_connections,
+            outer_loop_update_timing_info(placer_opts, noc_opts, &      costs,                                   num_connections,
                                           state.crit_exponent, &outer_crit_iter_count,
                                           place_delay_model.get(), placer_criticalities.get(),
                                           placer_setup_slacks.get(), pin_timing_invalidator.get(),
@@ -861,7 +865,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
-        outer_loop_update_timing_info(placer_opts, &costs, num_connections,
+        outer_loop_update_timing_info(placer_opts, noc_opts, &costs, num_connections,
                                       state.crit_exponent, &outer_crit_iter_count,
                                       place_delay_model.get(), placer_criticalities.get(),
                                       placer_setup_slacks.get(), pin_timing_invalidator.get(),
@@ -1008,6 +1012,7 @@ void try_place(const t_placer_opts& placer_opts,
 
 /* Function to update the setup slacks and criticalities before the inner loop of the annealing/quench */
 static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
+                                          const t_noc_opts& noc_opts,
                                           t_placer_costs* costs,
                                           int num_connections,
                                           float crit_exponent,
@@ -1042,7 +1047,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
     }
 
     /* Update the cost normalization factors */
-    costs->update_norm_factors();
+    update_placement_cost_normalization_factors(costs, placer_opts, noc_opts);
 }
 
 /* Function which contains the inner loop of the simulated annealing */
@@ -1861,6 +1866,30 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             blocks_affected.affected_pins.push_back(pin);
         }
     }
+}
+
+/**
+ * @brief Updates all the cost normalization factors during the outer
+ * loop iteration of the placement. At each temperature change, these
+ * values are updated so that we can balance the tradeoff between the
+ * different placement cost components (timing, wirelength and NoC).
+ * Depending on the placement mode the corresponding normalization factors are 
+ * updated.
+ * 
+ * @param costs Contains the normalization factors which need to be updated
+ * @param placer_opts Determines the placement mode
+ * @param noc_opts Determines if placement includes the NoC
+ */
+static void update_placement_cost_normalization_factors(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts){
+    /* Update the cost normalization factors */ 
+    costs->update_norm_factors();
+
+    // update the noc normalization factors if the palcement includes the NoC
+    if (noc_opts.noc){
+        update_noc_normalization_factors(*costs, placer_opts);
+    }
+    
+    return;
 }
 
 /**
