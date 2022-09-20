@@ -117,7 +117,7 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
 
 double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
     // default latency constraint is the maximum double val (indicating that there is no constraint)
-    double max_traffic_flow_latency = DBL_MAX;
+    double max_traffic_flow_latency = DEFAULT_MAX_TRAFFIC_FLOW_LATENCY;
 
     // get the corresponding attribute where the latency constraint is stored
     pugi::xml_attribute max_traffic_flow_latency_attribute = pugiutil::get_attribute(single_flow_tag, "latency_cons", loc_data, pugiutil::OPTIONAL);
