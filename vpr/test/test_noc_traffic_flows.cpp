@@ -49,7 +49,7 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
             sink_router_id = (ClusterBlockId)second_router;
 
             // need to match how the test function does it
-            golden_traffic_flow_list.emplace_back(source_router_name, sink_router_nanme, source_router_id, sink_router_id, traffic_flow_bandwidth, traffic_flow_latency);
+            golden_traffic_flow_list.emplace_back(source_router_name, sink_router_nanme, source_router_id, sink_router_id, traffic_flow_bandwidth, traffic_flow_latency, traffic_flow_priority);
 
             curr_flow_id = (NocTrafficFlowId)(golden_traffic_flow_list.size() - 1);
 
