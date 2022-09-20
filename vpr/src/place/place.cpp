@@ -624,7 +624,7 @@ void try_place(const t_placer_opts& placer_opts,
     } else {
         VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
 
-        /* Total cost is the same as wirelength cost */
+        /* Total cost is the same as wirelength cost normalized*/
         costs.bb_cost = comp_bb_cost(NORMAL);
         costs.bb_cost_norm = 1 / costs.bb_cost;
         costs.cost = 1;
@@ -1018,7 +1018,6 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                           SetupTimingInfo* timing_info) {
     if (placer_opts.place_algorithm.is_timing_driven()) {
-    
         /*at each temperature change we update these values to be used     */
         /*for normalizing the tradeoff between timing and wirelength (bb)  */
         if (*outer_crit_iter_count >= placer_opts.recompute_crit_iter
@@ -1035,7 +1034,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
 
             //Update all timing related classes
             perform_full_timing_update(crit_params, delay_model, criticalities,
-                                    setup_slacks, pin_timing_invalidator, timing_info, costs);
+                                       setup_slacks, pin_timing_invalidator, timing_info, costs);
 
             *outer_crit_iter_count = 0;
         }
@@ -1186,7 +1185,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
     } else {
         VTR_ASSERT(placer_opts.place_algorithm == BOUNDING_BOX_PLACE);
 
-        costs->cost = new_bb_cost*costs->bb_cost_norm;
+        costs->cost = new_bb_cost * costs->bb_cost_norm;
     }
 
     if (noc_opts.noc) {
