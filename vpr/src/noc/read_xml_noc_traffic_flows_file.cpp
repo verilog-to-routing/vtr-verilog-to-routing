@@ -103,7 +103,7 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     // store the properties of the traffic flow
     double traffic_flow_bandwidth = pugiutil::get_attribute(single_flow_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_double(NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE);
 
-    double max_traffic_flow_latency = get_max_traffic_flow_latency(single_flow_tag,loc_data);
+    double max_traffic_flow_latency = get_max_traffic_flow_latency(single_flow_tag, loc_data);
 
     int traffic_flow_priority = get_traffic_flow_priority(single_flow_tag, loc_data);
 
@@ -115,8 +115,7 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     return;
 }
 
-double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data){
-
+double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
     // default latency constraint is the maximum double val (indicating that there is no constraint)
     double max_traffic_flow_latency = DBL_MAX;
 
@@ -126,14 +125,13 @@ double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiut
     // check if the attribute value was provided
     if (max_traffic_flow_latency_attribute) {
         // value was provided, so store it
-        max_traffic_flow_latency = max_traffic_flow_latency_attribute.as_double (NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE);
+        max_traffic_flow_latency = max_traffic_flow_latency_attribute.as_double(NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE);
     }
 
     return max_traffic_flow_latency;
 }
 
-int get_traffic_flow_priority(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data){
-
+int get_traffic_flow_priority(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
     // default priority is 1 (indicating that the traffic flow is weighted equall to all others)
     int traffic_flow_priority = 1;
 
@@ -142,8 +140,8 @@ int get_traffic_flow_priority(pugi::xml_node single_flow_tag, const pugiutil::lo
 
     // check if the attribute value was provided
     if (traffic_flow_priority_attribute) {
-        // value was provided, so store it 
-        traffic_flow_priority = traffic_flow_priority_attribute.as_int (NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE);
+        // value was provided, so store it
+        traffic_flow_priority = traffic_flow_priority_attribute.as_int(NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE);
     }
 
     return traffic_flow_priority;
@@ -179,7 +177,7 @@ void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_tr
     }
 
     // check that the priority is a positive non-zero value
-    if (traffic_flow_priority <= 0){
+    if (traffic_flow_priority <= 0) {
         vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The traffic flow priorities expected to be positive, non-zero integer values.");
     }
 

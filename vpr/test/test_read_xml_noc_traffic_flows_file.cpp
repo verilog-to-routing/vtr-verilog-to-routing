@@ -96,8 +96,8 @@ TEST_CASE("test_verify_traffic_flow_properties", "[vpr_noc_traffic_flows_parser]
 
         // now check the case where the traffic flow priority is negative
         // illegal value
-        int test_traffic_flow_priority = -5;
-        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location), "The traffic flow bandwidth and latency constraints need to be positive values.");    
+        test_traffic_flow_priority = -5;
+        REQUIRE_THROWS_WITH(verify_traffic_flow_properties(test_traffic_flow_bandwidth, test_max_traffic_flow_latency, test_traffic_flow_priority, test, test_location), "The traffic flow bandwidth and latency constraints need to be positive values.");
     }
     SECTION("Test case where the traffic flow parameters are legal") {
         // legal values
