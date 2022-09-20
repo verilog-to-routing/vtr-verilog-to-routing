@@ -8,6 +8,13 @@
 #include "move_transactions.h"
 #include "vtr_log.h"
 
+// represent the maximum values of the NoC cost normalization factors //
+// we need to handle the case where the agggregate bandwidth is 0, so we set this to some arbritary positive number that is greater than 1.e-9, since that is the range we expect the normalization factor to be
+constexpr double MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST = 1.;
+// we expect the latency costs to be in the nanoseconds range, and we don't expect it to go lower than that. So if the latency costs go below the nanosecond range we trim the normalization value to below
+// This should be updated if the delays become lower
+constexpr double MAX_INV_NOC_LATENCY_COST = 1.e10;
+
 /* Defines how the links found in a traffic flow are updated in terms
  * of their bandwidth usage.
  */
@@ -159,6 +166,20 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
  * @param new_noc_latency_cost 
  */
 void recompute_noc_costs(double* new_noc_aggregate_bandwidth_cost, double* new_noc_latency_cost);
+
+/**
+ * @brief Updates all the cost normalization factors relevant to the NoC.
+ * Also updates the placement cost depending the on the placment mode.
+ * Handles exceptional cases so that the normalization factors do not
+ * reach INF.
+ * This is intended to be used to initialize the normalization factors of
+ * the NoC and also at the outer loop iteration of placement to 
+ * balance the NoC costs with other placment cost parameters.
+ * 
+ * @param costs Contains the normalization factors which need to be updated
+ * @param placer_opts Determines the placement mode
+ */
+void update_noc_normalization_factors(t_placer_costs& costs, const t_placer_opts& placer_opts);
 
 /**
  * @brief Calculates the aggregate bandwidth of each traffic flow in the NoC
