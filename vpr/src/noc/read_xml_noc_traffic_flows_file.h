@@ -39,6 +39,11 @@
 // identifier when an integer conversion failed while reading an attribute value in an xml file
 constexpr int NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE = -1;
 
+// defines the latency constriant of a traffic flow when not provided by the user
+// This value has to be signifigantly larger than latencies seen within the NoC so that the net effect in the placement cost is 0 (the latency constraint has no effect since there is none)
+// Since the traffic flow latencies will be in nanoseconds, setting this value to 1 second which is signifigantly larger that what will be seen in the NoC
+constexpr double DEFAULT_MAX_TRAFFIC_FLOW_LATENCY = 1.;
+
 // defines the prirority of a traffic flow when not specified by a user
 constexpr int DEFAULT_TRAFFIC_FLOW_PRIORITY = 1;
 
