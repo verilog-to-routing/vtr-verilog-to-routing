@@ -168,7 +168,7 @@ void verify_traffic_flow_router_modules(std::string source_router_name, std::str
 void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, int traffic_flow_priority, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
     // check that the bandwidth is a positive value
     if (traffic_flow_bandwidth < 0) {
-        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The traffic flow bandwidths are expected to be positive floating point or integer values");
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The traffic flow bandwidths are expected to be positive floating point or integer values.");
     }
 
     // check that the latency constraint is also a positive value
