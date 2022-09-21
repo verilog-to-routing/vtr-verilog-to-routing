@@ -385,9 +385,13 @@ std::vector<int> get_tile_pins(t_physical_tile_type_ptr physical_tile);
 
 std::vector<int> get_flat_tile_pins(t_physical_tile_type_ptr physical_type);
 
-std::vector<int> get_physical_pin_driving_pins(t_physical_tile_type_ptr physical_type,
-                                               t_logical_block_type_ptr logical_block,
-                                               int pin_physical_num);
+std::vector<int> get_physical_pin_src_pins(t_physical_tile_type_ptr physical_type,
+                                           t_logical_block_type_ptr logical_block,
+                                           int pin_physical_num);
+
+std::vector<int> get_physical_pin_sink_pins(t_physical_tile_type_ptr physical_type,
+                                            t_logical_block_type_ptr logical_block,
+                                            int pin_physical_num);
 
 int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                             const t_sub_tile* sub_tile,

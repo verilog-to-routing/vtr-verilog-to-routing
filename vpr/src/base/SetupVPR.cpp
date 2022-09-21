@@ -826,7 +826,7 @@ static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
             continue;
         }
         curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
-        auto driving_pins = get_physical_pin_driving_pins(physical_tile,
+        auto driving_pins = get_physical_pin_src_pins(physical_tile,
                                                           logical_block,
                                                           curr_pin_physical_num);
         for (auto driving_pin_physical_num : driving_pins) {

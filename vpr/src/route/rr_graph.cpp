@@ -541,7 +541,7 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                  pin_physical_num);
         VTR_ASSERT(pin_rr_node_id != RRNodeId::INVALID());
         auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, pin_physical_num);
-        auto driving_pins = get_physical_pin_driving_pins(physical_tile, logical_block, pin_physical_num);
+        auto driving_pins = get_physical_pin_src_pins(physical_tile, logical_block, pin_physical_num);
         for(auto driving_pin : driving_pins) {
             auto driving_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                           physical_tile,
@@ -2053,7 +2053,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                                                      pin);
         VTR_ASSERT(parent_pin_node_id != RRNodeId::INVALID());
 
-        auto driving_pins = get_physical_pin_driving_pins(physical_type,
+        auto driving_pins = get_physical_pin_src_pins(physical_type,
                                                           logical_block,
                                                           pin);
 
