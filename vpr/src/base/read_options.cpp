@@ -2647,6 +2647,28 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links.\n"
             "This can be used with any NoC topology\n")
         .default_value("bfs_routing")
+        .choices({"xy_routing", "bfs_routing"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<double>(args.noc_placement_weighting, "--noc_placement_weighting")
+        .help(
+            "Controls the importance of the NoC placement parameters relative to timing and wirelength of the design."
+            "This value can be >=0, where 0 would mean the placement is based solely on timing and wirelength, a value of 1 would mean noc placement is considered equal to timing and wirelength and a value greater than 1 would mean the placement is increasingly dominated by NoC parameters.")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<double>(args.noc_latency_constraints_weighting, "--noc_latency_constraints_weighting")
+        .help(
+            "Controls the importance of meeting all the NoC traffic flow latency constraints."
+            "This value can be >=0, where 0 would mean the latency constraints have no relevance to placement, a value of 1 would mean the latency constriants are equally considered to all other placement parameters and a value greater than 1 would mean the placement is increasingly dominated by meeting the latency constraints of the traffic flows.")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<double>(args.noc_latency_constraints_weighting, "--noc_latency_weighting")
+        .help(
+            "Controls the importance of reducing the latencies of the NoC traffic flows."
+            "This value can be >=0, where 0 would mean the latencies have no relevance to placement, a value of 1 would mean the latencies  are equally considered to all other placement parameters and a value greater than 1 would mean the placement is increasingly dominated by reducing the latencies of the traffic flows.")
+        .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     return parser;
