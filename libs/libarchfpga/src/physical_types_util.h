@@ -340,7 +340,7 @@ t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr ph
 
 std::vector<int> get_tile_classes(t_physical_tile_type_ptr physical_type);
 
-std::vector<int> get_flat_tile_classes(t_physical_tile_type_ptr physical_type);
+std::vector<int> get_flat_tile_primitive_classes(t_physical_tile_type_ptr physical_type);
 /** **/
 int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 
@@ -400,7 +400,7 @@ int get_edge_sw_arch_idx(t_physical_tile_type_ptr physical_tile,
                     int from_pin_physical_num,
                     int to_pin_physical_num);
 
-const t_pb_graph_node* get_pb_graph_node_form_pin_physical_num(t_physical_tile_type_ptr physical_type,
+const t_pb_graph_node* get_pb_graph_node_from_pin_physical_num(t_physical_tile_type_ptr physical_type,
                                                                int pin_physical_num);
 
 int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile);

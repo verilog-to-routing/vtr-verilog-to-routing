@@ -1831,7 +1831,7 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                          int y,
                                          int* num_rr_nodes) {
     std::vector<e_side> wanted_sides {TOP, BOTTOM, LEFT, RIGHT};
-    std::vector<int> class_num_vec = get_flat_tile_classes(physical_tile);
+    std::vector<int> class_num_vec = get_flat_tile_primitive_classes(physical_tile);
     std::vector<int> pin_num_vec = get_flat_tile_pins(physical_tile);
     add_classes_spatial_lookup(rr_graph_builder,
                                physical_tile,

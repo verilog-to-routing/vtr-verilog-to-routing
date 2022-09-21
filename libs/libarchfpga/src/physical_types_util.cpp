@@ -573,7 +573,7 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
 
     if(!is_pin_on_tile(type, pin_physical_num)) {
         pin_name += ".";
-        auto pb_graph_node = get_pb_graph_node_form_pin_physical_num(type, pin_physical_num);
+        auto pb_graph_node = get_pb_graph_node_from_pin_physical_num(type, pin_physical_num);
         pin_name += pb_graph_node->hierarchical_type_name();
     }
 
@@ -671,7 +671,7 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
             VTR_ASSERT(is_pin_on_tile(type, pin_physical_end) == false);
             auto pb_pin = get_pb_pin_from_pin_physical_num(type, pin_physical_start);
             port_name = pb_pin->port->name;
-            auto pb_graph_node = get_pb_graph_node_form_pin_physical_num(type, pin_physical_start);
+            auto pb_graph_node = get_pb_graph_node_from_pin_physical_num(type, pin_physical_start);
             block_name = vtr::string_fmt("%s[%d].%s",
                                          type->name,
                                          icapacity,
@@ -876,7 +876,7 @@ std::vector<int> get_tile_classes(t_physical_tile_type_ptr physical_type) {
     return classes;
 }
 
-std::vector<int> get_flat_tile_classes(t_physical_tile_type_ptr physical_type) {
+std::vector<int> get_flat_tile_primitive_classes(t_physical_tile_type_ptr physical_type) {
     std::vector<int> class_num_vec;
     size_t num_classes = physical_type->class_inf.size() + physical_type->internal_class_inf.size();
     class_num_vec.reserve(num_classes);
@@ -885,10 +885,12 @@ std::vector<int> get_flat_tile_classes(t_physical_tile_type_ptr physical_type) {
     class_num_vec.insert(class_num_vec.end(), tile_class.begin(), tile_class.end());
 
     for(const auto& internal_class_pair : physical_type->internal_class_inf){
+        if(is_class_on_tile(physical_type, internal_class_pair.first))
+            continue;
         class_num_vec.push_back(internal_class_pair.first);
     }
 
-    VTR_ASSERT(class_num_vec.size() == num_classes);
+    class_num_vec.shrink_to_fit();
     return class_num_vec;
 }
 
@@ -1123,10 +1125,13 @@ std::vector<int> get_flat_tile_pins(t_physical_tile_type_ptr physical_type) {
     pin_num_vec.insert(pin_num_vec.end(), tile_pins.begin(), tile_pins.end());
 
     for(const auto& internal_pin_class_pair : physical_type->internal_pin_class) {
+        if(is_pin_on_tile(physical_type, internal_pin_class_pair.first)){
+            continue;
+        }
         pin_num_vec.push_back(internal_pin_class_pair.first);
     }
 
-    VTR_ASSERT(pin_num_vec.size() == num_pins);
+    pin_num_vec.shrink_to_fit();
     return pin_num_vec;
 
 }
@@ -1210,7 +1215,7 @@ int get_edge_sw_arch_idx(t_physical_tile_type_ptr physical_tile,
     return sw_idx;
 }
 
-const t_pb_graph_node* get_pb_graph_node_form_pin_physical_num(t_physical_tile_type_ptr physical_type,
+const t_pb_graph_node* get_pb_graph_node_from_pin_physical_num(t_physical_tile_type_ptr physical_type,
                                                                int pin_physical_num) {
     VTR_ASSERT(!is_pin_on_tile(physical_type, pin_physical_num));
     t_logical_block_type_ptr logical_block = nullptr;

@@ -187,7 +187,7 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
 
 std::unordered_map<int, const t_class*> get_cluster_internal_primitive_class_pairs(ClusterBlockId cluster_block_id);
 
-std::vector<int> get_cluster_internal_ipin_opin(ClusterBlockId cluster_blk_id);
+std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id);
 
 std::vector<int> get_pb_pins(t_physical_tile_type_ptr physical_type,
                              const t_sub_tile* sub_tile,

@@ -1385,16 +1385,14 @@ std::unordered_map<int, const t_class*> get_cluster_internal_primitive_class_pai
     while (!internal_pbs.empty()) {
         pb = internal_pbs.front();
         internal_pbs.pop_front();
-        if(pb->is_primitive()) {
-            auto pb_graph_node_num_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
-                                                                                   sub_tile,
-                                                                                   logical_block,
-                                                                                   rel_cap,
-                                                                                   pb->pb_graph_node);
-            for (auto& class_pair : pb_graph_node_num_class_pairs) {
-                auto insert_res = internal_num_class_pairs.insert(std::make_pair(class_pair.first, class_pair.second));
-                VTR_ASSERT(insert_res.second == true);
-            }
+        auto pb_graph_node_num_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
+                                                                               sub_tile,
+                                                                               logical_block,
+                                                                               rel_cap,
+                                                                               pb->pb_graph_node);
+        for (auto& class_pair : pb_graph_node_num_class_pairs) {
+            auto insert_res = internal_num_class_pairs.insert(std::make_pair(class_pair.first, class_pair.second));
+            VTR_ASSERT(insert_res.second == true);
         }
 
         add_child_to_list(internal_pbs, pb);
@@ -1403,7 +1401,7 @@ std::unordered_map<int, const t_class*> get_cluster_internal_primitive_class_pai
     return internal_num_class_pairs;
 }
 
-std::vector<int> get_cluster_internal_ipin_opin(ClusterBlockId cluster_blk_id) {
+std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id) {
     std::vector<int> internal_pins;
 
     auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
@@ -1435,6 +1433,7 @@ std::vector<int> get_cluster_internal_ipin_opin(ClusterBlockId cluster_blk_id) {
 
         add_child_to_list(internal_pbs, pb);
     }
+    internal_pins.shrink_to_fit();
     VTR_ASSERT(internal_pins.size() <= logical_block->pin_logical_num_to_pb_pin_mapping.size());
     return internal_pins;
 }
@@ -2397,25 +2396,13 @@ std::vector<int> get_cluster_primitive_classes_at_loc(const int i,
                                                       const int j,
                                                       t_physical_tile_type_ptr physical_type) {
     std::vector<int> class_num_vec;
-    auto& place_ctx = g_vpr_ctx.placement();
+    class_num_vec.resize(physical_type->class_inf.size());
+    std::iota(class_num_vec.begin(), class_num_vec.end(), 0);
 
+    auto& place_ctx = g_vpr_ctx.placement();
     auto grid_block = place_ctx.grid_blocks[i][j];
 
-    //Reserve memory space for the vector
-    int num_primitive_class = 0;
-
-    for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
-        if (grid_block.subtile_empty(abs_cap)) {
-            continue;
-        }
-        auto cluster_blk_id = grid_block.blocks[abs_cap];
-        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
-
-        auto primitive_class_pairs = get_cluster_internal_primitive_class_pairs(cluster_blk_id);
-        num_primitive_class += (int)primitive_class_pairs.size();
-    }
-
-    class_num_vec.reserve(num_primitive_class);
+    class_num_vec.reserve(physical_type->class_inf.size() + physical_type->internal_class_inf.size());
 
     //iterate over different sub tiles inside a tile
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
@@ -2433,7 +2420,7 @@ std::vector<int> get_cluster_primitive_classes_at_loc(const int i,
         }
     }
 
-    VTR_ASSERT((int)class_num_vec.size() == num_primitive_class);
+    class_num_vec.shrink_to_fit();
     return class_num_vec;
 }
 
@@ -2441,15 +2428,13 @@ std::vector<int> get_cluster_pins_at_loc(const int i,
                                          const int j,
                                          t_physical_tile_type_ptr physical_type) {
     std::vector<int> pin_num_vec;
-    pin_num_vec.reserve(physical_type->num_pins + (int)physical_type->internal_pin_class.size());
+    pin_num_vec.resize(physical_type->num_pins);
+    std::iota(pin_num_vec.begin(), pin_num_vec.end(), 0);
 
     auto& place_ctx = g_vpr_ctx.placement();
-
     auto grid_block = place_ctx.grid_blocks[i][j];
 
-    for(int pin_num = 0; pin_num < physical_type->num_pins; pin_num++) {
-        pin_num_vec.push_back(pin_num);
-    }
+    pin_num_vec.reserve(physical_type->num_pins + physical_type->internal_pin_class.size());
 
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
         if (grid_block.subtile_empty(abs_cap)) {
@@ -2457,7 +2442,7 @@ std::vector<int> get_cluster_pins_at_loc(const int i,
         }
         auto cluster_blk_id = grid_block.blocks[abs_cap];
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
-        auto internal_pins = get_cluster_internal_ipin_opin(cluster_blk_id);
+        auto internal_pins = get_cluster_internal_pins(cluster_blk_id);
         for(int pin_num : internal_pins) {
             pin_num_vec.push_back(pin_num);
         }

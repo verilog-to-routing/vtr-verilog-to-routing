@@ -1852,7 +1852,7 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                          const int delayless_switch) {
     t_rr_edge_info_set rr_edges_to_create;
 
-    std::vector<int> class_num_vec = get_flat_tile_classes(physical_tile);
+    std::vector<int> class_num_vec = get_flat_tile_primitive_classes(physical_tile);
     std::vector<int> pin_num_vec = get_flat_tile_pins(physical_tile);
 
 
