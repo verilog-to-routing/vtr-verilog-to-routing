@@ -645,7 +645,7 @@ void try_place(const t_placer_opts& placer_opts,
     if (noc_opts.noc) {
         // get the costs associated with the NoC
         costs.noc_aggregate_bandwidth_cost = comp_noc_aggregate_bandwidth_cost();
-        costs.noc_latency_cost = comp_noc_latency_cost();
+        costs.noc_latency_cost = comp_noc_latency_cost(noc_opts);
 
         // initialize all the noc normalization factors
         update_noc_normalization_factors(costs, placer_opts);
@@ -1378,6 +1378,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     float rlim_escape_fraction = placer_opts.rlim_escape_fraction;
     float timing_tradeoff = placer_opts.timing_tradeoff;
+    double noc_placement_weighting = noc_opts.noc_placement_weighting;
 
     PlaceCritParams crit_params;
     crit_params.crit_exponent = state->crit_exponent;
@@ -1503,9 +1504,10 @@ static e_move_result try_swap(const t_annealing_state* state,
         double noc_latency_delta_c = 0;             // change in the NoC latency cost
         /* Update the NoC datastructure and costs*/
         if (noc_opts.noc) {
-            number_of_affected_noc_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c);
+            number_of_affected_noc_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
 
-            // calculate delta cost
+            // Noc include the NoC delata costs in the total cost change for this swap
+            delta_c = delta_c + noc_placement_weighting * (noc_latency_delta_c + noc_aggregate_bandwidth_delta_c);
         }
 
         /* 1 -> move accepted, 0 -> rejected. */
@@ -2800,7 +2802,7 @@ static void check_place(const t_placer_costs& costs,
 
     // check the NoC costs during placement if the user is using the NoC supported flow
     if (noc_opts.noc) {
-        error += check_noc_placement_costs(costs, ERROR_TOL);
+        error += check_noc_placement_costs(costs, ERROR_TOL, noc_opts);
     }
 
     if (error == 0) {
