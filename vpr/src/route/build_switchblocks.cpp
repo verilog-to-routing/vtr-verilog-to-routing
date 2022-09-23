@@ -196,7 +196,6 @@ typedef vtr::flat_map<vtr::string_view, Wire_Info> t_wire_type_sizes;
 /* Counts the number of wires in each wire type in the specified channel */
 static void count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_per_chan, t_wire_type_sizes* wire_type_sizes);
 
-
 /* Compute the wire(s) that the wire at (x, y, from_side, to_side, from_wire) should connect to.
  * sb_conns is updated with the result */
 static void compute_wire_connections(
@@ -319,7 +318,6 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
     count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan->x_max, &wire_type_sizes_x);
     count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan->max, &wire_type_sizes);
 
-
     /******** slow switch block computation method; computes switchblocks at each coordinate ********/
     /* iterate over all the switchblocks specified in the architecture */
     for (int i_sb = 0; i_sb < (int)switchblocks.size(); i_sb++) {
@@ -348,7 +346,6 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
             }
         }
     }
-
 
     return sb_conns;
 }
