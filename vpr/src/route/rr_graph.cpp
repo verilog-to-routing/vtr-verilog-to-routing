@@ -2036,35 +2036,35 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                                 logical_block,
                                 pb,
                                 rel_cap);
-    for (auto pin : pin_nums) {
+    for (auto pin_physical_num : pin_nums) {
         auto parent_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                      physical_type,
                                                      i,
                                                      j,
-                                                     pin);
+                                                     pin_physical_num);
         VTR_ASSERT(parent_pin_node_id != RRNodeId::INVALID());
 
-        auto driving_pins = get_physical_pin_src_pins(physical_type,
-                                                          logical_block,
-                                                          pin);
+        auto conn_pins_physical_num = get_physical_pin_sink_pins(physical_type,
+                                                       logical_block,
+                                                       pin_physical_num);
 
-        for (auto driving_pin : driving_pins) {
-            auto driving_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
-                                                          physical_type,
-                                                          i,
-                                                          j,
-                                                          driving_pin);
+        for (auto conn_pin_physical_num : conn_pins_physical_num) {
+            auto conn_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
+                                                       physical_type,
+                                                       i,
+                                                       j,
+                                                       conn_pin_physical_num);
             // If the node_id is INVALID it means that it belongs to a pin which is not added to the RR Graph. The pin is not added
             // since it belongs to a certain mode or block which is not used in clustered netlist
-            if (driving_pin_node_id == RRNodeId::INVALID()) {
+            if (conn_pin_node_id == RRNodeId::INVALID()) {
                 continue;
             }
             int sw_idx = get_edge_sw_arch_idx(physical_type,
-                                         logical_block,
-                                         driving_pin,
-                                         pin);
+                                              logical_block,
+                                              pin_physical_num,
+                                              conn_pin_physical_num);
             VTR_ASSERT(sw_idx != -1);
-            rr_edges_to_create.emplace_back(driving_pin_node_id, parent_pin_node_id, sw_idx);
+            rr_edges_to_create.emplace_back(parent_pin_node_id, conn_pin_node_id, sw_idx);
         }
     }
 }
