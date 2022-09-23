@@ -286,4 +286,6 @@ std::vector<int> get_cluster_pins_at_loc(const int i,
                                          const int j,
                                          t_physical_tile_type_ptr physical_type);
 
+t_arch_switch_inf create_internal_arch_sw(float delay);
+
 #endif

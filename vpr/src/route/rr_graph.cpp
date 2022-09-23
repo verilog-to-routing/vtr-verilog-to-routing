@@ -357,6 +357,9 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
                                                         RRNodeId from_rr,
                                                         const std::vector<RRNodeId>& candidate_rr_nodes);
 
+static int find_create_intra_cluster_sw_arch_idx(std::map<int, t_arch_switch_inf>& internal_arch_sw_inf_map,
+                                                 float delay);
+
 static void process_non_config_sets();
 
 static void build_rr_graph(const t_graph_type graph_type,
@@ -3637,6 +3640,34 @@ bool pins_connected(t_block_loc cluster_loc,
         }
     }
     return false;
+}
+
+static int find_create_intra_cluster_sw_arch_idx(std::map<int, t_arch_switch_inf>& internal_arch_sw_inf_map,
+                                                 float delay) {
+    auto find_res = std::find_if(internal_arch_sw_inf_map.begin(), internal_arch_sw_inf_map.end(),
+                                 [delay](const std::pair<int, t_arch_switch_inf>& sw_inf) {
+                                     if(std::get<1>(sw_inf).Tdel() == delay){
+                                         return true;
+                                     } else {
+                                         return false;
+                                     }
+                                 });
+
+    if(find_res == internal_arch_sw_inf_map.end()) {
+        auto arch_sw = create_internal_arch_sw(delay);
+        int max_key_num = std::numeric_limits<int>::min();
+        for(const auto& arch_sw_pair : internal_arch_sw_inf_map) {
+            if(arch_sw_pair.first > max_key_num){
+                max_key_num = arch_sw_pair.first;
+            }
+        }
+        int new_key_num = ++max_key_num;
+        internal_arch_sw_inf_map.insert(std::make_pair(new_key_num, arch_sw));
+        return new_key_num;
+    } else {
+        return find_res->first;
+    }
+
 }
 
 static void process_non_config_sets() {

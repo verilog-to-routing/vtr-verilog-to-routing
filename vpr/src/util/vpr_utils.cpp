@@ -2451,3 +2451,19 @@ std::vector<int> get_cluster_pins_at_loc(const int i,
     pin_num_vec.shrink_to_fit();
     return pin_num_vec;
 }
+
+t_arch_switch_inf create_internal_arch_sw(float delay) {
+    t_arch_switch_inf arch_switch_inf;
+    arch_switch_inf.set_type(SwitchType::MUX);
+    arch_switch_inf.name = vtr::strdup(("Internal Switch/" + std::to_string(delay)).c_str());
+    arch_switch_inf.R = 0.;
+    arch_switch_inf.Cin = 0.;
+    arch_switch_inf.Cout = 0;
+    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay);
+    arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
+    arch_switch_inf.mux_trans_size = 0.;
+    arch_switch_inf.buf_size_type = BufferSize::ABSOLUTE;
+    arch_switch_inf.buf_size = 0.;
+
+    return arch_switch_inf;
+}

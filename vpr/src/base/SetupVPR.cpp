@@ -800,17 +800,7 @@ static void add_intra_tile_switches() {
                     if (pb_edge_delays.find(max_delay) == pb_edge_delays.end()) {
                         switch_type_id = (int)device_ctx.all_sw_inf.size();
                         pb_edge_delays.insert(std::make_pair(max_delay, switch_type_id));
-                        t_arch_switch_inf arch_switch_inf;
-                        arch_switch_inf.set_type(SwitchType::MUX);
-                        arch_switch_inf.name = vtr::strdup(("Internal Switch/" + std::to_string(max_delay)).c_str());
-                        arch_switch_inf.R = 0.;
-                        arch_switch_inf.Cin = 0.;
-                        arch_switch_inf.Cout = 0;
-                        arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, max_delay);
-                        arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
-                        arch_switch_inf.mux_trans_size = 0.;
-                        arch_switch_inf.buf_size_type = BufferSize::ABSOLUTE;
-                        arch_switch_inf.buf_size = 0.;
+                        t_arch_switch_inf arch_switch_inf = create_internal_arch_sw(max_delay);
                         VTR_ASSERT_MSG(arch_switch_inf.buffered(), "Delayless switch expected to be buffered (isolating)");
                         VTR_ASSERT_MSG(arch_switch_inf.configurable(), "Delayless switch expected to be configurable");
 
