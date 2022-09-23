@@ -41,7 +41,7 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
 
 void free_rr_graph();
 
-t_rr_switch_inf create_rr_switch_from_arch_switch(int arch_switch_idx,
+t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_sw_inf,
                                                   const float R_minW_nmos,
                                                   const float R_minW_pmos);
 // Sets the spec for the rr_switch based on the arch switch

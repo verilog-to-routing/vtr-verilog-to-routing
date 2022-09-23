@@ -48,6 +48,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
 static void alloc_and_load_intra_cluster_resources();
+static void add_intra_tile_switches();
 static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,
                                                         t_logical_block_type* logical_block,
                                                         t_class* class_inf);
@@ -262,7 +263,10 @@ void SetupVPR(const t_options* Options,
     }
 
     if (RouterOpts->flat_routing) {
+        // The following two functions should be called when the data structured related to t_pb_graph_node, t_pb_type,
+        // and t_pb_graph_edge are initialized
         alloc_and_load_intra_cluster_resources();
+        add_intra_tile_switches();
     }
 
     if ((Options->clock_modeling == ROUTED_CLOCK) || (Options->clock_modeling == DEDICATED_NETWORK)) {
@@ -322,6 +326,9 @@ static void SetupSwitches(const t_arch& Arch,
     device_ctx.arch_switch_inf.resize(num_arch_switches);
     for (int iswitch = 0; iswitch < switches_to_copy; iswitch++) {
         device_ctx.arch_switch_inf[iswitch] = ArchSwitches[iswitch];
+        // TODO: AM: Since I am not sure whether replacing arch_switch_in with all_sw_inf, which contains the
+        //  information about intra-tile switched, would not break anything, for the time being, I decided to not remove it
+        device_ctx.all_sw_inf[iswitch] = ArchSwitches[iswitch];
     }
 
     /* Delayless switch for connecting sinks and sources with their pins. */
@@ -337,6 +344,8 @@ static void SetupSwitches(const t_arch& Arch,
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buf_size = 0.;
     VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buffered(), "Delayless switch expected to be buffered (isolating)");
     VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch->delayless_switch].configurable(), "Delayless switch expected to be configurable");
+
+    device_ctx.all_sw_inf[RoutingArch->delayless_switch] = device_ctx.arch_switch_inf[RoutingArch->delayless_switch];
 
     RoutingArch->global_route_switch = RoutingArch->delayless_switch;
 
@@ -758,6 +767,78 @@ static void alloc_and_load_intra_cluster_resources() {
             }
         }
     }
+}
+
+static void add_intra_tile_switches() {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    std::unordered_map<float, int> pb_edge_delays;
+
+    VTR_ASSERT(device_ctx.all_sw_inf.size() == device_ctx.arch_switch_inf.size());
+
+    for(auto& logical_block : device_ctx.logical_block_types) {
+        if(logical_block.is_empty()){
+            continue;
+        }
+        t_pb_graph_node* pb_graph_node = logical_block.pb_graph_head;
+
+        int switch_type_id = -1;
+
+        std::list<t_pb_graph_node*> pb_graph_node_q;
+
+        pb_graph_node_q.push_back(pb_graph_node);
+        while (!pb_graph_node_q.empty()) {
+            pb_graph_node = pb_graph_node_q.front();
+            pb_graph_node_q.pop_front();
+            auto pb_pins = get_mutable_pb_graph_node_pb_pins(pb_graph_node);
+
+            for (t_pb_graph_pin* pb_pin : pb_pins) {
+                for (int out_edge_idx = 0; out_edge_idx < pb_pin->num_output_edges; out_edge_idx++) {
+                    t_pb_graph_edge* pb_graph_edge = pb_pin->output_edges[out_edge_idx];
+                    float max_delay = pb_graph_edge->delay_max;
+
+                    if (pb_edge_delays.find(max_delay) == pb_edge_delays.end()) {
+                        switch_type_id = (int)device_ctx.all_sw_inf.size();
+                        pb_edge_delays.insert(std::make_pair(max_delay, switch_type_id));
+                        t_arch_switch_inf arch_switch_inf;
+                        arch_switch_inf.set_type(SwitchType::MUX);
+                        arch_switch_inf.name = vtr::strdup(("Internal Switch/" + std::to_string(max_delay)).c_str());
+                        arch_switch_inf.R = 0.;
+                        arch_switch_inf.Cin = 0.;
+                        arch_switch_inf.Cout = 0;
+                        arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, max_delay);
+                        arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
+                        arch_switch_inf.mux_trans_size = 0.;
+                        arch_switch_inf.buf_size_type = BufferSize::ABSOLUTE;
+                        arch_switch_inf.buf_size = 0.;
+                        VTR_ASSERT_MSG(arch_switch_inf.buffered(), "Delayless switch expected to be buffered (isolating)");
+                        VTR_ASSERT_MSG(arch_switch_inf.configurable(), "Delayless switch expected to be configurable");
+
+                        device_ctx.all_sw_inf.insert(std::make_pair(switch_type_id, arch_switch_inf));
+                    } else {
+                        switch_type_id = pb_edge_delays.at(max_delay);
+                    }
+
+                    // The data type of the number of switches is short - We add this assertion to make sure that overflow doesn't happen
+                    VTR_ASSERT(switch_type_id <= std::numeric_limits<short>::max());
+                    pb_graph_edge->switch_type_idx = switch_type_id;
+                }
+            }
+
+            t_pb_type* pb_type = pb_graph_node->pb_type;
+            for (int mode_num = 0; mode_num < pb_type->num_modes; mode_num++) {
+                t_mode* modes = pb_type->modes;
+                for (int pb_type_idx = 0; pb_type_idx < modes[mode_num].num_pb_type_children; pb_type_idx++) {
+                    t_pb_type* child_pb_type = &modes[mode_num].pb_type_children[pb_type_idx];
+                    for (int pb_num = 0; pb_num < child_pb_type->num_pb; pb_num++) {
+                        t_pb_graph_node* child_pb_graph_node = &pb_graph_node->child_pb_graph_nodes[mode_num][pb_type_idx][pb_num];
+                        pb_graph_node_q.push_back(child_pb_graph_node);
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,

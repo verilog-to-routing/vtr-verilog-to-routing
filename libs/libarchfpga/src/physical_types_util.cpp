@@ -1257,9 +1257,9 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
 }
 
 int get_edge_sw_arch_idx(t_physical_tile_type_ptr physical_tile,
-                    t_logical_block_type_ptr logical_block,
-                    int from_pin_physical_num,
-                    int to_pin_physical_num) {
+                         t_logical_block_type_ptr logical_block,
+                         int from_pin_physical_num,
+                         int to_pin_physical_num) {
     bool find_edge = false;
     int sw_idx = -1;
     const t_pb_graph_pin* from_pb_pin;
