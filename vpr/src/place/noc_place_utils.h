@@ -7,13 +7,14 @@
 #include "vtr_assert.h"
 #include "move_transactions.h"
 #include "vtr_log.h"
+#include "noc_routing_algorithm_creator.h"
 
 // represent the maximum values of the NoC cost normalization factors //
-// we need to handle the case where the agggregate bandwidth is 0, so we set this to some arbritary positive number that is greater than 1.e-9, since that is the range we expect the normalization factor to be
+// we need to handle the case where the agggregate bandwidth is 0, so we set this to some arbritary positive number that is greater than 1.e-9, since that is the range we expect the normalization factor to be (in Gbps)
 constexpr double MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST = 1.;
-// we expect the latency costs to be in the nanoseconds range, and we don't expect it to go lower than that. So if the latency costs go below the nanosecond range we trim the normalization value to below
+// we expect the latency costs to be in the picosecond range, and we don't expect it to go lower than that. So if the latency costs go below the picosecond range we trim the normalization value to below 1 picosecond
 // This should be updated if the delays become lower
-constexpr double MAX_INV_NOC_LATENCY_COST = 1.e10;
+constexpr double MAX_INV_NOC_LATENCY_COST = 1.e12;
 
 /* Defines how the links found in a traffic flow are updated in terms
  * of their bandwidth usage.
@@ -60,7 +61,7 @@ void initial_noc_placement(void);
  * the moved blocks, their previous locations and their new locations
  * after being moved.
  */
-int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c);
+int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, const t_noc_opts& noc_opts);
 
 void commit_noc_costs(int number_of_affected_traffic_flows);
 
@@ -196,48 +197,56 @@ void update_noc_normalization_factors(t_placer_costs& costs, const t_placer_opts
 double comp_noc_aggregate_bandwidth_cost(void);
 
 /**
- * @brief Calculates the latency of each traffic flow in the NoC
+ * @brief Calculates the latency cost of each traffic flow in the NoC
  * and initializes local variables that keep track of the traffic flow
  * latency costs. Then the total latency cost is determined by summing up all
- * the individual traffic flow latencies.
+ * the individual traffic flow latency costs.
  * 
  * This should be used after initial placement to determine the starting latency
  * cost of the NoC.
  * 
  * @return double The latency cost of the NoC.
  */
-double comp_noc_latency_cost(void);
+double comp_noc_latency_cost(const t_noc_opts& noc_opts);
 
 /**
  * @brief 
  * 
  */
-int check_noc_placement_costs(const t_placer_costs& costs, double error_tolerance);
+int check_noc_placement_costs(const t_placer_costs& costs, double error_tolerance, const t_noc_opts& noc_opts);
 
 /**
- * @brief Determines the aggregate bandwidth of a routed traffic flow.
- * Aggregate bandwidth is calculated as the number of links in a traffic
- * flow multiplied by the bandwidth of the traffic flow.
+ * @brief Determines the aggregate bandwidth cost of a routed traffic flow.
+ * The cost is calculated as the number of links in the traffic flow multiplied
+ * by the traffic flow bandwidth. This is then scaled by the priority of the
+ * traffic flow.
  * 
  * @param traffic_flow_route The routed path for a traffic flow. This
  * contains a collection of links in the NoC.
- * @param traffic_flow_bandwidth Bandwidth of the traffic flow.
- * @return double The aggregate bandwidth of the traffic flow.
+ * @param traffic_flow_info  Contains the traffic flow bandwidth and
+ * its priority.
  */
-double calculate_traffic_flow_aggregate_bandwidth(const std::vector<NocLinkId>& traffic_flow_route, double traffic_flow_bandwidth);
+double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route, const t_noc_traffic_flow& traffic_flow_info);
 
 /**
- * @brief Determiens the latency of a routed traffic flow. Latency is
- * calculated as the sum of all the router and link latencies seen in
- * a traffic flow route.
+ * @brief Determines the latency cost of a routed traffic flow.
+ * The cost is calculated as the combination of the traffic flow
+ * latency and its gap to the traffic flow latency constraint. Each
+ * parameter above is scaled by a weighting factor that determines
+ * the importance each term has on the placement cost. These weightings
+ * are provided by the user. This is then scaled by the priority of the
+ * traffic flow. 
+ * 
  * 
  * @param traffic_flow_route The routed path for a traffic flow. This
  * contains a collection of links in the NoC.
- * @param noc_router_latency The latency of a router in the NoC.
- * @param noc_link_latency The latency of a link in the NoC.
- * @return double The latency of a traffic flow.
+ * @param noc_model Contains noc information such as the router and link
+ * latencies.
+ * @param traffic_flow_info Contains the traffi flow priority.
+ * @param noc_opts Contains the user provided weightings of the traffic flow 
+ * latency and its constraint parameters for the cost calculation.
  */
-double calculate_traffic_flow_latency(const std::vector<NocLinkId>& traffic_flow_route, double noc_router_latency, double noc_link_latency);
+double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route, const NocStorage& noc_model, const t_noc_traffic_flow& traffic_flow_info, const t_noc_opts& noc_opts);
 
 void allocate_and_load_noc_placement_structs(void);
 

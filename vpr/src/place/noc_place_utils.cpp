@@ -41,7 +41,7 @@ void initial_noc_placement(void) {
     return;
 }
 
-int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c) {
+int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved& blocks_affected, double& noc_aggregate_bandwidth_delta_c, double& noc_latency_delta_c, const t_noc_opts& noc_opts) {
     // provides the positions where the affected blocks have moved to
     auto& place_ctx = g_vpr_ctx.placement();
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
@@ -65,10 +65,6 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
         }
     }
 
-    // parameters needed to calculate latency costs in traffic flows
-    double noc_link_latency = noc_ctx.noc_model.get_noc_link_latency();
-    double noc_router_latency = noc_ctx.noc_model.get_noc_router_latency();
-
     // go through all the affected traffic flows and calculate their new costs after being re-routed, then determine the change in cost before the traffic flows were modified
     for (int traffic_flow_affected = 0; traffic_flow_affected < number_of_affected_traffic_flows; traffic_flow_affected++) {
         NocTrafficFlowId traffic_flow_id = affected_traffic_flows[traffic_flow_affected];
@@ -78,8 +74,8 @@ int find_affected_noc_routers_and_update_noc_costs(const t_pl_blocks_to_be_moved
         // get the current traffic flow info
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
 
-        proposed_traffic_flow_aggregate_bandwidth_cost[traffic_flow_id] = calculate_traffic_flow_aggregate_bandwidth(traffic_flow_route, curr_traffic_flow.traffic_flow_bandwidth);
-        proposed_traffic_flow_latency_cost[traffic_flow_id] = calculate_traffic_flow_latency(traffic_flow_route, noc_router_latency, noc_link_latency);
+        proposed_traffic_flow_aggregate_bandwidth_cost[traffic_flow_id] = calculate_traffic_flow_aggregate_bandwidth_cost(traffic_flow_route, curr_traffic_flow);
+        proposed_traffic_flow_latency_cost[traffic_flow_id] = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow, noc_opts);
 
         noc_aggregate_bandwidth_delta_c += proposed_traffic_flow_aggregate_bandwidth_cost[traffic_flow_id] - traffic_flow_aggregate_bandwidth_cost[traffic_flow_id];
         noc_latency_delta_c += proposed_traffic_flow_latency_cost[traffic_flow_id] - traffic_flow_latency_cost[traffic_flow_id];
@@ -235,9 +231,13 @@ void re_route_traffic_flow(NocTrafficFlowId traffic_flow_id, NocTrafficFlows& no
 
     return;
 }
-
+// might need to set the values to 0 here first
 void recompute_noc_costs(double* new_noc_aggregate_bandwidth_cost, double* new_noc_latency_cost) {
     int number_of_traffic_flows = g_vpr_ctx.noc().noc_traffic_flows_storage.get_number_of_traffic_flows();
+
+    // reset the cost variables first
+    *new_noc_aggregate_bandwidth_cost = 0;
+    *new_noc_latency_cost = 0;
 
     // go through the costs of all the traffic flows and add them up to recompute the total costs associated with the NoC
     for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
@@ -280,7 +280,7 @@ double comp_noc_aggregate_bandwidth_cost(void) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
         const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route((NocTrafficFlowId)traffic_flow_id);
 
-        double curr_traffic_flow_aggregate_bandwidth_cost = calculate_traffic_flow_aggregate_bandwidth(curr_traffic_flow_route, curr_traffic_flow.traffic_flow_bandwidth);
+        double curr_traffic_flow_aggregate_bandwidth_cost = calculate_traffic_flow_aggregate_bandwidth_cost(curr_traffic_flow_route, curr_traffic_flow);
 
         // store the calculated aggregate bandwidth for the current traffic flow in local datastructures (this also initializes them)
         traffic_flow_aggregate_bandwidth_cost[(NocTrafficFlowId)traffic_flow_id] = curr_traffic_flow_aggregate_bandwidth_cost;
@@ -292,7 +292,7 @@ double comp_noc_aggregate_bandwidth_cost(void) {
     return noc_aggregate_bandwidth_cost;
 }
 
-double comp_noc_latency_cost(void) {
+double comp_noc_latency_cost(const t_noc_opts& noc_opts) {
     // used to get traffic flow route information
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
     // datastructure that stores all the traffic flow routes
@@ -302,29 +302,25 @@ double comp_noc_latency_cost(void) {
 
     double noc_latency_cost = 0.;
 
-    // get latency properties of the NoC
-    double noc_router_latency = noc_ctx.noc_model.get_noc_router_latency();
-    double noc_link_latency = noc_ctx.noc_model.get_noc_link_latency();
-
     // now go through each traffic flow route and calculate its
     // latency. Then store this in local datastrucutres and accumulate it.
     for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
+        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
         const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route((NocTrafficFlowId)traffic_flow_id);
 
-        double curr_traffic_flow_latency_cost = calculate_traffic_flow_latency(curr_traffic_flow_route, noc_router_latency, noc_link_latency);
+        double curr_traffic_flow_latency_cost = calculate_traffic_flow_latency_cost(curr_traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow, noc_opts);
 
         // store the calculated latency for the current traffic flow in local datastructures (this also initializes them)
         traffic_flow_latency_cost[(NocTrafficFlowId)traffic_flow_id] = curr_traffic_flow_latency_cost;
 
         // accumumulate the aggregate bandwidth cost
         noc_latency_cost += curr_traffic_flow_latency_cost;
-        ;
     }
 
     return noc_latency_cost;
 }
 
-int check_noc_placement_costs(const t_placer_costs& costs, double error_tolerance) {
+int check_noc_placement_costs(const t_placer_costs& costs, double error_tolerance, const t_noc_opts& noc_opts) {
     int error = 0;
     double noc_aggregate_bandwidth_cost_check = 0.;
     double noc_latency_cost_check = 0.;
@@ -336,16 +332,15 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     auto& noc_ctx = g_vpr_ctx.noc();
     const NocStorage* noc_model = &noc_ctx.noc_model;
     const NocTrafficFlows* noc_traffic_flows_storage = &noc_ctx.noc_traffic_flows_storage;
-    NocRouting* noc_flows_router = noc_ctx.noc_flows_router;
+
+    // need to create a temporary noc routing algorithm
+    NocRoutingAlgorithmCreator routing_algorithm_factory;
+    NocRouting* temp_noc_routing_algorithm = routing_algorithm_factory.create_routing_algorithm(noc_opts.noc_routing_algorithm);
 
     int number_of_traffic_flows = noc_traffic_flows_storage->get_number_of_traffic_flows();
 
     // stores a temporarily found route for a traffic flow
     std::vector<NocLinkId> temp_found_noc_route;
-
-    // local parameters needed to calculate latency of traffic flows
-    double noc_link_latency = noc_model->get_noc_link_latency();
-    double noc_router_latency = noc_model->get_noc_router_latency();
 
     // go through all the traffic flows and find route for them based on where the routers are placed within the NoC
     for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
@@ -361,13 +356,13 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         NocRouterId sink_router_block_id = noc_model->get_router_at_grid_location((*placed_cluster_block_locations)[logical_sink_router_block_id].loc);
 
         // route the current traffic flow
-        noc_flows_router->route_flow(source_router_block_id, sink_router_block_id, temp_found_noc_route, *noc_model);
+        temp_noc_routing_algorithm->route_flow(source_router_block_id, sink_router_block_id, temp_found_noc_route, *noc_model);
 
         // now calculate the costs associated to the current traffic flow and accumulate it to find the total cost of the NoC placement
-        traffic_flow_aggregate_bandwidth_cost[(NocTrafficFlowId)traffic_flow_id] = calculate_traffic_flow_aggregate_bandwidth(temp_found_noc_route, curr_traffic_flow.traffic_flow_bandwidth);
+        traffic_flow_aggregate_bandwidth_cost[(NocTrafficFlowId)traffic_flow_id] = calculate_traffic_flow_aggregate_bandwidth_cost(temp_found_noc_route, curr_traffic_flow);
         noc_aggregate_bandwidth_cost_check += traffic_flow_aggregate_bandwidth_cost[(NocTrafficFlowId)traffic_flow_id];
 
-        traffic_flow_latency_cost[(NocTrafficFlowId)traffic_flow_id] = calculate_traffic_flow_latency(temp_found_noc_route, noc_router_latency, noc_link_latency);
+        traffic_flow_latency_cost[(NocTrafficFlowId)traffic_flow_id] = calculate_traffic_flow_latency_cost(temp_found_noc_route, *noc_model, curr_traffic_flow, noc_opts);
         noc_latency_cost_check += traffic_flow_latency_cost[(NocTrafficFlowId)traffic_flow_id];
 
         // clear the current traffic flow route so we can route the next traffic flow
@@ -390,21 +385,39 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         error++;
     }
 
+    // delete the temporary routing algorithm
+    delete temp_noc_routing_algorithm;
+
     return error;
 }
 
-double calculate_traffic_flow_aggregate_bandwidth(const std::vector<NocLinkId>& traffic_flow_route, double traffic_flow_bandwidth) {
+double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route, const t_noc_traffic_flow& traffic_flow_info){
     int num_of_links_in_traffic_flow = traffic_flow_route.size();
 
-    return num_of_links_in_traffic_flow * traffic_flow_bandwidth;
+    // the traffic flow aggregate bandwidth cost is scaled by its priority, which dictates its important to the placement
+    return (traffic_flow_info.traffic_flow_priority * traffic_flow_info.traffic_flow_bandwidth * num_of_links_in_traffic_flow);
+
 }
 
-double calculate_traffic_flow_latency(const std::vector<NocLinkId>& traffic_flow_route, double noc_router_latency, double noc_link_latency) {
+double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route, const NocStorage& noc_model, const t_noc_traffic_flow& traffic_flow_info, const t_noc_opts& noc_opts){
     // there will always be one more router than links in a traffic flow
     int num_of_links_in_traffic_flow = traffic_flow_route.size();
     int num_of_routers_in_traffic_flow = num_of_links_in_traffic_flow + 1;
+    double max_latency = traffic_flow_info.max_traffic_flow_latency;
 
-    return ((noc_link_latency * num_of_links_in_traffic_flow) + (noc_router_latency * num_of_routers_in_traffic_flow));
+    // latencies of the noc
+    double noc_link_latency = noc_model.get_noc_link_latency();
+    double noc_router_latency = noc_model.get_noc_router_latency();
+
+    // calculate the traffic flow_latency
+    double latency = (noc_link_latency * num_of_links_in_traffic_flow) + (noc_router_latency * num_of_routers_in_traffic_flow);
+
+    // calculate the cost
+    double single_traffic_flow_latency_cost = (noc_opts.noc_latency_constraints_weighting * std::max(0., latency - max_latency)) + (noc_opts.noc_latency_weighting * latency);
+
+    // scale the latency cost by its priority to indicate its importance
+    return (single_traffic_flow_latency_cost * traffic_flow_info.traffic_flow_priority);
+
 }
 
 void allocate_and_load_noc_placement_structs(void) {
