@@ -294,9 +294,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
     /* Holds temporary memory for parsing. */
     t_wireconn_scratchpad scratchpad;
 
-    /* get a single number for channel width. 
-     * AA: Note that this needs be changed to support different horizontal and vertical channels. Future action item ... */
-    /* sparse array that will contain switch block connections */
+
     t_sb_connection_map* sb_conns = new t_sb_connection_map;
 
     /* We assume that x & y channels have the same ratios of wire types. i.e., looking at a single
