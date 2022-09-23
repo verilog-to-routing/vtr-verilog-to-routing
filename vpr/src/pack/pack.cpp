@@ -24,6 +24,7 @@
 #include "SetupGrid.h"
 #include "re_cluster.h"
 
+#include "pack_utils.h"
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
@@ -266,6 +267,25 @@ bool try_pack(t_packer_opts* packer_opts,
     /*       Use the re-cluster API to edit it        */
     /******************* Start *************************/
 
+    bool is_moved;
+    is_moved = move_mol_to_new_cluster(atom_ctx.atom_molecules.find(AtomBlockId(3))->second, true, 5, clustering_data);
+    is_moved = move_mol_to_existing_cluster(atom_ctx.atom_molecules.find(AtomBlockId(5))->second, ClusterBlockId (4), true, 5, clustering_data);
+    /*
+    for(auto& blk_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
+        t_pb* temp_pb = g_vpr_ctx.mutable_clustering().clb_nlist.block_pb(blk_id);
+        VTR_LOG("");
+    }
+     */
+
+    VTR_LOG("Start the iterative improvement process\n");
+    iteratively_improve_packing(clustering_data);
+    VTR_LOG("the iterative improvement process is done\n");
+
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    for(auto& blk_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
+        free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb(blk_id));
+    }
     /******************** End **************************/
 
     //check clustering and output it
