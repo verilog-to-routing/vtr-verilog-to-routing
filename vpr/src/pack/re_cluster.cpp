@@ -172,6 +172,10 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     ClusterBlockId clb_1 = atom_to_cluster(root_1_atom_id);
     ClusterBlockId clb_2 = atom_to_cluster(root_2_atom_id);
 
+    if(clb_1 == clb_2) {
+        VTR_LOGV(verbosity > 4, "Swap failed. Both atoms are already in the same cluster.\n");
+        return false;
+    }
     //Check that the old and new clusters are of the same type
     bool is_compitable = check_type_and_mode_compitability(clb_1, clb_2, verbosity);
     if (!is_compitable)
