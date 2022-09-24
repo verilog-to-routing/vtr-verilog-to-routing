@@ -80,7 +80,7 @@ static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physic
                                                  int pin_physical_num);
 
 static std::tuple<int, int, int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat) {
-    int max_ptc = get_tile_ipin_opin_max_ptc(type, is_flat);
+    int max_ptc = get_tile_pin_max_ptc(type, is_flat);
     VTR_ASSERT(pin_physical_num < max_ptc);
 
     const t_sub_tile* sub_tile;
@@ -608,7 +608,7 @@ std::string get_class_block_name(t_physical_tile_type_ptr type, int class_physic
 }
 
 std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat) {
-    int max_ptc = get_tile_ipin_opin_max_ptc(type, is_flat);
+    int max_ptc = get_tile_pin_max_ptc(type, is_flat);
     VTR_ASSERT(pin_physical_num < max_ptc);
     int pin_index;
     std::string pin_name = type->name;
@@ -1330,7 +1330,7 @@ int get_total_num_tile_internal_pins(t_physical_tile_type_ptr tile) {
     return num_pins;
 }
 
-int get_tile_ipin_opin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
+int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
     if (is_flat) {
         return tile->num_pins + get_total_num_tile_internal_pins(tile);
     } else {

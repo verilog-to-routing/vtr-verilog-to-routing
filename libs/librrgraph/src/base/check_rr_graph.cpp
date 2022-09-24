@@ -429,7 +429,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     /* Check that it's capacities and such make sense. */
 
     int class_max_ptc = get_tile_class_max_ptc(type, is_flat);
-    int pin_max_ptc = get_tile_ipin_opin_max_ptc(type, is_flat);
+    int pin_max_ptc = get_tile_pin_max_ptc(type, is_flat);
     e_pin_type class_type = OPEN;
     int class_num_pins = -1;
     switch (rr_type) {

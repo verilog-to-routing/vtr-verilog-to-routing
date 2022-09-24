@@ -1105,8 +1105,8 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
                 if(is_flat) {
-                    class_num_vec = get_cluster_primitive_classes_at_loc(x, y, physical_type);
-                    pin_num_vec = get_cluster_pins_at_loc(x, y, physical_type);
+                    class_num_vec = get_cluster_netlist_tile_primitive_classes_at_loc(x, y, physical_type);
+                    pin_num_vec = get_cluster_netlist_tile_pins_at_loc(x, y, physical_type);
                 } else {
                     class_num_vec = get_tile_classes(physical_type);
                     pin_num_vec = get_tile_pins(physical_type);

@@ -252,7 +252,8 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
  */
 static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                              t_rr_edge_info_set& rr_edges_to_create,
-                                             const DeviceGrid& grid);
+                                             const DeviceGrid& grid,
+                                             bool is_flat);
 
 static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                           t_rr_edge_info_set& rr_edges_to_create,
@@ -264,12 +265,13 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
  * Build the internal edges of blocks inside the given location
  */
 static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
-                                 ClusterBlockId cluster_blk_id,
-                                 const int i,
-                                 const int j,
-                                 const int cap,
-                                 t_rr_edge_info_set& rr_edges_to_create,
-                                 const DeviceGrid& grid);
+                                         ClusterBlockId cluster_blk_id,
+                                         const int i,
+                                         const int j,
+                                         const int cap,
+                                         t_rr_edge_info_set& rr_edges_to_create,
+                                         const DeviceGrid& grid,
+                                         bool is_flat);
 
 /*
  * Connect the pins of the given t_pb to their drivers
@@ -356,6 +358,16 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
 static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_graph,
                                                         RRNodeId from_rr,
                                                         const std::vector<RRNodeId>& candidate_rr_nodes);
+
+static std::vector<std::vector<int>> get_cluster_directly_connected_nodes(ClusterBlockId cluster_blk_id,
+                                                                          int abs_cap,
+                                                                          t_physical_tile_type_ptr physical_type,
+                                                                          bool is_flat);
+
+static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr physical_type,
+                                                     t_logical_block_type_ptr logical_block,
+                                                     const std::vector<int>& cluster_pin_num_vec,
+                                                     int pin_physical_num);
 
 static int find_create_intra_cluster_sw_arch_idx(std::map<int, t_arch_switch_inf>& internal_arch_sw_inf_map,
                                                  float delay);
@@ -496,7 +508,9 @@ void create_rr_graph(const t_graph_type graph_type,
 
 static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                              t_rr_edge_info_set& rr_edges_to_create,
-                                             const DeviceGrid& grid) {
+                                             const DeviceGrid& grid,
+                                             bool is_flat) {
+    VTR_ASSERT(is_flat);
     /* This function should be called if placement is done! */
 
 
@@ -508,14 +522,15 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
         auto block_loc = place_ctx.block_locs[cluster_blk_id].loc;
         int i = block_loc.x;
         int j = block_loc.y;
-        int cap = block_loc.sub_tile;
+        int abs_cap = block_loc.sub_tile;
         build_cluster_internal_edges(rr_graph_builder,
-                             cluster_blk_id,
-                             i,
-                             j,
-                             cap,
-                             rr_edges_to_create,
-                             grid);
+                                     cluster_blk_id,
+                                     i,
+                                     j,
+                                     abs_cap,
+                                     rr_edges_to_create,
+                                     grid,
+                                     is_flat);
     }
 }
 
@@ -1223,7 +1238,7 @@ static void load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
 t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_sw_inf,
                                                   const float R_minW_nmos,
                                                   const float R_minW_pmos) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+
     t_rr_switch_inf rr_switch_inf;
 
     /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
@@ -1568,8 +1583,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
                 if(is_flat) {
-                    class_num_vec = get_cluster_primitive_classes_at_loc(i, j, physical_tile);
-                    pin_num_vec = get_cluster_pins_at_loc(i, j, physical_tile);
+                    class_num_vec = get_cluster_netlist_tile_primitive_classes_at_loc(i, j, physical_tile);
+                    pin_num_vec = get_cluster_netlist_tile_pins_at_loc(i, j, physical_tile);
                 } else {
                     class_num_vec = get_tile_classes(physical_tile);
                     pin_num_vec = get_tile_pins(physical_tile);
@@ -1644,7 +1659,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         // Add intra-tile edges
         add_intra_cluster_edges_rr_graph(rr_graph_builder,
                                          rr_edges_to_create,
-                                         grid);
+                                         grid, is_flat);
         uniquify_edges(rr_edges_to_create);
         alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
         num_edges += rr_edges_to_create.size();
@@ -1974,12 +1989,13 @@ void free_rr_graph() {
 }
 
 static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
-                                 ClusterBlockId cluster_blk_id,
-                                 const int i,
-                                 const int j,
-                                 const int cap,
-                                 t_rr_edge_info_set& rr_edges_to_create,
-                                 const DeviceGrid& grid) {
+                                         ClusterBlockId cluster_blk_id,
+                                         const int i,
+                                         const int j,
+                                         const int abs_cap,
+                                         t_rr_edge_info_set& rr_edges_to_create,
+                                         const DeviceGrid& grid,
+                                         bool /*is_flat*/) {
     /* Internal edges are added from the start tile */
     VTR_ASSERT(grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0);
 
@@ -1990,9 +2006,13 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
     int rel_cap;
     t_logical_block_type_ptr logical_block;
     std::tie(physical_type, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk_id);
-    VTR_ASSERT(cap < physical_type->capacity);
+    VTR_ASSERT(abs_cap < physical_type->capacity);
     VTR_ASSERT(rel_cap >= 0);
 
+//    auto nodes_to_collapse = get_cluster_directly_connected_nodes(cluster_blk_id,
+//                                                                  abs_cap,
+//                                                                  physical_type,
+//                                                                  is_flat);
     const t_pb* pb = cluster_net_list.block_pb(cluster_blk_id);
     std::list<const t_pb*> pb_q;
     pb_q.push_back(pb);
@@ -3622,7 +3642,7 @@ bool pins_connected(t_block_loc cluster_loc,
                                                       logical_block,
                                                       rel_cap,
                                                       to_pb_pin);
-    ;
+
     VTR_ASSERT(to_pin_physical_num != OPEN);
 
     RRNodeId from_node = get_pin_rr_node_id(rr_spatial_look_up, physical_type, x, y, from_pin_physical_num);
@@ -3640,6 +3660,131 @@ bool pins_connected(t_block_loc cluster_loc,
         }
     }
     return false;
+}
+
+static std::vector<std::vector<int>> get_cluster_directly_connected_nodes(ClusterBlockId cluster_blk_id,
+                                                                          int abs_cap,
+                                                                          t_physical_tile_type_ptr physical_type,
+                                                                          bool is_flat) {
+    const auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
+    auto cluster_pin_num_vec = get_cluster_block_pins(physical_type,
+                                              cluster_blk_id,
+                                              abs_cap);
+    auto logical_block = cluster_net_list.block_type(cluster_blk_id);
+
+    std::vector<int> pin_index_vec(get_tile_pin_max_ptc(physical_type, is_flat), -1);
+    std::vector<std::vector<int>> directly_connected_nodes;
+    for(auto pin_physical_num : cluster_pin_num_vec){
+        auto pin_type = get_pin_type_from_pin_physical_num(physical_type, pin_physical_num);
+        VTR_ASSERT(pin_type != OPEN);
+        if(pin_index_vec[pin_physical_num] >= 0){
+            continue;
+        } else {
+            auto node_chain = get_directly_connected_nodes(physical_type,
+                                                           logical_block,
+                                                           cluster_pin_num_vec,
+                                                           pin_physical_num);
+            if(node_chain.size() > 1) {
+                int chain_idx = (int)directly_connected_nodes.size();
+                for(auto pin_in_chain : node_chain) {
+                    VTR_ASSERT(pin_index_vec[pin_in_chain] == -1);
+                    pin_index_vec[pin_in_chain] = chain_idx;
+                }
+                directly_connected_nodes.push_back(node_chain);
+            }
+        }
+    }
+
+    return directly_connected_nodes;
+}
+
+static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr physical_type,
+                                              t_logical_block_type_ptr logical_block,
+                                              const std::vector<int>& cluster_pin_num_vec,
+                                              int pin_physical_num) {
+    std::vector<int> conn_node_chain;
+    conn_node_chain.push_back(pin_physical_num);
+
+    auto is_num_sink_greater_than_one = [&cluster_pin_num_vec] (const std::vector<int>& sink_pins) {
+        int num_cluster_sinks = 0;
+        int single_sink_pin_num = -1;
+        for(auto sink_pin : sink_pins) {
+            if(std::find(cluster_pin_num_vec.begin(), cluster_pin_num_vec.end(), sink_pin) ==
+                cluster_pin_num_vec.end()) {
+                continue;
+            } else {
+                num_cluster_sinks++;
+                single_sink_pin_num = sink_pin;
+            }
+            if(num_cluster_sinks > 1)
+                break;
+        }
+        if(num_cluster_sinks == 1) {
+            return std::make_tuple(true, single_sink_pin_num);
+        } else {
+            return std::make_tuple(false, -1);
+        }
+    };
+
+    auto is_num_src_greater_than_one = [&cluster_pin_num_vec] (const std::vector<int>& src_pins) {
+        int num_cluster_src = 0;
+        int single_src_pin_num = -1;
+        for(auto src_pin : src_pins) {
+            if(std::find(cluster_pin_num_vec.begin(), cluster_pin_num_vec.end(), src_pin) ==
+                cluster_pin_num_vec.end()) {
+                continue;
+            } else {
+                num_cluster_src++;
+                single_src_pin_num = src_pin;
+            }
+            if(num_cluster_src > 1)
+                break;
+        }
+        if(num_cluster_src == 1) {
+            return std::make_tuple(true, single_src_pin_num);
+        } else {
+            return std::make_tuple(false, -1);
+        }
+    };
+
+    // Forward
+    {
+        auto sink_pins = get_physical_pin_sink_pins(physical_type,
+                                                    logical_block,
+                                                    pin_physical_num);
+        auto nxt_sink_pair = is_num_sink_greater_than_one(sink_pins);
+        int curr_pin_num = std::get<1>(nxt_sink_pair);
+
+        while(std::get<0>(nxt_sink_pair)) {
+            conn_node_chain.push_back(curr_pin_num);
+            sink_pins = get_physical_pin_sink_pins(physical_type,
+                                                   logical_block,
+                                                   curr_pin_num);
+            nxt_sink_pair = is_num_sink_greater_than_one(sink_pins);
+            curr_pin_num = std::get<1>(nxt_sink_pair);
+        };
+    }
+
+    // Backward
+    {
+        auto src_pins = get_physical_pin_src_pins(physical_type,
+                                                  logical_block,
+                                                  pin_physical_num);
+        auto nxt_src_pair = is_num_src_greater_than_one(src_pins);
+        int curr_pin_num = std::get<1>(nxt_src_pair);
+
+        while(std::get<0>(nxt_src_pair)) {
+            conn_node_chain.insert(conn_node_chain.begin(), curr_pin_num);
+            src_pins = get_physical_pin_src_pins(physical_type,
+                                                 logical_block,
+                                                 curr_pin_num);
+            nxt_src_pair = is_num_src_greater_than_one(src_pins);
+            curr_pin_num = std::get<1>(nxt_src_pair);
+        }
+    }
+
+
+    return conn_node_chain;
 }
 
 static int find_create_intra_cluster_sw_arch_idx(std::map<int, t_arch_switch_inf>& internal_arch_sw_inf_map,
