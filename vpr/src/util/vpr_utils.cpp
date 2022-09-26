@@ -2425,8 +2425,8 @@ std::vector<int> get_cluster_netlist_tile_primitive_classes_at_loc(const int i,
 }
 
 std::vector<int> get_cluster_netlist_tile_pins_at_loc(const int i,
-                                         const int j,
-                                         t_physical_tile_type_ptr physical_type) {
+                                                      const int j,
+                                                      t_physical_tile_type_ptr physical_type) {
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto grid_block = place_ctx.grid_blocks[i][j];
@@ -2435,15 +2435,21 @@ std::vector<int> get_cluster_netlist_tile_pins_at_loc(const int i,
     pin_num_vec.reserve(physical_type->num_pins + physical_type->internal_pin_class.size());
 
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
+        std::vector<int> cluster_pins;
+        int num_tile_pin_per_inst = physical_type->num_pins / physical_type->capacity;
         if (grid_block.subtile_empty(abs_cap)) {
-            continue;
-        }
-        auto cluster_blk_id = grid_block.blocks[abs_cap];
-        VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
+            cluster_pins.resize(num_tile_pin_per_inst);
+            std::iota(cluster_pins.begin(),
+                      cluster_pins.end(),
+                      abs_cap*num_tile_pin_per_inst);
+        } else {
+            auto cluster_blk_id = grid_block.blocks[abs_cap];
+            VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
 
-        auto cluster_pins = get_cluster_block_pins(physical_type,
-                                                   cluster_blk_id,
-                                                   abs_cap);
+            cluster_pins = get_cluster_block_pins(physical_type,
+                                                  cluster_blk_id,
+                                                  abs_cap);
+        }
         pin_num_vec.insert(pin_num_vec.end(), cluster_pins.begin(), cluster_pins.end());
     }
 
@@ -2456,9 +2462,9 @@ std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
                                         int abs_cap) {
     int max_num_pin =
         (int)(physical_tile->num_pins + physical_tile->internal_pin_class.size()) / physical_tile->capacity;
-    int num_tile_pins_per_inst = physical_tile->num_pins / physical_tile->capacity;
-    std::vector<int> pin_num_vec(num_tile_pins_per_inst);
-    std::iota(pin_num_vec.begin(), pin_num_vec.end(), abs_cap*num_tile_pins_per_inst);
+    int num_tile_pin_per_inst = physical_tile->num_pins / physical_tile->capacity;
+    std::vector<int> pin_num_vec(num_tile_pin_per_inst);
+    std::iota(pin_num_vec.begin(), pin_num_vec.end(), abs_cap*num_tile_pin_per_inst);
 
     pin_num_vec.reserve(max_num_pin);
 
