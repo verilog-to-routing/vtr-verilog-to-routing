@@ -8,7 +8,7 @@ static vtr::vector<NocTrafficFlowId, double> traffic_flow_aggregate_bandwidth_co
 
 /* Keeps track of traffic flows that have been updated at each placement iteration*/
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
-/******************************************************************/
+/*********************************************************** *****************************/
 
 void initial_noc_placement(void) {
     // need to get placement information about where the router cluster blocks are palced on the device
@@ -359,11 +359,11 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         temp_noc_routing_algorithm->route_flow(source_router_block_id, sink_router_block_id, temp_found_noc_route, *noc_model);
 
         // now calculate the costs associated to the current traffic flow and accumulate it to find the total cost of the NoC placement
-        traffic_flow_aggregate_bandwidth_cost[(NocTrafficFlowId)traffic_flow_id] = calculate_traffic_flow_aggregate_bandwidth_cost(temp_found_noc_route, curr_traffic_flow);
-        noc_aggregate_bandwidth_cost_check += traffic_flow_aggregate_bandwidth_cost[(NocTrafficFlowId)traffic_flow_id];
+        double current_flow_aggregate_bandwidth_cost = calculate_traffic_flow_aggregate_bandwidth_cost(temp_found_noc_route, curr_traffic_flow);
+        noc_aggregate_bandwidth_cost_check += current_flow_aggregate_bandwidth_cost;
 
-        traffic_flow_latency_cost[(NocTrafficFlowId)traffic_flow_id] = calculate_traffic_flow_latency_cost(temp_found_noc_route, *noc_model, curr_traffic_flow, noc_opts);
-        noc_latency_cost_check += traffic_flow_latency_cost[(NocTrafficFlowId)traffic_flow_id];
+        double current_flow_latency_cost = calculate_traffic_flow_latency_cost(temp_found_noc_route, *noc_model, curr_traffic_flow, noc_opts);
+        noc_latency_cost_check += current_flow_latency_cost;
 
         // clear the current traffic flow route so we can route the next traffic flow
         temp_found_noc_route.clear();
