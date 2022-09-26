@@ -1507,7 +1507,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             number_of_affected_noc_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, noc_aggregate_bandwidth_delta_c, noc_latency_delta_c, noc_opts);
 
             // Noc include the NoC delata costs in the total cost change for this swap
-            delta_c = delta_c + noc_placement_weighting * (noc_latency_delta_c + noc_aggregate_bandwidth_delta_c);
+            delta_c = delta_c + noc_placement_weighting * (noc_latency_delta_c * costs->noc_latency_cost_norm + noc_aggregate_bandwidth_delta_c * costs->noc_aggregate_bandwidth_cost_norm);
         }
 
         /* 1 -> move accepted, 0 -> rejected. */
