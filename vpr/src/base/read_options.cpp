@@ -2664,7 +2664,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    noc_grp.add_argument<double>(args.noc_latency_constraints_weighting, "--noc_latency_weighting")
+    noc_grp.add_argument<double>(args.noc_latency_weighting, "--noc_latency_weighting")
         .help(
             "Controls the importance of reducing the latencies of the NoC traffic flows."
             "This value can be >=0, where 0 would mean the latencies have no relevance to placement, a value of 1 would mean the latencies  are equally considered to all other placement parameters and a value greater than 1 would mean the placement is increasingly dominated by reducing the latencies of the traffic flows.")
