@@ -424,7 +424,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // setup random number generation
     std::random_device device;
     std::mt19937 rand_num_gen(device());
-    std::uniform_int_distribution<std::mt19937::result_type> dist(0, NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 1);
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0, NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 3);
     // this sets the range of possible bandwidths for a traffic flow
     std::uniform_int_distribution<std::mt19937::result_type> dist_2(0, 1000);
     // this sets the range of possible priorities
@@ -523,7 +523,8 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     int number_of_created_traffic_flows = 0;
 
     // now create a random number of traffic flows
-    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST; cluster_block_number++) {
+    // now we want the last two router clusters to not have any traffic flows associated to them, so restrict this loop to all router clusters except the last two
+    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST-2; cluster_block_number++) {
         // the current cluster block number will act as the source router
         // and we will choose a random router to act as the sink router
 
@@ -531,6 +532,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         ClusterBlockId sink_router_for_traffic_flow;
 
         // randomly choose sink router
+        // make sure the traffic flow does not start and end at the same router and also make sure that the sink router is never that last 2 router cluster blocks (we dont want them associated to any traffic flows)
         do {
             sink_router_for_traffic_flow = (ClusterBlockId)dist(rand_num_gen);
         } while (sink_router_for_traffic_flow == source_router_for_traffic_flow);
@@ -575,7 +577,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     double test_noc_latency_costs = 0;
 
     // we need to route all the traffic flows based on their initial positions
-    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
+    for (int traffic_flow_number = 0; traffic_flow_number < number_of_created_traffic_flows; traffic_flow_number++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
 
         // get the source and sink routers of this traffic flow
@@ -598,7 +600,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // now store update the bandwidths used by all the links based on the initial traffic flow routes
     // also initialize the bandwidth and latency costs for all traffic flows
     // and sum them up to calculate the total initial aggregate bandwidth and latency costs for the NoC
-    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
+    for (int traffic_flow_number = 0; traffic_flow_number < number_of_created_traffic_flows; traffic_flow_number++) {
         const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_number);
 
         for (auto& link : golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number]) {
@@ -640,6 +642,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
      */
     for (int iteration_number = 0; iteration_number < NUM_OF_PLACEMENT_MOVES_NOC_PLACE_UTILS_TEST; iteration_number++) {
         // get the two cluster blocks to swap first
+        // make sure that the two router blocks are not the last two router cluster blocks and also aren't the same clusters themselves
         ClusterBlockId swap_router_block_one = (ClusterBlockId)dist(rand_num_gen);
         ClusterBlockId swap_router_block_two;
         do {
@@ -867,7 +870,142 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // need this function to update the local datastructures that store all the traffic flow costs
     commit_noc_costs(number_of_affected_traffic_flows);
 
-    // now verify the function by comparing the link bandwidths in the noc model (should have been updated by the test function) to the golden set
+    // clear the affected blocks
+    clear_move_blocks(blocks_affected);
+
+    /*
+     * Now we will run a test where one of the router clusters we will swap has no traffic flows associated with it. This will make sure whether the test
+     function currently determines that a router cluster block has no traffic flows and also calculates that cost accordingly (cost of 0)
+     */
+    // start by picking one of the router cluster blocks that dont have any traffic flows as one of our cluster blocks to swap
+    swap_router_block_one = (ClusterBlockId)(NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 1);
+    // the second router block to swap will be one with a traffic flow associated to it
+    swap_router_block_two = (ClusterBlockId)(NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST - 4);
+
+    // now perform the swap
+    //setup the moved blocks datastructure for the test function
+    blocks_affected.num_moved_blocks = 2;
+
+    blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
+
+    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+
+    blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
+    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+
+    // swap the hard router blocks where the two cluster blocks are placed on
+    router_first_swap_cluster_location = router_where_cluster_is_placed[swap_router_block_one];
+    router_where_cluster_is_placed[swap_router_block_one] = router_where_cluster_is_placed[swap_router_block_two];
+    router_where_cluster_is_placed[swap_router_block_two] = router_first_swap_cluster_location;
+
+    // now move the blocks in the placement datastructures
+    place_ctx.block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].new_loc;
+    place_ctx.block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
+
+    // get all the associated traffic flows of the moved cluster blocks
+    // remember that the first cluster block doesnt have any traffic flows associated to it
+    assoc_traffic_flows_block_two = noc_ctx.noc_traffic_flows_storage.get_traffic_flows_associated_to_router_block(swap_router_block_two);
+
+    // this is for the second swapped block
+    for (auto& traffic_flow : *assoc_traffic_flows_block_two) {
+        // get the current traffic flow
+        const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
+
+        // go through the current traffic flow and reduce the bandwidths of the links
+        for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+            golden_link_bandwidths[link] -= curr_traffic_flow.traffic_flow_bandwidth;
+        }
+
+        // re-route the traffic flow
+        routing_algorithm->route_flow(router_where_cluster_is_placed[curr_traffic_flow.source_router_cluster_id], router_where_cluster_is_placed[curr_traffic_flow.sink_router_cluster_id], golden_traffic_flow_routes[traffic_flow], noc_ctx.noc_model);
+
+        // go through the current traffic flow and increase the bandwidths of the links
+        for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
+            golden_link_bandwidths[link] += curr_traffic_flow.traffic_flow_bandwidth;
+        }
+
+        // update the costs now
+        golden_traffic_flow_bandwidth_costs[traffic_flow] = golden_traffic_flow_routes[traffic_flow].size() * curr_traffic_flow.traffic_flow_bandwidth;
+        golden_traffic_flow_bandwidth_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+
+        double curr_traffic_flow_latency = (router_latency * (golden_traffic_flow_routes[traffic_flow].size() + 1)) + (link_latency * golden_traffic_flow_routes[traffic_flow].size());
+
+        golden_traffic_flow_latency_costs[traffic_flow] = (noc_opts.noc_latency_constraints_weighting * (std::max(0., curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency))) + (noc_opts.noc_latency_weighting * curr_traffic_flow_latency);
+        golden_traffic_flow_latency_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
+    }
+
+    // reset the delta costs
+    delta_aggr_band_cost = 0.;
+    delta_laten_cost = 0.;
+
+    // call the test function
+    number_of_affected_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
+
+    // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
+    test_noc_bandwidth_costs += delta_aggr_band_cost;
+    test_noc_latency_costs += delta_laten_cost;
+
+    // need this function to update the local datastructures that store all the traffic flow costs
+    commit_noc_costs(number_of_affected_traffic_flows);
+
+    // clear the affected blocks
+    clear_move_blocks(blocks_affected);
+
+    /*
+     * Now we will run a test where both of the router clusters being swapped
+     do not have traffic flows associated to them. This will make sure whether 
+     the test function currently determines that both router blocks have no 
+     traffic flows associated with them and calculates the cost change accordingly (total cost of 0)
+     */
+    // start by picking one of the router cluster blocks that dont have any traffic flows as one of our cluster blocks to swap
+    swap_router_block_one = (ClusterBlockId)(NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 1);
+    // the second router block to swap will be one with a traffic flow associated to it
+    swap_router_block_two = (ClusterBlockId)(NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST - 2);
+
+    // now perform the swap
+    //setup the moved blocks datastructure for the test function
+    blocks_affected.num_moved_blocks = 2;
+
+    blocks_affected.moved_blocks[0].block_num = swap_router_block_one;
+
+    blocks_affected.moved_blocks[0].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[0].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+
+    blocks_affected.moved_blocks[1].block_num = swap_router_block_two;
+    blocks_affected.moved_blocks[1].old_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_two]).get_router_grid_position_y(), -1);
+    blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
+
+    // swap the hard router blocks where the two cluster blocks are placed on
+    router_first_swap_cluster_location = router_where_cluster_is_placed[swap_router_block_one];
+    router_where_cluster_is_placed[swap_router_block_one] = router_where_cluster_is_placed[swap_router_block_two];
+    router_where_cluster_is_placed[swap_router_block_two] = router_first_swap_cluster_location;
+
+    // now move the blocks in the placement datastructures
+    place_ctx.block_locs[swap_router_block_one].loc = blocks_affected.moved_blocks[0].new_loc;
+    place_ctx.block_locs[swap_router_block_two].loc = blocks_affected.moved_blocks[1].new_loc;
+
+    // we dont have to calculate the costs or update bandwidths because the swapped router blocks do not have any associated traffic flows //
+
+    // reset the delta costs
+    delta_aggr_band_cost = 0.;
+    delta_laten_cost = 0.;
+
+    // call the test function
+    number_of_affected_traffic_flows = find_affected_noc_routers_and_update_noc_costs(blocks_affected, delta_aggr_band_cost, delta_laten_cost, noc_opts);
+
+    // update the test total noc bandwidth and latency costs based on the cost changes found by the test functions
+    test_noc_bandwidth_costs += delta_aggr_band_cost;
+    test_noc_latency_costs += delta_laten_cost;
+
+    // need this function to update the local datastructures that store all the traffic flow costs
+    commit_noc_costs(number_of_affected_traffic_flows);
+
+    // clear the affected blocks
+    clear_move_blocks(blocks_affected);
+
+    // now verify the test function by comparing the link bandwidths in the noc model (should have been updated by the test function) to the golden set
     int number_of_links = golden_link_bandwidths.size();
     for (int link_number = 0; link_number < number_of_links; link_number++) {
         NocLinkId current_link_id = (NocLinkId)link_number;
@@ -880,7 +1018,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     double golden_total_noc_aggr_bandwidth_cost = 0.;
     double golden_total_noc_latency_cost = 0.;
 
-    for (int traffic_flow_number = 0; traffic_flow_number < NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST; traffic_flow_number++) {
+    for (int traffic_flow_number = 0; traffic_flow_number < number_of_created_traffic_flows; traffic_flow_number++) {
 
         golden_total_noc_aggr_bandwidth_cost += golden_traffic_flow_bandwidth_costs[(NocTrafficFlowId)traffic_flow_number];
         golden_total_noc_latency_cost += golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number];
