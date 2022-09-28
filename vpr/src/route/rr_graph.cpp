@@ -3756,22 +3756,18 @@ static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr ph
                                                      bool is_flat) {
     VTR_ASSERT(is_flat);
     std::vector<int> conn_node_chain;
-    conn_node_chain.push_back(pin_physical_num);
 
     // Forward
     {
-        auto conn_sink_pins = get_sink_pins_in_cluster(cluster_pin_num_vec,
-                                                       physical_type,
-                                                       logical_block,
-                                                       pin_physical_num);
-
-        while(conn_sink_pins.size() == 1) {
+        std::vector<int> conn_sink_pins;
+        conn_sink_pins.push_back(pin_physical_num);
+         do {
             int conn_pin_num = conn_sink_pins[0];
             conn_node_chain.push_back(conn_pin_num);
             // To enable route-through, input pins on the primitives are connected to the output pins.
             // To prevent collapsing these nodes, since the input pins are actually also connected to SINK nodes,
             // we added this if-condition
-            if(is_primitive_pin(physical_type, pin_physical_num) &&
+            if(is_primitive_pin(physical_type, conn_pin_num) &&
                 get_pin_type_from_pin_physical_num(physical_type, conn_pin_num) == e_pin_type::RECEIVER){
                 break;
             }
@@ -3779,7 +3775,7 @@ static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr ph
                                                       physical_type,
                                                       logical_block,
                                                       conn_pin_num);
-        }
+        } while(conn_sink_pins.size() == 1);
     }
     return conn_node_chain;
 }
