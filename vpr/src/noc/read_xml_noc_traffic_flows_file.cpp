@@ -101,7 +101,7 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     check_traffic_flow_router_module_type(sink_router_module_name, sink_router_id, single_flow_tag, loc_data, cluster_ctx, noc_router_tile_type);
 
     // store the properties of the traffic flow
-    double traffic_flow_bandwidth = pugiutil::get_attribute(single_flow_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_double(NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE);
+    double traffic_flow_bandwidth = get_traffic_flow_bandwidth(single_flow_tag, loc_data);
 
     double max_traffic_flow_latency = get_max_traffic_flow_latency(single_flow_tag, loc_data);
 
@@ -115,9 +115,25 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
     return;
 }
 
+double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
+
+    double traffic_flow_bandwidth;
+    // holds the bandwidth value as a string so that it can be used to convert to a floating point value (this is done so that scientific notation is supported)
+    std::string traffic_flow_bandwidth_intermediate_val = pugiutil::get_attribute(single_flow_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_string();
+
+    // now convert the value to double
+    traffic_flow_bandwidth = std::atof(traffic_flow_bandwidth_intermediate_val.c_str());
+
+    return traffic_flow_bandwidth;
+
+}
+
 double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
     // default latency constraint is the maximum double val (indicating that there is no constraint)
     double max_traffic_flow_latency = DEFAULT_MAX_TRAFFIC_FLOW_LATENCY;
+
+    // holds the latency value as a string so that it can be used to convert to a floating point value (this is done so that scientific notation is supported)
+    std::string max_traffic_flow_latency_intermediate_val;
 
     // get the corresponding attribute where the latency constraint is stored
     pugi::xml_attribute max_traffic_flow_latency_attribute = pugiutil::get_attribute(single_flow_tag, "latency_cons", loc_data, pugiutil::OPTIONAL);
@@ -125,7 +141,10 @@ double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiut
     // check if the attribute value was provided
     if (max_traffic_flow_latency_attribute) {
         // value was provided, so store it
-        max_traffic_flow_latency = max_traffic_flow_latency_attribute.as_double(NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE);
+        max_traffic_flow_latency_intermediate_val = max_traffic_flow_latency_attribute.as_string();
+
+        // now convert the value to double
+        max_traffic_flow_latency = std::atof(max_traffic_flow_latency_intermediate_val.c_str());
     }
 
     return max_traffic_flow_latency;
@@ -167,13 +186,13 @@ void verify_traffic_flow_router_modules(std::string source_router_name, std::str
 
 void verify_traffic_flow_properties(double traffic_flow_bandwidth, double max_traffic_flow_latency, int traffic_flow_priority, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
     // check that the bandwidth is a positive value
-    if (traffic_flow_bandwidth < 0) {
-        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The traffic flow bandwidths are expected to be positive floating point or integer values.");
+    if (traffic_flow_bandwidth <= 0.) {
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The traffic flow bandwidths are expected to be a non-zero positive floating point or integer values.");
     }
 
     // check that the latency constraint is also a positive value
-    if (max_traffic_flow_latency < 0) {
-        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The latency constraints need to be positive floating point or integer values.");
+    if (max_traffic_flow_latency <= 0.) {
+        vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "The latency constraints need to be a non-zero positive floating point or integer values.");
     }
 
     // check that the priority is a positive non-zero value
