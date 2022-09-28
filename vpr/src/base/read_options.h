@@ -147,7 +147,6 @@ struct t_options {
     argparse::ArgValue<double> noc_latency_constraints_weighting;
     argparse::ArgValue<double> noc_latency_weighting;
 
-
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
     argparse::ArgValue<int> RecomputeCritIter;

@@ -116,7 +116,6 @@ void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_dat
 }
 
 double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
-
     double traffic_flow_bandwidth;
     // holds the bandwidth value as a string so that it can be used to convert to a floating point value (this is done so that scientific notation is supported)
     std::string traffic_flow_bandwidth_intermediate_val = pugiutil::get_attribute(single_flow_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_string();
@@ -125,7 +124,6 @@ double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil
     traffic_flow_bandwidth = std::atof(traffic_flow_bandwidth_intermediate_val.c_str());
 
     return traffic_flow_bandwidth;
-
 }
 
 double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data) {
