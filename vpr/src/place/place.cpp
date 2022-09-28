@@ -719,8 +719,7 @@ void try_place(const t_placer_opts& placer_opts,
                             device_ctx.grid.height() - 1);
     place_move_ctx.first_rlim = first_rlim;
 
-    /* Set the temperature high so essentially all swaps will be accepted   */
-    /* when trying to determine the starting temp for placement inner loop. */
+    /* Set the temperature low to ensure that initial placement quality will be preserved */
     first_t = EPSILON;
 
     t_annealing_state state(annealing_sched, first_t, first_rlim,
@@ -1252,7 +1251,7 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
     VTR_LOG("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
 #endif
 
-    /* Set the initial temperature to 20 times the standard of deviation */
+    /* Set the initial temperature to the standard of deviation divided by 128 */
     /* so that the initial temperature adjusts according to the circuit */
     return (std_dev / 128);
 }
