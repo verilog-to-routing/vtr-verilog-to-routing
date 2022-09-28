@@ -85,11 +85,25 @@ void read_xml_noc_traffic_flows_file(const char* noc_flows_file);
 void process_single_flow(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data, const ClusteringContext& cluster_ctx, NocContext& noc_ctx, t_physical_tile_type_ptr noc_router_tile_type, const std::vector<ClusterBlockId>& cluster_blocks_compatible_with_noc_router_tiles);
 
 /**
+ * @brief Retrieves the user provided bandwidth for the traffic
+ * flow currently being processed. If a bandwidth is not provided then
+ * an error is thrown. If the value provided was not an number then it is 
+ * assigned to an illegal value. 
+ * 
+ * @param single_flow_tag A xml tag that contains the traffic flow information.
+ * @param loc_data Contains location data about the current line in the xml
+ *                 file.
+ * @return double The bandwidth for the currently processed
+ * traffic flow.
+ */
+double get_traffic_flow_bandwidth(pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
+
+/**
  * @brief Retrieves the user provided maximum allowed latency for the traffic
  * flow currently being processed. If a maxmum latency is not provided, then 
  * it is set to DOUBLE_MAX to indicate that there are no constraints on the
- * latency. Finally, if the provided maximu latency was negative or a not a
- * number, then an error is thrown.
+ * latency. If the value provided was not an number then it is assigned to
+ * an illegal value.
  * 
  * @param single_flow_tag A xml tag that contains the traffic flow information.
  * @param loc_data Contains location data about the current line in the xml
@@ -102,9 +116,9 @@ double get_max_traffic_flow_latency(pugi::xml_node single_flow_tag, const pugiut
 /**
  * @brief Retrieves the user provided priority for the traffic flow currently
  * being processed. If a priority was not provided then its set to a default 
- * value of 1 (it has an equal weighting to all other traffic flows). Finally,
- * if the provided weighting was not an integer or grater than 0, then an
- * error is thrown. 
+ * value of 1 (it has an equal weighting to all other traffic flows). If the
+ * value not a number then it is assigned to an illegal value. If a floating
+ * point value is passed, then it is converted to an integer.
  * 
  * @param single_flow_tag A xml tag that contains the traffic flow information.
  * @param loc_data Contains location data about the current line in the xml
@@ -131,8 +145,10 @@ int get_traffic_flow_priority(pugi::xml_node single_flow_tag, const pugiutil::lo
 void verify_traffic_flow_router_modules(std::string source_router_name, std::string sink_router_name, pugi::xml_node single_flow_tag, const pugiutil::loc_data& loc_data);
 
 /**
- * @brief Ensures that the a given traffic flows data transmission size and
- *        latency constraints are not negative values.
+ * @brief Ensures that the a given traffic flows bandwidth and
+ *        latency constraints are not negative or 0. Also checks that
+ *        the traffic flow priorities are not negative or 0. An error
+ *        is thrown if the above conditions are not met.
  * 
  * @param traffic_flow_bandwidth The transmission size betwee the two routers
  *                               in the traffic flow.

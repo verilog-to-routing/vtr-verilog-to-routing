@@ -4551,9 +4551,6 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
     pugi::xml_node noc_topology;
     pugi::xml_node noc_mesh_topology;
 
-    // identifier that lets us know when we could not properly convert an attribute value to a integer
-    int attribute_conversion_failure = -1;
-
     // identifier that lets us know when we could not properly convert a string conversion value
     std::string attribute_conversion_failure_string = "";
 
@@ -4567,16 +4564,26 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
     pugiutil::expect_only_attributes(noc_tag, expected_noc_attributes, loc_data);
 
     // now go through and parse the required attributes for noc tag
-    noc_ref->link_bandwidth = pugiutil::get_attribute(noc_tag, "link_bandwidth", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+    
+    // variables below temporarily store the attribute values as string
+    // this is so that scientific notation can be used for these attributes
+    std::string link_bandwidth_intermediate_val;
+    std::string router_latency_intermediate_val;
+    std::string link_latency_intermediate_val;
 
-    noc_ref->link_latency = pugiutil::get_attribute(noc_tag, "link_latency", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+    link_bandwidth_intermediate_val = pugiutil::get_attribute(noc_tag, "link_bandwidth", loc_data, pugiutil::REQUIRED).as_string();
+    noc_ref->link_bandwidth = std::atof(link_bandwidth_intermediate_val.c_str());
 
-    noc_ref->router_latency = pugiutil::get_attribute(noc_tag, "router_latency", loc_data, pugiutil::REQUIRED).as_double(attribute_conversion_failure);
+    link_latency_intermediate_val = pugiutil::get_attribute(noc_tag, "link_latency", loc_data, pugiutil::REQUIRED).as_string();
+    noc_ref->link_latency = std::atof(link_latency_intermediate_val.c_str());
+
+    router_latency_intermediate_val = pugiutil::get_attribute(noc_tag, "router_latency", loc_data, pugiutil::REQUIRED).as_string();
+    noc_ref->router_latency = std::atof(router_latency_intermediate_val.c_str());
 
     noc_ref->noc_router_tile_name = pugiutil::get_attribute(noc_tag, "noc_router_tile_name", loc_data, pugiutil::REQUIRED).as_string();
 
     // the noc parameters can only be non-zero positive values
-    if ((noc_ref->link_bandwidth < 0) || (noc_ref->link_latency < 0) || (noc_ref->router_latency < 0)) {
+    if ((noc_ref->link_bandwidth <= 0.) || (noc_ref->link_latency <= 0.) || (noc_ref->router_latency <= 0.)) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(noc_tag),
                        "The link bandwidth, link latency and router latency for the NoC must be a positive non-zero value.");
     }
