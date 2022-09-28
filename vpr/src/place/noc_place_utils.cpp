@@ -248,20 +248,18 @@ void recompute_noc_costs(double* new_noc_aggregate_bandwidth_cost, double* new_n
     return;
 }
 
-void update_noc_normalization_factors(t_placer_costs& costs, const t_placer_opts& placer_opts){
-    
+void update_noc_normalization_factors(t_placer_costs& costs, const t_placer_opts& placer_opts) {
     //Prevent the norm factors from going to infinity
-    costs.noc_aggregate_bandwidth_cost_norm = std::min(1/costs.noc_aggregate_bandwidth_cost, MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST);
-    costs.noc_latency_cost_norm = std::min(1/costs.noc_latency_cost, MAX_INV_NOC_LATENCY_COST);
+    costs.noc_aggregate_bandwidth_cost_norm = std::min(1 / costs.noc_aggregate_bandwidth_cost, MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST);
+    costs.noc_latency_cost_norm = std::min(1 / costs.noc_latency_cost, MAX_INV_NOC_LATENCY_COST);
 
-    // reset the placement cost to 1 (similiar to timing driven mode). if placement algorithm is in bounding box mode this would not have been done by default. 
+    // reset the placement cost to 1 (similiar to timing driven mode). if placement algorithm is in bounding box mode this would not have been done by default.
     //This is needed now since with a NoC we have two different factors contributing to the placement costs
-    if (placer_opts.place_algorithm == BOUNDING_BOX_PLACE){
+    if (placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
         costs.cost = 1;
     }
 
     return;
-
 }
 
 double comp_noc_aggregate_bandwidth_cost(void) {
@@ -391,15 +389,14 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
     return error;
 }
 
-double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route, const t_noc_traffic_flow& traffic_flow_info){
+double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLinkId>& traffic_flow_route, const t_noc_traffic_flow& traffic_flow_info) {
     int num_of_links_in_traffic_flow = traffic_flow_route.size();
 
     // the traffic flow aggregate bandwidth cost is scaled by its priority, which dictates its important to the placement
     return (traffic_flow_info.traffic_flow_priority * traffic_flow_info.traffic_flow_bandwidth * num_of_links_in_traffic_flow);
-
 }
 
-double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route, const NocStorage& noc_model, const t_noc_traffic_flow& traffic_flow_info, const t_noc_opts& noc_opts){
+double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route, const NocStorage& noc_model, const t_noc_traffic_flow& traffic_flow_info, const t_noc_opts& noc_opts) {
     // there will always be one more router than links in a traffic flow
     int num_of_links_in_traffic_flow = traffic_flow_route.size();
     int num_of_routers_in_traffic_flow = num_of_links_in_traffic_flow + 1;
@@ -417,7 +414,6 @@ double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic
 
     // scale the latency cost by its priority to indicate its importance
     return (single_traffic_flow_latency_cost * traffic_flow_info.traffic_flow_priority);
-
 }
 
 void allocate_and_load_noc_placement_structs(void) {

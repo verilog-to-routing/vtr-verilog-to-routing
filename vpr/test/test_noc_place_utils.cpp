@@ -18,7 +18,7 @@ namespace {
 
 TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     /** Remainder test functions rely on the function being tested here, so if this fails then all the following tests will fail.**/
-    
+
     // setup random number generation
     std::random_device device;
     std::mt19937 rand_num_gen(device());
@@ -185,16 +185,15 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
     delete routing_algorithm;
 }
 TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
-
-// setup random number generation
+    // setup random number generation
     std::random_device device;
     std::mt19937 rand_num_gen(device());
     std::uniform_int_distribution<std::mt19937::result_type> dist(0, NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 1);
     // this sets the range of possible priorities
     std::uniform_int_distribution<std::mt19937::result_type> dist_1(1, 100);
     // for random double number generation for the bandwidth and latency
-    std::uniform_real_distribution<double> dist_2(0,1000);
-    std::uniform_real_distribution<double> dist_3(1,25);
+    std::uniform_real_distribution<double> dist_2(0, 1000);
+    std::uniform_real_distribution<double> dist_3(1, 25);
     std::default_random_engine double_engine;
 
     // get global datastructures
@@ -302,13 +301,13 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
             break;
         }
     }
-    
+
     noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
 
     // need to route all the traffic flows so create a datstructure to store them here
     std::vector<int> golden_traffic_flow_route_sizes;
     golden_traffic_flow_route_sizes.resize(number_of_created_traffic_flows);
-    
+
     // now go and route all the traffic flows //
     // start by creating the routing alagorithm
     NocRouting* routing_algorithm_global = new XYRouting();
@@ -340,8 +339,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
     // this is needed to setup the global noc packet router and also global datastructures
     initial_noc_placement();
 
-    SECTION("test_comp_noc_aggregate_bandwidth_cost"){
-
+    SECTION("test_comp_noc_aggregate_bandwidth_cost") {
         //initialize all the cost calculator datastructures
         allocate_and_load_noc_placement_structs();
 
@@ -373,8 +371,7 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         delete routing_algorithm;
     }
 
-    SECTION("test_comp_noc_latency_cost"){
-
+    SECTION("test_comp_noc_latency_cost") {
         //initialize all the cost calculator datastructures
         allocate_and_load_noc_placement_structs();
 
@@ -430,9 +427,8 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // this sets the range of possible priorities
     std::uniform_int_distribution<std::mt19937::result_type> dist_1(1, 100);
     // for random double number generation for the latency
-    std::uniform_real_distribution<double> dist_3(1,25);
+    std::uniform_real_distribution<double> dist_3(1, 25);
     std::default_random_engine double_engine;
-
 
     // get global datastructures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
@@ -448,7 +444,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     int curr_router_id;
     int router_grid_position_x;
     int router_grid_position_y;
-    
+
     // noc options used in this test
     // we creae these randomly
     t_noc_opts noc_opts;
@@ -524,7 +520,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     // now create a random number of traffic flows
     // now we want the last two router clusters to not have any traffic flows associated to them, so restrict this loop to all router clusters except the last two
-    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST-2; cluster_block_number++) {
+    for (int cluster_block_number = 0; cluster_block_number < NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 2; cluster_block_number++) {
         // the current cluster block number will act as the source router
         // and we will choose a random router to act as the sink router
 
@@ -618,7 +614,6 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
         test_noc_bandwidth_costs += golden_traffic_flow_bandwidth_costs[(NocTrafficFlowId)traffic_flow_number];
         test_noc_latency_costs += golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number];
-
     }
 
     // initialize noc placement structs
@@ -826,7 +821,6 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
         golden_traffic_flow_latency_costs[traffic_flow] = (noc_opts.noc_latency_constraints_weighting * (std::max(0., curr_traffic_flow_latency - curr_traffic_flow.max_traffic_flow_latency))) + (noc_opts.noc_latency_weighting * curr_traffic_flow_latency);
         golden_traffic_flow_latency_costs[traffic_flow] *= curr_traffic_flow.traffic_flow_priority;
-
     }
 
     // this is for the second swapped block
@@ -875,7 +869,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     /*
      * Now we will run a test where one of the router clusters we will swap has no traffic flows associated with it. This will make sure whether the test
-     function currently determines that a router cluster block has no traffic flows and also calculates that cost accordingly (cost of 0)
+     * function currently determines that a router cluster block has no traffic flows and also calculates that cost accordingly (cost of 0)
      */
     // start by picking one of the router cluster blocks that dont have any traffic flows as one of our cluster blocks to swap
     swap_router_block_one = (ClusterBlockId)(NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 1);
@@ -955,9 +949,9 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
 
     /*
      * Now we will run a test where both of the router clusters being swapped
-     do not have traffic flows associated to them. This will make sure whether 
-     the test function currently determines that both router blocks have no 
-     traffic flows associated with them and calculates the cost change accordingly (total cost of 0)
+     * do not have traffic flows associated to them. This will make sure whether 
+     * the test function currently determines that both router blocks have no 
+     * traffic flows associated with them and calculates the cost change accordingly (total cost of 0)
      */
     // start by picking one of the router cluster blocks that dont have any traffic flows as one of our cluster blocks to swap
     swap_router_block_one = (ClusterBlockId)(NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST - 1);
@@ -1019,7 +1013,6 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     double golden_total_noc_latency_cost = 0.;
 
     for (int traffic_flow_number = 0; traffic_flow_number < number_of_created_traffic_flows; traffic_flow_number++) {
-
         golden_total_noc_aggr_bandwidth_cost += golden_traffic_flow_bandwidth_costs[(NocTrafficFlowId)traffic_flow_number];
         golden_total_noc_latency_cost += golden_traffic_flow_latency_costs[(NocTrafficFlowId)traffic_flow_number];
     }
@@ -1038,7 +1031,7 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // now execute the test function
     recompute_noc_costs(&test_noc_bandwidth_costs, &test_noc_latency_costs);
 
-    // now verify 
+    // now verify
     REQUIRE(vtr::isclose(golden_total_noc_latency_cost, test_noc_latency_costs));
     REQUIRE(vtr::isclose(golden_total_noc_aggr_bandwidth_cost, test_noc_bandwidth_costs));
 
@@ -1048,13 +1041,12 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
     // need to delete local noc routing algorithm
     delete routing_algorithm;
 }
-TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]"){
-
+TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]") {
     // creating local parameters needed for the test
     t_placer_costs costs;
     t_placer_opts placer_opts;
 
-    SECTION("Test case where the bandwidth cost is 0"){
+    SECTION("Test case where the bandwidth cost is 0") {
         costs.noc_aggregate_bandwidth_cost = 0.;
         costs.noc_latency_cost = 1.;
 
@@ -1067,7 +1059,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]"){
         // this should not be +INF and instead trimmed
         REQUIRE(costs.noc_aggregate_bandwidth_cost_norm == 1.0);
     }
-    SECTION("Test case where the latency cost is 0"){
+    SECTION("Test case where the latency cost is 0") {
         costs.noc_aggregate_bandwidth_cost = 1.;
         costs.noc_latency_cost = 0.;
 
@@ -1080,7 +1072,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]"){
         // this should not be +INF and instead trimmed
         REQUIRE(costs.noc_latency_cost_norm == 1.e12);
     }
-    SECTION("Test case where the bandwidth cost is an expected value"){
+    SECTION("Test case where the bandwidth cost is an expected value") {
         costs.noc_aggregate_bandwidth_cost = 1.e9;
         costs.noc_latency_cost = 0.;
 
@@ -1093,7 +1085,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]"){
         // this should not be trimmed
         REQUIRE(costs.noc_aggregate_bandwidth_cost_norm == 1.e-9);
     }
-    SECTION("Test case where the latency cost is an expected value"){
+    SECTION("Test case where the latency cost is an expected value") {
         costs.noc_aggregate_bandwidth_cost = 1.;
         costs.noc_latency_cost = 50.e-12;
 
@@ -1106,7 +1098,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]"){
         // this should not be trimmed
         REQUIRE(costs.noc_latency_cost_norm == 2.e10);
     }
-    SECTION("Test case where the latency cost is lower than the smallest expected value"){
+    SECTION("Test case where the latency cost is lower than the smallest expected value") {
         costs.noc_aggregate_bandwidth_cost = 1.;
         costs.noc_latency_cost = 999.e-15;
 
@@ -1119,7 +1111,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]"){
         // this should not be trimmed
         REQUIRE(costs.noc_latency_cost_norm == 1.e12);
     }
-    SECTION("Test case where the placement algorithm is timing based"){
+    SECTION("Test case where the placement algorithm is timing based") {
         costs.noc_aggregate_bandwidth_cost = 1.;
         costs.noc_latency_cost = 1.;
 
@@ -1142,7 +1134,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]"){
         // cost should not be updated
         REQUIRE(costs.cost == 10.);
     }
-    SECTION("Test case where the placement algorithm is not timing based"){
+    SECTION("Test case where the placement algorithm is not timing based") {
         costs.noc_aggregate_bandwidth_cost = 1.;
         costs.noc_latency_cost = 1.;
 
@@ -1157,8 +1149,7 @@ TEST_CASE("test_update_noc_normalization_factors", "[noc_place_utils]"){
         REQUIRE(costs.cost == 1.);
     }
 }
-TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
-
+TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
     // setup random number generation
     std::random_device device;
     std::mt19937 rand_num_gen(device());
@@ -1168,9 +1159,8 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
     // this sets the range of possible priorities
     std::uniform_int_distribution<std::mt19937::result_type> dist_1(1, 100);
     // for random double number generation for the latency
-    std::uniform_real_distribution<double> dist_3(1,25);
+    std::uniform_real_distribution<double> dist_3(1, 25);
     std::default_random_engine double_engine;
-
 
     // get global datastructures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
@@ -1186,7 +1176,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
     int curr_router_id;
     int router_grid_position_x;
     int router_grid_position_y;
-    
+
     // noc options used in this test
     // we creae these randomly
     t_noc_opts noc_opts;
@@ -1286,7 +1276,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
             break;
         }
     }
-    
+
     noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
 
     // now go and route all the traffic flows //
@@ -1308,7 +1298,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
         // get the source and sink routers of this traffic flow
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
-        
+
         // route it
         routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
     }
@@ -1334,16 +1324,15 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
         }
     }
 
-
     /* The function that is tested here will basically assume all the blocks
-    have been moved back to their original position before being swapped in
-    placement. Then it will re-route the traffic flows with the blocks in
-    their original placement, and update the traffic flow bandwidth.
-
-    So for this test, we will first choose two random blocks to swap, then
-    we will update the link bandwidths within the NoC to imitate this swap.
-    Then we will call the test function to see whether it re-updates the link bandwidths to their original values.
-    */
+     * have been moved back to their original position before being swapped in
+     * placement. Then it will re-route the traffic flows with the blocks in
+     * their original placement, and update the traffic flow bandwidth.
+     *
+     * So for this test, we will first choose two random blocks to swap, then
+     * we will update the link bandwidths within the NoC to imitate this swap.
+     * Then we will call the test function to see whether it re-updates the link bandwidths to their original values.
+     */
 
     // datastructure that keeps track of moved blocks during placement
     t_pl_blocks_to_be_moved blocks_affected(NUM_OF_LOGICAL_ROUTER_BLOCKS_NOC_PLACE_UTILS_TEST);
@@ -1371,7 +1360,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
     blocks_affected.moved_blocks[1].new_loc = t_pl_loc(noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_x(), noc_ctx.noc_model.get_single_noc_router(router_where_cluster_is_placed[swap_router_block_one]).get_router_grid_position_y(), -1);
 
     // swap the hard router blocks where the two cluster blocks are placed on
-    // this is needed to that we can 
+    // this is needed to that we can
     NocRouterId router_first_swap_cluster_location = router_where_cluster_is_placed[swap_router_block_one];
     router_where_cluster_is_placed[swap_router_block_one] = router_where_cluster_is_placed[swap_router_block_two];
     router_where_cluster_is_placed[swap_router_block_two] = router_first_swap_cluster_location;
@@ -1403,7 +1392,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
             // This shouldnt be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
             for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
-                 // update the link bandwidth in the NoC datastructure
+                // update the link bandwidth in the NoC datastructure
                 double current_link_bandwidth = noc_ctx.noc_model.get_single_noc_link(link).get_bandwidth_usage();
                 noc_ctx.noc_model.get_single_mutable_noc_link(link).set_bandwidth_usage(current_link_bandwidth + curr_traffic_flow.traffic_flow_bandwidth);
                 traffic_flow_route.push_back(link);
@@ -1418,7 +1407,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
         if (routed_traffic_flows.find(traffic_flow) == routed_traffic_flows.end()) {
             // get the current traffic flow
             const t_noc_traffic_flow& curr_traffic_flow = noc_ctx.noc_traffic_flows_storage.get_single_noc_traffic_flow(traffic_flow);
-            
+
             std::vector<NocLinkId>& traffic_flow_route = noc_ctx.noc_traffic_flows_storage.get_mutable_traffic_flow_route(traffic_flow);
             traffic_flow_route.clear();
 
@@ -1436,7 +1425,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
             // go through the current traffic flow and reduce the bandwidths of the links (we only update this in the NoC, since these changes should be rectified by the test function)
             // This shouldnt be updated in the golden bandwidths since we are imitating a swap of blocks and not having a real swap of blocks
             for (auto& link : golden_traffic_flow_routes[traffic_flow]) {
-                 // update the link bandwidth in the NoC datastructure
+                // update the link bandwidth in the NoC datastructure
                 double current_link_bandwidth = noc_ctx.noc_model.get_single_noc_link(link).get_bandwidth_usage();
                 noc_ctx.noc_model.get_single_mutable_noc_link(link).set_bandwidth_usage(current_link_bandwidth + curr_traffic_flow.traffic_flow_bandwidth);
                 traffic_flow_route.push_back(link);
@@ -1446,7 +1435,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
         }
     }
 
-    // okay so now we undo the swapped blocks. We dont need to update the block locations in the placement datastructure since we initially never moved the blocks that were mswapped at the start. 
+    // okay so now we undo the swapped blocks. We dont need to update the block locations in the placement datastructure since we initially never moved the blocks that were mswapped at the start.
     // To undoe this we just need to update the noc link bandwidths as if there was no swap (we do this by calling the test function)
     // This should then re-update the noc link bandwidths to their values before we imitated the swap above
     // THe result is that the link bandwidths should match the golden link bandwidths that never changed after the initial router block placement (at a point before block swapping)
@@ -1463,8 +1452,7 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]"){
 
     delete routing_algorithm;
 }
-TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]"){
-
+TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
     // setup random number generation
     std::random_device device;
     std::mt19937 rand_num_gen(device());
@@ -1474,9 +1462,8 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]"){
     // this sets the range of possible priorities
     std::uniform_int_distribution<std::mt19937::result_type> dist_1(1, 100);
     // for random double number generation for the latency
-    std::uniform_real_distribution<double> dist_3(1,25);
+    std::uniform_real_distribution<double> dist_3(1, 25);
     std::default_random_engine double_engine;
-
 
     // get global datastructures
     auto& noc_ctx = g_vpr_ctx.mutable_noc();
@@ -1492,11 +1479,11 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]"){
     int curr_router_id;
     int router_grid_position_x;
     int router_grid_position_y;
-    
+
     // setting the NoC parameters
     noc_ctx.noc_model.set_noc_link_latency(1);
     noc_ctx.noc_model.set_noc_router_latency(1);
-    
+
     double link_latency = 1;
     double router_latency = 1;
 
@@ -1600,7 +1587,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]"){
             break;
         }
     }
-    
+
     noc_ctx.noc_traffic_flows_storage.finshed_noc_traffic_flows_setup();
 
     // now go and route all the traffic flows //
@@ -1622,7 +1609,7 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]"){
         // get the source and sink routers of this traffic flow
         int source_hard_router_id = (size_t)curr_traffic_flow.source_router_cluster_id;
         int sink_hard_routed_id = (size_t)curr_traffic_flow.sink_router_cluster_id;
-        
+
         // route it
         routing_algorithm->route_flow((NocRouterId)source_hard_router_id, (NocRouterId)sink_hard_routed_id, golden_traffic_flow_routes[(NocTrafficFlowId)traffic_flow_number], noc_ctx.noc_model);
     }
@@ -1655,16 +1642,14 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]"){
     // we will set it to what the VTR placer uses
     double error_tolerance = .01;
 
-    SECTION("Case where check place works after initial placement"){
-
+    SECTION("Case where check place works after initial placement") {
         // run the test function
         int error = check_noc_placement_costs(costs, error_tolerance, noc_opts);
 
         // we expect error to be 0 here, meaning the found costs are within the error tolerance of the noc golden costs
         REQUIRE(error == 0);
     }
-    SECTION("Case where the check place fails for both NoC costs"){
-
+    SECTION("Case where the check place fails for both NoC costs") {
         // we need to make the aggregate badnwdith cost and latency cost be a value that is larger or smaller than the tolerance value
         costs.noc_aggregate_bandwidth_cost += (costs.noc_aggregate_bandwidth_cost * error_tolerance * 2);
         costs.noc_latency_cost -= (costs.noc_latency_cost * error_tolerance * 2);

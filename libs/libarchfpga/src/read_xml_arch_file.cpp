@@ -4564,7 +4564,7 @@ static void ProcessNoc(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc
     pugiutil::expect_only_attributes(noc_tag, expected_noc_attributes, loc_data);
 
     // now go through and parse the required attributes for noc tag
-    
+
     // variables below temporarily store the attribute values as string
     // this is so that scientific notation can be used for these attributes
     std::string link_bandwidth_intermediate_val;
