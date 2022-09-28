@@ -788,7 +788,7 @@ void try_place(const t_placer_opts& placer_opts,
         do {
             vtr::Timer temperature_timer;
 
-            outer_loop_update_timing_info(placer_opts, noc_opts, &      costs,                                   num_connections,
+            outer_loop_update_timing_info(placer_opts, noc_opts, &costs, num_connections,
                                           state.crit_exponent, &outer_crit_iter_count,
                                           place_delay_model.get(), placer_criticalities.get(),
                                           placer_setup_slacks.get(), pin_timing_invalidator.get(),
@@ -1882,15 +1882,15 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
  * @param placer_opts Determines the placement mode
  * @param noc_opts Determines if placement includes the NoC
  */
-static void update_placement_cost_normalization_factors(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts){
-    /* Update the cost normalization factors */ 
+static void update_placement_cost_normalization_factors(t_placer_costs* costs, const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {
+    /* Update the cost normalization factors */
     costs->update_norm_factors();
 
     // update the noc normalization factors if the palcement includes the NoC
-    if (noc_opts.noc){
+    if (noc_opts.noc) {
         update_noc_normalization_factors(*costs, placer_opts);
     }
-    
+
     return;
 }
 

@@ -1262,12 +1262,12 @@ struct t_analysis_opts {
 
 // used to store NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
-    bool noc;                          ///<options to turn on hard NoC modeling & optimization
-    std::string noc_flows_file;        ///<name of the file that contains all the traffic flow information in the NoC
-    std::string noc_routing_algorithm; ///<controls the routing algorithm used to route packets within the NoC
-    double noc_placement_weighting; ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
+    bool noc;                                 ///<options to turn on hard NoC modeling & optimization
+    std::string noc_flows_file;               ///<name of the file that contains all the traffic flow information in the NoC
+    std::string noc_routing_algorithm;        ///<controls the routing algorithm used to route packets within the NoC
+    double noc_placement_weighting;           ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
     double noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow contraints range:[0-inf)]
-    double noc_latency_weighting; ///<constrols the significance of the traffic flow latencies relative to the other NoC placement costs
+    double noc_latency_weighting;             ///<constrols the significance of the traffic flow latencies relative to the other NoC placement costs
 };
 
 /**
