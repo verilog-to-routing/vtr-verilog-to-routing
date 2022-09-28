@@ -1067,6 +1067,16 @@ int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, 
     }
 }
 
+bool is_primitive_pin(t_physical_tile_type_ptr physical_tile, int pin_physical_num) {
+    // We assume that pins on the tile are not primitive
+    if(is_pin_on_tile(physical_tile, pin_physical_num)) {
+        return false;
+    } else {
+        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_physical_num);
+        return pb_pin->is_primitive_pin();
+    }
+}
+
 std::vector<const t_pb_graph_pin*> get_pb_graph_node_pb_pins(const t_pb_graph_node* pb_graph_node) {
     std::vector<const t_pb_graph_pin*> pins(pb_graph_node->num_pins());
     int num_added_pins = 0;

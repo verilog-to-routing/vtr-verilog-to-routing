@@ -367,6 +367,8 @@ std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coor
 
 int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
 
+bool is_primitive_pin(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
+
 inline bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_num) {
     return (physical_num < physical_tile->num_pins);
 }

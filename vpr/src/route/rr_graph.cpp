@@ -375,7 +375,8 @@ static std::vector<std::vector<t_pin_chain_node>> get_cluster_directly_connected
 static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr physical_type,
                                                      t_logical_block_type_ptr logical_block,
                                                      const std::vector<int>& cluster_pin_num_vec,
-                                                     int pin_physical_num);
+                                                     int pin_physical_num,
+                                                     bool is_flat);
 
 static bool is_node_chain_sorted(t_physical_tile_type_ptr physical_type,
                                  t_logical_block_type_ptr logical_block,
@@ -3724,7 +3725,8 @@ static std::vector<std::vector<t_pin_chain_node>> get_cluster_directly_connected
             auto node_chain = get_directly_connected_nodes(physical_type,
                                                            logical_block,
                                                            pins_in_cluster,
-                                                           pin_physical_num);
+                                                           pin_physical_num,
+                                                           is_flat);
             if(node_chain.size() > 1) {
                 int num_chain = (int)directly_connected_nodes.size();
                 int chain_idx = get_chain_idx(pin_index_vec, node_chain, num_chain);
@@ -3750,7 +3752,9 @@ static std::vector<std::vector<t_pin_chain_node>> get_cluster_directly_connected
 static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr physical_type,
                                                      t_logical_block_type_ptr logical_block,
                                                      const std::vector<int>& cluster_pin_num_vec,
-                                                     int pin_physical_num) {
+                                                     int pin_physical_num,
+                                                     bool is_flat) {
+    VTR_ASSERT(is_flat);
     std::vector<int> conn_node_chain;
     conn_node_chain.push_back(pin_physical_num);
 
@@ -3764,6 +3768,13 @@ static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr ph
         while(conn_sink_pins.size() == 1) {
             int conn_pin_num = conn_sink_pins[0];
             conn_node_chain.push_back(conn_pin_num);
+            // To enable route-through, input pins on the primitives are connected to the output pins.
+            // To prevent collapsing these nodes, since the input pins are actually also connected to SINK nodes,
+            // we added this if-condition
+            if(is_primitive_pin(physical_type, pin_physical_num) &&
+                get_pin_type_from_pin_physical_num(physical_type, conn_pin_num) == e_pin_type::RECEIVER){
+                break;
+            }
             conn_sink_pins = get_sink_pins_in_cluster(cluster_pin_num_vec,
                                                       physical_type,
                                                       logical_block,
@@ -3797,7 +3808,7 @@ static bool is_node_chain_sorted(t_physical_tile_type_ptr physical_type,
                 return false;
             }
         }
-    }
+     }
 
     return true;
 
