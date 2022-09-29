@@ -590,33 +590,41 @@ def vtr_command_main(arg_list, prog=None):
         return_status = exit_status
 
     finally:
-        seconds = datetime.now() - start
+        write_vtr_summary(start, error_status, exit_status, temp_dir)
 
-        print(
-            "{status} (took {time}, "
-            "overall memory peak {stage[0]} consumed by {stage[1]} run)".format(
-                status=error_status,
-                time=vtr.format_elapsed_time(seconds),
-                stage=get_max_memory_usage(temp_dir),
-            )
-        )
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        out = temp_dir / "output.txt"
-        out.touch()
-        with out.open("w") as file:
-            file.write("vpr_status=")
-            if exit_status == 0:
-                file.write("success\n")
-            else:
-                file.write("exited with return code {}\n".format(exit_status))
-            file.write(
-                "vpr_seconds=%d\nrundir=%s\nhostname=%s\nerror="
-                % (seconds.total_seconds(), str(Path.cwd()), socket.gethostname())
-            )
-            file.write("\n")
     if __name__ == "__main__":
         sys.exit(return_status)
     return return_status
+
+
+def write_vtr_summary(start, error_status, exit_status, temp_dir):
+    """
+    Write the summary of the results in vtr flow.
+    Keep 15 variable limits of pylint in function vtr_command_main.
+    """
+    seconds = datetime.now() - start
+    print(
+        "{status} (took {time}, "
+        "overall memory peak {stage[0]} consumed by {stage[1]} run)".format(
+            status=error_status,
+            time=vtr.format_elapsed_time(seconds),
+            stage=get_max_memory_usage(temp_dir),
+        )
+    )
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    out = temp_dir / "output.txt"
+    out.touch()
+    with out.open("w") as file:
+        file.write("vpr_status=")
+        if exit_status == 0:
+            file.write("success\n")
+        else:
+            file.write("exited with return code {}\n".format(exit_status))
+        file.write(
+            "vpr_seconds=%d\nrundir=%s\nhostname=%s\nerror="
+            % (seconds.total_seconds(), str(Path.cwd()), socket.gethostname())
+        )
+        file.write("\n")
 
 
 def process_unknown_args(unknown_args):
