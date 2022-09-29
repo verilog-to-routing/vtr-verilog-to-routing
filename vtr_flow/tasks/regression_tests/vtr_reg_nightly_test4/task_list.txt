@@ -1,3 +1,4 @@
 regression_tests/vtr_reg_nightly_test4/koios_multi_arch
 regression_tests/vtr_reg_nightly_test4/koios
-regression_tests/vtr_reg_nightly_test4/koios_no_complex_dsp
+regression_tests/vtr_reg_nightly_test4/koios_no_hard_block
+regression_tests/vtr_reg_nightly_test4/koios_yosys_odin

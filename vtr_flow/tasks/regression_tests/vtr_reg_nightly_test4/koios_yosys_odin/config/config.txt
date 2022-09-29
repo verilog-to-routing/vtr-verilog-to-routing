@@ -13,14 +13,15 @@ archs_dir=arch/COFFE_22nm
 includes_dir=benchmarks/verilog/koios
 
 # Add circuits to list to sweep
-circuit_list_add=clstm_like.small.v
-circuit_list_add=clstm_like.medium.v
-circuit_list_add=clstm_like.large.v
-circuit_list_add=lstm.v
-circuit_list_add=tpu_like.medium.v
-circuit_list_add=tiny_darknet_like.small.v
-circuit_list_add=tiny_darknet_like.medium.v
-circuit_list_add=dla_like.medium.v
+circuit_list_add=bwave_like.float.small
+circuit_list_add=bwave_like.fixed.large
+circuit_list_add=lenet
+circuit_list_add=dnnweaver
+circuit_list_add=tdarknet_like.small
+circuit_list_add=proxy.5
+circuit_list_add=proxy.6
+circuit_list_add=proxy.7
+circuit_list_add=proxy.8
 
 # Add architectures to list to sweep
 arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
@@ -42,5 +43,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-track_memory_usage -crit_path_router_iterations 100 --route_chan_width 300
-
+script_params=-track_memory_usage -crit_path_router_iterations 100 --route_chan_width 300 -fflegalize -elaborator yosys 
