@@ -1,4 +1,6 @@
 module NoC_adapter(
+    clk,
+    reset,
     master_tready,
     master_tdata,
     master_tstrb,
@@ -7,6 +9,7 @@ module NoC_adapter(
     master_tdest,
     master_tuser,
     master_tlast,
+    slave_tvalid,
     slave_tready,
     slave_tdata,
     slave_tstrb,
@@ -23,11 +26,12 @@ parameter byte_dw = 8;
 /*****************INPUT/OUTPUT Definition********************/
 
 /*control signal*/
-
+input wire clk;
+input wire reset;
 
 /*Master*/
 input wire master_tready;
-output wire master_tready;
+//output wire master_tready;
 output wire [noc_dw - 1 : 0] master_tdata;
 output wire [noc_dw / byte_dw - 1 : 0] master_tstrb;
 output wire [noc_dw / byte_dw - 1 : 0] master_tkeep;
@@ -54,6 +58,9 @@ output wire slave_tready;
 //register the output port
 
 //vqm2blif flow
+
+
+
 
 
 endmodule 
