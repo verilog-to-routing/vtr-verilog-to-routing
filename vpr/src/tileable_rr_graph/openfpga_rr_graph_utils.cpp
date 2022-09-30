@@ -149,7 +149,7 @@ bool is_opin_direct_connected_ipin(const RRGraphView& rr_graph,
 
     VTR_ASSERT(1 == rr_graph.node_out_edges(node).size());
     for (auto edge : rr_graph.node_out_edges(node)) {
-        const RRNodeId& sink_node = rr_graph.edge_sink_node(RREdgeId(edge));
+        const RRNodeId& sink_node = rr_graph.edge_sink_node(node, edge);
         if (IPIN != rr_graph.node_type(sink_node)) {
             return false;
         }
