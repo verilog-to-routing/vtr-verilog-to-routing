@@ -1425,7 +1425,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 RRNodeId ipin_node_id = rr_graph.node_lookup().find_node(to_grid_coordinate.x() - to_grid_width_ofs,
                                                                                 to_grid_coordinate.y() - to_grid_height_ofs,
                                                                                 IPIN, ipin, ipin_grid_side[0]);
-                
+                /* 
                 VTR_LOG("Direct connection: from grid[%lu][%lu].pin[%lu] at side %s to grid[%lu][%lu].pin[%lu] at side %s\n",
                         from_grid_coordinate.x() - from_grid_width_ofs,
                         from_grid_coordinate.y() - from_grid_height_ofs,
@@ -1433,6 +1433,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                         to_grid_coordinate.x() - to_grid_width_ofs,
                         to_grid_coordinate.y() - to_grid_height_ofs,
                         ipin, SIDE_STRING[ipin_grid_side[0]]);
+                 */
 
                 /* add edges to the opin_node */
                 VTR_ASSERT(opin_node_id && ipin_node_id);
