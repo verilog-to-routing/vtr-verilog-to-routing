@@ -355,6 +355,10 @@ t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile
 
 const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
+const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_type,
+                                                       t_logical_block_type_ptr logical_block,
+                                                       int pin_physical_num);
+
 t_pb_graph_pin* get_mutable_pb_pin_from_pin_physical_num(t_physical_tile_type* physical_tile, t_logical_block_type* logical_block, int physical_num);
 
 PortEquivalence get_port_equivalency_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num);
@@ -419,6 +423,11 @@ int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
                                 int pin_physical_num,
                                 int sink_physical_num);
+
+float get_edge_delay(t_physical_tile_type_ptr physical_type,
+                     t_logical_block_type_ptr logical_block,
+                     int src_pin_physical_num,
+                     int sink_pin_physical_num);
 
 /* */
 

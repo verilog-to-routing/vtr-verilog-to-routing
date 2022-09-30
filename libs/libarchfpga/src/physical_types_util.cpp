@@ -1005,6 +1005,22 @@ const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr 
     return logical_block->pin_logical_num_to_pb_pin_mapping.at(logical_num);
 }
 
+const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_type,
+                                                       t_logical_block_type_ptr logical_block,
+                                                       int pin_physical_num) {
+    const t_pb_graph_pin* pb_pin;
+    if(is_pin_on_tile(physical_type, pin_physical_num)) {
+        pb_pin = get_tile_pin_pb_pin(physical_type,
+                                     logical_block,
+                                     pin_physical_num);
+    } else {
+        pb_pin = get_pb_pin_from_pin_physical_num(physical_type,
+                                                  pin_physical_num);
+    }
+
+    return pb_pin;
+}
+
 t_pb_graph_pin* get_mutable_pb_pin_from_pin_physical_num(t_physical_tile_type* physical_tile, t_logical_block_type* logical_block, int physical_num) {
     VTR_ASSERT(physical_num >= physical_tile->num_pins);
     int logical_num = get_pin_logical_num_from_pin_physical_num(physical_tile, physical_num);
@@ -1378,5 +1394,36 @@ bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
             return true;
         }
     }
+}
+
+float get_edge_delay(t_physical_tile_type_ptr physical_type,
+                     t_logical_block_type_ptr logical_block,
+                     int src_pin_physical_num,
+                     int sink_pin_physical_num) {
+    float delay = 0.;
+    const t_pb_graph_pin* src_pb_pin = get_pb_pin_from_pin_physical_num(physical_type,
+                                                                        logical_block,
+                                                                        src_pin_physical_num);
+    const t_pb_graph_pin* sink_pb_pin = get_pb_pin_from_pin_physical_num(physical_type,
+                                                                         logical_block,
+                                                                         sink_pin_physical_num);
+
+    bool edge_found = false;
+    for(int out_edge_idx = 0; out_edge_idx < src_pb_pin->num_output_edges; out_edge_idx++) {
+        auto edge = src_pb_pin->output_edges[out_edge_idx];
+        for(int out_pin_idx = 0; out_pin_idx < edge->num_output_pins; out_pin_idx++) {
+            if(edge->output_pins[out_pin_idx] == sink_pb_pin) {
+                delay = edge->delay_max;
+                edge_found = true;
+                break;
+            }
+        }
+        if(edge_found) {
+            break;
+        }
+    }
+
+    VTR_ASSERT(edge_found);
+    return delay;
 }
 /* */
