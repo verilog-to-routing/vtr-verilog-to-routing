@@ -24,6 +24,9 @@ When disabling these advanced features (by not defining `complex_dsp` as mention
 
 If users want to use a different FPGA architecture file, they can replace the macro instantiations in the benchmarks with their equivalents from the FPGA architectures they wish to use.
 
+## Proxy benchmarks
+In Koios 2.0, there are 8 synthetic/proxy benchmarks. These were generated using a framework that is present [here](https://github.com/UT-LCA/koios_proxy_benchmarks). To generate more benchmarks using this framework, use the generate_benchmark.py script.
+
 ## Regressions
 Koios benchmarks are tested by the following regression tests in VTR:
 | Suite         |Test Description      | Config file   | Wall-clock time   |
