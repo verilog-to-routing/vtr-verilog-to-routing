@@ -20,7 +20,7 @@ circuit_list_add=proxy.2.v
 circuit_list_add=tdarknet_like.large.v
 circuit_list_add=proxy.4.v
 circuit_list_add=proxy.1.v
-circuit_list_add=bwave_like_float.large.v
+circuit_list_add=bwave_like.float.large.v
 circuit_list_add=proxy.3.v
 
 # Add architectures to list to sweep
