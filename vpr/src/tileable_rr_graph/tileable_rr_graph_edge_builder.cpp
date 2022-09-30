@@ -150,7 +150,6 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
             rr_graph_builder.build_edges(true);
         }
     }
-    VTR_LOG("Number of edges to create: %ld\n", num_edges_to_create);
 }
 
 /************************************************************************
