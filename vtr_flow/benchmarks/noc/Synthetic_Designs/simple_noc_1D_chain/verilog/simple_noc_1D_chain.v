@@ -1,6 +1,7 @@
 module simple_noc_1D_chain (
     clk,
-    reset
+    reset,
+	 data_out
 );
 
 parameter noc_dw = 32; //NoC Data Width
@@ -9,6 +10,8 @@ parameter byte_dw = 8;
 /*****************INPUT/OUTPUT Definition********************/
 input wire clk;
 input wire reset;
+
+output wire [noc_dw * 2 - 1:0] data_out;
 
 /*******************Internal Variables**********************/
 //traffic generator
@@ -121,7 +124,7 @@ traffic_processor tp(
 	.reset(reset),
 	.tdata(s_data),
 	.tvalid(s_valid),
-	.o_sum()
+	.o_sum(data_out)
 );
 
 endmodule
