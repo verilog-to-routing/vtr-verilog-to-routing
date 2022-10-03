@@ -2297,11 +2297,10 @@ static void add_chain_edges(RRGraphBuilder& rr_graph_builder,
                                                      i,
                                                      j,
                                                      pin_num);
-            float edge_delay = get_delay_directly_connected_pins(physical_type,
-                                                                 logical_block,
-                                                                 cluster_pins,
-                                                                 sink_pin_num,
-                                                                 pin_num);
+            float edge_delay = get_edge_delay(physical_type,
+                                              logical_block,
+                                              sink_pin_num,
+                                              pin_num);
 
             int sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
                                                            start_internal_edge_num,
