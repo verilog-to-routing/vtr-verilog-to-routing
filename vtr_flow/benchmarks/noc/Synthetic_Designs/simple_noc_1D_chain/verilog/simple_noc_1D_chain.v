@@ -56,7 +56,7 @@ master_interface mi (
 noc_router_adapter_block na1(
 	.clk(clk),
     .reset(reset),
-    .master_tready(),
+    .master_tready(1'd0),
     .master_tdata(),
 	.master_tvalid(),
     .master_tstrb(),
@@ -68,12 +68,12 @@ noc_router_adapter_block na1(
     .slave_tvalid(m_valid),
     .slave_tready(m_ready), 
     .slave_tdata(m_data),
-    .slave_tstrb(),
-    .slave_tkeep(),
-    .slave_tid(),
-    .slave_tdest(),
-    .slave_tuser(),
-    .slave_tlast(),
+    .slave_tstrb(8'd0),
+    .slave_tkeep(8'd0),
+    .slave_tid(8'd0),
+    .slave_tdest(8'd0),
+    .slave_tuser(8'd0),
+    .slave_tlast(1'd0),
 
 );
 
@@ -89,15 +89,15 @@ noc_router_adapter_block na2(
     .master_tdest(),
     .master_tuser(),
     .master_tlast(),
-    .slave_tvalid(),
+    .slave_tvalid(1'd0),
     .slave_tready(), 
-    .slave_tdata(),
-    .slave_tstrb(),
-    .slave_tkeep(),
-    .slave_tid(),
-    .slave_tdest(),
-    .slave_tuser(),
-    .slave_tlast(),
+    .slave_tdata(32'd0),
+    .slave_tstrb(8'd0),
+    .slave_tkeep(8'd0),
+    .slave_tid(8'd0),
+    .slave_tdest(8'd0),
+    .slave_tuser(8'd0),
+    .slave_tlast(1'd0),
 );
 
 slave_interface si(
@@ -108,12 +108,12 @@ slave_interface si(
 	.tready(s_ready),
 	.tdata_out(s_data),
 	.tvalid_out(s_valid),
-	.tstrb(),
-	.tkeep(),
-	.tid(),
-	.tdest(),
-	.tuser(),
-	.tlast()
+	.tstrb(8'd0),
+	.tkeep(8'd0),
+	.tid(8'd0),
+	.tdest(8'd0),
+	.tuser(8'd0),
+	.tlast(1'd0)
 );
 
 traffic_processor tp(
