@@ -98,7 +98,9 @@ target_include_directories(libvtrutil PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libvtrutil PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Ensure version is always up to date by requiring version to be run first
-add_dependencies(libvtrutil version)
+if (VTR_ENABLE_VERSION_UP_TO_DATE)
+    add_dependencies(libvtrutil version)
+endif()
 
 #Specify link-time dependencies
 target_link_libraries(libvtrutil
