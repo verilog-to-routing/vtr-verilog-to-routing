@@ -1,8 +1,9 @@
-module NoC_adapter(
+module noc_router_adapter_block(
     clk,
     reset,
     master_tready,
     master_tdata,
+    master_tvalid,
     master_tstrb,
     master_tkeep,
     master_tid,
@@ -31,7 +32,7 @@ input wire reset;
 
 /*Master*/
 input wire master_tready;
-//output wire master_tready;
+output reg master_tvalid; /* synthesis preserve */
 output reg [noc_dw - 1 : 0] master_tdata; /* synthesis preserve */
 output reg [noc_dw / byte_dw - 1 : 0] master_tstrb; /* synthesis preserve */
 output reg [noc_dw / byte_dw - 1 : 0] master_tkeep; /* synthesis preserve */

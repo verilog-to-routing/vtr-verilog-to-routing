@@ -1,3 +1,7 @@
+/* This is the traffic generator module. This
+	generate data to be sent over the NoC to the
+	traffic processor module*/
+	
 module traffic_generator(
     clk,
     reset,
