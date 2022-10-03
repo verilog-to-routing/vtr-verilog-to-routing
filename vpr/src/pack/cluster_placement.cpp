@@ -262,7 +262,6 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
     bool success;
     if (pb_type->modes == nullptr) {
         placement_primitive = new t_cluster_placement_primitive;
-        *placement_primitive = t_cluster_placement_primitive();
         placement_primitive->pb_graph_node = pb_graph_node;
         placement_primitive->valid = true;
         pb_graph_node->cluster_placement_primitive = placement_primitive;
@@ -275,7 +274,6 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
                        == pb_graph_node->pb_type) {
                 if (cluster_placement_stats->valid_primitives[i] == nullptr) {
                     cluster_placement_stats->valid_primitives[i] = new t_cluster_placement_primitive; /* head of linked list is empty, makes it easier to remove nodes later */
-                    *cluster_placement_stats->valid_primitives[i] = t_cluster_placement_primitive();
                     cluster_placement_stats->num_pb_types++;
                 }
                 success = true;
