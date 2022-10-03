@@ -227,7 +227,7 @@ void free_pack_molecules(t_pack_molecule* list_of_pack_molecules) {
 /**
  * Free linked lists found in cluster_placement_stats_list
  */
-void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats_list) {
+void free_cluster_placement_stats(std::vector<t_cluster_placement_stats>& cluster_placement_stats_list) {
     t_cluster_placement_primitive *cur, *next;
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -260,7 +260,7 @@ void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_s
             }
             delete cluster_placement_stats_list[index].valid_primitives[j];
         }
-        delete[] cluster_placement_stats_list[index].valid_primitives;
+    
     }
-    delete[] cluster_placement_stats_list;
+
 }

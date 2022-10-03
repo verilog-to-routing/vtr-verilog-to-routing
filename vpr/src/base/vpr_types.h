@@ -429,7 +429,7 @@ struct t_cluster_placement_stats {
     int num_pb_types;                                 ///<num primitive pb_types inside complex block
     bool has_long_chain;                              ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
     const t_pack_molecule* curr_molecule;             ///<current molecule being considered for packing
-    t_cluster_placement_primitive** valid_primitives; ///<[0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty
+    std::vector<t_cluster_placement_primitive*> valid_primitives; ///<[0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty
     t_cluster_placement_primitive* in_flight;         ///<ptrs to primitives currently being considered
     t_cluster_placement_primitive* tried;             ///<ptrs to primitives that are open but current logic block unable to pack to
     t_cluster_placement_primitive* invalid;           ///<ptrs to primitives that are invalid
@@ -1673,6 +1673,6 @@ void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
 /**
  * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.
  */
-void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
+void free_cluster_placement_stats(std::vector<t_cluster_placement_stats>& cluster_placement_stats);
 
 #endif

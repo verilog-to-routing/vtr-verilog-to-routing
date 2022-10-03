@@ -306,13 +306,13 @@ struct ClusteringHelperContext : public Context {
     std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
 
     // Stats keeper for placement information during packing/clustering
-    t_cluster_placement_stats* cluster_placement_stats;
+    std::vector<t_cluster_placement_stats> cluster_placement_stats;
 
     // total number of models in the architecture
     int num_models;
 
     int max_cluster_size;
-    t_pb_graph_node** primitives_list;
+    std::vector<t_pb_graph_node*> primitives_list;
 
     bool enable_pin_feasibility_filter;
     int feasible_block_array_size;
@@ -327,7 +327,8 @@ struct ClusteringHelperContext : public Context {
     t_ext_pin_util_targets target_external_pin_util;
 
     ~ClusteringHelperContext() {
-        delete[] primitives_list;
+        cluster_placement_stats.clear();
+        primitives_list.clear();
     }
 };
 
