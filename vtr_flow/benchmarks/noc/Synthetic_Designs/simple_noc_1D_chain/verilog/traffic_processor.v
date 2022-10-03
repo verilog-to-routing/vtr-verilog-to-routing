@@ -3,33 +3,27 @@
 	accumulates it.
 */
 module traffic_processor (
-									i_clk,
-									i_reset,
-									i_data,
-									i_data_valid,
-									o_sum);
+	clk,
+	reset,
+	tdata,
+	tvalid,
+	o_sum
+);
 
-// parameter declarations
-parameter 				INPUT_DATA_SIZE	= 32;
+/*****************Parameter Declarations********************/
+parameter INPUT_DATA_SIZE = 32;
 
-// port declarations
-input											i_clk				;
-input											i_reset			;
-input		[INPUT_DATA_SIZE-1:0]		i_data			;
-input											i_data_valid	;
+/*****************INPUT/OUTPUT Definition********************/
+input wire clk;
+input wire reset;
+input wire [INPUT_DATA_SIZE-1:0] tdata;
+input tvalid;
 
-output	[INPUT_DATA_SIZE*2-1:0]		o_sum				;
-
-// port wires
-wire 											i_clk				;
-wire 											i_reset			;
-wire 		[INPUT_DATA_SIZE-1:0]		i_data			;
-wire 											i_data_valid	;
-wire 		[INPUT_DATA_SIZE*2-1:0]		o_sum				;
+output wire [INPUT_DATA_SIZE*2-1:0] o_sum;
 
 
 /*
-	This module will wait on the i_data_valid signal
+	This module will wait on the tvalid signal
 	to indicate whether data is available to read
 	in from the input. When the data is read in, it is
 	then added to the output signal. The output will act
@@ -37,25 +31,22 @@ wire 		[INPUT_DATA_SIZE*2-1:0]		o_sum				;
 
 */
 
-// internal variables
+/*******************Internal Variables**********************/
 reg [INPUT_DATA_SIZE*2-1:0]		sum_reg;
 wire [INPUT_DATA_SIZE*2-1:0]		data_extended;
 
+/******************Sequential Logic*************************/
 // make the input data size equal to the output data size
-assign data_extended = {{INPUT_DATA_SIZE{1'b0}}, i_data};
-
+assign data_extended = {{INPUT_DATA_SIZE{1'b0}}, tdata};
 // handle the accumulation
-always @(posedge i_clk)
+always @(posedge clk)
 begin
-	if (i_reset)
-		begin
-		sum_reg <= 0;
+	if (reset)begin
+			sum_reg <= 0;
 		end
-	else
-		begin
-			if (i_data_valid)
-			begin
-			sum_reg <= sum_reg + data_extended;
+	else begin
+			if (tvalid) begin
+				sum_reg <= sum_reg + data_extended;
 			end
 		end
 end
