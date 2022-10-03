@@ -2285,57 +2285,81 @@ static void add_chain_edges(RRGraphBuilder& rr_graph_builder,
                                                   i,
                                                   j,
                                                   sink_pin_num);
+    VTR_ASSERT(sink_rr_node_id != RRNodeId::INVALID());
     if(pin_physical_num == sink_pin_num) {
-        return;
-    } else if(is_pin_on_tile(physical_type, pin_physical_num)){
-        VTR_ASSERT(get_src_pins_in_cluster(cluster_pins, physical_type, logical_block, pin_physical_num).empty());
-        float chain_delay = get_delay_directly_connected_pins(physical_type,
-                                                              logical_block,
-                                                              cluster_pins,
-                                                              pin_physical_num,
-                                                              sink_pin_num);
-        RRNodeId rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
-                                                 physical_type,
-                                                 i,
-                                                 j,
-                                                 pin_physical_num);
-
-        src_node_edge_pair.insert(std::make_pair(rr_node_id, chain_delay));
-
-    } else {
-        num_collapsed_pins++;
-        auto src_pins = get_src_pins_in_cluster(cluster_pins,
-                                                physical_type,
-                                                logical_block,
-                                                pin_physical_num);
-        for(auto src_pin : src_pins) {
-            if(std::find(chain_pins.begin(), chain_pins.end(), src_pin) != chain_pins.end()) {
-                continue;
-            }
-            float delay = get_min_delay_to_chain(physical_type,
-                                                 logical_block,
-                                                 cluster_pins,
-                                                 chain_pins,
-                                                 src_pin,
-                                                 sink_pin_num);
+        auto sink_pins = get_sink_pins_in_cluster(cluster_pins,
+                                                  physical_type,
+                                                  logical_block,
+                                                  pin_physical_num);
+        for(auto pin_num : sink_pins) {
             RRNodeId rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                      physical_type,
                                                      i,
                                                      j,
-                                                     src_pin);
-            src_node_edge_pair.insert(std::make_pair(rr_node_id, delay));
+                                                     pin_num);
+            float edge_delay = get_delay_directly_connected_pins(physical_type,
+                                                                 logical_block,
+                                                                 cluster_pins,
+                                                                 sink_pin_num,
+                                                                 pin_num);
+
+            int sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
+                                                           start_internal_edge_num,
+                                                           edge_delay);
+
+            rr_edges_to_create.emplace_back(sink_rr_node_id, rr_node_id, sw);
         }
-    }
+    } else {
+        if(is_pin_on_tile(physical_type, pin_physical_num)){
+            VTR_ASSERT(get_src_pins_in_cluster(cluster_pins, physical_type, logical_block, pin_physical_num).empty());
+            float chain_delay = get_delay_directly_connected_pins(physical_type,
+                                                                  logical_block,
+                                                                  cluster_pins,
+                                                                  pin_physical_num,
+                                                                  sink_pin_num);
+            RRNodeId rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
+                                                     physical_type,
+                                                     i,
+                                                     j,
+                                                     pin_physical_num);
 
-    VTR_ASSERT(sink_rr_node_id != RRNodeId::INVALID());
+            src_node_edge_pair.insert(std::make_pair(rr_node_id, chain_delay));
+
+        } else {
+            num_collapsed_pins++;
+            auto src_pins = get_src_pins_in_cluster(cluster_pins,
+                                                    physical_type,
+                                                    logical_block,
+                                                    pin_physical_num);
+            for(auto src_pin : src_pins) {
+                if(std::find(chain_pins.begin(), chain_pins.end(), src_pin) != chain_pins.end()) {
+                    continue;
+                }
+                float delay = get_min_delay_to_chain(physical_type,
+                                                     logical_block,
+                                                     cluster_pins,
+                                                     chain_pins,
+                                                     src_pin,
+                                                     sink_pin_num);
+                RRNodeId rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
+                                                         physical_type,
+                                                         i,
+                                                         j,
+                                                         src_pin);
+                src_node_edge_pair.insert(std::make_pair(rr_node_id, delay));
+            }
+        }
+
+        VTR_ASSERT(sink_rr_node_id != RRNodeId::INVALID());
 
 
-    for(auto src_pair : src_node_edge_pair) {
-        VTR_ASSERT(src_pair.first != RRNodeId::INVALID());
-        int sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
-                                                       start_internal_edge_num,
-                                                       src_pair.second);
-        rr_edges_to_create.emplace_back(src_pair.first, sink_rr_node_id, sw);
+        for(auto src_pair : src_node_edge_pair) {
+            VTR_ASSERT(src_pair.first != RRNodeId::INVALID());
+            int sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
+                                                           start_internal_edge_num,
+                                                           src_pair.second);
+            rr_edges_to_create.emplace_back(src_pair.first, sink_rr_node_id, sw);
+        }
     }
 
 }
