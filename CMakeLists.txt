@@ -31,6 +31,7 @@ option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
+option(VTR_ENABLE_VERSION_UP_TO_DATE "Enable version number up-to-date during compilation" ON) 
 
 #Allow the user to decide whether to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
