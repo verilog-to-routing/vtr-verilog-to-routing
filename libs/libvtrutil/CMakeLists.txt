@@ -61,7 +61,7 @@ endif()
 # 2) The custom command depends on the touched version input file and generates the processed 
 #    version file, with updated values. The custom command uses the configure_version.cmake 
 #    script to generate the up-to-date vtr_version.cpp
-if (VTR_ENABLE_VERSION_UP_TO_DATE)
+if (VTR_ENABLE_VERSION)
     add_custom_target(version ALL
         COMMAND ${CMAKE_COMMAND} -E touch ${VTR_VERSION_FILE_IN})
     
@@ -79,6 +79,9 @@ if (VTR_ENABLE_VERSION_UP_TO_DATE)
         MAIN_DEPENDENCY ${VTR_VERSION_FILE_IN}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     	VERBATIM)
+else()
+# Just copy the input file to output file with version number
+    configure_file(${VTR_VERSION_FILE_IN} ${VTR_VERSION_FILE_OUT})
 endif()
 
 #
@@ -99,7 +102,7 @@ target_include_directories(libvtrutil PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libvtrutil PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Ensure version is always up to date by requiring version to be run first
-if (VTR_ENABLE_VERSION_UP_TO_DATE)
+if (VTR_ENABLE_VERSION)
     add_dependencies(libvtrutil version)
 endif()
 
