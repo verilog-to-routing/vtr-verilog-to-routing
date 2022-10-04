@@ -37,6 +37,7 @@ if {$env(PARSER) == "surelog" } {
 # read the custom complex blocks in the architecture
 read_verilog -lib CCC
 
+
 # These commands follow the generic `synth'
 # command script inside Yosys
 # The -libdir argument allows Yosys to search the current 
