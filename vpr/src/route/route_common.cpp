@@ -213,6 +213,10 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
         graph_directionality = GRAPH_BIDIR;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        /* Branch on tileable routing */
+        if (det_routing_arch->directionality == UNI_DIRECTIONAL && det_routing_arch->tileable) {
+            graph_type = GRAPH_UNIDIR_TILEABLE;
+        }
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
