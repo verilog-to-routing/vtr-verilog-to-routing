@@ -2,12 +2,13 @@
 	accepts data coming in from the NoC and 
 	accumulates it.
 */
+
 module traffic_processor (
 	clk,
 	reset,
 	tdata,
 	tvalid,
-	o_sum
+	o_enc
 );
 
 /*****************Parameter Declarations********************/
@@ -19,11 +20,22 @@ input wire reset;
 input wire [noc_dw-1:0] tdata;
 input tvalid;
 
-output wire [noc_dw*2-1:0] o_sum;
+output reg [noc_dw-1:0] o_enc;
 
 /*******************Internal Variables**********************/
-reg [noc_dw*2-1:0]		sum_reg;
-wire [noc_dw*2-1:0]		data_extended;
+wire [noc_dw - 1 : 0] sha_out;
+
+/*******************module instantiation*******************/
+sha1 sha1_module
+(
+	.clk_i(clk),
+	.rst_i(reset),
+	.text_i(tdata),
+	.text_o(sha_out),
+	.cmd_i({{2{1'b0}},{2{tvalid}}}),
+	.cmd_w_i(tvalid),
+	.cmd_o()
+);
 
 /******************Sequential Logic*************************/
 /*
@@ -34,23 +46,19 @@ wire [noc_dw*2-1:0]		data_extended;
 	as an accumulator.
 
 */
-assign data_extended = {{noc_dw{1'b0}}, tdata};
-// handle the accumulation
+
 always @(posedge clk)
 begin
 	if (reset)begin
-			sum_reg <= 0;
+			o_enc <= 0;
 		end
 	else begin
 			if (tvalid) begin
-				sum_reg <= sum_reg + data_extended;
+				o_enc <= sha_out;
 			end
 		end
 end
 		
-/*******************Output Logic***************************/
-assign o_sum = sum_reg;
-
 endmodule 
 						
 
