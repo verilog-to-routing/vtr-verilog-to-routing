@@ -603,15 +603,15 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
             }
 
             for (e_side side : wanted_sides) {
-                 for (int width_offset = 0; width_offset < grids[ix][iy].type->width; ++width_offset) {
-                     int x_tile = ix + width_offset;
-                     for (int height_offset = 0; height_offset < grids[ix][iy].type->height; ++height_offset) {
-                         int y_tile = iy + height_offset;
-                         rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN, grids[ix][iy].type->num_pins, side);
-                         rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN, grids[ix][iy].type->num_pins, side);
-                     }
-                 }
-             }
+                for (int width_offset = 0; width_offset < grids[ix][iy].type->width; ++width_offset) {
+                    int x_tile = ix + width_offset;
+                    for (int height_offset = 0; height_offset < grids[ix][iy].type->height; ++height_offset) {
+                        int y_tile = iy + height_offset;
+                        rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, OPIN, grids[ix][iy].type->num_pins, side);
+                        rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, IPIN, grids[ix][iy].type->num_pins, side);
+                    }
+                }
+            }
 
             /* Configure source rr_nodes for this grid */
             load_one_grid_source_nodes_basic_info(rr_graph_builder,
@@ -1013,8 +1013,7 @@ static void reverse_dec_chan_rr_node_track_ids(const RRGraphView& rr_graph,
     // this should call rr_graph_builder to do the job
     for (const RRNodeId& node : rr_graph.nodes()) {
         /* Bypass condition: only focus on CHANX and CHANY in DEC_DIRECTION */
-        if ( (CHANX != rr_graph.node_type(node))
-          && (CHANY != rr_graph.node_type(node)) ) {
+        if (CHANX != rr_graph.node_type(node) && CHANY != rr_graph.node_type(node)) {
             continue;
         }
         /* Reach here, we must have a node of CHANX or CHANY */
@@ -1022,7 +1021,7 @@ static void reverse_dec_chan_rr_node_track_ids(const RRGraphView& rr_graph,
             continue;
         }
         std::reverse(rr_node_track_ids[node].begin(),
-                     rr_node_track_ids[node].end() );
+                     rr_node_track_ids[node].end());
     }
 }
 

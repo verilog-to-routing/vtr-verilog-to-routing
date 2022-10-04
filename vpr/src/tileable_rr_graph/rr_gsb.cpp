@@ -844,7 +844,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
          * Just try to find a qualified one. */
         int index = OPEN;
         index = get_node_index(rr_graph, src_node, chan_side, IN_PORT);
-        if (OPEN == index) {  
+        if (OPEN == index) {
             index = get_node_index(rr_graph, src_node, chan_side, OUT_PORT);
         }
 
@@ -871,8 +871,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
 
         VTR_ASSERT(OPEN != index);
 
-        VTR_ASSERT((CHANX == rr_graph.node_type(src_node))
-                || (CHANY == rr_graph.node_type(src_node)));
+        VTR_ASSERT(CHANX == rr_graph.node_type(src_node) || CHANY == rr_graph.node_type(src_node));
         from_track_edge_map[index] = edge;
         edge_counter++;
     }
@@ -901,7 +900,6 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph) {
         }
     }
 }
-
 
 /************************************************************************
  * Public Mutators: clean-up functions

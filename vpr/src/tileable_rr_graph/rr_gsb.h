@@ -138,7 +138,7 @@ class RRGSB {
      * on being a mirror of the current one
      */
     bool is_sb_mirrorable(const RRGraphView& rr_graph, const RRGSB& cand) const;
-    
+
   public:                                                                 /* Cooridinator conversion and output  */
     size_t get_x() const;                                                 /* get the x coordinate of this switch block */
     size_t get_y() const;                                                 /* get the y coordinate of this switch block */

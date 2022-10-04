@@ -158,7 +158,6 @@ static bool is_gsb_in_track_sb_population(const RRGraphView& rr_graph,
     /* Get segment id */
     RRSegmentId seg_id = rr_gsb.get_chan_node_segment(gsb_side, track_id);
     /* validate offset */
-    if (!(offset < segment_inf[size_t(seg_id)].sb.size()))
     VTR_ASSERT(offset < segment_inf[size_t(seg_id)].sb.size());
 
     /* Get the SB population */
@@ -1420,20 +1419,11 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 VTR_ASSERT(1 == ipin_grid_side.size());
 
                 RRNodeId opin_node_id = rr_graph.node_lookup().find_node(from_grid_coordinate.x() - from_grid_width_ofs,
-                                                                                from_grid_coordinate.y() - from_grid_height_ofs,
-                                                                                OPIN, opin, opin_grid_side[0]);
+                                                                         from_grid_coordinate.y() - from_grid_height_ofs,
+                                                                         OPIN, opin, opin_grid_side[0]);
                 RRNodeId ipin_node_id = rr_graph.node_lookup().find_node(to_grid_coordinate.x() - to_grid_width_ofs,
-                                                                                to_grid_coordinate.y() - to_grid_height_ofs,
-                                                                                IPIN, ipin, ipin_grid_side[0]);
-                /* 
-                VTR_LOG("Direct connection: from grid[%lu][%lu].pin[%lu] at side %s to grid[%lu][%lu].pin[%lu] at side %s\n",
-                        from_grid_coordinate.x() - from_grid_width_ofs,
-                        from_grid_coordinate.y() - from_grid_height_ofs,
-                        opin, SIDE_STRING[opin_grid_side[0]],
-                        to_grid_coordinate.x() - to_grid_width_ofs,
-                        to_grid_coordinate.y() - to_grid_height_ofs,
-                        ipin, SIDE_STRING[ipin_grid_side[0]]);
-                 */
+                                                                         to_grid_coordinate.y() - to_grid_height_ofs,
+                                                                         IPIN, ipin, ipin_grid_side[0]);
 
                 /* add edges to the opin_node */
                 VTR_ASSERT(opin_node_id && ipin_node_id);
