@@ -3453,7 +3453,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             if (inst_lsb < 0 || inst_msb > PhysicalTileType->capacity - 1) {
                                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                                "Pin location specification '%s' contain an out-of-range instance. Expect [%d:%d]",
-                                               token.c_str(), 0 , PhysicalTileType->capacity - 1);
+                                               token.c_str(), 0, PhysicalTileType->capacity - 1);
                             }
                         }
 

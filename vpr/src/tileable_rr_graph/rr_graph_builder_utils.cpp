@@ -282,8 +282,8 @@ bool is_chanx_left_to_multi_height_grid(const DeviceGrid& grids,
     VTR_ASSERT(chanx_coord.x() < grids.width() - 1);
     if (grids.width() - 2 == chanx_coord.x()) {
         /* This is already the RIGHT side of FPGA fabric,
-     * it is the same results as chanx is right to a multi-height grid
-     */
+         * it is the same results as chanx is right to a multi-height grid
+         */
         return true;
     }
 
