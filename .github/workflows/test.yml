@@ -68,6 +68,13 @@ jobs:
   Build:
     name: 'B: Building VtR'
     runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - { build_type: 'release', verbose: '0' }
+        - { build_type: 'debug',   verbose: '0' }
+        - { build_type: 'debug',   verbose: '1' }
     steps:
 
     - uses: actions/setup-python@v2
@@ -80,10 +87,10 @@ jobs:
 
     - name: Test
       env:
-        BUILD_TYPE: release
+        BUILD_TYPE: ${{ matrix.build_type }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
+        ./.github/scripts/build.sh VERBOSE=${{ matrix.verbose }}
 
 
   Format:
