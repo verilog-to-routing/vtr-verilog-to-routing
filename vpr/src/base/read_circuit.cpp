@@ -33,7 +33,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
     bool should_sweep_dangling_nets = vpr_setup.NetlistOpts.sweep_dangling_nets;
     bool should_sweep_dangling_blocks = vpr_setup.NetlistOpts.sweep_dangling_blocks;
     bool should_sweep_constant_primary_outputs = vpr_setup.NetlistOpts.sweep_constant_primary_outputs;
-    bool verbosity = vpr_setup.NetlistOpts.netlist_verbosity;
+    int verbosity = vpr_setup.NetlistOpts.netlist_verbosity;
 
     if (circuit_format == e_circuit_format::AUTO) {
         auto name_ext = vtr::split_ext(circuit_file);
