@@ -963,7 +963,6 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                                  backward_path_cost, R_upstream, rt_node->Tdel, &rcv_path_manager);
     }
 
-    ++router_stats_->heap_pushes;
     update_router_stats(device_ctx,
                         rr_graph_,
                         router_stats_,
