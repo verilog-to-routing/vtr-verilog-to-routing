@@ -638,48 +638,6 @@
     </model>
 
     <!-- systolic fir mode -->  
-    <model name="fourteennm_mac.opmode{m18x18_systolic}.input_type{reg}.output_type{comb}">
-      <input_ports> 
-        <port name="accumulate" clock="accumulate_clk"/>
-        <port name="chainin" combinational_sink_ports="resulta chainout"/>
-        <port name="clr" clock="ax_clk"/>
-        <port name="ax_clk" is_clock="1"/>
-        <port name="ay_scan_in_clk" is_clock="1"/>
-        <port name="az_clk" is_clock="1"/>
-        <port name="bx_clk" is_clock="1"/>
-        <port name="by_clk" is_clock="1"/>
-        <port name="bz_clk" is_clock="1"/>
-        <port name="coef_sel_a_clk" is_clock="1"/>
-        <port name="coef_sel_b_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
-        <port name="sub_clk" is_clock="1"/>
-        <port name="negate_clk" is_clock="1"/>
-        <port name="loadconst_clk" is_clock="1"/>
-        <port name="accumulate_clk" is_clock="1"/>
-        <port name="ax" clock="ax_clk" combinational_sink_ports="resulta chainout"/>
-        <port name="ay" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout scanout"/>
-        <port name="az" clock="az_clk" combinational_sink_ports="resulta chainout"/>
-        <port name="coefsela" clock="coef_sel_a_clk" combinational_sink_ports="resulta chainout"/>
-        <port name="bx" clock="bx_clk" combinational_sink_ports="resulta chainout"/>
-        <port name="by" clock="by_clk" combinational_sink_ports="resulta chainout scanout"/>
-        <port name="bz" clock="bz_clk" combinational_sink_ports="resulta chainout"/>
-        <port name="coefselb" clock="coef_sel_b_clk" combinational_sink_ports="resulta chainout"/>
-        <port name="loadconst" clock="loadconst_clk"/>
-        <port name="negate" clock="negate_clk"/>
-        <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout scanout"/>
-        <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ena_clk"/>
-        <port name="dfxlfsrena" clock="ax_clk"/>
-        <port name="dfxmisrena" clock="ax_clk"/>
-      </input_ports> 
-      <output_ports> 
-        <port name="chainout"/>
-        <port name="resulta"/>
-        <port name="scanout" clock="by_clk"/>
-        <port name="dftout" clock="ax_clk"/>
-      </output_ports> 
-    </model>
-
     <model name="fourteennm_mac.opmode{m18x18_systolic}.input_type{comb}.output_type{reg}">
       <input_ports> 
         <port name="accumulate" clock="accumulate_clk"/>
@@ -713,35 +671,6 @@
         <port name="resulta" clock="output_clk"/>
         <port name="scanout" />
         <port name="dftout" clock="output_clk"/>
-      </output_ports> 
-    </model>
-
-    <model name="fourteennm_mac.opmode{m18x18_systolic}.input_type{comb}.output_type{comb}">
-      <input_ports> 
-        <port name="accumulate" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="chainin" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="clr" combinational_sink_ports="resulta chainout"/>
-        <port name="ax" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="ay" combinational_sink_ports="resulta chainout scanout dftout"/>
-        <port name="az" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="coefsela" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="bx" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="by" combinational_sink_ports="resulta chainout scanout dftout"/>
-        <port name="bz" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="coefselb" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="loadconst" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="negate" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="scanin" combinational_sink_ports="resulta chainout scanout dftout"/>
-        <port name="sub" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="ena" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="dfxlfsrena" combinational_sink_ports="resulta chainout dftout"/>
-        <port name="dfxmisrena" combinational_sink_ports="resulta chainout dftout"/>
-      </input_ports> 
-      <output_ports> 
-        <port name="chainout"/>
-        <port name="resulta"/>
-        <port name="scanout"/>
-        <port name="dftout"/>
       </output_ports> 
     </model>
 
@@ -1102,33 +1031,7 @@
     </model>
 
     <!-- multiply accumulate mode -->
-    <model name="fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{reg}.output_type{comb}">
-      <input_ports>
-        <port name="chainin"  combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
-        <port name="clr" clock="ay_clk"/>
-        <port name="ay_clk" is_clock="1"/>
-        <port name="az_clk" is_clock="1"/>
-        <port name="output_clk" is_clock="1"/>
-        <port name="ay" clock="ay_clk" combinational_sink_ports="resulta chainout mult_inexact mult_invalid mult_overflow mult_underflow adder_inexact adder_invalid adder_overflow adder_underflow"/>
-        <port name="az" clock="az_clk" combinational_sink_ports="resulta chainout mult_inexact mult_invalid mult_overflow mult_underflow adder_inexact adder_invalid adder_overflow adder_underflow"/>
-        <port name="ena" clock="ay_clk"/>
-        <port name="dfxlfsrena" clock="ay_clk"/>
-        <port name="dfxmisrena" clock="ay_clk"/>
-      </input_ports> 
-      <output_ports> 
-        <port name="chainout"/>
-        <port name="resulta"/>
-        <port name="adder_inexact"/>
-        <port name="adder_invalid"/>
-        <port name="adder_overflow"/>
-        <port name="adder_underflow"/>
-        <port name="mult_inexact" clock="output_clk"/>
-        <port name="mult_invalid" clock="output_clk"/>
-        <port name="mult_overflow" clock="output_clk"/>
-        <port name="mult_underflow" clock="output_clk"/>
-        <port name="dftout" clock="output_clk"/>
-      </output_ports>
-    </model>
+
 
     <model name="fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{comb}.output_type{reg}">
       <input_ports>
@@ -1153,31 +1056,6 @@
         <port name="mult_overflow"/>
         <port name="mult_underflow"/>
         <port name="dftout" clock="output_clk"/>
-      </output_ports>
-    </model>
-
-    <model name="fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{comb}.output_type{comb}">
-      <input_ports>
-        <port name="chainin" combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
-        <port name="clr" combinational_sink_ports="resulta"/>
-        <port name="ay" combinational_sink_ports="resulta chainout mult_inexact mult_invalid mult_overflow mult_underflow adder_inexact adder_invalid adder_overflow adder_underflow"/>
-        <port name="az" combinational_sink_ports="resulta chainout mult_inexact mult_invalid mult_overflow mult_underflow adder_inexact adder_invalid adder_overflow adder_underflow"/>
-        <port name="ena" combinational_sink_ports="resulta chainout mult_inexact mult_invalid mult_overflow mult_underflow adder_inexact adder_invalid adder_overflow adder_underflow"/>
-        <port name="dfxlfsrena" combinational_sink_ports="resulta chainout mult_inexact mult_invalid mult_overflow mult_underflow adder_inexact adder_invalid adder_overflow adder_underflow"/>
-        <port name="dfxmisrena" combinational_sink_ports="resulta chainout mult_inexact mult_invalid mult_overflow mult_underflow adder_inexact adder_invalid adder_overflow adder_underflow"/>
-      </input_ports> 
-      <output_ports> 
-        <port name="chainout"/>
-        <port name="resulta"/>
-        <port name="adder_inexact"/>
-        <port name="adder_invalid"/>
-        <port name="adder_overflow"/>
-        <port name="adder_underflow"/>
-        <port name="mult_inexact"/>
-        <port name="mult_invalid"/>
-        <port name="mult_overflow"/>
-        <port name="mult_underflow"/>
-        <port name="dftout"/>
       </output_ports>
     </model>
 
@@ -3349,83 +3227,6 @@
 
 
         <!-- systolic fir mode -->
-			<mode name="m18x18_systolic.input_type{reg}.output_type{comb}">
-				<pb_type blif_model=".subckt fourteennm_mac.opmode{m18x18_systolic}.input_type{reg}.output_type{comb}" name="mac18x18_systolic" num_pb="1">
-					<input name="accumulate" num_pins="1"/>
-					<input name="chainin" num_pins="64"/>
-					<input name="clr" num_pins="2"/>
-					<input name="ax" num_pins="18"/>
-					<input name="ay" num_pins="19"/>
-					<input name="az" num_pins="18"/>
-					<input name="coefsela" num_pins="3"/>
-					<input name="bx" num_pins="18"/>
-					<input name="by" num_pins="19"/>
-					<input name="bz" num_pins="18"/>
-					<input name="coefselb" num_pins="3"/>
-					<input name="loadconst" num_pins="1"/>
-					<input name="negate" num_pins="1"/>
-					<input name="scanin" num_pins="19"/>
-					<input name="sub" num_pins="1"/>
-					<input name="ena" num_pins="3"/>
-					<input name="dfxlfsrena" num_pins="1"/>
-					<input name="dfxmisrena" num_pins="1"/>
-					<output name="chainout" num_pins="64"/>
-					<output name="resulta" num_pins="64"/>
-					<output name="scanout" num_pins="19"/>
-					<output name="dftout" num_pins="1"/>
-					<clock name="ax_clk" num_pins="1"/>
-					<clock name="ay_scan_in_clk" num_pins="1"/>
-					<clock name="az_clk" num_pins="1"/>
-					<clock name="bx_clk" num_pins="1"/>
-					<clock name="by_clk" num_pins="1"/>
-					<clock name="bz_clk" num_pins="1"/>
-					<clock name="coef_sel_a_clk" num_pins="1"/>
-					<clock name="coef_sel_b_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
-					<clock name="sub_clk" num_pins="1"/>
-					<clock name="negate_clk" num_pins="1"/>
-					<clock name="loadconst_clk" num_pins="1"/>
-					<clock name="accumulate_clk" num_pins="1"/>
-				</pb_type>
-				<interconnect>
-					<direct input="DSP.chainin" name="chain_in" output="mac18x18_systolic.chainin"/>
-					<direct input="mac18x18_systolic.chainout" name="chain_out" output="DSP.chainout"/>
-					<direct input="DSP.scanin[18:0]" name="scan_in" output="mac18x18_systolic.scanin"/>
-					<direct input="mac18x18_systolic.scanout" name="scan_out" output="DSP.scanout[18:0]"/>
-					<direct input="mac18x18_systolic.dftout" name="dft_out" output="DSP.dftout"/>
-					<direct input="DSP.datain[17:0]" name="ax_in" output="mac18x18_systolic.ax"/>
-					<direct input="DSP.datain[36:18]" name="ay_in" output="mac18x18_systolic.ay"/>
-					<direct input="DSP.datain[54:37]" name="az_in" output="mac18x18_systolic.az"/>
-					<direct input="DSP.datain[72:55]" name="bx_in" output="mac18x18_systolic.bx"/>
-					<direct input="DSP.datain[91:73]" name="by_in" output="mac18x18_systolic.by"/>
-					<direct input="DSP.datain[109:92]" name="bz_in" output="mac18x18_systolic.bz"/>
-					<direct input="mac18x18_systolic.resulta" name="resulta_out" output="DSP.result[63:0]"/>
-					<direct input="DSP.controlin[1:0]" name="clr_in" output="mac18x18_systolic.clr"/>
-					<direct input="DSP.controlin[4:2]" name="coefsela_in" output="mac18x18_systolic.coefsela"/>
-					<direct input="DSP.controlin[7:5]" name="coefselb_in" output="mac18x18_systolic.coefselb"/>
-					<direct input="DSP.controlin[10:8]" name="ena_in" output="mac18x18_systolic.ena"/>
-					<direct input="DSP.controlin[11]" name="dfxlfsrena_in" output="mac18x18_systolic.dfxlfsrena"/>
-					<direct input="DSP.controlin[12]" name="dfxmisrena_in" output="mac18x18_systolic.dfxmisrena"/>
-					<direct input="DSP.controlin[13]" name="accumulate_in" output="mac18x18_systolic.accumulate"/>
-					<direct input="DSP.controlin[14]" name="loadconst_in" output="mac18x18_systolic.loadconst"/>
-					<direct input="DSP.controlin[15]" name="negate_in" output="mac18x18_systolic.negate"/>
-					<direct input="DSP.controlin[16]" name="sub_in" output="mac18x18_systolic.sub"/>
-					<complete input="DSP.clk" name="clk_in0" output="mac18x18_systolic.ax_clk"/>
-					<complete input="DSP.clk" name="clk_in1" output="mac18x18_systolic.ay_scan_in_clk"/>
-					<complete input="DSP.clk" name="clk_in2" output="mac18x18_systolic.az_clk"/>
-					<complete input="DSP.clk" name="clk_in3" output="mac18x18_systolic.bx_clk"/>
-					<complete input="DSP.clk" name="clk_in4" output="mac18x18_systolic.by_clk"/>
-					<complete input="DSP.clk" name="clk_in5" output="mac18x18_systolic.bz_clk"/>
-					<complete input="DSP.clk" name="clk_in6" output="mac18x18_systolic.coef_sel_a_clk"/>
-					<complete input="DSP.clk" name="clk_in7" output="mac18x18_systolic.coef_sel_b_clk"/>
-					<complete input="DSP.clk" name="clk_in8" output="mac18x18_systolic.ena_clk"/>
-					<complete input="DSP.clk" name="clk_in9" output="mac18x18_systolic.sub_clk"/>
-					<complete input="DSP.clk" name="clk_in10" output="mac18x18_systolic.negate_clk"/>
-					<complete input="DSP.clk" name="clk_in11" output="mac18x18_systolic.loadconst_clk"/>
-					<complete input="DSP.clk" name="clk_in12" output="mac18x18_systolic.accumulate_clk"/>
-				</interconnect>
-			</mode>
-
 			<mode name="m18x18_systolic.input_type{comb}.output_type{reg}">
 				<pb_type blif_model=".subckt fourteennm_mac.opmode{m18x18_systolic}.input_type{comb}.output_type{reg}" name="mac18x18_systolic" num_pb="1">
 					<input name="accumulate" num_pins="1"/>
@@ -3488,57 +3289,6 @@
 					<complete input="DSP.clk" name="clk_in4" output="mac18x18_systolic.accumulate_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_systolic.output_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_systolic.chainout_clk"/>
-				</interconnect>
-			</mode>
-
-			<mode name="m18x18_systolic.input_type{comb}.output_type{comb}">
-				<pb_type blif_model=".subckt fourteennm_mac.opmode{m18x18_systolic}.input_type{comb}.output_type{comb}" name="mac18x18_systolic" num_pb="1">
-					<input name="accumulate" num_pins="1"/>
-					<input name="chainin" num_pins="64"/>
-					<input name="clr" num_pins="2"/>
-					<input name="ax" num_pins="18"/>
-					<input name="ay" num_pins="19"/>
-					<input name="az" num_pins="18"/>
-					<input name="coefsela" num_pins="3"/>
-					<input name="bx" num_pins="18"/>
-					<input name="by" num_pins="19"/>
-					<input name="bz" num_pins="18"/>
-					<input name="coefselb" num_pins="3"/>
-					<input name="loadconst" num_pins="1"/>
-					<input name="negate" num_pins="1"/>
-					<input name="scanin" num_pins="19"/>
-					<input name="sub" num_pins="1"/>
-					<input name="ena" num_pins="3"/>
-					<input name="dfxlfsrena" num_pins="1"/>
-					<input name="dfxmisrena" num_pins="1"/>
-					<output name="chainout" num_pins="64"/>
-					<output name="resulta" num_pins="64"/>
-					<output name="scanout" num_pins="19"/>
-					<output name="dftout" num_pins="1"/>
-				</pb_type>
-				<interconnect>
-					<direct input="DSP.chainin" name="chain_in" output="mac18x18_systolic.chainin"/>
-					<direct input="mac18x18_systolic.chainout" name="chain_out" output="DSP.chainout"/>
-					<direct input="DSP.scanin[18:0]" name="scan_in" output="mac18x18_systolic.scanin"/>
-					<direct input="mac18x18_systolic.scanout" name="scan_out" output="DSP.scanout[18:0]"/>
-					<direct input="mac18x18_systolic.dftout" name="dft_out" output="DSP.dftout"/>
-					<direct input="DSP.datain[17:0]" name="ax_in" output="mac18x18_systolic.ax"/>
-					<direct input="DSP.datain[36:18]" name="ay_in" output="mac18x18_systolic.ay"/>
-					<direct input="DSP.datain[54:37]" name="az_in" output="mac18x18_systolic.az"/>
-					<direct input="DSP.datain[72:55]" name="bx_in" output="mac18x18_systolic.bx"/>
-					<direct input="DSP.datain[91:73]" name="by_in" output="mac18x18_systolic.by"/>
-					<direct input="DSP.datain[109:92]" name="bz_in" output="mac18x18_systolic.bz"/>
-					<direct input="mac18x18_systolic.resulta" name="resulta_out" output="DSP.result[63:0]"/>
-					<direct input="DSP.controlin[1:0]" name="clr_in" output="mac18x18_systolic.clr"/>
-					<direct input="DSP.controlin[4:2]" name="coefsela_in" output="mac18x18_systolic.coefsela"/>
-					<direct input="DSP.controlin[7:5]" name="coefselb_in" output="mac18x18_systolic.coefselb"/>
-					<direct input="DSP.controlin[10:8]" name="ena_in" output="mac18x18_systolic.ena"/>
-					<direct input="DSP.controlin[11]" name="dfxlfsrena_in" output="mac18x18_systolic.dfxlfsrena"/>
-					<direct input="DSP.controlin[12]" name="dfxmisrena_in" output="mac18x18_systolic.dfxmisrena"/>
-					<direct input="DSP.controlin[13]" name="accumulate_in" output="mac18x18_systolic.accumulate"/>
-					<direct input="DSP.controlin[14]" name="loadconst_in" output="mac18x18_systolic.loadconst"/>
-					<direct input="DSP.controlin[15]" name="negate_in" output="mac18x18_systolic.negate"/>
-					<direct input="DSP.controlin[16]" name="sub_in" output="mac18x18_systolic.sub"/>
 				</interconnect>
 			</mode>
 
@@ -4197,59 +3947,6 @@
         </mode>
 
         <!-- fp multiply accumulate mode -->
-        <mode name="sp_mult_acc.input_type{reg}.output_type{comb}">
-          <pb_type name="fp_mac_multacc" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{reg}.output_type{comb}" num_pb="1">
-              <input name="chainin" num_pins="32"/>
-              <input name="clr" num_pins="2"/>
-              <clock name="clk" num_pins="1"/>
-              <input name="ay" num_pins="32"/>
-              <input name="az" num_pins="32"/>
-              <input name="ena" num_pins="3"/>
-              <input name="dfxlfsrena" num_pins="1"/>
-              <input name="dfxmisrena" num_pins="1"/>
-
-              <output name="chainout" num_pins="32"/>
-              <output name="resulta" num_pins="32"/>
-              <output name="adder_inexact" num_pins="1"/>
-              <output name="adder_invalid" num_pins="1"/>
-              <output name="adder_overflow" num_pins="1"/>
-              <output name="adder_underflow" num_pins="1"/>
-              <output name="mult_inexact" num_pins="1"/>
-              <output name="mult_invalid" num_pins="1"/>
-              <output name="mult_overflow" num_pins="1"/>
-              <output name="mult_underflow" num_pins="1"/>
-              <output name="dftout" num_pins="1"/>
-          </pb_type>
-
-          <interconnect>
-
-              <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_multacc.chainin"/>
-              <direct name="chain_out" input="fp_mac_multacc.chainout[31:0]" output="DSP.chainout[31:0]"/>
-              <direct name="dft_out" input="fp_mac_multacc.dftout" output="DSP.dftout"/>
-
-              <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multacc.ay"/>
-              <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_multacc.az"/>
-
-              <direct name="resulta_out" input="fp_mac_multacc.resulta" output="DSP.result[31:0]"/>
-              <direct name="adder_inexact_out" input="fp_mac_multacc.adder_inexact" output="DSP.result[32]" />
-              <direct name="adder_invalid_out" input="fp_mac_multacc.adder_invalid" output="DSP.result[33]" />
-              <direct name="adder_overflow_out" input="fp_mac_multacc.adder_overflow" output="DSP.result[34]" />
-              <direct name="adder_underflow_out" input="fp_mac_multacc.adder_underflow" output="DSP.result[35]" />
-              <direct name="mult_inexact_out" input="fp_mac_multacc.mult_inexact" output="DSP.result[36]" />
-              <direct name="mult_invlid_out" input="fp_mac_multacc.mult_invalid" output="DSP.result[37]" />
-              <direct name="mult_overflow_out" input="fp_mac_multacc.mult_overflow" output="DSP.result[38]" />
-              <direct name="mult_underflow_out" input="fp_mac_multacc.mult_underflow" output="DSP.result[39]" />
-
-              
-              <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_multacc.clr"/>
-              <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_multacc.ena"/>
-              <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_multacc.dfxlfsrena"/>
-              <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_multacc.dfxmisrena"/>
-
-              <complete name="clk_in" input="DSP.clk" output="fp_mac_multacc.clk"/>
-          </interconnect> 
-        </mode>
-
         <mode name="sp_mult_acc.input_type{comb}.output_type{reg}">
           <pb_type name="fp_mac_multacc" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{comb}.output_type{reg}" num_pb="1">
             <input name="chainin" num_pins="32"/>
@@ -4302,58 +3999,6 @@
             <complete name="clk_in" input="DSP.clk" output="fp_mac_multacc.clk"/>
 
           </interconnect> 
-        </mode>
-
-        <mode name="sp_mult_acc.input_type{comb}.output_type{comb}">
-            <pb_type name="fp_mac_multacc" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{comb}.output_type{comb}" num_pb="1">
-                <input name="chainin" num_pins="32"/>
-                <input name="clr" num_pins="2"/>
-                <input name="ay" num_pins="32"/>
-                <input name="az" num_pins="32"/>
-                <input name="ena" num_pins="3"/>
-                <input name="dfxlfsrena" num_pins="1"/>
-                <input name="dfxmisrena" num_pins="1"/>
-
-                <output name="chainout" num_pins="32"/>
-                <output name="resulta" num_pins="32"/>
-                <output name="adder_inexact" num_pins="1"/>
-                <output name="adder_invalid" num_pins="1"/>
-                <output name="adder_overflow" num_pins="1"/>
-                <output name="adder_underflow" num_pins="1"/>
-                <output name="mult_inexact" num_pins="1"/>
-                <output name="mult_invalid" num_pins="1"/>
-                <output name="mult_overflow" num_pins="1"/>
-                <output name="mult_underflow" num_pins="1"/>
-                <output name="dftout" num_pins="1"/>
-            </pb_type>
-
-            <interconnect>
-
-                <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_multacc.chainin"/>
-                <direct name="chain_out" input="fp_mac_multacc.chainout[31:0]" output="DSP.chainout[31:0]"/>
-                <direct name="dft_out" input="fp_mac_multacc.dftout" output="DSP.dftout"/>
-
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multacc.ay"/>
-                <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_multacc.az"/>
-
-                <direct name="resulta_out" input="fp_mac_multacc.resulta" output="DSP.result[31:0]"/>
-                <direct name="adder_inexact_out" input="fp_mac_multacc.adder_inexact" output="DSP.result[32]" />
-                <direct name="adder_invalid_out" input="fp_mac_multacc.adder_invalid" output="DSP.result[33]" />
-                <direct name="adder_overflow_out" input="fp_mac_multacc.adder_overflow" output="DSP.result[34]" />
-                <direct name="adder_underflow_out" input="fp_mac_multacc.adder_underflow" output="DSP.result[35]" />
-                <direct name="mult_inexact_out" input="fp_mac_multacc.mult_inexact" output="DSP.result[36]" />
-                <direct name="mult_invlid_out" input="fp_mac_multacc.mult_invalid" output="DSP.result[37]" />
-                <direct name="mult_overflow_out" input="fp_mac_multacc.mult_overflow" output="DSP.result[38]" />
-                <direct name="mult_underflow_out" input="fp_mac_multacc.mult_underflow" output="DSP.result[39]" />
-
-                
-                <direct name="clr_in" input="DSP.controlin[1:0]" output="fp_mac_multacc.clr"/>
-                <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_multacc.ena"/>
-                <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_multacc.dfxlfsrena"/>
-                <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_multacc.dfxmisrena"/>
-
-
-            </interconnect> 
         </mode>
 
         <mode name="sp_mult_acc.input_type{reg}.output_type{reg}">
