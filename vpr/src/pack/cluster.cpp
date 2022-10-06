@@ -139,7 +139,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     bool is_cluster_legal;
     enum e_block_pack_status block_pack_status;
-
     
     t_lb_router_data* router_data = nullptr;
     t_pack_molecule *istart, *next_molecule, *prev_molecule;
@@ -300,7 +299,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 /*it doesn't make sense to do a timing analysis here since there*
                  *is only one atom block clustered it would not change anything      */
             }
-            
+
             cluster_stats.num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                      attraction_groups,

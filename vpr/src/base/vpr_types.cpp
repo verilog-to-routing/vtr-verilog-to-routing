@@ -260,7 +260,5 @@ void free_cluster_placement_stats(std::vector<t_cluster_placement_stats>& cluste
             }
             delete cluster_placement_stats_list[index].valid_primitives[j];
         }
-    
     }
-
 }

@@ -614,7 +614,6 @@ static void rebuild_cluster_placemet_stats(const ClusterBlockId& clb_index,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-
     reset_cluster_placement_stats(helper_ctx.cluster_placement_stats[type_idx]);
     set_mode_cluster_placement_stats(cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node, mode);
 
