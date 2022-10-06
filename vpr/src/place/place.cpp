@@ -658,6 +658,9 @@ void try_place(const t_placer_opts& placer_opts,
     //Initial pacement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
             costs.bb_cost, costs.timing_cost);
+    if (noc_opts.noc){
+        VTR_LOG("Initial noc placement costs. noc_aggregate_bandwidth_cost: %g, noc_latency_cost: %g, \n", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost);
+    }
     if (placer_opts.place_algorithm.is_timing_driven()) {
         VTR_LOG(
             "Initial placement estimated Critical Path Delay (CPD): %g ns\n",
@@ -687,6 +690,10 @@ void try_place(const t_placer_opts& placer_opts,
     sprintf(msg,
             "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
+    if (noc_opts.noc){
+        sprintf(msg,
+            "\nInitial noc placement costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g ", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost);
+    }
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
 
@@ -987,6 +994,12 @@ void try_place(const t_placer_opts& placer_opts,
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
     VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n", costs.cost,
             costs.bb_cost, costs.timing_cost);
+    // print the noc costs info
+    if (noc_opts.noc){
+        sprintf(msg,
+            "\nNoC Placement Costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g ", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost);
+        VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, noc_latency_cost: %g, \n", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost);
+    }
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics
     print_resources_utilization();
