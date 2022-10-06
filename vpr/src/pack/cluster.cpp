@@ -139,7 +139,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     bool is_cluster_legal;
     enum e_block_pack_status block_pack_status;
-    
+
     t_lb_router_data* router_data = nullptr;
     t_pack_molecule *istart, *next_molecule, *prev_molecule;
 

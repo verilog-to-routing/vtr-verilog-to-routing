@@ -56,17 +56,13 @@ static void flush_intermediate_queues(t_cluster_placement_stats& cluster_placeme
  * [0..num_pb_types-1] array of cluster placement stats, one for each device_ctx.block_types
  */
 void alloc_and_load_cluster_placement_stats(std::vector<t_cluster_placement_stats>& cluster_placement_stats_list) {
-    
-
     auto& device_ctx = g_vpr_ctx.device();
 
     cluster_placement_stats_list.resize(device_ctx.logical_block_types.size());
 
     for (const auto& type : device_ctx.logical_block_types) {
-        
         if (!is_empty_type(&type)) {
             cluster_placement_stats_list[type.index].valid_primitives.resize(get_max_primitives_in_pb_type(type.pb_type) + 1, nullptr);
-            
             /* too much memory allocated but shouldn't be a problem */
             cluster_placement_stats_list[type.index].curr_molecule = nullptr;
             load_cluster_placement_stats_for_pb_graph_node(cluster_placement_stats_list[type.index],
