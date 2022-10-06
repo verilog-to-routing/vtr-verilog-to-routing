@@ -1,3 +1,12 @@
+/*
+    Top level modules to instantiate an AXI handshake between two routers.
+    The design implements the following:
+        1) Traffic generator uses a FIR filter to generate data and pass it to master_interface.
+        2) Master interface sends data and valid signal that coming from traffic generator to the NoC.
+        3) Slave interface receives data and valid signal, passes the ready signal through NoC and data to the traffic processor.
+        4) Traffic Processor encrypts the data and passes it to the output. 
+
+*/
 module complex_noc_1D_chain (
     clk,
     reset,
@@ -56,7 +65,7 @@ master_interface mi (
 	.tlast()
 );
 
-noc_router_adapter_block na1(
+noc_router_adapter_block noc_router_adapter_block_one(
 	.clk(clk),
     .reset(reset),
     .master_tready(1'd0),
@@ -80,7 +89,7 @@ noc_router_adapter_block na1(
 
 );
 
-noc_router_adapter_block na2(
+noc_router_adapter_block noc_router_adapter_block_two(
 	.clk(clk),
     .reset(reset),
     .master_tready(s_ready),
