@@ -32,6 +32,7 @@ option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 option(VTR_ENABLE_VERSION "Enable version number up-to-date during compilation" ON) 
+option(VTR_ENABLE_VERBOSE "Enable increased debug verbosity" OFF)
 
 #Allow the user to decide whether to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
@@ -284,6 +285,14 @@ if(VTR_ENABLE_DEBUG_LOGGING)
     #Enable gcov
     set(LOGGING_FLAGS "-DVTR_ENABLE_DEBUG_LOGGING")
     message(STATUS "Logging Flags: ${LOGGING_FLAGS}")
+endif()
+
+#
+# Increased debugging vebosity
+#
+if(VTR_ENABLE_VERBOSE)
+    set(EXTRA_FLAGS "${EXTRA_FLAGS} -DVTR_ENABLE_DEBUG_LOGGING")
+    message(STATUS "Enabling increased debugging verbosity")
 endif()
 
 if (CMAKE_MAKE_PROGRAM EQUAL "ninja" )
