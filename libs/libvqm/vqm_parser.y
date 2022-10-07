@@ -21,7 +21,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 //#include <crtdbg.h>
+#ifndef __APPLE__
 #include <malloc.h>
+#endif
 #include <string.h>
 #include <assert.h>
 #include "vqm_dll.h"

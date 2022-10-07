@@ -349,7 +349,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         ODIN_ERROR_CODE error_code;
 
         print_input_files_info();
-        assert_valid_file_extenstion(configuration.list_of_file_names, configuration.input_file_type);
+        report_frontend_elaborator();
 
         if (configuration.input_file_type != file_type_e::_BLIF || configuration.coarsen) {
             try {

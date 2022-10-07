@@ -2247,9 +2247,10 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
     }
 
     // 4. Find unpacked molecules based on attraction group of the current cluster (if the cluster has an attraction group)
-    add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, attraction_groups,
-                                                        feasible_block_array_size, cluster_index, primitive_candidate_block_types);
-
+    if (cur_pb->pb_stats->num_feasible_blocks == 0) {
+        add_cluster_molecule_candidates_by_attraction_group(cur_pb, cluster_placement_stats_ptr, attraction_groups,
+                                                            feasible_block_array_size, cluster_index, primitive_candidate_block_types);
+    }
     /* Grab highest gain molecule */
     t_pack_molecule* molecule = nullptr;
     if (cur_pb->pb_stats->num_feasible_blocks > 0) {

@@ -198,7 +198,7 @@ if(NOT TBB_FOUND)
   # Find TBB components
   ##################################
 
-  if(TBB_VERSION VERSION_LESS 4.3)
+  if(TBB_VERSION VERSION_LESS 4.3 AND NOT TBB_VERSION_MAJOR STREQUAL 2020)
     set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc tbb)
   else()
     set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc tbb)

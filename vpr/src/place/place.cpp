@@ -245,7 +245,7 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
 
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
-static void print_clb_placement(const char* fname);
+void print_clb_placement(const char* fname);
 #endif
 
 static void alloc_and_load_placement_structs(float place_cost_exp,
@@ -2848,7 +2848,7 @@ int check_macro_placement_consistency() {
 }
 
 #ifdef VERBOSE
-static void print_clb_placement(const char* fname) {
+void print_clb_placement(const char* fname) {
     /* Prints out the clb placements to a file.  */
     FILE* fp;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2859,7 +2859,7 @@ static void print_clb_placement(const char* fname) {
 
     fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
     for (auto i : cluster_ctx.clb_nlist.blocks()) {
-        fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i), place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].sub_tile);
+        fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i).c_str(), place_ctx.block_locs[i].loc.x, place_ctx.block_locs[i].loc.y, place_ctx.block_locs[i].loc.sub_tile);
     }
 
     fclose(fp);

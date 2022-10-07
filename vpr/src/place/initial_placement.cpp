@@ -17,6 +17,11 @@
 #include <chrono>
 #include <time.h>
 
+
+#ifdef VERBOSE
+void print_clb_placement(const char* fname);
+#endif
+
 /// @brief Sentinel value for indicating that a block does not have a valid x location, used to check whether a block has been placed
 constexpr int INVALID_X = -1;
 
