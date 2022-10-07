@@ -5,7 +5,6 @@
 """
 
 from cgi import test
-from ctypes.wintypes import FLOAT
 from distutils.log import error
 from email.headerregistry import Address
 from fileinput import close
@@ -22,6 +21,7 @@ from multiprocessing import Pool, Manager
 from operator import itemgetter
 import smtplib
 from email.message import EmailMessage
+import getpass
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "vtr_flow/scripts/python_libs"))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "vtr_flow/scripts"))
@@ -268,7 +268,7 @@ def run_vpr(vpr_location, arch_file, design_file, design_flows_file, max_noc_wei
         noc_weighting+=noc_weighting_interval
 
     # create the multiprocessing pool
-    execute_pool = Pool(3)
+    execute_pool = Pool(2)
     # run each test run in a seperate process
     execute_pool.starmap(execute_vpr_and_process_output, test_args)
 
@@ -300,7 +300,7 @@ def write_csv_file(data, csv_file_name):
 
         file.close()
 
-def send_notification(test_status, error_message):
+def send_notification(test_status, error_message, email_related_info):
     # create the message to send
     message = EmailMessage()
     # set the subject line to match the test status
@@ -312,24 +312,43 @@ def send_notification(test_status, error_message):
         message.set_content('TEST FAILED WITH THE FOLLOWING ERROR:\n{0}'.format(error_message))
     
     # set the sender and receiver email address
-    message['From'] = Address("****", "****", "****")
-    message['To'] = Address("****", "****", "****")
+    message['From'] = Address(email_related_info['email_display_name'], email_related_info['email_user_name'], email_related_info['domain'])
+    message['To'] = Address(email_related_info['email_display_name'], email_related_info['email_user_name'], email_related_info['domain'])
 
     # now we send the message
-    sender_method = smtplib.SMTP(host='****', port=587)
-    sender_method.starttls()
-    sender_method.login('****', '****')
-    sender_method.send_message(message)
-    sender_method.quit()
+    email_related_info['sender_method'].send_message(message)
+    email_related_info['sender_method'].quit()
 
-    
-    
+def get_user_email_info_and_authenticate():
+
+    email_related_info = {}
+
+    # the user email address
+    email_related_info['user_email'] = input("Email Address: ")
+    email_related_info['email_display_name'] = input("Display Name (your full name): ")
+    email_related_info['email_user_name'] = input("Email User Name: ")
+    email_related_info['domain'] = input("Domain: ")
+    email_related_info['email_password'] = getpass.getpass("Email Password: ")
+
+    # now login to the smtp server (we only support outlook right now)
+    try:
+        email_related_info['sender_method'] = smtplib.SMTP(host='smtp.office365.com', port=587)
+        email_related_info['sender_method'].starttls()
+        email_related_info['sender_method'].login(email_related_info['user_email'], email_related_info['email_password'])
+    except Exception as email_setup_error:
+        print("Email setup failed with error:\n{0}".format(email_setup_error))
+
+    return email_related_info
+
 
 if __name__ == "__main__":
     
     error_message = ''
     test_status = True
 
+    # get user information and authenticate them
+    email_setup = get_user_email_info_and_authenticate()
+    
     try:
         # Load the arguments
         args = noc_test_command_line_parser().parse_args(sys.argv[1:])
@@ -357,8 +376,8 @@ if __name__ == "__main__":
         error_message = error
         test_status = False  
 
-    send_notification(test_status=test_status, error_message=error)
-
+    send_notification(test_status=test_status, error_message=error, email_related_info=email_setup)
+    
 
 
 
