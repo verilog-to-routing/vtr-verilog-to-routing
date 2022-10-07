@@ -1819,38 +1819,28 @@
                         <output name="sumout" num_pins="1"/>
                         <output name="cout" num_pins="1"/>
 
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.dataa" out_port="lcell_comb.combout"/>
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datab" out_port="lcell_comb.combout"/>
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datac" out_port="lcell_comb.combout"/>
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datad" out_port="lcell_comb.combout"/>
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datae" out_port="lcell_comb.combout"/>
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.dataf" out_port="lcell_comb.combout"/>
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datag" out_port="lcell_comb.combout"/>
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datah" out_port="lcell_comb.combout"/>
 
-                        <!-- Arithmetic output delays -->
-                        <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.dataa" out_port="lcell_comb.sumout"/>
-                        <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.datab" out_port="lcell_comb.sumout"/>
-                        <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.datac" out_port="lcell_comb.sumout"/>
-                        <delay_constant max="491e-12" min="335e-12" in_port="lcell_comb.datad" out_port="lcell_comb.sumout"/>
-                        <!-- Carry input to carry output delay -->
-                        <delay_constant max="11e-12" min="8e-12" in_port="lcell_comb.cin" out_port="lcell_comb.cout"/>
-                        <!-- Carry input to sumout delay 
+                        <delay_constant max="198e-12" min="198e-12" in_port="lcell_comb.dataa" out_port="lcell_comb.combout"/>
+                        <delay_constant max="197-12" min="197-12" in_port="lcell_comb.datab" out_port="lcell_comb.combout"/>
+                        <delay_constant max="78e-12" min="78e-12" in_port="lcell_comb.datac" out_port="lcell_comb.combout"/>
+                        <delay_constant max="60e-12" min="60e-12" in_port="lcell_comb.datad" out_port="lcell_comb.combout"/>
+                        <delay_constant max="34e-12" min="34e-12" in_port="lcell_comb.datae" out_port="lcell_comb.combout"/>
+                        <delay_constant max="4e-12" min="4e-12" in_port="lcell_comb.dataf" out_port="lcell_comb.combout"/>
+                        <delay_constant max="198e-12" min="198e-12" in_port="lcell_comb.datag" out_port="lcell_comb.combout"/>
+                        <delay_constant max="198e-12" min="198e-12" in_port="lcell_comb.datah" out_port="lcell_comb.combout"/>
 
-                        Observed max values in QII:
-                         287e-12, 256e-12, 272e-12
-                        Observed min values in QII:
-                         200e-12, 228e-12
-                        -->
-                        <delay_constant max="287e-12" min="228e-12" in_port="lcell_comb.cin" out_port="lcell_comb.sumout"/>
-                        <!-- Combinational LUT input to carry out delays 
-                        -->
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.dataa" out_port="lcell_comb.cout"/>
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datab" out_port="lcell_comb.cout"/>
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datac" out_port="lcell_comb.cout"/>
-                        <delay_constant max="261e-12" min="193e-12" in_port="lcell_comb.datad" out_port="lcell_comb.cout"/>
+                        <delay_constant max="238e-12" min="238e-12" in_port="lcell_comb.dataa" out_port="lcell_comb.sumout"/>
+                        <delay_constant max="238e-12" min="238e-12" in_port="lcell_comb.datab" out_port="lcell_comb.sumout"/>
+                        <delay_constant max="122e-12" min="122e-12" in_port="lcell_comb.datac" out_port="lcell_comb.sumout"/>
+                        <delay_constant max="103e-12" min="103e-12" in_port="lcell_comb.datad" out_port="lcell_comb.sumout"/>
+                        <delay_constant max="67e-12" min="67e-12" in_port="lcell_comb.cin" out_port="lcell_comb.sumout"/>
 
-            
+                        <delay_constant max="350e-12" min="350e-12" in_port="lcell_comb.dataa" out_port="lcell_comb.cout"/>
+                        <delay_constant max="350e-12" min="350e-12" in_port="lcell_comb.datab" out_port="lcell_comb.cout"/>
+                        <delay_constant max="205e-12" min="205e-12" in_port="lcell_comb.datac" out_port="lcell_comb.cout"/>
+                        <delay_constant max="249e-12" min="249e-12" in_port="lcell_comb.datad" out_port="lcell_comb.cout"/>
+                        <delay_constant max="40e-12" min="40e-12" in_port="lcell_comb.cin" out_port="lcell_comb.cout"/>
+ 
                       </pb_type>
                       <interconnect>
                         <!-- LUT inputs -->
@@ -1905,24 +1895,24 @@
                     </mode>
                   </pb_type>
                   <interconnect>
-                <!-- Inputs to the LUTs -->
-                <complete input="comb_block.lin" name="in_lut0" output="lut[0].lin"/>
-                <complete input="comb_block.lin" name="in_lut1" output="lut[1].lin"/>
-                <!-- Combinational Block Carry Chain -->
-                <direct input="comb_block.cin" name="comb_block_cin" output="lut[0].cin">
-                  <pack_pattern name="LAB_carry_chain" in_port="comb_block.cin" out_port="lut[0].cin"/>
-                </direct>
-                <direct input="lut[0].cout" name="lut_to_lut_carry" output="lut[1].cin">
-                  <pack_pattern name="LAB_carry_chain" in_port="lut[0].cout" out_port="lut[1].cin"/>
-                </direct>
-                <direct input="lut[1].cout" name="alm_cout" output="comb_block.cout">
-                  <pack_pattern name="LAB_carry_chain" in_port="lut[1].cout" out_port="comb_block.cout"/>
-                </direct>
-                <!-- Outputs to the Combinational Block -->
-                <direct input="lut[0].combout" name="lut0_comb" output=" comb_block.combout[0]"/>
-                <direct input="lut[1].combout" name="lut1_comb" output=" comb_block.combout[1]"/>
-                <direct input="lut[0].sumout" name="lut0_sum" output=" comb_block.sumout[0]"/>
-                <direct input="lut[1].sumout" name="lut1_sum" output=" comb_block.sumout[1]"/>
+                    <!-- Inputs to the LUTs -->
+                    <complete input="comb_block.lin" name="in_lut0" output="lut[0].lin"/>
+                    <complete input="comb_block.lin" name="in_lut1" output="lut[1].lin"/>
+                    <!-- Combinational Block Carry Chain -->
+                    <direct input="comb_block.cin" name="comb_block_cin" output="lut[0].cin">
+                      <pack_pattern name="LAB_carry_chain" in_port="comb_block.cin" out_port="lut[0].cin"/>
+                    </direct>
+                    <direct input="lut[0].cout" name="lut_to_lut_carry" output="lut[1].cin">
+                      <pack_pattern name="LAB_carry_chain" in_port="lut[0].cout" out_port="lut[1].cin"/>
+                    </direct>
+                    <direct input="lut[1].cout" name="alm_cout" output="comb_block.cout">
+                      <pack_pattern name="LAB_carry_chain" in_port="lut[1].cout" out_port="comb_block.cout"/>
+                    </direct>
+                    <!-- Outputs to the Combinational Block -->
+                    <direct input="lut[0].combout" name="lut0_comb" output=" comb_block.combout[0]"/>
+                    <direct input="lut[1].combout" name="lut1_comb" output=" comb_block.combout[1]"/>
+                    <direct input="lut[0].sumout" name="lut0_sum" output=" comb_block.sumout[0]"/>
+                    <direct input="lut[1].sumout" name="lut1_sum" output=" comb_block.sumout[1]"/>
                   </interconnect>
               </mode>
               
@@ -1942,15 +1932,18 @@
                   <input name="d" num_pins="1"/>
                   <output name="q" num_pins="1"/>
                   <clock name="clk" num_pins="1"/>
-                  <T_setup value="66e-12" port="fourteennm_ff.d" clock="clk"/>
-                  <T_setup value="66e-12" port="fourteennm_ff.clrn" clock="clk"/>
-                  <T_setup value="66e-12" port="fourteennm_ff.sclr" clock="clk"/>
-                  <T_setup value="66e-12" port="fourteennm_ff.ena" clock="clk"/>
-                  <T_hold value="37e-12" port="fourteennm_ff.d" clock="clk"/>
-                  <T_hold value="37e-12" port="fourteennm_ff.clrn" clock="clk"/>
-                  <T_hold value="37e-12" port="fourteennm_ff.sclr" clock="clk"/>
-                  <T_hold value="37e-12" port="fourteennm_ff.ena" clock="clk"/>
-                  <T_clock_to_Q max="42e-12" min="37e-12" port="fourteennm_ff.q" clock="clk"/>
+                  <T_setup value="89e-12" port="fourteennm_ff.clrn" clock="clk"/>
+                  <T_setup value="89e-12" port="fourteennm_ff.sclr" clock="clk"/>
+                  <T_setup value="89e-12" port="fourteennm_ff.ena" clock="clk"/>
+                  <T_setup value="89e-12" port="fourteennm_ff.d" clock="clk"/>
+
+                  <T_hold value="162e-12" port="fourteennm_ff.clrn" clock="clk"/>
+                  <T_hold value="162e-12" port="fourteennm_ff.sclr" clock="clk"/>
+                  <T_hold value="162e-12" port="fourteennm_ff.ena" clock="clk"/>
+                  <T_hold value="162e-12" port="fourteennm_ff.d" clock="clk"/>
+
+                  <T_clock_to_Q max="283e-12" min="283e-12" port="fourteennm_ff.q" clock="clk"/>
+
                 </pb_type>
                 <interconnect>
                   <direct input="dff.clrn" name="fourteennm_ff_clrn" output="fourteennm_ff.clrn"/>
@@ -2028,28 +2021,16 @@
           <!--LAB-ALM Interconnect-->
           <!-- LAB Input: Global Routing to ALM inputs -->
           <complete input="LAB.data_in" name="LAB_datain" output="alm[9:0].data_in">
-            <!-- The delay modeled here is the delay from global routing to the ALM inputs.
-                   In QII the maximum delay varies from 121 ps to 258 ps.  Taking the average of the
-                   values observed in QII we arrive at: 171 ps. The minimum delay ranges from 111 ps to 79 ps.
-                   The average observed is: 104 ps-->
-            <delay_constant max="171e-12" min="104e-12" in_port="LAB.data_in" out_port="alm[9:0].data_in"/>
+            <delay_constant max="145e-12" min="145e-12" in_port="LAB.data_in" out_port="alm[9:0].data_in"/>
           </complete>
           <!-- ALM Outputs: directly drive global routing -->
-          <complete input="alm[9:0].data_out" name="LAB_dataout" output="LAB.data_out"/>
+          <complete input="alm[9:0].data_out" name="LAB_dataout" output="LAB.data_out">
+            <delay_constant max="56e-12" min="56e-12" in_port="LAB.data_in" out_port="alm[9:0].data_in"/>
+          </complete>   
           <!-- ALM Control Inputs -->
           <complete input="LAB.control_in" name="LAB_control" output="alm[9:0].control">
-            <!-- The delay modeled here on the ALM control inputs consists of two components:
-                    1) The LAB_SEC_MUX or LAB_CONTROL_MUX delay: 52 ps
-                    2) The delay from the LAB_CONTROL_MUX to the ALM DFF: 385 ps 
-                 Therefore the total delay modeled here is: (1) + (2) = 437 ps 
-
-                 A similar calculation for the minimum delay results in:
-                    1) The LAB_SEC_MUX or LAB_CONTROL_MUX delay: 48 ps
-                    2) The delay from the LAB_CONTROL_MUX to the ALM DFF: 289 ps 
-                 Therefore the total delay modeled here is: (1) + (2) = 333 ps 
-                    -->
-            <delay_constant max="437e-12" min="333e-12" in_port="LAB.control_in" out_port="alm[9:0].control"/>
-          </complete>
+            <delay_constant max="145e-12" min="145e-12" in_port="LAB.data_in" out_port="alm[9:0].data_in"/>
+          </complete>  
           <!-- LAB Clocks -->
           <complete input="LAB.clk" name="LAB_clock" output="alm[9:0].clock"/>
           <!-- LAB Carry Chain mid-point entry/exit points, this allows the chain to jump early to
