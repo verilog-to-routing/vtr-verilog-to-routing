@@ -33,12 +33,13 @@ CIRCUIT_FILE_EXT = ".blif"
 FLOWS_FILE_EXT = ".flows"
 CSV_FILE_EXT = ".csv"
 NET_FILE_EXT = ".net"
+CONSTRAINTS_FILE_EXT = ".xml"
 
 # informat parsed from the vpr output
 PLACE_COST = "place_cost"
 PLACE_TIME = "place_time"
 PLACE_BB_COST = "bb_cost"
-PLACE_TD_COST = "td_cost"
+PLACE_CPD = "post_place_cpd"
 NOC_AGGREGATE_BANDWIDTH_COST = "noc_aggregate_bandwidth_cost"
 NOC_LATENCY_COST = "noc_latency_cost"
 NOC_PLACEMENT_WEIGHT = "noc_placement_weight"
@@ -47,11 +48,13 @@ NOC_PLACEMENT_WEIGHT = "noc_placement_weight"
 PLACEMENT_COST_PHRASE = "Placement cost:"
 NOC_PLACEMENT_COST_PHRASE = "NoC Placement Costs."
 PLACEMENT_TIME = "# Placement took"
+POST_PLACE_CRITICAL_PATH_DELAY_PHRASE = "post-quench CPD"
 
 # regex match strings to extract placement info
 PLACEMENT_COST_REGEX = 'Placement cost: (.*), bb_cost: (.*), td_cost: (.*),'
 NOC_PLACEMENT_COST_REGEX = 'NoC Placement Costs. noc_aggregate_bandwidth_cost: (.*), noc_latency_cost: (.*),'
 PLACEMENT_TIME_REGEX = '# Placement took (.*) seconds.*'
+POST_PLACE_CRITICAL_PATH_DELAY_REGEX = 'post-quench CPD = (.*) \(ns\)'
 
 # global synhronization datastructures
 main_manager = Manager()
@@ -162,6 +165,9 @@ def process_vpr_output(vpr_output_file):
         if PLACEMENT_COST_PHRASE in line:
             process_placement_costs(placement_data, line)
 
+        if POST_PLACE_CRITICAL_PATH_DELAY_PHRASE in line:
+            process_placement_cpd(placement_data, line)
+
         if NOC_PLACEMENT_COST_PHRASE in line:
             process_noc_placement_costs(placement_data, line)
 
@@ -181,15 +187,28 @@ def process_placement_costs(placement_data, line_with_data):
     found_placement_metrics = regex.search(PLACEMENT_COST_REGEX, line_with_data)
 
     # quick check that the regex worked properly
-    if found_placement_metrics.lastindex != 3:
+    if (found_placement_metrics is None) or (found_placement_metrics.lastindex != 3):
         raise Exception("Placement cost not written out correctly")
 
     # we know the order of the different placement costs as they are found within the extracted metric list above
     # 1st element is the overall placement cost, second element is the placement bb cost and the third element is the placement td cost
-    # covert them to floats and store them
+    # covert them to floats and store them (we don't care about the td cost so ignore it)
     placement_data[PLACE_COST] = float(found_placement_metrics.group(1))
     placement_data[PLACE_BB_COST] = float(found_placement_metrics.group(2))
-    placement_data[PLACE_TD_COST] = float(found_placement_metrics.group(3))
+    
+    return
+
+def process_placement_cpd(placement_data, line_with_data):
+
+    # extract the placement time from the line where it is located
+    found_placement_metrics = regex.search(POST_PLACE_CRITICAL_PATH_DELAY_REGEX, line_with_data)
+
+    # quick check that the regex worked properly
+    if  (found_placement_metrics is None) or (found_placement_metrics.lastindex != 1):
+        raise Exception("Placement cpd not written out correctly")
+
+    # there should be only one element, since we are only grabbing the placement critical path delay
+    placement_data[PLACE_CPD] = float(found_placement_metrics.group(1))
     
     return
 
@@ -199,7 +218,7 @@ def process_noc_placement_costs(placement_data, line_with_data):
     found_placement_metrics = regex.search(NOC_PLACEMENT_COST_REGEX, line_with_data)
 
     # quick check that the regex worked properly
-    if found_placement_metrics.lastindex != 2:
+    if (found_placement_metrics is None) or (found_placement_metrics.lastindex != 2):
         raise Exception("Placement noc cost not written out correctly")
 
     # we know the order of the different noc placement costs as they are found within the extracted metric list above
@@ -223,12 +242,37 @@ def process_placement_time(placement_data, line_with_data):
     
     return
 
+def check_for_constraints_file(design_file):
+    
+    # build the constraint file path
+    constraints_file = os.path.splitext(design_file)[0] + CONSTRAINTS_FILE_EXT
+
+    # now check if this file exists
+    file_to_check = Path(constraints_file)
+
+    if not file_to_check.is_file():
+        # file doesn't exist. so set the file path to an empty string
+        constraints_file = ''
+
+    return constraints_file
+
+
 def execute_vpr_and_process_output(vpr_location, arch_file, design_file, design_flows_file, routing_algorithm, device, noc_placement_weight, vpr_out_file, vpr_net_file):
     # create the filr that will store the VPR output
     vpr_output = open(vpr_out_file, 'w')
 
+    vpr_command = [vpr_location, arch_file, str(design_file), '--noc', 'on', '--noc_flows_file', design_flows_file, '--noc_routing_algorithm', routing_algorithm, '--device', device, '--noc_placement_weighting', str(noc_placement_weight), '--pack', '--place', '--net_file', vpr_net_file]
+
+    # check if there is also a constraints file we need to worry about
+    constraints_file = check_for_constraints_file(design_file=design_file)
+
+    if constraints_file != '':
+        # this means there is a constraints file we need to include in the command line arguments
+        vpr_command.append('--read_vpr_constraints')
+        vpr_command.append(constraints_file)
+
     # run vpr. Will timeout after 30 minutes (maybe we need more for larger designs
-    result = subprocess.run([vpr_location, arch_file, str(design_file), '--noc', 'on', '--noc_flows_file', design_flows_file, '--noc_routing_algorithm', routing_algorithm, '--device', device, '--noc_placement_weighting', str(noc_placement_weight), '--pack', '--place', '--net_file', vpr_net_file],check=True, stdout=vpr_output, timeout=1800)
+    result = subprocess.run(vpr_command,check=True, stdout=vpr_output, timeout=1800)
 
     #close the output file
     vpr_output.close()
@@ -292,11 +336,11 @@ def write_csv_file(data, csv_file_name):
         # add the table column headers
         # It will look like follows:
         # noc_placement_weight place_cost bb_cost td_cost place_time noc_aggregate_bandwidth_cost noc_latency_cost
-        csv_writer.writerow([NOC_PLACEMENT_WEIGHT, PLACE_COST, PLACE_BB_COST, PLACE_TD_COST, PLACE_TIME, NOC_AGGREGATE_BANDWIDTH_COST, NOC_LATENCY_COST])
+        csv_writer.writerow([NOC_PLACEMENT_WEIGHT, PLACE_COST, PLACE_BB_COST, PLACE_CPD, PLACE_TIME, NOC_AGGREGATE_BANDWIDTH_COST, NOC_LATENCY_COST])
 
         # now go through the sorted data for the design and write each run within a single row
         for single_run_data in sorted_data:
-            csv_writer.writerow([single_run_data[NOC_PLACEMENT_WEIGHT], single_run_data[PLACE_COST], single_run_data[PLACE_BB_COST], single_run_data[PLACE_TD_COST], single_run_data[PLACE_TIME], single_run_data[NOC_AGGREGATE_BANDWIDTH_COST], single_run_data[NOC_LATENCY_COST]])
+            csv_writer.writerow([single_run_data[NOC_PLACEMENT_WEIGHT], single_run_data[PLACE_COST], single_run_data[PLACE_BB_COST], single_run_data[PLACE_CPD], single_run_data[PLACE_TIME], single_run_data[NOC_AGGREGATE_BANDWIDTH_COST], single_run_data[NOC_LATENCY_COST]])
 
         file.close()
 
