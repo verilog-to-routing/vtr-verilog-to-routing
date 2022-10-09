@@ -381,6 +381,9 @@ def get_user_email_info_and_authenticate():
         email_related_info['sender_method'].login(email_related_info['user_email'], email_related_info['email_password'])
     except Exception as email_setup_error:
         print("Email setup failed with error:\n{0}".format(email_setup_error))
+        exit()
+    
+    email_related_info['sender_method'].quit()
 
     return email_related_info
 
@@ -392,7 +395,7 @@ if __name__ == "__main__":
 
     # get user information and authenticate them
     email_setup = get_user_email_info_and_authenticate()
-    
+
     try:
         # Load the arguments
         args = noc_test_command_line_parser().parse_args(sys.argv[1:])
@@ -419,7 +422,11 @@ if __name__ == "__main__":
         # the test failed
         error_message = error
         test_status = False  
-
+    
+    # need to reinitiate a connection to the server
+    email_setup['sender_method'] = smtplib.SMTP(host='smtp.office365.com', port=587)
+    email_setup['sender_method'].starttls()
+    email_setup['sender_method'].login(email_setup['user_email'], email_setup['email_password'])
     send_notification(test_status=test_status, error_message=error, email_related_info=email_setup)
     
 
