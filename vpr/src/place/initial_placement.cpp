@@ -17,7 +17,6 @@
 #include <chrono>
 #include <time.h>
 
-
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
 #endif
