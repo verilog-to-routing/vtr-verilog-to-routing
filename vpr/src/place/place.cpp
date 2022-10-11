@@ -1251,9 +1251,20 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
     VTR_LOG("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
 #endif
 
-    /* Set the initial temperature to the standard of deviation divided by 128 */
+    /* Set the initial temperature to the standard of deviation divided by 64 */
     /* so that the initial temperature adjusts according to the circuit */
-    return (std_dev / 64);
+    float init_temp = (std_dev / 64);
+
+    /**
+     * We increase the initial temperature to allow more movement applied to centroid 
+     * initial placement based on the netlist size. 
+     */
+    auto blocks = cluster_ctx.clb_nlist.blocks();
+    if (blocks.size() < 500) {
+        init_temp *= 10;
+    }
+
+    return init_temp;
 }
 
 static void update_move_nets(int num_nets_affected) {
