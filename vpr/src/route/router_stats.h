@@ -5,12 +5,14 @@ struct RouterStats {
     size_t nets_routed = 0;
     size_t heap_pushes = 0;
     size_t heap_pops = 0;
+    size_t inter_cluster_node_pushes = 0;
+    size_t inter_cluster_node_pops = 0;
     size_t intra_cluster_node_pushes = 0;
     size_t intra_cluster_node_pops = 0;
-    size_t inter_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES];
-    size_t inter_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
-    size_t intra_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES];
-    size_t intra_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
+    size_t inter_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES];
+    size_t inter_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
+    size_t intra_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES];
+    size_t intra_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
 };
 
 class WirelengthInfo {
