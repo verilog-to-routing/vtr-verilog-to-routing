@@ -90,72 +90,72 @@
     <!-- PLL Primitive -->
     <model name="fourteennm_iopll">
       <input_ports>
-        <port name="clken" clock="refclk"/>
-        <port name="cnt_sel" clock="refclk"/> 
-        <port name="core_refclk" clock="refclk"/> 
-        <port name="dps_rst_n" clock="refclk"/> 
-        <port name="extswitch" clock="refclk"/> 
-        <port name="fbclk_in" clock="refclk"/> 
-        <port name="fblvds_in" clock="refclk"/> 
-        <port name="refclk" is_clock="1"/> 
-        <port name="mdio_dis" clock="refclk"/>
-        <port name="rst_n" clock="refclk"/>
-        <port name="num_phase_shifts" clock="refclk"/> 
-        <port name="pfden" clock="refclk"/> 
-        <port name="pll_cascade_in" clock="refclk"/> 
-        <port name="scan_mode_n" clock="refclk"/> 
-        <port name="scan_shift_n" clock="refclk"/>
-        <port name="csr_clk" clock="refclk"/>
-        <port name="csr_en" clock="refclk"/>
-        <port name="phase_en" clock="refclk"/>
-        <port name="csr_in" clock="refclk"/>
-        <port name="uc_cal_addr" clock="refclk"/>
-        <port name="uc_cal_clk" clock="refclk"/>
-        <port name="uc_cal_read" clock="refclk"/>
-        <port name="uc_cal_write" clock="refclk"/>
-        <port name="uc_cal_writedata" clock="refclk"/>  
-        <port name="up_dn" clock="refclk"/> 
-        <port name="user_mode" clock="refclk"/> 
-        <port name="zdb_in" clock="refclk"/> 
-        <port name="dprio_address" clock="refclk"/>                                 
-        <port name="dprio_clk" clock="refclk"/>                                 
-        <port name="read" clock="refclk"/>   
-        <port name="write" clock="refclk"/> 
-        <port name="writedata" clock="refclk"/> 
-        <port name="dprio_rst_n" clock="refclk"/>                                 
-        <port name="pipeline_global_en_n" clock="refclk"/>
-        <port name="pma_csr_test_dis" clock="refclk"/>
+        <port name="clken" clock="core_refclk"/>
+        <port name="cnt_sel" clock="core_refclk"/> 
+        <port name="core_refclk" is_clock="1"/> 
+        <port name="dps_rst_n" clock="core_refclk"/> 
+        <port name="extswitch" clock="core_refclk"/> 
+        <port name="fbclk_in" clock="core_refclk"/> 
+        <port name="fblvds_in" clock="core_refclk"/> 
+        <port name="refclk" clock="core_refclk"/> 
+        <port name="mdio_dis" clock="core_refclk"/>
+        <port name="rst_n" clock="core_refclk"/>
+        <port name="num_phase_shifts" clock="core_refclk"/> 
+        <port name="pfden" clock="core_refclk"/> 
+        <port name="pll_cascade_in" clock="core_refclk"/> 
+        <port name="scan_mode_n" clock="core_refclk"/> 
+        <port name="scan_shift_n" clock="core_refclk"/>
+        <port name="csr_clk" clock="core_refclk"/>
+        <port name="csr_en" clock="core_refclk"/>
+        <port name="phase_en" clock="core_refclk"/>
+        <port name="csr_in" clock="core_refclk"/>
+        <port name="uc_cal_addr" clock="core_refclk"/>
+        <port name="uc_cal_clk" clock="core_refclk"/>
+        <port name="uc_cal_read" clock="core_refclk"/>
+        <port name="uc_cal_write" clock="core_refclk"/>
+        <port name="uc_cal_writedata" clock="core_refclk"/>  
+        <port name="up_dn" clock="core_refclk"/> 
+        <port name="user_mode" clock="core_refclk"/> 
+        <port name="zdb_in" clock="core_refclk"/> 
+        <port name="dprio_address" clock="core_refclk"/>                                 
+        <port name="dprio_clk" clock="core_refclk"/>                                 
+        <port name="read" clock="core_refclk"/>   
+        <port name="write" clock="core_refclk"/> 
+        <port name="writedata" clock="core_refclk"/> 
+        <port name="dprio_rst_n" clock="core_refclk"/>                                 
+        <port name="pipeline_global_en_n" clock="core_refclk"/>
+        <port name="pma_csr_test_dis" clock="core_refclk"/>
       </input_ports>
       <output_ports>
-        <port name="block_select" clock="refclk"/>
-        <port name="clk0_bad" clock="refclk"/> 
-        <port name="clk1_bad" clock="refclk"/> 
-        <port name="clksel" clock="refclk"/>
-        <port name="cal_ok" clock="refclk"/> 
-        <port name="core_avl_busy" clock="refclk"/>
-        <port name="core_cal_done" clock="refclk"/>
-        <port name="extclk_output" clock="refclk"/> 
-        <port name="extclk_dft" clock="refclk"/>
-        <port name="fblvds_out" clock="refclk"/>
-        <port name="lf_reset" clock="refclk"/> 
-        <port name="loaden" clock="refclk"/> 
-        <port name="lock" clock="refclk"/> 
-        <port name="lock2io12lane0" clock="refclk"/> 
-        <port name="lock2io12lane1" clock="refclk"/> 
-        <port name="lock2io12lane2" clock="refclk"/> 
-        <port name="lock2io12lane3" clock="refclk"/> 
-        <port name="lock2iohmc" clock="refclk"/> 
-        <port name="phase_done" clock="refclk"/> 
-        <port name="pll_cascade_out" clock="refclk"/> 
-        <port name="pll_pd" clock="refclk"/> 
-        <port name="outclk" clock="refclk"/> 
-        <port name="dll_output" clock="refclk"/> 
-        <port name="fbclk_out" clock="refclk"/> 
-        <port name="uc_cal_readdata" clock="refclk"/>
-        <port name="vcop_en" clock="refclk"/>
-        <port name="vcoph" clock="refclk"/> 
-        <port name="iopll_out_sig1" clock="refclk"/>
-        <port name="iopll_out_sig2" clock="refclk"/>
+        <port name="block_select" clock="core_refclk"/>
+        <port name="clk0_bad" clock="core_refclk"/> 
+        <port name="clk1_bad" clock="core_refclk"/> 
+        <port name="clksel" clock="core_refclk"/>
+        <port name="cal_ok" clock="core_refclk"/> 
+        <port name="core_avl_busy" clock="core_refclk"/>
+        <port name="core_cal_done" clock="core_refclk"/>
+        <port name="extclk_output" clock="core_refclk"/> 
+        <port name="extclk_dft" clock="core_refclk"/>
+        <port name="fblvds_out" clock="core_refclk"/>
+        <port name="lf_reset" clock="core_refclk"/> 
+        <port name="loaden" clock="core_refclk"/> 
+        <port name="lock" clock="core_refclk"/> 
+        <port name="lock2io12lane0" clock="core_refclk"/> 
+        <port name="lock2io12lane1" clock="core_refclk"/> 
+        <port name="lock2io12lane2" clock="core_refclk"/> 
+        <port name="lock2io12lane3" clock="core_refclk"/> 
+        <port name="lock2iohmc" clock="core_refclk"/> 
+        <port name="phase_done" clock="core_refclk"/> 
+        <port name="pll_cascade_out" clock="core_refclk"/> 
+        <port name="pll_pd" clock="core_refclk"/> 
+        <port name="outclk" clock="core_refclk"/> 
+        <port name="dll_output" clock="core_refclk"/> 
+        <port name="fbclk_out" clock="core_refclk"/> 
+        <port name="uc_cal_readdata" clock="core_refclk"/>
+        <port name="vcop_en" clock="core_refclk"/>
+        <port name="vcoph" clock="core_refclk"/> 
+        <port name="iopll_out_sig1" clock="core_refclk"/>
+        <port name="iopll_out_sig2" clock="core_refclk"/>
       </output_ports>
     </model>
 
@@ -1759,7 +1759,7 @@
         <input name="read" num_pins="1"/>  <!--  Avalon-MM Interface - indicate a read operation during dynamic partial reconfiguration -->
         <input name="write" num_pins="1"/>  <!--  Avalon-MM Interface - indicate a write operation during dynamic partial reconfiguration -->
         <input name="writedata" num_pins="8"/>  <!--  Avalon-MM Interface - data to be written to the given address during dynamic partial reconfiguration -->
-        <input name="core_refclk" num_pins="1"/> <!-- use core clock as an input reference clock -->
+        <clock name="core_refclk" num_pins="1"/> <!-- use core clock as an input reference clock -->
         <input name="csr_clk" num_pins="1"/> <!--Avalon-MM control-and-status register (CSR) agent interface - clock signal-->
         <input name="csr_en" num_pins="1"/> <!--Avalon-MM control-and-status register (CSR) agent interface - enable signal-->
         <input name="phase_en" num_pins="1"/> 
@@ -1769,7 +1769,7 @@
         <input name="extswitch" num_pins="1"/> <!--  controlling clock switchover -->
         <input name="fbclk_in" num_pins="1"/> <!--  feedback clock used for external feedback compensation -->
         <input name="fblvds_in" num_pins="1"/> <!--  feedback clock used for LVDS compensation -->
-        <clock name="refclk" num_pins="4"/> <!--  reference clock source driving the IO PLL -->
+        <input name="refclk" num_pins="4"/> <!--  reference clock source driving the IO PLL -->
         <input name="mdio_dis" num_pins="1"/>
         <input name="rst_n" num_pins="1"/>
         <input name="num_phase_shifts" num_pins="3"/> <!--  number of phase shifts per dynamic phase shift operation -->
@@ -1823,9 +1823,9 @@
       </pb_type>
        <interconnect>
        
-        <complete input="PLL.core_in" name="core_to_pll" output="iopll.clken iopll.cnt_sel iopll.dprio_address iopll.dprio_clk iopll.read iopll.write iopll.writedata iopll.core_refclk iopll.csr_clk iopll.csr_en iopll.csr_in iopll.dprio_rst_n iopll.dps_rst_n iopll.extswitch iopll.fbclk_in iopll.fblvds_in iopll.mdio_dis iopll.rst_n  iopll.phase_en iopll.num_phase_shifts iopll.pfden iopll.pipeline_global_en_n iopll.pma_csr_test_dis iopll.pll_cascade_in iopll.scan_mode_n iopll.scan_shift_n iopll.uc_cal_addr iopll.uc_cal_clk iopll.uc_cal_read  iopll.uc_cal_write iopll.uc_cal_writedata iopll.up_dn iopll.user_mode iopll.zdb_in"/>
+        <complete input="PLL.core_in" name="core_to_pll" output="iopll.refclk iopll.clken iopll.cnt_sel iopll.dprio_address iopll.dprio_clk iopll.read iopll.write iopll.writedata iopll.csr_clk iopll.csr_en iopll.csr_in iopll.dprio_rst_n iopll.dps_rst_n iopll.extswitch iopll.fbclk_in iopll.fblvds_in iopll.mdio_dis iopll.rst_n  iopll.phase_en iopll.num_phase_shifts iopll.pfden iopll.pipeline_global_en_n iopll.pma_csr_test_dis iopll.pll_cascade_in iopll.scan_mode_n iopll.scan_shift_n iopll.uc_cal_addr iopll.uc_cal_clk iopll.uc_cal_read  iopll.uc_cal_write iopll.uc_cal_writedata iopll.up_dn iopll.user_mode iopll.zdb_in"/>
 
-        <complete input="PLL.clk" name="pll_clock" output="iopll.refclk"/>
+        <complete input="PLL.clk" name="pll_clock" output="iopll.core_refclk"/>
 
         <complete input="iopll.block_select iopll.clk0_bad iopll.clk1_bad iopll.clksel iopll.cal_ok iopll.core_avl_busy iopll.core_cal_done iopll.extclk_output iopll.extclk_dft iopll.fblvds_out iopll.lf_reset iopll.loaden iopll.lock iopll.lock2io12lane0 iopll.lock2io12lane1 iopll.lock2io12lane2 iopll.lock2io12lane3 iopll.lock2iohmc iopll.phase_done iopll.pll_cascade_out iopll.pll_pd iopll.outclk iopll.dll_output iopll.fbclk_out iopll.uc_cal_readdata iopll.vcop_en iopll.vcoph iopll.iopll_out_sig1 iopll.iopll_out_sig2" name="pll_to_core" output="PLL.core_out"/>
       </interconnect>
