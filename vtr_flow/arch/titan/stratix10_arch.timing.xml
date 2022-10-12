@@ -1104,11 +1104,11 @@
         <port name="adder_invalid"/>
         <port name="adder_overflow"/>
         <port name="adder_underflow"/>
-        <port name="mult_inexact" clock="output_clk"/>
-        <port name="mult_invalid" clock="output_clk"/>
-        <port name="mult_overflow" clock="output_clk"/>
-        <port name="mult_underflow" clock="output_clk"/>
-        <port name="dftout" clock="output_clk"/>
+        <port name="mult_inexact"/>
+        <port name="mult_invalid"/>
+        <port name="mult_overflow"/>
+        <port name="mult_underflow"/>
+        <port name="dftout" clock="ax_clk"/>
       </output_ports>
     </model>
 
@@ -1131,10 +1131,10 @@
         <port name="adder_invalid" clock="output_clk"/>
         <port name="adder_overflow" clock="output_clk"/>
         <port name="adder_underflow" clock="output_clk"/>
-        <port name="mult_inexact"/>
-        <port name="mult_invalid"/>
-        <port name="mult_overflow"/>
-        <port name="mult_underflow"/>
+        <port name="mult_inexact" clock="output_clk"/>
+        <port name="mult_invalid" clock="output_clk"/>
+        <port name="mult_overflow" clock="output_clk"/>
+        <port name="mult_underflow" clock="output_clk"/>
         <port name="dftout" clock="output_clk"/>
       </output_ports>
     </model>
@@ -1202,7 +1202,6 @@
         <port name="clr" clock="ax_clk"/>
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_clk" is_clock="1"/>
-        <port name="output_clk" is_clock="1"/>
         <port name="ax" clock="ax_clk" combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
         <port name="ay" clock="ay_clk" combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
         <port name="ena" clock="ax_clk"/>
@@ -1216,7 +1215,7 @@
         <port name="adder_invalid" />
         <port name="adder_overflow" />
         <port name="adder_underflow" />
-        <port name="dftout" clock="output_clk"/>
+        <port name="dftout" clock="ax_clk"/>
       </output_ports>
     </model>
 
@@ -1296,7 +1295,6 @@
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
-        <port name="output_clk" is_clock="1"/>
         <port name="ax" clock="ax_clk" combinational_sink_ports="chainout"/>
         <port name="ay" clock="ay_clk" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow mult_inexact mult_invalid mult_overflow mult_underflow"/>
         <port name="az" clock="az_clk" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow mult_inexact mult_invalid mult_overflow mult_underflow"/>
@@ -1305,17 +1303,17 @@
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports> 
       <output_ports> 
-        <port name="chainout" clock="output_clk"/>
+        <port name="chainout"/>
         <port name="resulta"/>
         <port name="adder_inexact"/>
         <port name="adder_invalid"/>
         <port name="adder_overflow"/>
         <port name="adder_underflow"/>
-        <port name="mult_inexact" clock="output_clk"/>
-        <port name="mult_invalid" clock="output_clk"/>
-        <port name="mult_overflow" clock="output_clk"/>
-        <port name="mult_underflow" clock="output_clk"/>
-        <port name="dftout" clock="output_clk"/>
+        <port name="mult_inexact"/>
+        <port name="mult_invalid"/>
+        <port name="mult_overflow"/>
+        <port name="mult_underflow"/>
+        <port name="dftout" clock="ax_clk"/>
       </output_ports>
     </model>
 
@@ -1411,7 +1409,6 @@
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
-        <port name="output_clk" is_clock="1"/>
         <port name="ax" clock="ax_clk" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
         <port name="ay" clock="ay_clk" combinational_sink_ports="chainout mult_inexact mult_invalid mult_overflow mult_underflow"/>
         <port name="az" clock="az_clk" combinational_sink_ports="chainout mult_inexact mult_invalid mult_overflow mult_underflow"/>
@@ -1426,11 +1423,11 @@
         <port name="adder_invalid"/>
         <port name="adder_overflow"/>
         <port name="adder_underflow"/>
-        <port name="mult_inexact" clock="output_clk"/>
-        <port name="mult_invalid" clock="output_clk"/>
-        <port name="mult_overflow" clock="output_clk"/>
-        <port name="mult_underflow" clock="output_clk"/>
-        <port name="dftout" clock="output_clk"/>
+        <port name="mult_inexact"/>
+        <port name="mult_invalid"/>
+        <port name="mult_overflow"/>
+        <port name="mult_underflow"/>
+        <port name="dftout" clock="ax_clk"/>
       </output_ports>
     </model>
 
