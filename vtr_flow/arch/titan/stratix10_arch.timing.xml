@@ -1632,6 +1632,72 @@
       </sub_tile>
     </tile>
 
+    <tile height="4" name="DSP">
+      <sub_tile name="DSP">
+        <equivalent_sites>
+          <site pb_type="DSP" pin_mapping="direct" />
+        </equivalent_sites>
+      <input name="datain" num_pins="110" />
+      <input name="chainin" num_pins="64" />
+      <input name="controlin" num_pins="17" />
+      <input name="scanin" num_pins="27" />
+      <clock name="clk" num_pins="3" />
+      <output name="result" num_pins="74" />
+      <output name="chainout" num_pins="64" />
+      <output name="scanout" num_pins="27" />
+      <output name="dftout" num_pins="1" />
+        <fc in_type="frac" in_val="0.0275" out_type="frac" out_val="0.0375">
+          
+        </fc>
+        <pinlocations pattern="custom">
+          
+          
+          
+          
+          <loc side="left" yoffset="3">DSP.datain[8:0]    DSP.chainin[4:0] DSP.chainout[4:0] DSP.controlin[0] DSP.scanin[1:0] DSP.clk[0] DSP.result[17:0]  DSP.scanout[1:0]   DSP.dftout                  </loc>
+          <loc side="left" yoffset="2">DSP.datain[17:9]   DSP.chainin[9:5] DSP.chainout[9:5] DSP.controlin[2:1] DSP.scanin[4:2]            DSP.result[35:18] DSP.scanout[4:2]  </loc>
+          <loc side="right" yoffset="3">DSP.datain[26:18]  DSP.chainin[14:10] DSP.chainout[14:10] DSP.controlin[3] DSP.scanin[6:5] DSP.clk[1] DSP.result[53:36] DSP.scanout[6:5]  </loc>
+          <loc side="right" yoffset="2">DSP.datain[35:27] DSP.chainin[19:15] DSP.chainout[19:15] DSP.controlin[5:4] DSP.scanin[8:7]            DSP.result[71:54] DSP.scanout[8:7]  </loc>
+          <loc side="top" yoffset="3">DSP.datain[44:36]  DSP.chainin[24:20] DSP.chainout[24:20] DSP.controlin[6] DSP.scanin[10:9]    DSP.clk[2] DSP.result[35:0]  DSP.scanout[10:9]  </loc>
+          <loc side="top" yoffset="2">DSP.datain[53:45]    DSP.chainin[29:25] DSP.chainout[29:25] DSP.controlin[8:7] DSP.scanin[12:11]    DSP.clk[1] DSP.result[73:36] DSP.scanout[12:11]  </loc>
+          <loc side="bottom" yoffset="3" />
+          <loc side="bottom" yoffset="2" />
+          
+          <loc side="left" yoffset="1">DSP.datain[61:54] DSP.chainin[34:30] DSP.chainout[34:30] DSP.controlin[9]  DSP.scanin[14:13]     DSP.clk[2] DSP.result[17:0]  DSP.scanout[14:13]                      </loc>
+          <loc side="left" yoffset="0">DSP.datain[70:62] DSP.chainin[39:35] DSP.chainout[39:35] DSP.controlin[11:10] DSP.scanin[16:15]               DSP.result[35:18] DSP.scanout[16:15] </loc>
+          <loc side="right" yoffset="1">DSP.datain[79:71] DSP.chainin[44:40] DSP.chainout[44:40] DSP.controlin[12] DSP.scanin[18:17]               DSP.result[53:36] DSP.scanout[18:17] </loc>
+          <loc side="right" yoffset="0">DSP.datain[88:80] DSP.chainin[49:45] DSP.chainout[49:45] DSP.controlin[14:13] DSP.scanin[20:19]    DSP.clk[0] DSP.result[71:54] DSP.scanout[20:19] </loc>
+          <loc side="top" yoffset="1">DSP.datain[97:89] DSP.chainin[54:50] DSP.chainout[54:50] DSP.controlin[15]  DSP.scanin[22:21]     DSP.clk[2] DSP.result[35:0]  DSP.scanout[22:21] </loc>
+          <loc side="top" yoffset="0">DSP.datain[109:98] DSP.chainin[63:55] DSP.chainout[63:55] DSP.controlin[16] DSP.scanin[26:23]    DSP.clk[0] DSP.result[73:36] DSP.scanout[26:23] </loc>
+          <loc side="bottom" yoffset="1" />
+          <loc side="bottom" yoffset="0">DSP.chainout</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+
+    <tile name="M20K">
+      <sub_tile name="M20K">
+        <equivalent_sites>
+          <site pb_type="M20K" pin_mapping="direct" />
+        </equivalent_sites>
+        <input name="data_addr_control_in" num_pins="104" />
+        <output name="data_out" num_pins="40" />
+        <output name="control_out" num_pins="2" />
+        <clock name="clk_in" num_pins="2" />
+
+        <fc in_type="frac" in_val="0.0275" out_type="frac" out_val="0.0375">
+          
+          
+          
+        </fc>
+        <pinlocations pattern="custom">
+          
+          <loc side="left">  M20K.data_addr_control_in[0:51]  M20K.control_out[0] M20K.data_out[0:19]  M20K.clk_in </loc>
+          <loc side="right"> M20K.data_addr_control_in[52:103] M20K.control_out[1] M20K.data_out[20:39] </loc>
+          <loc side="top">   M20K.data_addr_control_in        M20K.control_out      M20K.data_out        M20K.clk_in </loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
   </tiles>
   <layout>
     <auto_layout aspect_ratio="1.35">
