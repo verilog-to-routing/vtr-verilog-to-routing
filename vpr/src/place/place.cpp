@@ -1261,7 +1261,7 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
      */
     auto blocks = cluster_ctx.clb_nlist.blocks();
     if (blocks.size() < 500) {
-        init_temp *= 10;
+        init_temp = std_dev * 20;
     }
 
     return init_temp;
