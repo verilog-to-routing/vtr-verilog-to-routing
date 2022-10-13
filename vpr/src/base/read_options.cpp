@@ -1804,7 +1804,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "  * circuit: proportional to circuit size (num_blocks ^ 4/3)\n"
             "  * device_circuit: proportional to device and circuit size\n"
             "                    (grid_size ^ 2/3 * num_blocks ^ 2/3)\n")
-        .default_value("circuit")
+        .default_value("device_circuit")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceInitT, "--init_t")
