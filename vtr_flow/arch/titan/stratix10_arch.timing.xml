@@ -1877,7 +1877,7 @@
 
 
                         <delay_constant max="198e-12" min="198e-12" in_port="lcell_comb.dataa" out_port="lcell_comb.combout"/>
-                        <delay_constant max="197-12" min="197-12" in_port="lcell_comb.datab" out_port="lcell_comb.combout"/>
+                        <delay_constant max="197e-12" min="197e-12" in_port="lcell_comb.datab" out_port="lcell_comb.combout"/>
                         <delay_constant max="78e-12" min="78e-12" in_port="lcell_comb.datac" out_port="lcell_comb.combout"/>
                         <delay_constant max="60e-12" min="60e-12" in_port="lcell_comb.datad" out_port="lcell_comb.combout"/>
                         <delay_constant max="34e-12" min="34e-12" in_port="lcell_comb.datae" out_port="lcell_comb.combout"/>
@@ -2081,11 +2081,11 @@
           </complete>
           <!-- ALM Outputs: directly drive global routing -->
           <complete input="alm[9:0].data_out" name="LAB_dataout" output="LAB.data_out">
-            <delay_constant max="56e-12" min="56e-12" in_port="LAB.data_in" out_port="alm[9:0].data_in"/>
+            <delay_constant max="56e-12" min="56e-12" in_port="alm[9:0].data_out" out_port="LAB.data_out"/>
           </complete>   
           <!-- ALM Control Inputs -->
           <complete input="LAB.control_in" name="LAB_control" output="alm[9:0].control">
-            <delay_constant max="145e-12" min="145e-12" in_port="LAB.data_in" out_port="alm[9:0].data_in"/>
+            <delay_constant max="145e-12" min="145e-12" in_port="LAB.control_in" out_port="alm[9:0].control"/>
           </complete>  
           <!-- LAB Clocks -->
           <complete input="LAB.clk" name="LAB_clock" output="alm[9:0].clock"/>
@@ -2110,19 +2110,6 @@
             <pack_pattern name="LAB_carry_chain" in_port="alm[3].cout" out_port="alm[4].cin"/>
           </direct>
           <direct input="alm[4].cout" name="alm4_alm5_carry" output="alm[5].cin">
-            <!--
-                 - There is extra delay crossing from the 5th to 6th ALM in
-                 - a LAB due to the extra distance (crossing control circuitry) and 
-                 - the optional entry/exit mux at the mid-point of the carry chain.
-                 - 
-                 - From experiments with Quartus II the maximum delay is roughly 65ps, 
-                 - since we already account for 11ps on the LUT we will account 
-                 - for the remainder (55ps) here.
-
-                 - Similarly, the value observed in QII for minimum delay is 53ps,
-                 - Subtracting the 8ps on the LUT, we account for 45ps here.
-                 -->
-            <delay_constant max="55e-12" min="45e-12" in_port="alm[4].cout" out_port="alm[5].cin"/>
             <pack_pattern name="LAB_carry_chain" in_port="alm[4].cout" out_port="alm[5].cin"/>
           </direct>
           <direct input="alm[5].cout" name="alm5_alm6_carry" output="alm[6].cin">
