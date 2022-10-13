@@ -9,7 +9,8 @@
 class MapLookahead : public RouterLookahead {
   public:
     explicit MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
-        : det_routing_arch_(det_routing_arch), is_flat_(is_flat) {}
+        : det_routing_arch_(det_routing_arch)
+        , is_flat_(is_flat) {}
 
   private:
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types

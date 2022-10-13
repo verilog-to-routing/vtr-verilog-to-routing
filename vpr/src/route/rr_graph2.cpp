@@ -1099,12 +1099,12 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
         for (size_t y = 0; y < grid.height(); y++) {
             //Process each block from it's root location
             if (grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0) {
-                t_physical_tile_type_ptr physical_type =  grid[x][y].type;
+                t_physical_tile_type_ptr physical_type = grid[x][y].type;
                 //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
-                if(is_flat) {
+                if (is_flat) {
                     class_num_vec = get_cluster_netlist_tile_primitive_classes_at_loc(x, y, physical_type);
                     pin_num_vec = get_cluster_netlist_tile_pins_at_loc(x, y, physical_type);
                 } else {
@@ -1197,7 +1197,7 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
     rr_graph_builder.node_lookup().reserve_nodes(root_x, root_y, IPIN, pin_num_vec.size(), e_side::TOP);
 
     for (e_side side : wanted_sides) {
-        if(side == TOP){
+        if (side == TOP) {
             // already reserved
             continue;
         }
@@ -1212,14 +1212,14 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
         }
     }
 
-    for(auto pin_num : pin_num_vec) {
+    for (auto pin_num : pin_num_vec) {
         bool assigned_to_rr_node = false;
         std::vector<int> x_offset;
         std::vector<int> y_offset;
         std::vector<e_side> pin_sides;
         std::tie(x_offset, y_offset, pin_sides) = get_pin_coordinates(physical_type_ptr, pin_num, wanted_sides);
         auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
-        for(int pin_coord_idx = 0; pin_coord_idx < (int)pin_sides.size(); pin_coord_idx++) {
+        for (int pin_coord_idx = 0; pin_coord_idx < (int)pin_sides.size(); pin_coord_idx++) {
             int x_tile = root_x + x_offset[pin_coord_idx];
             int y_tile = root_y + y_offset[pin_coord_idx];
             auto side = pin_sides[pin_coord_idx];
@@ -1232,7 +1232,6 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                 rr_graph_builder.node_lookup().add_node(RRNodeId(*index), x_tile, y_tile, IPIN, pin_num, side);
                 assigned_to_rr_node = true;
             }
-
         }
         /* A pin may locate on multiple sides of a tile.
          * Instead of allocating multiple rr_nodes for the pin,
@@ -1248,7 +1247,6 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
         if (assigned_to_rr_node) {
             ++(*index);
         }
-
     }
 }
 
@@ -1260,14 +1258,14 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                        int block_width,
                                        int block_height,
                                        int* index) {
-    for(int x_tile = root_x; x_tile < (root_x+block_width); x_tile++) {
-        for(int y_tile = root_y; y_tile < (root_y+block_height); y_tile++) {
+    for (int x_tile = root_x; x_tile < (root_x + block_width); x_tile++) {
+        for (int y_tile = root_y; y_tile < (root_y + block_height); y_tile++) {
             rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, SOURCE, class_num_vec.size(), SIDES[0]);
             rr_graph_builder.node_lookup().reserve_nodes(x_tile, y_tile, SINK, class_num_vec.size(), SIDES[0]);
         }
     }
 
-    for(auto class_num : class_num_vec) {
+    for (auto class_num : class_num_vec) {
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
         if (class_type == DRIVER) {
             rr_graph_builder.node_lookup().add_node(RRNodeId(*index), root_x, root_y, SOURCE, class_num);
@@ -1282,7 +1280,7 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
     // This ensures that look-ups on non-root locations will still find the correct SOURCE/SINK
     for (int x_offset = 0; x_offset < block_width; x_offset++) {
         for (int y_offset = 0; y_offset < block_height; y_offset++) {
-            if(x_offset == 0 && y_offset == 0){
+            if (x_offset == 0 && y_offset == 0) {
                 // Node is already added
                 continue;
             }
@@ -1830,7 +1828,7 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                          int x,
                                          int y,
                                          int* num_rr_nodes) {
-    std::vector<e_side> wanted_sides {TOP, BOTTOM, LEFT, RIGHT};
+    std::vector<e_side> wanted_sides{TOP, BOTTOM, LEFT, RIGHT};
     std::vector<int> class_num_vec = get_flat_tile_primitive_classes(physical_tile);
     std::vector<int> pin_num_vec = get_flat_tile_pins(physical_tile);
     add_classes_spatial_lookup(rr_graph_builder,

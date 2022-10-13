@@ -259,13 +259,11 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_physical_tile_type_ptr from_physical_type =
-        device_ctx.grid[rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)].type;
+    t_physical_tile_type_ptr from_physical_type = device_ctx.grid[rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)].type;
     t_rr_type from_rr_type = rr_graph.node_type(current_node);
     int from_node_ptc_num = rr_graph.node_ptc_num(current_node);
 
-    t_physical_tile_type_ptr to_physical_type =
-        device_ctx.grid[rr_graph.node_xlow(target_node)][rr_graph.node_ylow(target_node)].type;
+    t_physical_tile_type_ptr to_physical_type = device_ctx.grid[rr_graph.node_xlow(target_node)][rr_graph.node_ylow(target_node)].type;
     t_rr_type to_rr_type = rr_graph.node_type(target_node);
     int to_node_ptc_num = rr_graph.node_ptc_num(target_node);
     VTR_ASSERT(to_rr_type == t_rr_type::SINK);
@@ -273,7 +271,7 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     float delay_cost, cong_cost;
     float delay_offset_cost, cong_offset_cost;
 
-    if(is_flat_) {
+    if (is_flat_) {
         if (from_rr_type == CHANX || from_rr_type == CHANY) {
             std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
@@ -281,11 +279,11 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
             cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
 
             return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
-        } else if (from_rr_type == OPIN){
-            if(is_inter_cluster_node(from_physical_type,
+        } else if (from_rr_type == OPIN) {
+            if (is_inter_cluster_node(from_physical_type,
                                       from_rr_type,
                                       from_node_ptc_num)) {
-                if(node_in_same_physical_tile(current_node, target_node)) {
+                if (node_in_same_physical_tile(current_node, target_node)) {
                     delay_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
                     cong_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
                     return delay_cost + cong_cost;
@@ -297,10 +295,10 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                     return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
                 }
             } else {
-                if(node_in_same_physical_tile(current_node, target_node)) {
-                    const auto& pin_delays  = inter_tile_pin_primitive_pin_delay.at(from_physical_type)[from_node_ptc_num];
+                if (node_in_same_physical_tile(current_node, target_node)) {
+                    const auto& pin_delays = inter_tile_pin_primitive_pin_delay.at(from_physical_type)[from_node_ptc_num];
                     auto pin_delay_itr = pin_delays.find(rr_graph.node_ptc_num(target_node));
-                    if(pin_delay_itr == pin_delays.end()) {
+                    if (pin_delay_itr == pin_delays.end()) {
                         //VTR_ASSERT(pin_delay_itr != pin_delays.end());
                         delay_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
                         cong_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
@@ -322,9 +320,9 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
         } else if (from_rr_type == IPIN) {
             // Since ّI am pruning irrelevant pins, I should not get into this if statement.
             VTR_ASSERT(node_in_same_physical_tile(current_node, target_node));
-            const auto& pin_delays  = inter_tile_pin_primitive_pin_delay.at(from_physical_type)[from_node_ptc_num];
+            const auto& pin_delays = inter_tile_pin_primitive_pin_delay.at(from_physical_type)[from_node_ptc_num];
             auto pin_delay_itr = pin_delays.find(rr_graph.node_ptc_num(target_node));
-            if(pin_delay_itr == pin_delays.end()) {
+            if (pin_delay_itr == pin_delays.end()) {
                 // Since ّI am pruning irrelevant pins, I should not get into this if statement.
                 //VTR_ASSERT(pin_delay_itr != pin_delays.end());
                 delay_cost = std::numeric_limits<float>::max() / 1e12;
@@ -485,7 +483,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     //from the different physical tile type's SOURCEs & OPINs
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 
-    if(is_flat_) {
+    if (is_flat_) {
         compute_tiles_lookahead(inter_tile_pin_primitive_pin_delay,
                                 tile_min_cost,
                                 det_routing_arch_,
@@ -495,7 +493,6 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
                             f_wire_cost_map.dim_size(2),
                             f_wire_cost_map.dim_size(3));
     }
-
 }
 
 void MapLookahead::read(const std::string& file) {
@@ -792,8 +789,8 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry,
         // For the time being, we decide to not let the lookahead explore the node inside the clusters
         t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(child_node)][rr_graph.node_ylow(child_node)].type;
         if (!is_inter_cluster_node(physical_type,
-                             rr_graph.node_type(child_node),
-                             rr_graph.node_ptc_num(child_node))) {
+                                   rr_graph.node_type(child_node),
+                                   rr_graph.node_ptc_num(child_node))) {
             continue;
         }
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
@@ -1256,15 +1253,15 @@ static void compute_tiles_lookahead(std::map<t_physical_tile_type_ptr, util::t_i
     vtr::ScopedStartFinishTimer timer("Computing tile lookahead");
     const auto& tiles = device_ctx.physical_tile_types;
 
-    for(const auto& tile : tiles) {
-        if(is_empty_type(&tile)){
+    for (const auto& tile : tiles) {
+        if (is_empty_type(&tile)) {
             continue;
         }
         //TODO: The sw_id of the delayless switch should be somehow passed to this function - The current approach is not safe
         compute_tile_lookahead(inter_tile_pin_primitive_pin_delay,
                                &tile,
                                det_routing_arch,
-                               (int)device_ctx.arch_switch_inf.size()-1);
+                               (int)device_ctx.arch_switch_inf.size() - 1);
         store_min_cost_to_sinks(tile_min_cost,
                                 &tile,
                                 inter_tile_pin_primitive_pin_delay);
@@ -1312,53 +1309,52 @@ static void store_min_cost_to_sinks(std::map<t_physical_tile_type_ptr, std::unor
     const auto& tile_pin_delays = inter_tile_pin_primitive_pin_delay.at(physical_tile);
     std::unordered_map<int, util::Cost_Entry> min_cost_map;
 
-    for(const auto& class_pair : physical_tile->internal_class_inf) {
+    for (const auto& class_pair : physical_tile->internal_class_inf) {
         int class_physical_num = class_pair.first;
         const auto& class_inf = class_pair.second;
-        if(class_inf.type != e_pin_type::RECEIVER) {
+        if (class_inf.type != e_pin_type::RECEIVER) {
             continue;
         }
         auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, class_inf.pinlist[0]);
-        if(pb_pin->is_primitive_pin()){
+        if (pb_pin->is_primitive_pin()) {
             auto insert_res = primitive_sinks.insert(class_physical_num);
             VTR_ASSERT(insert_res.second);
         }
     }
 
-    for(int primitive_sink : primitive_sinks) {
+    for (int primitive_sink : primitive_sinks) {
         auto min_cost = util::Cost_Entry(std::numeric_limits<float>::max() / 1e12,
                                          std::numeric_limits<float>::max() / 1e12);
 
-        for(int pin_physical_num = 0; pin_physical_num < physical_tile->num_pins; pin_physical_num++) {
+        for (int pin_physical_num = 0; pin_physical_num < physical_tile->num_pins; pin_physical_num++) {
             const auto& pin_delays = tile_pin_delays[pin_physical_num];
-            if(pin_delays.find(primitive_sink) != pin_delays.end()) {
+            if (pin_delays.find(primitive_sink) != pin_delays.end()) {
                 auto pin_cost = pin_delays.at(primitive_sink);
-                if(pin_cost.delay < min_cost.delay) {
+                if (pin_cost.delay < min_cost.delay) {
                     min_cost = pin_cost;
                 }
             }
         }
-        auto insert_res= min_cost_map.insert(std::make_pair(primitive_sink, min_cost));
+        auto insert_res = min_cost_map.insert(std::make_pair(primitive_sink, min_cost));
         VTR_ASSERT(insert_res.second);
     }
 
     auto insert_res = tile_min_cost.insert(std::make_pair(physical_tile, min_cost_map));
     VTR_ASSERT(insert_res.second);
-
 }
 
 static void min_global_cost_map(vtr::NdMatrix<util::Cost_Entry, 2>& internal_opin_global_cost_map,
-                                                        size_t max_dx,
-                                                        size_t max_dy) {
+                                size_t max_dx,
+                                size_t max_dy) {
     internal_opin_global_cost_map.resize({max_dx, max_dy});
-    for(int dx = 0; dx < (int)max_dx; dx++){
-        for(int dy = 0; dy < (int)max_dy; dy++) {
+    for (int dx = 0; dx < (int)max_dx; dx++) {
+        for (int dy = 0; dy < (int)max_dy; dy++) {
             util::Cost_Entry min_cost(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-            for(int chan_idx = 0; chan_idx < (int)f_wire_cost_map.dim_size(0); chan_idx++) {
-                for(int seg_idx = 0; seg_idx < (int)f_wire_cost_map.dim_size(1); seg_idx++) {
+            for (int chan_idx = 0; chan_idx < (int)f_wire_cost_map.dim_size(0); chan_idx++) {
+                for (int seg_idx = 0; seg_idx < (int)f_wire_cost_map.dim_size(1); seg_idx++) {
                     auto cost = util::Cost_Entry(f_wire_cost_map[chan_idx][seg_idx][dx][dy].delay,
                                                  f_wire_cost_map[chan_idx][seg_idx][dx][dy].congestion);
-                    if(cost.delay < min_cost.delay) {
+                    if (cost.delay < min_cost.delay) {
                         min_cost.delay = cost.delay;
                         min_cost.congestion = cost.congestion;
                     }

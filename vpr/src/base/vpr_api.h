@@ -71,7 +71,7 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch);
 bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch);
 
 ///@brief Perform placement
-void vpr_place(const Netlist<>& net_list,t_vpr_setup& vpr_setup, const t_arch& arch);
+void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch);
 
 ///@brief Loads a previous placement
 void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch);

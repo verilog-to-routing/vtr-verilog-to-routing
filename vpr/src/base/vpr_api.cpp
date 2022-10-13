@@ -383,7 +383,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     // TODO: Placer still assumes that cluster net list is used - graphics can not work with flat routing yet
     vpr_init_graphics(vpr_setup, arch, false);
     { //Place
-        const auto& placement_net_list = (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
+        const auto& placement_net_list = (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
         bool place_success = vpr_place_flow(placement_net_list, vpr_setup, arch);
 
         if (!place_success) {
@@ -392,8 +392,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
-    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&) g_vpr_ctx.atom().nlist :
-                                        (const Netlist<>&) g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     RouteStatus route_status;
     { //Route
         route_status = vpr_route_flow(router_net_list, vpr_setup, arch, is_flat);
@@ -795,7 +794,6 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
 
         net_delay = make_net_pins_matrix<float>(net_list);
 
-
         //Initialize the delay calculator
         std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
@@ -952,7 +950,7 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
 
     auto& router_opts = vpr_setup.RouterOpts;
     // Placement does not use atom_net list regardless of the status of flat_routing.
-    int min_W = binary_search_place_and_route((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
+    int min_W = binary_search_place_and_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
                                               net_list,
                                               vpr_setup.PlacerOpts,
                                               vpr_setup.AnnealSched,

@@ -109,7 +109,7 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
 
 /* This function is used by get_cost_from_lookahead function. If the given node to the function belongs to one of the
  * intra-cluster routing resources, it would return a node corresponds to a pin on the tile.
-*/
+ */
 //static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat);
 
 /************************** Subroutine definitions ***************************/
@@ -1814,25 +1814,24 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               float R_upstream,
                               const t_conn_cost_params cost_params,
                               bool /*is_flat*/) {
-
     return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
 
-//    if (is_flat) {
-//        if (node_in_same_physical_tile(from_node, to_node)) {
-//            return 0.0;
-//        } else {
-//            RRNodeId on_tile_from_node = get_connected_on_tile_node(rr_graph_view, from_node, is_flat);
-//            RRNodeId on_tile_to_node = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
-//            VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
-//            VTR_ASSERT(on_tile_to_node != RRNodeId::INVALID());
-//            return router_lookahead.get_expected_cost(on_tile_from_node,
-//                                                      on_tile_to_node,
-//                                                      cost_params,
-//                                                      R_upstream);
-//        }
-//    } else {
-//        return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
-//    }
+    //    if (is_flat) {
+    //        if (node_in_same_physical_tile(from_node, to_node)) {
+    //            return 0.0;
+    //        } else {
+    //            RRNodeId on_tile_from_node = get_connected_on_tile_node(rr_graph_view, from_node, is_flat);
+    //            RRNodeId on_tile_to_node = get_connected_on_tile_node(rr_graph_view, to_node, is_flat);
+    //            VTR_ASSERT(on_tile_from_node != RRNodeId::INVALID());
+    //            VTR_ASSERT(on_tile_to_node != RRNodeId::INVALID());
+    //            return router_lookahead.get_expected_cost(on_tile_from_node,
+    //                                                      on_tile_to_node,
+    //                                                      cost_params,
+    //                                                      R_upstream);
+    //        }
+    //    } else {
+    //        return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
+    //    }
 }
 
 void update_router_stats(const DeviceContext& device_ctx,
@@ -1840,7 +1839,7 @@ void update_router_stats(const DeviceContext& device_ctx,
                          RouterStats* router_stats,
                          RRNodeId rr_node_id,
                          bool is_push) {
-    if(is_push) {
+    if (is_push) {
         router_stats->heap_pushes++;
     } else {
         router_stats->heap_pops++;
@@ -1848,13 +1847,12 @@ void update_router_stats(const DeviceContext& device_ctx,
 
     auto node_type = rr_graph->node_type(rr_node_id);
     VTR_ASSERT(node_type != NUM_RR_TYPES);
-    t_physical_tile_type_ptr physical_type =
-        device_ctx.grid[rr_graph->node_xlow(rr_node_id)][rr_graph->node_ylow(rr_node_id)].type;
+    t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph->node_xlow(rr_node_id)][rr_graph->node_ylow(rr_node_id)].type;
 
     if (is_inter_cluster_node(physical_type,
                               node_type,
                               rr_graph->node_ptc_num(rr_node_id))) {
-        if(is_push) {
+        if (is_push) {
             router_stats->inter_cluster_node_pushes++;
             router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
         } else {
@@ -1863,16 +1861,14 @@ void update_router_stats(const DeviceContext& device_ctx,
         }
 
     } else {
-        if(is_push) {
+        if (is_push) {
             router_stats->intra_cluster_node_pushes++;
             router_stats->intra_cluster_node_type_cnt_pushes[node_type]++;
         } else {
             router_stats->intra_cluster_node_pops++;
             router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
         }
-
     }
-
 }
 
 //static RRNodeId get_connected_on_tile_node(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat) {

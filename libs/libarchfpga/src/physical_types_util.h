@@ -406,9 +406,9 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                             const t_pb_graph_pin* pin);
 
 int get_edge_sw_arch_idx(t_physical_tile_type_ptr physical_tile,
-                    t_logical_block_type_ptr logical_block,
-                    int from_pin_physical_num,
-                    int to_pin_physical_num);
+                         t_logical_block_type_ptr logical_block,
+                         int from_pin_physical_num,
+                         int to_pin_physical_num);
 
 const t_pb_graph_node* get_pb_graph_node_from_pin_physical_num(t_physical_tile_type_ptr physical_type,
                                                                int pin_physical_num);

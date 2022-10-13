@@ -2289,8 +2289,8 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
 }
 
 bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
-                     t_rr_type node_type,
-                     int node_ptc) {
+                           t_rr_type node_type,
+                           int node_ptc) {
     if (node_type == CHANX || node_type == CHANY) {
         return true;
     } else {
@@ -2333,18 +2333,17 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     std::vector<int> x_offset;
     std::vector<int> y_offset;
     std::vector<e_side> pin_sides;
-    std::tie(x_offset, y_offset, pin_sides)  = get_pin_coordinates(physical_tile, pin_physical_num, std::vector<e_side>(SIDES.begin(), SIDES.end()));
+    std::tie(x_offset, y_offset, pin_sides) = get_pin_coordinates(physical_tile, pin_physical_num, std::vector<e_side>(SIDES.begin(), SIDES.end()));
     VTR_ASSERT(!x_offset.empty());
     RRNodeId node_id = RRNodeId::INVALID();
-    for(int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
-        node_id = rr_spatial_lookup.find_node(i+x_offset[coord_idx],
-                                                j+y_offset[coord_idx],
-                                                    node_type,
-                                                        pin_physical_num,
-                                                            pin_sides[coord_idx]);
-        if(node_id != RRNodeId::INVALID())
+    for (int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
+        node_id = rr_spatial_lookup.find_node(i + x_offset[coord_idx],
+                                              j + y_offset[coord_idx],
+                                              node_type,
+                                              pin_physical_num,
+                                              pin_sides[coord_idx]);
+        if (node_id != RRNodeId::INVALID())
             break;
-
     }
     return node_id;
 }
@@ -2393,8 +2392,8 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
 }
 
 std::vector<int> get_cluster_netlist_tile_primitive_classes_at_loc(const int i,
-                                                      const int j,
-                                                      t_physical_tile_type_ptr physical_type) {
+                                                                   const int j,
+                                                                   t_physical_tile_type_ptr physical_type) {
     std::vector<int> class_num_vec;
     class_num_vec.resize(physical_type->class_inf.size());
     std::iota(class_num_vec.begin(), class_num_vec.end(), 0);
@@ -2427,7 +2426,6 @@ std::vector<int> get_cluster_netlist_tile_primitive_classes_at_loc(const int i,
 std::vector<int> get_cluster_netlist_tile_pins_at_loc(const int i,
                                                       const int j,
                                                       t_physical_tile_type_ptr physical_type) {
-
     auto& place_ctx = g_vpr_ctx.placement();
     auto grid_block = place_ctx.grid_blocks[i][j];
 
@@ -2441,7 +2439,7 @@ std::vector<int> get_cluster_netlist_tile_pins_at_loc(const int i,
             cluster_pins.resize(num_tile_pin_per_inst);
             std::iota(cluster_pins.begin(),
                       cluster_pins.end(),
-                      abs_cap*num_tile_pin_per_inst);
+                      abs_cap * num_tile_pin_per_inst);
         } else {
             auto cluster_blk_id = grid_block.blocks[abs_cap];
             VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
@@ -2460,11 +2458,10 @@ std::vector<int> get_cluster_netlist_tile_pins_at_loc(const int i,
 std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
                                         ClusterBlockId cluster_blk_id,
                                         int abs_cap) {
-    int max_num_pin =
-        (int)(physical_tile->num_pins + physical_tile->internal_pin_class.size()) / physical_tile->capacity;
+    int max_num_pin = (int)(physical_tile->num_pins + physical_tile->internal_pin_class.size()) / physical_tile->capacity;
     int num_tile_pin_per_inst = physical_tile->num_pins / physical_tile->capacity;
     std::vector<int> pin_num_vec(num_tile_pin_per_inst);
-    std::iota(pin_num_vec.begin(), pin_num_vec.end(), abs_cap*num_tile_pin_per_inst);
+    std::iota(pin_num_vec.begin(), pin_num_vec.end(), abs_cap * num_tile_pin_per_inst);
 
     pin_num_vec.reserve(max_num_pin);
 

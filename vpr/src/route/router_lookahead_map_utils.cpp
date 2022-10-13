@@ -343,8 +343,8 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                     int ptc = rr_graph.node_ptc_num(node_id);
                     // For the time being, we decide to not let the lookahead explore the node inside the clusters
                     if (!is_inter_cluster_node(&device_ctx.physical_tile_types[itile],
-                                         rr_type,
-                                         ptc)) {
+                                               rr_type,
+                                               ptc)) {
                         continue;
                     }
 
@@ -432,7 +432,7 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
     std::vector<RRNodeId> tile_pins_node_id;
     tile_pins_node_id.reserve(physical_tile->num_pins + physical_tile->internal_pin_class.size());
 
-    for(int pin_physical_num = 0; pin_physical_num < physical_tile->num_pins; pin_physical_num++) {
+    for (int pin_physical_num = 0; pin_physical_num < physical_tile->num_pins; pin_physical_num++) {
         e_side node_side = e_side::NUM_SIDES;
         int x_tile = -1;
         int y_tile = -1;
@@ -448,11 +448,11 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
                         break;
                     }
                 }
-                if(is_found){
+                if (is_found) {
                     break;
                 }
             }
-            if(is_found){
+            if (is_found) {
                 break;
             }
         }
@@ -463,10 +463,10 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
         VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
         tile_pins_node_id.push_back(pin_node_id);
     }
-    for(const auto& pin_class_pair : physical_tile->internal_pin_class) {
+    for (const auto& pin_class_pair : physical_tile->internal_pin_class) {
         int pin_physical_num = pin_class_pair.first;
         auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_physical_num);
-        if(pb_pin->is_root_block_pin()) {
+        if (pb_pin->is_root_block_pin()) {
             continue;
         }
         auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
@@ -475,7 +475,7 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
         VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
         tile_pins_node_id.push_back(pin_node_id);
     }
-    for(auto rr_node_id : tile_pins_node_id) {
+    for (auto rr_node_id : tile_pins_node_id) {
         run_intra_tile_dijkstra(rr_graph, pin_delays, physical_tile, rr_node_id);
     }
 
@@ -573,8 +573,8 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId node, util::t_src_opin_d
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
                 t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)].type;
                 if (!is_inter_cluster_node(physical_type,
-                                     rr_graph.node_type(next_node),
-                                     rr_graph.node_ptc_num(next_node))) {
+                                           rr_graph.node_type(next_node),
+                                           rr_graph.node_ptc_num(next_node))) {
                     continue;
                 }
 
@@ -728,7 +728,6 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                     util::t_ipin_primitive_sink_delays& pin_delays,
                                     t_physical_tile_type_ptr physical_tile,
                                     RRNodeId starting_node_id) {
-
     // device_ctx should not be used to access rr_graph, since the graph get from device_ctx is not the intra-tile graph
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -739,7 +738,6 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
     vtr::vector<RRNodeId, float> node_seen_cost;
     node_seen_cost.resize(rr_graph.num_nodes());
     std::fill(node_seen_cost.begin(), node_seen_cost.end(), -1.);
-
 
     struct t_pq_entry {
         float delay;
@@ -762,17 +760,17 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
     std::unordered_map<int, util::Cost_Entry>& starting_pin_delay_map = pin_delays.at(root_ptc);
     pq.push(root);
 
-    while(!pq.empty()) {
+    while (!pq.empty()) {
         t_pq_entry curr = pq.top();
         pq.pop();
-        if(node_expanded[curr.node]) {
+        if (node_expanded[curr.node]) {
             continue;
-        } else{
+        } else {
             node_expanded[curr.node] = true;
         }
         auto curr_type = rr_graph.node_type(curr.node);
         VTR_ASSERT(curr_type != t_rr_type::CHANX && curr_type != t_rr_type::CHANY);
-        if(curr_type != SINK) {
+        if (curr_type != SINK) {
             auto cost_index = rr_graph.node_cost_index(curr.node);
             float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
 
@@ -787,23 +785,19 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
                 next.delay = curr.delay + incr_delay;          //To reach next node
                 next.node = next_node;
 
-                if(node_seen_cost[next_node] < 0. ||
-                    node_seen_cost[next_node] > next.delay) {
+                if (node_seen_cost[next_node] < 0. || node_seen_cost[next_node] > next.delay) {
                     node_seen_cost[next_node] = next.delay;
                     pq.push(next);
                 }
             }
         } else {
             const auto& pin_list = get_pin_list_from_class_physical_num(physical_tile, rr_graph.node_ptc_num(curr.node));
-            if(!is_pin_on_tile(physical_tile, pin_list[0]) && get_pb_pin_from_pin_physical_num(physical_tile, pin_list[0])->is_primitive_pin()){
+            if (!is_pin_on_tile(physical_tile, pin_list[0]) && get_pb_pin_from_pin_physical_num(physical_tile, pin_list[0])->is_primitive_pin()) {
                 int curr_ptc = rr_graph.node_ptc_num(curr.node);
-                if(starting_pin_delay_map.find(curr_ptc) == starting_pin_delay_map.end() ||
-                    starting_pin_delay_map.at(curr_ptc).delay > curr.delay){
+                if (starting_pin_delay_map.find(curr_ptc) == starting_pin_delay_map.end() || starting_pin_delay_map.at(curr_ptc).delay > curr.delay) {
                     starting_pin_delay_map[curr_ptc] = util::Cost_Entry(curr.delay, curr.congestion);
                 }
             }
         }
     }
-
-
 }

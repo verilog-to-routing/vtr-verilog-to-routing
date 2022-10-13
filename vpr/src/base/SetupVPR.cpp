@@ -776,8 +776,8 @@ static void add_intra_tile_switches() {
 
     VTR_ASSERT(device_ctx.all_sw_inf.size() == device_ctx.arch_switch_inf.size());
 
-    for(auto& logical_block : device_ctx.logical_block_types) {
-        if(logical_block.is_empty()){
+    for (auto& logical_block : device_ctx.logical_block_types) {
+        if (logical_block.is_empty()) {
             continue;
         }
         t_pb_graph_node* pb_graph_node = logical_block.pb_graph_head;
@@ -828,7 +828,6 @@ static void add_intra_tile_switches() {
             }
         }
     }
-
 }
 
 static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,
@@ -871,11 +870,11 @@ static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
     pin_list.insert(pin_list.begin(), class_inf->pinlist.begin(), class_inf->pinlist.end());
 
     int pin_in_class_physical_num = class_inf->pinlist[0];
-    if(is_pin_on_tile(physical_tile, pin_in_class_physical_num)) {
+    if (is_pin_on_tile(physical_tile, pin_in_class_physical_num)) {
         return;
     } else {
         auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_in_class_physical_num);
-        if(!pb_pin->is_primitive_pin())
+        if (!pb_pin->is_primitive_pin())
             return;
     }
 
@@ -898,8 +897,8 @@ static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
         }
         curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
         auto driving_pins = get_physical_pin_src_pins(physical_tile,
-                                                          logical_block,
-                                                          curr_pin_physical_num);
+                                                      logical_block,
+                                                      curr_pin_physical_num);
         for (auto driving_pin_physical_num : driving_pins) {
             pin_list.push_back(driving_pin_physical_num);
         }
