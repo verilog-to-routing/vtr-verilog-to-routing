@@ -1255,15 +1255,6 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
     /* so that the initial temperature adjusts according to the circuit */
     float init_temp = (std_dev / 64);
 
-    /**
-     * We increase the initial temperature to allow more movement applied to centroid 
-     * initial placement based on the netlist size. 
-     */
-    auto blocks = cluster_ctx.clb_nlist.blocks();
-    if (blocks.size() < 500) {
-        init_temp *= 10;
-    }
-
     return init_temp;
 }
 
