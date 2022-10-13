@@ -140,6 +140,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     bool is_cluster_legal;
     enum e_block_pack_status block_pack_status;
 
+    t_cluster_placement_stats* cur_cluster_placement_stats_ptr;
     t_lb_router_data* router_data = nullptr;
     t_pack_molecule *istart, *next_molecule, *prev_molecule;
 
@@ -199,7 +200,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 	check_for_duplicate_inputs ();
 #endif
     alloc_and_init_clustering(max_molecule_stats,
-                              helper_ctx.cluster_placement_stats, helper_ctx.primitives_list, molecule_head,
+                              &(helper_ctx.cluster_placement_stats), &(helper_ctx.primitives_list), molecule_head,
                               clustering_data, net_output_feeds_driving_block_input,
                               unclustered_list_head_size, cluster_stats.num_molecules);
 
@@ -299,7 +300,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 /*it doesn't make sense to do a timing analysis here since there*
                  *is only one atom block clustered it would not change anything      */
             }
-
+            cur_cluster_placement_stats_ptr = &(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index]);
             cluster_stats.num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                      attraction_groups,
@@ -308,7 +309,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      packer_opts.transitive_fanout_threshold,
                                                      packer_opts.feasible_block_array_size,
                                                      &cluster_stats.num_unrelated_clustering_attempts,
-                                                     helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index],
+                                                     cur_cluster_placement_stats_ptr,
                                                      clb_inter_blk_nets,
                                                      clb_index,
                                                      verbosity,
@@ -337,7 +338,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 prev_molecule = next_molecule;
 
                 try_fill_cluster(packer_opts,
-                                 helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index],
+                                 cur_cluster_placement_stats_ptr,
                                  prev_molecule,
                                  next_molecule,
                                  num_repeated_molecules,
