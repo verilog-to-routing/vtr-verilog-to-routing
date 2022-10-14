@@ -3,10 +3,10 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=tasks/regression_tests/vtr_reg_strong/strong_tight_floorplan
+circuits_dir=tasks/regression_tests/vtr_reg_nightly_test5/strong_tight_floorplan
 
 # Path to directory of architectures to use
-archs_dir=tasks/regression_tests/vtr_reg_strong/strong_tight_floorplan
+archs_dir=tasks/regression_tests/vtr_reg_nightly_test5/strong_tight_floorplan
 
 # Add circuits to list to sweep
 circuit_list_add=neuron_stratixiv_arch_timing.blif
