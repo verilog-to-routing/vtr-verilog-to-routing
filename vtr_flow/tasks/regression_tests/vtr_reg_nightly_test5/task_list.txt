@@ -1,2 +1,2 @@
 regression_tests/vtr_reg_nightly_test5/vpr_ispd
-regression_tests/vtr_reg_nightly_test5/strong_tight_floorplan
+regression_tests/vtr_reg_nightly_test5/vpr_tight_floorplan
