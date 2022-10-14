@@ -1030,6 +1030,7 @@
     <model name="fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{comb}.output_type{reg}">
       <input_ports>
         <port name="chainin" combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="accumulate" combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
         <port name="clr" clock="output_clk"/>
         <port name="output_clk" is_clock="1"/>
         <port name="ay" combinational_sink_ports="resulta chainout mult_inexact mult_invalid mult_overflow mult_underflow adder_inexact adder_invalid adder_overflow adder_underflow"/>
@@ -1056,6 +1057,7 @@
     <model name="fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{reg}.output_type{reg}">
       <input_ports>
         <port name="chainin"  combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="accumulate"  combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
         <port name="clr" clock="ay_clk"/>
         <port name="ay_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
@@ -3980,6 +3982,7 @@
         <!-- fp multiply accumulate mode -->
         <mode name="sp_mult_acc.input_type{comb}.output_type{reg}">
           <pb_type name="fp_mac_multacc" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{comb}.output_type{reg}" num_pb="1">
+            <input name="accumulate" num_pins="1"/>
             <input name="chainin" num_pins="32"/>
             <input name="clr" num_pins="2"/>
             <clock name="output_clk" num_pins="1"/>
@@ -4026,6 +4029,7 @@
             <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_multacc.ena"/>
             <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_multacc.dfxlfsrena"/>
             <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_multacc.dfxmisrena"/>
+            <direct name="accumulate" input="DSP.controlin[13]" output="fp_mac_multacc.accumulate"/>
 
             <complete name="clk_in" input="DSP.clk" output="fp_mac_multacc.output_clk"/>
 
@@ -4036,6 +4040,7 @@
             <pb_type name="fp_mac_multacc" blif_model=".subckt fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{reg}.output_type{reg}" num_pb="1">
                 <input name="chainin" num_pins="32"/>
                 <input name="clr" num_pins="2"/>
+                <input name="accumulate" num_pins="1"/>
                 <clock name="az_clk" num_pins="1"/>
                 <clock name="ay_clk" num_pins="1"/>
                 <clock name="output_clk" num_pins="1"/>
@@ -4082,6 +4087,7 @@
                 <direct name="ena_in" input="DSP.controlin[10:8]" output="fp_mac_multacc.ena"/>
                 <direct name="dfxlfsrena_in" input="DSP.controlin[11]" output="fp_mac_multacc.dfxlfsrena"/>
                 <direct name="dfxmisrena_in" input="DSP.controlin[12]" output="fp_mac_multacc.dfxmisrena"/>
+                <direct name="accumulate" input="DSP.controlin[13]" output="fp_mac_multacc.accumulate"/>
 
                 <complete name="clk_in" input="DSP.clk" output="fp_mac_multacc.az_clk"/>
                 <complete name="clk_in2" input="DSP.clk" output="fp_mac_multacc.ay_clk"/>
