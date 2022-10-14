@@ -13,12 +13,12 @@
 #include "pack_move_utils.h"
 
 
-const int max_swaps = 100000;
+const int max_swaps = 10000000;
 
 
 
 
-void iteratively_improve_packing(t_clustering_data& clustering_data) {
+void iteratively_improve_packing(t_clustering_data& clustering_data, int verbosity) {
     /*
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -33,21 +33,21 @@ void iteratively_improve_packing(t_clustering_data& clustering_data) {
         new_locs.clear();
         is_proposed = move_generator->propose_move(new_locs);
         if (!is_proposed) {
-            VTR_LOG("Move failed! Can't propose.\n");
+            VTR_LOGV(verbosity > 2, "Move failed! Can't propose.\n");
             continue;
         }
 
         is_valid = move_generator->evaluate_move(new_locs);
         if (!is_valid) {
-            VTR_LOG("Move failed! Proposed move is bad.\n");
+            VTR_LOGV(verbosity > 2, "Move failed! Proposed move is bad.\n");
             continue;
         }
 
         is_successful = move_generator->apply_move(new_locs, clustering_data);
         if (!is_successful) {
-            VTR_LOG("Move failed! Proposed move isn't legal.\n");
+            VTR_LOGV(verbosity > 2, "Move failed! Proposed move isn't legal.\n");
             continue;
         }
-        VTR_LOG("Move succeeded! YAAAAAAY!\n");
+        VTR_LOGV(verbosity > 1, "Packing move succeeded!\n");
     }
 }
