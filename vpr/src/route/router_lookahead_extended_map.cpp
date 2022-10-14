@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <queue>
+#include <mutex>
 
 #include "rr_node.h"
 #include "router_lookahead_map_utils.h"
@@ -26,7 +27,6 @@
 
 #if defined(VPR_USE_TBB)
 #    include <tbb/parallel_for_each.h>
-#    include <tbb/mutex.h>
 #endif
 
 /* we're profiling routing cost over many tracks for each wire type, so we'll
@@ -434,7 +434,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
 #if defined(VPR_USE_TBB) // Run parallely
-    tbb::mutex all_costs_mutex;
+    std::mutex all_costs_mutex;
     tbb::parallel_for_each(sample_regions, [&](const SampleRegion& region) {
 #else // Run serially
     for (const auto& region : sample_regions) {

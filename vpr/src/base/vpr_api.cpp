@@ -96,11 +96,8 @@
 #include "iostream"
 
 #ifdef VPR_USE_TBB
-#    include <tbb/task_scheduler_init.h>
-
-//We need to store the scheduler object so any concurrency
-//setting is persistent
-std::unique_ptr<tbb::task_scheduler_init> tbb_scheduler;
+#    include <tbb/task_arena.h>
+#    include <tbb/global_control.h>
 #endif
 
 /* Local subroutines */
@@ -220,11 +217,11 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     //Using Thread Building Blocks
     if (num_workers == 0) {
         //Use default concurrency (i.e. maximum conccurency)
-        num_workers = tbb::task_scheduler_init::default_num_threads();
+        num_workers = tbb::this_task_arena::max_concurrency();
     }
 
     VTR_LOG("Using up to %zu parallel worker(s)\n", num_workers);
-    tbb_scheduler = std::make_unique<tbb::task_scheduler_init>(num_workers);
+    tbb::global_control c(tbb::global_control::max_allowed_parallelism, num_workers);
 #else
     //No parallel execution support
     if (num_workers != 1) {
@@ -520,7 +517,7 @@ void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
  *        setup by creating an internal model and storing the NoC
  *        constraints. Additionally, the graphics state is updated
  *        to include a NoC button to display it.
- * 
+ *
  * @param vpr_setup A datastructure that stores all the user provided option
  *                  to vpr.
  * @param arch Contains the parsed information from the architecture
@@ -550,8 +547,8 @@ void vpr_setup_noc(const t_vpr_setup& vpr_setup, const t_arch& arch) {
  * @brief Constructs a NoC routing algorithm that is identified by a user
  * provided string. Then the newly created routing algorithm is stored
  * inside the global NoC context.
- * 
- * @param noc_routing_algorithm_name A user provided string that identifies a 
+ *
+ * @param noc_routing_algorithm_name A user provided string that identifies a
  * NoC routing algorithm
  */
 void vpr_setup_noc_routing_algorithm(std::string noc_routing_algorithm_name) {
@@ -1346,7 +1343,7 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
     /* If routing is successful, apply post-routing annotations
      * - apply logic block pin fix-up
      *
-     * Note: 
+     * Note:
      *   - Turn on verbose output when users require verbose output
      *     for packer (default verbosity is set to 2 for compact logs)
      */

@@ -16,6 +16,10 @@
 #include <chrono>
 #include <time.h>
 
+#ifdef VERBOSE
+void print_clb_placement(const char* fname);
+#endif
+
 /**
  * @brief Used to assign each block a score for how difficult it is to place. 
  * The higher numbers indicate a block is expected to be more difficult to place.

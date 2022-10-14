@@ -244,9 +244,9 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
 #endif
 
 /********************* Static subroutines local to place.c *******************/
-//#ifdef VERBOSE
-//static void print_clb_placement(const char* fname);
-//#endif
+#ifdef VERBOSE
+void print_clb_placement(const char* fname);
+#endif
 
 static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
@@ -2031,9 +2031,8 @@ static double comp_bb_cost(e_cost_methods method) {
     }
 
     if (method == CHECK) {
-        /*VTR_LOG("\n");
-         * VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
-         * expected_wirelength);*/
+        VTR_LOG("\n");
+        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
     }
     return cost;
 }
@@ -2860,24 +2859,24 @@ int check_macro_placement_consistency() {
     return error;
 }
 
-//#ifdef VERBOSE
-//static void print_clb_placement(const char* fname) {
-//    /* Prints out the clb placements to a file.  */
-//    FILE* fp;
-//    auto& cluster_ctx = g_vpr_ctx.clustering();
-//    auto& place_ctx = g_vpr_ctx.placement();
-//
-//    fp = vtr::fopen(fname, "w");
-//    fprintf(fp, "Complex block placements:\n\n");
-//
-//    fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
-//    for (auto i : cluster_ctx.clb_nlist.blocks()) {
-//        fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i), place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].sub_tile);
-//    }
-//
-//    fclose(fp);
-//}
-//#endif
+#ifdef VERBOSE
+void print_clb_placement(const char* fname) {
+    /* Prints out the clb placements to a file.  */
+    FILE* fp;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    fp = vtr::fopen(fname, "w");
+    fprintf(fp, "Complex block placements:\n\n");
+
+    fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
+    for (auto i : cluster_ctx.clb_nlist.blocks()) {
+        fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i).c_str(), place_ctx.block_locs[i].loc.x, place_ctx.block_locs[i].loc.y, place_ctx.block_locs[i].loc.sub_tile);
+    }
+
+    fclose(fp);
+}
+#endif
 
 static void free_try_swap_arrays() {
     g_vpr_ctx.mutable_placement().compressed_block_grids.clear();

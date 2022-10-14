@@ -513,13 +513,13 @@ static void generic_compute_matrix_dijkstra_expansion(
                             continue;
                         }
 
-                        //#ifdef VERBOSE
-                        //                        VTR_LOG("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
-                        //                                delay,
-                        //                                delta_x, delta_y,
-                        //                                source_x, source_y,
-                        //                                sink_x, sink_y);
-                        //#endif
+#ifdef VERBOSE
+                        VTR_LOG("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                                delays[size_t(sink_rr_node)],
+                                delta_x, delta_y,
+                                source_x, source_y,
+                                sink_x, sink_y);
+#endif
                         found_matrix[delta_x][delta_y] = true;
 
                         add_delay_to_matrix(&matrix, delta_x, delta_y, delays[size_t(sink_rr_node)]);

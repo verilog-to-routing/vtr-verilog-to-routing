@@ -57,6 +57,7 @@
 #include "breakpoint.h"
 #include "manual_moves.h"
 #include "draw_noc.h"
+#include "draw_floorplanning.h"
 
 #include "move_utils.h"
 #include "ui_setup.h"
@@ -126,6 +127,7 @@ static void setup_default_ezgl_callbacks(ezgl::application* app);
 static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void run_graphics_commands(std::string commands);
 
@@ -261,6 +263,11 @@ static void draw_main_canvas(ezgl::renderer* g) {
     draw_logical_connections(g);
 
     draw_noc(g);
+
+    if (draw_state->draw_partitions) {
+        highlight_all_regions(g);
+        draw_constrained_atoms(g);
+    }
 
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
@@ -1105,6 +1112,10 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect Debug Button
     GObject* debugger = app->get_object("debugButton");
     g_signal_connect(debugger, "clicked", G_CALLBACK(draw_debug_window), NULL);
+
+    // Connect Draw Partitions Checkbox
+    GObject* draw_partitions = app->get_object("drawPartitions");
+    g_signal_connect(draw_partitions, "toggled", G_CALLBACK(set_draw_partitions), app);
 }
 
 // Callback function for Block Outline checkbox
@@ -1145,6 +1156,76 @@ static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer 
         draw_state->clip_routing_util = true;
     else
         draw_state->clip_routing_util = false;
+
+    //redraw
+    application.update_message(draw_state->default_message);
+    application.refresh_drawing();
+}
+
+static void on_dialog_response(GtkDialog* dialog, gint response_id, gpointer /* user_data*/) {
+    switch (response_id) {
+        case GTK_RESPONSE_ACCEPT:
+            std::cout << "GTK_RESPONSE_ACCEPT ";
+            break;
+        case GTK_RESPONSE_DELETE_EVENT:
+            std::cout << "GTK_RESPONSE_DELETE_EVENT (i.e. ’X’ button) ";
+            break;
+        case GTK_RESPONSE_REJECT:
+            std::cout << "GTK_RESPONSE_REJECT ";
+            break;
+        default:
+            std::cout << "UNKNOWN ";
+            break;
+    }
+
+    gtk_widget_destroy(GTK_WIDGET(dialog));
+}
+
+// Callback function for Draw Partitions checkbox
+static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    GObject* window;
+    GtkWidget* dialog;
+
+    window = application.get_object(application.get_main_window_id().c_str());
+
+    dialog = gtk_dialog_new_with_buttons(
+        "Floorplanning Legend",
+        (GtkWindow*)window,
+        GTK_DIALOG_DESTROY_WITH_PARENT,
+        ("CLOSE"),
+        GTK_RESPONSE_ACCEPT,
+        NULL);
+
+    GtkWidget* content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    GtkWidget* content_tree = gtk_tree_view_new();
+    content_tree = setup_floorplanning_legend(content_tree);
+
+    gtk_container_add(GTK_CONTAINER(content_area), content_tree);
+
+    GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(content_tree));
+    g_signal_connect(selection,
+                     "changed",
+                     G_CALLBACK(highlight_selected_partition),
+                     NULL);
+
+    // assign corresponding bool value to draw_state->draw_partitions
+    if (gtk_toggle_button_get_active((GtkToggleButton*)widget)) {
+        gtk_widget_show_all(dialog);
+
+        g_signal_connect(
+            GTK_DIALOG(dialog),
+            "response",
+            G_CALLBACK(on_dialog_response),
+            NULL);
+
+        draw_state->draw_partitions = true;
+
+    } else {
+        gtk_widget_destroy(GTK_WIDGET(dialog));
+        draw_state->draw_partitions = false;
+    }
 
     //redraw
     application.update_message(draw_state->default_message);

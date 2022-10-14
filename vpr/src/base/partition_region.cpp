@@ -9,6 +9,10 @@ std::vector<Region> PartitionRegion::get_partition_region() {
     return partition_region;
 }
 
+std::vector<Region> PartitionRegion::get_partition_region() const {
+    return partition_region;
+}
+
 void PartitionRegion::set_partition_region(std::vector<Region> pr) {
     partition_region = pr;
 }
