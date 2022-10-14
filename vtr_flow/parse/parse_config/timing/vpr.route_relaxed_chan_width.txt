@@ -1,5 +1,7 @@
-#Collapsed Nodes
-collapsed_nodes;vpr.crit_path.out;Number of collapsed nodes: (\d+)
+#RR Graph Metrics
+crit_num_rr_graph_nodes;vpr.crit_path.out;\s*RR Graph Nodes: (\d+)
+crit_num_rr_graph_edges;vpr.crit_path.out;\s*RR Graph Edges: (\d+)
+crit_collapsed_nodes;vpr.crit_path.out;Number of collapsed nodes: (\d+)
 
 #VPR Critical Path Routing Metrics
 crit_path_routed_wirelength;vpr.crit_path.out;\s*Total wirelength: (.*), average
@@ -38,12 +40,12 @@ crit_total_external_CHANY_pops;vpr.crit_path.out;Router Stats: .*total_external_
 crit_total_internal_CHANY_pushes;vpr.crit_path.out;Router Stats: .*total_internal_CHANY_pushes: (\d+) .*
 crit_total_internal_CHANY_pops;vpr.crit_path.out;Router Stats: .*total_internal_CHANY_pops: (\d+) .*
 
-rt_node_SOURCE_pushes;vpr.out;Router Stats: .*rt_node_SOURCE_pushes: (\d+) .*
-rt_node_SINK_pushes;vpr.out;Router Stats: .*rt_node_SINK_pushes: (\d+) .*
-rt_node_IPIN_pushes;vpr.out;Router Stats: .*rt_node_IPIN_pushes: (\d+) .*
-rt_node_OPIN_pushes;vpr.out;Router Stats: .*rt_node_OPIN_pushes: (\d+) .*
-rt_node_CHANX_pushes;vpr.out;Router Stats: .*rt_node_CHANX_pushes: (\d+) .*
-rt_node_CHANY_pushes;vpr.out;Router Stats: .*rt_node_CHANY_pushes: (\d+)
+crit_rt_node_SOURCE_pushes;vpr.crit_path.out;Router Stats: .*rt_node_SOURCE_pushes: (\d+) .*
+crit_rt_node_SINK_pushes;vpr.crit_path.out;Router Stats: .*rt_node_SINK_pushes: (\d+) .*
+crit_rt_node_IPIN_pushes;vpr.crit_path.out;Router Stats: .*rt_node_IPIN_pushes: (\d+) .*
+crit_rt_node_OPIN_pushes;vpr.crit_path.out;Router Stats: .*rt_node_OPIN_pushes: (\d+) .*
+crit_rt_node_CHANX_pushes;vpr.crit_path.out;Router Stats: .*rt_node_CHANX_pushes: (\d+) .*
+crit_rt_node_CHANY_pushes;vpr.crit_path.out;Router Stats: .*rt_node_CHANY_pushes: (\d+)
 
 #VPR Analysis (final implementation) Metrics
 critical_path_delay;vpr.crit_path.out;Final critical path delay \(least slack\): (.*) ns
