@@ -13,6 +13,9 @@ struct RouterStats {
     size_t inter_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
     size_t intra_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES];
     size_t intra_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES];
+
+    // For debugging purposes
+    size_t rt_node_pushes[t_rr_type::NUM_RR_TYPES];
 };
 
 class WirelengthInfo {

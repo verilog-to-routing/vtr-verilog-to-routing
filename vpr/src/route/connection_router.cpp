@@ -968,6 +968,8 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                         router_stats_,
                         RRNodeId(inode),
                         true);
+
+    router_stats_->rt_node_pushes[rr_graph_->node_type(RRNodeId(inode))]++;
 }
 
 static t_bb adjust_highfanout_bounding_box(t_bb highfanout_bb) {
