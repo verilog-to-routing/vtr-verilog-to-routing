@@ -13,7 +13,7 @@
 #include "pack_move_utils.h"
 
 
-const int max_swaps = 10;
+const int max_swaps = 100000;
 
 
 

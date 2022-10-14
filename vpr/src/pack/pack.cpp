@@ -266,17 +266,6 @@ bool try_pack(t_packer_opts* packer_opts,
     /* Packing iterative improvement can be done here */
     /*       Use the re-cluster API to edit it        */
     /******************* Start *************************/
-
-    bool is_moved;
-    is_moved = move_mol_to_new_cluster(atom_ctx.atom_molecules.find(AtomBlockId(3))->second, true, 5, clustering_data);
-    is_moved = move_mol_to_existing_cluster(atom_ctx.atom_molecules.find(AtomBlockId(5))->second, ClusterBlockId (4), true, 5, clustering_data);
-    /*
-    for(auto& blk_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
-        t_pb* temp_pb = g_vpr_ctx.mutable_clustering().clb_nlist.block_pb(blk_id);
-        VTR_LOG("");
-    }
-     */
-
     VTR_LOG("Start the iterative improvement process\n");
     iteratively_improve_packing(clustering_data);
     VTR_LOG("the iterative improvement process is done\n");

@@ -35,10 +35,8 @@ static void fix_cluster_net_after_moving(const t_pack_molecule* molecule,
                                          const ClusterBlockId& old_clb,
                                          const ClusterBlockId& new_clb);
 
-static void rebuild_cluster_placemet_stats(const ClusterBlockId& clb_index,
-                                           const std::vector<AtomBlockId>& clb_atoms,
-                                           int type_idx,
-                                           int mode);
+static void rebuild_cluster_placement_stats(const ClusterBlockId& clb_index,
+                                            const std::vector<AtomBlockId>& clb_atoms);
 
 /*****************  API functions ***********************/
 ClusterBlockId atom_to_cluster(const AtomBlockId& atom) {
@@ -199,7 +197,9 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
     t_pb* temp_pb = cluster_ctx.clb_nlist.block_pb(new_clb);
 
     //re-build cluster placement stats
-    rebuild_cluster_placemet_stats(new_clb, new_clb_atoms, cluster_ctx.clb_nlist.block_type(new_clb)->index, cluster_ctx.clb_nlist.block_pb(new_clb)->mode);
+    rebuild_cluster_placement_stats(new_clb, new_clb_atoms);
+    if(!check_free_primitives_for_molecule_atoms(molecule, &(helper_ctx.cluster_placement_stats[block_type->index])))
+            return false;
 
     //re-build router_data structure for this cluster
     if (!is_swap)
@@ -606,35 +606,21 @@ static bool count_children_pbs(const t_pb* pb) {
 }
 #endif
 
-static void rebuild_cluster_placemet_stats(const ClusterBlockId& clb_index,
-                                           const std::vector<AtomBlockId>& clb_atoms,
-                                           int type_idx,
-                                           int mode) {
+static void rebuild_cluster_placement_stats(const ClusterBlockId& clb_index,
+                                            const std::vector<AtomBlockId>& clb_atoms) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    t_cluster_placement_stats* cluster_placement_stats = &(helper_ctx.cluster_placement_stats[type_idx]);
-
+    t_cluster_placement_stats* cluster_placement_stats = &(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index]);
     reset_cluster_placement_stats(cluster_placement_stats);
-    set_mode_cluster_placement_stats(cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node, mode);
+    set_mode_cluster_placement_stats(cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node, cluster_ctx.clb_nlist.block_pb(clb_index)->mode);
 
-    std::set<t_pb_graph_node*> list_of_pb_atom_nodes;
-    t_cluster_placement_primitive* cur_cluster_placement_primitive;
-
-    for (auto& atom_blk : clb_atoms) {
-        list_of_pb_atom_nodes.insert(atom_ctx.lookup.atom_pb(atom_blk)->pb_graph_node);
+    for(auto& atom: clb_atoms){
+        const t_pb* atom_pb = atom_ctx.lookup.atom_pb(atom);
+        commit_primitive(cluster_placement_stats, atom_pb->pb_graph_node);
     }
 
-    for (int i = 0; i < cluster_placement_stats->num_pb_types; i++) {
-        cur_cluster_placement_primitive = cluster_placement_stats->valid_primitives[i]->next_primitive;
-        while (cur_cluster_placement_primitive != nullptr) {
-            if (list_of_pb_atom_nodes.find(cur_cluster_placement_primitive->pb_graph_node) != list_of_pb_atom_nodes.end()) {
-                cur_cluster_placement_primitive->valid = false;
-            }
-            cur_cluster_placement_primitive = cur_cluster_placement_primitive->next_primitive;
-        }
-    }
 }
 
 bool is_cluster_legal(t_lb_router_data*& router_data) {
