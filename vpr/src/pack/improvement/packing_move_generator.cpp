@@ -4,6 +4,7 @@
 
 #include "packing_move_generator.h"
 #include "re_cluster.h"
+#include <string.h>
 #include "re_cluster_util.h"
 #include "pack_move_utils.h"
 
@@ -37,6 +38,7 @@ bool packingMoveGenerator::apply_move(std::vector<molMoveDescription>& new_locs,
 /****************************************************************/
 bool randomPackingMove::propose_move(std::vector<molMoveDescription>& new_locs) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     t_pack_molecule *mol_1, *mol_2;
     ClusterBlockId clb_index_1, clb_index_2;
@@ -49,13 +51,11 @@ bool randomPackingMove::propose_move(std::vector<molMoveDescription>& new_locs) 
     clb_index_1 = atom_to_cluster(mol_1->atom_block_ids[mol_1->root]);
     block_type_1 = cluster_ctx.clb_nlist.block_type(clb_index_1);
 
-
-    //pick the 2nd molecule randomly but make sure that its cluster is of the same type as the 1st molecule's clb
     do {
         mol_2 = pick_molecule_randomly();
         clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
         block_type_2 = cluster_ctx.clb_nlist.block_type(clb_index_2);
-        if(block_type_1 == block_type_2 && clb_index_1 != clb_index_2) {
+        if(block_type_1 == block_type_2 && clb_index_1 != clb_index_2 ) {
             found = true;
             build_mol_move_description(new_locs, mol_1,clb_index_1,mol_2,clb_index_2);
         }

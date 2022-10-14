@@ -52,6 +52,8 @@ int calculate_cutsize_change(const std::vector<molMoveDescription>& new_locs) {
         ClusterBlockId old_block_id = atom_to_cluster(new_loc.molecule_to_move->atom_block_ids[new_loc.molecule_to_move->root]);
 
         for(auto& moving_atom : new_loc.molecule_to_move->atom_block_ids) {
+            if(!moving_atom)
+                continue;
             for(auto& atom_pin : atom_ctx.nlist.block_pins(moving_atom)) {
                 AtomNetId atom_net = atom_ctx.nlist.pin_net(atom_pin);
                 if(atom_ctx.nlist.net_pins(atom_net).size() > LARGE_FANOUT_LIMIT)
