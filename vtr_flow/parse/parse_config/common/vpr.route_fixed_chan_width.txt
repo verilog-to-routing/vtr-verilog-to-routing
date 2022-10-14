@@ -32,7 +32,14 @@ total_internal_CHANX_pops;vpr.out;Router Stats: .*total_internal_CHANX_pops: (\d
 total_external_CHANY_pushes;vpr.out;Router Stats: .*total_external_CHANY_pushes: (\d+) .*
 total_external_CHANY_pops;vpr.out;Router Stats: .*total_external_CHANY_pops: (\d+) .*
 total_internal_CHANY_pushes;vpr.out;Router Stats: .*total_internal_CHANY_pushes: (\d+) .*
-total_internal_CHANY_pops;vpr.out;Router Stats: .*total_internal_CHANY_pops: (\d+)
+total_internal_CHANY_pops;vpr.out;Router Stats: .*total_internal_CHANY_pops: (\d+) .*
+
+rt_node_SOURCE_pushes;vpr.out;Router Stats: .*rt_node_SOURCE_pushes: (\d+) .*
+rt_node_SINK_pushes;vpr.out;Router Stats: .*rt_node_SINK_pushes: (\d+) .*
+rt_node_IPIN_pushes;vpr.out;Router Stats: .*rt_node_IPIN_pushes: (\d+) .*
+rt_node_OPIN_pushes;vpr.out;Router Stats: .*rt_node_OPIN_pushes: (\d+) .*
+rt_node_CHANX_pushes;vpr.out;Router Stats: .*rt_node_CHANX_pushes: (\d+) .*
+rt_node_CHANY_pushes;vpr.out;Router Stats: .*rt_node_CHANY_pushes: (\d+)
 
 #Area Metrics
 logic_block_area_total;vpr.out;\s*Total logic block area .*: (.*)
