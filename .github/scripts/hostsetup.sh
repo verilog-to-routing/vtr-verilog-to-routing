@@ -68,9 +68,8 @@ apt install -y \
   default-jdk \
   g++-9 \
   gcc-9 \
-  wget
-  # Don't include libtbb-dev since it may increase memory usage
-  #libtbb-dev \
+  wget \
+  libtbb-dev
 
 # installing the latest version of cmake
 apt install -y apt-transport-https ca-certificates gnupg
