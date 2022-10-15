@@ -2480,7 +2480,9 @@
             <!-- inputs coming from the FPGA core and going to the input buffer -->
             <complete input="io_cell.data_in" name="core_to_ibuff" output="ibuf.ibar ibuf.dynamicterminationcontrol ibuf.seriesterminationcontrol ibuf.parallelterminationcontrol"/>
             <!-- the output of the padin will directly drive the input buffer  -->
-            <direct input="pad.recieve_off_chip" name="pad_receive" num_pins="1" output="ibuf.i"/>
+            <direct input="pad.recieve_off_chip" name="pad_receive" num_pins="1" output="ibuf.i">
+              <pack_pattern name="pad_to_ibuf" in_port="pad.recieve_off_chip" out_port="ibuf.i"/>
+            </direct>
 
             <!-- inputs coming from the FPGA core and going to pseudo diff out primitive -->
             <complete input="io_cell.data_in" name="core_to_pseudo_diff_out" num_pins="1" output="pseudo_diff_out.ibar pseudo_diff_out.oebin pseudo_diff_out.dtcin pseudo_diff_out.dtcbarin"/>
@@ -2493,18 +2495,20 @@
             <complete input="io_cell.data_in" name="core_to_ddio_in" num_pins="1" output="ddio_in.clkn ddio_in.areset ddio_in.sreset ddio_in.ena"/>
             <direct input="io_cell.clk" name="ddioi_clk" num_pins="1" output="ddio_in.clk"/>
 
-            <!-- the data port of theddio in is driven by the output of the input buffer -->
-            <direct input="ibuf.o" name="ddioi_datain" num_pins="1" output="ddio_in.datain"/>
+            <!-- the data port of theddio in is driven by the output of the input buffer or by FPGA global routing -->
+            <complete input="ibuf.o io_cell.data_in" name="ddioi_datain" num_pins="1" output="ddio_in.datain"/>
 
-            <!-- the pad out can be driven by the output ports of the output buffer  -->
-            <complete input="obuf.o obuf.obar" name="pad_drive" num_pins="1" output="pad.drive_off_chip"/>
+            <!-- the pad out can be driven by the output ports of the output buffer or by FPGA core  -->
+            <complete input="io_cell.data_in obuf.o obuf.obar" name="pad_drive" num_pins="1" output="pad.drive_off_chip">
+              <pack_pattern name="obuf_to_pad" in_port="obuf.o" out_port="pad.drive_off_chip"/>
+            </complete>
 
             <!-- the outputs of the io_cell block going to the core -->
             <direct input="pseudo_diff_out.obar" name="io_cell_obar" num_pins="1" output="io_cell.data_out[0]"/>
             <direct input="pseudo_diff_out.oebout" name="io_cell_oeout" num_pins="1" output="io_cell.data_out[1]"/>
             <direct input="pseudo_diff_out.dtc" name="io_cell_dtc" num_pins="1" output="io_cell.data_out[2]"/>
             <direct input="pseudo_diff_out.dtcbar" name="io_cell_dtcbar" num_pins="1" output="io_cell.data_out[3]"/>
-            <complete input="ibuf.o ddio_in.regoutlo" name="io_cell_regoutlo" num_pins="1" output="io_cell.data_out[4]"/>
+            <complete input="ibuf.o ddio_in.regoutlo pad.recieve_off_chip" name="io_cell_regoutlo" num_pins="1" output="io_cell.data_out[4]"/>
             <direct input="ddio_in.regouthi" name="io_cell_regouthi" num_pins="1" output="io_cell.data_out[5]"/>
 
           </interconnect>
