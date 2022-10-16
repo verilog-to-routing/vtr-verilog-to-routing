@@ -266,6 +266,7 @@ static std::vector<int> get_pb_pin_src_pins(t_physical_tile_type_ptr physical_ty
     return driving_pins;
 }
 
+<<<<<<< HEAD
 static std::vector<int> get_pb_pin_sink_pins(t_physical_tile_type_ptr physical_type,
                                              const t_sub_tile* sub_tile,
                                              t_logical_block_type_ptr logical_block,
@@ -330,6 +331,8 @@ static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physic
     return logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
 }
 
+=======
+>>>>>>> ed0934fd37500e41c15a4411f7b322f900a2dfc0
 /******************** End Subroutine declarations and definition ************************/
 
 int get_sub_tile_physical_pin(int sub_tile_index,
