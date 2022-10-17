@@ -4133,8 +4133,9 @@
                 <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_multadd.chainin"/>
                 <direct name="chain_out" input="fp_mac_multadd.chainout[31:0]" output="DSP.chainout[31:0]"/>
                 <direct name="dft_out" input="fp_mac_multadd.dftout" output="DSP.dftout"/>
-
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multadd.ax"/>
+                
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_multadd.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multadd.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_multadd.az"/>
 
                 <direct name="resulta_out" input="fp_mac_multadd.resulta" output="DSP.result[31:0]"/>
@@ -4190,7 +4191,8 @@
                 <direct name="chain_out" input="fp_mac_multadd.chainout[31:0]" output="DSP.chainout[31:0]"/>
                 <direct name="dft_out" input="fp_mac_multadd.dftout" output="DSP.dftout"/>
 
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multadd.ax"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_multadd.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multadd.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_multadd.az"/>
 
                 <direct name="resulta_out" input="fp_mac_multadd.resulta" output="DSP.result[31:0]"/>
@@ -4243,8 +4245,9 @@
                 <direct name="chain_in" input="DSP.chainin[31:0]" output="fp_mac_multadd.chainin"/>
                 <direct name="chain_out" input="fp_mac_multadd.chainout[31:0]" output="DSP.chainout[31:0]"/>
                 <direct name="dft_out" input="fp_mac_multadd.dftout" output="DSP.dftout"/>
-
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multadd.ax"/>
+                
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_multadd.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multadd.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_multadd.az"/>
 
                 <direct name="resulta_out" input="fp_mac_multadd.resulta" output="DSP.result[31:0]"/>
@@ -4301,7 +4304,8 @@
                 <direct name="chain_out" input="fp_mac_multadd.chainout[31:0]" output="DSP.chainout[31:0]"/>
                 <direct name="dft_out" input="fp_mac_multadd.dftout" output="DSP.dftout"/>
 
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multadd.ax"/>
+                <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_multadd.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_multadd.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_multadd.az"/>
 
                 <direct name="resulta_out" input="fp_mac_multadd.resulta" output="DSP.result[31:0]"/>
@@ -4549,7 +4553,7 @@
                 <direct name="dft_out" input="fp_mac_vect1.dftout" output="DSP.dftout"/>
 
                 <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect1.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect1.az"/>
 
                 <direct name="resulta_out" input="fp_mac_vect1.resulta" output="DSP.result[31:0]"/>
@@ -4607,7 +4611,7 @@
                 <direct name="dft_out" input="fp_mac_vect1.dftout" output="DSP.dftout"/>
 
                 <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect1.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect1.az"/>
 
                 <direct name="resulta_out" input="fp_mac_vect1.resulta" output="DSP.result[31:0]"/>
@@ -4661,7 +4665,7 @@
                 <direct name="dft_out" input="fp_mac_vect1.dftout" output="DSP.dftout"/>
 
                 <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect1.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect1.az"/>
 
                 <direct name="resulta_out" input="fp_mac_vect1.resulta" output="DSP.result[31:0]"/>
@@ -4719,7 +4723,7 @@
                 <direct name="dft_out" input="fp_mac_vect1.dftout" output="DSP.dftout"/>
 
                 <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect1.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect1.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect1.az"/>
 
                 <direct name="resulta_out" input="fp_mac_vect1.resulta" output="DSP.result[31:0]"/>
@@ -4780,7 +4784,7 @@
                 <direct name="dft_out" input="fp_mac_vect2.dftout" output="DSP.dftout"/>
 
                 <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect2.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect2.az"/>
 
                 <direct name="resulta_out" input="fp_mac_vect2.resulta" output="DSP.result[31:0]"/>
@@ -4838,7 +4842,7 @@
                 <direct name="dft_out" input="fp_mac_vect2.dftout" output="DSP.dftout"/>
 
                 <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect2.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect2.az"/>
 
                 <direct name="resulta_out" input="fp_mac_vect2.resulta" output="DSP.result[31:0]"/>
@@ -4893,7 +4897,7 @@
                 <direct name="dft_out" input="fp_mac_vect2.dftout" output="DSP.dftout"/>
 
                 <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect2.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect2.az"/>
 
                 <direct name="resulta_out" input="fp_mac_vect2.resulta" output="DSP.result[31:0]"/>
@@ -4951,7 +4955,7 @@
                 <direct name="dft_out" input="fp_mac_vect2.dftout" output="DSP.dftout"/>
 
                 <direct name="ax_in" input="DSP.datain[31:0]" output="fp_mac_vect2.ax"/>
-                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ax"/>
+                <direct name="ay_in" input="DSP.datain[63:32]" output="fp_mac_vect2.ay"/>
                 <direct name="az_in" input="DSP.datain[95:64]" output="fp_mac_vect2.az"/>
 
                 <direct name="resulta_out" input="fp_mac_vect2.resulta" output="DSP.result[31:0]"/>
