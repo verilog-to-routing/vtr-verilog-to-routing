@@ -17,7 +17,7 @@ class MapLookahead : public RouterLookahead {
     util::t_src_opin_delays src_opin_delays;
     std::map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays> inter_tile_pin_primitive_pin_delay;
     std::map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>> tile_min_cost;
-    vtr::NdMatrix<util::Cost_Entry, 2> internal_opin_global_cost_map;
+    vtr::NdMatrix<util::Cost_Entry, 2> distance_based_min_cost;
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
 

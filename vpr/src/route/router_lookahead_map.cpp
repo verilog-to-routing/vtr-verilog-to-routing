@@ -268,8 +268,10 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     int to_node_ptc_num = rr_graph.node_ptc_num(target_node);
     VTR_ASSERT(to_rr_type == t_rr_type::SINK);
 
-    float delay_cost, cong_cost;
-    float delay_offset_cost, cong_offset_cost;
+    float delay_cost = 0.;
+    float cong_cost = 0.;
+    float delay_offset_cost = 0.;
+    float cong_offset_cost = 0.;
 
     if (is_flat_) {
         if (from_rr_type == CHANX || from_rr_type == CHANY) {
@@ -312,10 +314,13 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                     get_xy_deltas(current_node, target_node, &delta_x, &delta_y);
                     delta_x = abs(delta_x);
                     delta_y = abs(delta_y);
-                    delay_cost = params.criticality * internal_opin_global_cost_map[delta_x][delta_y].delay;
-                    cong_cost = (1. - params.criticality) * internal_opin_global_cost_map[delta_x][delta_y].congestion;
+                    delay_cost = params.criticality * distance_based_min_cost[delta_x][delta_y].delay;
+                    cong_cost = (1. - params.criticality) * distance_based_min_cost[delta_x][delta_y].congestion;
+
+                    delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
+                    cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
                 }
-                return delay_cost + cong_cost;
+                return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
             }
         } else if (from_rr_type == IPIN) {
             // Since ّI am pruning irrelevant pins, I should not get into this if statement.
@@ -332,8 +337,28 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                 cong_cost = (1. - params.criticality) * pin_delay_itr->second.congestion;
             }
             return delay_cost + cong_cost;
+        } else if(from_rr_type == SOURCE) {
+            if(node_in_same_physical_tile(current_node, target_node)) {
+                delay_cost = 0.;
+                cong_cost = 0.;
+                delay_offset_cost = 0.;
+                cong_offset_cost = 0.;
+            } else {
+                int delta_x, delta_y;
+                get_xy_deltas(current_node, target_node, &delta_x, &delta_y);
+                delta_x = abs(delta_x);
+                delta_y = abs(delta_y);
+                delay_cost = params.criticality * distance_based_min_cost[delta_x][delta_y].delay;
+                cong_cost = (1. - params.criticality) * distance_based_min_cost[delta_x][delta_y].congestion;
+
+                delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
+                cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
+            }
+
+
+            return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
         } else {
-            VTR_ASSERT(from_rr_type == SINK || from_rr_type == SOURCE);
+            VTR_ASSERT(from_rr_type == SINK);
             return (0.);
         }
     } else {
@@ -489,7 +514,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
                                 det_routing_arch_,
                                 g_vpr_ctx.device());
 
-        min_global_cost_map(internal_opin_global_cost_map,
+        min_global_cost_map(distance_based_min_cost,
                             f_wire_cost_map.dim_size(2),
                             f_wire_cost_map.dim_size(3));
     }
