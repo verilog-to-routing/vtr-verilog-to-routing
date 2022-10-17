@@ -208,18 +208,31 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     if (mol_1_success && mol_2_success) {
         VTR_LOGV(verbosity > 4, "Molecules swap is performed successfully\n");
     } else {
-        revert_mol_move(clb_1, molecule_1, old_1_router_data, during_packing, clustering_data);
-        revert_mol_move(clb_2, molecule_2, old_2_router_data, during_packing, clustering_data);
+        if(mol_1_success) {
+            remove_mol_from_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, old_2_router_data);
+            commit_mol_removal(molecule_1, molecule_1_size, clb_2, during_packing, old_2_router_data, clustering_data);
+        }
+        if(mol_2_success) {
+            remove_mol_from_cluster(molecule_2, molecule_2_size, clb_1, clb_1_atoms, old_1_router_data);
+            commit_mol_removal(molecule_2, molecule_2_size, clb_1, during_packing, old_1_router_data, clustering_data);
+        }
+
+        mol_1_success = pack_mol_in_existing_cluster(molecule_1, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data);
+        mol_2_success = pack_mol_in_existing_cluster(molecule_2, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data);
+        VTR_ASSERT(mol_1_success && mol_2_success);
+
+
+        //revert_mol_move(clb_1, molecule_1, old_1_router_data, during_packing, clustering_data);
+        //revert_mol_move(clb_2, molecule_2, old_2_router_data, during_packing, clustering_data);
         VTR_LOGV(verbosity > 4, "Molecules swap failed\n");
+        return false;
     }
 
     //If the move is done after packing not during it, some fixes need to be done on the clustered netlist
-    if (mol_1_success && mol_2_success && !during_packing) {
+    if (!during_packing) {
         fix_clustered_netlist(molecule_1, molecule_1_size, clb_1, clb_2);
         fix_clustered_netlist(molecule_2, molecule_2_size, clb_2, clb_1);
     }
-
-    //return the move result
-    return (mol_1_success && mol_2_success);
+    return true;
 }
 #endif

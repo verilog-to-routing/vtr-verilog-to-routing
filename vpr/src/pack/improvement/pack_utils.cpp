@@ -13,7 +13,7 @@
 #include "pack_move_utils.h"
 
 
-const int max_swaps = 10000000;
+const int max_swaps = 5000;
 
 
 
@@ -23,8 +23,10 @@ void iteratively_improve_packing(t_clustering_data& clustering_data, int verbosi
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
     */
+    int proposed = 0;
+    int succeeded = 0;
     std::unique_ptr<packingMoveGenerator> move_generator;
-    move_generator = std::make_unique<randomPackingMove>();
+    move_generator = std::make_unique<quasiDirectedPackingMove>();
 
     bool is_proposed, is_valid, is_successful;
     std::vector<molMoveDescription> new_locs;
@@ -43,11 +45,14 @@ void iteratively_improve_packing(t_clustering_data& clustering_data, int verbosi
             continue;
         }
 
+        proposed++;
         is_successful = move_generator->apply_move(new_locs, clustering_data);
         if (!is_successful) {
             VTR_LOGV(verbosity > 2, "Move failed! Proposed move isn't legal.\n");
             continue;
         }
+        succeeded++;
         VTR_LOGV(verbosity > 1, "Packing move succeeded!\n");
     }
+    VTR_LOG("@@@@ proposed = %zu, succeded %zu\n", proposed, succeeded);
 }
