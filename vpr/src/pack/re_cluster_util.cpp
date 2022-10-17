@@ -63,7 +63,8 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
     for (int i_atom = 0; i_atom < molecule_size; i_atom++) {
         if (molecule->atom_block_ids[i_atom]) {
             remove_atom_from_target(router_data, molecule->atom_block_ids[i_atom]);
-            old_clb_atoms.erase(std::remove(old_clb_atoms.begin(), old_clb_atoms.end(), molecule->atom_block_ids[i_atom]));
+            if(std::find(old_clb_atoms.begin(), old_clb_atoms.end(), molecule->atom_block_ids[i_atom]) != old_clb_atoms.end())
+                old_clb_atoms.erase(std::remove(old_clb_atoms.begin(), old_clb_atoms.end(), molecule->atom_block_ids[i_atom]));
         }
     }
 }

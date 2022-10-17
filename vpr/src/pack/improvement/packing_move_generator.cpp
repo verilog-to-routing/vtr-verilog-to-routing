@@ -38,7 +38,6 @@ bool packingMoveGenerator::apply_move(std::vector<molMoveDescription>& new_locs,
 /****************************************************************/
 bool randomPackingMove::propose_move(std::vector<molMoveDescription>& new_locs) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
 
     t_pack_molecule *mol_1, *mol_2;
     ClusterBlockId clb_index_1, clb_index_2;

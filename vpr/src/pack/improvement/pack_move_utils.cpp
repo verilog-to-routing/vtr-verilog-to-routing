@@ -178,16 +178,18 @@ bool pick_molecule_connected(t_pack_molecule* mol_1, t_pack_molecule*& mol_2){
 
     // Calculate the connected blocks to the moving molecule
     for(auto& atom_id : mol_1->atom_block_ids) {
-        for(auto& atom_pin : atom_ctx.nlist.block_pins(atom_id)) {
-            cur_net = atom_ctx.nlist.pin_net(atom_pin);
-            if(atom_ctx.nlist.net_pins(cur_net).size() > LARGE_FANOUT_LIMIT)
-                continue;
-            for(auto& net_pin : atom_ctx.nlist.net_pins(cur_net)) {
-                cur_atom = atom_ctx.nlist.pin_block(net_pin);
-                cur_clb = atom_to_cluster(cur_atom);
-                block_type_2 = cluster_ctx.clb_nlist.block_type(cur_clb);
-                if(cur_clb != clb_index_1 && block_type_1 == block_type_2)
-                    connected_blocks.push_back(cur_clb);
+        if(atom_id) {
+            for (auto& atom_pin : atom_ctx.nlist.block_pins(atom_id)) {
+                cur_net = atom_ctx.nlist.pin_net(atom_pin);
+                if (atom_ctx.nlist.net_pins(cur_net).size() > LARGE_FANOUT_LIMIT)
+                    continue;
+                for (auto& net_pin : atom_ctx.nlist.net_pins(cur_net)) {
+                    cur_atom = atom_ctx.nlist.pin_block(net_pin);
+                    cur_clb = atom_to_cluster(cur_atom);
+                    block_type_2 = cluster_ctx.clb_nlist.block_type(cur_clb);
+                    if (cur_clb != clb_index_1 && block_type_1 == block_type_2)
+                        connected_blocks.push_back(cur_clb);
+                }
             }
         }
     }
