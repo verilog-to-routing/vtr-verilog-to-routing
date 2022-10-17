@@ -238,7 +238,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     void add_route_tree_node_to_heap(
         t_rt_node* rt_node,
         int target_node,
-        const t_conn_cost_params cost_params);
+        const t_conn_cost_params cost_params,
+        bool is_high_fanout);
 
     t_bb add_high_fanout_route_tree_to_heap(
         t_rt_node* rt_root,

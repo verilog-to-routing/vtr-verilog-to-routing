@@ -864,6 +864,8 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pushes[node_type_idx]);
         VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pops[node_type_idx]);
         VTR_LOG("rt_node_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_pushes[node_type_idx]);
+        VTR_LOG("rt_node_%s_high_fanout_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_high_fanout_pushes[node_type_idx]);
+        VTR_LOG("rt_node_%s_entire_tree_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_entire_tree_pushes[node_type_idx]);
     }
     VTR_LOG("\n");
 
@@ -2255,6 +2257,8 @@ static void update_route_stats(RouterStats& router_stats, RouterStats& router_it
         router_stats.intra_cluster_node_type_cnt_pushes[node_type_idx] += router_iteration_stats.intra_cluster_node_type_cnt_pushes[node_type_idx];
         router_stats.intra_cluster_node_type_cnt_pops[node_type_idx] += router_iteration_stats.intra_cluster_node_type_cnt_pops[node_type_idx];
         router_stats.rt_node_pushes[node_type_idx] += router_iteration_stats.rt_node_pushes[node_type_idx];
+        router_stats.rt_node_high_fanout_pushes[node_type_idx] += router_iteration_stats.rt_node_high_fanout_pushes[node_type_idx];
+        router_stats.rt_node_entire_tree_pushes[node_type_idx] += router_iteration_stats.rt_node_entire_tree_pushes[node_type_idx];
     }
 }
 
@@ -2273,6 +2277,8 @@ static void init_route_stats(RouterStats& router_stats) {
         router_stats.intra_cluster_node_type_cnt_pushes[node_type_idx] = 0;
         router_stats.intra_cluster_node_type_cnt_pops[node_type_idx] = 0;
         router_stats.rt_node_pushes[node_type_idx] = 0;
+        router_stats.rt_node_entire_tree_pushes[node_type_idx] = 0;
+        router_stats.rt_node_high_fanout_pushes[node_type_idx] = 0;
     }
 }
 

@@ -16,6 +16,8 @@ struct RouterStats {
 
     // For debugging purposes
     size_t rt_node_pushes[t_rr_type::NUM_RR_TYPES];
+    size_t rt_node_high_fanout_pushes[t_rr_type::NUM_RR_TYPES];
+    size_t rt_node_entire_tree_pushes[t_rr_type::NUM_RR_TYPES];
 };
 
 class WirelengthInfo {

@@ -897,12 +897,14 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
                                         RRNodeId(target_node))) {
                 add_route_tree_node_to_heap(rt_node,
                                             target_node,
-                                            cost_params);
+                                            cost_params,
+                                            false);
             }
         } else {
             add_route_tree_node_to_heap(rt_node,
                                         target_node,
-                                        cost_params);
+                                        cost_params,
+                                        false);
         }
     }
 
@@ -924,7 +926,8 @@ template<typename Heap>
 void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     t_rt_node* rt_node,
     int target_node,
-    const t_conn_cost_params cost_params) {
+    const t_conn_cost_params cost_params,
+    bool is_high_fanout) {
     const auto& device_ctx = g_vpr_ctx.device();
     int inode = rt_node->inode;
     float backward_path_cost = cost_params.criticality * rt_node->Tdel;
@@ -970,6 +973,11 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                         true);
 
     router_stats_->rt_node_pushes[rr_graph_->node_type(RRNodeId(inode))]++;
+    if(is_high_fanout) {
+        router_stats_->rt_node_high_fanout_pushes[rr_graph_->node_type(RRNodeId(inode))]++;
+    } else {
+        router_stats_->rt_node_entire_tree_pushes[rr_graph_->node_type(RRNodeId(inode))]++;
+    }
 }
 
 static t_bb adjust_highfanout_bounding_box(t_bb highfanout_bb) {
@@ -1033,7 +1041,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
 
                 //Put the node onto the heap
                 if (relevant_node_to_target(rr_graph_, RRNodeId(rt_node->inode), RRNodeId(target_node))) {
-                    add_route_tree_node_to_heap(rt_node, target_node, cost_params);
+                    add_route_tree_node_to_heap(rt_node, target_node, cost_params, true);
                     //Update Bounding Box
                     RRNodeId node(rt_node->inode);
                     highfanout_bb.xmin = std::min<int>(highfanout_bb.xmin, rr_graph_->node_xlow(node));

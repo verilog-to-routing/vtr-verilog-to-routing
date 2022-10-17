@@ -39,7 +39,21 @@ rt_node_SINK_pushes;vpr.out;Router Stats: .*rt_node_SINK_pushes: (\d+) .*
 rt_node_IPIN_pushes;vpr.out;Router Stats: .*rt_node_IPIN_pushes: (\d+) .*
 rt_node_OPIN_pushes;vpr.out;Router Stats: .*rt_node_OPIN_pushes: (\d+) .*
 rt_node_CHANX_pushes;vpr.out;Router Stats: .*rt_node_CHANX_pushes: (\d+) .*
-rt_node_CHANY_pushes;vpr.out;Router Stats: .*rt_node_CHANY_pushes: (\d+)
+rt_node_CHANY_pushes;vpr.out;Router Stats: .*rt_node_CHANY_pushes: (\d+) .*
+
+rt_node_SOURCE_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_SOURCE_high_fanout_pushes: (\d+) .*
+rt_node_SINK_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_SINK_high_fanout_pushes: (\d+) .*
+rt_node_IPIN_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_IPIN_high_fanout_pushes: (\d+) .*
+rt_node_OPIN_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_OPIN_high_fanout_pushes: (\d+) .*
+rt_node_CHANX_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_CHANX_high_fanout_pushes: (\d+) .*
+rt_node_CHANY_high_fanout_pushes;vpr.out;Router Stats: .*rt_node_CHANY_high_fanout_pushes: (\d+) .*
+
+rt_node_SOURCE_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_SOURCE_entire_tree_pushes: (\d+) .*
+rt_node_SINK_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_SINK_entire_tree_pushes: (\d+) .*
+rt_node_IPIN_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_IPIN_entire_tree_pushes: (\d+) .*
+rt_node_OPIN_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_OPIN_entire_tree_pushes: (\d+) .*
+rt_node_CHANX_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_CHANX_entire_tree_pushes: (\d+) .*
+rt_node_CHANY_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_CHANY_entire_tree_pushes: (\d+) .*
 
 #Area Metrics
 logic_block_area_total;vpr.out;\s*Total logic block area .*: (.*)
