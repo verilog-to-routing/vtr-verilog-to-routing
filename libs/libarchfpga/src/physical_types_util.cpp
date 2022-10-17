@@ -266,7 +266,6 @@ static std::vector<int> get_pb_pin_src_pins(t_physical_tile_type_ptr physical_ty
     return driving_pins;
 }
 
-<<<<<<< HEAD
 static std::vector<int> get_pb_pin_sink_pins(t_physical_tile_type_ptr physical_type,
                                              const t_sub_tile* sub_tile,
                                              t_logical_block_type_ptr logical_block,
