@@ -1321,7 +1321,7 @@ void expand_dsp_clocks(t_module* module) {
     for (int i = 0; i < module->number_of_nodes; ++i) {
         t_node* node = module->array_of_nodes[i];
 
-        if (strcmp(node->type, "fourteennm_mac") == 0) {
+        if (strcmp(node->type, "fourteennm_mac") == 0 || strcmp(node->type, "fourteennm_fp_mac") == 0) {
             ++num_ram_blocks_processed;
             DSPInfo dsp_info = get_dsp_info(node);
 

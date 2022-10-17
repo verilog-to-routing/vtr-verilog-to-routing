@@ -1346,7 +1346,7 @@ void set_dsp_clk(DSPInfo& dsp_info, t_node_port_association* source_clk, std::st
 
 DSPInfo get_dsp_info(const t_node* vqm_node) {
 
-    VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_mac") == 0);
+    VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_mac") == 0 || strcmp(vqm_node->type, "fourteennm_fp_mac") == 0);
 
     const char* clock_param_name[dsp_clock_count] = { 
         "ax_clock", 
