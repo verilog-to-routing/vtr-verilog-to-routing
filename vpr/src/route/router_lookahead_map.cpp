@@ -285,26 +285,21 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
             if (is_inter_cluster_node(from_physical_type,
                                       from_rr_type,
                                       from_node_ptc_num)) {
-                if (node_in_same_physical_tile(current_node, target_node)) {
-                    delay_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
-                    cong_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
-                    return delay_cost + cong_cost;
-                } else {
-                    std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
+                std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
-                    delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
-                    cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
-                    return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
-                }
+                delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
+                cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
+                return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
             } else {
                 if (node_in_same_physical_tile(current_node, target_node)) {
+                    delay_offset_cost = 0.;
+                    cong_offset_cost = 0.;
                     const auto& pin_delays = inter_tile_pin_primitive_pin_delay.at(from_physical_type)[from_node_ptc_num];
                     auto pin_delay_itr = pin_delays.find(rr_graph.node_ptc_num(target_node));
                     if (pin_delay_itr == pin_delays.end()) {
                         //VTR_ASSERT(pin_delay_itr != pin_delays.end());
-                        delay_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
-                        cong_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
-                        return delay_cost + cong_cost;
+                        delay_cost = std::numeric_limits<float>::max() / 1e12;
+                        cong_cost = std::numeric_limits<float>::max() / 1e12;
                     } else {
                         delay_cost = params.criticality * pin_delay_itr->second.delay;
                         cong_cost = (1. - params.criticality) * pin_delay_itr->second.congestion;
@@ -328,8 +323,6 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
             const auto& pin_delays = inter_tile_pin_primitive_pin_delay.at(from_physical_type)[from_node_ptc_num];
             auto pin_delay_itr = pin_delays.find(rr_graph.node_ptc_num(target_node));
             if (pin_delay_itr == pin_delays.end()) {
-                // Since ّI am pruning irrelevant pins, I should not get into this if statement.
-                //VTR_ASSERT(pin_delay_itr != pin_delays.end());
                 delay_cost = std::numeric_limits<float>::max() / 1e12;
                 cong_cost = std::numeric_limits<float>::max() / 1e12;
             } else {
@@ -354,7 +347,6 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                 delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
                 cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
             }
-
 
             return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
         } else {
