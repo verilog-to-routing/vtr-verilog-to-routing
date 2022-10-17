@@ -297,9 +297,12 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                     const auto& pin_delays = inter_tile_pin_primitive_pin_delay.at(from_physical_type)[from_node_ptc_num];
                     auto pin_delay_itr = pin_delays.find(rr_graph.node_ptc_num(target_node));
                     if (pin_delay_itr == pin_delays.end()) {
-                        //VTR_ASSERT(pin_delay_itr != pin_delays.end());
-                        delay_cost = std::numeric_limits<float>::max() / 1e12;
-                        cong_cost = std::numeric_limits<float>::max() / 1e12;
+                        // There isn't any intra-cluster path to connect the current OPIN to the SINK, thus it has to outside.
+                        // The best estimation we have now, it the minimum intra-cluster delay to the sink. However, this cost is incomplete,
+                        // since it does not consider the cost of going outside of the cluster and, then, returning to it.
+                        delay_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
+                        cong_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
+                        return delay_cost + cong_cost;
                     } else {
                         delay_cost = params.criticality * pin_delay_itr->second.delay;
                         cong_cost = (1. - params.criticality) * pin_delay_itr->second.congestion;
