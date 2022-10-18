@@ -1249,12 +1249,12 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
 
         // set the clear ports for output registers 
         if (port_a_dataout_clear) {
-            if (port_a_dataout_clear->value.string_value == std::string("aclr")){
+            if (port_a_dataout_clear->value.string_value == std::string("aclear")){
                 VTR_ASSERT(aclr_port);
                 ram_info.port_a_dataout_aclr = aclr_port;
                 ram_info.port_a_dataout_sclr = nullptr;
 
-            } else if (port_a_dataout_clear->value.string_value == std::string("sclr")) {
+            } else if (port_a_dataout_clear->value.string_value == std::string("sclear")) {
                 VTR_ASSERT(sclr_port);
                 ram_info.port_a_dataout_aclr = nullptr;
                 ram_info.port_a_dataout_sclr = sclr_port;
