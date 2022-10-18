@@ -272,7 +272,7 @@ def execute_vpr_and_process_output(vpr_location, arch_file, design_file, design_
         vpr_command.append(constraints_file)
 
     # run vpr. Will timeout after 30 minutes (maybe we need more for larger designs
-    result = subprocess.run(vpr_command,check=True, stdout=vpr_output, timeout=1800)
+    result = subprocess.run(vpr_command,check=True, stdout=vpr_output, timeout=7200)
 
     #close the output file
     vpr_output.close()
@@ -427,7 +427,7 @@ if __name__ == "__main__":
     email_setup['sender_method'] = smtplib.SMTP(host='smtp.office365.com', port=587)
     email_setup['sender_method'].starttls()
     email_setup['sender_method'].login(email_setup['user_email'], email_setup['email_password'])
-    send_notification(test_status=test_status, error_message=error, email_related_info=email_setup)
+    send_notification(test_status=test_status, error_message=error_message, email_related_info=email_setup)
     
 
 
