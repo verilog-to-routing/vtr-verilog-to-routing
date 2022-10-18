@@ -1296,49 +1296,49 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
 
 void set_dsp_clk(DSPInfo& dsp_info, t_node_port_association* source_clk, std::string clock_name){
    
-        if(clock_name.compare("ax_clock")){ 
+        if(clock_name.compare("ax_clock") == 0){ 
             dsp_info.port_ax_clock = source_clk;
         }        
-        if(clock_name.compare("ay_clock")){ 
+        if(clock_name.compare("ay_clock") == 0){ 
             dsp_info.port_ay_clock = source_clk;
         }        
-        if(clock_name.compare("az_clock")){ 
+        if(clock_name.compare("az_clock") == 0){ 
             dsp_info.port_az_clock = source_clk;
         }        
-        if(clock_name.compare("bx_clock")){ 
+        if(clock_name.compare("bx_clock") == 0){ 
             dsp_info.port_bx_clock = source_clk;
         }        
-        if(clock_name.compare("by_clock")){ 
+        if(clock_name.compare("by_clock") == 0){ 
             dsp_info.port_by_clock = source_clk;
         }        
-        if(clock_name.compare("bz_clock")){ 
+        if(clock_name.compare("bz_clock") == 0){ 
             dsp_info.port_bz_clock = source_clk;
         }        
-        if(clock_name.compare("coef_sel_a_clock")){ 
+        if(clock_name.compare("coef_sel_a_clock") == 0){ 
             dsp_info.port_coef_sel_a_clock = source_clk;
         }        
-        if(clock_name.compare("coef_sel_b_clock")){ 
+        if(clock_name.compare("coef_sel_b_clock") == 0){ 
             dsp_info.port_coef_sel_b_clock = source_clk;
         }        
-        if(clock_name.compare("ay_scan_in_clock")){ 
+        if(clock_name.compare("ay_scan_in_clock") == 0){ 
             dsp_info.port_ay_scan_in_clock = source_clk;
         }        
-        if(clock_name.compare("accumulate_clock")){
+        if(clock_name.compare("accumulate_clock") == 0){
             dsp_info.port_accumulate_clock = source_clk;
         }        
-        if(clock_name.compare("load_const_clock")){
+        if(clock_name.compare("load_const_clock") == 0){
             dsp_info.port_load_const_clock = source_clk;
         }        
-        if(clock_name.compare("negate_clock")){
+        if(clock_name.compare("negate_clock") == 0){
             dsp_info.port_negate_clock = source_clk;
         }        
-        if(clock_name.compare("sub_clock")){
+        if(clock_name.compare("sub_clock") == 0){
             dsp_info.port_sub_clock = source_clk;
         }        
-        if(clock_name.compare("chainout_clock")){
+        if(clock_name.compare("chainout_clock") == 0){
             dsp_info.port_chainout_clock = source_clk;
         }        
-        if(clock_name.compare("output_clock")){
+        if(clock_name.compare("output_clock") == 0){
             dsp_info.port_output_clock = source_clk; 
         }
 }
