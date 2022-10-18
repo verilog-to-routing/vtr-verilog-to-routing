@@ -1910,7 +1910,7 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
         VTR_ASSERT(class_rr_node_id != RRNodeId::INVALID());
         for (auto pin_num : pin_list) {
             RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, i, j, pin_num);
-            if(pin_rr_node_id == RRNodeId::INVALID()) {
+            if (pin_rr_node_id == RRNodeId::INVALID()) {
                 VTR_LOG_ERROR("In block (%d, %d) pin num: %d doesn't exist to be connected to class %d",
                               i,
                               j,

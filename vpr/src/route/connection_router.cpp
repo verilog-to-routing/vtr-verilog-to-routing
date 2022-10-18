@@ -973,7 +973,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                         true);
 
     router_stats_->rt_node_pushes[rr_graph_->node_type(RRNodeId(inode))]++;
-    if(is_high_fanout) {
+    if (is_high_fanout) {
         router_stats_->rt_node_high_fanout_pushes[rr_graph_->node_type(RRNodeId(inode))]++;
     } else {
         router_stats_->rt_node_entire_tree_pushes[rr_graph_->node_type(RRNodeId(inode))]++;

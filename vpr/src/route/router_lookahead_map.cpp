@@ -333,8 +333,8 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                 cong_cost = (1. - params.criticality) * pin_delay_itr->second.congestion;
             }
             return delay_cost + cong_cost;
-        } else if(from_rr_type == SOURCE) {
-            if(node_in_same_physical_tile(current_node, target_node)) {
+        } else if (from_rr_type == SOURCE) {
+            if (node_in_same_physical_tile(current_node, target_node)) {
                 delay_cost = 0.;
                 cong_cost = 0.;
                 delay_offset_cost = 0.;
