@@ -305,8 +305,8 @@ noc_router_adapter_block noc_router_adapter_block_four(
 slave_interface si_4(
 	.clk(clk),
 	.reset(reset),
-	.tvalid_in(si_4_data_in),
-	.tdata_in(si_4_valid_in),
+	.tvalid_in(si_4_valid_in),
+	.tdata_in(si_4_data_in),
 	.tready(si_4_ready),
 	.tdata_out(si_4_data_out),
 	.tvalid_out(si_4_valid_out),
