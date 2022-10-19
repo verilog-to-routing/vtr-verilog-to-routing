@@ -13,7 +13,7 @@
 #include "pack_move_utils.h"
 
 
-const int max_swaps = 5000;
+const int max_swaps = 100000;
 
 
 
@@ -47,6 +47,7 @@ void iteratively_improve_packing(t_clustering_data& clustering_data, int verbosi
 
         proposed++;
         is_successful = move_generator->apply_move(new_locs, clustering_data);
+
         if (!is_successful) {
             VTR_LOGV(verbosity > 2, "Move failed! Proposed move isn't legal.\n");
             continue;
