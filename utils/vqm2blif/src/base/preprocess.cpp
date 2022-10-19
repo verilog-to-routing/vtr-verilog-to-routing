@@ -1397,7 +1397,7 @@ void expand_dsp_clocks(t_module* module) {
                 ++num_clocks_added;
             }
             if (dsp_info.port_load_const_clock) {
-                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_load_const_clock, "load_const_clk");
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, dsp_info.port_load_const_clock, "loadconst_clk");
                 ++num_clocks_added;
             }
             if (dsp_info.port_negate_clock) {
