@@ -1803,7 +1803,7 @@ traffic_processor tp_32(
 	        .tvalid_out(tp_valid_out_32)
         );
 
-
+/*******************Output Logic***************************/
 assign data_out = tp_data_out_32;
 
 
