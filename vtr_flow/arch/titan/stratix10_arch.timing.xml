@@ -297,7 +297,7 @@
         <port name="bz" combinational_sink_ports="resultb"/>
         <port name="coefselb" combinational_sink_ports="resultb"/>
         <port name="scanin" combinational_sink_ports="resulta resultb scanout"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="output_clk"/>
         <port name="dfxlfsrena" clock="output_clk"/>
         <port name="dfxmisrena" clock="output_clk"/>
       </input_ports>
@@ -424,7 +424,7 @@
 
     <model name="fourteennm_mac.opmode{m18x18_sumof2}.input_type{comb}.output_type{reg}">
       <input_ports>
-        <port name="accumulate" clock="accumulate_clk"/>
+        <port name="accumulate" clock="output_clk"/>
         <port name="chainin" combinational_sink_ports="resulta chainout"/>
         <port name="clr" clock="output_clk"/>
         <port name="ax_clk" is_clock="1"/>
@@ -450,11 +450,11 @@
         <port name="by" combinational_sink_ports="resulta chainout scanout"/>
         <port name="bz" combinational_sink_ports="resulta chainout"/>
         <port name="coefselb" combinational_sink_ports="resulta chainout"/>
-        <port name="loadconst" clock="loadconst_clk"/>
-        <port name="negate" clock="negate_clk"/>
+        <port name="loadconst" clock="output_clk"/>
+        <port name="negate" clock="output_clk"/>
         <port name="scanin" combinational_sink_ports="resulta chainout scanout"/>
-        <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="sub" clock="output_clk"/>
+        <port name="ena" clock="output_clk"/>
         <port name="dfxlfsrena" clock="output_clk"/>
         <port name="dfxmisrena" clock="output_clk"/>
       </input_ports>
@@ -592,7 +592,7 @@
 
     <model name="fourteennm_mac.opmode{m18x18_plus36}.input_type{comb}.output_type{reg}">
       <input_ports> 
-        <port name="accumulate" clock="accumulate_clk"/>
+        <port name="accumulate" clock="output_clk"/>
         <port name="chainin" combinational_sink_ports="resulta chainout"/>
         <port name="clr" clock="output_clk"/>
         <port name="ax_clk" is_clock="1"/>
@@ -610,10 +610,10 @@
         <port name="ay" combinational_sink_ports="resulta chainout"/>
         <port name="bx" combinational_sink_ports="resulta chainout"/>
         <port name="by" combinational_sink_ports="resulta chainout"/>
-        <port name="loadconst" clock="loadconst_clk"/>
-        <port name="negate" clock="negate_clk"/>
-        <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="loadconst" clock="output_clk"/>
+        <port name="negate" clock="output_clk"/>
+        <port name="sub" clock="output_clk"/>
+        <port name="ena" clock="output_clk"/>
         <port name="dfxlfsrena" clock="output_clk"/>
         <port name="dfxmisrena" clock="output_clk"/>
       </input_ports> 
@@ -695,7 +695,7 @@
     <!-- systolic fir mode -->  
     <model name="fourteennm_mac.opmode{m18x18_systolic}.input_type{comb}.output_type{reg}">
       <input_ports> 
-        <port name="accumulate" clock="accumulate_clk"/>
+        <port name="accumulate" clock="output_clk"/>
         <port name="chainin" combinational_sink_ports="resulta chainout"/>
         <port name="clr" clock="output_clk"/>
         <port name="ax_clk" is_clock="1"/>
@@ -721,11 +721,11 @@
         <port name="by" combinational_sink_ports="resulta chainout scanout"/>
         <port name="bz" combinational_sink_ports="resulta chainout"/>
         <port name="coefselb" combinational_sink_ports="resulta chainout"/>
-        <port name="loadconst" clock="loadconst_clk"/>
-        <port name="negate" clock="negate_clk"/>
+        <port name="loadconst" clock="output_clk"/>
+        <port name="negate" clock="output_clk"/>
         <port name="scanin" combinational_sink_ports="resulta chainout scanout"/>
-        <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="sub" clock="output_clk"/>
+        <port name="ena" clock="output_clk"/>
         <port name="dfxlfsrena" clock="output_clk"/>
         <port name="dfxmisrena" clock="output_clk"/>
       </input_ports> 
@@ -817,7 +817,7 @@
     </model>     
     <model name="fourteennm_mac.opmode{m27x27}.input_type{comb}.output_type{reg}">
       <input_ports>       
-        <port name="accumulate" clock="accumulate_clk" />
+        <port name="accumulate" clock="output_clk" />
         <port name="chainin" combinational_sink_ports="resulta chainout"/>
         <port name="clr" clock="output_clk"/>
         <port name="ax_clk" is_clock="1"/>
@@ -835,9 +835,9 @@
         <port name="az" combinational_sink_ports="resulta chainout"/>
         <port name="coefsela" combinational_sink_ports="resulta chainout"/>
         <port name="loadconst" combinational_sink_ports="resulta chainout"/>
-        <port name="negate" clock="negate_clk"/>
+        <port name="negate" clock="output_clk"/>
         <port name="scanin" combinational_sink_ports="resulta chainout scanout"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="output_clk"/>
         <port name="dfxlfsrena" clock="output_clk"/>
         <port name="dfxmisrena" clock="output_clk"/>
       </input_ports> 
@@ -961,9 +961,9 @@
         <port name="az" combinational_sink_ports="resulta"/>
         <port name="coefsela" combinational_sink_ports="resulta"/>
         <port name="scanin" combinational_sink_ports="resulta scanout"/>
-        <port name="ena" clock="ena_clk"/>
-        <port name="sub" clock="sub_clk"/>
-        <port name="negate" clock="negate_clk"/>
+        <port name="ena" clock="output_clk"/>
+        <port name="sub" clock="output_clk"/>
+        <port name="negate" clock="output_clk"/>
         <port name="dfxlfsrena" clock="output_clk"/>
         <port name="dfxmisrena" clock="output_clk"/>
       </input_ports> 
@@ -1881,7 +1881,6 @@
   <!-- <directlist> -->
       <!-- <direct name="LAB_feedback" from_pin="LAB.data_out" to_pin="LAB.data_in" x_offset="0" y_offset="0" z_offset="0"/> -->
   <!-- </directlist> -->
-
   <complexblocklist>
 
     <pb_type name="PLL">
