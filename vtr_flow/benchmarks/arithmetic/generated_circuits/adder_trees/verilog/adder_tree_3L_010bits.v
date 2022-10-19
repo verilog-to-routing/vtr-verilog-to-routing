@@ -1,7 +1,7 @@
 `define ADDER_WIDTH 010
 `define DUMMY_WIDTH 128
 
-`define 3_LEVEL_ADDER
+
 
 module adder_tree_top (
 	clk,
@@ -45,12 +45,7 @@ module adder_tree_top (
 		sum0_1_1_0 <= isum0_1_1_0;
 		sum0_1_1_1 <= isum0_1_1_1;
 
-		`ifdef 3_LEVEL_ADDER
-			sum <= sum0;
-		`endif
-		`ifdef 2_LEVEL_ADDER
-			sum <= sum0_0;
-		`endif
+		sum <= sum0;
 	end
 
 endmodule
