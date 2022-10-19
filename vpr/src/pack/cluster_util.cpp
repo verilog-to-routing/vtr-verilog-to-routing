@@ -941,7 +941,6 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
 
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-
     parent = nullptr;
 
     block_pack_status = BLK_STATUS_UNDEFINED;

@@ -77,11 +77,9 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
         part.set_part_region(pr);
         constraints.add_partition(part);
 
-        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(blk_id);
-        int num_atoms = atoms.size();
+        std::unordered_set<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(blk_id);
 
-        for (auto atm = 0; atm < num_atoms; atm++) {
-            AtomBlockId atom_id = atoms[atm];
+        for (auto atom_id : atoms) {
             constraints.add_constrained_atom(atom_id, partid);
         }
         part_id++;
@@ -153,8 +151,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
      * appropriate region accordingly
      */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(blk_id);
-        int num_atoms = atoms.size();
+        std::unordered_set<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(blk_id);
         int x = place_ctx.block_locs[blk_id].loc.x;
         int y = place_ctx.block_locs[blk_id].loc.y;
         int width = device_ctx.grid.width();
@@ -186,8 +183,8 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
 
         VTR_ASSERT(got != region_atoms.end());
 
-        for (int at = 0; at < num_atoms; at++) {
-            got->second.push_back(atoms[at]);
+        for (auto atom_id :atoms) {
+            got->second.push_back(atom_id);
         }
     }
 

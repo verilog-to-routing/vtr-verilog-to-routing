@@ -48,11 +48,11 @@ void ClusterAtomsLookup::init_lookup() {
     for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
         ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
 
-        cluster_atoms[clb_index].push_back(atom_blk_id);
+        cluster_atoms[clb_index].insert(atom_blk_id);
     }
 }
 
-std::vector<AtomBlockId> ClusterAtomsLookup::atoms_in_cluster(ClusterBlockId blk_id) {
-    std::vector<AtomBlockId> atoms = cluster_atoms[blk_id];
+std::unordered_set<AtomBlockId> ClusterAtomsLookup::atoms_in_cluster(ClusterBlockId blk_id) {
+    std::unordered_set<AtomBlockId> atoms = cluster_atoms[blk_id];
     return atoms;
 }
