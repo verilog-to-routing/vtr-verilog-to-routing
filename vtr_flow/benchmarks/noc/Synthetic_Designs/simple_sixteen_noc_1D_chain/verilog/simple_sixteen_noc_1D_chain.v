@@ -1155,8 +1155,8 @@ noc_router_adapter_block noc_router_adapter_block_16(
 slave_interface si_16(
 	.clk(clk),
 	.reset(reset),
-	.tvalid_in(si_last_data_in),
-	.tdata_in(si_last_valid_in),
+	.tvalid_in(si_last_valid_in),
+	.tdata_in(si_last_data_in),
 	.tready(si_last_ready),
 	.tdata_out(si_last_data_out),
 	.tvalid_out(si_last_valid_out),
