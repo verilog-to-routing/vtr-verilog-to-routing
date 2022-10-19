@@ -4,7 +4,7 @@
     Module for running tests to verify the NoC placement of vpr
 """
 
-from cgi import test
+from concurrent.futures import ThreadPoolExecutor, wait
 from distutils.log import error
 from email.headerregistry import Address
 from fileinput import close
@@ -22,6 +22,8 @@ from operator import itemgetter
 import smtplib
 from email.message import EmailMessage
 import getpass
+from random import randrange
+import threading
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "vtr_flow/scripts/python_libs"))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "vtr_flow/scripts"))
@@ -56,9 +58,13 @@ NOC_PLACEMENT_COST_REGEX = 'NoC Placement Costs. noc_aggregate_bandwidth_cost: (
 PLACEMENT_TIME_REGEX = '# Placement took (.*) seconds.*'
 POST_PLACE_CRITICAL_PATH_DELAY_REGEX = 'post-quench CPD = (.*) \(ns\)'
 
+NUM_OF_SEED_RUNS = 5
+MAX_SEED_VAL = 10000
+
 # global synhronization datastructures
 main_manager = Manager()
 design_run_data = main_manager.list()
+single_weight_multiple_runs = main_manager.list()
 
 
 def noc_test_command_line_parser(prog=None):
@@ -256,12 +262,11 @@ def check_for_constraints_file(design_file):
 
     return constraints_file
 
-
-def execute_vpr_and_process_output(vpr_location, arch_file, design_file, design_flows_file, routing_algorithm, device, noc_placement_weight, vpr_out_file, vpr_net_file):
-    # create the filr that will store the VPR output
+def run_vpr_command_and_store_output(vpr_location, arch_file, design_file, design_flows_file, routing_algorithm, device, noc_placement_weight, vpr_out_file, vpr_net_file, seed_val):
+    # create the file that will store the VPR output
     vpr_output = open(vpr_out_file, 'w')
 
-    vpr_command = [vpr_location, arch_file, str(design_file), '--noc', 'on', '--noc_flows_file', design_flows_file, '--noc_routing_algorithm', routing_algorithm, '--device', device, '--noc_placement_weighting', str(noc_placement_weight), '--pack', '--place', '--net_file', vpr_net_file]
+    vpr_command = [vpr_location, arch_file, str(design_file), '--noc', 'on', '--noc_flows_file', design_flows_file, '--noc_routing_algorithm', routing_algorithm, '--device', device, '--noc_placement_weighting', str(noc_placement_weight), '--pack', '--place', '--net_file', vpr_net_file, '--seed', str(seed_val)]
 
     # check if there is also a constraints file we need to worry about
     constraints_file = check_for_constraints_file(design_file=design_file)
@@ -271,22 +276,75 @@ def execute_vpr_and_process_output(vpr_location, arch_file, design_file, design_
         vpr_command.append('--read_vpr_constraints')
         vpr_command.append(constraints_file)
 
-    # run vpr. Will timeout after 30 minutes (maybe we need more for larger designs
+    # run vpr. Will timeout after 2 hours (maybe we need more for larger designs
     result = subprocess.run(vpr_command,check=True, stdout=vpr_output, timeout=7200)
 
     #close the output file
     vpr_output.close()
-        
-    # get the placement metrics for the current run
-    curr_vpr_place_data = process_vpr_output(vpr_out_file)
+
+
+def execute_vpr_and_process_output(vpr_location, arch_file, design_file, design_flows_file, routing_algorithm, device, noc_placement_weight, vpr_out_file, vpr_net_file):
+
+    # stores a list of arguments that are needed for the vpr runs
+    run_args = []
+
+    # create the test args for all the seed runs
+    for seed_run in range(NUM_OF_SEED_RUNS):
+        # generate a random seed val
+        seed_val = randrange(1, MAX_SEED_VAL)
+
+        # generate the new net and output file names
+        new_vpr_out_file = os.path.splitext(vpr_out_file)[0]
+        new_vpr_out_file = os.path.splitext(new_vpr_out_file)[0]
+        new_vpr_out_file = '{0}.{1}.vpr.out'.format(new_vpr_out_file, seed_val)
+
+        new_vpr_net_file = os.path.splitext(vpr_net_file)[0]
+        new_vpr_net_file = '{0}.{1}{2}'.format(new_vpr_net_file, seed_val, NET_FILE_EXT)
+
+        run_args.append((vpr_location, arch_file, design_file, design_flows_file, routing_algorithm, device, noc_placement_weight, new_vpr_out_file, new_vpr_net_file, seed_val))
+
+    # create the thread pool that will run vpr in parallel
+    vpr_executor = ThreadPoolExecutor(max_workers=1)
+
+    # run all instances of vpr
+    vpr_run_result = vpr_executor.map(lambda vpr_args: run_vpr_command_and_store_output(*vpr_args), run_args)
+    # wait for all the vpr runs to finish
+    vpr_executor.shutdown(wait=True)
+
+    # stores the average of all results for the current test
+    vpr_average_place_data = {}
+    vpr_average_place_data[PLACE_BB_COST] = 0.0
+    vpr_average_place_data[PLACE_COST] = 0.0
+    vpr_average_place_data[PLACE_TIME] = 0.0
+    vpr_average_place_data[PLACE_CPD] = 0.0
+    vpr_average_place_data[NOC_AGGREGATE_BANDWIDTH_COST] = 0.0
+    vpr_average_place_data[NOC_LATENCY_COST] = 0.0
+
+    for single_run_args in run_args:
+
+        # get the placement metrics for the current run
+        curr_vpr_place_data = process_vpr_output(vpr_output_file=single_run_args[7])
+
+        # now accumulate the results of the current seed run
+        vpr_average_place_data[PLACE_BB_COST] = vpr_average_place_data[PLACE_BB_COST] + curr_vpr_place_data[PLACE_BB_COST]
+        vpr_average_place_data[PLACE_COST] = vpr_average_place_data[PLACE_COST] + curr_vpr_place_data[PLACE_COST]
+        vpr_average_place_data[PLACE_TIME] = vpr_average_place_data[PLACE_TIME] + curr_vpr_place_data[PLACE_TIME]
+        vpr_average_place_data[PLACE_CPD] = vpr_average_place_data[PLACE_CPD] + curr_vpr_place_data[PLACE_CPD]
+        vpr_average_place_data[NOC_AGGREGATE_BANDWIDTH_COST] = vpr_average_place_data[NOC_AGGREGATE_BANDWIDTH_COST] + curr_vpr_place_data[NOC_AGGREGATE_BANDWIDTH_COST]
+        vpr_average_place_data[NOC_LATENCY_COST] = vpr_average_place_data[NOC_LATENCY_COST] + curr_vpr_place_data[NOC_LATENCY_COST]
+
+        # delete the net file associated with the current run
+        os.remove(single_run_args[8])
+    
+    # get the average palacement results after all the runs
+    vpr_average_place_data = {place_param: value / NUM_OF_SEED_RUNS for place_param, value in vpr_average_place_data.items()}
+    
     # indicate what the current noc weighting is 
-    curr_vpr_place_data[NOC_PLACEMENT_WEIGHT] = noc_placement_weight
+    vpr_average_place_data[NOC_PLACEMENT_WEIGHT] = noc_placement_weight
 
     # store the current run data
-    design_run_data.append(curr_vpr_place_data)
+    design_run_data.append(vpr_average_place_data)
 
-    # delete the netfile since we dont need it anymore
-    os.remove(vpr_net_file)
 
 def run_vpr(vpr_location, arch_file, design_file, design_flows_file, max_noc_weighting, noc_weighting_interval):
 
