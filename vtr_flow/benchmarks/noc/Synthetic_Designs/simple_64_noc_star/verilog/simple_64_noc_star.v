@@ -7,7 +7,7 @@
     processor module.
 */
 
-module simple_32_noc_star (
+module simple_64_noc_star (
     clk,
     reset,
 	data_out
@@ -251,6 +251,230 @@ wire si_ready_32;
 wire [noc_dw - 1: 0] si_data_out_32;
 wire si_valid_out_32;
 
+wire [noc_dw - 1: 0] si_data_in_33;
+wire si_valid_in_33;
+wire si_ready_33;
+
+wire [noc_dw - 1: 0] si_data_out_33;
+wire si_valid_out_33;
+
+wire [noc_dw - 1: 0] si_data_in_34;
+wire si_valid_in_34;
+wire si_ready_34;
+
+wire [noc_dw - 1: 0] si_data_out_34;
+wire si_valid_out_34;
+
+wire [noc_dw - 1: 0] si_data_in_35;
+wire si_valid_in_35;
+wire si_ready_35;
+
+wire [noc_dw - 1: 0] si_data_out_35;
+wire si_valid_out_35;
+
+wire [noc_dw - 1: 0] si_data_in_36;
+wire si_valid_in_36;
+wire si_ready_36;
+
+wire [noc_dw - 1: 0] si_data_out_36;
+wire si_valid_out_36;
+
+wire [noc_dw - 1: 0] si_data_in_37;
+wire si_valid_in_37;
+wire si_ready_37;
+
+wire [noc_dw - 1: 0] si_data_out_37;
+wire si_valid_out_37;
+
+wire [noc_dw - 1: 0] si_data_in_38;
+wire si_valid_in_38;
+wire si_ready_38;
+
+wire [noc_dw - 1: 0] si_data_out_38;
+wire si_valid_out_38;
+
+wire [noc_dw - 1: 0] si_data_in_39;
+wire si_valid_in_39;
+wire si_ready_39;
+
+wire [noc_dw - 1: 0] si_data_out_39;
+wire si_valid_out_39;
+
+wire [noc_dw - 1: 0] si_data_in_40;
+wire si_valid_in_40;
+wire si_ready_40;
+
+wire [noc_dw - 1: 0] si_data_out_40;
+wire si_valid_out_40;
+
+wire [noc_dw - 1: 0] si_data_in_41;
+wire si_valid_in_41;
+wire si_ready_41;
+
+wire [noc_dw - 1: 0] si_data_out_41;
+wire si_valid_out_41;
+
+wire [noc_dw - 1: 0] si_data_in_42;
+wire si_valid_in_42;
+wire si_ready_42;
+
+wire [noc_dw - 1: 0] si_data_out_42;
+wire si_valid_out_42;
+
+wire [noc_dw - 1: 0] si_data_in_43;
+wire si_valid_in_43;
+wire si_ready_43;
+
+wire [noc_dw - 1: 0] si_data_out_43;
+wire si_valid_out_43;
+
+wire [noc_dw - 1: 0] si_data_in_44;
+wire si_valid_in_44;
+wire si_ready_44;
+
+wire [noc_dw - 1: 0] si_data_out_44;
+wire si_valid_out_44;
+
+wire [noc_dw - 1: 0] si_data_in_45;
+wire si_valid_in_45;
+wire si_ready_45;
+
+wire [noc_dw - 1: 0] si_data_out_45;
+wire si_valid_out_45;
+
+wire [noc_dw - 1: 0] si_data_in_46;
+wire si_valid_in_46;
+wire si_ready_46;
+
+wire [noc_dw - 1: 0] si_data_out_46;
+wire si_valid_out_46;
+
+wire [noc_dw - 1: 0] si_data_in_47;
+wire si_valid_in_47;
+wire si_ready_47;
+
+wire [noc_dw - 1: 0] si_data_out_47;
+wire si_valid_out_47;
+
+wire [noc_dw - 1: 0] si_data_in_48;
+wire si_valid_in_48;
+wire si_ready_48;
+
+wire [noc_dw - 1: 0] si_data_out_48;
+wire si_valid_out_48;
+
+wire [noc_dw - 1: 0] si_data_in_49;
+wire si_valid_in_49;
+wire si_ready_49;
+
+wire [noc_dw - 1: 0] si_data_out_49;
+wire si_valid_out_49;
+
+wire [noc_dw - 1: 0] si_data_in_50;
+wire si_valid_in_50;
+wire si_ready_50;
+
+wire [noc_dw - 1: 0] si_data_out_50;
+wire si_valid_out_50;
+
+wire [noc_dw - 1: 0] si_data_in_51;
+wire si_valid_in_51;
+wire si_ready_51;
+
+wire [noc_dw - 1: 0] si_data_out_51;
+wire si_valid_out_51;
+
+wire [noc_dw - 1: 0] si_data_in_52;
+wire si_valid_in_52;
+wire si_ready_52;
+
+wire [noc_dw - 1: 0] si_data_out_52;
+wire si_valid_out_52;
+
+wire [noc_dw - 1: 0] si_data_in_53;
+wire si_valid_in_53;
+wire si_ready_53;
+
+wire [noc_dw - 1: 0] si_data_out_53;
+wire si_valid_out_53;
+
+wire [noc_dw - 1: 0] si_data_in_54;
+wire si_valid_in_54;
+wire si_ready_54;
+
+wire [noc_dw - 1: 0] si_data_out_54;
+wire si_valid_out_54;
+
+wire [noc_dw - 1: 0] si_data_in_55;
+wire si_valid_in_55;
+wire si_ready_55;
+
+wire [noc_dw - 1: 0] si_data_out_55;
+wire si_valid_out_55;
+
+wire [noc_dw - 1: 0] si_data_in_56;
+wire si_valid_in_56;
+wire si_ready_56;
+
+wire [noc_dw - 1: 0] si_data_out_56;
+wire si_valid_out_56;
+
+wire [noc_dw - 1: 0] si_data_in_57;
+wire si_valid_in_57;
+wire si_ready_57;
+
+wire [noc_dw - 1: 0] si_data_out_57;
+wire si_valid_out_57;
+
+wire [noc_dw - 1: 0] si_data_in_58;
+wire si_valid_in_58;
+wire si_ready_58;
+
+wire [noc_dw - 1: 0] si_data_out_58;
+wire si_valid_out_58;
+
+wire [noc_dw - 1: 0] si_data_in_59;
+wire si_valid_in_59;
+wire si_ready_59;
+
+wire [noc_dw - 1: 0] si_data_out_59;
+wire si_valid_out_59;
+
+wire [noc_dw - 1: 0] si_data_in_60;
+wire si_valid_in_60;
+wire si_ready_60;
+
+wire [noc_dw - 1: 0] si_data_out_60;
+wire si_valid_out_60;
+
+wire [noc_dw - 1: 0] si_data_in_61;
+wire si_valid_in_61;
+wire si_ready_61;
+
+wire [noc_dw - 1: 0] si_data_out_61;
+wire si_valid_out_61;
+
+wire [noc_dw - 1: 0] si_data_in_62;
+wire si_valid_in_62;
+wire si_ready_62;
+
+wire [noc_dw - 1: 0] si_data_out_62;
+wire si_valid_out_62;
+
+wire [noc_dw - 1: 0] si_data_in_63;
+wire si_valid_in_63;
+wire si_ready_63;
+
+wire [noc_dw - 1: 0] si_data_out_63;
+wire si_valid_out_63;
+
+wire [noc_dw - 1: 0] si_data_in_64;
+wire si_valid_in_64;
+wire si_ready_64;
+
+wire [noc_dw - 1: 0] si_data_out_64;
+wire si_valid_out_64;
+
 //traffic processor data - middle routers
 wire [noc_dw - 1: 0] tp_data_out_2;
 wire tp_valid_out_2;
@@ -344,6 +568,103 @@ wire tp_valid_out_31;
 
 wire [noc_dw - 1: 0] tp_data_out_32;
 wire tp_valid_out_32;
+
+wire [noc_dw - 1: 0] tp_data_out_33;
+wire tp_valid_out_33;
+
+wire [noc_dw - 1: 0] tp_data_out_34;
+wire tp_valid_out_34;
+
+wire [noc_dw - 1: 0] tp_data_out_35;
+wire tp_valid_out_35;
+
+wire [noc_dw - 1: 0] tp_data_out_36;
+wire tp_valid_out_36;
+
+wire [noc_dw - 1: 0] tp_data_out_37;
+wire tp_valid_out_37;
+
+wire [noc_dw - 1: 0] tp_data_out_38;
+wire tp_valid_out_38;
+
+wire [noc_dw - 1: 0] tp_data_out_39;
+wire tp_valid_out_39;
+
+wire [noc_dw - 1: 0] tp_data_out_40;
+wire tp_valid_out_40;
+
+wire [noc_dw - 1: 0] tp_data_out_41;
+wire tp_valid_out_41;
+
+wire [noc_dw - 1: 0] tp_data_out_42;
+wire tp_valid_out_42;
+
+wire [noc_dw - 1: 0] tp_data_out_43;
+wire tp_valid_out_43;
+
+wire [noc_dw - 1: 0] tp_data_out_44;
+wire tp_valid_out_44;
+
+wire [noc_dw - 1: 0] tp_data_out_45;
+wire tp_valid_out_45;
+
+wire [noc_dw - 1: 0] tp_data_out_46;
+wire tp_valid_out_46;
+
+wire [noc_dw - 1: 0] tp_data_out_47;
+wire tp_valid_out_47;
+
+wire [noc_dw - 1: 0] tp_data_out_48;
+wire tp_valid_out_48;
+
+wire [noc_dw - 1: 0] tp_data_out_49;
+wire tp_valid_out_49;
+
+wire [noc_dw - 1: 0] tp_data_out_50;
+wire tp_valid_out_50;
+
+wire [noc_dw - 1: 0] tp_data_out_51;
+wire tp_valid_out_51;
+
+wire [noc_dw - 1: 0] tp_data_out_52;
+wire tp_valid_out_52;
+
+wire [noc_dw - 1: 0] tp_data_out_53;
+wire tp_valid_out_53;
+
+wire [noc_dw - 1: 0] tp_data_out_54;
+wire tp_valid_out_54;
+
+wire [noc_dw - 1: 0] tp_data_out_55;
+wire tp_valid_out_55;
+
+wire [noc_dw - 1: 0] tp_data_out_56;
+wire tp_valid_out_56;
+
+wire [noc_dw - 1: 0] tp_data_out_57;
+wire tp_valid_out_57;
+
+wire [noc_dw - 1: 0] tp_data_out_58;
+wire tp_valid_out_58;
+
+wire [noc_dw - 1: 0] tp_data_out_59;
+wire tp_valid_out_59;
+
+wire [noc_dw - 1: 0] tp_data_out_60;
+wire tp_valid_out_60;
+
+wire [noc_dw - 1: 0] tp_data_out_61;
+wire tp_valid_out_61;
+
+wire [noc_dw - 1: 0] tp_data_out_62;
+wire tp_valid_out_62;
+
+wire [noc_dw - 1: 0] tp_data_out_63;
+wire tp_valid_out_63;
+
+wire [noc_dw - 1: 0] tp_data_out_64;
+wire tp_valid_out_64;
+
 
 /*******************module instantiation********************/
 
@@ -1802,10 +2123,1450 @@ traffic_processor tp_32(
 	        .tdata_out(tp_data_out_32),
 	        .tvalid_out(tp_valid_out_32)
         );
+noc_router_adapter_block noc_router_adapter_block_33 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_33),
+             .master_tdata(si_data_in_33),
+             .master_tvalid(si_valid_in_33),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_33(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_33),
+             .tdata_in(si_data_in_33),
+             .tready(si_ready_33),
+             .tdata_out(si_data_out_33),
+             .tvalid_out(si_valid_out_33),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_33(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_33),
+	        .tvalid_in(si_valid_out_33),
+	        .tdata_out(tp_data_out_33),
+	        .tvalid_out(tp_valid_out_33)
+        );
+noc_router_adapter_block noc_router_adapter_block_34 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_34),
+             .master_tdata(si_data_in_34),
+             .master_tvalid(si_valid_in_34),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_34(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_34),
+             .tdata_in(si_data_in_34),
+             .tready(si_ready_34),
+             .tdata_out(si_data_out_34),
+             .tvalid_out(si_valid_out_34),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_34(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_34),
+	        .tvalid_in(si_valid_out_34),
+	        .tdata_out(tp_data_out_34),
+	        .tvalid_out(tp_valid_out_34)
+        );
+noc_router_adapter_block noc_router_adapter_block_35 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_35),
+             .master_tdata(si_data_in_35),
+             .master_tvalid(si_valid_in_35),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_35(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_35),
+             .tdata_in(si_data_in_35),
+             .tready(si_ready_35),
+             .tdata_out(si_data_out_35),
+             .tvalid_out(si_valid_out_35),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_35(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_35),
+	        .tvalid_in(si_valid_out_35),
+	        .tdata_out(tp_data_out_35),
+	        .tvalid_out(tp_valid_out_35)
+        );
+noc_router_adapter_block noc_router_adapter_block_36 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_36),
+             .master_tdata(si_data_in_36),
+             .master_tvalid(si_valid_in_36),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_36(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_36),
+             .tdata_in(si_data_in_36),
+             .tready(si_ready_36),
+             .tdata_out(si_data_out_36),
+             .tvalid_out(si_valid_out_36),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_36(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_36),
+	        .tvalid_in(si_valid_out_36),
+	        .tdata_out(tp_data_out_36),
+	        .tvalid_out(tp_valid_out_36)
+        );
+noc_router_adapter_block noc_router_adapter_block_37 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_37),
+             .master_tdata(si_data_in_37),
+             .master_tvalid(si_valid_in_37),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_37(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_37),
+             .tdata_in(si_data_in_37),
+             .tready(si_ready_37),
+             .tdata_out(si_data_out_37),
+             .tvalid_out(si_valid_out_37),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_37(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_37),
+	        .tvalid_in(si_valid_out_37),
+	        .tdata_out(tp_data_out_37),
+	        .tvalid_out(tp_valid_out_37)
+        );
+noc_router_adapter_block noc_router_adapter_block_38 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_38),
+             .master_tdata(si_data_in_38),
+             .master_tvalid(si_valid_in_38),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_38(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_38),
+             .tdata_in(si_data_in_38),
+             .tready(si_ready_38),
+             .tdata_out(si_data_out_38),
+             .tvalid_out(si_valid_out_38),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_38(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_38),
+	        .tvalid_in(si_valid_out_38),
+	        .tdata_out(tp_data_out_38),
+	        .tvalid_out(tp_valid_out_38)
+        );
+noc_router_adapter_block noc_router_adapter_block_39 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_39),
+             .master_tdata(si_data_in_39),
+             .master_tvalid(si_valid_in_39),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_39(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_39),
+             .tdata_in(si_data_in_39),
+             .tready(si_ready_39),
+             .tdata_out(si_data_out_39),
+             .tvalid_out(si_valid_out_39),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_39(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_39),
+	        .tvalid_in(si_valid_out_39),
+	        .tdata_out(tp_data_out_39),
+	        .tvalid_out(tp_valid_out_39)
+        );
+noc_router_adapter_block noc_router_adapter_block_40 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_40),
+             .master_tdata(si_data_in_40),
+             .master_tvalid(si_valid_in_40),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_40(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_40),
+             .tdata_in(si_data_in_40),
+             .tready(si_ready_40),
+             .tdata_out(si_data_out_40),
+             .tvalid_out(si_valid_out_40),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_40(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_40),
+	        .tvalid_in(si_valid_out_40),
+	        .tdata_out(tp_data_out_40),
+	        .tvalid_out(tp_valid_out_40)
+        );
+noc_router_adapter_block noc_router_adapter_block_41 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_41),
+             .master_tdata(si_data_in_41),
+             .master_tvalid(si_valid_in_41),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_41(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_41),
+             .tdata_in(si_data_in_41),
+             .tready(si_ready_41),
+             .tdata_out(si_data_out_41),
+             .tvalid_out(si_valid_out_41),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_41(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_41),
+	        .tvalid_in(si_valid_out_41),
+	        .tdata_out(tp_data_out_41),
+	        .tvalid_out(tp_valid_out_41)
+        );
+noc_router_adapter_block noc_router_adapter_block_42 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_42),
+             .master_tdata(si_data_in_42),
+             .master_tvalid(si_valid_in_42),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_42(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_42),
+             .tdata_in(si_data_in_42),
+             .tready(si_ready_42),
+             .tdata_out(si_data_out_42),
+             .tvalid_out(si_valid_out_42),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_42(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_42),
+	        .tvalid_in(si_valid_out_42),
+	        .tdata_out(tp_data_out_42),
+	        .tvalid_out(tp_valid_out_42)
+        );
+noc_router_adapter_block noc_router_adapter_block_43 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_43),
+             .master_tdata(si_data_in_43),
+             .master_tvalid(si_valid_in_43),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_43(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_43),
+             .tdata_in(si_data_in_43),
+             .tready(si_ready_43),
+             .tdata_out(si_data_out_43),
+             .tvalid_out(si_valid_out_43),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_43(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_43),
+	        .tvalid_in(si_valid_out_43),
+	        .tdata_out(tp_data_out_43),
+	        .tvalid_out(tp_valid_out_43)
+        );
+noc_router_adapter_block noc_router_adapter_block_44 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_44),
+             .master_tdata(si_data_in_44),
+             .master_tvalid(si_valid_in_44),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_44(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_44),
+             .tdata_in(si_data_in_44),
+             .tready(si_ready_44),
+             .tdata_out(si_data_out_44),
+             .tvalid_out(si_valid_out_44),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_44(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_44),
+	        .tvalid_in(si_valid_out_44),
+	        .tdata_out(tp_data_out_44),
+	        .tvalid_out(tp_valid_out_44)
+        );
+noc_router_adapter_block noc_router_adapter_block_45 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_45),
+             .master_tdata(si_data_in_45),
+             .master_tvalid(si_valid_in_45),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_45(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_45),
+             .tdata_in(si_data_in_45),
+             .tready(si_ready_45),
+             .tdata_out(si_data_out_45),
+             .tvalid_out(si_valid_out_45),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_45(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_45),
+	        .tvalid_in(si_valid_out_45),
+	        .tdata_out(tp_data_out_45),
+	        .tvalid_out(tp_valid_out_45)
+        );
+noc_router_adapter_block noc_router_adapter_block_46 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_46),
+             .master_tdata(si_data_in_46),
+             .master_tvalid(si_valid_in_46),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_46(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_46),
+             .tdata_in(si_data_in_46),
+             .tready(si_ready_46),
+             .tdata_out(si_data_out_46),
+             .tvalid_out(si_valid_out_46),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_46(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_46),
+	        .tvalid_in(si_valid_out_46),
+	        .tdata_out(tp_data_out_46),
+	        .tvalid_out(tp_valid_out_46)
+        );
+noc_router_adapter_block noc_router_adapter_block_47 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_47),
+             .master_tdata(si_data_in_47),
+             .master_tvalid(si_valid_in_47),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_47(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_47),
+             .tdata_in(si_data_in_47),
+             .tready(si_ready_47),
+             .tdata_out(si_data_out_47),
+             .tvalid_out(si_valid_out_47),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_47(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_47),
+	        .tvalid_in(si_valid_out_47),
+	        .tdata_out(tp_data_out_47),
+	        .tvalid_out(tp_valid_out_47)
+        );
+noc_router_adapter_block noc_router_adapter_block_48 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_48),
+             .master_tdata(si_data_in_48),
+             .master_tvalid(si_valid_in_48),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_48(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_48),
+             .tdata_in(si_data_in_48),
+             .tready(si_ready_48),
+             .tdata_out(si_data_out_48),
+             .tvalid_out(si_valid_out_48),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_48(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_48),
+	        .tvalid_in(si_valid_out_48),
+	        .tdata_out(tp_data_out_48),
+	        .tvalid_out(tp_valid_out_48)
+        );
+noc_router_adapter_block noc_router_adapter_block_49 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_49),
+             .master_tdata(si_data_in_49),
+             .master_tvalid(si_valid_in_49),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_49(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_49),
+             .tdata_in(si_data_in_49),
+             .tready(si_ready_49),
+             .tdata_out(si_data_out_49),
+             .tvalid_out(si_valid_out_49),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_49(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_49),
+	        .tvalid_in(si_valid_out_49),
+	        .tdata_out(tp_data_out_49),
+	        .tvalid_out(tp_valid_out_49)
+        );
+noc_router_adapter_block noc_router_adapter_block_50 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_50),
+             .master_tdata(si_data_in_50),
+             .master_tvalid(si_valid_in_50),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_50(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_50),
+             .tdata_in(si_data_in_50),
+             .tready(si_ready_50),
+             .tdata_out(si_data_out_50),
+             .tvalid_out(si_valid_out_50),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_50(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_50),
+	        .tvalid_in(si_valid_out_50),
+	        .tdata_out(tp_data_out_50),
+	        .tvalid_out(tp_valid_out_50)
+        );
+noc_router_adapter_block noc_router_adapter_block_51 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_51),
+             .master_tdata(si_data_in_51),
+             .master_tvalid(si_valid_in_51),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_51(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_51),
+             .tdata_in(si_data_in_51),
+             .tready(si_ready_51),
+             .tdata_out(si_data_out_51),
+             .tvalid_out(si_valid_out_51),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_51(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_51),
+	        .tvalid_in(si_valid_out_51),
+	        .tdata_out(tp_data_out_51),
+	        .tvalid_out(tp_valid_out_51)
+        );
+noc_router_adapter_block noc_router_adapter_block_52 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_52),
+             .master_tdata(si_data_in_52),
+             .master_tvalid(si_valid_in_52),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_52(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_52),
+             .tdata_in(si_data_in_52),
+             .tready(si_ready_52),
+             .tdata_out(si_data_out_52),
+             .tvalid_out(si_valid_out_52),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_52(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_52),
+	        .tvalid_in(si_valid_out_52),
+	        .tdata_out(tp_data_out_52),
+	        .tvalid_out(tp_valid_out_52)
+        );
+noc_router_adapter_block noc_router_adapter_block_53 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_53),
+             .master_tdata(si_data_in_53),
+             .master_tvalid(si_valid_in_53),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_53(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_53),
+             .tdata_in(si_data_in_53),
+             .tready(si_ready_53),
+             .tdata_out(si_data_out_53),
+             .tvalid_out(si_valid_out_53),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_53(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_53),
+	        .tvalid_in(si_valid_out_53),
+	        .tdata_out(tp_data_out_53),
+	        .tvalid_out(tp_valid_out_53)
+        );
+noc_router_adapter_block noc_router_adapter_block_54 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_54),
+             .master_tdata(si_data_in_54),
+             .master_tvalid(si_valid_in_54),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_54(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_54),
+             .tdata_in(si_data_in_54),
+             .tready(si_ready_54),
+             .tdata_out(si_data_out_54),
+             .tvalid_out(si_valid_out_54),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_54(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_54),
+	        .tvalid_in(si_valid_out_54),
+	        .tdata_out(tp_data_out_54),
+	        .tvalid_out(tp_valid_out_54)
+        );
+noc_router_adapter_block noc_router_adapter_block_55 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_55),
+             .master_tdata(si_data_in_55),
+             .master_tvalid(si_valid_in_55),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_55(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_55),
+             .tdata_in(si_data_in_55),
+             .tready(si_ready_55),
+             .tdata_out(si_data_out_55),
+             .tvalid_out(si_valid_out_55),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_55(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_55),
+	        .tvalid_in(si_valid_out_55),
+	        .tdata_out(tp_data_out_55),
+	        .tvalid_out(tp_valid_out_55)
+        );
+noc_router_adapter_block noc_router_adapter_block_56 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_56),
+             .master_tdata(si_data_in_56),
+             .master_tvalid(si_valid_in_56),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_56(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_56),
+             .tdata_in(si_data_in_56),
+             .tready(si_ready_56),
+             .tdata_out(si_data_out_56),
+             .tvalid_out(si_valid_out_56),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_56(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_56),
+	        .tvalid_in(si_valid_out_56),
+	        .tdata_out(tp_data_out_56),
+	        .tvalid_out(tp_valid_out_56)
+        );
+noc_router_adapter_block noc_router_adapter_block_57 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_57),
+             .master_tdata(si_data_in_57),
+             .master_tvalid(si_valid_in_57),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_57(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_57),
+             .tdata_in(si_data_in_57),
+             .tready(si_ready_57),
+             .tdata_out(si_data_out_57),
+             .tvalid_out(si_valid_out_57),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_57(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_57),
+	        .tvalid_in(si_valid_out_57),
+	        .tdata_out(tp_data_out_57),
+	        .tvalid_out(tp_valid_out_57)
+        );
+noc_router_adapter_block noc_router_adapter_block_58 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_58),
+             .master_tdata(si_data_in_58),
+             .master_tvalid(si_valid_in_58),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_58(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_58),
+             .tdata_in(si_data_in_58),
+             .tready(si_ready_58),
+             .tdata_out(si_data_out_58),
+             .tvalid_out(si_valid_out_58),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_58(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_58),
+	        .tvalid_in(si_valid_out_58),
+	        .tdata_out(tp_data_out_58),
+	        .tvalid_out(tp_valid_out_58)
+        );
+noc_router_adapter_block noc_router_adapter_block_59 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_59),
+             .master_tdata(si_data_in_59),
+             .master_tvalid(si_valid_in_59),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_59(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_59),
+             .tdata_in(si_data_in_59),
+             .tready(si_ready_59),
+             .tdata_out(si_data_out_59),
+             .tvalid_out(si_valid_out_59),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_59(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_59),
+	        .tvalid_in(si_valid_out_59),
+	        .tdata_out(tp_data_out_59),
+	        .tvalid_out(tp_valid_out_59)
+        );
+noc_router_adapter_block noc_router_adapter_block_60 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_60),
+             .master_tdata(si_data_in_60),
+             .master_tvalid(si_valid_in_60),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_60(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_60),
+             .tdata_in(si_data_in_60),
+             .tready(si_ready_60),
+             .tdata_out(si_data_out_60),
+             .tvalid_out(si_valid_out_60),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_60(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_60),
+	        .tvalid_in(si_valid_out_60),
+	        .tdata_out(tp_data_out_60),
+	        .tvalid_out(tp_valid_out_60)
+        );
+noc_router_adapter_block noc_router_adapter_block_61 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_61),
+             .master_tdata(si_data_in_61),
+             .master_tvalid(si_valid_in_61),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_61(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_61),
+             .tdata_in(si_data_in_61),
+             .tready(si_ready_61),
+             .tdata_out(si_data_out_61),
+             .tvalid_out(si_valid_out_61),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_61(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_61),
+	        .tvalid_in(si_valid_out_61),
+	        .tdata_out(tp_data_out_61),
+	        .tvalid_out(tp_valid_out_61)
+        );
+noc_router_adapter_block noc_router_adapter_block_62 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_62),
+             .master_tdata(si_data_in_62),
+             .master_tvalid(si_valid_in_62),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_62(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_62),
+             .tdata_in(si_data_in_62),
+             .tready(si_ready_62),
+             .tdata_out(si_data_out_62),
+             .tvalid_out(si_valid_out_62),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_62(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_62),
+	        .tvalid_in(si_valid_out_62),
+	        .tdata_out(tp_data_out_62),
+	        .tvalid_out(tp_valid_out_62)
+        );
+noc_router_adapter_block noc_router_adapter_block_63 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_63),
+             .master_tdata(si_data_in_63),
+             .master_tvalid(si_valid_in_63),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_63(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_63),
+             .tdata_in(si_data_in_63),
+             .tready(si_ready_63),
+             .tdata_out(si_data_out_63),
+             .tvalid_out(si_valid_out_63),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_63(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_63),
+	        .tvalid_in(si_valid_out_63),
+	        .tdata_out(tp_data_out_63),
+	        .tvalid_out(tp_valid_out_63)
+        );
+noc_router_adapter_block noc_router_adapter_block_64 (
+             .clk(clk),
+             .reset(reset),
+             .master_tready(si_ready_64),
+             .master_tdata(si_data_in_64),
+             .master_tvalid(si_valid_in_64),
+             .master_tstrb(),
+             .master_tkeep(),
+             .master_tid(),
+             .master_tdest(),
+             .master_tuser(),
+             .master_tlast(),
+             .slave_tvalid(1'd0),
+             .slave_tready(), 
+             .slave_tdata(32'd0),
+             .slave_tstrb(8'd0),
+             .slave_tkeep(8'd0),
+             .slave_tid(8'd0),
+             .slave_tdest(8'd0),
+             .slave_tuser(8'd0),
+             .slave_tlast(1'd0)
+         );
+slave_interface si_64(
+             .clk(clk),
+             .reset(reset),
+             .tvalid_in(si_valid_in_64),
+             .tdata_in(si_data_in_64),
+             .tready(si_ready_64),
+             .tdata_out(si_data_out_64),
+             .tvalid_out(si_valid_out_64),
+             .tstrb(8'd0),
+             .tkeep(8'd0),
+             .tid(8'd0),
+             .tdest(8'd0),
+             .tuser(8'd0),
+             .tlast(1'd0)
+         );
+traffic_processor tp_64(
+ 	        .clk(clk),
+	        .reset(reset),
+	        .tdata_in(si_data_out_64),
+	        .tvalid_in(si_valid_out_64),
+	        .tdata_out(tp_data_out_64),
+	        .tvalid_out(tp_valid_out_64)
+        );
 
 
 /*******************Output Logic***************************/
-assign data_out = tp_data_out_32;
+assign data_out = tp_data_out_64;
 
 
 
