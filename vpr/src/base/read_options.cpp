@@ -1772,6 +1772,19 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument(args.pack_num_moves, "--pack_num_moves")
+        .help(
+            "The number of moves that can be tried in packing stage")
+        .default_value("100000")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    pack_grp.add_argument(args.pack_move_type, "--pack_move_type")
+        .help(
+            "The move type used in packing."
+            "The available values are: random, semiDirected")
+        .default_value("semiDirected")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& place_grp = parser.add_argument_group("placement options");
 
     place_grp.add_argument(args.Seed, "--seed")
