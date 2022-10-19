@@ -1,6 +1,6 @@
 /* This is the traffic processor module. This
 	accepts data coming in from the NoC and 
-	accumulates it.
+	encrypts it using sha algorithm
 */
 
 module traffic_processor (
