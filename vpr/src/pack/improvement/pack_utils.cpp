@@ -57,7 +57,7 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
             continue;
         }
         succeeded++;
-        VTR_LOGV(verbosity > 1, "Packing move succeeded!\n");
+        VTR_LOGV(verbosity > 2, "Packing move succeeded!\n");
     }
     VTR_LOG("\n### Iterative packing stats: \n\tpack move type = %s\n\ttotal pack moves = %zu\n\tgood pack moves = %zu\n\tlegal pack moves = %zu\n\n", packer_opts.pack_move_type.c_str(), packer_opts.pack_num_moves, proposed, succeeded);
 }
