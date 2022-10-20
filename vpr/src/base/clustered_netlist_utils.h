@@ -36,13 +36,13 @@ class ClusteredPinAtomPinsLookup {
 class ClusterAtomsLookup {
   public:
     ClusterAtomsLookup();
-    std::unordered_set<AtomBlockId> atoms_in_cluster(ClusterBlockId blk_id);
+    std::vector<AtomBlockId> atoms_in_cluster(ClusterBlockId blk_id);
 
-  private:
+  public:
     void init_lookup();
 
   private:
     //Store the atom ids of the atoms inside each cluster
-    vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> cluster_atoms;
+    vtr::vector<ClusterBlockId, std::vector<AtomBlockId>> cluster_atoms;
 };
 #endif

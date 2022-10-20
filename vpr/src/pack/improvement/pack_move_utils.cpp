@@ -202,10 +202,10 @@ bool pick_molecule_connected(t_pack_molecule* mol_1, t_pack_molecule*& mol_2){
     ClusterBlockId clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size()-1)];
 
     //pick a random molecule for the chosen block
-    std::unordered_set<AtomBlockId> atom_ids = cluster_to_atoms(clb_index_2);
+    std::unordered_set<AtomBlockId>* atom_ids = cluster_to_atoms(clb_index_2);
 
-    int rand_num = vtr::irand((int)atom_ids.size()-1);
-    auto it = atom_ids.begin();
+    int rand_num = vtr::irand((int)atom_ids->size()-1);
+    auto it = atom_ids->begin();
     std::advance(it, rand_num);
     AtomBlockId  atom_id = *it;
     auto rng = atom_ctx.atom_molecules.equal_range(atom_id);

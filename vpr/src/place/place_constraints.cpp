@@ -233,7 +233,7 @@ void load_cluster_constraints() {
     floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
-        std::unordered_set<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(cluster_id);
+        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(cluster_id);
         PartitionRegion empty_pr;
         floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
 

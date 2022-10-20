@@ -13,6 +13,18 @@
 #include "pack_move_utils.h"
 #include "string.h"
 
+void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup){
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    atoms_lookup.resize(cluster_ctx.clb_nlist.blocks().size());
+
+    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
+        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
+
+        atoms_lookup[clb_index].insert(atom_blk_id);
+    }
+}
 
 void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_data& clustering_data, int verbosity) {
     /*
@@ -22,6 +34,10 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
     int proposed = 0;
     int succeeded = 0;
     std::unique_ptr<packingMoveGenerator> move_generator;
+
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    init_clb_atoms_lookup(helper_ctx.atoms_lookup);
+
     if(strcmp(packer_opts.pack_move_type.c_str(), "random") == 0 )
         move_generator = std::make_unique<randomPackingMove>();
     else if(strcmp(packer_opts.pack_move_type.c_str(), "semiDirected") == 0)
