@@ -243,7 +243,7 @@
     <!-- independent multiplier mode -->
     <model name="fourteennm_mac.opmode{m18x18_full}.input_type{reg}.output_type{comb}">
       <input_ports>
-        <port name="clr" clock="ax_clk"/>
+        <port name="clr" clock="by_clk"/>
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
@@ -262,9 +262,9 @@
         <port name="bz" clock="bz_clk" combinational_sink_ports="resultb"/>
         <port name="coefselb" clock="coef_sel_b_clk" combinational_sink_ports="resultb"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta resultb scanout"/>
-        <port name="ena" clock="ax_clk"/>
-        <port name="dfxlfsrena" clock="ax_clk"/>
-        <port name="dfxmisrena" clock="ax_clk"/>
+        <port name="ena" clock="by_clk"/>
+        <port name="dfxlfsrena" clock="by_clk"/>
+        <port name="dfxmisrena" clock="by_clk"/>
       </input_ports>
       <output_ports>
         <port name="resulta" />
@@ -342,7 +342,7 @@
 
     <model name="fourteennm_mac.opmode{m18x18_full}.input_type{reg}.output_type{reg}">
       <input_ports>
-        <port name="clr" clock="ax_clk"/>
+        <port name="clr" clock="by_clk"/>
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
@@ -361,9 +361,9 @@
         <port name="bz" clock="bz_clk" combinational_sink_ports="resultb"/>
         <port name="coefselb" clock="coef_sel_b_clk" combinational_sink_ports="resultb"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta resultb"/>
-        <port name="ena" clock="ax_clk"/>
-        <port name="dfxlfsrena" clock="ax_clk"/>
-        <port name="dfxmisrena" clock="ax_clk"/>
+        <port name="ena" clock="by_clk"/>
+        <port name="dfxlfsrena" clock="by_clk"/>
+        <port name="dfxmisrena" clock="by_clk"/>
       </input_ports>
       <output_ports>
         <port name="resulta" clock="output_clk"/>
@@ -378,7 +378,7 @@
       <input_ports>
         <port name="accumulate" clock="accumulate_clk"/>
         <port name="chainin" combinational_sink_ports="resulta chainout"/>
-        <port name="clr" clock="ax_clk"/>
+        <port name="clr" clock="by_clk"/>
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
@@ -405,15 +405,15 @@
         <port name="negate" clock="negate_clk"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout"/>
         <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ax_clk"/>
-        <port name="dfxlfsrena" clock="ax_clk"/>
-        <port name="dfxmisrena" clock="ax_clk"/>
+        <port name="ena" clock="by_clk"/>
+        <port name="dfxlfsrena" clock="by_clk"/>
+        <port name="dfxmisrena" clock="by_clk"/>
       </input_ports>
       <output_ports>
         <port name="chainout"/>
         <port name="resulta"/>
         <port name="scanout" clock="by_clk"/>
-        <port name="dftout" clock="ax_clk"/>
+        <port name="dftout" clock="by_clk"/>
       </output_ports>
     </model>
 
@@ -507,7 +507,7 @@
       <input_ports>
         <port name="accumulate" clock="accumulate_clk"/>
         <port name="chainin" combinational_sink_ports="resulta chainout"/>
-        <port name="clr" clock="ax_clk"/>
+        <port name="clr" clock="by_clk"/>
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
@@ -534,9 +534,9 @@
         <port name="negate" clock="negate_clk"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout"/>
         <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ax_clk"/>
-        <port name="dfxlfsrena" clock="ax_clk"/>
-        <port name="dfxmisrena" clock="ax_clk"/>
+        <port name="ena" clock="by_clk"/>
+        <port name="dfxlfsrena" clock="by_clk"/>
+        <port name="dfxmisrena" clock="by_clk"/>
       </input_ports>
       <output_ports>
         <port name="chainout" clock="chainout_clk"/>
@@ -728,7 +728,7 @@
       <input_ports> 
         <port name="accumulate" clock="accumulate_clk"/>
         <port name="chainin" combinational_sink_ports="resulta chainout"/>
-        <port name="clr" clock="ax_clk"/>
+        <port name="clr" clock="by_clk"/>
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
@@ -755,9 +755,9 @@
         <port name="negate" clock="negate_clk"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout scanout"/>
         <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ax_clk"/>
-        <port name="dfxlfsrena" clock="ax_clk"/>
-        <port name="dfxmisrena" clock="ax_clk"/>
+        <port name="ena" clock="by_clk"/>
+        <port name="dfxlfsrena" clock="by_clk"/>
+        <port name="dfxmisrena" clock="by_clk"/>
       </input_ports> 
       <output_ports> 
         <port name="chainout" clock="chainout_clk"/>
@@ -1115,6 +1115,7 @@
         <port name="chainin" combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
         <port name="accumulate" combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
         <port name="clr" clock="output_clk"/>
+        <port name="accumulate_clk" is_clock="1"/>
         <port name="ay_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
@@ -1141,9 +1142,10 @@
 
     <model name="fourteennm_fp_mac.opmode{sp_mult_acc}.input_type{reg}.output_type{reg}">
       <input_ports>
-        <port name="chainin"  combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
+        <port name="chainin" clock="accumulate_clk" combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
         <port name="accumulate"  combinational_sink_ports="resulta chainout adder_inexact adder_invalid adder_overflow adder_underflow"/>
         <port name="clr" clock="ay_clk"/>
+        <port name="accumulate_clk" is_clock="1"/>
         <port name="ay_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
@@ -4397,6 +4399,7 @@
             <input name="accumulate" num_pins="1"/>
             <input name="chainin" num_pins="32"/>
             <input name="clr" num_pins="2"/>
+            <clock name="accumulate_clk" num_pins="1"/>
             <clock name="az_clk" num_pins="1"/>
             <clock name="ay_clk" num_pins="1"/>
             <clock name="output_clk" num_pins="1"/>
@@ -4448,6 +4451,7 @@
             <complete name="clk_in" input="DSP.clk" output="fp_mac_multacc.az_clk"/>
             <complete name="clk_in2" input="DSP.clk" output="fp_mac_multacc.ay_clk"/>
             <complete name="clk_in3" input="DSP.clk" output="fp_mac_multacc.output_clk"/>
+            <complete name="clk_in4" input="DSP.clk" output="fp_mac_multacc.accumulate_clk"/>
 
           </interconnect> 
         </mode>
@@ -4460,6 +4464,7 @@
                 <clock name="az_clk" num_pins="1"/>
                 <clock name="ay_clk" num_pins="1"/>
                 <clock name="output_clk" num_pins="1"/>
+                <clock name="accumulate_clk" num_pins="1"/>
                 <input name="ay" num_pins="32"/>
                 <input name="az" num_pins="32"/>
                 <input name="ena" num_pins="3"/>
@@ -4508,6 +4513,7 @@
                 <complete name="clk_in" input="DSP.clk" output="fp_mac_multacc.az_clk"/>
                 <complete name="clk_in2" input="DSP.clk" output="fp_mac_multacc.ay_clk"/>
                 <complete name="clk_in3" input="DSP.clk" output="fp_mac_multacc.output_clk"/>
+                <complete name="clk_in4" input="DSP.clk" output="fp_mac_multacc.accumulate_clk"/>
 
             </interconnect> 
         </mode>
