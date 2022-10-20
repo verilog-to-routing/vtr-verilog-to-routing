@@ -1253,6 +1253,8 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
 
     /* Set the initial temperature to the standard of deviation divided by 64 */
     /* so that the initial temperature adjusts according to the circuit */
+    /* and also keep the initial placement qaulity (not destroying it completely) */
+    /* and fine-tune the initial placement with the anneal*/
     float init_temp = (std_dev / 64);
 
     return init_temp;
