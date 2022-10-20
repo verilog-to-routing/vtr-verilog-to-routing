@@ -5526,4 +5526,147 @@
     </pb_type>
 
   </complexblocklist>
+  <switchblocklist>
+    <!-- Stratix 10 uses a uni-directional routing architecture with a Driver Input Mux (DIM) size of 12 (i.e.
+           each wire can be driven by one of 12 block/outputs or wires) for the L4s.
+           
+           In the Stratix IV architecture the long wires (L16 here) are accessible only from the short wires, 
+           and are not connected to the block pins (i.e. connection blocks). Furthermore, they only connect 
+           to switch blocks every 4 LABs (to avoid expensive deep via stacks).
+           We approximate the L16 DIM size as 40:1 (in reality it is a pair of 20:1 (?) muxes with a 2:1 swap mux
+           in front, which has nearly the same connectivity as a full 40:1).
+
+           L4 wires
+           ================
+           At a channel width of 300 there are 260 L4/L4prime wires. At an effective Fc_out of 0.075 
+           and 40 LAB outputs this yeilds:
+
+                40 * 2 = 80 outputs per channel  [2 LABs per-channel]
+
+                80 * 0.075 = 6 outputs drive each L4 wire [output connection block]
+
+           This leaves:
+
+                12 - 6 = 6 inputs to the DIMs from other routing wires [switch block]
+
+           Since L4s connect at every switch block, there are:
+
+                260 L16 wires per channel + direction which can drive wires at a particular switchblock
+                (via switchpoints 0, 1, 2, 3)
+
+           And for each direction (260 wires) only:
+
+               260 / 4 = 65 wires starting/ending per channel + direction at each switch block
+               (i.e. from each direction, north/south/east/west, there are 32 L4s starting, and 32 L4s ending; + 1 wire for the 65th)
+
+           Which we allocate as follows:
+
+                L4
+                =====
+                straight-through connection: 2 (from L4 or L16)
+                clock-wise turn            : 2 (from L4 or L16)
+                counter-clock-wise turn    : 2 (from L4 or L16)
+
+           L16 wires
+           =========
+           At a channel width of 300 there are 40 L16 wires (20 in each direction), which do not connect to the input/output connection blocks.
+           This leaves 40 inputs to the DIM to select from routing wires (long wires use larger DIMs to improve reachability,
+           the area cost is relatively small since they are so rare).
+
+           Since L16s only connect at every 4th switch block there are:
+
+                40 / 4 = 10 L16 wires per channel (5 in each direction) which can drive wires at a particular switchblock
+                (via switchpoints 0, 4, 8, 12)
+
+           And for each direction (20 wires) only:
+
+               40 / 16 = 2.25 => 2 wires starting/ending per channel + direction at each switch block
+               (i.e. from each direction, north/south/east/west, there is one L16 starting, and one L16 ending)
+           
+           We assign the 40 DIM inputs as follows:
+
+                L16
+                =====
+                straight-through connection:  3 (from L16)
+                straight-through connection: 11 (from L4)
+                clock-wise turn            :  3 (from L16)
+                clock-wise turn            : 10 (from L4)
+                counter clock-wise turn    :  3 (from L16)
+                counter clock-wise turn    : 10 (from L4)
+
+           Switch pattern
+           ==============
+           This switch block is based on the Wilton switch block (see Page 103 of Steve Wilton's PhD Thesis 
+           "Architecture and Algorithms for Field-Programmable Gate Arrays with Embedded Memory", 1997):
+
+                left-to-top: W - t
+                top-to-right: t + 1
+                right-to-bottom: 2*W - 2 - t
+                bottom-to-left: t + 1
+                left-to-right: t
+                top-to-bottom: t
+
+           Since Wilton assumed bidirection routing (while we use unidirectional routing),
+           we mirror the clock-wise turns to match the conter-clock-wise specification.
+    -->
+    <!-- Short H wires have DIM of size 12
+         Fan-in distribution: 
+         5 of the inputs come from logic block outputs - This is modelled by setting fc_out to the right value
+         1 input coming from a long wire - It is assumed that for half of the wires the input is coming from long H wires
+              and for the other half it's coming from long V wires. This is implemented by making two groups of wire connections 
+              with num_conn set to 0.5 * to. Since there is not a way to spe
+         2 stitches - one from wire of the same type one from other short wires
+         4 inputs from short V wires of different type
+    -->  
+    <!-- Short V wires have DIM of size 15
+         Fan-in distribution: 
+         6 of the inputs come from logic block outputs - This is modelled by setting fc_out to the right value
+         1 input coming from a long wire - It is assumed that for half of the wires the input is coming from long H wires
+              and for the other half it's coming from long V wires. This is implemented by making two groups of wire connections 
+              with num_conn set to 0.5 * to. Since there is not a way to spe
+         1 stitch from wire of the same type 
+         7 inputs from short H wires of different types
+    -->  
+    <!-- Long wires have DIM of size 50
+         The wires share four 12:1 muxes - since this cannot be modelled with the current switch box syntax
+         it is approximated that each wire has 50 separate inputs. 
+         Fan-in distribution: 
+         2 stitches - one optimal and one suboptimal
+         10 long wires for turns - 5 from each side 
+         38 short wires - only short H wires can drive long wires   
+    -->  
+
+    <!-- Describing SB connections from vertical sides to horizontal sides in counter clockwise direction -->
+    <switchblock name="wilton_turn_counter_clockwise_v2h_core" type="unidir">
+      <switchblock_location type="CORE"/>
+      <switchfuncs>
+        <func type="tr" formula="t+1"/>
+        <!-- top to right -->
+        <func type="lr" formula="t"/>
+        <!-- left to right -->
+        <func type="br" formula="2*W-2-t"/>
+        <!-- bottom to right -->
+      </switchfuncs>
+        
+      <!--  L2 drivers -->
+      <!-- The input coming from the long wires -->
+      <wireconn num_conns="3*to" from_type="L16" from_switchpoint="0,12,8,4" to_type="L16" to_switchpoint="0"/>
+      <wireconn num_conns="10*to" from_type="L4" from_switchpoint="0" to_type="L16" to_switchpoint="0"/>
+      <!-- L4 drivers 
+
+               Driving from L16 (few) to L4 (many) preferr driving from end-point of L16, although since there are many they will
+               all be multiply connected.
+               
+               Driving from L4 (many) to L4 (many) shuffle the switchpoints so the L4's are driven from a variety of switchpoints.
+               Since the actual number L4s starting/ending are equal, using 'fixed' from_order would mean only switchpoint 0 -> 0
+               connections. A 'shuffled' order will mix-up the from switchpoints for more diversity.
+               -->
+      <wireconn num_conns="2*to" from_order="shuffled">
+        <from type="L16" switchpoint="0,12,8,4"/>
+        <from type="L4" switchpoint="0,1,2,3"/>
+        <to type="L4" switchpoint="0"/>
+      </wireconn>
+    </switchblock>
+
+  </switchblocklist>
 </architecture>
