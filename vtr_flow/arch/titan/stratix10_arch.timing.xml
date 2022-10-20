@@ -252,7 +252,6 @@
         <port name="bz_clk" is_clock="1"/>
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
         <port name="ax" clock="ax_clk" combinational_sink_ports="resulta"/>
         <port name="ay" clock="ay_scan_in_clk" combinational_sink_ports="resulta scanout"/>
@@ -263,7 +262,7 @@
         <port name="bz" clock="bz_clk" combinational_sink_ports="resultb"/>
         <port name="coefselb" clock="coef_sel_b_clk" combinational_sink_ports="resultb"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta resultb scanout"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="ax_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports>
@@ -286,7 +285,6 @@
         <port name="bz_clk" is_clock="1"/>
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
         <port name="ax" combinational_sink_ports="resulta"/>
         <port name="ay" combinational_sink_ports="resulta scanout"/>
@@ -319,7 +317,6 @@
         <port name="bz_clk" is_clock="1"/>
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
         <port name="clr" combinational_sink_ports="resulta resultb"/>
         <port name="ax" combinational_sink_ports="resulta dftout"/>
@@ -354,7 +351,6 @@
         <port name="bz_clk" is_clock="1"/>
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
         <port name="ax" clock="ax_clk" combinational_sink_ports="resulta"/>
         <port name="ay" clock="ay_scan_in_clk" combinational_sink_ports="resulta"/>
@@ -365,7 +361,7 @@
         <port name="bz" clock="bz_clk" combinational_sink_ports="resultb"/>
         <port name="coefselb" clock="coef_sel_b_clk" combinational_sink_ports="resultb"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta resultb"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="ax_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports>
@@ -391,7 +387,6 @@
         <port name="bz_clk" is_clock="1"/>
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
@@ -410,7 +405,7 @@
         <port name="negate" clock="negate_clk"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout"/>
         <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="ax_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports>
@@ -435,7 +430,6 @@
         <port name="bz_clk" is_clock="1"/>
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
@@ -476,7 +470,6 @@
         <port name="bz_clk" is_clock="1"/>
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
@@ -523,7 +516,6 @@
         <port name="bz_clk" is_clock="1"/>
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
@@ -542,7 +534,7 @@
         <port name="negate" clock="negate_clk"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout"/>
         <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="ax_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports>
@@ -565,7 +557,6 @@
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="bx_clk" is_clock="1"/>
         <port name="by_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
@@ -579,7 +570,7 @@
         <port name="loadconst" clock="loadconst_clk"/>
         <port name="negate" clock="negate_clk"/>
         <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="ax_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports> 
@@ -599,7 +590,6 @@
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="bx_clk" is_clock="1"/>
         <port name="by_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
@@ -630,7 +620,6 @@
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="bx_clk" is_clock="1"/>
         <port name="by_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
@@ -667,7 +656,6 @@
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="bx_clk" is_clock="1"/>
         <port name="by_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
@@ -681,7 +669,7 @@
         <port name="loadconst" clock="loadconst_clk"/>
         <port name="negate" clock="negate_clk"/>
         <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="ax_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports> 
@@ -704,7 +692,6 @@
         <port name="bx_clk" is_clock="1"/>
         <port name="by_clk" is_clock="1"/>
         <port name="bz_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
@@ -748,7 +735,6 @@
         <port name="bx_clk" is_clock="1"/>
         <port name="by_clk" is_clock="1"/>
         <port name="bz_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
@@ -769,7 +755,7 @@
         <port name="negate" clock="negate_clk"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout scanout"/>
         <port name="sub" clock="sub_clk"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="ax_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports> 
@@ -790,7 +776,6 @@
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
         <port name="accumulate_clk" is_clock="1"/>
@@ -804,7 +789,7 @@
         <port name="loadconst" clock="loadconst_clk" combinational_sink_ports="resulta chainout"/>
         <port name="negate" clock="negate_clk"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout scanout"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="ax_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports> 
@@ -823,7 +808,6 @@
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
         <port name="accumulate_clk" is_clock="1"/>
@@ -853,7 +837,6 @@
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
         <port name="accumulate_clk" is_clock="1"/>
@@ -889,7 +872,6 @@
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
         <port name="accumulate_clk" is_clock="1"/>
@@ -903,7 +885,7 @@
         <port name="loadconst" clock="loadconst_clk" combinational_sink_ports="resulta chainout"/>
         <port name="negate" clock="negate_clk"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout scanout"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="ax_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports> 
@@ -922,7 +904,6 @@
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
@@ -932,7 +913,7 @@
         <port name="az" clock="az_clk" combinational_sink_ports="resulta"/>
         <port name="coefsela" clock="coef_sel_a_clk" combinational_sink_ports="resulta"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta scanout"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="ax_clk"/>
         <port name="sub" clock="sub_clk"/>
         <port name="negate" clock="negate_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
@@ -951,7 +932,6 @@
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
@@ -979,7 +959,6 @@
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
@@ -1009,7 +988,6 @@
         <port name="ax_clk" is_clock="1"/>
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
-        <port name="ena_clk" is_clock="1"/>
         <port name="sub_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
@@ -1019,7 +997,7 @@
         <port name="az" clock="az_clk" combinational_sink_ports="resulta"/>
         <port name="coefsela" clock="coef_sel_a_clk" combinational_sink_ports="resulta"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta scanout"/>
-        <port name="ena" clock="ena_clk"/>
+        <port name="ena" clock="ax_clk"/>
         <port name="sub" clock="sub_clk"/>
         <port name="negate" clock="negate_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
@@ -1477,7 +1455,7 @@
         <port name="az_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>      
         <port name="chainin" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow"/>
-        <port name="clr" combinational_sink_ports="chainout"/>
+        <port name="clr" combinational_sink_ports="resulta chainout"/>
         <port name="ax" combinational_sink_ports="resulta chainout"/>
         <port name="ay" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow mult_inexact mult_invalid mult_overflow mult_underflow"/>
         <port name="az" combinational_sink_ports="resulta adder_inexact adder_invalid adder_overflow adder_underflow mult_inexact mult_invalid mult_overflow mult_underflow"/>
@@ -2850,7 +2828,6 @@
 					<clock name="bz_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
 				</pb_type>
 				<interconnect>
@@ -2879,7 +2856,6 @@
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_full.bz_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_full.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_full.coef_sel_b_clk"/>
-					<complete input="DSP.clk" name="clk_in8" output="mac18x18_full.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in11" output="mac18x18_full.output_clk"/>
 				</interconnect>
 			</mode>
@@ -2911,7 +2887,6 @@
 					<clock name="bz_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
 				</pb_type>
 				<interconnect>
@@ -2940,7 +2915,6 @@
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_full.bz_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_full.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_full.coef_sel_b_clk"/>
-					<complete input="DSP.clk" name="clk_in8" output="mac18x18_full.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in11" output="mac18x18_full.output_clk"/>
 				</interconnect>
 			</mode>
@@ -2972,7 +2946,6 @@
 					<clock name="bz_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
 				</pb_type>
 				<interconnect>
@@ -3001,7 +2974,6 @@
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_full.bz_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_full.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_full.coef_sel_b_clk"/>
-					<complete input="DSP.clk" name="clk_in8" output="mac18x18_full.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in11" output="mac18x18_full.output_clk"/>          
 				</interconnect>
 			</mode>
@@ -3033,7 +3005,6 @@
 					<clock name="bz_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
 				</pb_type>
 				<interconnect>
@@ -3062,7 +3033,6 @@
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_full.bz_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_full.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_full.coef_sel_b_clk"/>
-					<complete input="DSP.clk" name="clk_in8" output="mac18x18_full.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in11" output="mac18x18_full.output_clk"/>
 				</interconnect>
 			</mode>
@@ -3100,7 +3070,6 @@
 					<clock name="bz_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
@@ -3139,7 +3108,6 @@
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_sumof2.bz_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_sumof2.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_sumof2.coef_sel_b_clk"/>
-					<complete input="DSP.clk" name="clk_in8" output="mac18x18_sumof2.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in9" output="mac18x18_sumof2.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in10" output="mac18x18_sumof2.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in11" output="mac18x18_sumof2.loadconst_clk"/>
@@ -3181,7 +3149,6 @@
 					<clock name="bz_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
@@ -3220,7 +3187,6 @@
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_sumof2.bz_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_sumof2.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_sumof2.coef_sel_b_clk"/>
-					<complete input="DSP.clk" name="clk_in8" output="mac18x18_sumof2.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in9" output="mac18x18_sumof2.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in10" output="mac18x18_sumof2.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in11" output="mac18x18_sumof2.loadconst_clk"/>
@@ -3262,7 +3228,6 @@
 					<clock name="bz_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
@@ -3301,7 +3266,6 @@
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_sumof2.bz_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_sumof2.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_sumof2.coef_sel_b_clk"/>
-					<complete input="DSP.clk" name="clk_in8" output="mac18x18_sumof2.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in9" output="mac18x18_sumof2.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in10" output="mac18x18_sumof2.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in11" output="mac18x18_sumof2.loadconst_clk"/>
@@ -3343,7 +3307,6 @@
 					<clock name="bz_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
@@ -3382,7 +3345,6 @@
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_sumof2.bz_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_sumof2.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_sumof2.coef_sel_b_clk"/>
-					<complete input="DSP.clk" name="clk_in8" output="mac18x18_sumof2.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in9" output="mac18x18_sumof2.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in10" output="mac18x18_sumof2.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in11" output="mac18x18_sumof2.loadconst_clk"/>
@@ -3416,7 +3378,6 @@
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="bx_clk" num_pins="1"/>
 					<clock name="by_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
@@ -3445,7 +3406,6 @@
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_plus36.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_plus36.bx_clk"/>
 					<complete input="DSP.clk" name="clk_in3" output="mac18x18_plus36.by_clk"/>
-					<complete input="DSP.clk" name="clk_in4" output="mac18x18_plus36.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_plus36.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_plus36.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_plus36.loadconst_clk"/>
@@ -3477,7 +3437,6 @@
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="bx_clk" num_pins="1"/>
 					<clock name="by_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
@@ -3506,7 +3465,6 @@
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_plus36.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_plus36.bx_clk"/>
 					<complete input="DSP.clk" name="clk_in3" output="mac18x18_plus36.by_clk"/>
-					<complete input="DSP.clk" name="clk_in4" output="mac18x18_plus36.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_plus36.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_plus36.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_plus36.loadconst_clk"/>
@@ -3538,7 +3496,6 @@
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="bx_clk" num_pins="1"/>
 					<clock name="by_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
@@ -3567,7 +3524,6 @@
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_plus36.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_plus36.bx_clk"/>
 					<complete input="DSP.clk" name="clk_in3" output="mac18x18_plus36.by_clk"/>
-					<complete input="DSP.clk" name="clk_in4" output="mac18x18_plus36.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_plus36.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_plus36.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_plus36.loadconst_clk"/>
@@ -3599,7 +3555,6 @@
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="bx_clk" num_pins="1"/>
 					<clock name="by_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
@@ -3628,7 +3583,6 @@
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_plus36.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_plus36.bx_clk"/>
 					<complete input="DSP.clk" name="clk_in3" output="mac18x18_plus36.by_clk"/>
-					<complete input="DSP.clk" name="clk_in4" output="mac18x18_plus36.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_plus36.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_plus36.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_plus36.loadconst_clk"/>
@@ -3670,7 +3624,6 @@
 					<clock name="bx_clk" num_pins="1"/>
 					<clock name="by_clk" num_pins="1"/>
 					<clock name="bz_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
@@ -3709,7 +3662,6 @@
 					<complete input="DSP.clk" name="clk_in3" output="mac18x18_systolic.bx_clk"/>
 					<complete input="DSP.clk" name="clk_in4" output="mac18x18_systolic.by_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_systolic.bz_clk"/>
-					<complete input="DSP.clk" name="clk_in6" output="mac18x18_systolic.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_systolic.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in8" output="mac18x18_systolic.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in9" output="mac18x18_systolic.loadconst_clk"/>
@@ -3751,7 +3703,6 @@
 					<clock name="bx_clk" num_pins="1"/>
 					<clock name="by_clk" num_pins="1"/>
 					<clock name="bz_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
@@ -3790,7 +3741,6 @@
 					<complete input="DSP.clk" name="clk_in3" output="mac18x18_systolic.bx_clk"/>
 					<complete input="DSP.clk" name="clk_in4" output="mac18x18_systolic.by_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_systolic.bz_clk"/>
-					<complete input="DSP.clk" name="clk_in6" output="mac18x18_systolic.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_systolic.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in8" output="mac18x18_systolic.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in9" output="mac18x18_systolic.loadconst_clk"/>
@@ -3825,7 +3775,6 @@
 					<clock name="ax_clk" num_pins="1"/>
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
 					<clock name="accumulate_clk" num_pins="1"/>
@@ -3854,7 +3803,6 @@
 					<complete input="DSP.clk" name="clk_in0" output="mac27x27.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac27x27.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac27x27.az_clk"/>
-					<complete input="DSP.clk" name="clk_in3" output="mac27x27.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac27x27.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac27x27.loadconst_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac27x27.accumulate_clk"/>
@@ -3886,7 +3834,6 @@
 					<clock name="ax_clk" num_pins="1"/>
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
 					<clock name="accumulate_clk" num_pins="1"/>
@@ -3915,7 +3862,6 @@
 					<complete input="DSP.clk" name="clk_in0" output="mac27x27.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac27x27.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac27x27.az_clk"/>
-					<complete input="DSP.clk" name="clk_in3" output="mac27x27.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac27x27.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac27x27.loadconst_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac27x27.accumulate_clk"/>
@@ -3947,7 +3893,6 @@
 					<clock name="ax_clk" num_pins="1"/>
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
 					<clock name="accumulate_clk" num_pins="1"/>
@@ -3976,7 +3921,6 @@
 					<complete input="DSP.clk" name="clk_in0" output="mac27x27.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac27x27.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac27x27.az_clk"/>
-					<complete input="DSP.clk" name="clk_in3" output="mac27x27.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac27x27.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac27x27.loadconst_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac27x27.accumulate_clk"/>
@@ -4008,7 +3952,6 @@
 					<clock name="ax_clk" num_pins="1"/>
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
 					<clock name="accumulate_clk" num_pins="1"/>
@@ -4037,7 +3980,6 @@
 					<complete input="DSP.clk" name="clk_in0" output="mac27x27.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac27x27.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac27x27.az_clk"/>
-					<complete input="DSP.clk" name="clk_in3" output="mac27x27.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac27x27.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac27x27.loadconst_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac27x27.accumulate_clk"/>
@@ -4067,7 +4009,6 @@
 					<clock name="ax_clk" num_pins="1"/>
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
@@ -4091,7 +4032,6 @@
 					<complete input="DSP.clk" name="clk_in0" output="mac18x18_top.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_top.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_top.az_clk"/>
-					<complete input="DSP.clk" name="clk_in3" output="mac18x18_top.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in4" output="mac18x18_top.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_top.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_top.output_clk"/>
@@ -4118,7 +4058,6 @@
 					<clock name="ax_clk" num_pins="1"/>
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
@@ -4142,7 +4081,6 @@
 					<complete input="DSP.clk" name="clk_in0" output="mac18x18_top.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_top.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_top.az_clk"/>
-					<complete input="DSP.clk" name="clk_in3" output="mac18x18_top.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in4" output="mac18x18_top.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_top.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_top.output_clk"/>
@@ -4169,7 +4107,6 @@
 					<clock name="ax_clk" num_pins="1"/>
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
@@ -4193,7 +4130,6 @@
 					<complete input="DSP.clk" name="clk_in0" output="mac18x18_top.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_top.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_top.az_clk"/>
-					<complete input="DSP.clk" name="clk_in3" output="mac18x18_top.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in4" output="mac18x18_top.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_top.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_top.output_clk"/>
@@ -4220,7 +4156,6 @@
 					<clock name="ax_clk" num_pins="1"/>
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
-					<clock name="ena_clk" num_pins="1"/>
 					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
@@ -4244,7 +4179,6 @@
 					<complete input="DSP.clk" name="clk_in0" output="mac18x18_top.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_top.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_top.az_clk"/>
-					<complete input="DSP.clk" name="clk_in3" output="mac18x18_top.ena_clk"/>
 					<complete input="DSP.clk" name="clk_in4" output="mac18x18_top.sub_clk"/>
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_top.negate_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_top.output_clk"/>
