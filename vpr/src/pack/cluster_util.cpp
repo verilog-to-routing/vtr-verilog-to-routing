@@ -231,8 +231,8 @@ void free_clustering_data(const t_packer_opts& packer_opts,
                           t_clustering_data& clustering_data) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks())
-        free_intra_lb_nets(clustering_data.intra_lb_routing[blk_id]);
+    for (auto lb_net : clustering_data.intra_lb_routing)
+        free_intra_lb_nets(lb_net);
 
     clustering_data.intra_lb_routing.clear();
 
