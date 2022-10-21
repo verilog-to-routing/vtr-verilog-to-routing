@@ -58,7 +58,7 @@ NOC_PLACEMENT_COST_REGEX = 'NoC Placement Costs. noc_aggregate_bandwidth_cost: (
 PLACEMENT_TIME_REGEX = '# Placement took (.*) seconds.*'
 POST_PLACE_CRITICAL_PATH_DELAY_REGEX = 'post-quench CPD = (.*) \(ns\)'
 
-NUM_OF_SEED_RUNS = 5
+NUM_OF_SEED_RUNS = 1
 MAX_SEED_VAL = 10000
 
 # global synhronization datastructures
@@ -134,6 +134,13 @@ def noc_test_command_line_parser(prog=None):
         default="",
         type=str,
         help="The executable file of VPR"
+    )
+
+    parser.add_argument(
+        "-device",
+        default="EP4SGX110",
+        type=str,
+        help="The FPGA device name the design will be placed on. Default device is EP4SGX110"
     )
 
 
@@ -266,7 +273,7 @@ def run_vpr_command_and_store_output(vpr_location, arch_file, design_file, desig
     # create the file that will store the VPR output
     vpr_output = open(vpr_out_file, 'w')
 
-    vpr_command = [vpr_location, arch_file, str(design_file), '--noc', 'on', '--noc_flows_file', design_flows_file, '--noc_routing_algorithm', routing_algorithm, '--device', device, '--noc_placement_weighting', str(noc_placement_weight), '--pack', '--place', '--net_file', vpr_net_file, '--seed', str(seed_val)]
+    vpr_command = [vpr_location, arch_file, str(design_file), '--noc', 'on', '--noc_flows_file', design_flows_file, '--noc_routing_algorithm', routing_algorithm, '--device', device, '--noc_placement_weighting', str(noc_placement_weight), '--pack', '--place', '--net_file', vpr_net_file, '--seed', str(seed_val), '--place_effort_scaling', 'device_circuit']
 
     # check if there is also a constraints file we need to worry about
     constraints_file = check_for_constraints_file(design_file=design_file)
@@ -346,11 +353,11 @@ def execute_vpr_and_process_output(vpr_location, arch_file, design_file, design_
     design_run_data.append(vpr_average_place_data)
 
 
-def run_vpr(vpr_location, arch_file, design_file, design_flows_file, max_noc_weighting, noc_weighting_interval):
+def run_vpr(vpr_location, arch_file, design_file, design_flows_file, max_noc_weighting, noc_weighting_interval, device_name):
 
     # setup command line parameters for vpr, these all can be paramitizable
     routing_algorithm = "xy_routing"
-    device = "EP4SGX110"
+    device = device_name
 
     # now we need to generate a list of tuples that hold all the command line parameters
     # With each set of command line parameters, the temporary output file and the noc weighting will change
@@ -469,7 +476,7 @@ if __name__ == "__main__":
         for single_design, single_design_flows_file, single_design_name in zip(design_files, design_flow_files, design_names):
 
             # execute vpr place on the current design
-            run_vpr(vpr_location=args.vpr_executable, arch_file=args.arch_file, design_file=single_design, design_flows_file=single_design_flows_file, max_noc_weighting=args.max_weighting, noc_weighting_interval=args.interval)
+            run_vpr(vpr_location=args.vpr_executable, arch_file=args.arch_file, design_file=single_design, design_flows_file=single_design_flows_file, max_noc_weighting=args.max_weighting, noc_weighting_interval=args.interval, device_name=args.device)
 
             # lets create a CSV file that will store the 
             write_csv_file(data=design_run_data, csv_file_name=single_design_name)
