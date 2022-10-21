@@ -156,6 +156,9 @@
         <port name="vcoph" clock="core_refclk"/> 
         <port name="iopll_out_sig1" clock="core_refclk"/>
         <port name="iopll_out_sig2" clock="core_refclk"/>
+        <port name="readdata" clock="core_refclk"/>
+        <port name="lvds_clk" clock="core_refclk"/>
+        <port name="csr_out" clock="core_refclk"/>
       </output_ports>
     </model>
 
@@ -2038,8 +2041,8 @@
         <output name="cal_ok" num_pins="1"/> <!-- indicates the calibration status -->
         <output name="core_avl_busy" num_pins="1"/>
         <output name="core_cal_done" num_pins="1"/>
-        <!--<output name="readdata" num_pins="8"/> --> <!-- Avalon-MM Interface - data read from the given address during dynamic partial reconfiguration -->
-        <!--<output name="csr_out" num_pins="1"/> --> <!--Avalon-MM control-and-status register (CSR) agent interface !-->
+        <output name="readdata" num_pins="8"/> <!-- Avalon-MM Interface - data read from the given address during dynamic partial reconfiguration -->
+        <output name="csr_out" num_pins="1"/> <!--Avalon-MM control-and-status register (CSR) agent interface !-->
         <output name="extclk_output" num_pins="2"/> <!-- external clock output port -->
         <output name="extclk_dft" num_pins="2"/>
         <output name="fblvds_out" num_pins="1"/>
@@ -2051,7 +2054,7 @@
         <output name="lock2io12lane2" num_pins="1"/> <!-- indicate wether the PLL is locked - going to the IO Lane 2 -->
         <output name="lock2io12lane3" num_pins="1"/> <!-- indicate wether the PLL is locked - going to the IO Lane 3 -->
         <output name="lock2iohmc" num_pins="1"/> <!-- indicate wether the PLL is locked - going to Hybrid Memory Cube (HMC)-->
-        <!--<output name="lvds_clk" num_pins="2"/> --> <!-- the output clk feeding the LVDS SERDES block -->
+        <output name="lvds_clk" num_pins="2"/> <!-- the output clk feeding the LVDS SERDES block -->
         <output name="phase_done" num_pins="1"/> <!-- indicates completion of dynamic phase shift operation -->
         <output name="pll_cascade_out" num_pins="1"/> <!-- the output from the source PLL feeding the downstream PLL in cascade mode -->
         <output name="pll_pd" num_pins="1"/> <!-- indicating power down - going to the exteral PLLs  -->
@@ -2070,7 +2073,7 @@
 
         <complete input="PLL.clk" name="pll_clock" output="iopll.core_refclk"/>
 
-        <complete input="iopll.block_select iopll.clk0_bad iopll.clk1_bad iopll.clksel iopll.cal_ok iopll.core_avl_busy iopll.core_cal_done iopll.extclk_output iopll.extclk_dft iopll.fblvds_out iopll.lf_reset iopll.loaden iopll.lock iopll.lock2io12lane0 iopll.lock2io12lane1 iopll.lock2io12lane2 iopll.lock2io12lane3 iopll.lock2iohmc iopll.phase_done iopll.pll_cascade_out iopll.pll_pd iopll.outclk iopll.dll_output iopll.fbclk_out iopll.uc_cal_readdata iopll.vcop_en iopll.vcoph iopll.iopll_out_sig1 iopll.iopll_out_sig2" name="pll_to_core" output="PLL.core_out"/>
+        <complete input="iopll.readdata iopll.lvds_clk iopll.csr_out iopll.block_select iopll.clk0_bad iopll.clk1_bad iopll.clksel iopll.cal_ok iopll.core_avl_busy iopll.core_cal_done iopll.extclk_output iopll.extclk_dft iopll.fblvds_out iopll.lf_reset iopll.loaden iopll.lock iopll.lock2io12lane0 iopll.lock2io12lane1 iopll.lock2io12lane2 iopll.lock2io12lane3 iopll.lock2iohmc iopll.phase_done iopll.pll_cascade_out iopll.pll_pd iopll.outclk iopll.dll_output iopll.fbclk_out iopll.uc_cal_readdata iopll.vcop_en iopll.vcoph iopll.iopll_out_sig1 iopll.iopll_out_sig2" name="pll_to_core" output="PLL.core_out"/>
       </interconnect>
     </pb_type>
 
