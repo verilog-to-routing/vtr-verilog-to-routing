@@ -44,6 +44,17 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     seg_occ_by_length = new int[max_segment_length + 1];
     seg_cap_by_length = new int[max_segment_length + 1];
 
+    std::map<e_parallel_axis, std::vector<int>> directed_occ_by_length = {
+        {X_AXIS, std::vector<int>(max_segment_length+1, 0)},
+        {Y_AXIS, std::vector<int>(max_segment_length+1, 0)}
+    };
+
+    std::map<e_parallel_axis, std::vector<int>> directed_cap_by_length = {
+        {X_AXIS, std::vector<int>(max_segment_length+1, 0)},
+        {Y_AXIS, std::vector<int>(max_segment_length+1, 0)}
+    };
+
+
     for (int i = 0; i < max_segment_length + 1; i++) {
         seg_occ_by_length[i] = 0;
         seg_cap_by_length[i] = 0;
@@ -59,7 +70,8 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
 
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         size_t inode = (size_t)rr_id;
-        if (rr_graph.node_type(rr_id) == CHANX || rr_graph.node_type(rr_id) == CHANY) {
+        auto node_type = rr_graph.node_type(rr_id);
+        if (node_type == CHANX || node_type == CHANY) {
             cost_index = rr_graph.node_cost_index(rr_id);
             size_t seg_type = device_ctx.rr_indexed_data[cost_index].seg_index;
 
@@ -68,10 +80,54 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
             else
                 length = LONGLINE;
             const short& inode_capacity = rr_graph.node_capacity(rr_id);
-            seg_occ_by_length[length] += route_ctx.rr_node_route_inf[inode].occ();
+            int occ = route_ctx.rr_node_route_inf[inode].occ();
+            seg_occ_by_length[length] += occ;
             seg_cap_by_length[length] += inode_capacity;
-            seg_occ_by_type[seg_type] += route_ctx.rr_node_route_inf[inode].occ();
+            seg_occ_by_type[seg_type] += occ;
             seg_cap_by_type[seg_type] += inode_capacity;
+            VTR_ASSERT(node_type == CHANX|| node_type == CHANY);
+            auto ax = (node_type == CHANX) ? X_AXIS : Y_AXIS;
+            VTR_ASSERT(occ <= 1 && inode_capacity <= 1);
+            directed_occ_by_length[ax][length] += occ;
+            directed_cap_by_length[ax][length] += inode_capacity;
+        }
+    }
+
+    VTR_LOG("\n");
+    VTR_LOG("Total Number of Wiring Segments by Direction: direction length number\n");
+    VTR_LOG("                                              --------- ------ -------\n");
+    for (length = 1; length <= max_segment_length; length++) {
+        for(auto ax : {X_AXIS, Y_AXIS}) {
+            std::string ax_name = (ax==X_AXIS) ? "X" : "Y";
+            if (directed_cap_by_length[ax][length] != 0) {
+                VTR_LOG("                                              %s %4d %6d\n", ax_name.c_str(),
+                        length,
+                        directed_cap_by_length[ax][length]);
+            }
+        }
+
+    }
+
+
+    VTR_LOG("\n");
+    VTR_LOG("X - Directed Wiring Segment usage by length: length utilization\n");
+    VTR_LOG("                                             ------ -----------\n");
+
+    for (length = 1; length <= max_segment_length; length++) {
+        if (directed_cap_by_length[X_AXIS][length] != 0) {
+            utilization = (float)directed_occ_by_length[X_AXIS][length] / (float)directed_cap_by_length[X_AXIS][length];
+            VTR_LOG("                                       %6d %11.3g\n", length, utilization);
+        }
+    }
+
+    VTR_LOG("\n");
+    VTR_LOG("Y - Directed Wiring Segment usage by length: length utilization\n");
+    VTR_LOG("                                             ------ -----------\n");
+
+    for (length = 1; length <= max_segment_length; length++) {
+        if (directed_cap_by_length[Y_AXIS][length] != 0) {
+            utilization = (float)directed_occ_by_length[Y_AXIS][length] / (float)directed_cap_by_length[Y_AXIS][length];
+            VTR_LOG("                                             %6d %11.3g\n", length, utilization);
         }
     }
 
