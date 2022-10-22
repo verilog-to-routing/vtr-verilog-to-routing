@@ -257,6 +257,8 @@ bool try_pack(t_packer_opts* packer_opts,
         g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
         //attraction_groups.reset_attraction_groups();
 
+        free_cluster_placement_stats(helper_ctx.cluster_placement_stats);
+
         ++pack_iteration;
     }
 

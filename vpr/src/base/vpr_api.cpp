@@ -396,10 +396,10 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     }
 
     //clean packing-placement data
-    if (vpr_setup.PackerOpts.doPacking == STAGE_DO) {
-        auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
-        free_cluster_placement_stats(helper_ctx.cluster_placement_stats);
-    }
+    //if (vpr_setup.PackerOpts.doPacking == STAGE_DO) {
+    //    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    //    free_cluster_placement_stats(helper_ctx.cluster_placement_stats);
+    //}
 
     //close the graphics
     vpr_close_graphics(vpr_setup);
