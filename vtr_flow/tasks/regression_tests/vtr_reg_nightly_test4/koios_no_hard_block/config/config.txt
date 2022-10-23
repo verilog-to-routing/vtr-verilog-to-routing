@@ -13,7 +13,8 @@ archs_dir=arch/timing
 # Some of these benchmarks are designs with hard dsp and ram blocks.
 # But in this task, we're running them without enabling these
 # blocks (that is, the macros `complex_dsp` and `hard_mem` area not defined).
-circuit_list_add=tpu_like.small.v
+circuit_list_add=tpu_like.small.os.v
+circuit_list_add=tpu_like.small.ws.v
 circuit_list_add=dla_like.small.v
 circuit_list_add=bnn.v
 circuit_list_add=attention_layer.v

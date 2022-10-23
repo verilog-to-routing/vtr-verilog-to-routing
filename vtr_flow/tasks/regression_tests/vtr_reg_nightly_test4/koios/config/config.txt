@@ -13,7 +13,8 @@ archs_dir=arch/COFFE_22nm
 includes_dir=benchmarks/verilog/koios
 
 # Add circuits to list to sweep
-circuit_list_add=tpu_like.small.v
+circuit_list_add=tpu_like.small.os.v
+circuit_list_add=tpu_like.small.ws.v
 circuit_list_add=dla_like.small.v
 circuit_list_add=bnn.v
 circuit_list_add=attention_layer.v
