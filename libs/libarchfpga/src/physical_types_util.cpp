@@ -80,8 +80,6 @@ static std::vector<int> get_pb_pin_driving_pins(t_physical_tile_type_ptr physica
                                                 int relative_cap,
                                                 const t_pb_graph_pin* pin);
 
-//static std::vector<const t_pb_graph_node*> get_child_pb_graph_node_mode(const t_pb_graph_node* parent_node, int mode_num);
-
 static std::tuple<int, int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_index, bool is_flat) {
     int max_ptc = get_tile_ipin_opin_max_ptc(type, is_flat);
     VTR_ASSERT(pin_index < max_ptc);
@@ -359,31 +357,6 @@ static std::vector<int> get_pb_pin_driving_pins(t_physical_tile_type_ptr physica
 
     return driving_pins;
 }
-
-//static std::vector<const t_pb_graph_node*> get_child_pb_graph_node_mode(const t_pb_graph_node* parent_node, int mode_num) {
-//    int num_child_pb_nodes = 0;
-//    std::vector<const t_pb_graph_node*> child_pb_nodes;
-//
-//    if(parent_node->is_primitive())
-//        return child_pb_nodes;
-//
-//    const t_mode& mode = parent_node->pb_type->modes[mode_num];
-//    for(int pb_type_idx = 0; pb_type_idx < mode.num_pb_type_children; pb_type_idx++) {
-//        for(int pb_idx = 0; pb_idx < mode.pb_type_children[pb_type_idx].num_pb; pb_idx++) {
-//            num_child_pb_nodes++;
-//        }
-//    }
-//    child_pb_nodes.resize(num_child_pb_nodes);
-//    int num_added_pb_nodes = 0;
-//    for(int pb_type_idx = 0; pb_type_idx < mode.num_pb_type_children; pb_type_idx++) {
-//        for(int pb_idx = 0; pb_idx < mode.pb_type_children[pb_type_idx].num_pb; pb_idx++) {
-//            child_pb_nodes[num_added_pb_nodes] = &parent_node->child_pb_graph_nodes[mode_num][pb_type_idx][pb_idx];
-//            num_added_pb_nodes++;
-//        }
-//    }
-//    VTR_ASSERT(num_added_pb_nodes == num_child_pb_nodes);
-//    return child_pb_nodes;
-//}
 
 /******************** End Subroutine declarations and definition ************************/
 
