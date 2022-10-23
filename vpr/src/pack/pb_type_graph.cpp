@@ -142,7 +142,6 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
     for (auto& type : device_ctx.logical_block_types) {
         if (type.pb_type) {
             type.pb_graph_head = new t_pb_graph_node;
-            *type.pb_graph_head = t_pb_graph_node();
             int pin_count_in_cluster = 0;
             alloc_and_load_pb_graph(type.pb_graph_head, nullptr,
                                     type.pb_type, 0, load_power_structures, pin_count_in_cluster);
@@ -325,7 +324,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     /* Power */
     if (load_power_structures) {
         pb_graph_node->pb_node_power = new t_pb_graph_node_power;
-        *pb_graph_node->pb_node_power = t_pb_graph_node_power();
         pb_graph_node->pb_node_power->transistor_cnt_buffers = 0.;
         pb_graph_node->pb_node_power->transistor_cnt_interc = 0.;
         pb_graph_node->pb_node_power->transistor_cnt_pb_children = 0.;

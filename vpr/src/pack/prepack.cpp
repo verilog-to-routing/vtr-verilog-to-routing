@@ -494,7 +494,6 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                 // 2) assign an id to this pattern block, 3) increment the number of found blocks belonging to this
                 // pattern and 4) expand all its edges to find the other primitives that belong to this pattern
                 destination_block = new t_pack_pattern_block;
-                *destination_block = t_pack_pattern_block();
                 list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(destination_pb_graph_node);
                 destination_block->block_id = *L_num_blocks;
                 (*L_num_blocks)++;
@@ -636,7 +635,6 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             source_block = (t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad;
             if (source_block == nullptr || source_block->pattern_index != curr_pattern_index) {
                 source_block = new t_pack_pattern_block;
-                *source_block = t_pack_pattern_block();
                 source_block->block_id = *L_num_blocks;
                 (*L_num_blocks)++;
                 list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(source_pb_graph_node);
@@ -694,7 +692,6 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                 VTR_ASSERT(((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index);
                 source_block = (t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad;
                 pack_pattern_connection = new t_pack_pattern_connections;
-                *pack_pattern_connection = t_pack_pattern_connections();
                 pack_pattern_connection->from_block = source_block;
                 pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
                 pack_pattern_connection->to_block = destination_block;
@@ -703,7 +700,6 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                 source_block->connections = pack_pattern_connection;
 
                 pack_pattern_connection = new t_pack_pattern_connections;
-                *pack_pattern_connection = t_pack_pattern_connections();
                 pack_pattern_connection->from_block = source_block;
                 pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
                 pack_pattern_connection->to_block = destination_block;
