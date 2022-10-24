@@ -162,6 +162,28 @@
       </output_ports>
     </model>
 
+    <!-- Clock divider Primitive -->
+    <model name="fourteennm_clk_divider">
+      <input_ports>
+        <port name="inclk" is_clock="1"/> 
+      </input_ports>
+      <output_ports>
+        <port name="clock_div1" clock="inclk"/>
+        <port name="clock_div2" clock="inclk"/> 
+        <port name="clock_div4" clock="inclk"/> 
+      </output_ports>
+    </model>
+
+    <!-- Clock gate Primitive -->
+    <model name="fourteennm_clk_gate">
+      <input_ports>
+        <port name="inclk" is_clock="1"/> 
+        <port name="enable" clock="inclk"/> 
+      </input_ports>
+      <output_ports>
+        <port name="outclk" clock="inclk"/>
+      </output_ports>
+    </model>
     <!-- IO Primitives -->
     <model name="fourteennm_io_obuf">
       <input_ports>
@@ -1730,6 +1752,35 @@
           <loc side="bottom">PLL.core_in PLL.core_out PLL.clk </loc>
         </pinlocations>
       </sub_tile>
+      <sub_tile name="clock_div">
+        <equivalent_sites>
+          <site pb_type="clock_div" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="inclk" num_pins="1"/>
+        <output name="clock_div_out" num_pins="3"/>
+        <fc in_type="frac" in_val="0.055" out_type="frac" out_val="0.075"/>
+        <pinlocations pattern="custom">
+          <loc side="left">clock_div.inclk clock_div.clock_div_out </loc>
+          <loc side="right">clock_div.inclk clock_div.clock_div_out </loc>
+          <loc side="top">clock_div.inclk clock_div.clock_div_out </loc>
+          <loc side="bottom">clock_div.inclk clock_div.clock_div_out </loc>
+        </pinlocations>
+      </sub_tile>
+      <sub_tile name="clock_gate">
+        <equivalent_sites>
+          <site pb_type="clock_gate" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="inclk" num_pins="1"/>
+        <input name="enable" num_pins="1"/>
+        <output name="outclk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.055" out_type="frac" out_val="0.075"/>
+        <pinlocations pattern="custom">
+          <loc side="left">clock_gate.inclk clock_gate.enable clock_gate.outclk</loc>
+          <loc side="right">clock_gate.inclk clock_gate.enable clock_gate.outclk </loc>
+          <loc side="top">clock_gate.inclk clock_gate.enable clock_gate.outclk </loc>
+          <loc side="bottom">clock_gate.inclk clock_gate.enable clock_gate.outclk </loc>
+        </pinlocations>
+      </sub_tile>
     </tile>
 
     <tile height="1" name="OCT">
@@ -2076,6 +2127,40 @@
         <complete input="iopll.readdata iopll.lvds_clk iopll.csr_out iopll.block_select iopll.clk0_bad iopll.clk1_bad iopll.clksel iopll.cal_ok iopll.core_avl_busy iopll.core_cal_done iopll.extclk_output iopll.extclk_dft iopll.fblvds_out iopll.lf_reset iopll.loaden iopll.lock iopll.lock2io12lane0 iopll.lock2io12lane1 iopll.lock2io12lane2 iopll.lock2io12lane3 iopll.lock2iohmc iopll.phase_done iopll.pll_cascade_out iopll.pll_pd iopll.outclk iopll.dll_output iopll.fbclk_out iopll.uc_cal_readdata iopll.vcop_en iopll.vcoph iopll.iopll_out_sig1 iopll.iopll_out_sig2" name="pll_to_core" output="PLL.core_out"/>
       </interconnect>
     </pb_type>
+
+    <pb_type name="clock_gate">
+      <input name="inclk" num_pins="1"/>
+      <input name="enable" num_pins="1"/>
+      <output name="outclk" num_pins="1"/>
+
+      <pb_type blif_model=".subckt fourteennm_clk_gate" name="clk_gate" num_pb="1">
+        <clock name="inclk" num_pins="1"/>
+        <input name="enable" num_pins="1"/>
+        <output name="outclk" num_pins="1"/> 
+      </pb_type>
+       <interconnect>    
+        <direct input="clock_gate.inclk" name="core_to_clk_gate" output="clk_gate.inclk"/>
+        <direct input="clock_gate.enable" name="core_to_clk_gate2" output="clk_gate.enable"/>
+        <direct input="clk_gate.outclk" name="clk_gate_to_core" output="clock_gate.outclk"/>
+      </interconnect>
+    </pb_type>
+
+    <pb_type name="clock_div">
+      <input name="inclk" num_pins="1"/>
+      <output name="clock_div_out" num_pins="3"/>
+
+      <pb_type blif_model=".subckt fourteennm_clk_divider" name="clk_div" num_pb="1">
+        <clock name="inclk" num_pins="1"/>
+        <output name="clock_div1" num_pins="1"/> 
+        <output name="clock_div2" num_pins="1"/>
+        <output name="clock_div4" num_pins="1"/>
+      </pb_type>
+       <interconnect>    
+        <complete input="clock_div.inclk" name="core_to_clk_div" output="clk_div.inclk"/>
+        <complete input="clk_div.clock_div1 clk_div.clock_div2 clk_div.clock_div4" name="clk_div_to_core" output="clock_div.clock_div_out"/>
+      </interconnect>
+    </pb_type>
+
 
     <pb_type name="LAB">
       <input name="data_in" num_pins="60" equivalent="full"/>
