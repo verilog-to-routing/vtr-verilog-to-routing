@@ -88,7 +88,7 @@ end
 
 //assign mul_out_temp = a * b;
 `ifdef complex_dsp
-multiply_fp_clk mul_u1(.clk(clk), .a(a_flopped), .b(b_flopped), .out(mul_out_temp));
+mult_fp_clk_16 mul_u1(.clk(clk), .a(a_flopped), .b(b_flopped), .out(mul_out_temp));
 `else
 FPMult_16 u_FPMult (.clk(clk), .rst(1'b0), .a(a_flopped), .b(b_flopped), .result(mul_out_temp), .flags());
 `endif
