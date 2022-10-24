@@ -7,6 +7,8 @@
 
 #include "vpr_types.h"
 
+#define pack_improve_debug
+
 const int LARGE_FANOUT_LIMIT = 5;
 
 struct molMoveDescription {
