@@ -43571,6 +43571,7 @@
 # Subckt 4475: traffic_processor:tp_64|Add0~125_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~122 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[31]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[31] \
     sumout=traffic_processor:tp_64|Add0~125
 
@@ -43585,6 +43586,7 @@
 # Subckt 4477: traffic_processor:tp_64|Add0~121_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~118 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[30]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[30] \
     cout=traffic_processor:tp_64|Add0~122 \
     sumout=traffic_processor:tp_64|Add0~121
@@ -43600,6 +43602,7 @@
 # Subckt 4479: traffic_processor:tp_64|Add0~117_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~114 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[29]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[29] \
     cout=traffic_processor:tp_64|Add0~118 \
     sumout=traffic_processor:tp_64|Add0~117
@@ -43615,6 +43618,7 @@
 # Subckt 4481: traffic_processor:tp_64|Add0~113_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~110 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[28]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[28] \
     cout=traffic_processor:tp_64|Add0~114 \
     sumout=traffic_processor:tp_64|Add0~113
@@ -43630,6 +43634,7 @@
 # Subckt 4483: traffic_processor:tp_64|Add0~109_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~106 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[27]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[27] \
     cout=traffic_processor:tp_64|Add0~110 \
     sumout=traffic_processor:tp_64|Add0~109
@@ -43645,6 +43650,7 @@
 # Subckt 4485: traffic_processor:tp_64|Add0~105_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~102 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[26]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[26] \
     cout=traffic_processor:tp_64|Add0~106 \
     sumout=traffic_processor:tp_64|Add0~105
@@ -43660,6 +43666,7 @@
 # Subckt 4487: traffic_processor:tp_64|Add0~101_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~98 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[25]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[25] \
     cout=traffic_processor:tp_64|Add0~102 \
     sumout=traffic_processor:tp_64|Add0~101
@@ -43675,6 +43682,7 @@
 # Subckt 4489: traffic_processor:tp_64|Add0~97_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~94 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[24]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[24] \
     cout=traffic_processor:tp_64|Add0~98 \
     sumout=traffic_processor:tp_64|Add0~97
@@ -43690,6 +43698,7 @@
 # Subckt 4491: traffic_processor:tp_64|Add0~93_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~90 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[23]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[23] \
     cout=traffic_processor:tp_64|Add0~94 \
     sumout=traffic_processor:tp_64|Add0~93
@@ -43705,6 +43714,7 @@
 # Subckt 4493: traffic_processor:tp_64|Add0~89_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~86 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[22]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[22] \
     cout=traffic_processor:tp_64|Add0~90 \
     sumout=traffic_processor:tp_64|Add0~89
@@ -43720,6 +43730,7 @@
 # Subckt 4495: traffic_processor:tp_64|Add0~85_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~82 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[21]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[21] \
     cout=traffic_processor:tp_64|Add0~86 \
     sumout=traffic_processor:tp_64|Add0~85
@@ -43735,6 +43746,7 @@
 # Subckt 4497: traffic_processor:tp_64|Add0~81_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~78 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[20]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[20] \
     cout=traffic_processor:tp_64|Add0~82 \
     sumout=traffic_processor:tp_64|Add0~81
@@ -43750,6 +43762,7 @@
 # Subckt 4499: traffic_processor:tp_64|Add0~77_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~74 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[19]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[19] \
     cout=traffic_processor:tp_64|Add0~78 \
     sumout=traffic_processor:tp_64|Add0~77
@@ -43765,6 +43778,7 @@
 # Subckt 4501: traffic_processor:tp_64|Add0~73_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~70 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[18]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[18] \
     cout=traffic_processor:tp_64|Add0~74 \
     sumout=traffic_processor:tp_64|Add0~73
@@ -43780,6 +43794,7 @@
 # Subckt 4503: traffic_processor:tp_64|Add0~69_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~66 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[17]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[17] \
     cout=traffic_processor:tp_64|Add0~70 \
     sumout=traffic_processor:tp_64|Add0~69
@@ -43795,6 +43810,7 @@
 # Subckt 4505: traffic_processor:tp_64|Add0~65_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~62 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[16]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[16] \
     cout=traffic_processor:tp_64|Add0~66 \
     sumout=traffic_processor:tp_64|Add0~65
@@ -43810,6 +43826,7 @@
 # Subckt 4507: traffic_processor:tp_64|Add0~61_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~58 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[15]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[15] \
     cout=traffic_processor:tp_64|Add0~62 \
     sumout=traffic_processor:tp_64|Add0~61
@@ -43825,6 +43842,7 @@
 # Subckt 4509: traffic_processor:tp_64|Add0~57_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~54 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[14]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[14] \
     cout=traffic_processor:tp_64|Add0~58 \
     sumout=traffic_processor:tp_64|Add0~57
@@ -43840,6 +43858,7 @@
 # Subckt 4511: traffic_processor:tp_64|Add0~53_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~50 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[13]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[13] \
     cout=traffic_processor:tp_64|Add0~54 \
     sumout=traffic_processor:tp_64|Add0~53
@@ -43855,6 +43874,7 @@
 # Subckt 4513: traffic_processor:tp_64|Add0~49_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~46 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[12]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[12] \
     cout=traffic_processor:tp_64|Add0~50 \
     sumout=traffic_processor:tp_64|Add0~49
@@ -43870,6 +43890,7 @@
 # Subckt 4515: traffic_processor:tp_64|Add0~45_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~42 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[11]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[11] \
     cout=traffic_processor:tp_64|Add0~46 \
     sumout=traffic_processor:tp_64|Add0~45
@@ -43885,6 +43906,7 @@
 # Subckt 4517: traffic_processor:tp_64|Add0~41_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~38 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[10]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[10] \
     cout=traffic_processor:tp_64|Add0~42 \
     sumout=traffic_processor:tp_64|Add0~41
@@ -43900,6 +43922,7 @@
 # Subckt 4519: traffic_processor:tp_64|Add0~37_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~34 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[9]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[9] \
     cout=traffic_processor:tp_64|Add0~38 \
     sumout=traffic_processor:tp_64|Add0~37
@@ -43915,6 +43938,7 @@
 # Subckt 4521: traffic_processor:tp_64|Add0~33_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~30 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[8]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[8] \
     cout=traffic_processor:tp_64|Add0~34 \
     sumout=traffic_processor:tp_64|Add0~33
@@ -43930,6 +43954,7 @@
 # Subckt 4523: traffic_processor:tp_64|Add0~29_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~26 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[7]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[7] \
     cout=traffic_processor:tp_64|Add0~30 \
     sumout=traffic_processor:tp_64|Add0~29
@@ -43945,6 +43970,7 @@
 # Subckt 4525: traffic_processor:tp_64|Add0~25_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~22 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[6]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[6] \
     cout=traffic_processor:tp_64|Add0~26 \
     sumout=traffic_processor:tp_64|Add0~25
@@ -43960,6 +43986,7 @@
 # Subckt 4527: traffic_processor:tp_64|Add0~21_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~18 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[5]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[5] \
     cout=traffic_processor:tp_64|Add0~22 \
     sumout=traffic_processor:tp_64|Add0~21
@@ -43975,6 +44002,7 @@
 # Subckt 4529: traffic_processor:tp_64|Add0~17_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~14 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[4]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[4] \
     cout=traffic_processor:tp_64|Add0~18 \
     sumout=traffic_processor:tp_64|Add0~17
@@ -43990,6 +44018,7 @@
 # Subckt 4531: traffic_processor:tp_64|Add0~13_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~10 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[3]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[3] \
     cout=traffic_processor:tp_64|Add0~14 \
     sumout=traffic_processor:tp_64|Add0~13
@@ -44005,6 +44034,7 @@
 # Subckt 4533: traffic_processor:tp_64|Add0~9_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~6 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[2]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[2] \
     cout=traffic_processor:tp_64|Add0~10 \
     sumout=traffic_processor:tp_64|Add0~9
@@ -44020,6 +44050,7 @@
 # Subckt 4535: traffic_processor:tp_64|Add0~5_I 
 .subckt stratixiv_lcell_comb \
     cin=traffic_processor:tp_64|Add0~2 \
+    dataf=noc_router_adapter_block:noc_router_adapter_block_64|master_tdata[1]~reg0 \
     datad=traffic_processor:tp_64|sum_reg[1] \
     cout=traffic_processor:tp_64|Add0~6 \
     sumout=traffic_processor:tp_64|Add0~5
