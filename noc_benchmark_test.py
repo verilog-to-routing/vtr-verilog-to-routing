@@ -143,24 +143,27 @@ def noc_test_command_line_parser(prog=None):
         help="The FPGA device name the design will be placed on. Default device is EP4SGX110"
     )
 
+    parser.add_argument(
+        "-flow_file",
+        default="",
+        type=str,
+        help="The location of the NoC traffic flow file associated with the design"
+    )
+
 
     return parser
 
-def find_all_circuit_files(location_of_designs, design_files, design_names, design_flow_files):
+def find_all_circuit_files(location_of_designs, flow_file_location, design_files, design_names, design_flow_files):
 
     # find all the circuit files located within the provided folder
     for single_design_file_path in Path(location_of_designs).rglob('*{0}'.format(CIRCUIT_FILE_EXT)):
         # store the design
         design_files.append(single_design_file_path)
 
-        # find and store the name of the design
-        design_names.append(Path(single_design_file_path).stem)
-        
-        # now we need to create the path to the corresponding design flows file
-        # we expect this file to be in the same location as the design file and having the same name
-        # So we just need to change the file extension to match what a flows file would have
-        design_flow_files.append((os.path.splitext(single_design_file_path)[0]) + FLOWS_FILE_EXT)
-    
+    # find and store the name of the design
+    design_names.append(Path(flow_file_location).stem)
+    design_flow_files.append(flow_file_location)
+
     return
 
 def process_vpr_output(vpr_output_file):
@@ -470,8 +473,8 @@ if __name__ == "__main__":
         design_names = []
         design_flow_files = []
 
-        find_all_circuit_files(args.tests_folder_location, design_files=design_files, design_names=design_names, design_flow_files=design_flow_files)
-
+        find_all_circuit_files(location_of_designs=args.tests_folder_location, flow_file_location=args.flow_file, design_files=design_files, design_names=design_names, design_flow_files=design_flow_files)
+ 
         # process each design below
         for single_design, single_design_flows_file, single_design_name in zip(design_files, design_flow_files, design_names):
 
