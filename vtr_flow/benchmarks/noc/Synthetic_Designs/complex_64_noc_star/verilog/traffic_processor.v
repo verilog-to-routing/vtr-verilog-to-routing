@@ -44,10 +44,7 @@ sha1 sha1_module
 /*
 	This module will wait on the tvalid signal
 	to indicate whether data is available to read
-	in from the input. When the data is read in, it is
-	then added to the output signal. The output will act
-	as an accumulator.
-
+	in from the input. 
 */
 
 always @(posedge clk)

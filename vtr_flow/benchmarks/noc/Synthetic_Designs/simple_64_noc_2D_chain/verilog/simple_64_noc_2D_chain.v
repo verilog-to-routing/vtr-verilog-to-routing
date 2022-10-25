@@ -32,6 +32,14 @@ wire [noc_dw -1 : 0] mi_1_data;
 wire mi_1_valid;
 wire mi_1_ready;
 
+//Last router slave interface and traffic processor
+wire si_last_ready;
+wire [noc_dw -1 : 0] si_last_data_in;
+wire si_last_valid_in;
+wire [noc_dw -1 : 0] si_last_data_out;
+wire si_last_valid_out;
+wire [noc_dw - 1: 0] tp_last_data_out;
+
 //Second through routers_num-2 master and slave interface, and traffic processor
 //slave interface data - middle routers
 wire [noc_dw - 1: 0] si_data_in_2;
