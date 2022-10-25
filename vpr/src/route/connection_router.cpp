@@ -861,18 +861,21 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node->re_expand) {
-        if(is_flat_) {
-            if(relevant_node_to_target(rr_graph_, RRNodeId(rt_node->inode), RRNodeId(target_node))){
+        if (is_flat_) {
+            if (relevant_node_to_target(rr_graph_,
+                                        RRNodeId(rt_node->inode),
+                                        RRNodeId(target_node))) {
                 add_route_tree_node_to_heap(rt_node,
                                             target_node,
                                             cost_params,
                                             false);
             }
+        } else {
+            add_route_tree_node_to_heap(rt_node,
+                                        target_node,
+                                        cost_params,
+                                        false);
         }
-        add_route_tree_node_to_heap(rt_node,
-                                    target_node,
-                                    cost_params,
-                                    false);
     }
 
     linked_rt_edge = rt_node->u.child_list;
