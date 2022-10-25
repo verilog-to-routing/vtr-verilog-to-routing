@@ -175,12 +175,12 @@ noc_router_adapter_block noc_router_adapter_block_1(
 );
 
 /*
-    **********************Middle NOC ADAPTER*****************
-    1) Data comes through NoC to the second NoC adapter
+    **********************Middle NOC ADAPTERS*****************
+    1) Data comes through NoC to the NoC adapter
     2) NoC adapter passes data to slave interface
     3) slave_interface passes data to traffic processor
     4) traffic processor passes the processed data to master interface
-    5) master interface passes the data back to the second NoC adapter
+    5) master interface passes the data back to the next NoC adapter
 */
 
 noc_router_adapter_block noc_router_adapter_block_2 (
