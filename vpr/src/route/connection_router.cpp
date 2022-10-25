@@ -17,18 +17,11 @@ inline static bool relevant_node_to_target(const RRGraphView* rr_graph,
                                            RRNodeId target_node) {
     VTR_ASSERT(rr_graph->node_type(RRNodeId(target_node)) == t_rr_type::SINK);
     auto node_to_add_type = rr_graph->node_type(node_to_add);
-    auto node_to_add_x_low = rr_graph->node_xlow(node_to_add);
-    auto node_to_add_y_low = rr_graph->node_ylow(node_to_add);
     if (node_to_add_type == t_rr_type::OPIN || node_to_add_type == t_rr_type::SOURCE || node_to_add_type == t_rr_type::CHANX || node_to_add_type == t_rr_type::CHANY) {
         return true;
     } else if (node_in_same_physical_tile(node_to_add, target_node)) {
         VTR_ASSERT(node_to_add_type == IPIN);
-        t_physical_tile_type_ptr physical_type = g_vpr_ctx.device().grid[node_to_add_x_low][node_to_add_y_low].type;
-        if (intra_tile_nodes_connected(physical_type,
-                                       rr_graph->node_ptc_num(node_to_add),
-                                       rr_graph->node_ptc_num(target_node))) {
-            return true;
-        }
+        return true;
     }
     return false;
 }
@@ -65,6 +58,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     t_bb bounding_box) {
     //Re-add route nodes from the existing route tree to the heap.
     //They need to be repushed onto the heap since each node's cost is target specific.
+    router_stats_->add_all_rt++;
     add_route_tree_to_heap(rt_root, sink_node, cost_params);
     heap_.build_heap(); // via sifting down everything
 
@@ -119,6 +113,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
 
         //Re-initialize the heap since it was emptied by the previous call to
         //timing_driven_route_connection_from_heap()
+        router_stats_->add_all_rt++;
         add_route_tree_to_heap(rt_root, sink_node, cost_params);
         heap_.build_heap(); // via sifting down everything
 
@@ -154,6 +149,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
+    router_stats_->add_high_fanout_rt++;
     t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, spatial_rt_lookup, net_bounding_box);
     heap_.build_heap();
 
@@ -521,32 +517,6 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
                 return;
             }
-            // If flat_routing is enabled, for the time being, we decided to prune the which are not directly/indirectly connected to the
-            // sink node
-            //TODO: Ideally, we should adapt lookahead to return a large cost for the pins which do not lead to the sink node
-            if (is_flat_) {
-                if (node_in_same_physical_tile(to_node, RRNodeId(target_node))) {
-                    t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid[to_xlow][to_ylow].type;
-                    auto to_ptc = rr_graph_->node_ptc_num(to_node);
-
-                    auto target_type = rr_graph_->node_type(RRNodeId(target_node));
-                    auto target_ptc = rr_graph_->node_ptc_num(RRNodeId(target_node));
-                    VTR_ASSERT(target_type == t_rr_type::SINK);
-                    if (!intra_tile_nodes_connected(g_vpr_ctx.device().grid[to_xlow][to_ylow].type,
-                                                    to_ptc,
-                                                    target_ptc)) {
-                        VTR_LOGV_DEBUG(router_debug_,
-                                       "      Internal Pruned expansion of node %d edge %zu -> %d"
-                                       " (to node is IPIN at %d,%dx%d,%d[%s] which does not"
-                                       " lead to target block %d,%dx%d,%d[%s])\n",
-                                       from_node, size_t(from_edge), to_node_int,
-                                       to_xlow, to_ylow, to_xhigh, to_yhigh, block_type_pin_index_to_name(physical_tile, to_ptc, is_flat_).c_str(),
-                                       target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax,
-                                       get_class_block_name(physical_tile, target_ptc).c_str());
-                        return;
-                    }
-                }
-            }
         }
     }
 
@@ -891,28 +861,26 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node->re_expand) {
-        if (is_flat_) {
-            if (relevant_node_to_target(rr_graph_,
-                                        RRNodeId(rt_node->inode),
-                                        RRNodeId(target_node))) {
+        if(is_flat_) {
+            if(relevant_node_to_target(rr_graph_, RRNodeId(rt_node->inode), RRNodeId(target_node))){
                 add_route_tree_node_to_heap(rt_node,
                                             target_node,
                                             cost_params,
                                             false);
             }
-        } else {
-            add_route_tree_node_to_heap(rt_node,
-                                        target_node,
-                                        cost_params,
-                                        false);
         }
+        add_route_tree_node_to_heap(rt_node,
+                                    target_node,
+                                    cost_params,
+                                    false);
     }
 
     linked_rt_edge = rt_node->u.child_list;
 
     while (linked_rt_edge != nullptr) {
         child_node = linked_rt_edge->child;
-        add_route_tree_to_heap(child_node, target_node,
+        add_route_tree_to_heap(child_node,
+                               target_node,
                                cost_params);
         linked_rt_edge = linked_rt_edge->next;
     }
@@ -1049,20 +1017,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
                     highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
                     nodes_added++;
-                } else {
-                    auto rt_node_id = RRNodeId(rt_node->inode);
-                    auto rt_ptc = rr_graph_->node_ptc_num(RRNodeId(rt_node->inode));
-                    auto type = g_vpr_ctx.device().grid[rr_graph_->node_xlow(rt_node_id)][rr_graph_->node_ylow(rt_node_id)].type;
-                    auto target_ptc = rr_graph_->node_ptc_num(target_node_id);
-                    VTR_LOGV_DEBUG(router_debug_,
-                                   "      Not adding RT expansion of node %d"
-                                   " (node is %s[%s] which does not"
-                                   " lead to target block %s[%s])\n",
-                                   rt_node->inode,
-                                   rr_node_typename[rr_graph_->node_type(RRNodeId(rt_node->inode))],
-                                   block_type_pin_index_to_name(type, rt_ptc, is_flat_).c_str(),
-                                   rr_node_typename[rr_graph_->node_type(target_node_id)],
-                                   get_class_block_name(type, target_ptc).c_str());
                 }
             }
 
@@ -1082,7 +1036,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     }
 
     t_bb bounding_box = net_bounding_box;
-    if (nodes_added == 0) { //If the target bin and it's surrounding bins were empty, just add the full route tree
+    if (nodes_added == 0) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
+        router_stats_->add_all_rt_from_high_fanout++;
         add_route_tree_to_heap(rt_root, target_node, cost_params);
     } else {
         //We found nearby routing, replace original bounding box to be localized around that routing

@@ -55,6 +55,10 @@ rt_node_OPIN_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_OPIN_entire_tree
 rt_node_CHANX_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_CHANX_entire_tree_pushes: (\d+) .*
 rt_node_CHANY_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_CHANY_entire_tree_pushes: (\d+) .*
 
+adding_all_rt;vpr.out;Router Stats: .*add_all_rt: (\d+) .*
+adding_high_fanout_rt;vpr.out;Router Stats: .*add_high_fanout_rt: (\d+) .*
+adding_all_rt_from_high_fanout_rt;vpr.out;Router Stats: .*add_all_rt_from_high_fanout: (\d+) .*
+
 #Area Metrics
 logic_block_area_total;vpr.out;\s*Total logic block area .*: (.*)
 logic_block_area_used;vpr.out;\s*Total used logic block area: (.*)

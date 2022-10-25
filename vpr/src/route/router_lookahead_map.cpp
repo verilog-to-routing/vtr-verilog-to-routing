@@ -321,7 +321,6 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                 return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
             }
         } else if (from_rr_type == IPIN) {
-            // Since ّI am pruning irrelevant pins, I should not get into this if statement.
             VTR_ASSERT(node_in_same_physical_tile(current_node, target_node));
             const auto& pin_delays = inter_tile_pin_primitive_pin_delay.at(from_physical_type)[from_node_ptc_num];
             auto pin_delay_itr = pin_delays.find(rr_graph.node_ptc_num(target_node));

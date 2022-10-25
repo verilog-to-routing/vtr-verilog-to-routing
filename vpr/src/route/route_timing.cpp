@@ -867,6 +867,10 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
         VTR_LOG("rt_node_%s_high_fanout_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_high_fanout_pushes[node_type_idx]);
         VTR_LOG("rt_node_%s_entire_tree_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_entire_tree_pushes[node_type_idx]);
     }
+
+    VTR_LOG("total_number_of_adding_all_rt: %zu ", router_stats.add_all_rt);
+    VTR_LOG("total_number_of_adding_high_fanout_rt: %zu ", router_stats.add_high_fanout_rt);
+    VTR_LOG("total_number_of_adding_all_rt_from_calling_high_fanout_rt: %zu ", router_stats.add_all_rt_from_high_fanout);
     VTR_LOG("\n");
 
     return routing_is_successful;
@@ -2260,6 +2264,9 @@ static void update_route_stats(RouterStats& router_stats, RouterStats& router_it
         router_stats.rt_node_high_fanout_pushes[node_type_idx] += router_iteration_stats.rt_node_high_fanout_pushes[node_type_idx];
         router_stats.rt_node_entire_tree_pushes[node_type_idx] += router_iteration_stats.rt_node_entire_tree_pushes[node_type_idx];
     }
+    router_stats.add_all_rt += router_iteration_stats.add_all_rt;
+    router_stats.add_all_rt_from_high_fanout += router_iteration_stats.add_all_rt_from_high_fanout;
+    router_stats.add_high_fanout_rt += router_iteration_stats.add_high_fanout_rt;
 }
 
 static void init_route_stats(RouterStats& router_stats) {
@@ -2280,6 +2287,9 @@ static void init_route_stats(RouterStats& router_stats) {
         router_stats.rt_node_entire_tree_pushes[node_type_idx] = 0;
         router_stats.rt_node_high_fanout_pushes[node_type_idx] = 0;
     }
+    router_stats.add_all_rt = 0;
+    router_stats.add_high_fanout_rt = 0;
+    router_stats.add_all_rt_from_high_fanout = 0;
 }
 
 #ifndef NO_GRAPHICS
