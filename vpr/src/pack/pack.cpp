@@ -246,7 +246,6 @@ bool try_pack(t_packer_opts* packer_opts,
         }
 
         //Reset clustering for re-packing
-        //g_vpr_ctx.mutable_clustering().clb_nlist = ClusteredNetlist();
         for (auto blk : g_vpr_ctx.atom().nlist.blocks()) {
             g_vpr_ctx.mutable_atom().lookup.set_atom_clb(blk, ClusterBlockId::INVALID());
             g_vpr_ctx.mutable_atom().lookup.set_atom_pb(blk, nullptr);
