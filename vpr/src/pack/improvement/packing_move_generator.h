@@ -24,13 +24,19 @@ class packingMoveGenerator {
     bool apply_move(std::vector<molMoveDescription>& new_locs, t_clustering_data& clustering_data);
 };
 
-class randomPackingMove : public packingMoveGenerator {
+class randomPackingSwap : public packingMoveGenerator {
   public:
     bool propose_move(std::vector<molMoveDescription>& new_locs);
     bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
 };
 
-class quasiDirectedPackingMove : public packingMoveGenerator {
+class quasiDirectedPackingSwap : public packingMoveGenerator {
+  public:
+    bool propose_move(std::vector<molMoveDescription>& new_locs);
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
+};
+
+class quasiDirectedSameTypePackingSwap : public  packingMoveGenerator {
   public:
     bool propose_move(std::vector<molMoveDescription>& new_locs);
     bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
