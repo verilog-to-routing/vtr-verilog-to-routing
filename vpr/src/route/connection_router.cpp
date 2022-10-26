@@ -58,8 +58,8 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     t_bb bounding_box) {
     //Re-add route nodes from the existing route tree to the heap.
     //They need to be repushed onto the heap since each node's cost is target specific.
-    router_stats_->add_all_rt++;
-    add_route_tree_to_heap(rt_root, sink_node, cost_params);
+
+    add_route_tree_to_heap(rt_root, sink_node, cost_params, false);
     heap_.build_heap(); // via sifting down everything
 
     int source_node = rt_root->inode;
@@ -113,8 +113,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
 
         //Re-initialize the heap since it was emptied by the previous call to
         //timing_driven_route_connection_from_heap()
-        router_stats_->add_all_rt++;
-        add_route_tree_to_heap(rt_root, sink_node, cost_params);
+        add_route_tree_to_heap(rt_root, sink_node, cost_params, false);
         heap_.build_heap(); // via sifting down everything
 
         //Try finding the path again with the relaxed bounding box
@@ -285,7 +284,7 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
 
     //Add the route tree to the heap with no specific target node
     int target_node = OPEN;
-    add_route_tree_to_heap(rt_root, target_node, cost_params);
+    add_route_tree_to_heap(rt_root, target_node, cost_params, false);
     heap_.build_heap(); // via sifting down everything
 
     auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box);
@@ -850,10 +849,17 @@ template<typename Heap>
 void ConnectionRouter<Heap>::add_route_tree_to_heap(
     t_rt_node* rt_node,
     int target_node,
-    const t_conn_cost_params cost_params) {
+    const t_conn_cost_params cost_params,
+    bool from_high_fanout) {
     /* Puts the entire partial routing below and including rt_node onto the heap *
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
+
+    if(from_high_fanout) {
+        router_stats_->add_all_rt_from_high_fanout++;
+    } else {
+        router_stats_->add_all_rt++;
+    }
 
     t_rt_node* child_node;
     t_linked_rt_edge* linked_rt_edge;
@@ -861,30 +867,32 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node->re_expand) {
-        if (is_flat_) {
-            if (relevant_node_to_target(rr_graph_,
-                                        RRNodeId(rt_node->inode),
-                                        RRNodeId(target_node))) {
-                add_route_tree_node_to_heap(rt_node,
-                                            target_node,
-                                            cost_params,
-                                            false);
-            }
-        } else {
             add_route_tree_node_to_heap(rt_node,
                                         target_node,
                                         cost_params,
                                         false);
-        }
     }
 
     linked_rt_edge = rt_node->u.child_list;
 
     while (linked_rt_edge != nullptr) {
         child_node = linked_rt_edge->child;
-        add_route_tree_to_heap(child_node,
-                               target_node,
-                               cost_params);
+        if(is_flat_) {
+            if(relevant_node_to_target(rr_graph_,
+                                        RRNodeId(child_node->inode),
+                                        RRNodeId(target_node))) {
+                add_route_tree_to_heap(child_node,
+                                       target_node,
+                                       cost_params,
+                                       from_high_fanout);
+            }
+        } else {
+            add_route_tree_to_heap(child_node,
+                                   target_node,
+                                   cost_params,
+                                   from_high_fanout);
+        }
+
         linked_rt_edge = linked_rt_edge->next;
     }
 }
@@ -1055,8 +1063,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
 
     t_bb bounding_box = net_bounding_box;
     if (nodes_added == 0) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
-        router_stats_->add_all_rt_from_high_fanout++;
-        add_route_tree_to_heap(rt_root, target_node, cost_params);
+        add_route_tree_to_heap(rt_root, target_node, cost_params, true);
     } else {
         //We found nearby routing, replace original bounding box to be localized around that routing
         bounding_box = adjust_highfanout_bounding_box(highfanout_bb);
