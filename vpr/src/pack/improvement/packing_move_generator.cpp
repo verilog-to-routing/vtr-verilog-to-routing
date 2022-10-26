@@ -36,7 +36,7 @@ bool packingMoveGenerator::apply_move(std::vector<molMoveDescription>& new_locs,
 
 /****************** Random packing move class *******************/
 /****************************************************************/
-bool randomPackingMove::propose_move(std::vector<molMoveDescription>& new_locs) {
+bool randomPackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     t_pack_molecule *mol_1, *mol_2;
@@ -64,13 +64,13 @@ bool randomPackingMove::propose_move(std::vector<molMoveDescription>& new_locs) 
     return found;
 }
 
-bool randomPackingMove::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+bool randomPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
     return (evaluate_move_based_on_cutsize(new_locs));
 }
 
 /***************** Quasi directed packing move class *******************/
 /***********************************************************************/
-bool quasiDirectedPackingMove::propose_move(std::vector<molMoveDescription>& new_locs) {
+bool quasiDirectedPackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) {
 
     t_pack_molecule *mol_1, *mol_2;
     ClusterBlockId clb_index_1;
@@ -90,6 +90,30 @@ bool quasiDirectedPackingMove::propose_move(std::vector<molMoveDescription>& new
     return found;
 }
 
-bool quasiDirectedPackingMove::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+bool quasiDirectedPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
     return (evaluate_move_based_on_cutsize(new_locs));
+}
+
+bool quasiDirectedSameTypePackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
+    return(evaluate_move_based_on_cutsize(new_locs));
+}
+
+bool quasiDirectedSameTypePackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) {
+
+    t_pack_molecule *mol_1, *mol_2;
+    ClusterBlockId clb_index_1;
+
+    //pick the 1st molecule randomly
+    mol_1 = pick_molecule_randomly();
+    clb_index_1 = atom_to_cluster(mol_1->atom_block_ids[mol_1->root]);
+
+    //pick the 2nd molecule from a cluster that is directly connected to mol_1 cluster
+    mol_2 = nullptr;
+    bool found = pick_molecule_connected_same_type(mol_1, mol_2);
+
+    if(found) {
+        ClusterBlockId clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
+        build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
+    }
+    return found;
 }

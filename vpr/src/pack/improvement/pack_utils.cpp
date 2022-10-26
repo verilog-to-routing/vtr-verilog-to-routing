@@ -43,16 +43,19 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     init_clb_atoms_lookup(helper_ctx.atoms_lookup);
 
-    if(strcmp(packer_opts.pack_move_type.c_str(), "random") == 0 )
-        move_generator = std::make_unique<randomPackingMove>();
-    else if(strcmp(packer_opts.pack_move_type.c_str(), "semiDirected") == 0)
-        move_generator = std::make_unique<quasiDirectedPackingMove>();
+
+    if(strcmp(packer_opts.pack_move_type.c_str(), "randomSwap") == 0 )
+        move_generator = std::make_unique<randomPackingSwap>();
+    else if(strcmp(packer_opts.pack_move_type.c_str(), "semiDirectedSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedPackingSwap>();
+    else if(strcmp(packer_opts.pack_move_type.c_str(), "semiDirectedSameTypeSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameTypePackingSwap>();
     else{
         VTR_LOG("Packing move type (%s) is not correct!\n", packer_opts.pack_move_type.c_str());
         VTR_LOG("Packing iterative improvement is aborted\n");
         return;
     }
-
+    
     bool is_proposed, is_valid, is_successful;
     std::vector<molMoveDescription> new_locs;
 

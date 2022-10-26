@@ -1781,8 +1781,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     pack_grp.add_argument(args.pack_move_type, "--pack_move_type")
         .help(
             "The move type used in packing."
-            "The available values are: random, semiDirected")
-        .default_value("semiDirected")
+            "The available values are: randomSwap, semiDirectedSwap, semiDirectedSameTypeSwap")
+        .default_value("semiDirectedSwap")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_grp = parser.add_argument_group("placement options");
