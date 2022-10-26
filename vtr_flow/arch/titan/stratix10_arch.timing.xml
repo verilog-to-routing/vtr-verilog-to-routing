@@ -1919,14 +1919,17 @@
          Stratix 10 is modelled here to have 3 different segment wire types per horizational/vertical channel.           
        -->
 
-
     <!-- AA: The mux_tran_size and buf_size parameters for switches are kept the same as ones in Startix IV since modelling area in Stratix 10 is of little intrest and difficult.-->
-    <switch type="mux" name="seg2_driver" R="0" Cin="0" Cout="0" Tdel="92.1e-15" mux_trans_size="2.630740" buf_size="27.647901"/>
-    <switch type="mux" name="seg4_driver" R="0" Cin="0" Cout="0" Tdel="139.4e-15" mux_trans_size="2.630740" buf_size="27.647901"/>
-    <switch type="mux" name="seg20_driver" R="0" Cin="0" Cout="0" Tdel="201.8e-15" mux_trans_size="2.630740" buf_size="27.647901"/>
+    <switch type="mux" name="seg_h2_driver" R="0" Cin="0" Cout="0" Tdel="89e-12" mux_trans_size="2.630740" buf_size="27.647901"/>
+    <switch type="mux" name="seg_h4_driver" R="0" Cin="0" Cout="0" Tdel="133e-12" mux_trans_size="2.630740" buf_size="27.647901"/>
+    <switch type="mux" name="seg_h10_driver" R="0" Cin="0" Cout="0" Tdel="203e-12" mux_trans_size="2.630740" buf_size="27.647901"/>
+    <switch type="mux" name="seg_h24_driver" R="0" Cin="0" Cout="0" Tdel="188e-12" mux_trans_size="2.630740" buf_size="27.647901"/>
 
-    <!--<switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer>-->
-    <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="0e0" mux_trans_size="1.222260" buf_size="auto"/>
+    <switch type="mux" name="seg_v2_driver" R="0" Cin="0" Cout="0" Tdel="95e-12" mux_trans_size="2.630740" buf_size="27.647901"/>
+    <switch type="mux" name="seg_v3_driver" R="0" Cin="0" Cout="0" Tdel="194e-12" mux_trans_size="2.630740" buf_size="27.647901"/>
+    <switch type="mux" name="seg_v4_driver" R="0" Cin="0" Cout="0" Tdel="146e-12" mux_trans_size="2.630740" buf_size="27.647901"/>
+    <switch type="mux" name="seg_v16_driver" R="0" Cin="0" Cout="0" Tdel="213e-12" mux_trans_size="2.630740" buf_size="27.647901"/>
+
   </switchlist>
   <segmentlist>
     <!-- AA: July 19, 2021
@@ -2011,31 +2014,52 @@
 
           NOTE: We don't model minimum capacitances for Stratix10. 
     -->
-    <segment name="L2" freq="236" length="2" type="unidir" Rmetal="0" Cmetal="0">
-      <mux name="seg2_driver"/>
+    <segment name="H2" axis="x" freq="40" length="2" type="unidir" Rmetal="0" Cmetal="0">
+      <mux name="seg_h2_driver"/>
       <sb type="pattern">1 1 1</sb>
       <cb type="pattern">1 1</cb>
     </segment>
 
-    <segment name="L4" freq="264" length="4" type="unidir" Rmetal="0" Cmetal="0">
-      <mux name="seg4_driver"/>
-      <!-- L4 connect to connection block L4 and L4prime -->
+    <segment name="H4" axis="x" freq="112" length="4" type="unidir" Rmetal="0" Cmetal="0">
+      <mux name="seg_h4_driver"/>
       <sb type="pattern">1 1 1 1 1</sb>
       <cb type="pattern">1 1 1 1</cb>
     </segment>
-    <segment name="L20" freq="40" length="20" type="unidir" Rmetal="0" Cmetal="0">
-      <mux name="seg20_driver"/>
-      <!-- AA: The connection pattern for Startix 10 is similar [based on extensive experimentation and data from Quartus PrimePro] as Startix IV-->
-      
-      <!-- L20 (C16 and R24) wires connect to L2 and L4 wires. -->
-      <!-- Vias from the top of the metal stack (global layers, where the long wires are 
-           implemented) down to the middle/bottom of the metal stack (semi-global layers, 
-           where the short wires are implemented) are expensive and restrictive.
-           
-           As a result Startix IV only places long wire switch blocks every 4 LABs -->
-      <sb type="pattern">1 0 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1 0 0 0 1</sb>
-      <!-- For the same reasons, long wires do not connect to block pins in Stratix IV -->
-      <cb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</cb>
+
+    <segment name="H10" axis="x" freq="200" length="10" type="unidir" Rmetal="0" Cmetal="0">
+      <mux name="seg_h10_driver"/>
+      <sb type="pattern">1 0 1 0 1 0 1 0 1 0 1</sb>
+      <cb type="pattern">1 1 1 1 1 1 1 1 1 1</cb>
+    </segment>
+
+    <segment name="H24" axis="x" freq="48" length="24" type="unidir" Rmetal="0" Cmetal="0">
+      <mux name="seg_h24_driver"/>
+      <sb type="pattern">1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 1</sb>
+      <cb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</cb>
+    </segment>
+    
+    <segment name="V2" axis="y" freq="24" length="2" type="unidir" Rmetal="0" Cmetal="0">
+      <mux name="seg_v2_driver"/>
+      <sb type="pattern">1 1 1</sb>
+      <cb type="pattern">1 1</cb>
+    </segment>
+
+    <segment name="V3" axis="y" freq="72" length="3" type="unidir" Rmetal="0" Cmetal="0">
+      <mux name="seg_v3_driver"/>
+      <sb type="pattern">1 1 1 1</sb>
+      <cb type="pattern">1 1 1</cb>
+    </segment>
+
+    <segment name="V4" axis="y" freq="64" length="4" type="unidir" Rmetal="0" Cmetal="0">
+      <mux name="seg_v4_driver"/>
+      <sb type="pattern">1 1 1 1 1</sb>
+      <cb type="pattern">1 1 1 1</cb>
+    </segment>
+
+    <segment name="V16" axis="y" freq="32" length="16" type="unidir" Rmetal="0" Cmetal="0">
+      <mux name="seg_v16_driver"/>
+      <sb type="pattern">1 0 0 0 0 0 0 0 1 0 0 0 1 0 0 0 1</sb>
+      <cb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</cb>
     </segment>
   </segmentlist>
   <!-- <directlist> -->
