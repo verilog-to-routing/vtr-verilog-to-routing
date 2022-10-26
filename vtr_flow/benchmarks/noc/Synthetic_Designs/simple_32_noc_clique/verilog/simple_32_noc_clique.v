@@ -1,7 +1,7 @@
 /*
     Top level modules to instantiate an AXI handshake between 32 routers.
-    The first router generates data and pass it through all other routers (star connection),
-    and each router can process data with the traffic processor module.
+    The first router generates data and pass it through all other routers (clique connection),
+    and each router can process data with the traffic processor module and send it to others.
     For now, all of our routers traffic processor's module does the same calculation, 
     but in a more complicated design, we can add different logic to each router's traffic 
     processor module.

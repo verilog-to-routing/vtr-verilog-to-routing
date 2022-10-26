@@ -1,5 +1,5 @@
 /*
-    Top level modules to instantiate an AXI handshake between two routers.
+    Top level modules to instantiate an AXI handshake between 64 routers.
     The design implements the following:
         1) Traffic generator uses a FIR filter to generate data and pass it to master_interface.
         2) Master interface sends data and valid signal that coming from traffic generator to the NoC.
