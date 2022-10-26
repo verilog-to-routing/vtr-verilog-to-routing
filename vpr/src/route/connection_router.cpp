@@ -804,13 +804,10 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     } else {
         const auto& device_ctx = g_vpr_ctx.device();
         //Update total cost
-        float expected_cost = get_cost_from_lookahead(router_lookahead_,
-                                                      *rr_graph_,
-                                                      RRNodeId(to_node),
-                                                      RRNodeId(target_node),
-                                                      to->R_upstream,
-                                                      cost_params,
-                                                      is_flat_);
+        float expected_cost = router_lookahead_.get_expected_cost(RRNodeId(to_node),
+                                                                  RRNodeId(target_node),
+                                                                  cost_params,
+                                                                  to->R_upstream);
         VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
                        "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
                        rr_node_arch_name(to_node, is_flat_).c_str(),
@@ -923,13 +920,10 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
         // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
         float tot_cost = backward_path_cost
                          + cost_params.astar_fac
-                               * get_cost_from_lookahead(router_lookahead_,
-                                                         *rr_graph_,
-                                                         RRNodeId(inode),
-                                                         RRNodeId(target_node),
-                                                         R_upstream,
-                                                         cost_params,
-                                                         is_flat_);
+                               * router_lookahead_.get_expected_cost(RRNodeId(inode),
+                                                                     RRNodeId(target_node),
+                                                                     cost_params,
+                                                                     R_upstream);
         VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n",
                        inode,
                        tot_cost,
