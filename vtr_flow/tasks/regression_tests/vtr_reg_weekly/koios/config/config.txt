@@ -17,6 +17,7 @@ circuit_list_add=clstm_like.small.v
 circuit_list_add=clstm_like.medium.v
 circuit_list_add=clstm_like.large.v
 circuit_list_add=lstm.v
+circuit_list_add=gemm_layer.v
 circuit_list_add=tpu_like.medium.os.v
 circuit_list_add=tpu_like.medium.ws.v
 circuit_list_add=tiny_darknet_like.small.v

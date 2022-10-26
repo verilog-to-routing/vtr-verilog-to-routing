@@ -15,13 +15,15 @@ includes_dir=benchmarks/verilog/koios
 # Add circuits to list to sweep
 circuit_list_add=bwave_like.float.small.v
 circuit_list_add=bwave_like.fixed.large.v
-circuit_list_add=lenet.v
 circuit_list_add=dnnweaver.v
 circuit_list_add=tdarknet_like.small.v
 circuit_list_add=proxy.5.v
 circuit_list_add=proxy.6.v
 circuit_list_add=proxy.7.v
 circuit_list_add=proxy.8.v
+circuit_list_add=deepfreeze.style1.sv
+circuit_list_add=deepfreeze.style2.sv
+circuit_list_add=deepfreeze.style3.sv
 
 # Add architectures to list to sweep
 arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml

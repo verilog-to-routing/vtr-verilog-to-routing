@@ -20,7 +20,6 @@ circuit_list_add=bnn.v
 circuit_list_add=attention_layer.v
 circuit_list_add=conv_layer_hls.v
 circuit_list_add=conv_layer.v
-circuit_list_add=gemm_layer.v
 circuit_list_add=eltwise_layer.v
 circuit_list_add=robot_rl.v
 circuit_list_add=reduction_layer.v
