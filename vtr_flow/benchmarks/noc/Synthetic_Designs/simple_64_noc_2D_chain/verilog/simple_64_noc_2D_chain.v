@@ -1,5 +1,5 @@
 /*
-    Top level modules to instantiate an AXI handshake between eight routers.
+    Top level modules to instantiate an AXI handshake between 64 routers.
     Each routers receives 32-bit data, processes it, pass it to the next routers in a 2D chain.
     For now, all of our routers traffic processor's module does the same calculation, 
     but in a more complicated design, we can add different logic to each router's traffic 
