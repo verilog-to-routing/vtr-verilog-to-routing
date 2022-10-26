@@ -1,5 +1,5 @@
 /*
-    Top level modules to instantiate an AXI handshake between 32 routers.
+    Top level modules to instantiate an AXI handshake between 64 routers.
     The first router generates data and pass it through all other routers (star connection),
     and each router can process data with the traffic processor module.
     For now, all of our routers traffic processor's module does the same calculation, 
