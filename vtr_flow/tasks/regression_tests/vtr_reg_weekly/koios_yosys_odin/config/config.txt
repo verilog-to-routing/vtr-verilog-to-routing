@@ -20,6 +20,9 @@ circuit_list_add=proxy.1.v
 circuit_list_add=bwave_like.float.large.v
 circuit_list_add=proxy.3.v
 circuit_list_add=lenet.v
+circuit_list_add=deepfreeze.style1.sv
+circuit_list_add=deepfreeze.style2.sv
+circuit_list_add=deepfreeze.style3.sv
 
 # Add architectures to list to sweep
 arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
