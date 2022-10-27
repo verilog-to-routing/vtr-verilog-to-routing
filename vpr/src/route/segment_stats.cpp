@@ -22,8 +22,6 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
 
     int length, max_segment_length;
     RRIndexedDataId cost_index;
-    int *seg_occ_by_length, *seg_cap_by_length; /* [0..max_segment_length] */
-    int *seg_occ_by_type, *seg_cap_by_type;     /* [0..num_segment-1]      */
     float utilization;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -41,8 +39,8 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         max_segment_name_length = std::max(max_segment_name_length, static_cast<int>(segment_inf[seg_type].name.size()));
     }
 
-    seg_occ_by_length = new int[max_segment_length + 1];
-    seg_cap_by_length = new int[max_segment_length + 1];
+    std::vector<int> seg_occ_by_length(max_segment_length+1, 0);
+    std::vector<int> seg_cap_by_length(max_segment_length+1, 0);
 
     std::map<e_parallel_axis, std::vector<int>> directed_occ_by_length = {
         {X_AXIS, std::vector<int>(max_segment_length+1, 0)},
@@ -55,18 +53,9 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     };
 
 
-    for (int i = 0; i < max_segment_length + 1; i++) {
-        seg_occ_by_length[i] = 0;
-        seg_cap_by_length[i] = 0;
-    }
+    std::vector<int> seg_occ_by_type(max_segment_length+1, 0);
+    std::vector<int> seg_cap_by_type(max_segment_length+1, 0);
 
-    seg_occ_by_type = new int[segment_inf.size()];
-    seg_cap_by_type = new int[segment_inf.size()];
-
-    for (size_t i = 0; i < segment_inf.size(); i++) {
-        seg_occ_by_type[i] = 0;
-        seg_cap_by_type[i] = 0;
-    }
 
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         size_t inode = (size_t)rr_id;
@@ -96,38 +85,30 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     VTR_LOG("\n");
     VTR_LOG("Total Number of Wiring Segments by Direction: direction length number\n");
     VTR_LOG("                                              --------- ------ -------\n");
-    for (length = 1; length <= max_segment_length; length++) {
+    for (length = 0; length <= max_segment_length; length++) {
         for(auto ax : {X_AXIS, Y_AXIS}) {
             std::string ax_name = (ax==X_AXIS) ? "X" : "Y";
             if (directed_cap_by_length[ax][length] != 0) {
-                VTR_LOG("                                              %s %4d %6d\n", ax_name.c_str(),
-                        length,
+                std::string length_str = (length == LONGLINE) ? "longline" : std::to_string(length);
+                VTR_LOG("                                              %s %s %6d\n", ax_name.c_str(),
+                        length_str.c_str(),
                         directed_cap_by_length[ax][length]);
             }
         }
 
     }
 
-
-    VTR_LOG("\n");
-    VTR_LOG("X - Directed Wiring Segment usage by length: length utilization\n");
-    VTR_LOG("                                             ------ -----------\n");
-
-    for (length = 1; length <= max_segment_length; length++) {
-        if (directed_cap_by_length[X_AXIS][length] != 0) {
-            utilization = (float)directed_occ_by_length[X_AXIS][length] / (float)directed_cap_by_length[X_AXIS][length];
-            VTR_LOG("                                       %6d %11.3g\n", length, utilization);
-        }
-    }
-
-    VTR_LOG("\n");
-    VTR_LOG("Y - Directed Wiring Segment usage by length: length utilization\n");
-    VTR_LOG("                                             ------ -----------\n");
-
-    for (length = 1; length <= max_segment_length; length++) {
-        if (directed_cap_by_length[Y_AXIS][length] != 0) {
-            utilization = (float)directed_occ_by_length[Y_AXIS][length] / (float)directed_cap_by_length[Y_AXIS][length];
-            VTR_LOG("                                             %6d %11.3g\n", length, utilization);
+    for(auto ax : {X_AXIS, Y_AXIS}) {
+        std::string ax_name = (ax==X_AXIS) ? "X" : "Y";
+        VTR_LOG("\n");
+        VTR_LOG("%s - Directed Wiring Segment usage by length: length utilization\n", ax_name.c_str());
+        VTR_LOG("                                             ------ -----------\n");
+        for (length = 0; length <= max_segment_length; length++) {
+            if (directed_cap_by_length[ax][length] != 0) {
+                std::string length_str = (length == LONGLINE) ? "longline" : std::to_string(length);
+                utilization = (float)directed_occ_by_length[ax][length] / (float)directed_cap_by_length[ax][length];
+                VTR_LOG("                                       %s %11.3g\n", length, utilization);
+            }
         }
     }
 
@@ -160,9 +141,4 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         utilization = (float)seg_occ_by_length[LONGLINE] / (float)seg_cap_by_length[LONGLINE];
         VTR_LOG("   longline                 %5.3g\n", utilization);
     }
-
-    delete[](seg_occ_by_length);
-    delete[](seg_cap_by_length);
-    delete[](seg_occ_by_type);
-    delete[](seg_cap_by_type);
 }
