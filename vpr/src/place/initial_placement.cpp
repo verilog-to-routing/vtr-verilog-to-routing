@@ -159,12 +159,10 @@ static std::vector<ClusterBlockId> find_centroid_loc(t_pl_macro pl_macro, t_pl_l
  *
  *   @param centroid_loc Calculated location in try_centroid_placement function for the block.
  *   @param block_type Logical block type of the macro blocks.
- *   @param cx_to x-axis of nearest location in the compressed grid to the centroid location.
- *   @param cy_to y-axis of nearest location in the compressed grid to the centroid location.
  *
  * @return true if the function can find any location near the centroid one, false otherwise.
  */
-static bool find_centroid_neighbor(t_pl_loc centroid_loc, t_logical_block_type_ptr block_type, int& cx_to, int& cy_to);
+static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_ptr block_type);
 
 /**
  * @brief  tries to place a macro at a centroid location of its placed connections.
@@ -272,13 +270,11 @@ static bool is_loc_legal(t_pl_loc loc, PartitionRegion& pr, t_logical_block_type
     for (auto reg : pr.get_partition_region()) {
         if (reg.get_region_rect().contains(vtr::Point<int>(loc.x, loc.y))) {
             //Check if blk_id type and the location physical types match
-            if (grid[loc.x][loc.y].type->index == block_type->index) {
-                //Check if the location has enough capacity left to place blk_id
-                if (place_ctx.grid_blocks[loc.x][loc.y].usage < grid[loc.x][loc.y].type->capacity) {
-                    if (grid[loc.x][loc.y].height_offset == 0 && grid[loc.x][loc.y].width_offset == 0) {
-                        legal = true;
-                        break;
-                    }
+            if (is_tile_compatible(grid[loc.x][loc.y].type, block_type)) {
+                //Check if the location is an anchor position
+                if (grid[loc.x][loc.y].height_offset == 0 && grid[loc.x][loc.y].width_offset == 0) {
+                    legal = true;
+                    break;
                 }
             }
         }
@@ -286,7 +282,7 @@ static bool is_loc_legal(t_pl_loc loc, PartitionRegion& pr, t_logical_block_type
     return legal;
 }
 
-static bool find_centroid_neighbor(t_pl_loc centroid_loc, t_logical_block_type_ptr block_type, int& cx_to, int& cy_to) {
+static bool find_centroid_neighbor(t_pl_loc& centroid_loc, t_logical_block_type_ptr block_type) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
 
     //Determine centroid location in the compressed space of the current block
@@ -315,7 +311,15 @@ static bool find_centroid_neighbor(t_pl_loc centroid_loc, t_logical_block_type_p
     int cx_from = -1;
     int cy_from = -1;
 
+    int cx_to, cy_to;
+
     bool legal = find_compatible_compressed_loc_in_range(block_type, min_cx, max_cx, min_cy, max_cy, delta_cx, cx_from, cy_from, cx_to, cy_to, false);
+
+    if (!legal) {
+        return false;
+    }
+
+    compressed_grid_to_loc(block_type, cx_to, cy_to, centroid_loc);
 
     return legal;
 }
@@ -409,11 +413,13 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
     //centroid suggestion was either occupied or does not match block type
     //try to find a near location that meet these requirements
     if (!is_loc_legal(centroid_loc, pr, block_type)) {
-        find_centroid_neighbor(centroid_loc, block_type, centroid_loc.x, centroid_loc.y);
+        if (!find_centroid_neighbor(centroid_loc, block_type)) { //no neighbor candidate found
+            return false;
+        }
     }
 
     //no neighbor were found that meet all our requirements, should be placed with random placement
-    if (!is_loc_on_chip(centroid_loc.x, centroid_loc.y) || !pr.is_loc_in_part_reg(centroid_loc) || !is_loc_legal(centroid_loc, pr, block_type)) {
+    if (!is_loc_on_chip(centroid_loc.x, centroid_loc.y) || !pr.is_loc_in_part_reg(centroid_loc)) {
         return false;
     }
 
