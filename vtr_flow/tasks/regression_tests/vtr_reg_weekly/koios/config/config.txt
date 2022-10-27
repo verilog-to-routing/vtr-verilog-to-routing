@@ -18,11 +18,12 @@ circuit_list_add=clstm_like.medium.v
 circuit_list_add=clstm_like.large.v
 circuit_list_add=lstm.v
 circuit_list_add=gemm_layer.v
-circuit_list_add=tpu_like.medium.os.v
-circuit_list_add=tpu_like.medium.ws.v
-circuit_list_add=tiny_darknet_like.small.v
-circuit_list_add=tiny_darknet_like.medium.v
+circuit_list_add=tpu_like.large.os.v
+circuit_list_add=tpu_like.large.ws.v
+circuit_list_add=tdarknet_like.small.v
+circuit_list_add=tdarknet_like.large.v
 circuit_list_add=dla_like.medium.v
+circuit_list_add=dla_like.large.v
 
 # Add architectures to list to sweep
 arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
