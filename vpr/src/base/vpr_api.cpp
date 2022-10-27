@@ -394,7 +394,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     { //Analysis
         vpr_analysis_flow(vpr_setup, arch, route_status, is_flat);
     }
-    
+
     //close the graphics
     vpr_close_graphics(vpr_setup);
 

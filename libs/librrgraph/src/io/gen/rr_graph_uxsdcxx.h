@@ -2073,8 +2073,10 @@ inline enum_loc_side lex_enum_loc_side(const char *in, bool throw_on_invalid, co
 inline int load_int(const char *in, const std::function<void(const char *)> * report_error){
 	int out;
 	out = std::strtol(in, NULL, 10);
-	if(errno != 0)
+	if(errno != 0) {
+		std::printf("errno:%d\n\n\n", errno);
 		noreturn_report(report_error, ("Invalid value `" + std::string(in) + "` when loading into a int.").c_str());
+	}
 	return out;
 }
 
