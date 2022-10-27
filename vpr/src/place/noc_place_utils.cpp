@@ -10,6 +10,10 @@ static vtr::vector<NocTrafficFlowId, double> traffic_flow_aggregate_bandwidth_co
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
 /*********************************************************** *****************************/
 
+/*********** NoC Placement Stats ***********/
+static NocPlaceStats noc_place_stats;
+/*******************************************/
+
 void initial_noc_placement(void) {
     // need to get placement information about where the router cluster blocks are palced on the device
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -437,6 +441,50 @@ void free_noc_placement_structs(void) {
     vtr::release_memory(traffic_flow_latency_cost);
     vtr::release_memory(proposed_traffic_flow_latency_cost);
     vtr::release_memory(affected_traffic_flows);
+
+    return;
+}
+
+/* Below are functions related to modifying and printing the NoC placement
+statistical data */
+void initialize_noc_placement_stats(const t_placer_opts& placer_opts){
+
+    // initially there are not router blocks moved
+    noc_place_stats.number_of_noc_router_moves = 0;
+
+    // allocate the space to keep track of how many of each move type caused a router block to move
+    noc_place_stats.number_of_noc_router_moves_per_move_type.resize(placer_opts.place_static_move_prob.size() + 1, 0);
+
+    return;
+
+}
+
+void update_noc_placement_stats(int move_type){
+
+    noc_place_stats.number_of_noc_router_moves++;
+    noc_place_stats.number_of_noc_router_moves_per_move_type[move_type]++;
+
+    return;
+}
+
+void print_noc_placement_stats(void){
+
+    float moves;
+    std::string move_name;
+
+    VTR_LOG("\n\nTotal number of NoC router block moves: %d\n", noc_place_stats.number_of_noc_router_moves);
+    VTR_LOG("\nPercentage of different move types that cause NoC router block moves:\n");
+
+    for (size_t i = 0; i < noc_place_stats.number_of_noc_router_moves_per_move_type.size(); i++) {
+        moves = noc_place_stats.number_of_noc_router_moves_per_move_type[i];
+        if (moves != 0) {
+            move_name = move_type_to_string(e_move_type(i));
+            VTR_LOG(
+                "\t%.17s move: %2.2f %%\n",
+                move_name.c_str(), 100 * moves / noc_place_stats.number_of_noc_router_moves);
+        }
+    }
+    VTR_LOG("\n");
 
     return;
 }

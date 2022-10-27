@@ -740,6 +740,11 @@ void try_place(const t_placer_opts& placer_opts,
     move_type_stat.aborted_moves.resize(
         placer_opts.place_static_move_prob.size() + 1, 0);
 
+    // if the noc option was turned on then setup the noc placement stats datastructure
+    if (noc_opts.noc){
+        initialize_noc_placement_stats(placer_opts);
+    }
+
     /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1,
                             device_ctx.grid.height() - 1);
@@ -1007,6 +1012,9 @@ void try_place(const t_placer_opts& placer_opts,
     print_placement_swaps_stats(state);
 
     print_placement_move_types_stats(move_type_stat);
+    if (noc_opts.noc){
+        print_noc_placement_stats();
+    }
 
     free_placement_structs(placer_opts, noc_opts);
     free_try_swap_arrays();
@@ -1571,6 +1579,9 @@ static e_move_result try_swap(const t_annealing_state* state,
 
                 costs->noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
                 costs->noc_latency_cost += noc_latency_delta_c;
+
+                // since a noc router block was moved, update the NoC related stats
+                update_noc_placement_stats((int)move_type);
             }
 
             ++move_type_stat.accepted_moves[(int)move_type];
