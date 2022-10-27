@@ -425,7 +425,7 @@ int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, 
     return num_tiles;
 }
 
-int get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
+double get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     int num_pr_tiles = get_part_reg_size(pr, block_type, grid_tiles);
@@ -441,5 +441,5 @@ int get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_bl
 
     int total_type_tiles = grid_tiles.total_type_tiles(block_type);
 
-    return total_type_tiles - num_pr_tiles;
+    return (double)(total_type_tiles - num_pr_tiles)/total_type_tiles;
 }

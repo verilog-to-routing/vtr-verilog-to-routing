@@ -30,6 +30,9 @@ constexpr int INVALID_X = -1;
 // The amount of weight that will added to previous unplaced block scores to ensure that failed blocks would be placed earlier next iteration
 #define SORT_WEIGHT_PER_FAILED_BLOCK 10
 
+// The amount of weight that will added to each tile which is outside of the floorplanning constraints
+#define SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR 100
+
 /* The maximum number of tries when trying to place a macro at a    *
  * random location before trying exhaustive placement - find the first     *
  * legal position and place it during initial placement.                  */
@@ -822,7 +825,7 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
         if (is_cluster_constrained(blk_id)) {
             PartitionRegion pr = floorplan_ctx.cluster_constraints[blk_id];
             auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-            int floorplan_score = get_floorplan_score(blk_id, pr, block_type, grid_tiles);
+            double floorplan_score = get_floorplan_score(blk_id, pr, block_type, grid_tiles);
             block_scores[blk_id].tiles_outside_of_floorplan_constraints = floorplan_score;
         }
     }
@@ -849,8 +852,8 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
     std::unordered_set<int> unplaced_blk_type_in_curr_itr;
 
     auto criteria = [&block_scores, &cluster_ctx](const ClusterBlockId& lhs, const ClusterBlockId& rhs) {
-        int lhs_score = 10 * block_scores[lhs].macro_size + block_scores[lhs].number_of_placed_connections + block_scores[lhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[lhs].failed_to_place_in_prev_attempts;
-        int rhs_score = 10 * block_scores[rhs].macro_size + block_scores[rhs].number_of_placed_connections + block_scores[rhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[rhs].failed_to_place_in_prev_attempts;
+        int lhs_score = block_scores[lhs].macro_size + block_scores[lhs].number_of_placed_connections + SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR * block_scores[lhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[lhs].failed_to_place_in_prev_attempts;
+        int rhs_score = block_scores[rhs].macro_size + block_scores[rhs].number_of_placed_connections + SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR * block_scores[rhs].tiles_outside_of_floorplan_constraints + SORT_WEIGHT_PER_FAILED_BLOCK * block_scores[rhs].failed_to_place_in_prev_attempts;
 
         return lhs_score < rhs_score;
     };
@@ -889,7 +892,7 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
 
             auto blk_id_type = cluster_ctx.clb_nlist.block_type(blk_id);
             blocks_placed_since_heap_update++;
-
+            
             bool block_placed = place_one_block(blk_id, pad_loc_type, &blk_types_empty_locs_in_grid[blk_id_type->index], &block_scores);
 
             //update heap based on update_heap_freq calculated above

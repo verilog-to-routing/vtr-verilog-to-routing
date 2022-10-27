@@ -12,7 +12,7 @@ struct t_block_score {
     int macro_size = 0; //How many members does the macro have, if the block is part of one - this value is zero if the block is not in a macro
 
     //The number of tiles NOT covered by the block's floorplan constraints.
-    int tiles_outside_of_floorplan_constraints = 0;
+    double tiles_outside_of_floorplan_constraints = 0;
 
     //The number of initial placement iterations that the block was unplaced.
     int failed_to_place_in_prev_attempts;
