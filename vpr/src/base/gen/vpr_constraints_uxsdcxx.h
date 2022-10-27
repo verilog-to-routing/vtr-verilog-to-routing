@@ -436,6 +436,7 @@ inline int load_int(const char* in, const std::function<void(const char*)>* repo
     return out;
 }
 inline void load_add_region_required_attributes(const pugi::xml_node& root, int* x_high, int* x_low, int* y_high, int* y_low, const std::function<void(const char*)>* report_error) {
+    std::printf("load_add_region_required_attributes errno: %d\n", errno);
     std::bitset<5> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_add_region in = lex_attr_t_add_region(attr.name(), report_error);
@@ -503,6 +504,7 @@ inline void load_add_region(const pugi::xml_node& root, T& out, Context& context
         atok_t_add_region in = lex_attr_t_add_region(attr.name(), report_error);
         switch (in) {
             case atok_t_add_region::SUBTILE:
+                std::printf("out.set_add_region_subtile errno: %d\n", errno);
                 out.set_add_region_subtile(load_int(attr.value(), report_error), context);
                 break;
             case atok_t_add_region::X_HIGH:
@@ -534,6 +536,7 @@ constexpr int gstate_t_partition[NUM_T_PARTITION_STATES][NUM_T_PARTITION_INPUTS]
 };
 template<class T, typename Context>
 inline void load_partition(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    std::printf("load_partition errno: %d\n", errno);
     (void)root;
     (void)out;
     (void)context;
@@ -622,6 +625,7 @@ constexpr int gstate_t_partition_list[NUM_T_PARTITION_LIST_STATES][NUM_T_PARTITI
 };
 template<class T, typename Context>
 inline void load_partition_list(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    std::printf("load_partition_list errno: %d\n", errno);
     (void)root;
     (void)out;
     (void)context;
@@ -677,6 +681,7 @@ inline void load_partition_list(const pugi::xml_node& root, T& out, Context& con
 
 template<class T, typename Context>
 inline void load_vpr_constraints(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    std::printf("load_vpr_constraints errno: %d\n", errno);
     (void)root;
     (void)out;
     (void)context;
