@@ -325,7 +325,6 @@ struct ClusteringHelperContext : public Context {
 
     // the utilization of external input/output pins during packing (between 0 and 1)
     t_ext_pin_util_targets target_external_pin_util;
-
 };
 
 /**
