@@ -107,7 +107,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
             if (directed_cap_by_length[ax][length] != 0) {
                 std::string length_str = (length == LONGLINE) ? "longline" : std::to_string(length);
                 utilization = (float)directed_occ_by_length[ax][length] / (float)directed_cap_by_length[ax][length];
-                VTR_LOG("                                       %s %11.3g\n", length, utilization);
+                VTR_LOG("                                       %s %11.3g\n", length_str.c_str(), utilization);
             }
         }
     }
