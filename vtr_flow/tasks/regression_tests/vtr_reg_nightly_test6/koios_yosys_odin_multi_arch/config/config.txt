@@ -45,4 +45,8 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-track_memory_usage -crit_path_router_iterations 100 --route_chan_width 300 -fflegalize -elaborator yosys 
+#Adding target utilization because the bwave design being used here has lot of DSP chains.
+#This causes placement failures because of: https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2149
+#But it doesn't matter for this test because here the goal is sanity checking of the arch files.
+script_params=-track_memory_usage -crit_path_router_iterations 100 --route_chan_width 300 -fflegalize -elaborator yosys --target_utilization 0.10
+

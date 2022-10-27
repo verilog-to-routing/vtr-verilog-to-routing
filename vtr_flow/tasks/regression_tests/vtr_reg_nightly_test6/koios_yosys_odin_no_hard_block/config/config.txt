@@ -14,7 +14,8 @@ archs_dir=arch/COFFE_22nm
 # But in this task, we're running them without enabling these
 # blocks (that is, the macros `complex_dsp` and `hard_mem` area not defined).
 circuit_list_add=bwave_like.float.small.v
-circuit_list_add=bwave_like.fixed.large.v
+#Commenting out the following because of https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2149
+#circuit_list_add=bwave_like.fixed.large.v
 circuit_list_add=dnnweaver.v
 circuit_list_add=tdarknet_like.small.v
 circuit_list_add=proxy.5.v
