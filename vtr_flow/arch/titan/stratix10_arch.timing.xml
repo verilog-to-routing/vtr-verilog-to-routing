@@ -2062,9 +2062,10 @@
       <cb type="pattern">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</cb>
     </segment>
   </segmentlist>
-  <!-- <directlist> -->
-      <!-- <direct name="LAB_feedback" from_pin="LAB.data_out" to_pin="LAB.data_in" x_offset="0" y_offset="0" z_offset="0"/> -->
-  <!-- </directlist> -->
+  <directlist>
+    <!--Carry chain propogates downward between LAB blocks-->
+    <direct name="LAB_carry_chain" from_pin="LAB.cout" to_pin="LAB.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+  </directlist>
   <complexblocklist>
 
     <pb_type name="PLL">
@@ -2480,14 +2481,6 @@
             <pack_pattern name="LAB_carry_chain" in_port="alm[8].cout" out_port="alm[9].cin"/>
           </direct>
           <direct input="alm[9].cout" name="LAB_cout" output="LAB.cout">
-            <!--
-                 - There is extra delay to enter and exit the LAB carry chain.  In Quartus II
-                 - this delay is accounted for only on the output side.
-                 - 
-                 - From Quaruts II the maximum delay was found to be roughly 124ps and the
-                 - minimum delay is roughly 107 ps
-                 -->
-            <delay_constant max="124e-12" min="107e-12" in_port="alm[9].cout" out_port="LAB.cout"/>
             <pack_pattern name="LAB_carry_chain" in_port="alm[9].cout" out_port="LAB.cout"/>
           </direct>
 
