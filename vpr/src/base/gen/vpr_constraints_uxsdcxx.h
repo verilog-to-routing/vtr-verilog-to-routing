@@ -543,17 +543,21 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
     (void)report_error;
     // Update current file offset in case an error is encountered.
     *offset_debug = root.offset_debug();
-
+    std::printf("load_partition 546 errno: %d\n", errno);
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
+        std::printf("load_partition 548 errno: %d\n", errno);
         atok_t_partition in = lex_attr_t_partition(attr.name(), report_error);
+        std::printf("load_partition 550 errno: %d\n", errno);
         switch (in) {
             case atok_t_partition::NAME:
                 out.set_partition_name(attr.value(), context);
+                std::printf("load_partition 554 errno: %d\n", errno);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
+    std::printf("load_partition 560 errno: %d\n", errno);
 
     // Preallocate arrays by counting child nodes (if any)
     size_t add_atom_count = 0;
@@ -561,11 +565,17 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
     {
         int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            std::printf("load_partition 568 errno: %d\n", errno);
             *offset_debug = node.offset_debug();
+            std::printf("load_partition 570 errno: %d\n", errno);
             gtok_t_partition in = lex_node_t_partition(node.name(), report_error);
+            std::printf("load_partition 572 errno: %d\n", errno);
             next = gstate_t_partition[state][(int)in];
-            if (next == -1)
+            std::printf("load_partition 574 errno: %d\n", errno);
+            if (next == -1) {
                 dfa_error(gtok_lookup_t_partition[(int)in], gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
+                std::printf("load_partition 577 errno: %d\n", errno);
+            }
             state = next;
             switch (in) {
                 case gtok_t_partition::ADD_ATOM:
@@ -578,43 +588,68 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
                     break; /* Not possible. */
             }
         }
+        std::printf("load_partition 591 errno: %d\n", errno);
 
         out.preallocate_partition_add_atom(context, add_atom_count);
+        std::printf("load_partition 594 errno: %d\n", errno);
         out.preallocate_partition_add_region(context, add_region_count);
+        std::printf("load_partition 596 errno: %d\n", errno);
     }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+        std::printf("load_partition 600 errno: %d\n", errno);
         *offset_debug = node.offset_debug();
+        std::printf("load_partition 602 errno: %d\n", errno);
         gtok_t_partition in = lex_node_t_partition(node.name(), report_error);
+        std::printf("load_partition 604 errno: %d\n", errno);
         next = gstate_t_partition[state][(int)in];
-        if (next == -1)
+        if (next == -1) {
             dfa_error(gtok_lookup_t_partition[(int)in], gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
+            std::printf("load_partition 608 errno: %d\n", errno);
+        }
         state = next;
         switch (in) {
             case gtok_t_partition::ADD_ATOM: {
+                std::printf("load_partition 613 errno: %d\n", errno);
                 auto child_context = out.add_partition_add_atom(context);
+                std::printf("load_partition 615 errno: %d\n", errno);
                 load_add_atom(node, out, child_context, report_error, offset_debug);
+                std::printf("load_partition 617 errno: %d\n", errno);
                 out.finish_partition_add_atom(child_context);
+                std::printf("load_partition 619 errno: %d\n", errno);
             } break;
             case gtok_t_partition::ADD_REGION: {
                 int add_region_x_high;
+                std::printf("load_partition 623 errno: %d\n", errno);
                 memset(&add_region_x_high, 0, sizeof(add_region_x_high));
+                std::printf("load_partition 625 errno: %d\n", errno);
                 int add_region_x_low;
                 memset(&add_region_x_low, 0, sizeof(add_region_x_low));
+                std::printf("load_partition 628 errno: %d\n", errno);
                 int add_region_y_high;
                 memset(&add_region_y_high, 0, sizeof(add_region_y_high));
+                std::printf("load_partition 631 errno: %d\n", errno);
                 int add_region_y_low;
                 memset(&add_region_y_low, 0, sizeof(add_region_y_low));
+                std::printf("load_partition 634 errno: %d\n", errno);
                 load_add_region_required_attributes(node, &add_region_x_high, &add_region_x_low, &add_region_y_high, &add_region_y_low, report_error);
+                std::printf("load_partition 636 errno: %d\n", errno);
                 auto child_context = out.add_partition_add_region(context, add_region_x_high, add_region_x_low, add_region_y_high, add_region_y_low);
+                std::printf("load_partition 638 errno: %d\n", errno);
                 load_add_region(node, out, child_context, report_error, offset_debug);
+                std::printf("load_partition 640 errno: %d\n", errno);
                 out.finish_partition_add_region(child_context);
+                std::printf("load_partition 642 errno: %d\n", errno);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
+    std::printf("load_partition 648 errno: %d\n", errno);
+    if (state != 0) {
+        dfa_error("end of input", gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
+        std::printf("load_partition 651 errno: %d\n", errno);
+    }
 }
 
 constexpr int NUM_T_PARTITION_LIST_STATES = 2;
