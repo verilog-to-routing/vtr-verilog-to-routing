@@ -148,14 +148,14 @@ enum class atok_t_vpr_constraints { TOOL_NAME };
 constexpr const char* atok_lookup_t_vpr_constraints[] = {"tool_name"};
 
 /* Internal lexers. These convert the PugiXML node names to input tokens. */
-inline atok_t_add_atom lex_attr_t_add_atom(const char* in, const std::function<void(const char*)>* report_error) {std::printf("lex_attr_t_add_atom 151 errno: %d\n", errno);
-    unsigned int len = strlen(in);std::printf("lex_attr_t_add_atom 152 errno: %d\n", errno);
+inline atok_t_add_atom lex_attr_t_add_atom(const char* in, const std::function<void(const char*)>* report_error) {
+    unsigned int len = strlen(in);
     switch (len) {
         case 12:
             switch (*((triehash_uu64*)&in[0])) {
-                case onechar('n', 0, 64) | onechar('a', 8, 64) | onechar('m', 16, 64) | onechar('e', 24, 64) | onechar('_', 32, 64) | onechar('p', 40, 64) | onechar('a', 48, 64) | onechar('t', 56, 64):std::printf("lex_attr_t_add_atom 156 errno: %d\n", errno);
-                    switch (*((triehash_uu32*)&in[8])) {std::printf("lex_attr_t_add_atom 157 errno: %d\n", errno);
-                        case onechar('t', 0, 32) | onechar('e', 8, 32) | onechar('r', 16, 32) | onechar('n', 24, 32):std::printf("lex_attr_t_add_atom 158 errno: %d\n", errno);
+                case onechar('n', 0, 64) | onechar('a', 8, 64) | onechar('m', 16, 64) | onechar('e', 24, 64) | onechar('_', 32, 64) | onechar('p', 40, 64) | onechar('a', 48, 64) | onechar('t', 56, 64):
+                    switch (*((triehash_uu32*)&in[8])) {
+                        case onechar('t', 0, 32) | onechar('e', 8, 32) | onechar('r', 16, 32) | onechar('n', 24, 32):
                             return atok_t_add_atom::NAME_PATTERN;
                             break;
                         default:
@@ -168,8 +168,8 @@ inline atok_t_add_atom lex_attr_t_add_atom(const char* in, const std::function<v
             break;
         default:
             break;
-    }std::printf("lex_attr_t_add_atom 171 errno: %d\n", errno);
-    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <add_atom>.").c_str());std::printf("lex_attr_t_add_atom 172 errno: %d\n", errno);
+    }
+    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <add_atom>.").c_str());
 }
 
 inline atok_t_add_region lex_attr_t_add_region(const char* in, const std::function<void(const char*)>* report_error) {
@@ -427,17 +427,13 @@ template<std::size_t N>
 /* Internal loading functions, which validate and load a PugiXML DOM tree into memory. */
 inline int load_int(const char* in, const std::function<void(const char*)>* report_error) {
     int out;
-    std::printf("before reading int errno:%d\n", errno);
     errno = 0;
     out = std::strtol(in, NULL, 10);
-    if (errno != 0) {
-        std::printf("after reading int errno:%d\n", errno);
+    if (errno != 0)
         noreturn_report(report_error, ("Invalid value `" + std::string(in) + "` when loading into a int.").c_str());
-    }
     return out;
 }
 inline void load_add_region_required_attributes(const pugi::xml_node& root, int* x_high, int* x_low, int* y_high, int* y_low, const std::function<void(const char*)>* report_error) {
-    std::printf("load_add_region_required_attributes errno: %d\n", errno);
     std::bitset<5> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_add_region in = lex_attr_t_add_region(attr.name(), report_error);
@@ -473,23 +469,23 @@ inline void load_add_atom(const pugi::xml_node& root, T& out, Context& context, 
     (void)root;
     (void)out;
     (void)context;
-    (void)report_error;std::printf("load_add_atom 475 errno: %d\n", errno);
+    (void)report_error;
     // Update current file offset in case an error is encountered.
-    *offset_debug = root.offset_debug();std::printf("load_add_atom 477 errno: %d\n", errno);
+    *offset_debug = root.offset_debug();
 
-    for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {std::printf("load_add_atom 479 errno: %d\n", errno);
-        atok_t_add_atom in = lex_attr_t_add_atom(attr.name(), report_error);std::printf("load_add_atom 480 errno: %d\n", errno);
+    for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
+        atok_t_add_atom in = lex_attr_t_add_atom(attr.name(), report_error);
         switch (in) {
-            case atok_t_add_atom::NAME_PATTERN:std::printf("load_add_atom 482 errno: %d\n", errno);
-                out.set_add_atom_name_pattern(attr.value(), context);std::printf("load_add_atom 483 errno: %d\n", errno);
+            case atok_t_add_atom::NAME_PATTERN:
+                out.set_add_atom_name_pattern(attr.value(), context);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
 
-    if (root.first_child().type() == pugi::node_element) {std::printf("load_add_atom 490 errno: %d\n", errno);
-        noreturn_report(report_error, "Unexpected child element in <add_atom>.");std::printf("load_add_atom 491 errno: %d\n", errno);}
+    if (root.first_child().type() == pugi::node_element)
+        noreturn_report(report_error, "Unexpected child element in <add_atom>.");
 }
 
 template<class T, typename Context>
@@ -505,7 +501,6 @@ inline void load_add_region(const pugi::xml_node& root, T& out, Context& context
         atok_t_add_region in = lex_attr_t_add_region(attr.name(), report_error);
         switch (in) {
             case atok_t_add_region::SUBTILE:
-                std::printf("out.set_add_region_subtile errno: %d\n", errno);
                 out.set_add_region_subtile(load_int(attr.value(), report_error), context);
                 break;
             case atok_t_add_region::X_HIGH:
@@ -537,28 +532,23 @@ constexpr int gstate_t_partition[NUM_T_PARTITION_STATES][NUM_T_PARTITION_INPUTS]
 };
 template<class T, typename Context>
 inline void load_partition(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
-    std::printf("load_partition errno: %d\n", errno);
     (void)root;
     (void)out;
     (void)context;
     (void)report_error;
     // Update current file offset in case an error is encountered.
     *offset_debug = root.offset_debug();
-    std::printf("load_partition 546 errno: %d\n", errno);
+
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        std::printf("load_partition 548 errno: %d\n", errno);
         atok_t_partition in = lex_attr_t_partition(attr.name(), report_error);
-        std::printf("load_partition 550 errno: %d\n", errno);
         switch (in) {
             case atok_t_partition::NAME:
                 out.set_partition_name(attr.value(), context);
-                std::printf("load_partition 554 errno: %d\n", errno);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
-    std::printf("load_partition 560 errno: %d\n", errno);
 
     // Preallocate arrays by counting child nodes (if any)
     size_t add_atom_count = 0;
@@ -566,17 +556,11 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
     {
         int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-            std::printf("load_partition 568 errno: %d\n", errno);
             *offset_debug = node.offset_debug();
-            std::printf("load_partition 570 errno: %d\n", errno);
             gtok_t_partition in = lex_node_t_partition(node.name(), report_error);
-            std::printf("load_partition 572 errno: %d\n", errno);
             next = gstate_t_partition[state][(int)in];
-            std::printf("load_partition 574 errno: %d\n", errno);
-            if (next == -1) {
+            if (next == -1)
                 dfa_error(gtok_lookup_t_partition[(int)in], gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
-                std::printf("load_partition 577 errno: %d\n", errno);
-            }
             state = next;
             switch (in) {
                 case gtok_t_partition::ADD_ATOM:
@@ -589,68 +573,43 @@ inline void load_partition(const pugi::xml_node& root, T& out, Context& context,
                     break; /* Not possible. */
             }
         }
-        std::printf("load_partition 591 errno: %d\n", errno);
 
         out.preallocate_partition_add_atom(context, add_atom_count);
-        std::printf("load_partition 594 errno: %d\n", errno);
         out.preallocate_partition_add_region(context, add_region_count);
-        std::printf("load_partition 596 errno: %d\n", errno);
     }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        std::printf("load_partition 600 errno: %d\n", errno);
         *offset_debug = node.offset_debug();
-        std::printf("load_partition 602 errno: %d\n", errno);
         gtok_t_partition in = lex_node_t_partition(node.name(), report_error);
-        std::printf("load_partition 604 errno: %d\n", errno);
         next = gstate_t_partition[state][(int)in];
-        if (next == -1) {
+        if (next == -1)
             dfa_error(gtok_lookup_t_partition[(int)in], gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
-            std::printf("load_partition 608 errno: %d\n", errno);
-        }
         state = next;
         switch (in) {
             case gtok_t_partition::ADD_ATOM: {
-                std::printf("load_partition 613 errno: %d\n", errno);
                 auto child_context = out.add_partition_add_atom(context);
-                std::printf("load_partition 615 errno: %d\n", errno);
                 load_add_atom(node, out, child_context, report_error, offset_debug);
-                std::printf("load_partition 617 errno: %d\n", errno);
                 out.finish_partition_add_atom(child_context);
-                std::printf("load_partition 619 errno: %d\n", errno);
             } break;
             case gtok_t_partition::ADD_REGION: {
                 int add_region_x_high;
-                std::printf("load_partition 623 errno: %d\n", errno);
                 memset(&add_region_x_high, 0, sizeof(add_region_x_high));
-                std::printf("load_partition 625 errno: %d\n", errno);
                 int add_region_x_low;
                 memset(&add_region_x_low, 0, sizeof(add_region_x_low));
-                std::printf("load_partition 628 errno: %d\n", errno);
                 int add_region_y_high;
                 memset(&add_region_y_high, 0, sizeof(add_region_y_high));
-                std::printf("load_partition 631 errno: %d\n", errno);
                 int add_region_y_low;
                 memset(&add_region_y_low, 0, sizeof(add_region_y_low));
-                std::printf("load_partition 634 errno: %d\n", errno);
                 load_add_region_required_attributes(node, &add_region_x_high, &add_region_x_low, &add_region_y_high, &add_region_y_low, report_error);
-                std::printf("load_partition 636 errno: %d\n", errno);
                 auto child_context = out.add_partition_add_region(context, add_region_x_high, add_region_x_low, add_region_y_high, add_region_y_low);
-                std::printf("load_partition 638 errno: %d\n", errno);
                 load_add_region(node, out, child_context, report_error, offset_debug);
-                std::printf("load_partition 640 errno: %d\n", errno);
                 out.finish_partition_add_region(child_context);
-                std::printf("load_partition 642 errno: %d\n", errno);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    std::printf("load_partition 648 errno: %d\n", errno);
-    if (state != 0) {
-        dfa_error("end of input", gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
-        std::printf("load_partition 651 errno: %d\n", errno);
-    }
+    if (state != 0) dfa_error("end of input", gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
 }
 
 constexpr int NUM_T_PARTITION_LIST_STATES = 2;
@@ -661,7 +620,6 @@ constexpr int gstate_t_partition_list[NUM_T_PARTITION_LIST_STATES][NUM_T_PARTITI
 };
 template<class T, typename Context>
 inline void load_partition_list(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
-    std::printf("load_partition_list errno: %d\n", errno);
     (void)root;
     (void)out;
     (void)context;
@@ -717,7 +675,6 @@ inline void load_partition_list(const pugi::xml_node& root, T& out, Context& con
 
 template<class T, typename Context>
 inline void load_vpr_constraints(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
-    std::printf("load_vpr_constraints errno: %d\n", errno);
     (void)root;
     (void)out;
     (void)context;
