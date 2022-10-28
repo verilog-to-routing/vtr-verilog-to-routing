@@ -441,5 +441,5 @@ double get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical
 
     int total_type_tiles = grid_tiles.total_type_tiles(block_type);
 
-    return (double)(total_type_tiles - num_pr_tiles)/total_type_tiles;
+    return (double)(total_type_tiles - num_pr_tiles) / total_type_tiles;
 }

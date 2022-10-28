@@ -136,7 +136,7 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
 static inline void fix_IO_block_types(t_pl_macro pl_macro, t_pl_loc loc, enum e_pad_loc_type pad_loc_type);
 
 /**
- * @brief  Determine whether a specific macro can be placed in a specific location.
+ * @brief  Determine whether a specific macro can be placed in a specific location and choose the location's subtile if the location is legal.
  *  
  *   @param loc The location at which the macro head member is placed.
  *   @param pr The PartitionRegion of the macro head member - represents its floorplanning constraints, is the size of the whole chip if the macro is not
@@ -145,7 +145,7 @@ static inline void fix_IO_block_types(t_pl_macro pl_macro, t_pl_loc loc, enum e_
  * 
  * @return True if the location is legal for the macro head member, false otherwise.
  */
-static bool is_loc_legal(t_pl_loc loc, PartitionRegion& pr, t_logical_block_type_ptr block_type);
+static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_type_ptr block_type);
 
 /**
  * @brief Calculates a centroid location for a block based on its placed connections.
@@ -264,24 +264,31 @@ static bool is_block_placed(ClusterBlockId blk_id) {
     return (!(place_ctx.block_locs[blk_id].loc.x == INVALID_X));
 }
 
-static bool is_loc_legal(t_pl_loc loc, PartitionRegion& pr, t_logical_block_type_ptr block_type) {
+static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_type_ptr block_type) {
     const auto& grid = g_vpr_ctx.device().grid;
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
     bool legal = false;
 
     //Check if the location is within its constraint region
     for (auto reg : pr.get_partition_region()) {
         if (reg.get_region_rect().contains(vtr::Point<int>(loc.x, loc.y))) {
-            //Check if blk_id type and the location physical types match
-            if (is_tile_compatible(grid[loc.x][loc.y].type, block_type)) {
-                //Check if the location is an anchor position
-                if (grid[loc.x][loc.y].height_offset == 0 && grid[loc.x][loc.y].width_offset == 0) {
-                    legal = true;
-                    break;
-                }
+            //Check if the location is an anchor position
+            if (grid[loc.x][loc.y].height_offset == 0 && grid[loc.x][loc.y].width_offset == 0) {
+                legal = true;
+                break;
             }
         }
     }
+
+    if (legal) { // location (x,y) is legal for the block type, a compatible subtile should be choosen to place the block
+        legal = false;
+        for (auto subtile = 0; subtile < grid[loc.x][loc.y].type->capacity; subtile++) {
+            if (is_sub_tile_compatible(grid[loc.x][loc.y].type, block_type, loc.sub_tile)) {
+                loc.sub_tile = subtile;
+                legal = true;
+            }
+        }
+    }
+
     return legal;
 }
 
@@ -426,26 +433,12 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
         return false;
     }
 
-    auto& grid = g_vpr_ctx.device().grid;
-    auto to_type = grid[centroid_loc.x][centroid_loc.y].type;
-
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    centroid_loc.sub_tile = 0;
-
-    for (int subtile = 0; subtile < to_type->capacity; subtile++) {
-        if (place_ctx.grid_blocks[centroid_loc.x][centroid_loc.y].blocks[subtile] == EMPTY_BLOCK_ID) {
-            if (is_sub_tile_compatible(to_type, block_type, subtile)) {
-                centroid_loc.sub_tile = subtile;
-            }
-        }
-    }
 
     VTR_ASSERT(device_ctx.grid[centroid_loc.x][centroid_loc.y].width_offset == 0);
     VTR_ASSERT(device_ctx.grid[centroid_loc.x][centroid_loc.y].height_offset == 0);
 
-    bool legal = false;
+    bool legal;
 
     legal = try_place_macro(pl_macro, centroid_loc);
 
@@ -892,7 +885,7 @@ static void place_all_blocks(vtr::vector<ClusterBlockId, t_block_score>& block_s
 
             auto blk_id_type = cluster_ctx.clb_nlist.block_type(blk_id);
             blocks_placed_since_heap_update++;
-            
+
             bool block_placed = place_one_block(blk_id, pad_loc_type, &blk_types_empty_locs_in_grid[blk_id_type->index], &block_scores);
 
             //update heap based on update_heap_freq calculated above
