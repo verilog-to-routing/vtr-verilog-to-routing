@@ -136,7 +136,7 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
 static inline void fix_IO_block_types(t_pl_macro pl_macro, t_pl_loc loc, enum e_pad_loc_type pad_loc_type);
 
 /**
- * @brief  Determine whether a specific macro can be placed in a specific location and choose the location's subtile if the location is legal.
+ * @brief  Determine whether a specific macro can be placed in a specific location. 
  *  
  *   @param loc The location at which the macro head member is placed.
  *   @param pr The PartitionRegion of the macro head member - represents its floorplanning constraints, is the size of the whole chip if the macro is not
@@ -271,20 +271,13 @@ static bool is_loc_legal(t_pl_loc& loc, PartitionRegion& pr, t_logical_block_typ
     //Check if the location is within its constraint region
     for (auto reg : pr.get_partition_region()) {
         if (reg.get_region_rect().contains(vtr::Point<int>(loc.x, loc.y))) {
-            //Check if the location is an anchor position
-            if (grid[loc.x][loc.y].height_offset == 0 && grid[loc.x][loc.y].width_offset == 0) {
-                legal = true;
-                break;
-            }
-        }
-    }
-
-    if (legal) { // location (x,y) is legal for the block type, a compatible subtile should be choosen to place the block
-        legal = false;
-        for (auto subtile = 0; subtile < grid[loc.x][loc.y].type->capacity; subtile++) {
-            if (is_sub_tile_compatible(grid[loc.x][loc.y].type, block_type, loc.sub_tile)) {
-                loc.sub_tile = subtile;
-                legal = true;
+            //check if the location is compatible with the block type
+            if (is_tile_compatible(grid[loc.x][loc.y].type, block_type)) {
+                //Check if the location is an anchor position
+                if (grid[loc.x][loc.y].height_offset == 0 && grid[loc.x][loc.y].width_offset == 0) {
+                    legal = true;
+                    break;
+                }
             }
         }
     }
@@ -434,6 +427,10 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
     }
 
     auto& device_ctx = g_vpr_ctx.device();
+    //choose the location's subtile if the centroid location is legal.
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(device_ctx.grid[centroid_loc.x][centroid_loc.y].type->index);
+    centroid_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
     VTR_ASSERT(device_ctx.grid[centroid_loc.x][centroid_loc.y].width_offset == 0);
     VTR_ASSERT(device_ctx.grid[centroid_loc.x][centroid_loc.y].height_offset == 0);
