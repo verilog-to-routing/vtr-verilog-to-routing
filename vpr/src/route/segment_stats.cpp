@@ -40,14 +40,12 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     }
 
     std::map<e_parallel_axis, std::vector<int>> directed_occ_by_length = {
-        {X_AXIS, std::vector<int>(max_segment_length+1, 0)},
-        {Y_AXIS, std::vector<int>(max_segment_length+1, 0)}
-    };
+        {X_AXIS, std::vector<int>(max_segment_length + 1, 0)},
+        {Y_AXIS, std::vector<int>(max_segment_length + 1, 0)}};
 
     std::map<e_parallel_axis, std::vector<int>> directed_cap_by_length = {
-        {X_AXIS, std::vector<int>(max_segment_length+1, 0)},
-        {Y_AXIS, std::vector<int>(max_segment_length+1, 0)}
-    };
+        {X_AXIS, std::vector<int>(max_segment_length + 1, 0)},
+        {Y_AXIS, std::vector<int>(max_segment_length + 1, 0)}};
 
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         size_t inode = (size_t)rr_id;
@@ -62,7 +60,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
                 length = LONGLINE;
             const short& inode_capacity = rr_graph.node_capacity(rr_id);
             int occ = route_ctx.rr_node_route_inf[inode].occ();
-            VTR_ASSERT(node_type == CHANX|| node_type == CHANY);
+            VTR_ASSERT(node_type == CHANX || node_type == CHANY);
             auto ax = (node_type == CHANX) ? X_AXIS : Y_AXIS;
             VTR_ASSERT(occ <= 1 && inode_capacity <= 1);
             directed_occ_by_length[ax][length] += occ;
@@ -74,8 +72,8 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     VTR_LOG("Total Number of Wiring Segments by Direction: direction length number\n");
     VTR_LOG("                                              --------- ------ -------\n");
     for (int length = 0; length <= max_segment_length; length++) {
-        for(auto ax : {X_AXIS, Y_AXIS}) {
-            std::string ax_name = (ax==X_AXIS) ? "X" : "Y";
+        for (auto ax : {X_AXIS, Y_AXIS}) {
+            std::string ax_name = (ax == X_AXIS) ? "X" : "Y";
             if (directed_cap_by_length[ax][length] != 0) {
                 std::string length_str = (length == LONGLINE) ? "longline" : std::to_string(length);
                 VTR_LOG("                                              %s%s %s%s %6d\n",
@@ -86,11 +84,10 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
                         directed_cap_by_length[ax][length]);
             }
         }
-
     }
 
-    for(auto ax : {X_AXIS, Y_AXIS}) {
-        std::string ax_name = (ax==X_AXIS) ? "X" : "Y";
+    for (auto ax : {X_AXIS, Y_AXIS}) {
+        std::string ax_name = (ax == X_AXIS) ? "X" : "Y";
         VTR_LOG("\n");
         VTR_LOG("%s - Directed Wiring Segment usage by length: length utilization\n", ax_name.c_str());
         VTR_LOG("                                             ------ -----------\n");
@@ -117,7 +114,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
             int seg_name_size = static_cast<int>(seg_name.size());
             int occ = 0;
             int cap = 0;
-            for(auto ax : {X_AXIS, Y_AXIS}) {
+            for (auto ax : {X_AXIS, Y_AXIS}) {
                 occ += directed_occ_by_length[ax][seg_length];
                 cap = directed_cap_by_length[ax][seg_length];
             }
