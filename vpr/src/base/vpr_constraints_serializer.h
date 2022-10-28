@@ -115,7 +115,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return temp_atom_string_.c_str();
     }
 
-    virtual inline void set_add_atom_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
+    virtual inline void set_add_atom_name_pattern(const char* name_pattern, void* /*ctx*/) final {
         auto& atom_ctx = g_vpr_ctx.atom();
         std::string atom_name = name_pattern;
 
