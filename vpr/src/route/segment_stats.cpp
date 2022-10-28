@@ -60,9 +60,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
                 length = LONGLINE;
             const short& inode_capacity = rr_graph.node_capacity(rr_id);
             int occ = route_ctx.rr_node_route_inf[inode].occ();
-            VTR_ASSERT(node_type == CHANX || node_type == CHANY);
             auto ax = (node_type == CHANX) ? X_AXIS : Y_AXIS;
-            VTR_ASSERT(occ <= 1 && inode_capacity <= 1);
             directed_occ_by_length[ax][length] += occ;
             directed_cap_by_length[ax][length] += inode_capacity;
         }
