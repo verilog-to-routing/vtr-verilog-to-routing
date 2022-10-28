@@ -415,7 +415,7 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
 
     //centroid suggestion was either occupied or does not match block type
     //try to find a near location that meet these requirements
-    bool neighbor_legal_loc;
+    bool neighbor_legal_loc = false;
     if (!is_loc_legal(centroid_loc, pr, block_type)) {
         neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type);
         if (!neighbor_legal_loc) { //no neighbor candidate found
