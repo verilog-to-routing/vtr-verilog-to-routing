@@ -480,7 +480,7 @@ inline void load_add_atom(const pugi::xml_node& root, T& out, Context& context, 
         atok_t_add_atom in = lex_attr_t_add_atom(attr.name(), report_error);std::printf("load_add_atom 480 errno: %d\n", errno);
         switch (in) {
             case atok_t_add_atom::NAME_PATTERN:std::printf("load_add_atom 482 errno: %d\n", errno);
-                out.set_add_atom_name_pattern(attr.value(), context);std::printf("load_add_atom 483 errno: %d\n", errno);
+                out.set_add_atom_name_pattern((const char*)attr.value(), (void*)context);std::printf("load_add_atom 483 errno: %d\n", errno);
                 break;
             default:
                 break; /* Not possible. */
