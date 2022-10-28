@@ -148,14 +148,14 @@ enum class atok_t_vpr_constraints { TOOL_NAME };
 constexpr const char* atok_lookup_t_vpr_constraints[] = {"tool_name"};
 
 /* Internal lexers. These convert the PugiXML node names to input tokens. */
-inline atok_t_add_atom lex_attr_t_add_atom(const char* in, const std::function<void(const char*)>* report_error) {
-    unsigned int len = strlen(in);
+inline atok_t_add_atom lex_attr_t_add_atom(const char* in, const std::function<void(const char*)>* report_error) {std::printf("lex_attr_t_add_atom 151 errno: %d\n", errno);
+    unsigned int len = strlen(in);std::printf("lex_attr_t_add_atom 152 errno: %d\n", errno);
     switch (len) {
         case 12:
             switch (*((triehash_uu64*)&in[0])) {
-                case onechar('n', 0, 64) | onechar('a', 8, 64) | onechar('m', 16, 64) | onechar('e', 24, 64) | onechar('_', 32, 64) | onechar('p', 40, 64) | onechar('a', 48, 64) | onechar('t', 56, 64):
-                    switch (*((triehash_uu32*)&in[8])) {
-                        case onechar('t', 0, 32) | onechar('e', 8, 32) | onechar('r', 16, 32) | onechar('n', 24, 32):
+                case onechar('n', 0, 64) | onechar('a', 8, 64) | onechar('m', 16, 64) | onechar('e', 24, 64) | onechar('_', 32, 64) | onechar('p', 40, 64) | onechar('a', 48, 64) | onechar('t', 56, 64):std::printf("lex_attr_t_add_atom 156 errno: %d\n", errno);
+                    switch (*((triehash_uu32*)&in[8])) {std::printf("lex_attr_t_add_atom 157 errno: %d\n", errno);
+                        case onechar('t', 0, 32) | onechar('e', 8, 32) | onechar('r', 16, 32) | onechar('n', 24, 32):std::printf("lex_attr_t_add_atom 158 errno: %d\n", errno);
                             return atok_t_add_atom::NAME_PATTERN;
                             break;
                         default:
@@ -168,8 +168,8 @@ inline atok_t_add_atom lex_attr_t_add_atom(const char* in, const std::function<v
             break;
         default:
             break;
-    }
-    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <add_atom>.").c_str());
+    }std::printf("lex_attr_t_add_atom 171 errno: %d\n", errno);
+    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <add_atom>.").c_str());std::printf("lex_attr_t_add_atom 172 errno: %d\n", errno);
 }
 
 inline atok_t_add_region lex_attr_t_add_region(const char* in, const std::function<void(const char*)>* report_error) {
@@ -472,23 +472,23 @@ inline void load_add_atom(const pugi::xml_node& root, T& out, Context& context, 
     (void)root;
     (void)out;
     (void)context;
-    (void)report_error;
+    (void)report_error;std::printf("load_add_atom 475 errno: %d\n", errno);
     // Update current file offset in case an error is encountered.
-    *offset_debug = root.offset_debug();
+    *offset_debug = root.offset_debug();std::printf("load_add_atom 477 errno: %d\n", errno);
 
-    for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_add_atom in = lex_attr_t_add_atom(attr.name(), report_error);
+    for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {std::printf("load_add_atom 479 errno: %d\n", errno);
+        atok_t_add_atom in = lex_attr_t_add_atom(attr.name(), report_error);std::printf("load_add_atom 480 errno: %d\n", errno);
         switch (in) {
-            case atok_t_add_atom::NAME_PATTERN:
-                out.set_add_atom_name_pattern(attr.value(), context);
+            case atok_t_add_atom::NAME_PATTERN:std::printf("load_add_atom 482 errno: %d\n", errno);
+                out.set_add_atom_name_pattern(attr.value(), context);std::printf("load_add_atom 483 errno: %d\n", errno);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
 
-    if (root.first_child().type() == pugi::node_element)
-        noreturn_report(report_error, "Unexpected child element in <add_atom>.");
+    if (root.first_child().type() == pugi::node_element) {std::printf("load_add_atom 490 errno: %d\n", errno);
+        noreturn_report(report_error, "Unexpected child element in <add_atom>.");std::printf("load_add_atom 491 errno: %d\n", errno);}
 }
 
 template<class T, typename Context>
