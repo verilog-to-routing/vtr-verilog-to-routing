@@ -428,6 +428,7 @@ template<std::size_t N>
 inline int load_int(const char* in, const std::function<void(const char*)>* report_error) {
     int out;
     std::printf("before reading int errno:%d\n", errno);
+    errno = 0;
     out = std::strtol(in, NULL, 10);
     if (errno != 0) {
         std::printf("after reading int errno:%d\n", errno);
