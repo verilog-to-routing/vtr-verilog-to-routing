@@ -415,8 +415,10 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
 
     //centroid suggestion was either occupied or does not match block type
     //try to find a near location that meet these requirements
+    bool neighbor_legal_loc;
     if (!is_loc_legal(centroid_loc, pr, block_type)) {
-        if (!find_centroid_neighbor(centroid_loc, block_type)) { //no neighbor candidate found
+        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type);
+        if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
     }
@@ -428,10 +430,14 @@ static bool try_centroid_placement(t_pl_macro pl_macro, PartitionRegion& pr, t_l
 
     auto& device_ctx = g_vpr_ctx.device();
     //choose the location's subtile if the centroid location is legal.
-    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(device_ctx.grid[centroid_loc.x][centroid_loc.y].type->index);
-    centroid_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
-
+    //if the location is found within the "find_centroid_neighbor", it already has a subtile
+    //we don't need to find one agian
+    if(!neighbor_legal_loc){
+        const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+        auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(device_ctx.grid[centroid_loc.x][centroid_loc.y].type->index);
+        centroid_loc.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
+    }
+    
     VTR_ASSERT(device_ctx.grid[centroid_loc.x][centroid_loc.y].width_offset == 0);
     VTR_ASSERT(device_ctx.grid[centroid_loc.x][centroid_loc.y].height_offset == 0);
 
