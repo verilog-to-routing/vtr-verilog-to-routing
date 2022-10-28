@@ -267,6 +267,9 @@ std::string inst_port_to_port_name(std::string inst_port);
 static bool attribute_to_bool(const pugi::xml_node node,
                               const pugi::xml_attribute attr,
                               const pugiutil::loc_data& loc_data);
+static TriggeringEdge attribute_to_trigg_edge(const pugi::xml_node node,
+                                              const pugi::xml_attribute attr,
+                                              const pugiutil::loc_data& loc_data);
 int find_switch_by_name(const t_arch& arch, std::string switch_name);
 
 e_side string_to_side(std::string side_str);
@@ -2313,6 +2316,9 @@ static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::se
 
             } else if (attr.name() == std::string("is_clock")) {
                 model_port->is_clock = attribute_to_bool(port, attr, loc_data);
+
+            } else if (attr.name() == std::string("edge")) {
+                model_port->trigg_edge = attribute_to_trigg_edge(port, attr, loc_data);
 
             } else if (attr.name() == std::string("is_non_clock_global")) {
                 model_port->is_non_clock_global = attribute_to_bool(port, attr, loc_data);
@@ -4785,6 +4791,20 @@ static bool attribute_to_bool(const pugi::xml_node node,
     }
 
     return false;
+}
+
+static TriggeringEdge attribute_to_trigg_edge(const pugi::xml_node node,
+                                              const pugi::xml_attribute attr,
+                                              const pugiutil::loc_data& loc_data) {
+    if (attr.value() == std::string("rising")) {
+        return TriggeringEdge::RISING_EDGE;
+    } else if (attr.value() == std::string("falling")) {
+        return TriggeringEdge::FALLING_EDGE;
+    } else {
+        bad_attribute_value(attr, node, loc_data, {"rising", "falling"});
+    }
+
+    return ERROR_EDGE;
 }
 
 int find_switch_by_name(const t_arch& arch, std::string switch_name) {

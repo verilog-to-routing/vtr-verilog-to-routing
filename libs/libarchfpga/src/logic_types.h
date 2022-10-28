@@ -25,12 +25,20 @@ enum PORTS {
     ERR_PORT
 };
 
+enum TriggeringEdge {
+    RISING_EDGE,
+    FALLING_EDGE,
+    DONT_CARE,
+    ERROR_EDGE
+};
+
 struct t_model_ports {
     enum PORTS dir = ERR_PORT;                         /* port direction */
     char* name = nullptr;                              /* name of this port */
     int size = 0;                                      /* maximum number of pins */
     int min_size = 0;                                  /* minimum number of pins */
     bool is_clock = false;                             /* clock? */
+    enum TriggeringEdge trigg_edge = DONT_CARE;        /* triggering edge of the clock port */
     bool is_non_clock_global = false;                  /* not a clock but is a special, global, control signal (eg global asynchronous reset, etc) */
     std::string clock;                                 /* The clock associated with this pin (if the pin is sequential) */
     std::vector<std::string> combinational_sink_ports; /* The other ports on this model which are combinationally driven by this port */
