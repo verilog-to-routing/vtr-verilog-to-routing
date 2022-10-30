@@ -20,7 +20,7 @@ inline static bool relevant_node_to_target(const RRGraphView* rr_graph,
     if (node_to_add_type == t_rr_type::OPIN || node_to_add_type == t_rr_type::SOURCE || node_to_add_type == t_rr_type::CHANX || node_to_add_type == t_rr_type::CHANY) {
         return true;
     } else if (node_in_same_physical_tile(node_to_add, target_node)) {
-        VTR_ASSERT(node_to_add_type == IPIN);
+        VTR_ASSERT(node_to_add_type == IPIN || node_to_add_type == SINK);
         return true;
     }
     return false;

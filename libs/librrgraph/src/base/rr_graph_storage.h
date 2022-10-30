@@ -617,6 +617,10 @@ class t_rr_graph_storage {
         return side_tt[size_t(side)];
     }
 
+    inline void clear_node_first_edge() {
+        node_first_edge_.clear();
+    }
+
   private:
     friend struct edge_swapper;
     friend class edge_sort_iterator;

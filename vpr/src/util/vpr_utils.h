@@ -185,7 +185,7 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
 
 std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
 
-std::unordered_map<int, const t_class*> get_cluster_internal_primitive_class_pairs(ClusterBlockId cluster_block_id);
+std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(ClusterBlockId cluster_block_id);
 
 std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id);
 
@@ -278,13 +278,17 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
 // Check whether the given nodes are in the same cluster
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second);
 
-std::vector<int> get_cluster_netlist_tile_primitive_classes_at_loc(const int i,
-                                                                   const int j,
-                                                                   t_physical_tile_type_ptr physical_type);
+std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
+                                                         const int j,
+                                                         t_physical_tile_type_ptr physical_type);
 
 std::vector<int> get_cluster_netlist_tile_pins_at_loc(const int i,
                                                       const int j,
                                                       t_physical_tile_type_ptr physical_type);
+
+std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
+                                                            const int j,
+                                                            t_physical_tile_type_ptr physical_type);
 
 std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
                                         ClusterBlockId cluster_blk_id,

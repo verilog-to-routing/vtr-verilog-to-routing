@@ -1092,7 +1092,7 @@ static void load_chan_rr_indices(const int max_chan_width,
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
                                   int* index,
-                                  bool is_flat) {
+                                  bool /*is_flat*/) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
 
     for (size_t x = 0; x < grid.width(); x++) {
@@ -1104,13 +1104,9 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                 // Note that SINKS/SOURCES have no side, so we always use side 0
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
-                if (is_flat) {
-                    class_num_vec = get_cluster_netlist_tile_primitive_classes_at_loc(x, y, physical_type);
-                    pin_num_vec = get_cluster_netlist_tile_pins_at_loc(x, y, physical_type);
-                } else {
-                    class_num_vec = get_tile_classes(physical_type);
-                    pin_num_vec = get_tile_pins(physical_type);
-                }
+
+                class_num_vec = get_tile_classes(physical_type);
+                pin_num_vec = get_tile_pins(physical_type);
                 add_classes_spatial_lookup(rr_graph_builder,
                                            physical_type,
                                            class_num_vec,
@@ -1192,15 +1188,8 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                     int root_y,
                                     int* index,
                                     const std::vector<e_side>& wanted_sides) {
-    // Reserve nodes for top-level blocks in lookup to save memory
-    rr_graph_builder.node_lookup().reserve_nodes(root_x, root_y, OPIN, pin_num_vec.size(), e_side::TOP);
-    rr_graph_builder.node_lookup().reserve_nodes(root_x, root_y, IPIN, pin_num_vec.size(), e_side::TOP);
 
     for (e_side side : wanted_sides) {
-        if (side == TOP) {
-            // already reserved
-            continue;
-        }
         for (int width_offset = 0; width_offset < physical_type_ptr->width; ++width_offset) {
             int x_tile = root_x + width_offset;
             for (int height_offset = 0; height_offset < physical_type_ptr->height; ++height_offset) {
@@ -1336,6 +1325,45 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                          CHANX, chan_details_x, rr_graph_builder, index);
     load_chan_rr_indices(nodes_per_chan->y_max, grid.height(), grid.width(),
                          CHANY, chan_details_y, rr_graph_builder, index);
+}
+
+void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                                  const DeviceGrid& grid,
+                                                  int* index) {
+    for (size_t x = 0; x < grid.width(); x++) {
+        for (size_t y = 0; y < grid.height(); y++) {
+            //Process each block from it's root location
+            if (grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0) {
+                t_physical_tile_type_ptr physical_type = grid[x][y].type;
+                //Assign indices for SINKs and SOURCEs
+                // Note that SINKS/SOURCES have no side, so we always use side 0
+                std::vector<int> class_num_vec;
+                std::vector<int> pin_num_vec;
+                class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(x, y, physical_type);
+                pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(x,
+                                                                         y,
+                                                                         physical_type);
+                add_classes_spatial_lookup(rr_graph_builder,
+                                           physical_type,
+                                           class_num_vec,
+                                           x,
+                                           y,
+                                           physical_type->width,
+                                           physical_type->height,
+                                           index);
+
+                std::vector<e_side> wanted_sides;
+                wanted_sides.push_back(e_side::TOP);
+                add_pins_spatial_lookup(rr_graph_builder,
+                                        physical_type,
+                                        pin_num_vec,
+                                        x,
+                                        y,
+                                        index,
+                                        wanted_sides);
+            }
+        }
+    }
 }
 
 /**

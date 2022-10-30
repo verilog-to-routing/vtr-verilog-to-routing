@@ -37,8 +37,6 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
 void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
-                                                  int x,
-                                                  int y,
                                                   int* index);
 
 bool verify_rr_node_indices(const DeviceGrid& grid,

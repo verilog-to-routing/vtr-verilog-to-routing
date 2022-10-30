@@ -209,6 +209,11 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const enum e_clock_modeling clock_modeling,
                                                                   bool is_flat);
 
+static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                                  const DeviceGrid& grid,
+                                                  const int delayless_switch,
+                                                  bool is_flat);
+
 static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
                                  const std::vector<int>& class_num_vec,
                                  const int root_x,
@@ -477,6 +482,17 @@ static void build_rr_graph(const t_graph_type graph_type,
                            bool is_flat,
                            int* Warnings);
 
+static void build_intra_cluster_rr_graph(const DeviceGrid& grid,
+                                         const RRGraphView& rr_graph,
+                                         const int delayless_switch,
+                                         const std::map<int, t_arch_switch_inf>& all_sw_inf,
+                                         const float R_minW_nmos,
+                                         const float R_minW_pmos,
+                                         const int wire_to_arch_ipin_switch,
+                                         int* wire_to_rr_ipin_switch,
+                                         RRGraphBuilder& rr_graph_builder,
+                                         bool is_flat);
+
 /******************* Subroutine definitions *******************************/
 
 void create_rr_graph(const t_graph_type graph_type,
@@ -526,37 +542,54 @@ void create_rr_graph(const t_graph_type graph_type,
             }
         }
     } else {
-        if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty() && is_flat == false) {
+        if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty()) {
             //No change in channel width, so skip re-building RR graph
-            VTR_LOG("RR graph channel widths unchanged, skipping RR graph rebuild\n");
-            return;
+            if(is_flat) {
+                VTR_LOG("RR graph channel widths unchanged, intra-cluster resources should be added...\n");
+            } else {
+                VTR_LOG("RR graph channel widths unchanged, skipping RR graph rebuild\n");
+                return;
+            }
+        } else {
+            free_rr_graph();
+            build_rr_graph(graph_type,
+                           block_types,
+                           grid,
+                           nodes_per_chan,
+                           det_routing_arch->switch_block_type,
+                           det_routing_arch->Fs,
+                           det_routing_arch->switchblocks,
+                           segment_inf,
+                           det_routing_arch->global_route_switch,
+                           det_routing_arch->wire_to_arch_ipin_switch,
+                           det_routing_arch->delayless_switch,
+                           det_routing_arch->R_minW_nmos,
+                           det_routing_arch->R_minW_pmos,
+                           router_opts.base_cost_type,
+                           router_opts.clock_modeling,
+                           directs, num_directs,
+                           &det_routing_arch->wire_to_rr_ipin_switch,
+                           is_flat,
+                           Warnings);
+            if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
+                mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
+                                                                  router_opts.reorder_rr_graph_nodes_threshold,
+                                                                  router_opts.reorder_rr_graph_nodes_seed);
+            }
         }
+    }
 
-        free_rr_graph();
-        build_rr_graph(graph_type,
-                       block_types,
-                       grid,
-                       nodes_per_chan,
-                       det_routing_arch->switch_block_type,
-                       det_routing_arch->Fs,
-                       det_routing_arch->switchblocks,
-                       segment_inf,
-                       det_routing_arch->global_route_switch,
-                       det_routing_arch->wire_to_arch_ipin_switch,
-                       det_routing_arch->delayless_switch,
-                       det_routing_arch->R_minW_nmos,
-                       det_routing_arch->R_minW_pmos,
-                       router_opts.base_cost_type,
-                       router_opts.clock_modeling,
-                       directs, num_directs,
-                       &det_routing_arch->wire_to_rr_ipin_switch,
-                       is_flat,
-                       Warnings);
-        if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
-            mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
-                                                              router_opts.reorder_rr_graph_nodes_threshold,
-                                                              router_opts.reorder_rr_graph_nodes_seed);
-        }
+    if(is_flat) {
+        build_intra_cluster_rr_graph(grid,
+                                     device_ctx.rr_graph,
+                                     det_routing_arch->delayless_switch,
+                                     device_ctx.all_sw_inf,
+                                     det_routing_arch->R_minW_nmos,
+                                     det_routing_arch->R_minW_pmos,
+                                     det_routing_arch->wire_to_arch_ipin_switch,
+                                     &det_routing_arch->wire_to_rr_ipin_switch,
+                                     mutable_device_ctx.rr_graph_builder,
+                                     is_flat);
     }
 
     process_non_config_sets();
@@ -1148,6 +1181,53 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 }
 
+static void build_intra_cluster_rr_graph(const DeviceGrid& grid,
+                                         const RRGraphView& rr_graph,
+                                         const int delayless_switch,
+                                         const std::map<int, t_arch_switch_inf>& all_sw_inf,
+                                         const float R_minW_nmos,
+                                         const float R_minW_pmos,
+                                         const int wire_to_arch_ipin_switch,
+                                         int* wire_to_rr_ipin_switch,
+                                         RRGraphBuilder& rr_graph_builder,
+                                         bool is_flat) {
+    vtr::ScopedStartFinishTimer timer("Build intra-cluster routing resource graph");
+
+    invalidate_router_lookahead_cache();
+    rr_graph_builder.reset_rr_graph_flags();
+
+    int num_rr_nodes = rr_graph.num_nodes();
+    alloc_and_load_intra_cluster_rr_node_indices(rr_graph_builder,
+                                                 grid,
+                                                 &num_rr_nodes);
+    size_t expected_node_count = num_rr_nodes;
+    rr_graph_builder.resize_nodes(num_rr_nodes);
+
+    alloc_and_load_intra_cluster_rr_graph(rr_graph_builder,
+                                          grid,
+                                          delayless_switch,
+                                          is_flat);
+
+    /* AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks.
+     * Thus this below error is logged; it's not actually an error, the node estimation needs to get fixed for dedicated clock networks. */
+    if (rr_graph.num_nodes() > expected_node_count) {
+        VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
+                      expected_node_count, rr_graph.num_nodes());
+    }
+
+    alloc_and_load_rr_switch_inf(g_vpr_ctx.mutable_device().rr_graph_builder,
+                                 g_vpr_ctx.mutable_device().switch_fanin_remap,
+                                 all_sw_inf,
+                                 R_minW_nmos,
+                                 R_minW_pmos,
+                                 wire_to_arch_ipin_switch,
+                                 wire_to_rr_ipin_switch);
+
+    rr_graph_builder.partition_edges();
+
+
+}
+
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                          const t_det_routing_arch& det_routing_arch,
                          t_physical_tile_type_ptr physical_tile,
@@ -1630,7 +1710,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const t_clb_to_clb_directs* clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const enum e_clock_modeling clock_modeling,
-                                                                  bool is_flat) {
+                                                                  bool /*is_flat*/) {
     //We take special care when creating RR graph edges (there are typically many more
     //edges than nodes in an RR graph).
     //
@@ -1657,13 +1737,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                 t_physical_tile_type_ptr physical_tile = grid[i][j].type;
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
-                if (is_flat) {
-                    class_num_vec = get_cluster_netlist_tile_primitive_classes_at_loc(i, j, physical_tile);
-                    pin_num_vec = get_cluster_netlist_tile_pins_at_loc(i, j, physical_tile);
-                } else {
-                    class_num_vec = get_tile_classes(physical_tile);
-                    pin_num_vec = get_tile_pins(physical_tile);
-                }
+                class_num_vec = get_tile_classes(physical_tile);
+                pin_num_vec = get_tile_pins(physical_tile);
                 add_classes_rr_graph(rr_graph_builder,
                                      class_num_vec,
                                      i,
@@ -1730,22 +1805,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     VTR_LOG("OPIN->CHANX/CHANY edge count after creating direct connections: %d\n", num_edges);
 
     num_edges = 0;
-    if (is_flat) {
-        vtr::ScopedStartFinishTimer timer("Adding Internal Edges");
-        // Add intra-tile edges
-        add_intra_cluster_edges_rr_graph(rr_graph_builder,
-                                         rr_edges_to_create,
-                                         grid,
-                                         is_flat);
-        uniquify_edges(rr_edges_to_create);
-        alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-        num_edges += rr_edges_to_create.size();
-        rr_edges_to_create.clear();
-    }
-
-    VTR_LOG("Number of intra-cluster edges: %d\n", num_edges);
-
-    num_edges = 0;
     /* Build channels */
     VTR_ASSERT(Fs % 3 == 0);
     for (size_t i = 0; i < grid.width() - 1; ++i) {
@@ -1807,6 +1866,75 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     rr_graph_builder.init_fan_in();
 
     return update_chan_width;
+}
+
+static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                                  const DeviceGrid& grid,
+                                                  const int delayless_switch,
+                                                  bool is_flat) {
+    t_rr_edge_info_set rr_edges_to_create;
+    int num_edges = 0;
+    for (size_t i = 0; i < grid.width(); ++i) {
+        for (size_t j = 0; j < grid.height(); ++j) {
+            if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
+                t_physical_tile_type_ptr physical_tile = grid[i][j].type;
+                std::vector<int> class_num_vec;
+                std::vector<int> pin_num_vec;
+                class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(i, j, physical_tile);
+                std::for_each(class_num_vec.begin(), class_num_vec.end(), [&physical_tile] (int class_num){
+                    VTR_ASSERT(!is_class_on_tile(physical_tile, class_num));
+                });
+                pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(i, j, physical_tile);
+                std::for_each(pin_num_vec.begin(), pin_num_vec.end(), [&physical_tile] (int pin_num){
+                    VTR_ASSERT(!is_pin_on_tile(physical_tile, pin_num));
+                });
+                add_classes_rr_graph(rr_graph_builder,
+                                     class_num_vec,
+                                     i,
+                                     j,
+                                     physical_tile);
+
+                add_pins_rr_graph(rr_graph_builder,
+                                  pin_num_vec,
+                                  i,
+                                  j,
+                                  physical_tile);
+
+                connect_src_sink_to_pins(rr_graph_builder,
+                                         class_num_vec,
+                                         i,
+                                         j,
+                                         rr_edges_to_create,
+                                         delayless_switch,
+                                         physical_tile);
+
+                //Create the actual SOURCE->OPIN, IPIN->SINK edges
+                uniquify_edges(rr_edges_to_create);
+                alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+                num_edges += rr_edges_to_create.size();
+                rr_edges_to_create.clear();
+            }
+        }
+    }
+
+    VTR_LOG("Internal SOURCE->OPIN and IPIN->SINK edge count:%d\n", num_edges);
+    num_edges = 0;
+    {
+        vtr::ScopedStartFinishTimer timer("Adding Internal Edges");
+        // Add intra-tile edges
+        add_intra_cluster_edges_rr_graph(rr_graph_builder,
+                                         rr_edges_to_create,
+                                         grid,
+                                         is_flat);
+        uniquify_edges(rr_edges_to_create);
+        alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+        num_edges += rr_edges_to_create.size();
+        rr_edges_to_create.clear();
+    }
+
+    VTR_LOG("Internal edge count:%d\n", num_edges);
+
+    rr_graph_builder.init_fan_in();
 }
 
 static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -1911,7 +2039,7 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
         for (auto pin_num : pin_list) {
             RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, i, j, pin_num);
             if (pin_rr_node_id == RRNodeId::INVALID()) {
-                VTR_LOG_ERROR("In block (%d, %d) pin num: %d doesn't exist to be connected to class %d",
+                VTR_LOG_ERROR("In block (%d, %d) pin num: %d doesn't exist to be connected to class %d\n",
                               i,
                               j,
                               pin_num,

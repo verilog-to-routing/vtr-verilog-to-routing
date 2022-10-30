@@ -308,8 +308,11 @@ class RRGraphBuilder {
         node_storage_.init_fan_in();
     }
 
-    inline void reset_partitioned_flat() {
+    inline void reset_rr_graph_flags() {
+        node_storage_.edges_read_ = false;
         node_storage_.partitioned_ = false;
+        node_storage_.remapped_edges_ = false;
+        node_storage_.clear_node_first_edge();
     }
 
     /* -- Internal data storage -- */
