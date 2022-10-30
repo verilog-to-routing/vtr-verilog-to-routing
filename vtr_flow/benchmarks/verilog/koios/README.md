@@ -44,6 +44,55 @@ Koios benchmarks are tested by the following regression tests in VTR:
 ## Collecting QoR measurements
 For collecting QoR measurements on Koios benchmarks, follow the instructions [here](https://docs.verilogtorouting.org/en/latest/README.developers/#example-koios-benchmarks-qor-measurement).
 
+## VTR issues observed
+
+### Fixed
+Some of the main issues (and/or pull requests) that were seen and fixed during Koios 2.0 development:
+
+#### Multiple PBs using the same Model
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2103
+
+#### Difference in resource usage between ODIN and Yosys+ODIN
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2104
+
+#### Random net names
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2086
+
+#### Incorrect clock and reset signals
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2118
+
+#### SystemVerilog support
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2015
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2068
+
+#### Auto-name pass after optimization passes
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2031
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2035
+
+#### General hardblock support in the Yosys+ODIN flow
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/1953
+
+#### Padding the multiplication output port if it's size is less than the sum of both input ports
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2013
+
+#### Support for synthesis/mapping of reduce and shift operators
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/1923
+
+#### Error during placement with hard blocks with chains
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2036
+
+### Open
+Some issues that are still pending to be fixed are:
+
+#### Placement failure with designs with hard block chains:
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2149
+
+#### Difference in QoR between ODIN-only and Yosys+ODIN synthesis flows:
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2131
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2104
+https://github.com/verilog-to-routing/vtr-verilog-to-routing/pull/2148
+
+
 ## How to Cite
 The following paper may be used as a citation for Koios:
 
