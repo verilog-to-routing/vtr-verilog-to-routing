@@ -10,11 +10,11 @@
         "synthesis_time(ms)": 30.3,
         "Pi": 2,
         "Po": 2,
-        "logic element": 7,
-        "Longest Path": 6,
-        "Average Path": 4,
-        "Estimated LUTs": 7,
-        "Total Node": 7
+        "logic element": 9,
+        "Longest Path": 8,
+        "Average Path": 6,
+        "Estimated LUTs": 9,
+        "Total Node": 9
     },
     "else/if_else/no_arch": {
         "test_name": "else/if_else/no_arch",

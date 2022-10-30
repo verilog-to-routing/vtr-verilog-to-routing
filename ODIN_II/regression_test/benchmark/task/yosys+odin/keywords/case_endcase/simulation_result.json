@@ -8,11 +8,11 @@
         "test_coverage(%)": 100,
         "Pi": 11,
         "Po": 3,
-        "logic element": 22,
-        "Longest Path": 7,
+        "logic element": 23,
+        "Longest Path": 8,
         "Average Path": 6,
-        "Estimated LUTs": 22,
-        "Total Node": 22
+        "Estimated LUTs": 23,
+        "Total Node": 23
     },
     "DEFAULT": {
         "test_name": "n/a",

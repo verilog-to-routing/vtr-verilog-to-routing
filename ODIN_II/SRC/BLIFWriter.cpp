@@ -342,6 +342,9 @@ void BLIF::Writer::output_blif(FILE* out, const netlist_t* netlist) {
             nnet_t* net = node->input_pins[0]->net;
             warn_undriven(node, net);
             for (int j = 0; j < net->num_driver_pins; j++) {
+                // skip if their names is identical
+                if (coarsen_cleanup && net->driver_pins[j]->name && node->name && !strcmp(net->driver_pins[j]->name, node->name))
+                    continue;
                 fprintf(out, ".names");
                 print_net_driver(out, node, net, j);
                 print_output_pin(out, node);

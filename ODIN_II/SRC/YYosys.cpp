@@ -300,12 +300,28 @@ void YYosys::execute() {
             run_pass(std::string("hierarchy -check -auto-top -purge_lib"));
         }
 
-        // Translate processes to netlist components such as MUXs, FFs and latches
-        run_pass(std::string("proc; opt;"));
+        /* 
+         * Translate processes to netlist components such as MUXs, FFs and latches
+         * Transform the design into a new one with single top module
+         */
+        run_pass(std::string("proc; flatten; opt_expr; opt_clean;"));
+        /* 
+         * Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
+         * "-nodffe" to disable dff -> dffe conversion, and other transforms recognizing clock enable
+         * "-nosdff" to disable dff -> sdff conversion, and other transforms recognizing sync resets
+         */
+        run_pass(std::string("check; opt -nodffe -nosdff;"));
         // Extraction and optimization of finite state machines
         run_pass(std::string("fsm; opt;"));
-        // Collects memories, their port and create multiport memory cells
-        run_pass(std::string("memory_collect; memory_dff; opt;"));
+        // To possibly reduce word sizes by Yosys
+        run_pass(std::string("wreduce;"));
+        // To applies a collection of peephole optimizers to the current design.
+        run_pass(std::string("peepopt; opt_clean;"));
+        /* 
+         * To merge shareable resources into a single resource. A SAT solver
+         * is used to determine if two resources are share-able
+         */
+        run_pass(std::string("share; opt;"));
 
         // Use a readable name convention
         // [NOTE]: the 'autoname' process has a high memory footprint for giant netlists
@@ -317,8 +333,15 @@ void YYosys::execute() {
         // Transform asynchronous dffs to synchronous dffs using techlib files provided by Yosys
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adff2dff.v"));
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adffe2dff.v"));
-        // To resolve Yosys internal indexed part-select circuitries
-        run_pass(std::string("techmap */t:$shift */t:$shiftx"));
+
+        // Yosys performs various optimizations on memories in the design. Then, it detects DFFs at
+        // memory read ports and merges them into the memory port. I.e. it consumes an asynchronous
+        // memory port and the flip-flops at its interface and yields a synchronous memory port.
+        // Afterwards, Yosys detects cases where an asynchronous read port is only connected via a mux
+        // tree to a write port with the same address. When such a connection is found, it is replaced
+        // with a new condition on an enable signal, allowing for removal of the read port. Finally
+        // Yosys collects memories, their port and create multiport memory cells.
+        run_pass(std::string("opt_mem; memory_dff; opt_clean; opt_mem_feedback; opt_clean; memory_collect;"));
 
         /**
          * convert yosys mem blocks to BRAMs / ROMs
@@ -333,19 +356,35 @@ void YYosys::execute() {
          *  Yosys::run_pass(std::string("techmap -map ", this->odin_techlib, "/mem_map.v"));
          */
 
+        /* 
+         * Transforming all RTLIL components into LUTs except for memories, adders, subtractors, 
+         * multipliers, DFFs with set (VCC) and clear (GND) signals, and DFFs with the set (VCC),
+         * clear (GND), and enable signals The Odin-II partial mapper will perform the technology
+         * mapping for the above-mentioned circuits
+         * 
+         * [NOTE]: the purpose of using this pass is to keep the connectivity of internal signals  
+         *         in the coarse-grained BLIF file, as they were not properly connected in the 
+         *         initial implementation of Yosys+Odin-II, which did not use this pass
+         */
+        run_pass(std::string("techmap -autoproc */t:$mem */t:$memrd */t:$add */t:$sub */t:$mul */t:$dffsr */t:$dffsre */t:$sr */t:$dlatch */t:$adlatch %% %n"));
+
         // Transform the design into a new one with single top module
         run_pass(std::string("flatten"));
-        // Transforms PMUXes into trees of regular multiplexers
-        run_pass(std::string("pmuxtree"));
-        // To possibly reduce word sizes by Yosys
-        run_pass(std::string("wreduce"));
+
+        // To possibly reduce word sizes by Yosys and fine-graining the basic operations
+        run_pass(std::string("wreduce; simplemap */t:$dffsr */t:$dffsre */t:$sr */t:$dlatch */t:$adlatch %% %n;"));
+        // Turn all DFFs into simple latches
+        run_pass(std::string("dffunmap; opt -fast -noff;"));
+
+        // Check the hierarchy for any unknown modules, and purge all modules (including blackboxes) that aren't used
+        run_pass(std::string("hierarchy -check -purge_lib"));
         // "-undriven" to ensure there is no wire without drive
-        // -noff #potential option to remove all sdffXX and etc. Only dff will remain
+        // "-noff" option to remove all sdffXX and etc. Only dff will remain
         // "opt_muxtree" removes dead branches, "opt_expr" performs const folding and
         // removes "undef" from mux inputs and replace muxes with buffers and inverters
-        run_pass(std::string("opt -undriven -full; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;"));
+        run_pass(std::string("opt -undriven -full -noff; opt_muxtree; opt_expr -mux_undef -mux_bool -fine;;;"));
         // Use a readable name convention
-        run_pass(std::string("autoname"));
+        run_pass(std::string("autoname;"));
         // Print statistics
         run_pass(std::string("stat"));
     }

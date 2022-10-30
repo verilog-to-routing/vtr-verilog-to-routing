@@ -1,6 +1,6 @@
 // DEFINES
-`define DEPTH 16 	// Depth of memory
-`define ADDR_WIDTH 8
+`define DEPTH 64 	// Depth of memory
+`define ADDR_WIDTH $clog2(`DEPTH)
 `define DATA_WIDTH 8		// Width of memory
 
 // TOP MODULE

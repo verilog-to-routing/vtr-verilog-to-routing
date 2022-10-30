@@ -28,11 +28,11 @@ The flow is depicted in the figure below.
 
 .. code-block:: tcl
 
-    # FILE: $VTR_ROOT/ODIN_II/regression_test/tools/synth.tcl #
     yosys -import
     
     # the environment variable VTR_ROOT is set by Odin-II.
     # Feel free to specify file paths using "$env(VTR_ROOT)/ ..." 
+    
     # Read VTR baseline library first
     read_verilog -nomem2reg $env(ODIN_TECHLIB)/../../vtr_flow/primitives.v
     setattr -mod -set keep_hierarchy 1 single_port_ram
@@ -56,43 +56,79 @@ The flow is depicted in the figure below.
     	error "Invalid PARSER"
     }
     
-    # Read the hardware decription Verilog
-    read_verilog -nomem2reg -nolatches PATH_TO_VERILOG_FILE.v;
     # Check that cells match libraries and find top module
-    hierarchy -check -auto-top;
+    hierarchy -check -auto-top -purge_lib;
     
-    # Make name convention more readable
-    autoname;
+     
     # Translate processes to netlist components such as MUXs, FFs and latches
-    procs; opt;
+    # Transform the design into a new one with single top module
+    proc; flatten; opt_expr; opt_clean;
+    
+    # Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
+    # "-nodffe" to disable dff -> dffe conversion, and other transforms recognizing clock enable
+    # "-nosdff" to disable dff -> sdff conversion, and other transforms recognizing sync resets
+    check; opt -nodffe -nosdff;
+    
     # Extraction and optimization of finite state machines
     fsm; opt;
-    # Collects memories, their port and create multiport memory cells
-    memory_collect; memory_dff; opt;
+    # To possibly reduce word sizes by Yosys
+    wreduce;
+    # To applies a collection of peephole optimizers to the current design.
+    peepopt; opt_clean;
+     
+    # To merge shareable resources into a single resource. A SAT solver
+    # is used to determine if two resources are share-able
+    share; opt;
+    
+    # Use a readable name convention
+    # [NOTE]: the 'autoname' process has a high memory footprint for giant netlists
+    # we run it after basic optimization passes to reduce the overhead (see issue #2031)
+    autoname;     
     
     # Looking for combinatorial loops, wires with multiple drivers and used wires without any driver.
     check;
     # resolve asynchronous dffs
-    techmap -map $VTR_ROOT/ODIN_II/techlib/adff2dff.v;
-    techmap -map $VTR_ROOT/ODIN_II/techlib/adffe2dff.v;
-    # To resolve Yosys internal indexed part-select circuitry
-    techmap */t:\$shift */t:\$shiftx;
+    techmap -map $env(ODIN_TECHLIB)/adff2dff.v;
+    techmap -map $env(ODIN_TECHLIB)/adffe2dff.v;
     
-    ## Utilizing the "memory_bram" command and the Verilog design provided at "$VTR_ROOT/ODIN_II/techlib/mem_map.v"
-    ## we could map Yosys memory blocks to BRAMs and ROMs before the Odin-II partial mapping phase.
-    ## However, Yosys complains about expression widths more than 24 bits.
-    ## E.g. reg [63:0] memory [18:0] ==> ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
-    ## Although we provided the required design files for this process (located in ODIN_II/techlib), we will handle
-    ## memory blocks in the Odin-II BLIF elaborator and partial mapper. 
-    # memory_bram -rules $VTR_ROOT/ODIN_II/techlib/mem_rules.txt
-    # techmap -map $VTR_ROOT/ODIN_II/techlib/mem_map.v; 
+    # Yosys performs various optimizations on memories in the design. Then, it detects DFFs at
+    # memory read ports and merges them into the memory port. I.e. it consumes an asynchronous
+    # memory port and the flip-flops at its interface and yields a synchronous memory port.
+    # Afterwards, Yosys detects cases where an asynchronous read port is only connected via a mux
+    # tree to a write port with the same address. When such a connection is found, it is replaced
+    # with a new condition on an enable signal, allowing for removal of the read port. Finally
+    # Yosys collects memories, their port and create multiport memory cells.
+    opt_mem; memory_dff; opt_clean; opt_mem_feedback; opt_clean; memory_collect;
+    
+    # convert mem block to bram/rom
+    
+    # [NOTE]: Yosys complains about expression width more than 24 bits.
+    # E.g. [63:0] memory [18:0] ==>  ERROR: Expression width 33554432 exceeds implementation limit of 16777216!
+    # mem will be handled using Odin-II
+    # memory_bram -rules $env(ODIN_TECHLIB)/mem_rules.txt
+    # techmap -map $env(ODIN_TECHLIB)/mem_map.v; 
+    
+    # Transforming all RTLIL components into LUTs except for memories, adders, subtractors, 
+    # multipliers, DFFs with set (VCC) and clear (GND) signals, and DFFs with the set (VCC),
+    # clear (GND), and enable signals The Odin-II partial mapper will perform the technology
+    # mapping for the above-mentioned circuits
+    
+    # [NOTE]: the purpose of using this pass is to keep the connectivity of internal signals  
+    #         in the coarse-grained BLIF file, as they were not properly connected in the 
+    #         initial implementation of Yosys+Odin-II, which did not use this pass
+    techmap */t:\$mem */t:\$memrd */t:\$add */t:\$sub */t:\$mul */t:\$dffsr */t:\$dffsre */t:\$sr */t:\$dlatch */t:\$adlatch %% %n;
     
     # Transform the design into a new one with single top module
     flatten;
-    # Transforms pmux into trees of regular multiplexers
-    pmuxtree;
-    # To possibly reduce words size
-    wreduce;
+    
+    # To possibly reduce word sizes by Yosys and fine-graining the basic operations
+    wreduce; simplemap */t:\$dffsr */t:\$dffsre */t:\$sr */t:\$dlatch */t:\$adlatch %% %n;
+    # Turn all DFFs into simple latches
+    dffunmap; opt -fast -noff;
+    
+    # Check the hierarchy for any unknown modules, and purge all modules (including blackboxes) that aren't used
+    hierarchy -check -purge_lib;
+    
     # "undirven" to ensure there is no wire without drive
     # "opt_muxtree" removes dead branches, "opt_expr" performs constant folding,
     # removes "undef" inputs from mux cells, and replaces muxes with buffers and inverters.
@@ -102,9 +138,10 @@ The flow is depicted in the figure below.
     autoname;
     # Print statistics
     stat;
-    # Output BLIF
-    write_blif -param -impltf TCL_BLIF;
-
+    
+    write_blif -param -impltf $env(TCL_BLIF);
+    
+    
 **Algorithm 1** - The Yosys+Odin-II Tcl Script File
 
 
@@ -119,23 +156,42 @@ The generic coarse-grained synthesis commands includes:
 1. Parsing the hardware description Verilog/SystemVerilog/UHDM files. The option ``-nomem2reg`` prevents Yosys from exploding implicit memories to an array of registers. The option ``-nolatches`` is used for both VTR primitives and input circuit design to avoid Yosys generating logic loops.
 2. Checking that the design cells match the libraries and detecting the top module using ``hierarchy``.
 3. Translating the processes to netlist components such as multiplexers, flip-flops, and latches, by the ``procs`` command.
-4. Performing extraction and optimization of finite state machines by the ``fsm`` command.
-5. Collecting memories and their ports, then creating a multiport memory cell, by the ``memory_collect`` command.
-6. Converting asynchronous memory ports to synchronous ones by merging ports and the related DFFs at their interfaces, using the ``memory_dff`` command.
-7. Checking for errors like combinatorial loops, wires with multiple drivers and used wires without any driver by the ``check`` command.
+4. The ``flatten`` command generates a netlist with only one module, representing the HDL circuit design's top module.
+5. The ``check`` command looks for combinatorial loops, wires with multiple drivers and used wires without any driver.
+6. Performing extraction and optimization of finite state machines by the ``fsm`` command.
+7. The option ``wreduce`` performs possible word size reduction for operations to avoid propagating additional signals to the subsequent phases.
+8. The command ``peephole`` applies a collection of peephole optimizers to the current design.
+9. Using the ``share`` command, Yosys merges shareable resources into a single resource (A SAT solver is used to determine if two resources are share-able).
+
+In the ``autoname`` passes, Yosys generates an easy-to-read names by transforming signal names into a shorter format.
+This command removes some debugging information, such as the path to the source file, that Yosys inserts in names by default and generally gives easier-to-interpret names.
 
 After performing basic synthesis steps, the ``techmap`` command with the input ``adff2dff`` transforms DFFs with asynchronous reset to the synchronous form using the design provided by Yosys.
 The next command follows the same approach but with a modified version of the provided design file for DFFs with asynchronous reset and synchronous data enable signals.
-The last techmap command is in place to resolve the Yosys internal circuitries designed specifically for indexed part-select Verilog code.
-Since this step is mainly related to the Verilog elaboration, we ask Yosys to transform the ``$shift`` and ``$shiftx`` sub-circuits into a more straightforward representation.
 
-The ``flatten`` command generates an output netlist with only one module, representing the HDL circuit design's top module.
-The ``pmuxtree`` pass is used to transforms `pmux`, a sub-circuit representing parallel cases, into trees of regular multiplexers.
-The option ``wreduce`` performs possible word size reduction for operations to avoid propagating additional signals to the subsequent phases.
-In the ``autoname`` passes, Yosys generates an easy-to-read BLIF file by transforming signal names into a shorter format.
-This command removes some debugging information, such as the path to the source file, that Yosys inserts in names by default and generally gives easier-to-interpret names.
+Followed by the ``techmap`` command, Yosys performs various optimizations on memories in the design.
+Using the ``memory_dff`` commands, Yosys detects DFFs at memory read ports and merges them into the memory port.
+I.e. it consumes an asynchronous memory port and the flip-flops at its interface and yields a synchronous memory port.
+Yosys then detects cases where an asynchronous read port is only connected via a mux tree to a write port with the same address.
+When such a connection is found, it is replaced with a new condition on an enable signal, allowing for removal of the read port.
+Finally Yosys collects memories, their port and create multiport memory cells.
 
-Then, the optimization pass is called to make the netlist ready for output.
+Afterwards, Yosys transforms all RTLIL components into soft logic except for primary hard blocks and latches to postpone their technology mapping to the Odin-II partial mapping phase.
+These components include memories, adders, subtractors, multipliers, DFFs with set (VCC) and clear (GND) signals, and DFFs with the set (VCC), clear (GND), and enable signals.
+    
+.. note::
+	
+    The purpose of using ``techmap`` pass is to keep the connectivity of internal signals in the coarse-grained BLIF file.
+    In the initial implementation of Yosys+Odin-II, in which the Odin-II partial mapper received all components in coarse-grained format, some disconnectivity, resulting from an incomplete elaboration, existed in the BLIF file.
+    This solution is proposed to technology-map all primary components and keep the connectivity of the submodules with the top-module in the Yosys output BLIF file.
+    It worth noting that Odin-II still receives the memories and arithmetic operations in the coarse-grained format so that it partially-maps them with architecture awareness.
+
+Then, we again flatten the design and the ``simplemap`` command is called to ensure about the connectivity of the technology-mapped components.
+The given selection to the ``simplemap`` pass avoid mapping latches and DFFs with set/reset signals, as we want to postpone them for Odin-II partial mapping.
+The ``dffunmap`` command turns all types of complex DFFs, such as DFFs with enable and reset signals, into simple latches if there exist any in the design. 
+
+Ultimately, we check the hierarchy for any unknown modules, and purge all modules (including blackboxes) that aren't used.
+The optimization pass is then called to make the netlist ready for output.
 The option ``undriven`` ensures that all nets without a driver are removed, while the ``full`` optimization option is used to remove duplicated inputs in `AND`, `OR` and `MUX` gates.
 The ``opt_muxtree`` removes dead branches, ``opt_expr`` performs possible constant folding, in addition to removing ``undef`` inputs from mux cells and transforming muxes into buffers and inverters.
 Ultimately, we use the ``write_blif`` command to output the coarse-grained BLIF file.

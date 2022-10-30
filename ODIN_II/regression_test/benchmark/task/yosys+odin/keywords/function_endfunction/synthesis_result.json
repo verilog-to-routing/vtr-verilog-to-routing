@@ -60,11 +60,11 @@
         "synthesis_time(ms)": 40.7,
         "Pi": 3,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 5,
+        "logic element": 2,
+        "Longest Path": 4,
         "Average Path": 4,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "function_endfunction/outside_port/no_arch": {
         "test_name": "function_endfunction/outside_port/no_arch",

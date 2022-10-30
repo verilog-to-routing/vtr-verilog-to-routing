@@ -544,6 +544,10 @@ void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* net
  *-------------------------------------------------------------------------------------------*/
 void instantiate_not_logic(nnode_t* node, short mark, netlist_t* /*netlist*/) {
     int width = node->num_input_pins;
+
+    if (coarsen_cleanup && width == 1)
+        return;
+
     nnode_t** new_not_cells;
     int i;
 
@@ -619,6 +623,9 @@ void instantiate_logical_logic(nnode_t* node, operation_list op, short mark) {
     width_b = node->input_port_sizes[1];
     port_B_offset = width_a;
 
+    if (coarsen_cleanup && (width_a == width_b) == 1)
+        return;
+
     /* instantiate the cells */
     new_logic_cell = make_1port_logic_gate(op, 2, node, mark);
     reduction1 = make_1port_logic_gate(BITWISE_OR, width_a, node, mark);
@@ -689,8 +696,10 @@ void instantiate_bitwise_reduction(nnode_t* node, operation_list op, short mark)
             oassert(false);
             break;
     }
+
     /* instantiate the cells */
-    new_logic_cell = make_1port_logic_gate(cell_op, width_a, node, mark);
+    new_logic_cell = (coarsen_cleanup && cell_op == LOGICAL_OR && width_a == 1) ? make_1port_logic_gate(BUF_NODE, width_a, node, BLIF_ELABORATE_TRAVERSE_VALUE)
+                                                                                : make_1port_logic_gate(cell_op, width_a, node, mark);
 
     /* connect inputs.  In the case that a signal is smaller than the other then zero pad */
     for (i = 0; i < width_a; i++) {

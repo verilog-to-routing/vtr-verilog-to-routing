@@ -7,14 +7,12 @@
         "simulation_time(ms)": 0.8,
         "test_coverage(%)": 100,
         "Latch Drivers": 1,
-        "Pi": 2,
+        "Pi": 1,
         "Po": 1,
-        "logic element": 2,
         "latch": 1,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 2,
-        "Total Node": 4
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 2
     },
     "DEFAULT": {
         "test_name": "n/a",

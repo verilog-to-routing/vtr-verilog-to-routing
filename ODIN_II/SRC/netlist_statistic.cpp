@@ -487,7 +487,7 @@ void compute_statistics(netlist_t* netlist, bool display) {
                         auto unused_pi = netlist->num_top_input_nodes - netlist->num_of_type[op] - netlist->num_of_type[CLOCK_NODE];
                         if (unused_pi > 0) {
                             hdr = std::string("Number of unused <")
-                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                                  + operation_list_STR[INPUT_NODE][ODIN_LONG_STRING]
                                   + "> node: ";
                             printf("%-42s%lld\n", hdr.c_str(), unused_pi);
                         }
@@ -497,7 +497,7 @@ void compute_statistics(netlist_t* netlist, bool display) {
                         auto unused_po = netlist->num_top_output_nodes - netlist->num_of_type[op];
                         if (unused_po > 0) {
                             hdr = std::string("Number of unused <")
-                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                                  + operation_list_STR[OUTPUT_NODE][ODIN_LONG_STRING]
                                   + "> node: ";
                             printf("%-42s%lld\n", hdr.c_str(), unused_po);
                         }

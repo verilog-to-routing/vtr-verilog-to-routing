@@ -317,13 +317,13 @@ void blif_elaborate_node(nnode_t* node, short traverse_number, netlist_t* netlis
         case INPUT_NODE:  //fallthrough
         case OUTPUT_NODE: //fallthrough
         case HARD_IP:     //fallthrough
+        case CLOCK_NODE:  //fallthroguh
         case BUF_NODE: {
             /* some are already resolved for this phase */
             break;
         }
         case ADDER_FUNC:
         case CARRY_FUNC:
-        case CLOCK_NODE:
         case GENERIC:
         default:
             error_message(BLIF_ELABORATION, node->loc, "node (%s: %s) should have been converted to softer version.", node->type, node->name);

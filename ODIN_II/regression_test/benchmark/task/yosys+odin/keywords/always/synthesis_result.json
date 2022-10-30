@@ -77,11 +77,11 @@
         "synthesis_time(ms)": 36.3,
         "Pi": 11,
         "Po": 3,
-        "logic element": 17,
-        "Longest Path": 6,
-        "Average Path": 5,
-        "Estimated LUTs": 17,
-        "Total Node": 17
+        "logic element": 28,
+        "Longest Path": 9,
+        "Average Path": 7,
+        "Estimated LUTs": 28,
+        "Total Node": 28
     },
     "always/posedge/no_arch": {
         "test_name": "always/posedge/no_arch",

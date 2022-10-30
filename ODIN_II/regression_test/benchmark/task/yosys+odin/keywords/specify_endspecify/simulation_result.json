@@ -8,11 +8,11 @@
         "test_coverage(%)": 100,
         "Pi": 2,
         "Po": 1,
-        "logic element": 4,
-        "Longest Path": 5,
-        "Average Path": 5,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "specify_endspecify/specify_edge_sensitive/no_arch": {
         "test_name": "specify_endspecify/specify_edge_sensitive/no_arch",

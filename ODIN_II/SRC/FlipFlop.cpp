@@ -65,6 +65,10 @@ void resolve_dff_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* 
     npin_t* clk_pin = node->input_pins[0];
     clk_pin->sensitivity = node->attributes->clk_edge_type;
 
+    /* already satisfy the partial mapper requirements */
+    if (width == 1)
+        return;
+
     /* remapping the D inputs to [1..n] */
     for (i = 0; i < width; i++) {
         make_ff_node(node->input_pins[i + clk_width],                       // D
