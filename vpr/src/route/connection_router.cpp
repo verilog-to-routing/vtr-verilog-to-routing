@@ -17,10 +17,10 @@ inline static bool relevant_node_to_target(const RRGraphView* rr_graph,
                                            RRNodeId target_node) {
     VTR_ASSERT(rr_graph->node_type(RRNodeId(target_node)) == t_rr_type::SINK);
     auto node_to_add_type = rr_graph->node_type(node_to_add);
-    if (node_to_add_type == t_rr_type::OPIN || node_to_add_type == t_rr_type::SOURCE || node_to_add_type == t_rr_type::CHANX || node_to_add_type == t_rr_type::CHANY) {
+    if (node_to_add_type == t_rr_type::OPIN || node_to_add_type == t_rr_type::SOURCE || node_to_add_type == t_rr_type::CHANX || node_to_add_type == t_rr_type::CHANY || node_to_add_type == SINK) {
         return true;
     } else if (node_in_same_physical_tile(node_to_add, target_node)) {
-        VTR_ASSERT(node_to_add_type == IPIN || node_to_add_type == SINK);
+        VTR_ASSERT(node_to_add_type == IPIN);
         return true;
     }
     return false;
