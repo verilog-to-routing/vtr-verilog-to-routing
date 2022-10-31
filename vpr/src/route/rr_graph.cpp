@@ -537,6 +537,11 @@ void create_rr_graph(const t_graph_type graph_type,
                          echo_enabled,
                          echo_file_name,
                          is_flat);
+            if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
+                mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
+                                                                  router_opts.reorder_rr_graph_nodes_threshold,
+                                                                  router_opts.reorder_rr_graph_nodes_seed);
+            }
         }
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty()) {
@@ -577,29 +582,30 @@ void create_rr_graph(const t_graph_type graph_type,
                                      is_flat);
     }
 
-    build_rr_switch_inf(det_routing_arch->R_minW_nmos,
-                        det_routing_arch->R_minW_pmos,
-                        det_routing_arch->wire_to_arch_ipin_switch,
-                        nodes_per_chan,
-                        segment_inf,
-                        router_opts.base_cost_type,
-                        mutable_device_ctx.rr_graph_builder,
-                        &det_routing_arch->wire_to_rr_ipin_switch);
-
-    if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
-        mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
-                                                          router_opts.reorder_rr_graph_nodes_threshold,
-                                                          router_opts.reorder_rr_graph_nodes_seed);
+    if(det_routing_arch->read_rr_graph_filename.empty() || is_flat) {
+        // If flat_routing is enabled, the intra-cluster switches should be added to the rr_switch
+        build_rr_switch_inf(det_routing_arch->R_minW_nmos,
+                            det_routing_arch->R_minW_pmos,
+                            det_routing_arch->wire_to_arch_ipin_switch,
+                            nodes_per_chan,
+                            segment_inf,
+                            router_opts.base_cost_type,
+                            mutable_device_ctx.rr_graph_builder,
+                            &det_routing_arch->wire_to_rr_ipin_switch);
+        if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
+            mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
+                                                              router_opts.reorder_rr_graph_nodes_threshold,
+                                                              router_opts.reorder_rr_graph_nodes_seed);
+        }
+        check_rr_graph(device_ctx.rr_graph,
+                       block_types,
+                       device_ctx.rr_indexed_data,
+                       grid,
+                       device_ctx.chan_width,
+                       graph_type,
+                       device_ctx.virtual_clock_network_root_idx,
+                       is_flat);
     }
-
-    check_rr_graph(device_ctx.rr_graph,
-                   block_types,
-                   device_ctx.rr_indexed_data,
-                   grid,
-                   device_ctx.chan_width,
-                   graph_type,
-                   device_ctx.virtual_clock_network_root_idx,
-                   is_flat);
 
     process_non_config_sets();
 
