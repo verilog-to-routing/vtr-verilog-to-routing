@@ -5,6 +5,7 @@
 #include "globals.h"
 #include "cluster_placement.h"
 #include "re_cluster_util.h"
+#include <string>
 
 #if 0
 static void check_net_absorption(const AtomNetId& atom_net_id,
@@ -272,7 +273,7 @@ bool pick_molecule_connected_same_type(t_pack_molecule* mol_1, t_pack_molecule*&
         for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
             mol_2 = kv.second;
             const t_pb* pb_2 = atom_ctx.lookup.atom_pb(mol_2->atom_block_ids[mol_2->root]);
-            if(pb_1->pb_graph_node->pb_type == pb_2->pb_graph_node->pb_type)
+            if(strcmp(pb_1->pb_graph_node->pb_type->name,pb_2->pb_graph_node->pb_type->name) == 0)
                 return true;
             else
                 iteration++;
