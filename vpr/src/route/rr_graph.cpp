@@ -278,6 +278,7 @@ static void build_rr_switch_inf(const float R_minW_nmos,
                                 const t_chan_width& nodes_per_chan,
                                 const std::vector<t_segment_inf>& segment_inf,
                                 const enum e_base_cost_type base_cost_type,
+                                RRGraphBuilder& rr_graph_builder,
                                 int* wire_to_rr_ipin_switch);
 
 /*
@@ -582,6 +583,7 @@ void create_rr_graph(const t_graph_type graph_type,
                         nodes_per_chan,
                         segment_inf,
                         router_opts.base_cost_type,
+                        mutable_device_ctx.rr_graph_builder,
                         &det_routing_arch->wire_to_rr_ipin_switch);
 
     if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
@@ -634,9 +636,10 @@ static void build_rr_switch_inf(const float R_minW_nmos,
                                 const t_chan_width& nodes_per_chan,
                                 const std::vector<t_segment_inf>& segment_inf,
                                 const enum e_base_cost_type base_cost_type,
+                                RRGraphBuilder& rr_graph_builder,
                                 int* wire_to_rr_ipin_switch) {
     vtr::ScopedStartFinishTimer timer("Build rr switch inf");
-
+    rr_graph_builder.init_fan_in();
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
@@ -1859,8 +1862,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         VTR_LOG("\n Dedicated clock network edge count: %d \n", num_edges);
     }
 
-    rr_graph_builder.init_fan_in();
-
     return update_chan_width;
 }
 
@@ -1877,13 +1878,7 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
                 class_num_vec = get_cluster_netlist_intra_tile_classes_at_loc(i, j, physical_tile);
-                std::for_each(class_num_vec.begin(), class_num_vec.end(), [&physical_tile] (int class_num){
-                    VTR_ASSERT(!is_class_on_tile(physical_tile, class_num));
-                });
                 pin_num_vec = get_cluster_netlist_intra_tile_pins_at_loc(i, j, physical_tile);
-                std::for_each(pin_num_vec.begin(), pin_num_vec.end(), [&physical_tile] (int pin_num){
-                    VTR_ASSERT(!is_pin_on_tile(physical_tile, pin_num));
-                });
                 add_classes_rr_graph(rr_graph_builder,
                                      class_num_vec,
                                      i,
@@ -1930,7 +1925,6 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
 
     VTR_LOG("Internal edge count:%d\n", num_edges);
 
-    rr_graph_builder.init_fan_in();
 }
 
 static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
