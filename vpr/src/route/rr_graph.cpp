@@ -635,6 +635,8 @@ static void build_rr_switch_inf(const float R_minW_nmos,
                                 const std::vector<t_segment_inf>& segment_inf,
                                 const enum e_base_cost_type base_cost_type,
                                 int* wire_to_rr_ipin_switch) {
+    vtr::ScopedStartFinishTimer timer("Build rr switch inf");
+
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */

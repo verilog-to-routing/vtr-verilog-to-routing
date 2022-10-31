@@ -1156,6 +1156,14 @@ void free_device(const t_det_routing_arch& routing_arch) {
             device_ctx.arch_switch_inf[iswitch].name = nullptr;
         }
     }
+
+    for(auto& arch_sw_pair : device_ctx.all_sw_inf) {
+        auto& sw_inf = arch_sw_pair.second;
+        if(sw_inf.name){
+            vtr::free(sw_inf.name);
+            sw_inf.name = nullptr;
+        }
+    }
     device_ctx.arch_switch_inf.clear();
 
     device_ctx.all_sw_inf.clear();
