@@ -655,8 +655,6 @@ static void build_rr_switch_inf(const float R_minW_nmos,
     //edge subsets. Must be done after RR switches have been allocated
     mutable_device_ctx.rr_graph_builder.partition_edges();
 
-    //Save the channel widths for the newly constructed graph
-    mutable_device_ctx.chan_width = nodes_per_chan;
 
     t_unified_to_parallel_seg_index segment_index_map;
     std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
@@ -1173,6 +1171,9 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     update_chan_width(&nodes_per_chan);
+
+    //Save the channel widths for the newly constructed graph
+    device_ctx.chan_width = nodes_per_chan;
 
     /* Free all temp structs */
     delete[] seg_details_x;
