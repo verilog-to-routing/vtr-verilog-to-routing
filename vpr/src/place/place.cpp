@@ -527,6 +527,7 @@ void try_place(const t_placer_opts& placer_opts,
     if (placer_opts.enable_analytic_placer) {
         AnalyticPlacer{}.ap_place();
     }
+
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     // Update physical pin values
