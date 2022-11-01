@@ -48,7 +48,7 @@ class quasiDirectedCompatibleTypePackingSwap : public  packingMoveGenerator {
     bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
 };
 
-class quasiDirectedSameTypeSameSizePackingSwap : public  packingMoveGenerator {
+class quasiDirectedSameSizePackingSwap : public  packingMoveGenerator {
   bool propose_move(std::vector<molMoveDescription>& new_locs);
   bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
 };

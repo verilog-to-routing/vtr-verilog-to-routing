@@ -52,10 +52,9 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
         move_generator = std::make_unique<quasiDirectedSameTypePackingSwap>();
     else if(strcmp(packer_opts.pack_move_type.c_str(), "semiDirectedCompatibleTypeSwap") == 0)
         move_generator = std::make_unique<quasiDirectedCompatibleTypePackingSwap>();
-    else if(strcmp(packer_opts.pack_move_type.c_str(), "semiDirectedSameTypeSameSizeSwap") == 0)
-        move_generator = std::make_unique<quasiDirectedSameTypeSameSizePackingSwap>();
-    else if(strcmp(packer_opts.pack_move_type.c_str(), "semiDirectedCompatibleTypeSameSizeSwap") == 0)
-        move_generator = std::make_unique<quasiDirectedCompatibleTypeSameSizePackingSwap>();
+    else if(strcmp(packer_opts.pack_move_type.c_str(), "semiDirectedSameSizeSwap") == 0)
+        move_generator = std::make_unique<quasiDirectedSameSizePackingSwap>();
+
     else{
         VTR_LOG("Packing move type (%s) is not correct!\n", packer_opts.pack_move_type.c_str());
         VTR_LOG("Packing iterative improvement is aborted\n");

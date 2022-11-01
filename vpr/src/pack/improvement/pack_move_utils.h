@@ -21,7 +21,7 @@ t_pack_molecule* pick_molecule_randomly();
 bool pick_molecule_connected(t_pack_molecule* mol_1, t_pack_molecule*& mol_2);
 bool pick_molecule_connected_same_type(t_pack_molecule* mol_1, t_pack_molecule*& mol_2);
 bool pick_molecule_connected_compatible_type(t_pack_molecule* mol_1, t_pack_molecule*& mol_2);
-bool pick_molecule_connected_same_type_same_size(t_pack_molecule* mol_1, t_pack_molecule*& mol_2);
+bool pick_molecule_connected_same_size(t_pack_molecule* mol_1, t_pack_molecule*& mol_2);
 bool pick_molecule_connected_compatible_type_same_size(t_pack_molecule* mol_1, t_pack_molecule*& mol_2);
 
 
