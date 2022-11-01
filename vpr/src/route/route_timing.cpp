@@ -168,7 +168,8 @@ static t_bb calc_current_bb(const t_trace* head);
 static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_traceback>& best_routing,
                                       const RoutingMetrics& best_routing_metrics,
                                       const WirelengthInfo& wirelength_info,
-                                      std::shared_ptr<const SetupHoldTimingInfo> timing_info);
+                                      std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                                      const t_router_opts& router_opts);
 
 static bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,
                                                int itry_since_last_convergence,
@@ -419,6 +420,10 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
     int rcv_finished_count = RCV_FINISH_EARLY_COUNTDOWN;
 
+    // If tHNS is less than zero and the rcv_finished_count isn't zero, then hold isn't legal
+    // In this case don't allow the router to break early if RCV is enabled
+    bool hold_legal = true;
+
     print_route_status_header();
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
         RouterStats router_iteration_stats;
@@ -547,10 +552,10 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         /*
          * Are we finished?
          */
-        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info, rcv_finished_count == 0)) {
+        if (routing_is_feasible) {
             auto& router_ctx = g_vpr_ctx.routing();
 
-            if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
+            if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info, router_opts)) {
                 //Save routing
                 best_routing = router_ctx.trace;
                 best_clb_opins_used_locally = router_ctx.clb_opins_used_locally;
@@ -570,14 +575,18 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                 best_routing_metrics.used_wirelength = wirelength_info.used_wirelength();
             }
 
-            //Decrease pres_fac so that critical connections will take more direct routes
-            //Note that we use first_iter_pres_fac here (typically zero), and switch to
-            //use initial_pres_fac on the next iteration.
-            pres_fac = update_pres_fac(router_opts.first_iter_pres_fac);
+            if (router_opts.routing_budgets_algorithm != YOYO) {
+                // Only relax/reset routing parameters if RCV is inactive
 
-            //Reduce timing tolerances to re-route more delay-suboptimal signals
-            connections_inf.set_connection_criticality_tolerance(0.7);
-            connections_inf.set_connection_delay_tolerance(1.01);
+                //Decrease pres_fac so that critical connections will take more direct routes
+                //Note that we use first_iter_pres_fac here (typically zero), and switch to
+                //use initial_pres_fac on the next iteration.
+                pres_fac = update_pres_fac(router_opts.first_iter_pres_fac);
+
+                //Reduce timing tolerances to re-route more delay-suboptimal signals
+                connections_inf.set_connection_criticality_tolerance(0.7);
+                connections_inf.set_connection_delay_tolerance(1.01);
+            }
 
             ++legal_convergence_count;
             itry_since_last_convergence = 0;
@@ -593,11 +602,17 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             pres_fac = update_pres_fac(router_opts.initial_pres_fac);
         }
 
+        if (budgeting_inf.if_set()) {
+            // If total negative slack is greater than or equal to 0, or RCV is finished, allow router to complete
+            hold_legal = timing_info->hold_total_negative_slack() >= 0 || rcv_finished_count == 0;
+        }
+
         //Have we converged the maximum number of times, did not make any changes, or does it seem
         //unlikely additional convergences will improve QoR?
-        if (legal_convergence_count >= router_opts.max_convergence_count
-            || router_iteration_stats.connections_routed == 0
-            || early_reconvergence_exit_heuristic(router_opts, itry_since_last_convergence, timing_info, best_routing_metrics)) {
+        if ((legal_convergence_count >= router_opts.max_convergence_count
+             || router_iteration_stats.connections_routed == 0
+             || early_reconvergence_exit_heuristic(router_opts, itry_since_last_convergence, timing_info, best_routing_metrics))
+            && hold_legal) {
 #ifndef NO_GRAPHICS
             update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
 #endif
@@ -2011,22 +2026,6 @@ void enable_router_debug(
 #endif
 }
 
-bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts, int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info, bool rcv_finished) {
-    //This function checks if a routing iteration has completed.
-    //When VPR is run normally, we check if routing_budgets_algorithm is disabled, and if the routing is legal
-    //With the introduction of yoyo budgeting algorithm, we must check if there are no hold violations
-    //in addition to routing being legal and the correct budgeting algorithm being set.
-
-    if (routing_is_feasible) {
-        if (router_opts.routing_budgets_algorithm != YOYO) {
-            return true;
-        } else if (router_opts.routing_budgets_algorithm == YOYO && (timing_info->hold_worst_negative_slack() == 0 || rcv_finished) && itry != 1) {
-            return true;
-        }
-    }
-    return false;
-}
-
 bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& /*router_opts*/) {
     /* Checks to see if router should (re)calculate route budgets
      * It's currently set to only calculate after the first routing iteration */
@@ -2035,38 +2034,100 @@ bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& /
     return false;
 }
 
+// Compares the worst and total setup slacks of the current routing with that of the best routing so far
+// Returns -1 if the new routing is worse, 0 if tied, and 1 if its improved
+static int compare_setup(const RoutingMetrics& best_routing_metrics, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+    // In general we don't care about ties or improvements to positive slack, as once timing constraints have been met there is no point in trying harder
+    // Because of this, we only check if timing has either improved, or degraded, in which case we report the routing as better or worse respectively
+
+    // Worst negative setup slack is prioritized over total negative slack, since this metric is directly correlated to the CPD, and thus Fmax
+    if (timing_info->setup_worst_negative_slack() > best_routing_metrics.sWNS) {
+        return 1;
+    } else if (timing_info->setup_worst_negative_slack() < best_routing_metrics.sWNS) {
+        return -1;
+    }
+
+    if (timing_info->setup_total_negative_slack() > best_routing_metrics.sTNS) {
+        return 1;
+    } else if (timing_info->setup_total_negative_slack() < best_routing_metrics.sTNS) {
+        return -1;
+    }
+
+    // Return a tie
+    return 0;
+}
+
+// Compares the worst and total hold slacks of the current routing with that of the best routing so far
+// Returns -1 if the new routing is worse, 0 if tied, and 1 if its improved
+static int compare_hold(const RoutingMetrics& best_routing_metrics, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+    // In general we don't care about ties or improvements to positive slack, as once timing constraints have been met there is no point in trying harder
+    // Because of this, we only check if timing has either improved, or degraded, in which case we report the routing as better or worse respectively
+
+    // Worst negative hold slack is prioritized since getting this as close to zero as possible increases the odds of the routing still working on a physical device
+    //  this is because there are margins of error on timing calculations
+    if (timing_info->hold_worst_negative_slack() > best_routing_metrics.sWNS) {
+        return 1;
+    } else if (timing_info->hold_worst_negative_slack() < best_routing_metrics.sWNS) {
+        return -1;
+    }
+
+    if (timing_info->hold_total_negative_slack() > best_routing_metrics.sTNS) {
+        return 1;
+    } else if (timing_info->hold_total_negative_slack() < best_routing_metrics.sTNS) {
+        return -1;
+    }
+
+    // Report a tie
+    return 0;
+}
+
 static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_traceback>& best_routing,
                                       const RoutingMetrics& best_routing_metrics,
                                       const WirelengthInfo& wirelength_info,
-                                      std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+                                      std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                                      const t_router_opts& router_opts) {
     if (best_routing.empty()) {
         return true; //First legal routing
     }
 
-    //Rank first based on sWNS, followed by other timing metrics
     if (timing_info) {
-        if (timing_info->setup_worst_negative_slack() > best_routing_metrics.sWNS) {
-            return true;
-        } else if (timing_info->setup_worst_negative_slack() < best_routing_metrics.sWNS) {
-            return false;
-        }
+        if (router_opts.routing_budgets_algorithm != YOYO) {
+            // If RCV is disabled prioritize setup slack improvements
+            int setup_comparison = compare_setup(best_routing_metrics, timing_info);
 
-        if (timing_info->setup_total_negative_slack() > best_routing_metrics.sTNS) {
-            return true;
-        } else if (timing_info->setup_total_negative_slack() < best_routing_metrics.sTNS) {
-            return false;
-        }
+            if (setup_comparison > 0) {
+                // Setup has improved
+                return true;
+            } else if (setup_comparison < 0) {
+                // Setup has degraded
+                return false;
+            }
+            // Setup slack tied
+        } else {
+            // If RCV is enabled prioritize hold over setup, but still return true if setup slack improves
 
-        if (timing_info->hold_worst_negative_slack() > best_routing_metrics.hWNS) {
-            return true;
-        } else if (timing_info->hold_worst_negative_slack() > best_routing_metrics.hWNS) {
-            return false;
-        }
+            // Compare hold of current routing to best routing
+            int hold_comparison = compare_hold(best_routing_metrics, timing_info);
 
-        if (timing_info->hold_total_negative_slack() > best_routing_metrics.hTNS) {
-            return true;
-        } else if (timing_info->hold_total_negative_slack() > best_routing_metrics.hTNS) {
-            return false;
+            if (hold_comparison > 0) {
+                // Hold has improved
+                return true;
+            } else if (hold_comparison < 0) {
+                // Hold has degraded
+                return false;
+            }
+
+            int setup_comparison = compare_setup(best_routing_metrics, timing_info);
+
+            if (setup_comparison > 0) {
+                // Setup has improved
+                return true;
+            } else if (setup_comparison < 0) {
+                // Setup has degraded
+                return false;
+            }
+
+            // Setup and Hold have tied
         }
     }
 
