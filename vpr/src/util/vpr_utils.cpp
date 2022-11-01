@@ -2500,7 +2500,9 @@ std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
 t_arch_switch_inf create_internal_arch_sw(float delay) {
     t_arch_switch_inf arch_switch_inf;
     arch_switch_inf.set_type(SwitchType::MUX);
-    arch_switch_inf.name = vtr::strdup(("Internal Switch/" + std::to_string(delay)).c_str());
+    std::ostringstream stream_obj;
+    stream_obj << delay << std::scientific;
+    arch_switch_inf.name = vtr::strdup(("Internal Switch/" + stream_obj.str()).c_str());
     arch_switch_inf.R = 0.;
     arch_switch_inf.Cin = 0.;
     arch_switch_inf.Cout = 0;
