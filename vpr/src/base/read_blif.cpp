@@ -718,7 +718,7 @@ bool is_binary_param(const std::string& param) {
     return true;
 }
 
-bool is_real_param(const std::string &param) {
+bool is_real_param(const std::string& param) {
     /* Must be non-empty */
     if (param.empty()) {
         return false;
