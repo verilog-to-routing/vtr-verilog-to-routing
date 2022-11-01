@@ -294,7 +294,7 @@ bool pick_molecule_connected_compatible_type_same_size(t_pack_molecule* mol_1, t
     return false;
 }
 
-bool pick_molecule_connected_same_type_same_size(t_pack_molecule* mol_1, t_pack_molecule*& mol_2) {
+bool pick_molecule_connected_same_size(t_pack_molecule* mol_1, t_pack_molecule*& mol_2) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     std::vector<ClusterBlockId> connected_blocks;
@@ -302,7 +302,6 @@ bool pick_molecule_connected_same_type_same_size(t_pack_molecule* mol_1, t_pack_
     if(connected_blocks.empty())
         return false;
 
-    const t_pb* pb_1 = atom_ctx.lookup.atom_pb(mol_1->atom_block_ids[mol_1->root]);
     int mol_1_size = get_array_size_of_molecule(mol_1);
 
     // pick a random clb block from the connected blocks
@@ -319,8 +318,7 @@ bool pick_molecule_connected_same_type_same_size(t_pack_molecule* mol_1, t_pack_
         auto rng = atom_ctx.atom_molecules.equal_range(atom_id);
         for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
             mol_2 = kv.second;
-            const t_pb* pb_2 = atom_ctx.lookup.atom_pb(mol_2->atom_block_ids[mol_2->root]);
-            if(pb_1->pb_graph_node->pb_type == pb_2->pb_graph_node->pb_type && std::abs(mol_1_size - get_array_size_of_molecule(mol_2))<= 1 )
+            if(std::abs(mol_1_size - get_array_size_of_molecule(mol_2))<= 1 )
                 return true;
             else
                 iteration++;
