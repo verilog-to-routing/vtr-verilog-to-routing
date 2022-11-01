@@ -462,6 +462,8 @@ void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     //Mark the grid location and usage of the block
     place_ctx.grid_blocks[location.x][location.y].blocks[location.sub_tile] = blk_id;
     place_ctx.grid_blocks[location.x][location.y].usage++;
+
+    place_sync_external_block_connections(blk_id);
 }
 
 bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality) {
