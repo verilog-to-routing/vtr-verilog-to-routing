@@ -278,6 +278,10 @@
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
+        <port name="sub_clk" is_clock="1" />
+        <port name="negate_clk" is_clock="1"/>
+        <port name="sub" clock="sub_clk" combinational_sink_ports="resulta"/>
+        <port name="negate" clock="negate_clk" combinational_sink_ports="resulta"/>
         <port name="ax" clock="ax_clk" combinational_sink_ports="resulta"/>
         <port name="ay" clock="ay_scan_in_clk" combinational_sink_ports="resulta scanout"/>
         <port name="az" clock="az_clk" combinational_sink_ports="resulta"/>
@@ -311,6 +315,10 @@
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
+        <port name="sub_clk" is_clock="1"/>
+        <port name="negate_clk" is_clock="1"/>
+        <port name="sub" combinational_sink_ports="resulta"/>
+        <port name="negate" combinational_sink_ports="resulta"/>
         <port name="ax" combinational_sink_ports="resulta"/>
         <port name="ay" combinational_sink_ports="resulta scanout"/>
         <port name="az" combinational_sink_ports="resulta"/>
@@ -343,6 +351,10 @@
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
+        <port name="sub_clk" is_clock="1"/>
+        <port name="negate_clk" is_clock="1"/>
+        <port name="sub" combinational_sink_ports="resulta"/>
+        <port name="negate" combinational_sink_ports="resulta"/>
         <port name="clr" combinational_sink_ports="resulta resultb"/>
         <port name="ax" combinational_sink_ports="resulta dftout"/>
         <port name="ay" combinational_sink_ports="resulta scanout dftout"/>
@@ -377,6 +389,10 @@
         <port name="coef_sel_a_clk" is_clock="1"/>
         <port name="coef_sel_b_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
+        <port name="sub_clk" is_clock="1"/>
+        <port name="negate_clk" is_clock="1"/>
+        <port name="sub" clock="sub_clk" combinational_sink_ports="resulta"/>
+        <port name="negate" clock="negate_clk" combinational_sink_ports="resulta"/>
         <port name="ax" clock="ax_clk" combinational_sink_ports="resulta"/>
         <port name="ay" clock="ay_scan_in_clk" combinational_sink_ports="resulta"/>
         <port name="az" clock="az_clk" combinational_sink_ports="resulta"/>
@@ -802,17 +818,19 @@
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
+        <port name="sub_clk" is_clock="1" />
         <port name="loadconst_clk" is_clock="1"/>
         <port name="accumulate_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
         <port name="chainout_clk" is_clock="1"/>
         <port name="coef_sel_a_clk" is_clock="1"/>
+        <port name="sub" clock="sub_clk" combinational_sink_ports="resulta"/>
         <port name="ax" clock="ax_clk" combinational_sink_ports="resulta chainout"/>
         <port name="ay" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout scanout"/>
         <port name="az" clock="az_clk" combinational_sink_ports="resulta chainout"/>
         <port name="coefsela" clock="coef_sel_a_clk" combinational_sink_ports="resulta chainout"/>
         <port name="loadconst" clock="loadconst_clk" combinational_sink_ports="resulta chainout"/>
-        <port name="negate" clock="negate_clk"/>
+        <port name="negate" clock="negate_clk" combinational_sink_ports="resulta chainout"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout scanout"/>
         <port name="ena" clock="ax_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
@@ -834,6 +852,7 @@
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
+        <port name="sub_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
         <port name="accumulate_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
@@ -844,8 +863,9 @@
         <port name="az" combinational_sink_ports="resulta chainout"/>
         <port name="coefsela" combinational_sink_ports="resulta chainout"/>
         <port name="loadconst" combinational_sink_ports="resulta chainout"/>
-        <port name="negate" clock="output_clk"/>
+        <port name="negate" combinational_sink_ports="resulta chainout"/>
         <port name="scanin" combinational_sink_ports="resulta chainout scanout"/>
+        <port name="sub" combinational_sink_ports="resulta"/>
         <port name="ena" clock="output_clk"/>
         <port name="dfxlfsrena" clock="output_clk"/>
         <port name="dfxmisrena" clock="output_clk"/>
@@ -863,6 +883,7 @@
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
+        <port name="sub_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
         <port name="accumulate_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
@@ -879,6 +900,7 @@
         <port name="negate" combinational_sink_ports="resulta chainout scanout dftout"/>
         <port name="scanin" combinational_sink_ports="resulta chainout scanout dftout"/>
         <port name="ena" combinational_sink_ports="resulta chainout scanout dftout"/>
+        <port name="sub" combinational_sink_ports="resulta"/>
         <port name="dfxlfsrena" combinational_sink_ports="resulta chainout scanout dftout"/>
         <port name="dfxmisrena" combinational_sink_ports="resulta chainout scanout dftout"/>
       </input_ports> 
@@ -898,6 +920,7 @@
         <port name="ay_scan_in_clk" is_clock="1"/>
         <port name="az_clk" is_clock="1"/>
         <port name="negate_clk" is_clock="1"/>
+        <port name="sub_clk" is_clock="1"/>
         <port name="loadconst_clk" is_clock="1"/>
         <port name="accumulate_clk" is_clock="1"/>
         <port name="output_clk" is_clock="1"/>
@@ -909,6 +932,7 @@
         <port name="coefsela" clock="coef_sel_a_clk" combinational_sink_ports="resulta chainout"/>
         <port name="loadconst" clock="loadconst_clk" combinational_sink_ports="resulta chainout"/>
         <port name="negate" clock="negate_clk"/>
+        <port name="sub" clock="sub_clk" combinational_sink_ports="resulta"/>
         <port name="scanin" clock="ay_scan_in_clk" combinational_sink_ports="resulta chainout scanout"/>
         <port name="ena" clock="ax_clk"/>
         <port name="dfxlfsrena" clock="ax_clk"/>
@@ -2063,8 +2087,186 @@
     </segment>
   </segmentlist>
   <directlist>
+
+  <!-- qqqq are there any self sneaks for DSP and RAM ????-->
+
+    <!-- chainout propogates downward between DSP blocks-->
+    <direct name="DSP_chainout" from_pin="DSP.chainout" to_pin="DSP.chainin" x_offset="0" y_offset="-1" z_offset="0"/>
+
     <!--Carry chain propogates downward between LAB blocks-->
     <direct name="LAB_carry_chain" from_pin="LAB.cout" to_pin="LAB.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+
+    <!-- 
+        LAB lines are LAB's local interconnect driving the logic elements input muxes
+        LAB lines consist of 60 LAB input muxes (LIMs). A LIM is a 12:1 mux with the following distribution of inputs:
+        4 V wires, 6 or 7 H wires, 1 or 2 sneaks from the LAB itself or the adjacent block
+
+        For simplicity, it's assumed that all the LIMs have 6 H wires inputs, while half of them have 1 and the other half
+        have 2 sneaks. This will lead to a LIM size of 11 for half of the LAB lines and a LIM size of 12 for the other half
+    -->
+    <!-- 
+        50 self-sneaks coming from the LAB output; starting from LIM #11 every fourth LIM is missing a self-sneak.
+        (11, 15, 19, ..., 47) are the LIM numbers that don't have a self-sneak
+        One in every four LAB outputs (10 overall) have two fan-outs to the LAB input while the remaining 
+        30 outputs have a single self-sneak fan-out adding up to 50 self-sneaks overall 
+    -->
+    <!-- two fan-outs from data_out[0] -->
+    <direct name="LAB_self_sneak0" from_pin="LAB.data_out[0]" from_side="right" to_pin="LAB.data_in[0]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak1" from_pin="LAB.data_out[0]" from_side="right" to_pin="LAB.data_in[1]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak2" from_pin="LAB.data_out[1:3]" from_side="right" to_pin="LAB.data_in[2:4]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[4] -->
+    <direct name="LAB_self_sneak3" from_pin="LAB.data_out[4]" from_side="right" to_pin="LAB.data_in[5]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak4" from_pin="LAB.data_out[4]" from_side="right" to_pin="LAB.data_in[6]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak5" from_pin="LAB.data_out[5:7]" from_side="right" to_pin="LAB.data_in[7:9]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[8] -->
+    <direct name="LAB_self_sneak6" from_pin="LAB.data_out[8]" from_side="right" to_pin="LAB.data_in[10]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[11] -->
+    <direct name="LAB_self_sneak7" from_pin="LAB.data_out[8]" from_side="right" to_pin="LAB.data_in[12]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak8" from_pin="LAB.data_out[9:10]" from_side="right" to_pin="LAB.data_in[13:14]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[15] -->
+    <direct name="LAB_self_sneak9" from_pin="LAB.data_out[11]" from_side="right" to_pin="LAB.data_in[16]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[12] -->
+    <direct name="LAB_self_sneak10" from_pin="LAB.data_out[12]" from_side="right" to_pin="LAB.data_in[17]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak11" from_pin="LAB.data_out[12]" from_side="right" to_pin="LAB.data_in[18]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[19] -->
+    <direct name="LAB_self_sneak12" from_pin="LAB.data_out[13:15]" from_side="right" to_pin="LAB.data_in[20:22]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[16] -->
+    <!-- skipping data_in[23] -->
+    <direct name="LAB_self_sneak13" from_pin="LAB.data_out[16]" from_side="right" to_pin="LAB.data_in[24]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak14" from_pin="LAB.data_out[16]" from_side="right" to_pin="LAB.data_in[25]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak15" from_pin="LAB.data_out[17]" from_side="right" to_pin="LAB.data_in[26]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[27] -->
+    <direct name="LAB_self_sneak16" from_pin="LAB.data_out[18:19]" from_side="right" to_pin="LAB.data_in[28:29]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[20] -->
+    <direct name="LAB_self_sneak17" from_pin="LAB.data_out[20]" from_side="right" to_pin="LAB.data_in[30]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[31] -->
+    <direct name="LAB_self_sneak18" from_pin="LAB.data_out[20]" from_side="right" to_pin="LAB.data_in[32]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak19" from_pin="LAB.data_out[21:22]" from_side="right" to_pin="LAB.data_in[33:34]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[35] -->
+    <direct name="LAB_self_sneak20" from_pin="LAB.data_out[23]" from_side="right" to_pin="LAB.data_in[36]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[24] -->
+    <direct name="LAB_self_sneak21" from_pin="LAB.data_out[24]" from_side="right" to_pin="LAB.data_in[37]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak22" from_pin="LAB.data_out[24]" from_side="right" to_pin="LAB.data_in[38]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[39] -->
+    <direct name="LAB_self_sneak23" from_pin="LAB.data_out[25:27]" from_side="right" to_pin="LAB.data_in[40:42]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[28] -->
+    <!-- skipping data_in[43] -->
+    <direct name="LAB_self_sneak24" from_pin="LAB.data_out[28]" from_side="right" to_pin="LAB.data_in[44]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak25" from_pin="LAB.data_out[28]" from_side="right" to_pin="LAB.data_in[45]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak26" from_pin="LAB.data_out[29]" from_side="right" to_pin="LAB.data_in[46]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[47] -->
+    <direct name="LAB_self_sneak27" from_pin="LAB.data_out[30:31]" from_side="right" to_pin="LAB.data_in[48:49]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[32] -->
+    <direct name="LAB_self_sneak28" from_pin="LAB.data_out[32]" from_side="right" to_pin="LAB.data_in[50]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak29" from_pin="LAB.data_out[32]" from_side="right" to_pin="LAB.data_in[51]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak30" from_pin="LAB.data_out[33:35]" from_side="right" to_pin="LAB.data_in[52:54]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[36] -->
+    <direct name="LAB_self_sneak31" from_pin="LAB.data_out[36]" from_side="right" to_pin="LAB.data_in[55]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak32" from_pin="LAB.data_out[36]" from_side="right" to_pin="LAB.data_in[56]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak33" from_pin="LAB.data_out[37:39]" from_side="right" to_pin="LAB.data_in[57:59]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+
+    <!-- 
+      It's assumed that for the case where the adjacent block is an IO periphal other than iolane 
+      there are no incoming direct connections to the adjacent LAB  
+    -->
+
+    <!-- 
+      Since there is a full crossbar from the LAB lines to the ALM inputs 
+      the selection of LAB lines that are driven by outputs of the adjecent blocks won't affect routability to different ALMs.
+      
+      However, if a partial crossbar is implemented within the LAB then the selection of LAB lines should be 
+      such that the directlinks are uniformly accessible from every ALM input. These directlinks can come from LABs, DSPs, M20Ks and iolanes
+
+      The above point also applies to DSP lines and iolane lines as they are fed into a full crossbar as well
+    -->
+
+    <!-- 40 direct connections coming from the the adjacent LAB located to the left of the LAB-->
+    <direct name="LAB_side_sneak_LAB" from_pin="LAB.data_out[39:0]" from_side="right" to_pin="LAB.data_in[50:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 40 direct connections coming from the the adjacent memory block located to the left of the LAB-->
+    <direct name="Mem_side_sneak_LAB" from_pin="M20K.data_out[39:0]" from_side="right" to_pin="LAB.data_in[50:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 60 direct connections coming from the the adjacent DSP located to the left of the LAB-->
+    <direct name="DSP_side_sneak_LAB" from_pin="DSP.result[59:0]" from_side="right" to_pin="LAB.data_in[59:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+  
+    <!-- 24 direct connections coming from the the adjacent iolane located to the left of the LAB-->
+    <!-- all the LAB lines that don't have self-sneaks have an input coming from adjacent block - plus some of the LAB lines that have a self-sneak-->
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[1:0]" from_side="right" to_pin="LAB.data_in[1:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[3:2]" from_side="right" to_pin="LAB.data_in[12:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[5:4]" from_side="right" to_pin="LAB.data_in[16:15]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[7:6]" from_side="right" to_pin="LAB.data_in[20:19]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[9:8]" from_side="right" to_pin="LAB.data_in[24:23]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[11:10]" from_side="right" to_pin="LAB.data_in[28:27]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[13:12]" from_side="right" to_pin="LAB.data_in[32:31]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[15:14]" from_side="right" to_pin="LAB.data_in[36:35]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[17:16]" from_side="right" to_pin="LAB.data_in[40:39]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[19:18]" from_side="right" to_pin="LAB.data_in[44:43]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[21:20]" from_side="right" to_pin="LAB.data_in[48:47]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[23:22]" from_side="right" to_pin="LAB.data_in[59:58]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 40 direct connections coming from the the adjacent LAB located to the left of the DSP-->
+    <direct name="LAB_side_sneak_DSP" from_pin="LAB.data_out[39:0]" from_side="right" to_pin="DSP.data_in[39:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 40 direct connections coming from the the adjacent memory block located to the left of the DSP-->
+    <direct name="Mem_side_sneak_DSP" from_pin="M20K.data_out[39:0]" from_side="right" to_pin="DSP.data_in[39:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 74 direct connections coming from the the adjacent DSP located to the left of the DSP-->
+    <direct name="DSP_side_sneak_DSP" from_pin="DSP.result[73:0]" from_side="right" to_pin="DSP.data_in[73:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 24 direct connections coming from the the adjacent iolane located to the left of the DSP-->
+    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[23:0]" from_side="right" to_pin="DSP.data_in[23:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+
+    <!-- 
+      since a partial crossbar is implemented for memory blocks 
+      it's guaranteed that almost the same number of directlinks
+      are fed into every group of memory lines that constitute a pattern 
+    -->
+
+    <!-- 40 direct connections coming from the the adjacent LAB located to the left of the M20K-->
+    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[6:0]" from_side="right" to_pin="M20K.data_addr_control_in[6:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[13:7]" from_side="right" to_pin="M20K.data_addr_control_in[24:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[20:14]" from_side="right" to_pin="M20K.data_addr_control_in[42:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[27:21]" from_side="right" to_pin="M20K.data_addr_control_in[60:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[34:28]" from_side="right" to_pin="M20K.data_addr_control_in[78:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[39:34]" from_side="right" to_pin="M20K.data_addr_control_in[94:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 40 direct connections coming from the the adjacent memory block located to the left of the M20K-->
+    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[6:0]" from_side="right" to_pin="M20K.data_addr_control_in[6:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[13:7]" from_side="right" to_pin="M20K.data_addr_control_in[24:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[20:14]" from_side="right" to_pin="M20K.data_addr_control_in[42:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[27:21]" from_side="right" to_pin="M20K.data_addr_control_in[60:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[34:28]" from_side="right" to_pin="M20K.data_addr_control_in[78:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[39:34]" from_side="right" to_pin="M20K.data_addr_control_in[94:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 74 direct connections coming from the the adjacent DSP located to the left of the M20K-->
+    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[11:0]" from_side="right" to_pin="M20K.data_addr_control_in[11:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[23:12]" from_side="right" to_pin="M20K.data_addr_control_in[29:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[35:24]" from_side="right" to_pin="M20K.data_addr_control_in[47:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[47:36]" from_side="right" to_pin="M20K.data_addr_control_in[65:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[59:48]" from_side="right" to_pin="M20K.data_addr_control_in[83:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[73:60]" from_side="right" to_pin="M20K.data_addr_control_in[103:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+   
+    <!-- 24 direct connections coming from the the adjacent iolane located to the left of the M20K-->
+    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[3:0]" from_side="right" to_pin="M20K.data_addr_control_in[3:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[7:4]" from_side="right" to_pin="M20K.data_addr_control_in[21:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[11:8]" from_side="right" to_pin="M20K.data_addr_control_in[39:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[15:12]" from_side="right" to_pin="M20K.data_addr_control_in[57:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[19:16]" from_side="right" to_pin="M20K.data_addr_control_in[75:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[23:20]" from_side="right" to_pin="M20K.data_addr_control_in[93:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    
+
+    <!-- 40 direct connections coming from the the adjacent LAB located to the left of the iolane-->
+    <direct name="LAB_side_sneak_iolane" from_pin="LAB.data_out[39:0]" from_side="right" to_pin="iolane.core_in[39:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 40 direct connections coming from the the adjacent memory block located to the left of the iolane-->
+    <direct name="Mem_side_sneak_iolane" from_pin="M20K.data_out[39:0]" from_side="right" to_pin="iolane.core_in[39:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 74 direct connections coming from the the adjacent DSP located to the left of the iolane-->
+    <direct name="DSP_side_sneak_iolane" from_pin="DSP.result[54:0]" from_side="right" to_pin="iolane.core_in[54:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_iolane" from_pin="DSP.result[73:55]" from_side="right" to_pin="iolane.core_in[18:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+
   </directlist>
   <complexblocklist>
 
@@ -2918,6 +3120,8 @@
 					<input name="bx" num_pins="18"/>
 					<input name="by" num_pins="19"/>
 					<input name="bz" num_pins="18"/>
+					<input name="sub" num_pins="1"/>
+					<input name="negate" num_pins="1"/>
 					<input name="coefselb" num_pins="3"/>
 					<input name="scanin" num_pins="19"/>
 					<input name="ena" num_pins="3"/>
@@ -2933,6 +3137,8 @@
 					<clock name="bx_clk" num_pins="1"/>
 					<clock name="by_clk" num_pins="1"/>
 					<clock name="bz_clk" num_pins="1"/>
+					<clock name="sub_clk" num_pins="1"/>
+					<clock name="negate_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
@@ -2955,6 +3161,8 @@
 					<direct input="DSP.controlin[10:8]" name="ena_in" output="mac18x18_full.ena"/>
 					<direct input="DSP.controlin[11]" name="dfxlfsrena_in" output="mac18x18_full.dfxlfsrena"/>
 					<direct input="DSP.controlin[12]" name="dfxmisrena_in" output="mac18x18_full.dfxmisrena"/>
+					<direct input="DSP.controlin[15]" name="negate_in" output="mac18x18_full.negate"/>
+					<direct input="DSP.controlin[16]" name="sub_in" output="mac18x18_full.sub"/>
 					<complete input="DSP.clk" name="clk_in0" output="mac18x18_full.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_full.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_full.az_clk"/>
@@ -2964,6 +3172,8 @@
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_full.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_full.coef_sel_b_clk"/>
 					<complete input="DSP.clk" name="clk_in11" output="mac18x18_full.output_clk"/>
+					<complete input="DSP.clk" name="clk_in12" output="mac18x18_full.sub_clk"/>
+					<complete input="DSP.clk" name="clk_in13" output="mac18x18_full.negate_clk"/>
 				</interconnect>
 			</mode>
 
@@ -2977,6 +3187,8 @@
 					<input name="bx" num_pins="18"/>
 					<input name="by" num_pins="19"/>
 					<input name="bz" num_pins="18"/>
+					<input name="sub" num_pins="1"/>
+					<input name="negate" num_pins="1"/>
 					<input name="coefselb" num_pins="3"/>
 					<input name="scanin" num_pins="19"/>
 					<input name="ena" num_pins="3"/>
@@ -2992,6 +3204,8 @@
 					<clock name="bx_clk" num_pins="1"/>
 					<clock name="by_clk" num_pins="1"/>
 					<clock name="bz_clk" num_pins="1"/>
+					<clock name="sub_clk" num_pins="1"/>
+					<clock name="negate_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
@@ -3014,6 +3228,8 @@
 					<direct input="DSP.controlin[10:8]" name="ena_in" output="mac18x18_full.ena"/>
 					<direct input="DSP.controlin[11]" name="dfxlfsrena_in" output="mac18x18_full.dfxlfsrena"/>
 					<direct input="DSP.controlin[12]" name="dfxmisrena_in" output="mac18x18_full.dfxmisrena"/>
+					<direct input="DSP.controlin[15]" name="negate_in" output="mac18x18_full.negate"/>
+					<direct input="DSP.controlin[16]" name="sub_in" output="mac18x18_full.sub"/>
 					<complete input="DSP.clk" name="clk_in0" output="mac18x18_full.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_full.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_full.az_clk"/>
@@ -3023,6 +3239,8 @@
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_full.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_full.coef_sel_b_clk"/>
 					<complete input="DSP.clk" name="clk_in11" output="mac18x18_full.output_clk"/>
+					<complete input="DSP.clk" name="clk_in12" output="mac18x18_full.sub_clk"/>
+					<complete input="DSP.clk" name="clk_in13" output="mac18x18_full.negate_clk"/>
 				</interconnect>
 			</mode>
 
@@ -3036,6 +3254,8 @@
 					<input name="bx" num_pins="18"/>
 					<input name="by" num_pins="19"/>
 					<input name="bz" num_pins="18"/>
+					<input name="sub" num_pins="1"/>
+					<input name="negate" num_pins="1"/>
 					<input name="coefselb" num_pins="3"/>
 					<input name="scanin" num_pins="19"/>
 					<input name="ena" num_pins="3"/>
@@ -3051,6 +3271,8 @@
 					<clock name="bx_clk" num_pins="1"/>
 					<clock name="by_clk" num_pins="1"/>
 					<clock name="bz_clk" num_pins="1"/>
+					<clock name="sub_clk" num_pins="1"/>
+					<clock name="negate_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
@@ -3073,6 +3295,8 @@
 					<direct input="DSP.controlin[10:8]" name="ena_in" output="mac18x18_full.ena"/>
 					<direct input="DSP.controlin[11]" name="dfxlfsrena_in" output="mac18x18_full.dfxlfsrena"/>
 					<direct input="DSP.controlin[12]" name="dfxmisrena_in" output="mac18x18_full.dfxmisrena"/>
+					<direct input="DSP.controlin[15]" name="negate_in" output="mac18x18_full.negate"/>
+					<direct input="DSP.controlin[16]" name="sub_in" output="mac18x18_full.sub"/>
 					<complete input="DSP.clk" name="clk_in0" output="mac18x18_full.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_full.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_full.az_clk"/>
@@ -3081,7 +3305,9 @@
 					<complete input="DSP.clk" name="clk_in5" output="mac18x18_full.bz_clk"/>
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_full.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_full.coef_sel_b_clk"/>
-					<complete input="DSP.clk" name="clk_in11" output="mac18x18_full.output_clk"/>          
+					<complete input="DSP.clk" name="clk_in11" output="mac18x18_full.output_clk"/> 
+					<complete input="DSP.clk" name="clk_in12" output="mac18x18_full.sub_clk"/>
+					<complete input="DSP.clk" name="clk_in13" output="mac18x18_full.negate_clk"/>         
 				</interconnect>
 			</mode>
 
@@ -3095,6 +3321,8 @@
 					<input name="bx" num_pins="18"/>
 					<input name="by" num_pins="19"/>
 					<input name="bz" num_pins="18"/>
+					<input name="sub" num_pins="1"/>
+					<input name="negate" num_pins="1"/>
 					<input name="coefselb" num_pins="3"/>
 					<input name="scanin" num_pins="19"/>
 					<input name="ena" num_pins="3"/>
@@ -3110,6 +3338,8 @@
 					<clock name="bx_clk" num_pins="1"/>
 					<clock name="by_clk" num_pins="1"/>
 					<clock name="bz_clk" num_pins="1"/>
+					<clock name="sub_clk" num_pins="1"/>
+					<clock name="negate_clk" num_pins="1"/>
 					<clock name="coef_sel_a_clk" num_pins="1"/>
 					<clock name="coef_sel_b_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
@@ -3132,6 +3362,8 @@
 					<direct input="DSP.controlin[10:8]" name="ena_in" output="mac18x18_full.ena"/>
 					<direct input="DSP.controlin[11]" name="dfxlfsrena_in" output="mac18x18_full.dfxlfsrena"/>
 					<direct input="DSP.controlin[12]" name="dfxmisrena_in" output="mac18x18_full.dfxmisrena"/>
+					<direct input="DSP.controlin[15]" name="negate_in" output="mac18x18_full.negate"/>
+					<direct input="DSP.controlin[16]" name="sub_in" output="mac18x18_full.sub"/>
 					<complete input="DSP.clk" name="clk_in0" output="mac18x18_full.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac18x18_full.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac18x18_full.az_clk"/>
@@ -3141,6 +3373,8 @@
 					<complete input="DSP.clk" name="clk_in6" output="mac18x18_full.coef_sel_a_clk"/>
 					<complete input="DSP.clk" name="clk_in7" output="mac18x18_full.coef_sel_b_clk"/>
 					<complete input="DSP.clk" name="clk_in11" output="mac18x18_full.output_clk"/>
+					<complete input="DSP.clk" name="clk_in12" output="mac18x18_full.sub_clk"/>
+					<complete input="DSP.clk" name="clk_in13" output="mac18x18_full.negate_clk"/>
 				</interconnect>
 			</mode>
 
@@ -3871,6 +4105,7 @@
 					<input name="coefsela" num_pins="3"/>
 					<input name="loadconst" num_pins="1"/>
 					<input name="negate" num_pins="1"/>
+					<input name="sub" num_pins="1"/>
 					<input name="scanin" num_pins="27"/>
 					<input name="ena" num_pins="3"/>
 					<input name="dfxlfsrena" num_pins="1"/>
@@ -3882,6 +4117,7 @@
 					<clock name="ax_clk" num_pins="1"/>
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
+					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
 					<clock name="accumulate_clk" num_pins="1"/>
@@ -3907,6 +4143,7 @@
 					<direct input="DSP.controlin[13]" name="accumulate_in" output="mac27x27.accumulate"/>
 					<direct input="DSP.controlin[14]" name="loadconst_in" output="mac27x27.loadconst"/>
 					<direct input="DSP.controlin[15]" name="negate_in" output="mac27x27.negate"/>
+					<direct input="DSP.controlin[16]" name="sub_in" output="mac27x27.sub"/>
 					<complete input="DSP.clk" name="clk_in0" output="mac27x27.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac27x27.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac27x27.az_clk"/>
@@ -3916,6 +4153,7 @@
 					<complete input="DSP.clk" name="clk_in8" output="mac27x27.output_clk"/>
 					<complete input="DSP.clk" name="clk_in9" output="mac27x27.chainout_clk"/>
 					<complete input="DSP.clk" name="clk_in10" output="mac27x27.coef_sel_a_clk"/>
+					<complete input="DSP.clk" name="clk_in11" output="mac27x27.sub_clk"/>
 				</interconnect>
 			</mode>
 
@@ -3930,6 +4168,7 @@
 					<input name="coefsela" num_pins="3"/>
 					<input name="loadconst" num_pins="1"/>
 					<input name="negate" num_pins="1"/>
+					<input name="sub" num_pins="1"/>
 					<input name="scanin" num_pins="27"/>
 					<input name="ena" num_pins="3"/>
 					<input name="dfxlfsrena" num_pins="1"/>
@@ -3942,6 +4181,7 @@
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
+					<clock name="sub_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
 					<clock name="accumulate_clk" num_pins="1"/>
 					<clock name="output_clk" num_pins="1"/>
@@ -3966,6 +4206,7 @@
 					<direct input="DSP.controlin[13]" name="accumulate_in" output="mac27x27.accumulate"/>
 					<direct input="DSP.controlin[14]" name="loadconst_in" output="mac27x27.loadconst"/>
 					<direct input="DSP.controlin[15]" name="negate_in" output="mac27x27.negate"/>
+					<direct input="DSP.controlin[16]" name="sub_in" output="mac27x27.sub"/>
 					<complete input="DSP.clk" name="clk_in0" output="mac27x27.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac27x27.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac27x27.az_clk"/>
@@ -3975,6 +4216,7 @@
 					<complete input="DSP.clk" name="clk_in8" output="mac27x27.output_clk"/>
 					<complete input="DSP.clk" name="clk_in9" output="mac27x27.chainout_clk"/>
 					<complete input="DSP.clk" name="clk_in10" output="mac27x27.coef_sel_a_clk"/>
+					<complete input="DSP.clk" name="clk_in11" output="mac27x27.sub_clk"/>
 				</interconnect>
 			</mode>
 
@@ -3989,6 +4231,7 @@
 					<input name="coefsela" num_pins="3"/>
 					<input name="loadconst" num_pins="1"/>
 					<input name="negate" num_pins="1"/>
+					<input name="sub" num_pins="1"/>
 					<input name="scanin" num_pins="27"/>
 					<input name="ena" num_pins="3"/>
 					<input name="dfxlfsrena" num_pins="1"/>
@@ -3997,6 +4240,7 @@
 					<output name="resulta" num_pins="64"/>
 					<output name="scanout" num_pins="27"/>
 					<output name="dftout" num_pins="1"/>
+					<clock name="sub_clk" num_pins="1"/>
 					<clock name="ax_clk" num_pins="1"/>
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
@@ -4025,6 +4269,7 @@
 					<direct input="DSP.controlin[13]" name="accumulate_in" output="mac27x27.accumulate"/>
 					<direct input="DSP.controlin[14]" name="loadconst_in" output="mac27x27.loadconst"/>
 					<direct input="DSP.controlin[15]" name="negate_in" output="mac27x27.negate"/>
+					<direct input="DSP.controlin[16]" name="sub_in" output="mac27x27.sub"/>
 					<complete input="DSP.clk" name="clk_in0" output="mac27x27.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac27x27.ay_scan_in_clk"/>
 					<complete input="DSP.clk" name="clk_in2" output="mac27x27.az_clk"/>
@@ -4034,6 +4279,7 @@
 					<complete input="DSP.clk" name="clk_in8" output="mac27x27.output_clk"/>
 					<complete input="DSP.clk" name="clk_in9" output="mac27x27.chainout_clk"/>
 					<complete input="DSP.clk" name="clk_in10" output="mac27x27.coef_sel_a_clk"/>
+					<complete input="DSP.clk" name="clk_in11" output="mac27x27.sub_clk"/>
 				</interconnect>
 			</mode>
 
@@ -4048,6 +4294,7 @@
 					<input name="coefsela" num_pins="3"/>
 					<input name="loadconst" num_pins="1"/>
 					<input name="negate" num_pins="1"/>
+					<input name="sub" num_pins="1"/>
 					<input name="scanin" num_pins="27"/>
 					<input name="ena" num_pins="3"/>
 					<input name="dfxlfsrena" num_pins="1"/>
@@ -4059,6 +4306,7 @@
 					<clock name="ax_clk" num_pins="1"/>
 					<clock name="ay_scan_in_clk" num_pins="1"/>
 					<clock name="az_clk" num_pins="1"/>
+					<clock name="sub_clk" num_pins="1"/>
 					<clock name="negate_clk" num_pins="1"/>
 					<clock name="loadconst_clk" num_pins="1"/>
 					<clock name="accumulate_clk" num_pins="1"/>
@@ -4083,6 +4331,7 @@
 					<direct input="DSP.controlin[11]" name="dfxlfsrena_in" output="mac27x27.dfxlfsrena"/>
 					<direct input="DSP.controlin[12]" name="dfxmisrena_in" output="mac27x27.dfxmisrena"/>
 					<direct input="DSP.controlin[13]" name="accumulate_in" output="mac27x27.accumulate"/>
+					<direct input="DSP.controlin[16]" name="sub_in" output="mac27x27.sub"/>
 					<direct input="DSP.controlin[14]" name="loadconst_in" output="mac27x27.loadconst"/>
 					<complete input="DSP.clk" name="clk_in0" output="mac27x27.ax_clk"/>
 					<complete input="DSP.clk" name="clk_in1" output="mac27x27.ay_scan_in_clk"/>
@@ -4093,6 +4342,7 @@
 					<complete input="DSP.clk" name="clk_in8" output="mac27x27.output_clk"/>
 					<complete input="DSP.clk" name="clk_in9" output="mac27x27.chainout_clk"/>
 					<complete input="DSP.clk" name="clk_in10" output="mac27x27.coef_sel_a_clk"/>
+					<complete input="DSP.clk" name="clk_in11" output="mac27x27.sub_clk"/>
 				</interconnect>
 			</mode>
 
