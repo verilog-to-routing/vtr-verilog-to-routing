@@ -71,6 +71,7 @@ bool randomPackingSwap::evaluate_move(const std::vector<molMoveDescription>& new
 /***************** Quasi directed packing move class *******************/
 /***********************************************************************/
 bool quasiDirectedPackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) {
+    auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
 
     t_pack_molecule *mol_1, *mol_2;
     ClusterBlockId clb_index_1;
@@ -86,6 +87,10 @@ bool quasiDirectedPackingSwap::propose_move(std::vector<molMoveDescription>& new
     if(found) {
         ClusterBlockId clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
         build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
+    } else {
+        packing_multithreading_ctx.mu.lock();
+        packing_multithreading_ctx.clb_in_flight[clb_index_1] = false;
+        packing_multithreading_ctx.mu.unlock();
     }
     return found;
 }
