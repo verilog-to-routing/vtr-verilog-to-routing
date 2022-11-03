@@ -55,7 +55,6 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         last_crit_exponent_ = crit_params.crit_exponent;
     }
 
-    ClusterBlockId crit_block;
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
     /* Performs a 1-to-1 mapping from criticality to timing_place_crit_.
