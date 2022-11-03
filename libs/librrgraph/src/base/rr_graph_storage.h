@@ -432,6 +432,7 @@ class t_rr_graph_storage {
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
+        edge_remapped_.clear();
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
@@ -449,6 +450,7 @@ class t_rr_graph_storage {
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
+        edge_remapped_.shrink_to_fit();
     }
 
     // Append 1 more RR node to the RR graph.
@@ -621,6 +623,10 @@ class t_rr_graph_storage {
         node_first_edge_.clear();
     }
 
+    inline void clear_node_fan_in () {
+        node_fan_in_.clear();
+    }
+
   private:
     friend struct edge_swapper;
     friend class edge_sort_iterator;
@@ -670,6 +676,7 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
+    vtr::vector<RREdgeId, bool> edge_remapped_;
 
     /***************
      * State flags *

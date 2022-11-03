@@ -272,14 +272,6 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
                                                                    const std::vector<vtr::Matrix<int>>& Fc_out,
                                                                    const enum e_directionality directionality);
 
-static void build_rr_switch_inf(const float R_minW_nmos,
-                                const float R_minW_pmos,
-                                const int wire_to_arch_ipin_switch,
-                                const std::vector<t_segment_inf>& segment_inf,
-                                const enum e_base_cost_type base_cost_type,
-                                RRGraphBuilder& rr_graph_builder,
-                                int* wire_to_rr_ipin_switch);
-
 /*
  * Create the connection between intra-tile pins
  */
@@ -482,13 +474,17 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int delayless_switch,
                            const float R_minW_nmos,
                            const float R_minW_pmos,
+                           const enum e_base_cost_type base_cost_type,
                            const enum e_clock_modeling clock_modeling,
                            const t_direct_inf* directs,
                            const int num_directs,
+                           int* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings);
 
-static void build_intra_cluster_rr_graph(const DeviceGrid& grid,
+static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
+                                         const DeviceGrid& grid,
+                                         const std::vector<t_physical_tile_type>& types,
                                          const RRGraphView& rr_graph,
                                          const int delayless_switch,
                                          RRGraphBuilder& rr_graph_builder,
@@ -566,43 +562,29 @@ void create_rr_graph(const t_graph_type graph_type,
                            det_routing_arch->delayless_switch,
                            det_routing_arch->R_minW_nmos,
                            det_routing_arch->R_minW_pmos,
+                           router_opts.base_cost_type,
                            router_opts.clock_modeling,
                            directs, num_directs,
+                           &det_routing_arch->wire_to_rr_ipin_switch,
                            is_flat,
                            Warnings);
         }
     }
 
     if(is_flat) {
-        build_intra_cluster_rr_graph(grid,
+        build_intra_cluster_rr_graph(graph_type,
+                                     grid,
+                                     block_types,
                                      device_ctx.rr_graph,
                                      det_routing_arch->delayless_switch,
                                      mutable_device_ctx.rr_graph_builder,
                                      is_flat);
-    }
 
-    if(det_routing_arch->read_rr_graph_filename.empty() || is_flat) {
-        // If flat_routing is enabled, the intra-cluster switches should be added to the rr_switch
-        build_rr_switch_inf(det_routing_arch->R_minW_nmos,
-                            det_routing_arch->R_minW_pmos,
-                            det_routing_arch->wire_to_arch_ipin_switch,
-                            segment_inf,
-                            router_opts.base_cost_type,
-                            mutable_device_ctx.rr_graph_builder,
-                            &det_routing_arch->wire_to_rr_ipin_switch);
         if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
             mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
                                                               router_opts.reorder_rr_graph_nodes_threshold,
                                                               router_opts.reorder_rr_graph_nodes_seed);
         }
-        check_rr_graph(device_ctx.rr_graph,
-                       block_types,
-                       device_ctx.rr_indexed_data,
-                       grid,
-                       device_ctx.chan_width,
-                       graph_type,
-                       device_ctx.virtual_clock_network_root_idx,
-                       is_flat);
     }
 
     process_non_config_sets();
@@ -632,38 +614,6 @@ void create_rr_graph(const t_graph_type graph_type,
                        echo_file_name,
                        is_flat);
     }
-}
-
-static void build_rr_switch_inf(const float R_minW_nmos,
-                                const float R_minW_pmos,
-                                const int wire_to_arch_ipin_switch,
-                                const std::vector<t_segment_inf>& segment_inf,
-                                const enum e_base_cost_type base_cost_type,
-                                RRGraphBuilder& rr_graph_builder,
-                                int* wire_to_rr_ipin_switch) {
-    vtr::ScopedStartFinishTimer timer("Build rr switch inf");
-    rr_graph_builder.init_fan_in();
-    auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
-    /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
-     * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
-    alloc_and_load_rr_switch_inf(g_vpr_ctx.mutable_device().rr_graph_builder,
-                                 g_vpr_ctx.mutable_device().switch_fanin_remap,
-                                 mutable_device_ctx.all_sw_inf,
-                                 R_minW_nmos,
-                                 R_minW_pmos,
-                                 wire_to_arch_ipin_switch,
-                                 wire_to_rr_ipin_switch);
-
-    //Partition the rr graph edges for efficient access to configurable/non-configurable
-    //edge subsets. Must be done after RR switches have been allocated
-    mutable_device_ctx.rr_graph_builder.partition_edges();
-
-
-    t_unified_to_parallel_seg_index segment_index_map;
-    std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
-    std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS);
-
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, *wire_to_rr_ipin_switch, base_cost_type);
 }
 
 static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -772,9 +722,11 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int delayless_switch,
                            const float R_minW_nmos,
                            const float R_minW_pmos,
+                           const enum e_base_cost_type base_cost_type,
                            const enum e_clock_modeling clock_modeling,
                            const t_direct_inf* directs,
                            const int num_directs,
+                           int* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
@@ -1175,8 +1127,33 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     update_chan_width(&nodes_per_chan);
 
+    /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
+     * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
+    alloc_and_load_rr_switch_inf(g_vpr_ctx.mutable_device().rr_graph_builder,
+                                 g_vpr_ctx.mutable_device().switch_fanin_remap,
+                                 device_ctx.all_sw_inf,
+                                 R_minW_nmos,
+                                 R_minW_pmos,
+                                 wire_to_arch_ipin_switch,
+                                 wire_to_rr_ipin_switch);
+
+    //Partition the rr graph edges for efficient access to configurable/non-configurable
+    //edge subsets. Must be done after RR switches have been allocated
+    device_ctx.rr_graph_builder.partition_edges();
+
     //Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
+
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, *wire_to_rr_ipin_switch, base_cost_type);
+
+    check_rr_graph(device_ctx.rr_graph,
+                   types,
+                   device_ctx.rr_indexed_data,
+                   grid,
+                   device_ctx.chan_width,
+                   graph_type,
+                   device_ctx.virtual_clock_network_root_idx,
+                   is_flat);
 
     /* Free all temp structs */
     delete[] seg_details_x;
@@ -1199,11 +1176,15 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 }
 
-static void build_intra_cluster_rr_graph(const DeviceGrid& grid,
+static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
+                                         const DeviceGrid& grid,
+                                         const std::vector<t_physical_tile_type>& types,
                                          const RRGraphView& rr_graph,
                                          const int delayless_switch,
                                          RRGraphBuilder& rr_graph_builder,
                                          bool is_flat) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
     vtr::ScopedStartFinishTimer timer("Build intra-cluster routing resource graph");
 
     invalidate_router_lookahead_cache();
@@ -1227,6 +1208,20 @@ static void build_intra_cluster_rr_graph(const DeviceGrid& grid,
         VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
                       expected_node_count, rr_graph.num_nodes());
     }
+
+    remap_rr_node_switch_indices(rr_graph_builder,
+                                 g_vpr_ctx.device().switch_fanin_remap);
+
+    rr_graph_builder.partition_edges();
+
+    check_rr_graph(device_ctx.rr_graph,
+                   types,
+                   device_ctx.rr_indexed_data,
+                   grid,
+                   device_ctx.chan_width,
+                   graph_type,
+                   device_ctx.virtual_clock_network_root_idx,
+                   is_flat);
 
 
 }
@@ -1260,7 +1255,6 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                  det_routing_arch.R_minW_pmos,
                                  det_routing_arch.wire_to_arch_ipin_switch,
                                  &dummy_int);
-    VTR_ASSERT(dummy_int == OPEN);
     rr_graph_builder.partition_edges();
 }
 
@@ -1866,6 +1860,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         VTR_LOG("\n Dedicated clock network edge count: %d \n", num_edges);
     }
 
+    rr_graph_builder.init_fan_in();
+
     return update_chan_width;
 }
 
@@ -1928,6 +1924,8 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
     }
 
     VTR_LOG("Internal edge count:%d\n", num_edges);
+
+    rr_graph_builder.init_fan_in();
 
 }
 

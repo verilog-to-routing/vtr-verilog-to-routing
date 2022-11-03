@@ -8,6 +8,7 @@ void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_src_node_.reserve(num_edges);
     edge_dest_node_.reserve(num_edges);
     edge_switch_.reserve(num_edges);
+    edge_remapped_.reserve(num_edges);
 }
 
 void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch) {
@@ -16,6 +17,7 @@ void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short ed
     edge_src_node_.emplace_back(src);
     edge_dest_node_.emplace_back(dest);
     edge_switch_.emplace_back(edge_switch);
+    edge_remapped_.emplace_back(false);
 }
 
 // Typical node to edge ratio.  This allows a preallocation guess for the edges
@@ -39,6 +41,7 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
         edge_src_node_.reserve(new_capacity);
         edge_dest_node_.reserve(new_capacity);
         edge_switch_.reserve(new_capacity);
+        edge_remapped_.reserve(new_capacity);
     }
 
     for (const auto& new_edge : *rr_edges_to_create) {
@@ -81,6 +84,7 @@ struct edge_swapper {
         storage_->edge_src_node_[edge] = storage_->edge_src_node_[other_edge];
         storage_->edge_dest_node_[edge] = storage_->edge_dest_node_[other_edge];
         storage_->edge_switch_[edge] = storage_->edge_switch_[other_edge];
+        storage_->edge_remapped_[edge] = storage_->edge_remapped_[other_edge];
         return *this;
     }
 
@@ -90,6 +94,7 @@ struct edge_swapper {
         storage_->edge_src_node_[RREdgeId(idx_)] = RRNodeId(edge.from_node);
         storage_->edge_dest_node_[RREdgeId(idx_)] = RRNodeId(edge.to_node);
         storage_->edge_switch_[RREdgeId(idx_)] = edge.switch_type;
+        storage_->edge_remapped_[RREdgeId(idx_)] = edge.remapped;
         return *this;
     }
 
@@ -98,7 +103,8 @@ struct edge_swapper {
         t_rr_edge_info info(
             storage_->edge_src_node_[RREdgeId(idx_)],
             storage_->edge_dest_node_[RREdgeId(idx_)],
-            storage_->edge_switch_[RREdgeId(idx_)]);
+            storage_->edge_switch_[RREdgeId(idx_)],
+            storage_->edge_remapped_[RREdgeId(idx_)]);
 
         return info;
     }
@@ -114,6 +120,7 @@ struct edge_swapper {
         std::swap(a.storage_->edge_src_node_[a_edge], a.storage_->edge_src_node_[b_edge]);
         std::swap(a.storage_->edge_dest_node_[a_edge], a.storage_->edge_dest_node_[b_edge]);
         std::swap(a.storage_->edge_switch_[a_edge], a.storage_->edge_switch_[b_edge]);
+        std::swap(a.storage_->edge_remapped_[a_edge], a.storage_->edge_remapped_[b_edge]);
     }
 
     friend void swap(edge_swapper& a, edge_swapper& b) {
@@ -332,6 +339,7 @@ void t_rr_graph_storage::assign_first_edges() {
     size_t num_edges = edge_src_node_.size();
     VTR_ASSERT(edge_dest_node_.size() == num_edges);
     VTR_ASSERT(edge_switch_.size() == num_edges);
+    VTR_ASSERT(edge_remapped_.size() == num_edges);
     while (true) {
         VTR_ASSERT(first_id < num_edges);
         VTR_ASSERT(second_id < num_edges);
@@ -454,6 +462,14 @@ size_t t_rr_graph_storage::count_rr_switches(
 
     } while (first_edge != edge_dest_node_.end());
 
+    for(size_t iswitch = 0; iswitch < arch_switch_counts.size(); ++iswitch) {
+        if(arch_switch_fanins[iswitch].empty()){
+            if(arch_switch_inf[iswitch].fixed_Tdel()){
+                arch_switch_fanins[iswitch][UNDEFINED] = num_rr_switches++;
+            }
+        }
+    }
+
     return num_rr_switches;
 }
 
@@ -463,6 +479,9 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
     VTR_ASSERT(!remapped_edges_);
     for (size_t i = 0; i < edge_src_node_.size(); ++i) {
         RREdgeId edge(i);
+        if(edge_remapped_[edge]) {
+            continue;
+        }
 
         RRNodeId to_node = edge_dest_node_[edge];
         int switch_index = edge_switch_[edge];
@@ -478,6 +497,7 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
         int rr_switch_index = itr->second;
 
         edge_switch_[edge] = rr_switch_index;
+        edge_remapped_[edge] = true;
     }
     remapped_edges_ = true;
 }
@@ -788,6 +808,7 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         auto old_edge_src_node = edge_src_node_;
         auto old_edge_dest_node = edge_dest_node_;
         auto old_edge_switch = edge_switch_;
+        auto old_edge_remapped = edge_remapped_;
         RREdgeId cur_edge(0);
 
         // Reorder edges by source node
@@ -800,6 +821,7 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                 edge_src_node_[cur_edge] = order[old_edge_src_node[e]]; // == n?
                 edge_dest_node_[cur_edge] = order[old_edge_dest_node[e]];
                 edge_switch_[cur_edge] = old_edge_switch[e];
+                edge_remapped_[cur_edge] = old_edge_remapped[e];
                 cur_edge = RREdgeId(size_t(cur_edge) + 1);
             }
         }

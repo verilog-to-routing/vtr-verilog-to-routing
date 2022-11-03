@@ -313,6 +313,7 @@ class RRGraphBuilder {
         node_storage_.partitioned_ = false;
         node_storage_.remapped_edges_ = false;
         node_storage_.clear_node_first_edge();
+        node_storage_.clear_node_fan_in();
     }
 
     /* -- Internal data storage -- */
