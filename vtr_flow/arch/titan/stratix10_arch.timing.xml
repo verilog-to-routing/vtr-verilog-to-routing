@@ -1683,8 +1683,7 @@
 
   </models>
   <tiles>
-
-    <tile name="iolane">
+    <tile height="4" name="iolane">
       <sub_tile name="iolane" >
         <equivalent_sites>
           <site pb_type="iolane" pin_mapping="direct"/>
@@ -1693,13 +1692,70 @@
         <output name="core_out" num_pins="24" equivalent="none"/>
         <clock name="clk" num_pins="1"/>
         <fc in_type="frac" in_val="0.0275" out_type="frac" out_val="0.0375"/>
+        <!-- 
+          Stratix 10 is a 3 sided architecture, the iolanes can connect to routing on their
+          left, top, and right. 
+          We model that all the pins can connect to each vertical channel (left/right),
+          and the top horizontal channel.
+          The pins located on the left and right side of the block are uniformly distributed across
+          the legnths of 4   
+        -->
         <pinlocations pattern="custom">
-          
-          <loc side="left">  iolane.core_in[0:26]  iolane.core_out[0:11]  iolane.clk</loc>
-          <loc side="right"> iolane.core_in[27:54] iolane.core_out[12:23] iolane.clk</loc>
-          <loc side="top">   iolane.core_in[0:26]  iolane.core_out[0:11]  iolane.clk</loc>
-          <loc side="bottom">iolane.core_in[27:54] iolane.core_out[12:23] iolane.clk</loc>
+          <loc side="top">   iolane.core_in  iolane.core_out iolane.clk</loc>
+
+          <loc side="left" y_offset="0">  iolane.core_in[13:0]  iolane.core_out[5:0]  iolane.clk</loc>
+          <loc side="right" y_offset="0">  iolane.core_in[13:0]  iolane.core_out[5:0]  iolane.clk</loc>
+
+          <loc side="left" y_offset="1">  iolane.core_in[27:14]  iolane.core_out[11:6]  iolane.clk</loc>
+          <loc side="right" y_offset="1">  iolane.core_in[27:14]  iolane.core_out[11:6]  iolane.clk</loc>
+
+          <loc side="left" y_offset="2">  iolane.core_in[41:28]  iolane.core_out[17:12]  iolane.clk</loc>
+          <loc side="right" y_offset="2">  iolane.core_in[41:28]  iolane.core_out[17:12]  iolane.clk</loc>
+
+          <loc side="left" y_offset="3">  iolane.core_in[54:42]  iolane.core_out[23:18]  iolane.clk</loc>
+          <loc side="right" y_offset="3">  iolane.core_in[54:42]  iolane.core_out[23:18]  iolane.clk</loc>
         </pinlocations>
+        
+        <!-- qqqq it's assumed that mux size and input distribution for iolane is also similar -->
+        <!-- 
+          iolane input muxes have 4 V wires and 6 H wires as input.
+
+          Based on calculations performed for LABs (commented in LAB tile definition):
+
+          The distribution of 6 inputs among different short wire types and fc_in value would be as follows:
+          6 * (40/352) ~ 1 input from H2 wires | fc_in(H2) = 1/40 = 0.025
+          6 * (112/352) ~ 2 inputs from H4 wires | fc_in(H4) = 2/112 = 0.018 
+          6 * (200/352) ~ 3 inputs from H10 wires | fc_in(H10) = 3/200 = 0.015
+  
+          The distribution of 4 inputs among different short wire types and fc_in value would be as follows:
+          4 * (24/160) ~ 1 input from V2 wires | fc_in(V2) = 1/24 = 0.042
+          4 * (72/160) ~ 2 inputs from V3 wires | fc_in(V3) = 2/72 = 0.028
+          4 * (64/160) ~ 1 input from V4 wires | fc_in(V4) = 3/64 = 0.047 
+        -->
+
+        <!-- 
+          For every short H wire, 5 inputs come from adjacent blocks outputs. 
+          Assuming there are 24 pins on the top side of the iolane block: fc_out(H wires) = 5/24 = 0.21
+
+          For every short V wire, 6 inputs come block outputs. Assuming 3 inputs come from the block
+          located on either side of the channel, with 6 pins coming from a unit length on the left and right
+          side of the iolane block we have fc_out(V wires) = (3/6) = 0.5
+        -->
+        <!-- qqqq assumed the same fc value of control in -->
+
+        <!-- Specifying fc values for H2 wires -->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.21" segment_name="H2"/>
+        <!-- Specifying fc values for H4 wires -->
+        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.21" segment_name="H4"/>
+        <!-- Specifying fc values for H10 wires -->
+        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.21" segment_name="H10"/>
+
+        <!-- Specifying fc values for V2 wires -->
+        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.5" segment_name="V2"/>
+        <!-- Specifying fc values for V3 wires -->
+        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.5" segment_name="V3"/>
+        <!-- Specifying fc values for V4 wires -->
+        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.5" segment_name="V4"/>
       </sub_tile>
     </tile>
 
@@ -1723,44 +1779,125 @@
         <output name="data_out" num_pins="40" equivalent="full"/>
         <output name="cout" num_pins="1" equivalent="none"/>
         <clock name="clk" num_pins="2"/>
-        <fc in_type="frac" in_val="0.0275" out_type="frac" out_val="0.0375">
-          <!-- Based on mux size info Startix 10 has approximately the following effective Fc values:
-                   Fc_in: 0.055
-                   Fc_out: 0.075
 
-               However, we allow half the pins to connect to the left side, the other half to the right side
-               and all pins to connect to the top side of the LAB (3-sided architecture).
-
-               As a result we divide the effective Fc values by 2 (since each pin can connect to two sides)
-               to keep roughly the same number of switches, yielding:
-
-                    Fc_in: 0.0275
-                    Fc_out: 0.0375
-               -->
-          <!--Chains do not connect to general global routing-->
-          <fc_override port_name="cin" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
-        </fc>
         <pinlocations pattern="custom">
-          <!-- Stratix 10 is a 3 sided architecture, the LABs can connect to routing on their
-               left, top, and right.  To model this we spread the various ports around the three sides.
-
-               The exceptions to the above are the LAB chain ports, which propogate downward between blocks.
-
-               We model that half the pins can connect to each vertical channel (left/right),
-               and all can connect to the horizontal channel (top). This models the fact that
-               each block pin can connect to some Vertical and some Horizontal wires in Stratix IV.
-               Note that Fc_in/Fc_out have been scaled to account for this.
-             -->
-          <loc side="left">  LAB.data_in[0:39]  LAB.control_in[0:3] LAB.data_out[0:19]  LAB.clk</loc>
-          <loc side="right"> LAB.data_in[40:79] LAB.control_in[4:6] LAB.data_out[20:39]</loc>
-          <loc side="top">   LAB.data_in        LAB.control_in      LAB.data_out        LAB.clk LAB.cin</loc>
+          <!-- 
+            Stratix 10 is a 3 sided architecture, the LABs can connect to routing on their
+            left, top, and right. 
+            We model that all the pins can connect to each vertical channel (left/right),
+            and the top horizontal channel.
+            The exceptions to the above are the LAB chain ports, which propogate downward between blocks.   
+          -->
+          <loc side="left">  LAB.data_in LAB.control_in LAB.data_out LAB.clk</loc>
+          <loc side="right"> LAB.data_in LAB.control_in LAB.data_out LAB.clk<</loc>
+          <loc side="top">   LAB.data_in LAB.control_in LAB.data_out LAB.clk LAB.cin</loc>
           <loc side="bottom">LAB.cout</loc>
         </pinlocations>
+
+        <!-- 
+          LAB input muxes have 4 V wires and 6 H wires as input. It's assumed that distribution of inputs among different wires types 
+          is proportional to their frequency.
+
+          For every horizontal channel there are 352 short wires overall (H2:40, H4:112, H10:200). The distribution of 6 inputs among
+          different short wire types would be as follows:
+          6 * (40/352) ~ 1 input from H2 wires 
+          6 * (112/352) ~ 2 inputs from H4 wires 
+          6 * (200/352) ~ 3 inputs from H10 wires 
+  
+          For every vertical channel there are 160 short wires overall (V2:24, V3:72, V4:64). The distribution of 4 inputs among
+          different short wire types would be as follows:
+          4 * (24/160) ~ 1 input from V2 wires 
+          4 * (72/160) ~ 2 inputs from V3 wires 
+          4 * (64/160) ~ 1 input from V4 wires 
+
+          For an adjacent horizontal channel:
+          1 out of 40 H2 wires is fed into a LIM meaning fc_in(H2) = 1/40 = 0.025
+          2 out of 112 H4 wires are fed into a LIM meaning fc_in(H4) = 2/112 = 0.018
+          3 out of 200 H10 wires are fed into a LIM meaning fc_in(H10) = 3/200 = 0.015
+
+          For an adjacent vertical channel:
+          1 out of 24 V2 wires is fed into a LIM meaning fc_in(V2) = 1/24 = 0.042
+          2 out of 72 V3 wires are fed into a LIM meaning fc_in(V3) = 2/72 = 0.028
+          1 out of 64 V4 wires are fed into a LIM meaning fc_in(V4) = 3/64 = 0.047 
+        -->
+
+        <!-- 
+          For every short H wire, 5 inputs come from adjacent blocks outputs. 
+          Assuming there are 40 output pins on the top side of the logic block: fc_out(H wires) = 5/40 = 0.125
+
+          For every short V wire, 6 inputs come block outputs. Assuming 3 inputs come from the block
+          located on either side of the channel, with 40 output pins coming from the left and right
+          side of the logic block we have fc_out(V wires) = (3/40) = 0.075 
+        -->
+        <!-- qqqq assumed the same fc value of control in -->
+
+        <!-- Specifying fc values for H2 wires -->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" segment_name="H2">
+          <!--Chains do not connect to general global routing-->
+          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="H2"/>
+          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="H2"/>
+        </fc>
+        <!-- Specifying fc values for H4 wires -->
+        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.125" segment_name="H4">
+          <!--Chains do not connect to general global routing-->
+          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="H4"/>
+          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="H4"/>
+        </fc>
+        <!-- Specifying fc values for H10 wires -->
+        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.125" segment_name="H10">
+          <!--Chains do not connect to general global routing-->
+          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="H10"/>
+          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="H10"/>
+        </fc>
+
+        <!-- Specifying fc values for V2 wires -->
+        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.075" segment_name="V2">
+          <!--Chains do not connect to general global routing-->
+          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="V2"/>
+          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="V2"/>
+        </fc>
+        <!-- Specifying fc values for V3 wires -->
+        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.075" segment_name="V3">
+          <!--Chains do not connect to general global routing-->
+          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="V3"/>
+          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="V3"/>
+        </fc>
+        <!-- Specifying fc values for V4 wires -->
+        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.075" segment_name="V4">
+          <!--Chains do not connect to general global routing-->
+          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="V4"/>
+          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="V4"/>
+        </fc>
       </sub_tile>
     </tile>
 
-    <tile height="1" name="PLL">
+    <tile name="PLL">
+      <!-- 
+          PLL input muxes have 4 V wires and 6 H wires as input.
+
+          Based on calculations performed for LABs (commented in LAB tile definition):
+
+          The distribution of 6 inputs among different short wire types and fc_in value would be as follows:
+          6 * (40/352) ~ 1 input from H2 wires | fc_in(H2) = 1/40 = 0.025
+          6 * (112/352) ~ 2 inputs from H4 wires | fc_in(H4) = 2/112 = 0.018 
+          6 * (200/352) ~ 3 inputs from H10 wires | fc_in(H10) = 3/200 = 0.015
+  
+          The distribution of 4 inputs among different short wire types and fc_in value would be as follows:
+          4 * (24/160) ~ 1 input from V2 wires | fc_in(V2) = 1/24 = 0.042
+          4 * (72/160) ~ 2 inputs from V3 wires | fc_in(V3) = 2/72 = 0.028
+          4 * (64/160) ~ 1 input from V4 wires | fc_in(V4) = 3/64 = 0.047 
+      -->
+
+      <!-- 
+          For every short H wire, 5 inputs come from adjacent blocks outputs. 
+          Assuming there are 40 output pins (36 from PLL subtile, 3 from clock_div subtile, 1 from clock_gate subtile)
+          on the top side of the current tile: fc_out(H wires) = 5/40 = 0.125
+
+          For every short V wire, 6 inputs come block outputs. Assuming 3 inputs come from the block
+          located on either side of the channel, with 42 pins coming from the left and right
+          side of the  urrent tile we have fc_out(V wires) = (3/40) = 0.075
+      -->
+
       <sub_tile name="PLL">
         <equivalent_sites>
           <site pb_type="PLL" pin_mapping="direct"/>
@@ -1768,13 +1905,31 @@
         <input name="core_in" num_pins="10"/>
         <output name="core_out" num_pins="36"/>
         <clock name="clk" num_pins="2"/>
-        <fc in_type="frac" in_val="0.055" out_type="frac" out_val="0.075"/>
+        <!-- 
+          Stratix 10 is a 3 sided architecture, the iolanes can connect to routing on their
+          left, top, and right. 
+          We model that all the pins can connect to each vertical channel (left/right),
+          and the top horizontal channel.
+        -->
         <pinlocations pattern="custom">
           <loc side="left">PLL.core_in PLL.core_out PLL.clk </loc>
           <loc side="right">PLL.core_in PLL.core_out PLL.clk </loc>
           <loc side="top">PLL.core_in PLL.core_out PLL.clk </loc>
-          <loc side="bottom">PLL.core_in PLL.core_out PLL.clk </loc>
         </pinlocations>
+
+        <!-- Specifying fc values for H2 wires -->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" segment_name="H2"/>
+        <!-- Specifying fc values for H4 wires -->
+        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.125" segment_name="H4"/>
+        <!-- Specifying fc values for H10 wires -->
+        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.125" segment_name="H10"/>
+
+        <!-- Specifying fc values for V2 wires -->
+        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.075" segment_name="V2"/>
+        <!-- Specifying fc values for V3 wires -->
+        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.075" segment_name="V3"/>
+        <!-- Specifying fc values for V4 wires -->
+        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.075" segment_name="V4"/>
       </sub_tile>
       <sub_tile name="clock_div">
         <equivalent_sites>
@@ -1782,13 +1937,34 @@
         </equivalent_sites>
         <input name="inclk" num_pins="1"/>
         <output name="clock_div_out" num_pins="3"/>
-        <fc in_type="frac" in_val="0.055" out_type="frac" out_val="0.075"/>
+        <!-- 
+          Stratix 10 is a 3 sided architecture, the iolanes can connect to routing on their
+          left, top, and right. 
+          We model that all the pins can connect to each vertical channel (left/right),
+          and the top horizontal channel.
+          The pins located on the left and right side of the block are uniformly distributed across
+          the legnths of 4   
+        -->
         <pinlocations pattern="custom">
           <loc side="left">clock_div.inclk clock_div.clock_div_out </loc>
           <loc side="right">clock_div.inclk clock_div.clock_div_out </loc>
           <loc side="top">clock_div.inclk clock_div.clock_div_out </loc>
           <loc side="bottom">clock_div.inclk clock_div.clock_div_out </loc>
         </pinlocations>
+
+        <!-- Specifying fc values for H2 wires -->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" segment_name="H2"/>
+        <!-- Specifying fc values for H4 wires -->
+        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.125" segment_name="H4"/>
+        <!-- Specifying fc values for H10 wires -->
+        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.125" segment_name="H10"/>
+
+        <!-- Specifying fc values for V2 wires -->
+        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.075" segment_name="V2"/>
+        <!-- Specifying fc values for V3 wires -->
+        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.075" segment_name="V3"/>
+        <!-- Specifying fc values for V4 wires -->
+        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.075" segment_name="V4"/>
       </sub_tile>
       <sub_tile name="clock_gate">
         <equivalent_sites>
@@ -1797,17 +1973,38 @@
         <input name="inclk" num_pins="1"/>
         <input name="enable" num_pins="1"/>
         <output name="outclk" num_pins="1"/>
-        <fc in_type="frac" in_val="0.055" out_type="frac" out_val="0.075"/>
+        <!-- 
+          Stratix 10 is a 3 sided architecture, the iolanes can connect to routing on their
+          left, top, and right. 
+          We model that all the pins can connect to each vertical channel (left/right),
+          and the top horizontal channel.
+          The pins located on the left and right side of the block are uniformly distributed across
+          the legnths of 4   
+        -->
         <pinlocations pattern="custom">
           <loc side="left">clock_gate.inclk clock_gate.enable clock_gate.outclk</loc>
           <loc side="right">clock_gate.inclk clock_gate.enable clock_gate.outclk </loc>
           <loc side="top">clock_gate.inclk clock_gate.enable clock_gate.outclk </loc>
           <loc side="bottom">clock_gate.inclk clock_gate.enable clock_gate.outclk </loc>
         </pinlocations>
+        
+        <!-- Specifying fc values for H2 wires -->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" segment_name="H2"/>
+        <!-- Specifying fc values for H4 wires -->
+        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.125" segment_name="H4"/>
+        <!-- Specifying fc values for H10 wires -->
+        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.125" segment_name="H10"/>
+
+        <!-- Specifying fc values for V2 wires -->
+        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.075" segment_name="V2"/>
+        <!-- Specifying fc values for V3 wires -->
+        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.075" segment_name="V3"/>
+        <!-- Specifying fc values for V4 wires -->
+        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.075" segment_name="V4"/>
       </sub_tile>
     </tile>
 
-    <tile height="1" name="OCT">
+    <tile name="OCT">
       <sub_tile name="OCT">
         <equivalent_sites>
           <site pb_type="OCT" pin_mapping="direct"/>
@@ -1815,56 +2012,128 @@
         <input name="core_in" num_pins="10"/>
         <output name="core_out" num_pins="36"/>
         <clock name="clk" num_pins="1"/>
-        <fc in_type="frac" in_val="0.055" out_type="frac" out_val="0.075"/>
+        <!-- 
+          Stratix 10 is a 3 sided architecture, the iolanes can connect to routing on their
+          left, top, and right. 
+          We model that all the pins can connect to each vertical channel (left/right),
+          and the top horizontal channel.
+          The pins located on the left and right side of the block are uniformly distributed across
+          the legnths of 4   
+        -->
         <pinlocations pattern="custom">
           <loc side="left">OCT.core_in OCT.core_out OCT.clk </loc>
           <loc side="right">OCT.core_in OCT.core_out OCT.clk </loc>
           <loc side="top">OCT.core_in OCT.core_out OCT.clk </loc>
-          <loc side="bottom">OCT.core_in OCT.core_out OCT.clk </loc>
         </pinlocations>
+
+        <!-- 
+          OCT input muxes have 4 V wires and 6 H wires as input.
+
+          Based on calculations performed for LABs (commented in LAB tile definition):
+
+          The distribution of 6 inputs among different short wire types and fc_in value would be as follows:
+          6 * (40/352) ~ 1 input from H2 wires | fc_in(H2) = 1/40 = 0.025
+          6 * (112/352) ~ 2 inputs from H4 wires | fc_in(H4) = 2/112 = 0.018 
+          6 * (200/352) ~ 3 inputs from H10 wires | fc_in(H10) = 3/200 = 0.015
+  
+          The distribution of 4 inputs among different short wire types and fc_in value would be as follows:
+          4 * (24/160) ~ 1 input from V2 wires | fc_in(V2) = 1/24 = 0.042
+          4 * (72/160) ~ 2 inputs from V3 wires | fc_in(V3) = 2/72 = 0.028
+          4 * (64/160) ~ 1 input from V4 wires | fc_in(V4) = 3/64 = 0.047 
+        -->
+
+        <!-- 
+          For every short H wire, 5 inputs come from adjacent blocks outputs. 
+          Assuming there are 36 pins on the top side of the OCT block: fc_out(H wires) = 5/36 = 0.14
+
+          For every short V wire, 6 inputs come block outputs. Assuming 3 inputs come from the block
+          located on either side of the channel, with 36 pins coming from the left and right
+          side of the OCT block we have fc_out(V wires) = (3/36) = 0.083
+        -->
+
+        <!-- Specifying fc values for H2 wires -->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.14" segment_name="H2"/>
+        <!-- Specifying fc values for H4 wires -->
+        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.14" segment_name="H4"/>
+        <!-- Specifying fc values for H10 wires -->
+        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.14" segment_name="H10"/>
+
+        <!-- Specifying fc values for V2 wires -->
+        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.083" segment_name="V2"/>
+        <!-- Specifying fc values for V3 wires -->
+        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.083" segment_name="V3"/>
+        <!-- Specifying fc values for V4 wires -->
+        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.083" segment_name="V4"/>
       </sub_tile>
     </tile>
 
-    <tile height="4" name="DSP">
+    <tile name="DSP">
       <sub_tile name="DSP">
         <equivalent_sites>
-          <site pb_type="DSP" pin_mapping="direct" />
+          <site pb_type="DSP" pin_mapping="direct"/>
         </equivalent_sites>
-      <input name="datain" num_pins="110" />
-      <input name="chainin" num_pins="64" />
-      <input name="controlin" num_pins="17" />
-      <input name="scanin" num_pins="27" />
-      <clock name="clk" num_pins="3" />
-      <output name="result" num_pins="74" />
-      <output name="chainout" num_pins="64" />
-      <output name="scanout" num_pins="27" />
-      <output name="dftout" num_pins="1" />
-        <fc in_type="frac" in_val="0.0275" out_type="frac" out_val="0.0375">
-          
-        </fc>
+        <input name="datain" num_pins="110" />
+        <input name="chainin" num_pins="64" />
+        <input name="controlin" num_pins="17" />
+        <input name="scanin" num_pins="27" />
+        <clock name="clk" num_pins="3" />
+        <output name="result" num_pins="74" />
+        <output name="chainout" num_pins="64" />
+        <output name="scanout" num_pins="27" />
+        <output name="dftout" num_pins="1" />
+        
+        <!-- 
+          Stratix 10 is a 3 sided architecture, the DSPs can connect to routing on their
+          left, top, and right. 
+          We model that all the pins can connect to each vertical channel (left/right),
+          and the top horizontal channel.
+          The exceptions to the above are the DSP chan and scan ports, which propogate downward between blocks.   
+        -->
         <pinlocations pattern="custom">
-          
-          
-          
-          
-          <loc side="left" yoffset="3">DSP.datain[8:0]    DSP.chainin[4:0] DSP.chainout[4:0] DSP.controlin[0] DSP.scanin[1:0] DSP.clk[0] DSP.result[17:0]  DSP.scanout[1:0]   DSP.dftout                  </loc>
-          <loc side="left" yoffset="2">DSP.datain[17:9]   DSP.chainin[9:5] DSP.chainout[9:5] DSP.controlin[2:1] DSP.scanin[4:2]            DSP.result[35:18] DSP.scanout[4:2]  </loc>
-          <loc side="right" yoffset="3">DSP.datain[26:18]  DSP.chainin[14:10] DSP.chainout[14:10] DSP.controlin[3] DSP.scanin[6:5] DSP.clk[1] DSP.result[53:36] DSP.scanout[6:5]  </loc>
-          <loc side="right" yoffset="2">DSP.datain[35:27] DSP.chainin[19:15] DSP.chainout[19:15] DSP.controlin[5:4] DSP.scanin[8:7]            DSP.result[71:54] DSP.scanout[8:7]  </loc>
-          <loc side="top" yoffset="3">DSP.datain[44:36]  DSP.chainin[24:20] DSP.chainout[24:20] DSP.controlin[6] DSP.scanin[10:9]    DSP.clk[2] DSP.result[35:0]  DSP.scanout[10:9]  </loc>
-          <loc side="top" yoffset="2">DSP.datain[53:45]    DSP.chainin[29:25] DSP.chainout[29:25] DSP.controlin[8:7] DSP.scanin[12:11]    DSP.clk[1] DSP.result[73:36] DSP.scanout[12:11]  </loc>
-          <loc side="bottom" yoffset="3" />
-          <loc side="bottom" yoffset="2" />
-          
-          <loc side="left" yoffset="1">DSP.datain[61:54] DSP.chainin[34:30] DSP.chainout[34:30] DSP.controlin[9]  DSP.scanin[14:13]     DSP.clk[2] DSP.result[17:0]  DSP.scanout[14:13]                      </loc>
-          <loc side="left" yoffset="0">DSP.datain[70:62] DSP.chainin[39:35] DSP.chainout[39:35] DSP.controlin[11:10] DSP.scanin[16:15]               DSP.result[35:18] DSP.scanout[16:15] </loc>
-          <loc side="right" yoffset="1">DSP.datain[79:71] DSP.chainin[44:40] DSP.chainout[44:40] DSP.controlin[12] DSP.scanin[18:17]               DSP.result[53:36] DSP.scanout[18:17] </loc>
-          <loc side="right" yoffset="0">DSP.datain[88:80] DSP.chainin[49:45] DSP.chainout[49:45] DSP.controlin[14:13] DSP.scanin[20:19]    DSP.clk[0] DSP.result[71:54] DSP.scanout[20:19] </loc>
-          <loc side="top" yoffset="1">DSP.datain[97:89] DSP.chainin[54:50] DSP.chainout[54:50] DSP.controlin[15]  DSP.scanin[22:21]     DSP.clk[2] DSP.result[35:0]  DSP.scanout[22:21] </loc>
-          <loc side="top" yoffset="0">DSP.datain[109:98] DSP.chainin[63:55] DSP.chainout[63:55] DSP.controlin[16] DSP.scanin[26:23]    DSP.clk[0] DSP.result[73:36] DSP.scanout[26:23] </loc>
-          <loc side="bottom" yoffset="1" />
-          <loc side="bottom" yoffset="0">DSP.chainout</loc>
+          <loc side="left">DSP.datain DSP.controlin DSP.chainin DSP.scanin DSP.clk DSP.result</loc>
+          <loc side="right">DSP.datain DSP.controlin DSP.chainin DSP.scanin DSP.clk DSP.result</loc>
+          <loc side="top">DSP.datain DSP.controlin DSP.chainin DSP.scanin DSP.clk DSP.result</loc>
+          <loc side="bottom">DSP.chainout DSP.scanout</loc>
         </pinlocations>
+        <!-- 
+          DSP input muxes have 4 V wires and 6 H wires as input.
+
+          Based on calculations performed for LABs (commented in LAB tile definition):
+
+          The distribution of 6 inputs among different short wire types and fc_in value would be as follows:
+          6 * (40/352) ~ 1 input from H2 wires | fc_in(H2) = 1/40 = 0.025
+          6 * (112/352) ~ 2 inputs from H4 wires | fc_in(H4) = 2/112 = 0.018 
+          6 * (200/352) ~ 3 inputs from H10 wires | fc_in(H10) = 3/200 = 0.015
+  
+          The distribution of 4 inputs among different short wire types and fc_in value would be as follows:
+          4 * (24/160) ~ 1 input from V2 wires | fc_in(V2) = 1/24 = 0.042
+          4 * (72/160) ~ 2 inputs from V3 wires | fc_in(V3) = 2/72 = 0.028
+          4 * (64/160) ~ 1 input from V4 wires | fc_in(V4) = 3/64 = 0.047 
+        -->
+
+        <!-- 
+          qqqqqq
+          Since a DSP has more output pins compared to a LAB, if the fc_out value were to be calculated the same way, 
+          the fc_out value would be significantly smaller, affecting block's connectivity. In Stratix 10 architecture, 
+          certain solutions are applied to ensure enough connectivity for DSP blocks. In our modelling, fc_out value is set 
+          to the same value as that of logic blocks. This approximation will lead to bigger mus sizes for wire segments adjacent to the DSP blocks 
+          but it will ensure there is enough connectivty to route the DSP primitives
+        -->
+        <!-- qqqq assumed the same fc value of control in -->
+
+        <!-- Specifying fc values for H2 wires -->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" segment_name="H2"/>
+        <!-- Specifying fc values for H4 wires -->
+        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.125" segment_name="H4"/>
+        <!-- Specifying fc values for H10 wires -->
+        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.125" segment_name="H10"/>
+
+        <!-- Specifying fc values for V2 wires -->
+        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.075" segment_name="V2"/>
+        <!-- Specifying fc values for V3 wires -->
+        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.075" segment_name="V3"/>
+        <!-- Specifying fc values for V4 wires -->
+        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.075" segment_name="V4"/>
       </sub_tile>
     </tile>
 
@@ -1878,17 +2147,52 @@
         <output name="control_out" num_pins="2" />
         <clock name="clk_in" num_pins="2" />
 
-        <fc in_type="frac" in_val="0.0275" out_type="frac" out_val="0.0375">
-          
-          
-          
-        </fc>
         <pinlocations pattern="custom">
-          
-          <loc side="left">  M20K.data_addr_control_in[0:51]  M20K.control_out[0] M20K.data_out[0:19]  M20K.clk_in </loc>
-          <loc side="right"> M20K.data_addr_control_in[52:103] M20K.control_out[1] M20K.data_out[20:39] </loc>
-          <loc side="top">   M20K.data_addr_control_in        M20K.control_out      M20K.data_out        M20K.clk_in </loc>
+          <loc side="left">  M20K.data_addr_control_in  M20K.control_out M20K.data_out  M20K.clk_in </loc>
+          <loc side="right">  M20K.data_addr_control_in  M20K.control_out M20K.data_out  M20K.clk_in </loc>
+          <loc side="top">  M20K.data_addr_control_in  M20K.control_out M20K.data_out  M20K.clk_in </loc>
         </pinlocations>
+
+             <!-- qqqq it's assumed that mux size and input distribution for rams is also similar -->
+        <!-- 
+          RAM input muxes have 4 V wires and 6 H wires as input.
+
+          Based on calculations performed for LABs (commented in LAB tile definition):
+
+          The distribution of 6 inputs among different short wire types and fc_in value would be as follows:
+          6 * (40/352) ~ 1 input from H2 wires | fc_in(H2) = 1/40 = 0.025
+          6 * (112/352) ~ 2 inputs from H4 wires | fc_in(H4) = 2/112 = 0.018 
+          6 * (200/352) ~ 3 inputs from H10 wires | fc_in(H10) = 3/200 = 0.015
+  
+          The distribution of 4 inputs among different short wire types and fc_in value would be as follows:
+          4 * (24/160) ~ 1 input from V2 wires | fc_in(V2) = 1/24 = 0.042
+          4 * (72/160) ~ 2 inputs from V3 wires | fc_in(V3) = 2/72 = 0.028
+          4 * (64/160) ~ 1 input from V4 wires | fc_in(V4) = 3/64 = 0.047 
+        -->
+
+        <!-- 
+          For every short H wire, 5 inputs come from adjacent blocks outputs. 
+          Assuming there are 41 pins on the top side of the RAM block: fc_out(H wires) = 5/42 = 0.12
+
+          For every short V wire, 6 inputs come block outputs. Assuming 3 inputs come from the block
+          located on either side of the channel, with 42 pins coming from the left and right
+          side of the RAM block we have fc_out(V wires) = (3/42) = 0.07
+        -->
+        <!-- qqqq assumed the same fc value of control in -->
+
+        <!-- Specifying fc values for H2 wires -->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.12" segment_name="H2"/>
+        <!-- Specifying fc values for H4 wires -->
+        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.12" segment_name="H4"/>
+        <!-- Specifying fc values for H10 wires -->
+        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.12" segment_name="H10"/>
+
+        <!-- Specifying fc values for V2 wires -->
+        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.07" segment_name="V2"/>
+        <!-- Specifying fc values for V3 wires -->
+        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.07" segment_name="V3"/>
+        <!-- Specifying fc values for V4 wires -->
+        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.07" segment_name="V4"/>
       </sub_tile>
     </tile>
   </tiles>
@@ -2088,13 +2392,15 @@
   </segmentlist>
   <directlist>
 
-  <!-- qqqq are there any self sneaks for DSP and RAM ????-->
+    <!-- qqqq are there any self sneaks for DSP and RAM ????-->
 
     <!-- chainout propogates downward between DSP blocks-->
-    <direct name="DSP_chainout" from_pin="DSP.chainout" to_pin="DSP.chainin" x_offset="0" y_offset="-1" z_offset="0"/>
+    <direct name="DSP_chainout" from_pin="DSP.chainout" from_side="bottom" to_pin="DSP.chainin" to_side="top" x_offset="0" y_offset="-1" z_offset="0"/>
+   <!-- scanout propogates downward between DSP blocks-->
+    <direct name="DSP_scannout" from_pin="DSP.scanout" from_side="bottom" to_pin="DSP.scanin" to_side="top" x_offset="0" y_offset="-1" z_offset="0"/>
 
     <!--Carry chain propogates downward between LAB blocks-->
-    <direct name="LAB_carry_chain" from_pin="LAB.cout" to_pin="LAB.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+    <direct name="LAB_carry_chain" from_pin="LAB.cout" from_side="bottom" to_pin="LAB.cin" to_side="top" x_offset="0" y_offset="-1" z_offset="0"/>
 
     <!-- 
         LAB lines are LAB's local interconnect driving the logic elements input muxes
