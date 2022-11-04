@@ -332,8 +332,26 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                 cong_cost = (1. - params.criticality) * pin_delay_itr->second.congestion;
             }
             return delay_cost + cong_cost;
+        } else if (from_rr_type == SOURCE) {
+            if (node_in_same_physical_tile(current_node, target_node)) {
+                delay_cost = 0.;
+                cong_cost = 0.;
+                delay_offset_cost = 0.;
+                cong_offset_cost = 0.;
+            } else {
+                int delta_x, delta_y;
+                get_xy_deltas(current_node, target_node, &delta_x, &delta_y);
+                delta_x = abs(delta_x);
+                delta_y = abs(delta_y);
+                delay_cost = params.criticality * distance_based_min_cost[delta_x][delta_y].delay;
+                cong_cost = (1. - params.criticality) * distance_based_min_cost[delta_x][delta_y].congestion;
+
+                delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
+                cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
+            }
+            return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
         } else {
-            VTR_ASSERT(from_rr_type == SINK || from_rr_type == SOURCE);
+            VTR_ASSERT(from_rr_type == SINK);
             return (0.);
         }
     } else {

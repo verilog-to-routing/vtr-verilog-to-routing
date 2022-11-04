@@ -396,7 +396,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
     {
         vtr::ScopedStartFinishTimer init_timing_timer("Initializing router criticalities");
         if (timing_info) {
-            if (router_opts.initial_timing == e_router_initial_timing::ALL_CRITICAL || is_flat) {
+            if (router_opts.initial_timing == e_router_initial_timing::ALL_CRITICAL) {
                 //First routing iteration, make all nets critical for a min-delay routing
                 route_timing_info = make_constant_timing_info(1.);
             } else {
