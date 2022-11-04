@@ -349,6 +349,8 @@ static void SetupSwitches(const t_arch& Arch,
 
     RoutingArch->global_route_switch = RoutingArch->delayless_switch;
 
+    device_ctx.delayless_switch_idx = RoutingArch->delayless_switch;
+
     //Warn about non-zero Cout values for the ipin switch, since these values have no effect.
     //VPR do not model the R/C's of block internal routing connectsion.
     //

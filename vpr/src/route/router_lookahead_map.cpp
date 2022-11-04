@@ -1257,11 +1257,11 @@ static void compute_tiles_lookahead(std::map<t_physical_tile_type_ptr, util::t_i
         if (is_empty_type(&tile)) {
             continue;
         }
-        //TODO: The sw_id of the delayless switch should be somehow passed to this function - The current approach is not safe
+
         compute_tile_lookahead(inter_tile_pin_primitive_pin_delay,
                                &tile,
                                det_routing_arch,
-                               (int)device_ctx.arch_switch_inf.size() - 1);
+                               device_ctx.delayless_switch_idx);
         store_min_cost_to_sinks(tile_min_cost,
                                 &tile,
                                 inter_tile_pin_primitive_pin_delay);
