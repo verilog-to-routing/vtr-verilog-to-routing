@@ -130,6 +130,6 @@ int get_part_reg_size(PartitionRegion& pr, t_logical_block_type_ptr block_type, 
  * The resulting number is the number of tiles outside the block's floorplan region, meaning the higher
  * it is, the more difficult the block is to place.
  */
-int get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
+double get_floorplan_score(ClusterBlockId blk_id, PartitionRegion& pr, t_logical_block_type_ptr block_type, GridTileLookup& grid_tiles);
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

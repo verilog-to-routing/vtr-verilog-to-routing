@@ -743,14 +743,16 @@ An example listing for a global net is given below.
 Routing Resource Graph File Format (.xml)
 -----------------------------------------
 The routing resource graph (rr graph) file is an XML file that describes the routing resources within the FPGA.
-This file is generated through the last stage of the rr graph generation during routing with the final channel width.
-When reading in rr graph from an external file, the rr graph is used during the placement and routing section of VPR.
+VPR can generate a rr graph that matches your architecture specifications (from the architecture xml file), or it can read in an externally generated rr graph.
+When this file is written by VPR, the rr graph written out is the rr graph generated before routing with a final channel width 
+(even if multiple routings at different channel widths are performed during a binary search for the minimum channel width). 
+When reading in rr graph from an external file, the rr graph is used during both the placement and routing phases of VPR.
 The file is constructed using tags. The top level is the ``rr_graph`` tag.
 This tag contains all the channel, switches, segments, block, grid, node, and edge information of the FPGA.
 It is important to keep all the values as high precision as possible. Sensitive values include capacitance and Tdel. As default, these values are printed out with a precision of 30 digits.
 Each of these sections are separated into separate tags as described below.
 
-.. note:: Use :option:`vpr --read_rr_graph` to specify an RR graph file to be load.
+.. note:: Use :option:`vpr --read_rr_graph` to specify an RR graph file to be loaded.
 .. note:: Use :option:`vpr --write_rr_graph` to specify where the RR graph should be written.
 
 Top Level Tags
