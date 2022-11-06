@@ -64,11 +64,11 @@ The Titan benchmarks are suitable for large-scale FPGA CAD research, and FPGA ar
 
 .. seealso:: :ref:`titan_benchmarks_tutorial`
 
-Koios Benchmarks
+Koios 2.0 Benchmarks
 -----------------
 The Koios benchmarks :cite:`koios_benchmarks` are a set of Deep Learning (DL) benchmarks.
 They are suitable for DL related architecture and CAD research.
-There are 19 designs that include several medium-sized benchmarks and some large benchmarks.
+There are 40 designs that include several medium-sized benchmarks and some large benchmarks.
 The designs target different network types (CNNs, RNNs, MLPs, RL) and layer types (fully-connected, convolution, activation, softmax, reduction, eltwise).
 Some of the designs are generated from HLS tools as well.
 These designs use many precisions including binary, different fixed point types int8/16/32, brain floating point (bfloat16), and IEEE half-precision floating point (fp16).
@@ -80,21 +80,26 @@ These designs use many precisions including binary, different fixed point types 
     =================   ======================================
     Benchmark           Description
     =================   ======================================
-    clstm_like          CLSTM-like accelerator
     dla_like            Intel-DLA-like accelerator
+    clstm_like          CLSTM-like accelerator
+    deepfreeze          ARM FixyNN design
+    tdarknet_like       Accelerator for Tiny Darknet
+    bwave_like          Microsoft-Brainwave-like design
     lstm                LSTM engine
-    tpu_like            Google-TPU-v1-like accelerator
     bnn                 4-layer binary neural network
-    tiny_darknet_like   Accelerator for Tiny Darknet
+    lenet               Accelerator for LeNet-5
+    dnnweaver           DNNWeaver accelerator
+    tpu_like            Google-TPU-v1-like accelerator
     gemm_layer          20x20 matrix multiplication engine
     attention_layer     Transformer self-attention layer
     conv_layer          GEMM based convolution
-    spmv                Sparse matrix vector multiplication
     robot_rl            Robot+maze application
     reduction_layer     Add/max/min reduction tree
+    spmv                Sparse matrix vector multiplication
+    eltwise_layer       Matrix elementwise add/sub/mult
     softmax             Softmax classification layer
     conv_layer_hls      Sliding window convolution
-    eltwise_layer       Matrix elementwise add/sub/mult
+    proxy               Proxy/synthetic benchmarks
     =================   ======================================
 
 The VTR benchmarks are provided as Verilog (enabling full flexibility to modify and change how the designs are implemented) under: ::
