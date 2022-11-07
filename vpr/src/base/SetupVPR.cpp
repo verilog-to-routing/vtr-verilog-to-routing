@@ -790,8 +790,11 @@ static void add_intra_tile_switches() {
                         switch_type_id = (int)device_ctx.all_sw_inf.size();
                         pb_edge_delays.insert(std::make_pair(max_delay, switch_type_id));
                         t_arch_switch_inf arch_switch_inf = create_internal_arch_sw(max_delay);
-                        VTR_ASSERT_MSG(arch_switch_inf.buffered(), "Delayless switch expected to be buffered (isolating)");
-                        VTR_ASSERT_MSG(arch_switch_inf.configurable(), "Delayless switch expected to be configurable");
+                        // AM: In the function that arch_sw to rr_swith remapping takes place, we assumed that the delay of the intra-cluster
+                        // switches is fixed, and it is not dependent on the fan-in.
+                        VTR_ASSERT_MSG(arch_switch_inf.fixed_Tdel(), "Intra-cluster switch is expected to have a fixed delay");
+                        VTR_ASSERT_MSG(arch_switch_inf.buffered(), "Intra-cluster switch is expected to be buffered (isolating)");
+                        VTR_ASSERT_MSG(arch_switch_inf.configurable(), "Intra-cluster switch is expected to be configurable");
 
                         device_ctx.all_sw_inf.insert(std::make_pair(switch_type_id, arch_switch_inf));
                     } else {
