@@ -2081,7 +2081,7 @@
         <output name="chainout" num_pins="64" />
         <output name="scanout" num_pins="27" />
         <output name="dftout" num_pins="1" />
-        
+
         <!-- 
           Stratix 10 is a 3 sided architecture, the DSPs can connect to routing on their
           left, top, and right. 
@@ -2402,6 +2402,8 @@
     <!--Carry chain propogates downward between LAB blocks-->
     <direct name="LAB_carry_chain" from_pin="LAB.cout" from_side="bottom" to_pin="LAB.cin" to_side="top" x_offset="0" y_offset="-1" z_offset="0"/>
 
+
+    <!-- ############### Directlinks to LABs ############### -->
     <!-- 
         LAB lines are LAB's local interconnect driving the logic elements input muxes
         LAB lines consist of 60 LAB input muxes (LIMs). A LIM is a 12:1 mux with the following distribution of inputs:
@@ -2486,91 +2488,296 @@
       The above point also applies to DSP lines and iolane lines as they are fed into a full crossbar as well
     -->
 
-    <!-- 40 direct connections coming from the the adjacent LAB located to the left of the LAB-->
-    <direct name="LAB_side_sneak_LAB" from_pin="LAB.data_out[39:0]" from_side="right" to_pin="LAB.data_in[50:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!--
+      When there is a full crossbar from the output of ALMs to output of the LAB, it won't matter which set of 20
+      pins get selected for direct connection to the adjacent block. This is the case as of Nov 4, 2022. 
+      Nonetheless, the selection of output pins for directlink to neighboring blocks is based on the assumption that 
+      there is a directlink (instead of a crossbar) from ALM outputs to the LAB output to support future changes to 
+      the full crossbar. Each ALM has four outputs  where the first and second as well as the third and the fourth output 
+      are driven by the same set of signals. To avoid redundant links, the set of even/odd pins are selected for directlink 
+      to the left/right neighboring blocks. 
+    -->
 
-    <!-- 40 direct connections coming from the the adjacent memory block located to the left of the LAB-->
-    <direct name="Mem_side_sneak_LAB" from_pin="M20K.data_out[39:0]" from_side="right" to_pin="LAB.data_in[50:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 20 direct connections coming from the odd pin numbers of the adjacent LAB located to the left of the LAB-->
+    <direct name="LAB_side_sneak_LAB_1" from_pin="LAB.data_out[1]" from_side="right" to_pin="LAB.data_in[11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_3" from_pin="LAB.data_out[3]" from_side="right" to_pin="LAB.data_in[13]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_5" from_pin="LAB.data_out[5]" from_side="right" to_pin="LAB.data_in[15]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_7" from_pin="LAB.data_out[7]" from_side="right" to_pin="LAB.data_in[17]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_9" from_pin="LAB.data_out[9]" from_side="right" to_pin="LAB.data_in[19]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_11" from_pin="LAB.data_out[11]" from_side="right" to_pin="LAB.data_in[21]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_13" from_pin="LAB.data_out[13]" from_side="right" to_pin="LAB.data_in[23]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_15" from_pin="LAB.data_out[15]" from_side="right" to_pin="LAB.data_in[25]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_17" from_pin="LAB.data_out[17]" from_side="right" to_pin="LAB.data_in[27]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_19" from_pin="LAB.data_out[19]" from_side="right" to_pin="LAB.data_in[29]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_21" from_pin="LAB.data_out[21]" from_side="right" to_pin="LAB.data_in[31]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_23" from_pin="LAB.data_out[23]" from_side="right" to_pin="LAB.data_in[33]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_25" from_pin="LAB.data_out[25]" from_side="right" to_pin="LAB.data_in[35]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_27" from_pin="LAB.data_out[27]" from_side="right" to_pin="LAB.data_in[37]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_29" from_pin="LAB.data_out[29]" from_side="right" to_pin="LAB.data_in[39]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_31" from_pin="LAB.data_out[31]" from_side="right" to_pin="LAB.data_in[41]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_33" from_pin="LAB.data_out[33]" from_side="right" to_pin="LAB.data_in[43]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_35" from_pin="LAB.data_out[35]" from_side="right" to_pin="LAB.data_in[45]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_37" from_pin="LAB.data_out[37]" from_side="right" to_pin="LAB.data_in[47]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_39" from_pin="LAB.data_out[39]" from_side="right" to_pin="LAB.data_in[49]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
 
-    <!-- 60 direct connections coming from the the adjacent DSP located to the left of the LAB-->
-    <direct name="DSP_side_sneak_LAB" from_pin="DSP.result[59:0]" from_side="right" to_pin="LAB.data_in[59:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 20 direct connections coming from the even pin numbers of the adjacent LAB located to the right of the LAB-->
+    <direct name="LAB_side_sneak_LAB_0" from_pin="LAB.data_out[0]" from_side="left" to_pin="LAB.data_in[12]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_2" from_pin="LAB.data_out[2]" from_side="left" to_pin="LAB.data_in[14]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_4" from_pin="LAB.data_out[4]" from_side="left" to_pin="LAB.data_in[16]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_6" from_pin="LAB.data_out[6]" from_side="left" to_pin="LAB.data_in[18]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_8" from_pin="LAB.data_out[8]" from_side="left" to_pin="LAB.data_in[20]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_10" from_pin="LAB.data_out[10]" from_side="left" to_pin="LAB.data_in[22]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_12" from_pin="LAB.data_out[12]" from_side="left" to_pin="LAB.data_in[24]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_14" from_pin="LAB.data_out[14]" from_side="left" to_pin="LAB.data_in[26]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_16" from_pin="LAB.data_out[16]" from_side="left" to_pin="LAB.data_in[28]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_18" from_pin="LAB.data_out[18]" from_side="left" to_pin="LAB.data_in[30]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_20" from_pin="LAB.data_out[20]" from_side="left" to_pin="LAB.data_in[32]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_22" from_pin="LAB.data_out[22]" from_side="left" to_pin="LAB.data_in[34]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_24" from_pin="LAB.data_out[24]" from_side="left" to_pin="LAB.data_in[36]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_26" from_pin="LAB.data_out[26]" from_side="left" to_pin="LAB.data_in[38]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_28" from_pin="LAB.data_out[28]" from_side="left" to_pin="LAB.data_in[40]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_30" from_pin="LAB.data_out[30]" from_side="left" to_pin="LAB.data_in[42]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_32" from_pin="LAB.data_out[32]" from_side="left" to_pin="LAB.data_in[44]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_34" from_pin="LAB.data_out[34]" from_side="left" to_pin="LAB.data_in[46]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_36" from_pin="LAB.data_out[36]" from_side="left" to_pin="LAB.data_in[48]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_38" from_pin="LAB.data_out[38]" from_side="left" to_pin="LAB.data_in[50]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+ 
+
+
+    <!-- 20 direct connections coming from the the adjacent memory block located to the left of the LAB-->
+    <direct name="Mem_side_sneak_LAB0" from_pin="M20K.data_out[19:0]" from_side="right" to_pin="LAB.data_in[30:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 20 direct connections coming from the the adjacent memory block located to the right of the LAB-->
+    <direct name="Mem_side_sneak_LAB1" from_pin="M20K.data_out[39:20]" from_side="left" to_pin="LAB.data_in[50:31]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 30 direct connections coming from the the adjacent DSP located to the left of the LAB-->
+    <direct name="DSP_side_sneak_LAB0" from_pin="DSP.result[29:0]" from_side="right" to_pin="LAB.data_in[29:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 30 direct connections coming from the the adjacent DSP located to the right of the LAB-->
+    <direct name="DSP_side_sneak_LAB1" from_pin="DSP.result[59:30]" from_side="left" to_pin="LAB.data_in[59:30]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
   
     <!-- 24 direct connections coming from the the adjacent iolane located to the left of the LAB-->
     <!-- all the LAB lines that don't have self-sneaks have an input coming from adjacent block - plus some of the LAB lines that have a self-sneak-->
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[1:0]" from_side="right" to_pin="LAB.data_in[1:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[3:2]" from_side="right" to_pin="LAB.data_in[12:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[5:4]" from_side="right" to_pin="LAB.data_in[16:15]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[7:6]" from_side="right" to_pin="LAB.data_in[20:19]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[9:8]" from_side="right" to_pin="LAB.data_in[24:23]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[11:10]" from_side="right" to_pin="LAB.data_in[28:27]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[13:12]" from_side="right" to_pin="LAB.data_in[32:31]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[15:14]" from_side="right" to_pin="LAB.data_in[36:35]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[17:16]" from_side="right" to_pin="LAB.data_in[40:39]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[19:18]" from_side="right" to_pin="LAB.data_in[44:43]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[21:20]" from_side="right" to_pin="LAB.data_in[48:47]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[23:22]" from_side="right" to_pin="LAB.data_in[59:58]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB_0" from_pin="iolane.core_out[23:0]" from_side="right" to_pin="LAB.data_in[34:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
 
-    <!-- 40 direct connections coming from the the adjacent LAB located to the left of the DSP-->
-    <direct name="LAB_side_sneak_DSP" from_pin="LAB.data_out[39:0]" from_side="right" to_pin="DSP.data_in[39:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 24 direct connections coming from the the adjacent iolane located to the right of the LAB-->
+    <!-- all the LAB lines that don't have self-sneaks have an input coming from adjacent block - plus some of the LAB lines that have a self-sneak-->
+    <direct name="iolane_side_sneak_LAB_1" from_pin="iolane.core_out[23:0]" from_side="left" to_pin="LAB.data_in[58:35]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+ 
+    <!-- ############### Directlinks to DSPs ############### -->
 
+    <!-- 20 direct connections coming from the odd pin numbers of the adjacent LAB located to the left of the DSP-->
+    <direct name="LAB_side_sneak_DSP_1" from_pin="LAB.data_out[1]" from_side="right" to_pin="DSP.data_in[1]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_3" from_pin="LAB.data_out[3]" from_side="right" to_pin="DSP.data_in[3]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_5" from_pin="LAB.data_out[5]" from_side="right" to_pin="DSP.data_in[5]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_7" from_pin="LAB.data_out[7]" from_side="right" to_pin="DSP.data_in[7]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_9" from_pin="LAB.data_out[9]" from_side="right" to_pin="DSP.data_in[9]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_11" from_pin="LAB.data_out[11]" from_side="right" to_pin="DSP.data_in[11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_13" from_pin="LAB.data_out[13]" from_side="right" to_pin="DSP.data_in[13]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_15" from_pin="LAB.data_out[15]" from_side="right" to_pin="DSP.data_in[15]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_17" from_pin="LAB.data_out[17]" from_side="right" to_pin="DSP.data_in[17]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_19" from_pin="LAB.data_out[19]" from_side="right" to_pin="DSP.data_in[19]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_21" from_pin="LAB.data_out[21]" from_side="right" to_pin="DSP.data_in[21]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_23" from_pin="LAB.data_out[23]" from_side="right" to_pin="DSP.data_in[23]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_25" from_pin="LAB.data_out[25]" from_side="right" to_pin="DSP.data_in[25]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_27" from_pin="LAB.data_out[27]" from_side="right" to_pin="DSP.data_in[27]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_29" from_pin="LAB.data_out[29]" from_side="right" to_pin="DSP.data_in[29]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_31" from_pin="LAB.data_out[31]" from_side="right" to_pin="DSP.data_in[31]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_33" from_pin="LAB.data_out[33]" from_side="right" to_pin="DSP.data_in[33]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_35" from_pin="LAB.data_out[35]" from_side="right" to_pin="DSP.data_in[35]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_37" from_pin="LAB.data_out[37]" from_side="right" to_pin="DSP.data_in[37]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_39" from_pin="LAB.data_out[39]" from_side="right" to_pin="DSP.data_in[39]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 20 direct connections coming from the even pin numbers of the adjacent LAB located to the right of the DSP-->
+    <direct name="LAB_side_sneak_DSP_0" from_pin="LAB.data_out[0]" from_side="left" to_pin="DSP.data_in[0]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_2" from_pin="LAB.data_out[2]" from_side="left" to_pin="DSP.data_in[2]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_4" from_pin="LAB.data_out[4]" from_side="left" to_pin="DSP.data_in[4]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_6" from_pin="LAB.data_out[6]" from_side="left" to_pin="DSP.data_in[6]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_8" from_pin="LAB.data_out[8]" from_side="left" to_pin="DSP.data_in[8]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_10" from_pin="LAB.data_out[10]" from_side="left" to_pin="DSP.data_in[10]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_12" from_pin="LAB.data_out[12]" from_side="left" to_pin="DSP.data_in[12]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_14" from_pin="LAB.data_out[14]" from_side="left" to_pin="DSP.data_in[14]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_16" from_pin="LAB.data_out[16]" from_side="left" to_pin="DSP.data_in[16]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_18" from_pin="LAB.data_out[18]" from_side="left" to_pin="DSP.data_in[18]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_20" from_pin="LAB.data_out[20]" from_side="left" to_pin="DSP.data_in[20]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_22" from_pin="LAB.data_out[22]" from_side="left" to_pin="DSP.data_in[22]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_24" from_pin="LAB.data_out[24]" from_side="left" to_pin="DSP.data_in[24]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_26" from_pin="LAB.data_out[26]" from_side="left" to_pin="DSP.data_in[26]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_28" from_pin="LAB.data_out[28]" from_side="left" to_pin="DSP.data_in[28]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_30" from_pin="LAB.data_out[30]" from_side="left" to_pin="DSP.data_in[30]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_32" from_pin="LAB.data_out[32]" from_side="left" to_pin="DSP.data_in[32]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_34" from_pin="LAB.data_out[34]" from_side="left" to_pin="DSP.data_in[34]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_36" from_pin="LAB.data_out[36]" from_side="left" to_pin="DSP.data_in[36]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_38" from_pin="LAB.data_out[38]" from_side="left" to_pin="DSP.data_in[38]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+ 
     <!-- 40 direct connections coming from the the adjacent memory block located to the left of the DSP-->
-    <direct name="Mem_side_sneak_DSP" from_pin="M20K.data_out[39:0]" from_side="right" to_pin="DSP.data_in[39:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_DSP0" from_pin="M20K.data_out[39:0]" from_side="right" to_pin="DSP.data_in[153:114]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 40 direct connections coming from the the adjacent memory block located to the right of the DSP-->
+    <direct name="Mem_side_sneak_DSP1" from_pin="M20K.data_out[39:0]" from_side="left" to_pin="DSP.data_in[79:40]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
 
     <!-- 74 direct connections coming from the the adjacent DSP located to the left of the DSP-->
-    <direct name="DSP_side_sneak_DSP" from_pin="DSP.result[73:0]" from_side="right" to_pin="DSP.data_in[73:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_DSP0" from_pin="DSP.result[73:0]" from_side="right" to_pin="DSP.data_in[187:114]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 74 direct connections coming from the the adjacent DSP located to the right of the DSP-->
+    <direct name="DSP_side_sneak_DSP1" from_pin="DSP.result[73:0]" from_side="left" to_pin="DSP.data_in[113:40]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
 
     <!-- 24 direct connections coming from the the adjacent iolane located to the left of the DSP-->
-    <direct name="iolane_side_sneak_LAB" from_pin="iolane.core_out[23:0]" from_side="right" to_pin="DSP.data_in[23:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB0" from_pin="iolane.core_out[23:0]" from_side="right" to_pin="DSP.data_in[137:114]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 24 direct connections coming from the the adjacent iolane located to the right of the DSP-->
+    <direct name="iolane_side_sneak_LAB1" from_pin="iolane.core_out[23:0]" from_side="left" to_pin="DSP.data_in[63:40]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
 
 
+    <!-- ############### Directlinks to RAMs ############### -->
+    <!-- To the extent possible, the directlinks are spread evenly across the 120 RAM lines -->
     <!-- 
       since a partial crossbar is implemented for memory blocks 
-      it's guaranteed that almost the same number of directlinks
+      the directlinks are created such that almost the same number of directlinks
       are fed into every group of memory lines that constitute a pattern 
     -->
 
-    <!-- 40 direct connections coming from the the adjacent LAB located to the left of the M20K-->
-    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[6:0]" from_side="right" to_pin="M20K.data_addr_control_in[6:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[13:7]" from_side="right" to_pin="M20K.data_addr_control_in[24:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[20:14]" from_side="right" to_pin="M20K.data_addr_control_in[42:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[27:21]" from_side="right" to_pin="M20K.data_addr_control_in[60:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[34:28]" from_side="right" to_pin="M20K.data_addr_control_in[78:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem" from_pin="LAB.data_out[39:34]" from_side="right" to_pin="M20K.data_addr_control_in[94:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-
+    <!-- 20 direct connections coming from the odd pin numbers of the adjacent LAB located to the left of the RAM-->
+    <direct name="LAB_side_sneak_Mem_1" from_pin="LAB.data_out[1]" from_side="right" to_pin="M20K.data_in[0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_3" from_pin="LAB.data_out[3]" from_side="right" to_pin="M20K.data_in[18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_5" from_pin="LAB.data_out[5]" from_side="right" to_pin="M20K.data_in[36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_7" from_pin="LAB.data_out[7]" from_side="right" to_pin="M20K.data_in[54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_9" from_pin="LAB.data_out[9]" from_side="right" to_pin="M20K.data_in[72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_11" from_pin="LAB.data_out[11]" from_side="right" to_pin="M20K.data_in[90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_13" from_pin="LAB.data_out[13]" from_side="right" to_pin="M20K.data_in[108]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_15" from_pin="LAB.data_out[15]" from_side="right" to_pin="M20K.data_in[1]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_17" from_pin="LAB.data_out[17]" from_side="right" to_pin="M20K.data_in[19]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_19" from_pin="LAB.data_out[19]" from_side="right" to_pin="M20K.data_in[37]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_21" from_pin="LAB.data_out[21]" from_side="right" to_pin="M20K.data_in[55]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_23" from_pin="LAB.data_out[23]" from_side="right" to_pin="M20K.data_in[73]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_25" from_pin="LAB.data_out[25]" from_side="right" to_pin="M20K.data_in[91]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_27" from_pin="LAB.data_out[27]" from_side="right" to_pin="M20K.data_in[109]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_29" from_pin="LAB.data_out[29]" from_side="right" to_pin="M20K.data_in[2]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_31" from_pin="LAB.data_out[31]" from_side="right" to_pin="M20K.data_in[20]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_33" from_pin="LAB.data_out[33]" from_side="right" to_pin="M20K.data_in[38]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_35" from_pin="LAB.data_out[35]" from_side="right" to_pin="M20K.data_in[56]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_37" from_pin="LAB.data_out[37]" from_side="right" to_pin="M20K.data_in[74]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_39" from_pin="LAB.data_out[39]" from_side="right" to_pin="M20K.data_in[92]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 20 direct connections coming from the even pin numbers of the adjacent LAB located to the right of the RAM-->
+    <direct name="LAB_side_sneak_Mem_0" from_pin="LAB.data_out[0]" from_side="left" to_pin="M20K.data_in[17]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_2" from_pin="LAB.data_out[2]" from_side="left" to_pin="M20K.data_in[35]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_4" from_pin="LAB.data_out[4]" from_side="left" to_pin="M20K.data_in[53]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_6" from_pin="LAB.data_out[6]" from_side="left" to_pin="M20K.data_in[71]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_8" from_pin="LAB.data_out[8]" from_side="left" to_pin="M20K.data_in[89]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_10" from_pin="LAB.data_out[10]" from_side="left" to_pin="M20K.data_in[107]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_12" from_pin="LAB.data_out[12]" from_side="left" to_pin="M20K.data_in[119]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_14" from_pin="LAB.data_out[14]" from_side="left" to_pin="M20K.data_in[16]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_16" from_pin="LAB.data_out[16]" from_side="left" to_pin="M20K.data_in[34]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_18" from_pin="LAB.data_out[18]" from_side="left" to_pin="M20K.data_in[52]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_20" from_pin="LAB.data_out[20]" from_side="left" to_pin="M20K.data_in[70]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_22" from_pin="LAB.data_out[22]" from_side="left" to_pin="M20K.data_in[88]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_24" from_pin="LAB.data_out[24]" from_side="left" to_pin="M20K.data_in[106]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_26" from_pin="LAB.data_out[26]" from_side="left" to_pin="M20K.data_in[118]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_28" from_pin="LAB.data_out[28]" from_side="left" to_pin="M20K.data_in[15]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_30" from_pin="LAB.data_out[30]" from_side="left" to_pin="M20K.data_in[33]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_32" from_pin="LAB.data_out[32]" from_side="left" to_pin="M20K.data_in[51]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_34" from_pin="LAB.data_out[34]" from_side="left" to_pin="M20K.data_in[69]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_36" from_pin="LAB.data_out[36]" from_side="left" to_pin="M20K.data_in[87]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_38" from_pin="LAB.data_out[38]" from_side="left" to_pin="M20K.data_in[105]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+ 
     <!-- 40 direct connections coming from the the adjacent memory block located to the left of the M20K-->
-    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[6:0]" from_side="right" to_pin="M20K.data_addr_control_in[6:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[13:7]" from_side="right" to_pin="M20K.data_addr_control_in[24:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[20:14]" from_side="right" to_pin="M20K.data_addr_control_in[42:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[27:21]" from_side="right" to_pin="M20K.data_addr_control_in[60:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[34:28]" from_side="right" to_pin="M20K.data_addr_control_in[78:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem" from_pin="M20K.data_out[39:34]" from_side="right" to_pin="M20K.data_addr_control_in[94:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem0" from_pin="M20K.data_out[6:0]" from_side="right" to_pin="M20K.data_addr_control_in[6:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem1" from_pin="M20K.data_out[13:7]" from_side="right" to_pin="M20K.data_addr_control_in[24:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem2" from_pin="M20K.data_out[20:14]" from_side="right" to_pin="M20K.data_addr_control_in[42:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem3" from_pin="M20K.data_out[27:21]" from_side="right" to_pin="M20K.data_addr_control_in[60:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem4" from_pin="M20K.data_out[34:28]" from_side="right" to_pin="M20K.data_addr_control_in[78:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem5" from_pin="M20K.data_out[39:34]" from_side="right" to_pin="M20K.data_addr_control_in[94:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 40 direct connections coming from the the adjacent memory block located to the right of the M20K-->
+    <direct name="Mem_side_sneak_Mem6" from_pin="M20K.data_out[6:0]" from_side="left" to_pin="M20K.data_addr_control_in[17:11]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem7" from_pin="M20K.data_out[13:7]" from_side="left" to_pin="M20K.data_addr_control_in[35:29]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem8" from_pin="M20K.data_out[20:14]" from_side="left" to_pin="M20K.data_addr_control_in[53:47]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem9" from_pin="M20K.data_out[27:21]" from_side="left" to_pin="M20K.data_addr_control_in[71:65]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem10" from_pin="M20K.data_out[34:28]" from_side="left" to_pin="M20K.data_addr_control_in[89:83]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem11" from_pin="M20K.data_out[39:34]" from_side="left" to_pin="M20K.data_addr_control_in[119:113]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+
 
     <!-- 74 direct connections coming from the the adjacent DSP located to the left of the M20K-->
-    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[11:0]" from_side="right" to_pin="M20K.data_addr_control_in[11:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[23:12]" from_side="right" to_pin="M20K.data_addr_control_in[29:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[35:24]" from_side="right" to_pin="M20K.data_addr_control_in[47:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[47:36]" from_side="right" to_pin="M20K.data_addr_control_in[65:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[59:48]" from_side="right" to_pin="M20K.data_addr_control_in[83:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem" from_pin="DSP.result[73:60]" from_side="right" to_pin="M20K.data_addr_control_in[103:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-   
+    <direct name="DSP_side_sneak_Mem0" from_pin="DSP.result[11:0]" from_side="right" to_pin="M20K.data_addr_control_in[11:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem1" from_pin="DSP.result[23:12]" from_side="right" to_pin="M20K.data_addr_control_in[29:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem2" from_pin="DSP.result[35:24]" from_side="right" to_pin="M20K.data_addr_control_in[47:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem3" from_pin="DSP.result[47:36]" from_side="right" to_pin="M20K.data_addr_control_in[65:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem4" from_pin="DSP.result[59:48]" from_side="right" to_pin="M20K.data_addr_control_in[83:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem5" from_pin="DSP.result[73:60]" from_side="right" to_pin="M20K.data_addr_control_in[103:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 74 direct connections coming from the the adjacent DSP located to the left of the M20K-->
+    <direct name="DSP_side_sneak_Mem6" from_pin="DSP.result[11:0]" from_side="left" to_pin="M20K.data_addr_control_in[17:6]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem7" from_pin="DSP.result[23:12]" from_side="left" to_pin="M20K.data_addr_control_in[35:24]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem8" from_pin="DSP.result[35:24]" from_side="left" to_pin="M20K.data_addr_control_in[53:42]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem9" from_pin="DSP.result[47:36]" from_side="left" to_pin="M20K.data_addr_control_in[71:60]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem10" from_pin="DSP.result[59:48]" from_side="left" to_pin="M20K.data_addr_control_in[89:78]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem11" from_pin="DSP.result[73:60]" from_side="left" to_pin="M20K.data_addr_control_in[119:108]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+      
     <!-- 24 direct connections coming from the the adjacent iolane located to the left of the M20K-->
-    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[3:0]" from_side="right" to_pin="M20K.data_addr_control_in[3:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[7:4]" from_side="right" to_pin="M20K.data_addr_control_in[21:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[11:8]" from_side="right" to_pin="M20K.data_addr_control_in[39:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[15:12]" from_side="right" to_pin="M20K.data_addr_control_in[57:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[19:16]" from_side="right" to_pin="M20K.data_addr_control_in[75:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem" from_pin="iolane.core_out[23:20]" from_side="right" to_pin="M20K.data_addr_control_in[93:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    
+    <direct name="iolane_side_sneak_Mem0" from_pin="iolane.core_out[3:0]" from_side="right" to_pin="M20K.data_addr_control_in[3:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem1" from_pin="iolane.core_out[7:4]" from_side="right" to_pin="M20K.data_addr_control_in[21:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem2" from_pin="iolane.core_out[11:8]" from_side="right" to_pin="M20K.data_addr_control_in[39:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem3" from_pin="iolane.core_out[15:12]" from_side="right" to_pin="M20K.data_addr_control_in[57:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem4" from_pin="iolane.core_out[19:16]" from_side="right" to_pin="M20K.data_addr_control_in[75:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem5" from_pin="iolane.core_out[23:20]" from_side="right" to_pin="M20K.data_addr_control_in[93:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 24 direct connections coming from the the adjacent iolane located to the left of the M20K-->
+    <direct name="iolane_side_sneak_Mem6" from_pin="iolane.core_out[3:0]" from_side="left" to_pin="M20K.data_addr_control_in[17:14]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem7" from_pin="iolane.core_out[7:4]" from_side="left" to_pin="M20K.data_addr_control_in[35:32]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem8" from_pin="iolane.core_out[11:8]" from_side="left" to_pin="M20K.data_addr_control_in[53:50]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem9" from_pin="iolane.core_out[15:12]" from_side="left" to_pin="M20K.data_addr_control_in[71:68]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem10" from_pin="iolane.core_out[19:16]" from_side="left" to_pin="M20K.data_addr_control_in[89:86]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem11" from_pin="iolane.core_out[23:20]" from_side="left" to_pin="M20K.data_addr_control_in[119:116]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+        
 
-    <!-- 40 direct connections coming from the the adjacent LAB located to the left of the iolane-->
-    <direct name="LAB_side_sneak_iolane" from_pin="LAB.data_out[39:0]" from_side="right" to_pin="iolane.core_in[39:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- ############### Directlinks to iolanes ############### -->
+
+    <!-- 20 direct connections coming from the odd pin numbers of the adjacent LAB located to the left of the DSP-->
+    <direct name="LAB_side_sneak_iolane_1" from_pin="LAB.data_out[1]" from_side="right" to_pin="iolane.core_in[1]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_3" from_pin="LAB.data_out[3]" from_side="right" to_pin="iolane.core_in[3]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_5" from_pin="LAB.data_out[5]" from_side="right" to_pin="iolane.core_in[5]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_7" from_pin="LAB.data_out[7]" from_side="right" to_pin="iolane.core_in[7]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_9" from_pin="LAB.data_out[9]" from_side="right" to_pin="iolane.core_in[9]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_11" from_pin="LAB.data_out[11]" from_side="right" to_pin="iolane.core_in[11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_13" from_pin="LAB.data_out[13]" from_side="right" to_pin="iolane.core_in[13]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_15" from_pin="LAB.data_out[15]" from_side="right" to_pin="iolane.core_in[15]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_17" from_pin="LAB.data_out[17]" from_side="right" to_pin="iolane.core_in[17]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_19" from_pin="LAB.data_out[19]" from_side="right" to_pin="iolane.core_in[19]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_21" from_pin="LAB.data_out[21]" from_side="right" to_pin="iolane.core_in[21]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_23" from_pin="LAB.data_out[23]" from_side="right" to_pin="iolane.core_in[23]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_25" from_pin="LAB.data_out[25]" from_side="right" to_pin="iolane.core_in[25]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_27" from_pin="LAB.data_out[27]" from_side="right" to_pin="iolane.core_in[27]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_29" from_pin="LAB.data_out[29]" from_side="right" to_pin="iolane.core_in[29]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_31" from_pin="LAB.data_out[31]" from_side="right" to_pin="iolane.core_in[31]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_33" from_pin="LAB.data_out[33]" from_side="right" to_pin="iolane.core_in[33]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_35" from_pin="LAB.data_out[35]" from_side="right" to_pin="iolane.core_in[35]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_37" from_pin="LAB.data_out[37]" from_side="right" to_pin="iolane.core_in[37]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_39" from_pin="LAB.data_out[39]" from_side="right" to_pin="iolane.core_in[39]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 20 direct connections coming from the even pin numbers of the adjacent LAB located to the right of the DSP-->
+    <direct name="LAB_side_sneak_iolane_0" from_pin="LAB.data_out[0]" from_side="left" to_pin="iolane.core_in[0]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_2" from_pin="LAB.data_out[2]" from_side="left" to_pin="iolane.core_in[2]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_4" from_pin="LAB.data_out[4]" from_side="left" to_pin="iolane.core_in[4]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_6" from_pin="LAB.data_out[6]" from_side="left" to_pin="iolane.core_in[6]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_8" from_pin="LAB.data_out[8]" from_side="left" to_pin="iolane.core_in[8]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_10" from_pin="LAB.data_out[10]" from_side="left" to_pin="iolane.core_in[10]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_12" from_pin="LAB.data_out[12]" from_side="left" to_pin="iolane.core_in[12]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_14" from_pin="LAB.data_out[14]" from_side="left" to_pin="iolane.core_in[14]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_16" from_pin="LAB.data_out[16]" from_side="left" to_pin="iolane.core_in[16]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_18" from_pin="LAB.data_out[18]" from_side="left" to_pin="iolane.core_in[18]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_20" from_pin="LAB.data_out[20]" from_side="left" to_pin="iolane.core_in[20]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_22" from_pin="LAB.data_out[22]" from_side="left" to_pin="iolane.core_in[22]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_24" from_pin="LAB.data_out[24]" from_side="left" to_pin="iolane.core_in[24]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_26" from_pin="LAB.data_out[26]" from_side="left" to_pin="iolane.core_in[26]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_28" from_pin="LAB.data_out[28]" from_side="left" to_pin="iolane.core_in[28]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_30" from_pin="LAB.data_out[30]" from_side="left" to_pin="iolane.core_in[30]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_32" from_pin="LAB.data_out[32]" from_side="left" to_pin="iolane.core_in[32]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_34" from_pin="LAB.data_out[34]" from_side="left" to_pin="iolane.core_in[34]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_36" from_pin="LAB.data_out[36]" from_side="left" to_pin="iolane.core_in[36]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_38" from_pin="LAB.data_out[38]" from_side="left" to_pin="iolane.core_in[38]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
 
     <!-- 40 direct connections coming from the the adjacent memory block located to the left of the iolane-->
-    <direct name="Mem_side_sneak_iolane" from_pin="M20K.data_out[39:0]" from_side="right" to_pin="iolane.core_in[39:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_iolane0" from_pin="M20K.data_out[39:0]" from_side="right" to_pin="iolane.core_in[39:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 40 direct connections coming from the the adjacent memory block located to the right of the iolane-->
+    <direct name="Mem_side_sneak_iolane1" from_pin="M20K.data_out[39:0]" from_side="left" to_pin="iolane.core_in[39:0]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
 
-    <!-- 74 direct connections coming from the the adjacent DSP located to the left of the iolane-->
-    <direct name="DSP_side_sneak_iolane" from_pin="DSP.result[54:0]" from_side="right" to_pin="iolane.core_in[54:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_iolane" from_pin="DSP.result[73:55]" from_side="right" to_pin="iolane.core_in[18:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 55 direct connections coming from the the adjacent DSP located to the left of the iolane-->
+    <direct name="DSP_side_sneak_iolane0" from_pin="DSP.result[54:0]" from_side="right" to_pin="iolane.core_in[54:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 55 direct connections coming from the the adjacent DSP located to the right of the iolane-->
+    <direct name="DSP_side_sneak_iolane1" from_pin="DSP.result[54:0]" from_side="left" to_pin="iolane.core_in[54:0]" to_side="right" x_offset="1" y_offset="0" z_offset="0"/>
+
 
 
   </directlist>
