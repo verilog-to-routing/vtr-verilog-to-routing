@@ -1280,9 +1280,6 @@ class t_pb_graph_pin {
     float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
     t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
 
-    /* This member is used when flat-routing is enabled in order to prevent router from expanding to pins which don't lead to the desired sink */
-    std::set<int> connected_sinks_ptc; /* ptc numbers of sinks which are directly or indirectly connected to this pin */
-
     /* combinational timing information */
     int num_pin_timing = 0;                   /* Number of ipin to opin timing edges*/
     std::vector<t_pb_graph_pin*> pin_timing;  /* timing edge sink pins  [0..num_pin_timing-1]*/

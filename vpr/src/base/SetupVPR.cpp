@@ -730,11 +730,15 @@ static void alloc_and_load_intra_cluster_resources() {
 
                     auto logical_classes = logic_block_ptr->logical_class_inf;
                     std::for_each(logical_classes.begin(), logical_classes.end(),
-                                  [&physical_pin_offset](t_class& l_class) {
-                                      for (auto& pin : l_class.pinlist) {
-                                          pin += physical_pin_offset;
-                                      }
-                                  });
+                                  [&physical_pin_offset](t_class& l_class) { for(auto &pin : l_class.pinlist) {
+                        pin += physical_pin_offset;} });
+
+                    int physical_class_num = physical_class_offset;
+                    for (auto& logic_class : logical_classes) {
+                        auto result = physical_type.internal_class_inf.insert(std::make_pair(physical_class_num, logic_class));
+                        VTR_ASSERT(result.second);
+                        physical_class_num++;
+                    }
 
                     vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
                     for (auto pin_to_pb_pin_map : logic_block_ptr->pin_logical_num_to_pb_pin_mapping) {

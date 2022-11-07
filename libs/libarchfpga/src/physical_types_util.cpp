@@ -1360,35 +1360,6 @@ int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
     }
 }
 
-bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
-                                int pin_physical_num,
-                                int sink_physical_num) {
-    if (is_pin_on_tile(physical_type, pin_physical_num)) {
-        const t_sub_tile* from_sub_tile;
-        int from_sub_tile_rel_cap;
-        std::tie(from_sub_tile, from_sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_type, pin_physical_num);
-        VTR_ASSERT(from_sub_tile != nullptr && from_sub_tile_rel_cap != OPEN);
-
-        const t_sub_tile* to_sub_tile;
-        int to_sub_tile_rel_cap;
-        std::tie(to_sub_tile, to_sub_tile_rel_cap) = get_sub_tile_from_class_physical_num(physical_type, sink_physical_num);
-        VTR_ASSERT(to_sub_tile != nullptr && to_sub_tile_rel_cap != OPEN);
-
-        return (from_sub_tile_rel_cap == to_sub_tile_rel_cap) && (from_sub_tile == to_sub_tile);
-
-    } else {
-        const t_pb_graph_pin* from_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_type, pin_physical_num);
-
-        auto res = from_pb_graph_pin->connected_sinks_ptc.find(sink_physical_num);
-
-        if (res == from_pb_graph_pin->connected_sinks_ptc.end()) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-}
-
 float get_edge_delay(t_physical_tile_type_ptr physical_type,
                      t_logical_block_type_ptr logical_block,
                      int src_pin_physical_num,
