@@ -419,11 +419,6 @@ int get_total_num_tile_internal_pins(t_physical_tile_type_ptr tile);
 
 int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 
-// Check whether the pin corresponding to pin_physical_num is directly or indirectly connected to the sink corresponding to sink_physical_num
-bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
-                                int pin_physical_num,
-                                int sink_physical_num);
-
 float get_edge_delay(t_physical_tile_type_ptr physical_type,
                      t_logical_block_type_ptr logical_block,
                      int src_pin_physical_num,

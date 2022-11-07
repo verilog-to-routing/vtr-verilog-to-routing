@@ -1012,23 +1012,9 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
             for (t_rt_node* rt_node : spatial_rt_lookup[bin_x][bin_y]) {
                 if (!rt_node->re_expand) continue; //Some nodes (like IPINs) shouldn't be re-expanded
                 RRNodeId rr_node_to_add = RRNodeId(rt_node->inode);
-                bool add_node = false;
+
                 //Put the node onto the heap
                 if (relevant_node_to_target(rr_graph_, rr_node_to_add, target_node_id)) {
-                    if(rr_graph_->node_type(rr_node_to_add) == IPIN) {
-                        t_physical_tile_type_ptr physical_type = g_vpr_ctx.device().grid[rr_graph_->node_xlow(rr_node_to_add)][rr_graph_->node_ylow(rr_node_to_add)].type;
-                        if (intra_tile_nodes_connected(physical_type,
-                                                       rr_graph_->node_ptc_num(rr_node_to_add),
-                                                       rr_graph_->node_ptc_num(target_node_id))) {
-                            add_node = true;
-                        }
-                    } else {
-                        add_node = true;
-                    }
-
-                }
-
-                if(add_node) {
                     add_route_tree_node_to_heap(rt_node, target_node, cost_params, true);
                     //Update Bounding Box
                     RRNodeId node(rt_node->inode);

@@ -52,10 +52,6 @@ static void add_intra_tile_switches();
 static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,
                                                         t_logical_block_type* logical_block,
                                                         t_class* class_inf);
-static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
-                                      t_logical_block_type* logical_block,
-                                      t_class* class_inf,
-                                      int physical_class_num);
 
 /**
  * @brief Sets VPR parameters and defaults.
@@ -737,21 +733,11 @@ static void alloc_and_load_intra_cluster_resources() {
 
                     auto logical_classes = logic_block_ptr->logical_class_inf;
                     std::for_each(logical_classes.begin(), logical_classes.end(),
-                                  [&physical_pin_offset](t_class& l_class) { for(auto &pin : l_class.pinlist) {
-                        pin += physical_pin_offset;} });
-
-                    int physical_class_num = physical_class_offset;
-                    for (auto& logic_class : logical_classes) {
-                        auto result = physical_type.internal_class_inf.insert(std::make_pair(physical_class_num, logic_class));
-                        VTR_ASSERT(result.second);
-                        if (logic_class.type == e_pin_type::RECEIVER) {
-                            add_class_to_related_pins(&physical_type,
-                                                      mutable_logical_block,
-                                                      &logic_class,
-                                                      physical_class_num);
-                        }
-                        physical_class_num++;
-                    }
+                                  [&physical_pin_offset](t_class& l_class) {
+                                      for(auto &pin : l_class.pinlist) {
+                                            pin += physical_pin_offset;
+                                      }
+                                  } );
 
                     vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
                     for (auto pin_to_pb_pin_map : logic_block_ptr->pin_logical_num_to_pb_pin_mapping) {
@@ -862,47 +848,4 @@ static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* ph
     }
 
     return relevant_pb_nodes;
-}
-
-static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
-                                      t_logical_block_type* logical_block,
-                                      t_class* class_inf,
-                                      int physical_class_num) {
-    std::list<int> pin_list;
-    pin_list.insert(pin_list.begin(), class_inf->pinlist.begin(), class_inf->pinlist.end());
-
-    int pin_in_class_physical_num = class_inf->pinlist[0];
-    if (is_pin_on_tile(physical_tile, pin_in_class_physical_num)) {
-        return;
-    } else {
-        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_in_class_physical_num);
-        if (!pb_pin->is_primitive_pin())
-            return;
-    }
-
-    std::set<t_pb_graph_node*> relevant_pb_nodes = get_relevant_pb_nodes(physical_tile,
-                                                                         logical_block,
-                                                                         class_inf);
-
-    std::set<t_pb_graph_pin*> seen_pb_pins;
-    while (!pin_list.empty()) {
-        int curr_pin_physical_num = pin_list.front();
-        pin_list.pop_front();
-        if (is_pin_on_tile(physical_tile, curr_pin_physical_num)) {
-            continue;
-        }
-        t_pb_graph_pin* curr_pb_graph_pin = get_mutable_pb_pin_from_pin_physical_num(physical_tile, logical_block, curr_pin_physical_num);
-
-        auto insert_res = seen_pb_pins.insert(curr_pb_graph_pin);
-        if (!insert_res.second || relevant_pb_nodes.find(curr_pb_graph_pin->parent_node) == relevant_pb_nodes.end()) {
-            continue;
-        }
-        curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
-        auto driving_pins = get_physical_pin_src_pins(physical_tile,
-                                                      logical_block,
-                                                      curr_pin_physical_num);
-        for (auto driving_pin_physical_num : driving_pins) {
-            pin_list.push_back(driving_pin_physical_num);
-        }
-    }
 }
