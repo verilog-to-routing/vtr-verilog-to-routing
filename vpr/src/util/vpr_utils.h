@@ -279,8 +279,8 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second);
 
 std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
-                                                         const int j,
-                                                         t_physical_tile_type_ptr physical_type);
+                                                               const int j,
+                                                               t_physical_tile_type_ptr physical_type);
 
 std::vector<int> get_cluster_netlist_tile_pins_at_loc(const int i,
                                                       const int j,

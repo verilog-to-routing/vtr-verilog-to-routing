@@ -541,7 +541,7 @@ void create_rr_graph(const t_graph_type graph_type,
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty()) {
             //No change in channel width, so skip re-building RR graph
-            if(is_flat) {
+            if (is_flat) {
                 VTR_LOG("RR graph channel widths unchanged, intra-cluster resources should be added...\n");
             } else {
                 VTR_LOG("RR graph channel widths unchanged, skipping RR graph rebuild\n");
@@ -571,7 +571,7 @@ void create_rr_graph(const t_graph_type graph_type,
         }
     }
 
-    if(is_flat) {
+    if (is_flat) {
         build_intra_cluster_rr_graph(graph_type,
                                      grid,
                                      block_types,
@@ -1222,8 +1222,6 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                    graph_type,
                    device_ctx.virtual_clock_network_root_idx,
                    is_flat);
-
-
 }
 
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -1926,7 +1924,6 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
     VTR_LOG("Internal edge count:%d\n", num_edges);
 
     rr_graph_builder.init_fan_in();
-
 }
 
 static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,

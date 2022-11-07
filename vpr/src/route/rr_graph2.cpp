@@ -1188,7 +1188,6 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                     int root_y,
                                     int* index,
                                     const std::vector<e_side>& wanted_sides) {
-
     for (e_side side : wanted_sides) {
         for (int width_offset = 0; width_offset < physical_type_ptr->width; ++width_offset) {
             int x_tile = root_x + width_offset;

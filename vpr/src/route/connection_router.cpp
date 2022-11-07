@@ -852,7 +852,7 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
 
-    if(from_high_fanout) {
+    if (from_high_fanout) {
         router_stats_->add_all_rt_from_high_fanout++;
     } else {
         router_stats_->add_all_rt++;
@@ -864,18 +864,18 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
     if (rt_node->re_expand) {
-            add_route_tree_node_to_heap(rt_node,
-                                        target_node,
-                                        cost_params,
-                                        false);
+        add_route_tree_node_to_heap(rt_node,
+                                    target_node,
+                                    cost_params,
+                                    false);
     }
 
     linked_rt_edge = rt_node->u.child_list;
 
     while (linked_rt_edge != nullptr) {
         child_node = linked_rt_edge->child;
-        if(is_flat_) {
-            if(relevant_node_to_target(rr_graph_,
+        if (is_flat_) {
+            if (relevant_node_to_target(rr_graph_,
                                         RRNodeId(child_node->inode),
                                         RRNodeId(target_node))) {
                 add_route_tree_to_heap(child_node,

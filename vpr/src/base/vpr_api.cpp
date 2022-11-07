@@ -1156,7 +1156,7 @@ void free_device(const t_det_routing_arch& routing_arch) {
             device_ctx.arch_switch_inf[iswitch].name = nullptr;
         }
     }
-    
+
     device_ctx.arch_switch_inf.clear();
 
     device_ctx.all_sw_inf.clear();

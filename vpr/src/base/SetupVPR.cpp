@@ -49,9 +49,6 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
 static void alloc_and_load_intra_cluster_resources();
 static void add_intra_tile_switches();
-static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,
-                                                        t_logical_block_type* logical_block,
-                                                        t_class* class_inf);
 
 /**
  * @brief Sets VPR parameters and defaults.
@@ -734,10 +731,10 @@ static void alloc_and_load_intra_cluster_resources() {
                     auto logical_classes = logic_block_ptr->logical_class_inf;
                     std::for_each(logical_classes.begin(), logical_classes.end(),
                                   [&physical_pin_offset](t_class& l_class) {
-                                      for(auto &pin : l_class.pinlist) {
-                                            pin += physical_pin_offset;
+                                      for (auto& pin : l_class.pinlist) {
+                                          pin += physical_pin_offset;
                                       }
-                                  } );
+                                  });
 
                     vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
                     for (auto pin_to_pb_pin_map : logic_block_ptr->pin_logical_num_to_pb_pin_mapping) {
@@ -816,36 +813,4 @@ static void add_intra_tile_switches() {
             }
         }
     }
-}
-
-static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,
-                                                        t_logical_block_type* logical_block,
-                                                        t_class* class_inf) {
-    std::set<t_pb_graph_node*> relevant_pb_nodes;
-    int conn_pin_physical_num = class_inf->pinlist[0];
-    t_pb_graph_pin* conn_pb_pin = get_mutable_pb_pin_from_pin_physical_num(physical_tile,
-                                                                           logical_block,
-                                                                           conn_pin_physical_num);
-    t_pb_graph_node* curr_pb_graph_node = conn_pb_pin->parent_node;
-    relevant_pb_nodes.insert(curr_pb_graph_node);
-
-    if (!curr_pb_graph_node->is_root()) {
-        t_pb_graph_node* first_parent = curr_pb_graph_node->parent_pb_graph_node;
-
-        for (int mode_num = 0; mode_num < first_parent->pb_type->num_modes; mode_num++) {
-            auto mode = first_parent->pb_type->modes[mode_num];
-            for (int type_idx = 0; type_idx < mode.num_pb_type_children; type_idx++) {
-                for (int pb_idx = 0; pb_idx < mode.pb_type_children[type_idx].num_pb; pb_idx++) {
-                    relevant_pb_nodes.insert(&first_parent->child_pb_graph_nodes[mode_num][type_idx][pb_idx]);
-                }
-            }
-        }
-    }
-
-    while (!curr_pb_graph_node->is_root()) {
-        relevant_pb_nodes.insert(curr_pb_graph_node);
-        curr_pb_graph_node = curr_pb_graph_node->parent_pb_graph_node;
-    }
-
-    return relevant_pb_nodes;
 }
