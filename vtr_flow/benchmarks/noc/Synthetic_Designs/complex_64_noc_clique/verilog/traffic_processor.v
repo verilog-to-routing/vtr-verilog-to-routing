@@ -6,10 +6,9 @@
 module traffic_processor (
 	clk,
 	reset,
-	tdata_in,
-	tvalid_in,
-	tdata_out,
-	tvalid_out
+	tdata,
+	tvalid,
+	o_enc
 );
 
 /*****************Parameter Declarations********************/
@@ -18,15 +17,14 @@ parameter noc_dw = 32;
 /*****************INPUT/OUTPUT Definition*******************/
 input wire clk;
 input wire reset;
-input wire [noc_dw-1:0] tdata_in;
-input tvalid_in;
+input wire [noc_dw-1:0] tdata;
+input tvalid;
 
-output reg [noc_dw-1:0] tdata_out;
-output reg tvalid_out;
+output reg [noc_dw-1:0] o_enc;
 
 /*******************Internal Variables**********************/
 wire [noc_dw - 1 : 0] sha_out;
-reg valid_reg;
+wire [noc_dw - 1 : 0] sha2_out;
 
 /*******************module instantiation*******************/
 sha1 sha1_module
@@ -40,51 +38,35 @@ sha1 sha1_module
 	.cmd_o()
 );
 
+sha1 sha2_module 
+(
+	.clk_i(clk),
+	.rst_i(reset),
+	.text_i(sha_out),
+	.text_o(sha2_out),
+	.cmd_i({{1{1'b0}},{2{tvalid}}}),
+	.cmd_w_i(tvalid), 
+	.cmd_o()
+);
+
 /******************Sequential Logic*************************/
 /*
 	This module will wait on the tvalid signal
 	to indicate whether data is available to read
-	in from the input. 
+	in from the input.
 */
 
 always @(posedge clk)
 begin
 	if (reset)begin
-			tdata_out <= 0;
-			tvalid_out <= 0;
+			o_enc <= 0;
 		end
 	else begin
-			if (tvalid_in) begin
-				tdata_out <= sha_out;
-				tvalid_out <= 1'b1;
+			if (tvalid) begin
+				o_enc <= sha2_out;
 			end
 		end
 end
 		
 endmodule 
 						
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
