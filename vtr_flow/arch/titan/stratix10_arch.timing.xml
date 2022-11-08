@@ -1691,7 +1691,6 @@
         <input name="core_in" num_pins="55" equivalent="none"/>
         <output name="core_out" num_pins="24" equivalent="none"/>
         <clock name="clk" num_pins="1"/>
-        <fc in_type="frac" in_val="0.0275" out_type="frac" out_val="0.0375"/>
         <!-- 
           Stratix 10 is a 3 sided architecture, the iolanes can connect to routing on their
           left, top, and right. 
@@ -1703,20 +1702,19 @@
         <pinlocations pattern="custom">
           <loc side="top">   iolane.core_in  iolane.core_out iolane.clk</loc>
 
-          <loc side="left" y_offset="0">  iolane.core_in[13:0]  iolane.core_out[5:0]  iolane.clk</loc>
-          <loc side="right" y_offset="0">  iolane.core_in[13:0]  iolane.core_out[5:0]  iolane.clk</loc>
+          <loc side="left" yoffset="0">  iolane.core_in[13:0]  iolane.core_out[5:0]  iolane.clk</loc>
+          <loc side="right" yoffset="0">  iolane.core_in[13:0]  iolane.core_out[5:0]  iolane.clk</loc>
 
-          <loc side="left" y_offset="1">  iolane.core_in[27:14]  iolane.core_out[11:6]  iolane.clk</loc>
-          <loc side="right" y_offset="1">  iolane.core_in[27:14]  iolane.core_out[11:6]  iolane.clk</loc>
+          <loc side="left" yoffset="1">  iolane.core_in[27:14]  iolane.core_out[11:6]  iolane.clk</loc>
+          <loc side="right" yoffset="1">  iolane.core_in[27:14]  iolane.core_out[11:6]  iolane.clk</loc>
 
-          <loc side="left" y_offset="2">  iolane.core_in[41:28]  iolane.core_out[17:12]  iolane.clk</loc>
-          <loc side="right" y_offset="2">  iolane.core_in[41:28]  iolane.core_out[17:12]  iolane.clk</loc>
+          <loc side="left" yoffset="2">  iolane.core_in[41:28]  iolane.core_out[17:12]  iolane.clk</loc>
+          <loc side="right" yoffset="2">  iolane.core_in[41:28]  iolane.core_out[17:12]  iolane.clk</loc>
 
-          <loc side="left" y_offset="3">  iolane.core_in[54:42]  iolane.core_out[23:18]  iolane.clk</loc>
-          <loc side="right" y_offset="3">  iolane.core_in[54:42]  iolane.core_out[23:18]  iolane.clk</loc>
+          <loc side="left" yoffset="3">  iolane.core_in[54:42]  iolane.core_out[23:18]  iolane.clk</loc>
+          <loc side="right" yoffset="3">  iolane.core_in[54:42]  iolane.core_out[23:18]  iolane.clk</loc>
         </pinlocations>
         
-        <!-- qqqq it's assumed that mux size and input distribution for iolane is also similar -->
         <!-- 
           iolane input muxes have 4 V wires and 6 H wires as input.
 
@@ -1741,21 +1739,33 @@
           located on either side of the channel, with 6 pins coming from a unit length on the left and right
           side of the iolane block we have fc_out(V wires) = (3/6) = 0.5
         -->
-        <!-- qqqq assumed the same fc value of control in -->
 
-        <!-- Specifying fc values for H2 wires -->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.21" segment_name="H2"/>
-        <!-- Specifying fc values for H4 wires -->
-        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.21" segment_name="H4"/>
-        <!-- Specifying fc values for H10 wires -->
-        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.21" segment_name="H10"/>
+        <!-- 
+          The final fc value is the weighted average of all the calculated fc values. The weights
+          are the segments' frequencies.  
+          fc_in = (0.025 * 40 + 0.018 * 112 + 0.015 * 200 + 0.042 * 24 + 0.028 * 72 + 0.047 * 64) / 512 = 0.023
+          fc_out = ()
+        -->
 
-        <!-- Specifying fc values for V2 wires -->
-        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.5" segment_name="V2"/>
-        <!-- Specifying fc values for V3 wires -->
-        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.5" segment_name="V3"/>
-        <!-- Specifying fc values for V4 wires -->
-        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.5" segment_name="V4"/>
+        <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.21" >
+          <!-- Specifying fc values for H4 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.018" segment_name="H4"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.21" segment_name="H4"/>
+          <!-- Specifying fc values for H10 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.015" segment_name="H10"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.21" segment_name="H10"/>
+          <!-- Specifying fc values for V2 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.042" segment_name="V2"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.5" segment_name="V2"/>
+          <!-- Specifying fc values for V3 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.028" segment_name="V3"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.5" segment_name="V3"/>
+          <!-- Specifying fc values for V4 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.047" segment_name="V4"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.5" segment_name="V4"/>
+        </fc>
+
       </sub_tile>
     </tile>
 
@@ -1775,7 +1785,7 @@
              through a local routing architecture without changing packing results.
              Please note that this may cause optimistic routing results, being
              better in routability than what actual hardware can support
-          -->
+        -->
         <output name="data_out" num_pins="40" equivalent="full"/>
         <output name="cout" num_pins="1" equivalent="none"/>
         <clock name="clk" num_pins="2"/>
@@ -1789,7 +1799,7 @@
             The exceptions to the above are the LAB chain ports, which propogate downward between blocks.   
           -->
           <loc side="left">  LAB.data_in LAB.control_in LAB.data_out LAB.clk</loc>
-          <loc side="right"> LAB.data_in LAB.control_in LAB.data_out LAB.clk<</loc>
+          <loc side="right"> LAB.data_in LAB.control_in LAB.data_out LAB.clk</loc>
           <loc side="top">   LAB.data_in LAB.control_in LAB.data_out LAB.clk LAB.cin</loc>
           <loc side="bottom">LAB.cout</loc>
         </pinlocations>
@@ -1829,44 +1839,31 @@
           located on either side of the channel, with 40 output pins coming from the left and right
           side of the logic block we have fc_out(V wires) = (3/40) = 0.075 
         -->
-        <!-- qqqq assumed the same fc value of control in -->
-
-        <!-- Specifying fc values for H2 wires -->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" segment_name="H2">
+        <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
           <!--Chains do not connect to general global routing-->
-          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="H2"/>
-          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="H2"/>
-        </fc>
-        <!-- Specifying fc values for H4 wires -->
-        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.125" segment_name="H4">
-          <!--Chains do not connect to general global routing-->
-          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="H4"/>
-          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="H4"/>
-        </fc>
-        <!-- Specifying fc values for H10 wires -->
-        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.125" segment_name="H10">
-          <!--Chains do not connect to general global routing-->
-          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="H10"/>
-          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="H10"/>
-        </fc>
-
-        <!-- Specifying fc values for V2 wires -->
-        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.075" segment_name="V2">
-          <!--Chains do not connect to general global routing-->
-          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="V2"/>
-          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="V2"/>
-        </fc>
-        <!-- Specifying fc values for V3 wires -->
-        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.075" segment_name="V3">
-          <!--Chains do not connect to general global routing-->
-          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="V3"/>
-          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="V3"/>
-        </fc>
-        <!-- Specifying fc values for V4 wires -->
-        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.075" segment_name="V4">
-          <!--Chains do not connect to general global routing-->
-          <fc_override port_name="cin" fc_type="frac" fc_val="0" segment_name="V4"/>
-          <fc_override port_name="cout" fc_type="frac" fc_val="0" segment_name="V4"/>
+          <fc_override port_name="cin" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
+          <!-- Specifying fc values for H4 wires -->
+          <fc_override port_name="data_in" fc_type="frac" fc_val="0.018" segment_name="H4"/>
+          <fc_override port_name="control_in" fc_type="frac" fc_val="0.18" segment_name="H4"/>
+          <fc_override port_name="data_out" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <!-- Specifying fc values for H10 wires -->
+          <fc_override port_name="data_in" fc_type="frac" fc_val="0.015" segment_name="H10"/>
+          <fc_override port_name="control_in" fc_type="frac" fc_val="0.15" segment_name="H10"/>
+          <fc_override port_name="data_out" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <!-- Specifying fc values for V2 wires -->
+          <fc_override port_name="data_in" fc_type="frac" fc_val="0.042" segment_name="V2"/>
+          <fc_override port_name="control_in" fc_type="frac" fc_val="0.42" segment_name="V2"/>
+          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <!-- Specifying fc values for V3 wires -->
+          <fc_override port_name="data_in" fc_type="frac" fc_val="0.028" segment_name="V3"/>
+          <fc_override port_name="control_in" fc_type="frac" fc_val="0.28" segment_name="V3"/>
+          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <!-- Specifying fc values for V4 wires -->
+          <fc_override port_name="data_in" fc_type="frac" fc_val="0.047" segment_name="V4"/>
+          <fc_override port_name="control_in" fc_type="frac" fc_val="0.47" segment_name="V4"/>
+          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V4"/>
         </fc>
       </sub_tile>
     </tile>
@@ -1917,19 +1914,24 @@
           <loc side="top">PLL.core_in PLL.core_out PLL.clk </loc>
         </pinlocations>
 
-        <!-- Specifying fc values for H2 wires -->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" segment_name="H2"/>
-        <!-- Specifying fc values for H4 wires -->
-        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.125" segment_name="H4"/>
-        <!-- Specifying fc values for H10 wires -->
-        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.125" segment_name="H10"/>
-
-        <!-- Specifying fc values for V2 wires -->
-        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.075" segment_name="V2"/>
-        <!-- Specifying fc values for V3 wires -->
-        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.075" segment_name="V3"/>
-        <!-- Specifying fc values for V4 wires -->
-        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.075" segment_name="V4"/>
+        <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+          <!-- Specifying fc values for H4 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.018" segment_name="H4"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <!-- Specifying fc values for H10 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.015" segment_name="H10"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <!-- Specifying fc values for V2 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.042" segment_name="V2"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <!-- Specifying fc values for V3 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.028" segment_name="V3"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <!-- Specifying fc values for V4 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.047" segment_name="V4"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+        </fc>
       </sub_tile>
       <sub_tile name="clock_div">
         <equivalent_sites>
@@ -1952,19 +1954,24 @@
           <loc side="bottom">clock_div.inclk clock_div.clock_div_out </loc>
         </pinlocations>
 
-        <!-- Specifying fc values for H2 wires -->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" segment_name="H2"/>
-        <!-- Specifying fc values for H4 wires -->
-        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.125" segment_name="H4"/>
-        <!-- Specifying fc values for H10 wires -->
-        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.125" segment_name="H10"/>
-
-        <!-- Specifying fc values for V2 wires -->
-        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.075" segment_name="V2"/>
-        <!-- Specifying fc values for V3 wires -->
-        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.075" segment_name="V3"/>
-        <!-- Specifying fc values for V4 wires -->
-        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.075" segment_name="V4"/>
+        <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+          <!-- Specifying fc values for H4 wires -->
+          <fc_override port_name="inclk" fc_type="frac" fc_val="0.018" segment_name="H4"/>
+          <fc_override port_name="clock_div_out" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <!-- Specifying fc values for H10 wires -->
+          <fc_override port_name="inclk" fc_type="frac" fc_val="0.015" segment_name="H10"/>
+          <fc_override port_name="clock_div_out" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <!-- Specifying fc values for V2 wires -->
+          <fc_override port_name="inclk" fc_type="frac" fc_val="0.042" segment_name="V2"/>
+          <fc_override port_name="clock_div_out" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <!-- Specifying fc values for V3 wires -->
+          <fc_override port_name="inclk" fc_type="frac" fc_val="0.028" segment_name="V3"/>
+          <fc_override port_name="clock_div_out" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <!-- Specifying fc values for V4 wires -->
+          <fc_override port_name="inclk" fc_type="frac" fc_val="0.047" segment_name="V4"/>
+          <fc_override port_name="clock_div_out" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+        </fc>
       </sub_tile>
       <sub_tile name="clock_gate">
         <equivalent_sites>
@@ -1988,19 +1995,29 @@
           <loc side="bottom">clock_gate.inclk clock_gate.enable clock_gate.outclk </loc>
         </pinlocations>
         
-        <!-- Specifying fc values for H2 wires -->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" segment_name="H2"/>
-        <!-- Specifying fc values for H4 wires -->
-        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.125" segment_name="H4"/>
-        <!-- Specifying fc values for H10 wires -->
-        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.125" segment_name="H10"/>
-
-        <!-- Specifying fc values for V2 wires -->
-        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.075" segment_name="V2"/>
-        <!-- Specifying fc values for V3 wires -->
-        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.075" segment_name="V3"/>
-        <!-- Specifying fc values for V4 wires -->
-        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.075" segment_name="V4"/>
+        <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+          <!-- Specifying fc values for H4 wires -->
+          <fc_override port_name="inclk" fc_type="frac" fc_val="0.018" segment_name="H4"/>
+          <fc_override port_name="enable" fc_type="frac" fc_val="0.018" segment_name="H4"/>
+          <fc_override port_name="outclk" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <!-- Specifying fc values for H10 wires -->
+          <fc_override port_name="inclk" fc_type="frac" fc_val="0.015" segment_name="H10"/>
+          <fc_override port_name="enable" fc_type="frac" fc_val="0.015" segment_name="H10"/>
+          <fc_override port_name="outclk" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <!-- Specifying fc values for V2 wires -->
+          <fc_override port_name="inclk" fc_type="frac" fc_val="0.042" segment_name="V2"/>
+          <fc_override port_name="enable" fc_type="frac" fc_val="0.042" segment_name="V2"/>
+          <fc_override port_name="outclk" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <!-- Specifying fc values for V3 wires -->
+          <fc_override port_name="inclk" fc_type="frac" fc_val="0.028" segment_name="V3"/>
+          <fc_override port_name="enable" fc_type="frac" fc_val="0.028" segment_name="V3"/>
+          <fc_override port_name="outclk" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <!-- Specifying fc values for V4 wires -->
+          <fc_override port_name="inclk" fc_type="frac" fc_val="0.047" segment_name="V4"/>
+          <fc_override port_name="enable" fc_type="frac" fc_val="0.047" segment_name="V4"/>
+          <fc_override port_name="outclk" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+        </fc>
       </sub_tile>
     </tile>
 
@@ -2050,20 +2067,24 @@
           located on either side of the channel, with 36 pins coming from the left and right
           side of the OCT block we have fc_out(V wires) = (3/36) = 0.083
         -->
-
-        <!-- Specifying fc values for H2 wires -->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.14" segment_name="H2"/>
-        <!-- Specifying fc values for H4 wires -->
-        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.14" segment_name="H4"/>
-        <!-- Specifying fc values for H10 wires -->
-        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.14" segment_name="H10"/>
-
-        <!-- Specifying fc values for V2 wires -->
-        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.083" segment_name="V2"/>
-        <!-- Specifying fc values for V3 wires -->
-        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.083" segment_name="V3"/>
-        <!-- Specifying fc values for V4 wires -->
-        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.083" segment_name="V4"/>
+        <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.14" >
+          <!-- Specifying fc values for H4 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.018" segment_name="H4"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.14" segment_name="H4"/>
+          <!-- Specifying fc values for H10 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.015" segment_name="H10"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.14" segment_name="H10"/>
+          <!-- Specifying fc values for V2 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.042" segment_name="V2"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.083" segment_name="V2"/>
+          <!-- Specifying fc values for V3 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.028" segment_name="V3"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.083" segment_name="V3"/>
+          <!-- Specifying fc values for V4 wires -->
+          <fc_override port_name="core_in" fc_type="frac" fc_val="0.047" segment_name="V4"/>
+          <fc_override port_name="core_out" fc_type="frac" fc_val="0.083" segment_name="V4"/>
+        </fc>
       </sub_tile>
     </tile>
 
@@ -2089,9 +2110,9 @@
           The exceptions to the above are the DSP chain and scan ports, which propogate downward between blocks.   
         -->
         <pinlocations pattern="custom">
-          <loc side="left">DSP.dspin DSP.clk DSP.result</loc>
-          <loc side="right">DSP.dspin DSP.clk DSP.result</loc>
-          <loc side="top">DSP.dspin DSP.chainin DSP.scanin DSP.clk DSP.result</loc>
+          <loc side="left">DSP.dspin DSP.clk DSP.result DSP.dftout</loc>
+          <loc side="right">DSP.dspin DSP.clk DSP.result DSP.dftout</loc>
+          <loc side="top">DSP.dspin DSP.chainin DSP.scanin DSP.clk DSP.result DSP.dftout</loc>
           <loc side="bottom">DSP.chainout DSP.scanout</loc>
         </pinlocations>
         <!-- 
@@ -2118,21 +2139,34 @@
           to the same value as that of logic blocks. This approximation will lead to bigger mus sizes for wire segments adjacent to the DSP blocks 
           but it will ensure there is enough connectivty to route the DSP primitives
         -->
-        <!-- qqqq assumed the same fc value of control in -->
-
-        <!-- Specifying fc values for H2 wires -->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" segment_name="H2"/>
-        <!-- Specifying fc values for H4 wires -->
-        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.125" segment_name="H4"/>
-        <!-- Specifying fc values for H10 wires -->
-        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.125" segment_name="H10"/>
-
-        <!-- Specifying fc values for V2 wires -->
-        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.075" segment_name="V2"/>
-        <!-- Specifying fc values for V3 wires -->
-        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.075" segment_name="V3"/>
-        <!-- Specifying fc values for V4 wires -->
-        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.075" segment_name="V4"/>
+        <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+          <!--Chains do not connect to general global routing-->
+          <fc_override port_name="chainin" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="scanin" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="chainout" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="scanout" fc_type="frac" fc_val="0"/>
+          <!-- Specifying fc values for H4 wires -->
+          <fc_override port_name="dspin" fc_type="frac" fc_val="0.018" segment_name="H4"/>
+          <fc_override port_name="dftout" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <fc_override port_name="result" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <!-- Specifying fc values for H10 wires -->
+          <fc_override port_name="dspin" fc_type="frac" fc_val="0.015" segment_name="H10"/>
+          <fc_override port_name="dftout" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <fc_override port_name="result" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <!-- Specifying fc values for V2 wires -->
+          <fc_override port_name="dspin" fc_type="frac" fc_val="0.042" segment_name="V2"/>
+          <fc_override port_name="dftout" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <fc_override port_name="result" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <!-- Specifying fc values for V3 wires -->
+          <fc_override port_name="dspin" fc_type="frac" fc_val="0.028" segment_name="V3"/>
+          <fc_override port_name="dftout" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <fc_override port_name="result" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <!-- Specifying fc values for V4 wires -->
+          <fc_override port_name="dspin" fc_type="frac" fc_val="0.047" segment_name="V4"/>
+          <fc_override port_name="dftout" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+          <fc_override port_name="result" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+        </fc>
       </sub_tile>
     </tile>
 
@@ -2170,28 +2204,31 @@
         -->
 
         <!-- 
-          For every short H wire, 5 inputs come from adjacent blocks outputs. 
-          Assuming there are 41 pins on the top side of the RAM block: fc_out(H wires) = 5/42 = 0.12
-
-          For every short V wire, 6 inputs come block outputs. Assuming 3 inputs come from the block
-          located on either side of the channel, with 42 pins coming from the left and right
-          side of the RAM block we have fc_out(V wires) = (3/42) = 0.07
+          It's assumed that RAM block has the same fc_out value as LAB. 
         -->
-        <!-- qqqq assumed the same fc value of control in -->
-
-        <!-- Specifying fc values for H2 wires -->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.12" segment_name="H2"/>
-        <!-- Specifying fc values for H4 wires -->
-        <fc in_type="frac" in_val="0.018" out_type="frac" out_val="0.12" segment_name="H4"/>
-        <!-- Specifying fc values for H10 wires -->
-        <fc in_type="frac" in_val="0.015" out_type="frac" out_val="0.12" segment_name="H10"/>
-
-        <!-- Specifying fc values for V2 wires -->
-        <fc in_type="frac" in_val="0.042" out_type="frac" out_val="0.07" segment_name="V2"/>
-        <!-- Specifying fc values for V3 wires -->
-        <fc in_type="frac" in_val="0.028" out_type="frac" out_val="0.07" segment_name="V3"/>
-        <!-- Specifying fc values for V4 wires -->
-        <fc in_type="frac" in_val="0.047" out_type="frac" out_val="0.07" segment_name="V4"/>
+        <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
+        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+          <!-- Specifying fc values for H4 wires -->
+          <fc_override port_name="data_addr_control_in" fc_type="frac" fc_val="0.018" segment_name="H4"/>
+          <fc_override port_name="data_out" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <fc_override port_name="control_out" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <!-- Specifying fc values for H10 wires -->
+          <fc_override port_name="data_addr_control_in" fc_type="frac" fc_val="0.015" segment_name="H10"/>
+          <fc_override port_name="data_out" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <fc_override port_name="control_out" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <!-- Specifying fc values for V2 wires -->
+          <fc_override port_name="data_addr_control_in" fc_type="frac" fc_val="0.042" segment_name="V2"/>
+          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <fc_override port_name="control_out" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <!-- Specifying fc values for V3 wires -->
+          <fc_override port_name="data_addr_control_in" fc_type="frac" fc_val="0.028" segment_name="V3"/>
+          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <fc_override port_name="control_out" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <!-- Specifying fc values for V4 wires -->
+          <fc_override port_name="data_addr_control_in" fc_type="frac" fc_val="0.047" segment_name="V4"/>
+          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+          <fc_override port_name="control_out" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+        </fc>
       </sub_tile>
     </tile>
   </tiles>
@@ -2239,6 +2276,21 @@
     </auto_layout>
 
   </layout>
+  <device>
+    <sizing R_minW_nmos="8926" R_minW_pmos="16067"/>
+    <!-- KEM: Oct 15, 2013
+          Place no timing delay on the input pin of complex blocks.
+          We model this directly inside the block, rather than in the
+          global routing delay. This matches the behaviour of
+          Quartus II. -->
+    <area grid_logic_tile_area="0.0"/>
+    <chan_width_distr>
+      <x distr="uniform" peak="1.000000"/>
+      <y distr="uniform" peak="0.480000"/>
+    </chan_width_distr>
+    <switch_block type="custom"/>
+    <connection_block input_switch_name="ipin_cblock"/>
+  </device>
   <switchlist>
     <!-- AA: July 19, 2020
          We define three types of drivers, one for each of the segment types (see comment in <segmentlist> section)
@@ -2391,7 +2443,6 @@
   </segmentlist>
   <directlist>
 
-    <!-- qqqq are there any self sneaks for DSP and RAM ????-->
 
     <!-- chainout propogates downward between DSP blocks-->
     <direct name="DSP_chainout" from_pin="DSP.chainout" from_side="bottom" to_pin="DSP.chainin" to_side="top" x_offset="0" y_offset="-1" z_offset="0"/>
@@ -3595,7 +3646,7 @@
       <output name="scanout" num_pins="27"/>
       <output name="dftout" num_pins="1"/>
       <mode name="DSP">
-        <pb_type name="dsp_prim">
+        <pb_type name="dsp_prim" num_pb="1">
           <input name="datain" num_pins="110"/>
           <input name="chainin" num_pins="64"/>
           <input name="controlin" num_pins="17"/>
@@ -6350,14 +6401,13 @@
 
           <direct input="dsp_prim.dftout" name="dft_out" output="DSP.dftout"/>
           <direct input="dsp_prim.result" name="result_out" output="DSP.result"/>
-          
+
           <complete input="DSP.dspin" name="data_in" output="dsp_prim.datain"/>
           <complete input="DSP.dspin" name="control_in" output="dsp_prim.controlin"/>
           <complete input="DSP.clk" name="clk_in" output="dsp_prim.clk"/>
         </interconnect>
       </mode>
     </pb_type>
-
   </complexblocklist>
   <switchblocklist>
     <!-- Stratix 10 uses a uni-directional routing architecture with a Driver Input Mux (DIM) size of 12 (i.e.
