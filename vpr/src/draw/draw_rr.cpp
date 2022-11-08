@@ -396,7 +396,7 @@ void draw_rr_edges(int inode, ezgl::renderer* g) {
                         }
                         switch_type = rr_graph.edge_switch(rr_node, iedge);
                         draw_chanx_to_chanx_edge(rr_node, RRNodeId(to_node),
-                                                 to_ptc_num, switch_type, g);
+                                                 switch_type, g);
                         break;
 
                     case CHANY:
@@ -412,8 +412,8 @@ void draw_rr_edges(int inode, ezgl::renderer* g) {
                             g->set_color(blk_DARKGREEN);
                         }
                         switch_type = rr_graph.edge_switch(rr_node, iedge);
-                        draw_chanx_to_chany_edge(inode, from_ptc_num, to_node,
-                                                 to_ptc_num, FROM_X_TO_Y, switch_type, g);
+                        draw_chanx_to_chany_edge(inode, to_node,
+                                                 FROM_X_TO_Y, switch_type, g);
                         break;
 
                     default:
@@ -465,8 +465,8 @@ void draw_rr_edges(int inode, ezgl::renderer* g) {
                             g->set_color(blk_DARKGREEN);
                         }
                         switch_type = rr_graph.edge_switch(rr_node, iedge);
-                        draw_chanx_to_chany_edge(to_node, to_ptc_num, inode,
-                                                 from_ptc_num, FROM_Y_TO_X, switch_type, g);
+                        draw_chanx_to_chany_edge(to_node, inode,
+                                                 FROM_Y_TO_X, switch_type, g);
                         break;
 
                     case CHANY:
@@ -484,7 +484,7 @@ void draw_rr_edges(int inode, ezgl::renderer* g) {
                         }
                         switch_type = rr_graph.edge_switch(rr_node, iedge);
                         draw_chany_to_chany_edge(rr_node, RRNodeId(to_node),
-                                                 to_ptc_num, switch_type, g);
+                                                 switch_type, g);
                         break;
 
                     default:
