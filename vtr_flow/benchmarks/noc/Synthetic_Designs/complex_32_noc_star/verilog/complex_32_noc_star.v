@@ -1803,6 +1803,466 @@ traffic_processor tp_32(
 	        .tvalid_out(tp_valid_out_32)
         );
 
+/****************Avoid Synthesis Optimization***************/
+/* Quartus synthesis tool removes traffic processor modules 
+since their outputs are not connected to any module (considered
+as dangling ports). To avoid this optimization, we registered the
+traffic processor data output.
+*/
+//register output definition
+wire [noc_dw - 1: 0] reg_data_out_2;
+wire [noc_dw - 1: 0] reg_valid_out_2;
+
+wire [noc_dw - 1: 0] reg_data_out_3;
+wire [noc_dw - 1: 0] reg_valid_out_3;
+
+wire [noc_dw - 1: 0] reg_data_out_4;
+wire [noc_dw - 1: 0] reg_valid_out_4;
+
+wire [noc_dw - 1: 0] reg_data_out_5;
+wire [noc_dw - 1: 0] reg_valid_out_5;
+
+wire [noc_dw - 1: 0] reg_data_out_6;
+wire [noc_dw - 1: 0] reg_valid_out_6;
+
+wire [noc_dw - 1: 0] reg_data_out_7;
+wire [noc_dw - 1: 0] reg_valid_out_7;
+
+wire [noc_dw - 1: 0] reg_data_out_8;
+wire [noc_dw - 1: 0] reg_valid_out_8;
+
+wire [noc_dw - 1: 0] reg_data_out_9;
+wire [noc_dw - 1: 0] reg_valid_out_9;
+
+wire [noc_dw - 1: 0] reg_data_out_10;
+wire [noc_dw - 1: 0] reg_valid_out_10;
+
+wire [noc_dw - 1: 0] reg_data_out_11;
+wire [noc_dw - 1: 0] reg_valid_out_11;
+
+wire [noc_dw - 1: 0] reg_data_out_12;
+wire [noc_dw - 1: 0] reg_valid_out_12;
+
+wire [noc_dw - 1: 0] reg_data_out_13;
+wire [noc_dw - 1: 0] reg_valid_out_13;
+
+wire [noc_dw - 1: 0] reg_data_out_14;
+wire [noc_dw - 1: 0] reg_valid_out_14;
+
+wire [noc_dw - 1: 0] reg_data_out_15;
+wire [noc_dw - 1: 0] reg_valid_out_15;
+
+wire [noc_dw - 1: 0] reg_data_out_16;
+wire [noc_dw - 1: 0] reg_valid_out_16;
+
+wire [noc_dw - 1: 0] reg_data_out_17;
+wire [noc_dw - 1: 0] reg_valid_out_17;
+
+wire [noc_dw - 1: 0] reg_data_out_18;
+wire [noc_dw - 1: 0] reg_valid_out_18;
+
+wire [noc_dw - 1: 0] reg_data_out_19;
+wire [noc_dw - 1: 0] reg_valid_out_19;
+
+wire [noc_dw - 1: 0] reg_data_out_20;
+wire [noc_dw - 1: 0] reg_valid_out_20;
+
+wire [noc_dw - 1: 0] reg_data_out_21;
+wire [noc_dw - 1: 0] reg_valid_out_21;
+
+wire [noc_dw - 1: 0] reg_data_out_22;
+wire [noc_dw - 1: 0] reg_valid_out_22;
+
+wire [noc_dw - 1: 0] reg_data_out_23;
+wire [noc_dw - 1: 0] reg_valid_out_23;
+
+wire [noc_dw - 1: 0] reg_data_out_24;
+wire [noc_dw - 1: 0] reg_valid_out_24;
+
+wire [noc_dw - 1: 0] reg_data_out_25;
+wire [noc_dw - 1: 0] reg_valid_out_25;
+
+wire [noc_dw - 1: 0] reg_data_out_26;
+wire [noc_dw - 1: 0] reg_valid_out_26;
+
+wire [noc_dw - 1: 0] reg_data_out_27;
+wire [noc_dw - 1: 0] reg_valid_out_27;
+
+wire [noc_dw - 1: 0] reg_data_out_28;
+wire [noc_dw - 1: 0] reg_valid_out_28;
+
+wire [noc_dw - 1: 0] reg_data_out_29;
+wire [noc_dw - 1: 0] reg_valid_out_29;
+
+wire [noc_dw - 1: 0] reg_data_out_30;
+wire [noc_dw - 1: 0] reg_valid_out_30;
+
+wire [noc_dw - 1: 0] reg_data_out_31;
+wire [noc_dw - 1: 0] reg_valid_out_31;
+
+register r_2 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_2),
+             .data_out(reg_data_out_2)
+         );
+register r_3 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_3),
+             .data_out(reg_data_out_3)
+         );
+register r_4 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_4),
+             .data_out(reg_data_out_4)
+         );
+register r_5 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_5),
+             .data_out(reg_data_out_5)
+         );
+register r_6 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_6),
+             .data_out(reg_data_out_6)
+         );
+register r_7 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_7),
+             .data_out(reg_data_out_7)
+         );
+register r_8 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_8),
+             .data_out(reg_data_out_8)
+         );
+register r_9 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_9),
+             .data_out(reg_data_out_9)
+         );
+register r_10 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_10),
+             .data_out(reg_data_out_10)
+         );
+register r_11 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_11),
+             .data_out(reg_data_out_11)
+         );
+register r_12 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_12),
+             .data_out(reg_data_out_12)
+         );
+register r_13 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_13),
+             .data_out(reg_data_out_13)
+         );
+register r_14 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_14),
+             .data_out(reg_data_out_14)
+         );
+register r_15 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_15),
+             .data_out(reg_data_out_15)
+         );
+register r_16 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_16),
+             .data_out(reg_data_out_16)
+         );
+register r_17 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_17),
+             .data_out(reg_data_out_17)
+         );
+register r_18 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_18),
+             .data_out(reg_data_out_18)
+         );
+register r_19 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_19),
+             .data_out(reg_data_out_19)
+         );
+register r_20 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_20),
+             .data_out(reg_data_out_20)
+         );
+register r_21 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_21),
+             .data_out(reg_data_out_21)
+         );
+register r_22 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_22),
+             .data_out(reg_data_out_22)
+         );
+register r_23 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_23),
+             .data_out(reg_data_out_23)
+         );
+register r_24 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_24),
+             .data_out(reg_data_out_24)
+         );
+register r_25 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_25),
+             .data_out(reg_data_out_25)
+         );
+register r_26 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_26),
+             .data_out(reg_data_out_26)
+         );
+register r_27 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_27),
+             .data_out(reg_data_out_27)
+         );
+register r_28 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_28),
+             .data_out(reg_data_out_28)
+         );
+register r_29 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_29),
+             .data_out(reg_data_out_29)
+         );
+register r_30 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_30),
+             .data_out(reg_data_out_30)
+         );
+register r_31 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_data_out_31),
+             .data_out(reg_data_out_31)
+         );
+register r_valid_2 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_2),
+             .data_out(reg_Valid_out_2)
+         );
+register r_valid_3 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_3),
+             .data_out(reg_Valid_out_3)
+         );
+register r_valid_4 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_4),
+             .data_out(reg_Valid_out_4)
+         );
+register r_valid_5 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_5),
+             .data_out(reg_Valid_out_5)
+         );
+register r_valid_6 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_6),
+             .data_out(reg_Valid_out_6)
+         );
+register r_valid_7 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_7),
+             .data_out(reg_Valid_out_7)
+         );
+register r_valid_8 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_8),
+             .data_out(reg_Valid_out_8)
+         );
+register r_valid_9 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_9),
+             .data_out(reg_Valid_out_9)
+         );
+register r_valid_10 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_10),
+             .data_out(reg_Valid_out_10)
+         );
+register r_valid_11 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_11),
+             .data_out(reg_Valid_out_11)
+         );
+register r_valid_12 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_12),
+             .data_out(reg_Valid_out_12)
+         );
+register r_valid_13 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_13),
+             .data_out(reg_Valid_out_13)
+         );
+register r_valid_14 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_14),
+             .data_out(reg_Valid_out_14)
+         );
+register r_valid_15 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_15),
+             .data_out(reg_Valid_out_15)
+         );
+register r_valid_16 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_16),
+             .data_out(reg_Valid_out_16)
+         );
+register r_valid_17 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_17),
+             .data_out(reg_Valid_out_17)
+         );
+register r_valid_18 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_18),
+             .data_out(reg_Valid_out_18)
+         );
+register r_valid_19 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_19),
+             .data_out(reg_Valid_out_19)
+         );
+register r_valid_20 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_20),
+             .data_out(reg_Valid_out_20)
+         );
+register r_valid_21 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_21),
+             .data_out(reg_Valid_out_21)
+         );
+register r_valid_22 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_22),
+             .data_out(reg_Valid_out_22)
+         );
+register r_valid_23 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_23),
+             .data_out(reg_Valid_out_23)
+         );
+register r_valid_24 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_24),
+             .data_out(reg_Valid_out_24)
+         );
+register r_valid_25 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_25),
+             .data_out(reg_Valid_out_25)
+         );
+register r_valid_26 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_26),
+             .data_out(reg_Valid_out_26)
+         );
+register r_valid_27 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_27),
+             .data_out(reg_Valid_out_27)
+         );
+register r_valid_28 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_28),
+             .data_out(reg_Valid_out_28)
+         );
+register r_valid_29 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_29),
+             .data_out(reg_Valid_out_29)
+         );
+register r_valid_30 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_30),
+             .data_out(reg_Valid_out_30)
+         );
+register r_valid_31 (
+             .clk(clk),
+             .reset(reset),
+             .data_in(tp_valid_out_31),
+             .data_out(reg_Valid_out_31)
+         );
+
+
+
 /*******************Output Logic***************************/
 assign data_out = tp_data_out_32;
 
