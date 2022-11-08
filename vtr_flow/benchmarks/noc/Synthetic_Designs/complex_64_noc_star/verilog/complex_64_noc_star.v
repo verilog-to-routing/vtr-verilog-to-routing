@@ -669,6 +669,7 @@ wire tp_valid_out_63 /* synthesis keep */;
 
 wire [noc_dw - 1: 0] tp_data_out_64 /* synthesis keep */;
 wire tp_valid_out_64 /* synthesis keep */;
+<<<<<<< HEAD
 =======
 wire [noc_dw - 1: 0] tp_data_out_2;
 wire tp_valid_out_2;
@@ -860,6 +861,8 @@ wire [noc_dw - 1: 0] tp_data_out_64;
 wire tp_valid_out_64;
 >>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
 
+=======
+>>>>>>> blif file updated for complex_64_noc_star
 
 /*******************module instantiation********************/
 
