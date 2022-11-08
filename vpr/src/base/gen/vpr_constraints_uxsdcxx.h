@@ -427,7 +427,7 @@ template<std::size_t N>
 /* Internal loading functions, which validate and load a PugiXML DOM tree into memory. */
 inline int load_int(const char* in, const std::function<void(const char*)>* report_error) {
     int out;
-	// global variable, must set to 0 before using it to avoid changed by other errors, 
+    // global variable, must set to 0 before using it to avoid changed by other errors
     errno = 0;
     out = std::strtol(in, NULL, 10);
     if (errno != 0)
