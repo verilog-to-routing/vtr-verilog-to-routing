@@ -2072,7 +2072,8 @@ inline enum_loc_side lex_enum_loc_side(const char *in, bool throw_on_invalid, co
 /* Internal loading functions, which validate and load a PugiXML DOM tree into memory. */
 inline int load_int(const char *in, const std::function<void(const char *)> * report_error){
 	int out;
-    errno = 0;
+	// global variable, must set to 0 before using it to avoid changed by other errors
+    errno = 0; 
 	out = std::strtol(in, NULL, 10);
 	if(errno != 0)
 		noreturn_report(report_error, ("Invalid value `" + std::string(in) + "` when loading into a int.").c_str());
@@ -2081,6 +2082,7 @@ inline int load_int(const char *in, const std::function<void(const char *)> * re
 
 inline unsigned int load_unsigned_int(const char *in, const std::function<void(const char *)> * report_error){
 	unsigned int out;
+	// global variable, must set to 0 before using it to avoid changed by other errors
     errno = 0;
 	out = std::strtoul(in, NULL, 10);
 	if(errno != 0)
@@ -2090,6 +2092,7 @@ inline unsigned int load_unsigned_int(const char *in, const std::function<void(c
 
 inline float load_float(const char *in, const std::function<void(const char *)> * report_error){
 	float out;
+	// global variable, must set to 0 before using it to avoid changed by other errors
     errno = 0;
 	out = std::strtof(in, NULL);
 	if(errno != 0)
