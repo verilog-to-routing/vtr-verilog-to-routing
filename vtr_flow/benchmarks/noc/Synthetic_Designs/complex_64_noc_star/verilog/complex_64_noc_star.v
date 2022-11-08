@@ -20,11 +20,8 @@ parameter byte_dw = 8;
 input wire clk;
 input wire reset;
 
-<<<<<<< HEAD
+
 output wire [noc_dw - 1:0] data_out;
-=======
-output wire [noc_dw * 2 - 1:0] data_out;
->>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
 
 /*******************Internal Variables**********************/
 //traffic generator
@@ -480,7 +477,6 @@ wire [noc_dw - 1: 0] si_data_out_64;
 wire si_valid_out_64;
 
 //traffic processor data - middle routers
-<<<<<<< HEAD
 wire [noc_dw - 1: 0] tp_data_out_2 /* synthesis keep */;
 wire tp_valid_out_2 /* synthesis keep */; 
 
@@ -858,8 +854,6 @@ wire tp_valid_out_63;
 
 wire [noc_dw - 1: 0] tp_data_out_64;
 wire tp_valid_out_64;
->>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
-
 
 /*******************module instantiation********************/
 
@@ -913,12 +907,7 @@ noc_router_adapter_block noc_router_adapter_block_1(
     .slave_tid(8'd0),
     .slave_tdest(8'd0),
     .slave_tuser(8'd0),
-<<<<<<< HEAD
     .slave_tlast(1'd0)
-=======
-    .slave_tlast(1'd0),
->>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
-
 );
 
 /*

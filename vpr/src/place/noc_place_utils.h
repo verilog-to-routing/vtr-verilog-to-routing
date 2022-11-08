@@ -8,10 +8,9 @@
 #include "move_transactions.h"
 #include "vtr_log.h"
 #include "noc_routing_algorithm_creator.h"
-<<<<<<< HEAD
-=======
+
 #include "move_utils.h"
->>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
+
 
 // represent the maximum values of the NoC cost normalization factors //
 // we need to handle the case where the agggregate bandwidth is 0, so we set this to some arbritary positive number that is greater than 1.e-9, since that is the range we expect the normalization factor to be (in Gbps)
@@ -20,8 +19,7 @@ constexpr double MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST = 1.;
 // This should be updated if the delays become lower
 constexpr double MAX_INV_NOC_LATENCY_COST = 1.e12;
 
-<<<<<<< HEAD
-=======
+
 /* Stores statistical data about how the NoC blocks were moved during placement
 */
 struct NocPlaceStats{
@@ -30,7 +28,7 @@ struct NocPlaceStats{
 };
 
 
->>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
+
 /* Defines how the links found in a traffic flow are updated in terms
  * of their bandwidth usage.
  */
@@ -267,8 +265,6 @@ void allocate_and_load_noc_placement_structs(void);
 
 void free_noc_placement_structs(void);
 
-<<<<<<< HEAD
-=======
 /* Below are functions related to modifying and retreiving the NoC placement stats dastructure*/
 
 /**
@@ -299,5 +295,4 @@ void update_noc_placement_stats(int move_type);
  */
 void print_noc_placement_stats(void);
 
->>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
 #endif

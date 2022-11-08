@@ -1579,14 +1579,11 @@ static e_move_result try_swap(const t_annealing_state* state,
 
                 costs->noc_aggregate_bandwidth_cost += noc_aggregate_bandwidth_delta_c;
                 costs->noc_latency_cost += noc_latency_delta_c;
-<<<<<<< HEAD
-=======
 
                 // if a noc router block was moved, update the NoC related stats
                 if (number_of_affected_noc_traffic_flows != 0){
                     update_noc_placement_stats((int)move_type);
                 }
->>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
             }
 
             ++move_type_stat.accepted_moves[(int)move_type];

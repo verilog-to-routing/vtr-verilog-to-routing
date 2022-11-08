@@ -10,13 +10,10 @@ static vtr::vector<NocTrafficFlowId, double> traffic_flow_aggregate_bandwidth_co
 static std::vector<NocTrafficFlowId> affected_traffic_flows;
 /*********************************************************** *****************************/
 
-<<<<<<< HEAD
-=======
 /*********** NoC Placement Stats ***********/
 static NocPlaceStats noc_place_stats;
 /*******************************************/
 
->>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
 void initial_noc_placement(void) {
     // need to get placement information about where the router cluster blocks are palced on the device
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -446,8 +443,6 @@ void free_noc_placement_structs(void) {
     vtr::release_memory(affected_traffic_flows);
 
     return;
-<<<<<<< HEAD
-=======
 }
 
 /* Below are functions related to modifying and printing the NoC placement
@@ -492,5 +487,4 @@ void print_noc_placement_stats(void){
     VTR_LOG("\n");
 
     return;
->>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
 }
