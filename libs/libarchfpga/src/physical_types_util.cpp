@@ -63,18 +63,43 @@ static int get_logical_block_physical_pin_num_offset(t_physical_tile_type_ptr ph
 
 static int get_pin_logical_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num);
 
+/**
+ *
+ * @param physical_type physical tile which pin belongs to
+ * @param sub_tile  sub_tile in which physical tile located
+ * @param logical_block logical block mapped to the sub_tile
+ * @param relative_cap relative capacity of the sub_tile
+ * @param pin
+ * @return physical number of the pins derived the given pin
+ */
 static std::vector<int> get_pb_pin_src_pins(t_physical_tile_type_ptr physical_type,
                                             const t_sub_tile* sub_tile,
                                             t_logical_block_type_ptr logical_block,
                                             int relative_cap,
                                             const t_pb_graph_pin* pin);
 
+/**
+ *
+ * @param physical_type physical tile which pin belongs to
+ * @param sub_tile  sub_tile in which physical tile located
+ * @param logical_block logical block mapped to the sub_tile
+ * @param relative_cap relative capacity of the sub_tile
+ * @param pin
+ * @return physical number of the pins derived by the given pin
+ */
 static std::vector<int> get_pb_pin_sink_pins(t_physical_tile_type_ptr physical_type,
                                              const t_sub_tile* sub_tile,
                                              t_logical_block_type_ptr logical_block,
                                              int relative_cap,
                                              const t_pb_graph_pin* pin);
 
+/**
+ *
+ * @param physical_type
+ * @param logical_block
+ * @param pin_physical_num physical number of the pin *on* the tile. It shouldn't be for a pin inside the tile
+ * @return return the pb_pin corresponding to the given pin_physical num.
+ */
 static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physical_type,
                                                  t_logical_block_type_ptr logical_block,
                                                  int pin_physical_num);
@@ -311,14 +336,23 @@ static std::vector<int> get_pb_pin_sink_pins(t_physical_tile_type_ptr physical_t
 static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physical_type,
                                                  t_logical_block_type_ptr logical_block,
                                                  int pin_physical_num) {
+    /*
+     * To get the pb_pin we need to first get the logical number of the pin. Then, we can use a member inside
+     * logical block to retrieve the pb_pin
+    */
     VTR_ASSERT(is_pin_on_tile(physical_type, pin_physical_num));
     const t_sub_tile* sub_tile;
     int rel_cap;
     std::tie(sub_tile, rel_cap) = get_sub_tile_from_pin_physical_num(physical_type, pin_physical_num);
     VTR_ASSERT(sub_tile != nullptr);
+    /* get the mapping between sub_tile pins and pins on the tile */
     auto direct_map = (physical_type->tile_block_pin_directs_map).at(logical_block->index).at(sub_tile->index);
     int sub_tile_inst_num_pins = sub_tile->num_phy_pins / sub_tile->capacity.total();
     pin_physical_num -= (sub_tile_inst_num_pins * rel_cap);
+    /* direct_map only shows the mapping of the first instance of the sub_tile to the tile pins. Thus, we
+     * have to first reduce the offset of the pin number, if it is not located on the first instance, then, use
+     * direct_map. The offset is equal to the number of pins on each instance(cap).
+    */
     auto result = direct_map.find(t_physical_pin(pin_physical_num));
     if (result == direct_map.inverse_end()) {
         archfpga_throw(__FILE__, __LINE__,
@@ -598,13 +632,6 @@ bool is_output_type(t_physical_tile_type_ptr type) {
 bool is_io_type(t_physical_tile_type_ptr type) {
     return is_input_type(type)
            || is_output_type(type);
-}
-
-std::string get_class_block_name(t_physical_tile_type_ptr type, int class_physical_num) {
-    auto curr_class = type->internal_class_inf.at(class_physical_num);
-    int physical_pin = curr_class.pinlist[0];
-    auto pb_pin = get_pb_pin_from_pin_physical_num(type, physical_pin);
-    return pb_pin->parent_node->hierarchical_type_name();
 }
 
 std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat) {
@@ -892,14 +919,17 @@ t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr ph
                                                      const t_pb_graph_node* pb_graph_node) {
     t_class_range class_range;
 
+    // Get class pairs [class num, class obj] of the pb_graph_node
     auto pb_graph_node_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
                                                                        sub_tile,
                                                                        logical_block,
                                                                        sub_tile_relative_cap,
                                                                        pb_graph_node);
+    // We assume that class ids for each pb_graph_node are continuous
     int max_key = std::numeric_limits<int>::min();
     int min_key = std::numeric_limits<int>::max();
 
+    // Find the lower/upper band of the class range
     for (auto& class_pair : pb_graph_node_class_pairs) {
         if (class_pair.first < min_key)
             min_key = class_pair.first;
@@ -917,6 +947,8 @@ t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr ph
 }
 
 std::vector<int> get_tile_classes(t_physical_tile_type_ptr physical_type) {
+    // The class numbers are distributed in a way that the classes on the tile are from 0 to the
+    // maximum number of classes on the tile. For internal classes, the number starts from class_inf.size()
     std::vector<int> classes(physical_type->class_inf.size());
     std::iota(classes.begin(), classes.end(), 0);
 
@@ -997,11 +1029,13 @@ t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile
 }
 
 const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num) {
+    // Without providing logical_block to specifies which equivalent site is mapped to the sub_tile, there is no way to
+    // get the pb_graph_pin corresponding to the pin on the tile.
     VTR_ASSERT(physical_num >= physical_tile->num_pins);
     auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, physical_num);
     VTR_ASSERT(logical_block != nullptr);
-    int logical_num = get_pin_logical_num_from_pin_physical_num(physical_tile, physical_num);
-    return logical_block->pin_logical_num_to_pb_pin_mapping.at(logical_num);
+    int pin_logical_num = get_pin_logical_num_from_pin_physical_num(physical_tile, physical_num);
+    return logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
 }
 
 const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_type,
@@ -1049,6 +1083,9 @@ e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_
 std::tuple<std::vector<int>, std::vector<int>, std::vector<e_side>> get_pin_coordinates(t_physical_tile_type_ptr physical_type,
                                                                                         int pin_physical_num,
                                                                                         const std::vector<e_side>& sides) {
+    // For the pins which are on a tile, they may be located in multiple sides/locations to model a pin which is connected to multiple
+    // channels. However, in the case of internal pins, currently, they are only located on e_side::TOP and the root location of the
+    // tile.
     std::vector<int> x_vec;
     std::vector<int> y_vec;
     std::vector<e_side> side_vec;

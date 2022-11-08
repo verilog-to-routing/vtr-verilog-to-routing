@@ -159,8 +159,6 @@ int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_ti
  */
 std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type_ptr physical_tile, int pin);
 
-std::string get_class_block_name(t_physical_tile_type_ptr type, int class_physical_num);
-
 ///@brief Returns the name of the pin_index'th pin on the specified block type
 std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat);
 
@@ -312,6 +310,12 @@ const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
 /** get information given class physical num **/
 std::tuple<const t_sub_tile*, int> get_sub_tile_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
 
+/**
+ *
+ * @param physical_tile physical_tile which the given class belongs to
+ * @param class_physical_num physical number of the class
+ * @return return the pins' physical number of the pins connected to the given class
+ */
 const std::vector<int>& get_pin_list_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
 
 PortEquivalence get_port_equivalency_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
@@ -325,21 +329,48 @@ inline bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_p
 }
 /** **/
 
-/** get classes under different blocks **/
+/**
+ * @brief: To get the pb_graph_node's classes, we need to have all of the requested parameters to determine the physical number of the classes.
+ * @param physical_tile
+ * @param sub_tile
+ * @param logical_block
+ * @param sub_tile_relative_cap
+ * @param pb_graph_node
+ * @return the key of the map is the class physical number and the value the the class obj itself
+ */
 std::unordered_map<int, const t_class*> get_pb_graph_node_num_class_pairs(t_physical_tile_type_ptr physical_tile,
                                                                           const t_sub_tile* sub_tile,
                                                                           t_logical_block_type_ptr logical_block,
                                                                           int sub_tile_relative_cap,
                                                                           const t_pb_graph_node* pb_graph_node);
 
+/**
+ * @brief Classes are indexed in a way that the number of classes on the same pb_graph_node is continuous
+ * @param physical_tile
+ * @param sub_tile
+ * @param logical_block
+ * @param sub_tile_relative_cap
+ * @param pb_graph_node
+ * @return
+ */
 t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr physical_tile,
                                                      const t_sub_tile* sub_tile,
                                                      t_logical_block_type_ptr logical_block,
                                                      int sub_tile_relative_cap,
                                                      const t_pb_graph_node* pb_graph_node);
 
+/**
+ *
+ * @param physical_type
+ * @return Physical number of classes on the tile
+ */
 std::vector<int> get_tile_classes(t_physical_tile_type_ptr physical_type);
 
+/**
+ * Get the number of all classes, on the tile and inside the cluster.
+ * @param physical_type
+ * @return
+ */
 std::vector<int> get_flat_tile_primitive_classes(t_physical_tile_type_ptr physical_type);
 /** **/
 int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
