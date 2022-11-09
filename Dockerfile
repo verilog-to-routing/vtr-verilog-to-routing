@@ -27,3 +27,4 @@ RUN apt-get update -qq \
 RUN make -j$(nproc) && make install
 # Container's default launch command
 SHELL ["/bin/bash", "-c"]
+test
