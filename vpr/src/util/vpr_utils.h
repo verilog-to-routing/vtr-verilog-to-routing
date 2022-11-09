@@ -52,7 +52,7 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
                              int* pin_low,
                              int* pin_high);
 
-std::tuple<int, int> get_block_loc(const ParentBlockId& block_id, bool is_flat);
+t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat);
 
 int get_block_num_class(const ParentBlockId& block_id, bool is_flat);
 

@@ -249,9 +249,9 @@ static void check_source(const Netlist<>& net_list,
     /* First node_block for net is the source */
     ParentBlockId blk_id = net_list.net_driver_block(net_id);
 
-    int loc_x, loc_y;
-    std::tie(loc_x, loc_y) = get_block_loc(blk_id, is_flat);
-    if (loc_x != i || loc_y != j) {
+    t_block_loc blk_loc;
+    blk_loc = get_block_loc(blk_id, is_flat);
+    if (blk_loc.loc.x != i || blk_loc.loc.y != j) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
     }

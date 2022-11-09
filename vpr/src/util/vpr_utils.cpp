@@ -669,25 +669,22 @@ t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vec
     return nullptr; //Not found
 }
 
-std::tuple<int, int> get_block_loc(const ParentBlockId& block_id, bool is_flat) {
-    int i;
-    int j;
+t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat) {
     auto& place_ctx = g_vpr_ctx.placement();
+    ClusterBlockId cluster_block_id = ClusterBlockId::INVALID();
 
     if (is_flat) {
         AtomBlockId atom_block_id = convert_to_atom_block_id(block_id);
         auto& atom_look_up = g_vpr_ctx.atom().lookup;
-        ClusterBlockId cluster_block_id = atom_look_up.atom_clb(atom_block_id);
-        VTR_ASSERT(cluster_block_id != ClusterBlockId::INVALID());
-        i = place_ctx.block_locs[cluster_block_id].loc.x;
-        j = place_ctx.block_locs[cluster_block_id].loc.y;
+        cluster_block_id = atom_look_up.atom_clb(atom_block_id);
     } else {
-        ClusterBlockId cluster_block_id = convert_to_cluster_block_id(block_id);
-        i = place_ctx.block_locs[cluster_block_id].loc.x;
-        j = place_ctx.block_locs[cluster_block_id].loc.y;
+        cluster_block_id = convert_to_cluster_block_id(block_id);
     }
 
-    return std::make_tuple(i, j);
+    VTR_ASSERT(cluster_block_id != ClusterBlockId::INVALID());
+    auto blk_loc = place_ctx.block_locs[cluster_block_id];
+
+    return blk_loc;
 }
 
 int get_block_num_class(const ParentBlockId& block_id, bool is_flat) {

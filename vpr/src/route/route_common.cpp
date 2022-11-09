@@ -1016,13 +1016,12 @@ static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RR
         for (auto pin_id : net_list.net_pins(net_id)) {
             auto block_id = net_list.pin_block(pin_id);
 
-            int i;
-            int j;
-            std::tie(i, j) = get_block_loc(block_id, is_flat);
+            t_block_loc blk_loc;
+            blk_loc = get_block_loc(block_id, is_flat);
             int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
 
-            RRNodeId inode = rr_graph.node_lookup().find_node(i,
-                                                              j,
+            RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.x,
+                                                              blk_loc.loc.y,
                                                               (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
                                                               iclass);
             VTR_ASSERT(inode != RRNodeId::INVALID());
@@ -1055,9 +1054,8 @@ static vtr::vector<ParentBlockId, std::vector<int>> load_rr_clb_sources(const RR
         rr_blk_source[blk_id].resize(num_tile_class);
         for (int iclass = 0; iclass < num_tile_class; iclass++) {
             if (iclass >= class_range.low && iclass <= class_range.high) {
-                int i;
-                int j;
-                std::tie(i, j) = get_block_loc(blk_id, is_flat);
+                t_block_loc blk_loc;
+                blk_loc = get_block_loc(blk_id, is_flat);
                 auto class_type = get_class_type_from_class_physical_num(type, iclass);
                 if (class_type == DRIVER) {
                     rr_type = SOURCE;
@@ -1066,7 +1064,10 @@ static vtr::vector<ParentBlockId, std::vector<int>> load_rr_clb_sources(const RR
                     rr_type = SINK;
                 }
 
-                RRNodeId inode = rr_graph.node_lookup().find_node(i, j, rr_type, iclass);
+                RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.x,
+                                                                  blk_loc.loc.y,
+                                                                  rr_type,
+                                                                  iclass);
                 rr_blk_source[blk_id][iclass] = size_t(inode);
             } else {
                 rr_blk_source[blk_id][iclass] = OPEN;
@@ -1355,14 +1356,13 @@ void print_route(const Netlist<>& net_list,
             for (auto pin_id : net_list.net_pins(net_id)) {
                 ParentBlockId block_id = net_list.pin_block(pin_id);
                 int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
-                int block_x;
-                int block_y;
-                std::tie(block_x, block_y) = get_block_loc(block_id, is_flat);
+                t_block_loc blk_loc;
+                blk_loc = get_block_loc(block_id, is_flat);
                 fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
                         net_list.block_name(block_id).c_str(),
                         size_t(block_id),
-                        block_x,
-                        block_y,
+                        blk_loc.loc.x,
+                        blk_loc.loc.y,
                         iclass);
             }
         }
@@ -1673,10 +1673,10 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
                 auto net_id = itr->second;
                 VTR_LOG("    Used by net %s (%zu)\n", net_list.net_name(net_id).c_str(), size_t(net_id));
                 for (auto pin : net_list.net_pins(net_id)) {
-                    int x, y;
+                    t_block_loc blk_loc;
                     auto blk = net_list.pin_block(pin);
-                    std::tie(x, y) = get_block_loc(blk, is_flat);
-                    if (x == node_x && y == node_y) {
+                    blk_loc = get_block_loc(blk, is_flat);
+                    if (blk_loc.loc.x == node_x && blk_loc.loc.y == node_y) {
                         VTR_LOG("      Is in the same cluster: %s \n", describe_rr_node(rr_graph, device_ctx.grid,
                                                                                         device_ctx.rr_indexed_data, itr->first, is_flat)
                                                                            .c_str());
