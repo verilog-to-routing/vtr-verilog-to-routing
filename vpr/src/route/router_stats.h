@@ -22,6 +22,9 @@ struct RouterStats {
     size_t add_all_rt_from_high_fanout;
     size_t add_high_fanout_rt;
     size_t add_all_rt;
+
+    ParentNetId net_id;
+    int target_pin_num;
 };
 
 class WirelengthInfo {

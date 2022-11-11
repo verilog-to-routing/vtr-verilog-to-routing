@@ -39,6 +39,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , rr_graph_(rr_graph)
         , rr_rc_data_(rr_rc_data.data(), rr_rc_data.size())
         , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
+        , net_terminal_groups(g_vpr_ctx.routing().net_terminal_groups)
+        , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
         , rr_node_route_inf_(rr_node_route_inf.data(), rr_node_route_inf.size())
         , is_flat_(is_flat)
         , router_stats_(nullptr)
@@ -202,7 +204,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const int target_node);
 
     // Calculates the cost of reaching to_node
-    void evaluate_timing_driven_node_costs(
+    bool evaluate_timing_driven_node_costs(
         t_heap* to,
         const t_conn_cost_params cost_params,
         const int from_node,
@@ -255,6 +257,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     const RRGraphView* rr_graph_;
     vtr::array_view<const t_rr_rc_data> rr_rc_data_;
     vtr::array_view<const t_rr_switch_inf> rr_switch_inf_;
+    const vtr::vector<ParentNetId, std::vector<std::vector<int>>>& net_terminal_groups;
+    const vtr::vector<ParentNetId, std::vector<int>>& net_terminal_group_num;
     vtr::array_view<t_rr_node_route_inf> rr_node_route_inf_;
     bool is_flat_;
     std::vector<int> modified_rr_node_inf_;

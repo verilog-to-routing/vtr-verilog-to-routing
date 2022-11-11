@@ -1397,6 +1397,35 @@ int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
     }
 }
 
+bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
+                                int pin_physical_num,
+                                int sink_physical_num) {
+    if (is_pin_on_tile(physical_type, pin_physical_num)) {
+        const t_sub_tile* from_sub_tile;
+        int from_sub_tile_rel_cap;
+        std::tie(from_sub_tile, from_sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_type, pin_physical_num);
+        VTR_ASSERT(from_sub_tile != nullptr && from_sub_tile_rel_cap != OPEN);
+
+        const t_sub_tile* to_sub_tile;
+        int to_sub_tile_rel_cap;
+        std::tie(to_sub_tile, to_sub_tile_rel_cap) = get_sub_tile_from_class_physical_num(physical_type, sink_physical_num);
+        VTR_ASSERT(to_sub_tile != nullptr && to_sub_tile_rel_cap != OPEN);
+
+        return (from_sub_tile_rel_cap == to_sub_tile_rel_cap) && (from_sub_tile == to_sub_tile);
+
+    } else {
+        const t_pb_graph_pin* from_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_type, pin_physical_num);
+
+        auto res = from_pb_graph_pin->connected_sinks_ptc.find(sink_physical_num);
+
+        if (res == from_pb_graph_pin->connected_sinks_ptc.end()) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+}
+
 float get_edge_delay(t_physical_tile_type_ptr physical_type,
                      t_logical_block_type_ptr logical_block,
                      int src_pin_physical_num,
@@ -1426,5 +1455,46 @@ float get_edge_delay(t_physical_tile_type_ptr physical_type,
 
     VTR_ASSERT(edge_found);
     return delay;
+}
+
+bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
+                           int first_class_ptc_num,
+                           int second_class_ptc_num,
+                           bool is_flat) {
+    if(!is_flat) {
+        return true;
+    }
+    const int NUM_SIMILAR_PB_NODE_THRESHOLD = 2;
+    auto first_class_pin_list = get_pin_list_from_class_physical_num(physical_tile, first_class_ptc_num);
+    auto second_class_pin_list = get_pin_list_from_class_physical_num(physical_tile, second_class_ptc_num);
+
+    auto first_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile, first_class_pin_list[0]);
+    auto second_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile, second_class_pin_list[0]);
+
+    std::vector<const t_pb_graph_node*> first_pb_graph_node_chain;
+    auto curr_pb_graph_node = first_pb_graph_pin->parent_node;
+    while(curr_pb_graph_node != nullptr) {
+        first_pb_graph_node_chain.push_back(curr_pb_graph_node);
+        curr_pb_graph_node = curr_pb_graph_node->parent_pb_graph_node;
+    }
+
+    int num_shared_pb_graph_node = 0;
+    curr_pb_graph_node = second_pb_graph_pin->parent_node;
+    while(curr_pb_graph_node != nullptr) {
+        auto find_res = std::find(first_pb_graph_node_chain.begin(), first_pb_graph_node_chain.end(), curr_pb_graph_node);
+        if(find_res != first_pb_graph_node_chain.end()){
+            num_shared_pb_graph_node++;
+            if(num_shared_pb_graph_node >= NUM_SIMILAR_PB_NODE_THRESHOLD)
+                break;
+        }
+        curr_pb_graph_node = curr_pb_graph_node->parent_pb_graph_node;
+    }
+
+    if(num_shared_pb_graph_node < NUM_SIMILAR_PB_NODE_THRESHOLD) {
+        return false;
+    } else {
+        return true;
+    }
+
 }
 /* */

@@ -389,6 +389,10 @@ struct RoutingContext : public Context {
 
     std::vector<t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
+    vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
+
+    vtr::vector<ParentNetId, std::vector<int>> net_terminal_group_num;
+
     /**
      * @brief Information about whether a node is part of a non-configurable set
      *

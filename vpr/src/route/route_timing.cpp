@@ -1381,6 +1381,9 @@ static bool timing_driven_route_sink(ConnectionRouter& router,
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
+    router_stats.net_id = net_id;
+    router_stats.target_pin_num = target_pin;
+
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
     //the heap to ensure it has more flexibility to find the best path.
