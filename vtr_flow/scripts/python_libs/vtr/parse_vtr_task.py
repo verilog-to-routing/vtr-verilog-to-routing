@@ -482,9 +482,9 @@ def summarize_qor(configs, alt_tasks_dir=None):
     )
     with out_file.open("w+") as out:
         for config in configs:
-            with (
-                Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE
-            ).open("r") as in_file:
+            with (Path(find_latest_run_dir(config, alt_tasks_dir)) / QOR_PARSE_FILE).open(
+                "r"
+            ) as in_file:
                 headers = in_file.readline()
                 if first:
                     print("task_name \t{}".format(headers), file=out, end="")
