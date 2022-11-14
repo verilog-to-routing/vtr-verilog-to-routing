@@ -228,39 +228,35 @@ void free_pack_molecules(t_pack_molecule* list_of_pack_molecules) {
  * Free linked lists found in cluster_placement_stats_list
  */
 void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats_list) {
-    t_cluster_placement_primitive *cur, *next;
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
         int index = type.index;
-        cur = cluster_placement_stats_list[index].tried;
-        while (cur != nullptr) {
-            next = cur->next_primitive;
-            delete cur;
-            cur = next;
+
+        for(auto& primitive : cluster_placement_stats_list[index].tried) {
+            delete primitive.second;
+            //cluster_placement_stats_list[index].tried.erase(primitive.first);
         }
-        cur = cluster_placement_stats_list[index].in_flight;
-        while (cur != nullptr) {
-            next = cur->next_primitive;
-            delete cur;
-            cur = next;
+
+        for(auto& primitive : cluster_placement_stats_list[index].in_flight) {
+            delete primitive.second;
+            //cluster_placement_stats_list[index].in_flight.erase(primitive.first);
         }
-        cur = cluster_placement_stats_list[index].invalid;
-        while (cur != nullptr) {
-            next = cur->next_primitive;
-            delete cur;
-            cur = next;
+
+        for(auto& primitive : cluster_placement_stats_list[index].invalid) {
+            delete primitive.second;
+            //cluster_placement_stats_list[index].invalid.erase(primitive.first);
         }
+
         for (int j = 0; j < cluster_placement_stats_list[index].num_pb_types; j++) {
-            cur = cluster_placement_stats_list[index].valid_primitives[j]->next_primitive;
-            while (cur != nullptr) {
-                next = cur->next_primitive;
-                delete cur;
-                cur = next;
+            for(auto& primitive : cluster_placement_stats_list[index].valid_primitives[j]) {
+                delete primitive.second;
+                //cluster_placement_stats_list[index].valid_primitives[j].erase()
             }
-            delete cluster_placement_stats_list[index].valid_primitives[j];
+
+            //delete cluster_placement_stats_list[index].valid_primitives[j];
         }
-        delete[] cluster_placement_stats_list[index].valid_primitives;
+        //delete[] cluster_placement_stats_list[index].valid_primitives;
     }
-    delete[] cluster_placement_stats_list;
+    //delete[] cluster_placement_stats_list;
 }
