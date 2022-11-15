@@ -93,7 +93,6 @@ enum class ScreenUpdatePriority {
 constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
 constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 
-typedef std::pair<int, int> cluster_primitive_index;
 /*
  * Files
  */
@@ -431,7 +430,7 @@ struct t_cluster_placement_stats {
     bool has_long_chain;                              ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
     const t_pack_molecule* curr_molecule;             ///<current molecule being considered for packing
     //t_cluster_placement_primitive** valid_primitives; ///<[0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty
-    std::vector<std::unordered_multimap<int, t_cluster_placement_primitive*>> valid_primitives;
+    std::vector<std::unordered_multimap<int , t_cluster_placement_primitive*>> valid_primitives;
     std::unordered_multimap<int, t_cluster_placement_primitive*> in_flight;
     std::unordered_multimap<int, t_cluster_placement_primitive*> tried;
     std::unordered_multimap<int, t_cluster_placement_primitive*> invalid;

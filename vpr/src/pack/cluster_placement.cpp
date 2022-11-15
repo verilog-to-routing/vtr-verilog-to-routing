@@ -94,7 +94,9 @@ t_cluster_placement_stats* alloc_and_load_cluster_placement_stats() {
 bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
                              const t_pack_molecule* molecule,
                              t_pb_graph_node** primitives_list) {
-    std::pair<int, t_cluster_placement_primitive*> best = std::make_pair(-1, nullptr);
+    //std::pair<int, t_cluster_placement_primitive*> best = std::make_pair(-1, nullptr);
+    std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator best;
+
     int i;
     float cost, lowest_cost;
     //best = nullptr;
@@ -125,6 +127,7 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
      * 3. When found, move current blocks to in-flight, return lowest cost array of primitives
      * 4. Return NULL if not found
      */
+    bool init_best = false;
     lowest_cost = HUGE_POSITIVE_FLOAT;
     for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
         //for (auto& primitive : cluster_placement_stats->valid_primitives[i]) {
@@ -132,40 +135,42 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
             for(auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end(); ) {
                 if (!it->second->valid) {
                     cluster_placement_stats->invalid.insert(*it);
-                    cluster_placement_stats->valid_primitives[i].erase(it++->first);
+                    cluster_placement_stats->valid_primitives[i].erase(it++);
                     continue;
                 }
 
                 /* try place molecule at root location cur */
                 cost = try_place_molecule(molecule, it->second->pb_graph_node, primitives_list);
+
                 // if the cost is lower than the best, or is equal to the best but this
                 // primitive is more available in the cluster mark it as the best primitive
-                if (cost < lowest_cost || (best.second && cost == lowest_cost && it->second->pb_graph_node->total_primitive_count > best.second->pb_graph_node->total_primitive_count)) {
+                if (cost < lowest_cost || (init_best && best->second && cost == lowest_cost && it->second->pb_graph_node->total_primitive_count > best->second->pb_graph_node->total_primitive_count)) {
                     lowest_cost = cost;
-                    best = *it;
+                    best = it;
                     best_index = i;
+                    init_best = true;
                 }
                 ++it;
             }
         }
     }
 
-    if (best.second == nullptr) {
+    if (!init_best || best->second == nullptr) {
         /* failed to find a placement */
         for (i = 0; i < molecule->num_blocks; i++) {
             primitives_list[i] = nullptr;
         }
     } else {
         /* populate primitive list with best */
-        cost = try_place_molecule(molecule, best.second->pb_graph_node, primitives_list);
+        cost = try_place_molecule(molecule, best->second->pb_graph_node, primitives_list);
         VTR_ASSERT(cost == lowest_cost);
 
         /* take out best node and put it in flight */
-        cluster_placement_stats->in_flight.insert(best);
-        cluster_placement_stats->valid_primitives[best_index].erase(best.first);
+        cluster_placement_stats->in_flight.insert(*best);
+        cluster_placement_stats->valid_primitives[best_index].erase(best);
     }
 
-    if (best.second == nullptr) {
+    if (!init_best || best->second == nullptr) {
         return false;
     }
     return true;
@@ -183,7 +188,7 @@ void reset_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_
     //for(auto& primitive : cluster_placement_stats->invalid) {
     for(auto it = cluster_placement_stats->invalid.begin(); it != cluster_placement_stats->invalid.end(); ) {
         requeue_primitive(cluster_placement_stats, *it);
-        cluster_placement_stats->invalid.erase(it++->first);
+        cluster_placement_stats->invalid.erase(it++);
     }
 
     /* reset flags and cost */
@@ -255,7 +260,7 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
          */
         bool success = false;
         for (auto& type_primitives : cluster_placement_stats->valid_primitives) {
-            if (type_primitives[0]->pb_graph_node->pb_type == pb_graph_node->pb_type) {
+            if (type_primitives.find(0)->second->pb_graph_node->pb_type == pb_graph_node->pb_type) {
                 type_primitives.insert({type_primitives.size(), placement_primitive});
                 success = true;
                 break;
@@ -588,7 +593,7 @@ static void flush_intermediate_queues(t_cluster_placement_stats* cluster_placeme
     //for(auto& primitive : cluster_placement_stats->tried) {
     for(auto it = cluster_placement_stats->tried.begin(); it != cluster_placement_stats->tried.end(); ) {
         requeue_primitive(cluster_placement_stats, *it);
-        cluster_placement_stats->tried.erase(it++->first);
+        cluster_placement_stats->tried.erase(it++);
     }
     VTR_ASSERT(cluster_placement_stats->tried.empty());
 
@@ -596,7 +601,7 @@ static void flush_intermediate_queues(t_cluster_placement_stats* cluster_placeme
     //for(auto& primitive : cluster_placement_stats->in_flight) {
     for(auto it = cluster_placement_stats->in_flight.begin(); it != cluster_placement_stats->in_flight.end(); ) {
         requeue_primitive(cluster_placement_stats, *it);
-        cluster_placement_stats->in_flight.erase(it++->first);
+        cluster_placement_stats->in_flight.erase(it++);
     }
     VTR_ASSERT(cluster_placement_stats->in_flight.empty());
 }
