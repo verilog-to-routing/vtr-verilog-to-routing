@@ -2000,7 +2000,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument(args.place_reward_fun, "--place_reward_fun")
         .help(
             "The reward function used by placement RL agent."
-            "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware")
+            "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware"
+            "The latter two are only available for timing-driven placement.")
         .default_value("WLbiased_runtime_aware")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
