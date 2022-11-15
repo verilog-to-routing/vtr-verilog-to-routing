@@ -84,6 +84,24 @@ class TimingGraph {
         ///\returns The type of the node
         NodeType node_type(const NodeId id) const { return node_types_[id]; }
 
+        int trigg_edge(const NodeId id) const { return trigg_edges_[id]; }
+        std::string trigg_edge_str(const NodeId id) const {
+            switch(trigg_edges_[id]) {
+                case 0:
+                      return "RISING";
+                      break;
+                case 1:
+                      return "FALLING";
+                      break;
+                case 2:
+                      return "DONT_CARE";
+                      break;
+                default:
+                      return "ERROR";
+                      break;
+            }
+        }
+
         ///\param id The node id
         ///\returns A range of all out-going edges the node drives
         edge_range node_out_edges(const NodeId id) const { return tatum::util::make_range(node_out_edges_[id].begin(), node_out_edges_[id].end()); }
@@ -198,6 +216,7 @@ class TimingGraph {
         ///\param type The type of the node to be added
         ///\warning Graph will likely need to be re-levelized after modification
         NodeId add_node(const NodeType type);
+        NodeId add_node(const NodeType type, int trigg_edge);
 
         ///Adds an edge to the timing graph
         ///\param type The edge's type
@@ -282,6 +301,7 @@ class TimingGraph {
         //Node data
         tatum::util::linear_map<NodeId,NodeId> node_ids_; //The node IDs in the graph
         tatum::util::linear_map<NodeId,NodeType> node_types_; //Type of node
+        tatum::util::linear_map<NodeId,int> trigg_edges_; //Triggering edge of the clock
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node
         tatum::util::linear_map<NodeId,LevelId> node_levels_; //Out going edge IDs for node
