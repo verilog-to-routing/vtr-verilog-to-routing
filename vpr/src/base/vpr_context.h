@@ -334,7 +334,6 @@ struct ClusteringHelperContext : public Context {
 };
 
 struct PackingMultithreadingContext : public Context {
-
     vtr::vector<ClusterBlockId, bool> clb_in_flight;
     std::mutex mu;
 };
@@ -579,8 +578,9 @@ class VprContext : public Context {
     const NocContext& noc() const { return noc_; }
     NocContext& mutable_noc() { return noc_; }
 
-    const PackingMultithreadingContext& packing_multithreading() const {return packing_multithreading_; }
-    PackingMultithreadingContext& mutable_packing_multithreading() {return packing_multithreading_; }
+    const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
+    PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
+
   private:
     DeviceContext device_;
 

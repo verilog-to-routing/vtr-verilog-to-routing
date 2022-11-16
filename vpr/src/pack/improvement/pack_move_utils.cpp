@@ -47,46 +47,45 @@ int calculate_cutsize_change(const std::vector<molMoveDescription>& new_locs) {
     AtomBlockId cur_atom;
     ClusterBlockId cur_clb;
     std::set<ClusterBlockId> net_blocks;
-    std::map<AtomNetId,int> nets_between_old_new_blks;
+    std::map<AtomNetId, int> nets_between_old_new_blks;
 
-    for(auto& new_loc : new_locs) {
+    for (auto& new_loc : new_locs) {
         ClusterBlockId new_block_id = new_loc.new_clb;
         ClusterBlockId old_block_id = atom_to_cluster(new_loc.molecule_to_move->atom_block_ids[new_loc.molecule_to_move->root]);
 
-        for(auto& moving_atom : new_loc.molecule_to_move->atom_block_ids) {
-            if(!moving_atom)
+        for (auto& moving_atom : new_loc.molecule_to_move->atom_block_ids) {
+            if (!moving_atom)
                 continue;
-            for(auto& atom_pin : atom_ctx.nlist.block_pins(moving_atom)) {
+            for (auto& atom_pin : atom_ctx.nlist.block_pins(moving_atom)) {
                 AtomNetId atom_net = atom_ctx.nlist.pin_net(atom_pin);
-                if(atom_ctx.nlist.net_pins(atom_net).size() > LARGE_FANOUT_LIMIT)
+                if (atom_ctx.nlist.net_pins(atom_net).size() > LARGE_FANOUT_LIMIT)
                     continue;
 
                 net_blocks.clear();
-                for(auto& net_pin : atom_ctx.nlist.net_pins(atom_net)) {
+                for (auto& net_pin : atom_ctx.nlist.net_pins(atom_net)) {
                     cur_atom = atom_ctx.nlist.pin_block(net_pin);
-                    if(cur_atom == moving_atom)
+                    if (cur_atom == moving_atom)
                         continue;
 
                     cur_clb = atom_to_cluster(cur_atom);
                     net_blocks.insert(cur_clb);
                 }
-                if(net_blocks.size() == 1 && *(net_blocks.begin())== old_block_id)
+                if (net_blocks.size() == 1 && *(net_blocks.begin()) == old_block_id)
                     change_cutsize += 1;
-                else if(net_blocks.size() == 1 &&*(net_blocks.begin()) == new_block_id) {
+                else if (net_blocks.size() == 1 && *(net_blocks.begin()) == new_block_id) {
                     change_cutsize -= 1;
-                    if(nets_between_old_new_blks.find(atom_net) == nets_between_old_new_blks.end())
+                    if (nets_between_old_new_blks.find(atom_net) == nets_between_old_new_blks.end())
                         nets_between_old_new_blks.insert(std::make_pair(atom_net, 1));
                     else
                         nets_between_old_new_blks[atom_net]++;
                 }
-
             }
         }
     }
 
-    for(auto& direct_conn:nets_between_old_new_blks) {
-        if(direct_conn.second > 1)
-            change_cutsize+=2;
+    for (auto& direct_conn : nets_between_old_new_blks) {
+        if (direct_conn.second > 1)
+            change_cutsize += 2;
     }
     return change_cutsize;
 }
@@ -151,17 +150,17 @@ t_pack_molecule* pick_molecule_randomly() {
     bool molecule_picked = false;
     t_pack_molecule* molecule;
 
-    while(!molecule_picked) {
+    while (!molecule_picked) {
         int rand_num = vtr::irand((int)atom_ctx.nlist.blocks().size() - 1);
         AtomBlockId random_atom = AtomBlockId(rand_num);
         ClusterBlockId clb_index = atom_to_cluster(random_atom);
-        if(!clb_index)
+        if (!clb_index)
             continue;
         packing_multithreading_ctx.mu.lock();
-        if(!packing_multithreading_ctx.clb_in_flight[clb_index]) {
+        if (!packing_multithreading_ctx.clb_in_flight[clb_index]) {
             packing_multithreading_ctx.clb_in_flight[clb_index] = true;
             packing_multithreading_ctx.mu.unlock();
-        } else{
+        } else {
             packing_multithreading_ctx.mu.unlock();
             continue;
         }
@@ -175,25 +174,24 @@ t_pack_molecule* pick_molecule_randomly() {
     return molecule;
 }
 
-bool pick_molecule_connected(t_pack_molecule* mol_1, t_pack_molecule*& mol_2){
+bool pick_molecule_connected(t_pack_molecule* mol_1, t_pack_molecule*& mol_2) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
 
     std::vector<ClusterBlockId> connected_blocks;
     calculate_connected_clbs_to_moving_mol(mol_1, connected_blocks);
-    if(connected_blocks.empty())
+    if (connected_blocks.empty())
         return false;
-
 
     // pick a random clb block from the connected blocks
     bool clb2_not_found = true;
     ClusterBlockId clb_index_2;
     int iteration = 0;
-    while(clb2_not_found && iteration < 10){
-        int rand_num = vtr::irand((int)connected_blocks.size()-1);
+    while (clb2_not_found && iteration < 10) {
+        int rand_num = vtr::irand((int)connected_blocks.size() - 1);
         clb_index_2 = connected_blocks[rand_num];
         packing_multithreading_ctx.mu.lock();
-        if(!packing_multithreading_ctx.clb_in_flight[clb_index_2]) {
+        if (!packing_multithreading_ctx.clb_in_flight[clb_index_2]) {
             clb2_not_found = false;
             packing_multithreading_ctx.clb_in_flight[clb_index_2] = true;
         }
@@ -201,16 +199,16 @@ bool pick_molecule_connected(t_pack_molecule* mol_1, t_pack_molecule*& mol_2){
         iteration++;
     }
 
-    if(clb2_not_found)
+    if (clb2_not_found)
         return false;
 
     //pick a random molecule for the chosen block
     std::unordered_set<AtomBlockId>* atom_ids = cluster_to_atoms(clb_index_2);
 
-    int rand_num = vtr::irand((int)atom_ids->size()-1);
+    int rand_num = vtr::irand((int)atom_ids->size() - 1);
     auto it = atom_ids->begin();
     std::advance(it, rand_num);
-    AtomBlockId  atom_id = *it;
+    AtomBlockId atom_id = *it;
     auto rng = atom_ctx.atom_molecules.equal_range(atom_id);
     for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
         mol_2 = kv.second;
@@ -228,16 +226,16 @@ bool pick_molecule_connected_compatible_type(t_pack_molecule* mol_1, t_pack_mole
 
     std::vector<ClusterBlockId> connected_blocks;
     calculate_connected_clbs_to_moving_mol(mol_1, connected_blocks);
-    if(connected_blocks.empty())
+    if (connected_blocks.empty())
         return false;
 
     // pick a random clb block from the connected blocks
     bool clb2_not_found = true;
     ClusterBlockId clb_index_2;
-    while(clb2_not_found){
-        clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size()-1)];
+    while (clb2_not_found) {
+        clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size() - 1)];
         packing_multithreading_ctx.mu.lock();
-        if(!packing_multithreading_ctx.clb_in_flight[clb_index_2]) {
+        if (!packing_multithreading_ctx.clb_in_flight[clb_index_2]) {
             clb2_not_found = false;
             packing_multithreading_ctx.clb_in_flight[clb_index_2] = true;
         }
@@ -257,12 +255,12 @@ bool pick_molecule_connected_compatible_type(t_pack_molecule* mol_1, t_pack_mole
         for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
             mol_2 = kv.second;
             const t_pb* pb_2 = atom_ctx.lookup.atom_pb(mol_2->atom_block_ids[mol_2->root]);
-            if(strcmp(pb_1->pb_graph_node->pb_type->name,pb_2->pb_graph_node->pb_type->name) == 0)
+            if (strcmp(pb_1->pb_graph_node->pb_type->name, pb_2->pb_graph_node->pb_type->name) == 0)
                 return true;
             else
                 iteration++;
         }
-    } while (iteration< 20);
+    } while (iteration < 20);
 
     return false;
 }
@@ -273,16 +271,16 @@ bool pick_molecule_connected_same_type(t_pack_molecule* mol_1, t_pack_molecule*&
 
     std::vector<ClusterBlockId> connected_blocks;
     calculate_connected_clbs_to_moving_mol(mol_1, connected_blocks);
-    if(connected_blocks.empty())
+    if (connected_blocks.empty())
         return false;
 
     // pick a random clb block from the connected blocks
     bool clb2_not_found = true;
     ClusterBlockId clb_index_2;
-    while(clb2_not_found){
-        clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size()-1)];
+    while (clb2_not_found) {
+        clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size() - 1)];
         packing_multithreading_ctx.mu.lock();
-        if(!packing_multithreading_ctx.clb_in_flight[clb_index_2]) {
+        if (!packing_multithreading_ctx.clb_in_flight[clb_index_2]) {
             clb2_not_found = false;
             packing_multithreading_ctx.clb_in_flight[clb_index_2] = true;
         }
@@ -302,12 +300,12 @@ bool pick_molecule_connected_same_type(t_pack_molecule* mol_1, t_pack_molecule*&
         for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
             mol_2 = kv.second;
             const t_pb* pb_2 = atom_ctx.lookup.atom_pb(mol_2->atom_block_ids[mol_2->root]);
-            if(pb_1->pb_graph_node->pb_type == pb_2->pb_graph_node->pb_type)
+            if (pb_1->pb_graph_node->pb_type == pb_2->pb_graph_node->pb_type)
                 return true;
             else
                 iteration++;
         }
-    } while (iteration< 20);
+    } while (iteration < 20);
 
     return false;
 }
@@ -318,7 +316,7 @@ bool pick_molecule_connected_same_size(t_pack_molecule* mol_1, t_pack_molecule*&
 
     std::vector<ClusterBlockId> connected_blocks;
     calculate_connected_clbs_to_moving_mol(mol_1, connected_blocks);
-    if(connected_blocks.empty())
+    if (connected_blocks.empty())
         return false;
 
     int mol_1_size = get_array_size_of_molecule(mol_1);
@@ -326,10 +324,10 @@ bool pick_molecule_connected_same_size(t_pack_molecule* mol_1, t_pack_molecule*&
     // pick a random clb block from the connected blocks
     bool clb2_not_found = true;
     ClusterBlockId clb_index_2;
-    while(clb2_not_found){
-        clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size()-1)];
+    while (clb2_not_found) {
+        clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size() - 1)];
         packing_multithreading_ctx.mu.lock();
-        if(!packing_multithreading_ctx.clb_in_flight[clb_index_2]) {
+        if (!packing_multithreading_ctx.clb_in_flight[clb_index_2]) {
             clb2_not_found = false;
             packing_multithreading_ctx.clb_in_flight[clb_index_2] = true;
         }
@@ -347,16 +345,15 @@ bool pick_molecule_connected_same_size(t_pack_molecule* mol_1, t_pack_molecule*&
         auto rng = atom_ctx.atom_molecules.equal_range(atom_id);
         for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
             mol_2 = kv.second;
-            if(std::abs(mol_1_size - get_array_size_of_molecule(mol_2))<= 1 )
+            if (std::abs(mol_1_size - get_array_size_of_molecule(mol_2)) <= 1)
                 return true;
             else
                 iteration++;
         }
-    } while (iteration< 20);
+    } while (iteration < 20);
 
     return false;
 }
-
 
 void build_mol_move_description(std::vector<molMoveDescription>& new_locs,
                                 t_pack_molecule* mol_1,
@@ -377,7 +374,7 @@ void build_mol_move_description(std::vector<molMoveDescription>& new_locs,
 
 bool evaluate_move_based_on_cutsize(const std::vector<molMoveDescription>& new_locs) {
     int change_in_cutsize = calculate_cutsize_change(new_locs);
-    if(change_in_cutsize<0)
+    if (change_in_cutsize < 0)
         return true;
     else
         return false;
@@ -429,7 +426,7 @@ static void update_cutsize_for_net(int& new_cutsize, bool previously_absorbed, b
 }
 #endif
 
-static void calculate_connected_clbs_to_moving_mol(const t_pack_molecule* mol_1, std::vector<ClusterBlockId>& connected_blocks){
+static void calculate_connected_clbs_to_moving_mol(const t_pack_molecule* mol_1, std::vector<ClusterBlockId>& connected_blocks) {
     // get the clb index of the first molecule
     ClusterBlockId clb_index_1 = atom_to_cluster(mol_1->atom_block_ids[mol_1->root]);
 
@@ -444,8 +441,8 @@ static void calculate_connected_clbs_to_moving_mol(const t_pack_molecule* mol_1,
     ClusterBlockId cur_clb;
 
     // Calculate the connected blocks to the moving molecule
-    for(auto& atom_id : mol_1->atom_block_ids) {
-        if(atom_id) {
+    for (auto& atom_id : mol_1->atom_block_ids) {
+        if (atom_id) {
             for (auto& atom_pin : atom_ctx.nlist.block_pins(atom_id)) {
                 cur_net = atom_ctx.nlist.pin_net(atom_pin);
                 if (atom_ctx.nlist.net_pins(cur_net).size() > LARGE_FANOUT_LIMIT)

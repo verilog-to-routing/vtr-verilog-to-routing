@@ -233,23 +233,23 @@ void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_s
     for (const auto& type : device_ctx.logical_block_types) {
         int index = type.index;
 
-        for(auto& primitive : cluster_placement_stats_list[index].tried) {
+        for (auto& primitive : cluster_placement_stats_list[index].tried) {
             delete primitive.second;
             //cluster_placement_stats_list[index].tried.erase(primitive.first);
         }
 
-        for(auto& primitive : cluster_placement_stats_list[index].in_flight) {
+        for (auto& primitive : cluster_placement_stats_list[index].in_flight) {
             delete primitive.second;
             //cluster_placement_stats_list[index].in_flight.erase(primitive.first);
         }
 
-        for(auto& primitive : cluster_placement_stats_list[index].invalid) {
+        for (auto& primitive : cluster_placement_stats_list[index].invalid) {
             delete primitive.second;
             //cluster_placement_stats_list[index].invalid.erase(primitive.first);
         }
 
         for (int j = 0; j < cluster_placement_stats_list[index].num_pb_types; j++) {
-            for(auto& primitive : cluster_placement_stats_list[index].valid_primitives[j]) {
+            for (auto& primitive : cluster_placement_stats_list[index].valid_primitives[j]) {
                 delete primitive.second;
                 //cluster_placement_stats_list[index].valid_primitives[j].erase()
             }
