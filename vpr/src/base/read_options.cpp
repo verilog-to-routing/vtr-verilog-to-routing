@@ -9,6 +9,7 @@
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
+#include <string>
 
 using argparse::ConvertedValue;
 using argparse::Provenance;
@@ -2749,6 +2750,18 @@ void set_conditional_defaults(t_options& args) {
             args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
         }
     }
+
+    // Check for correct options combinations
+    // If you are running WLdriven placement, the RL reward function should be
+    // either basic or nonPenalizing basic
+    if (args.RL_agent_placement && (args.PlaceAlgorithm == BOUNDING_BOX_PLACE || !args.timing_analysis)) {
+        if (args.place_reward_fun.value() != "basic" && args.place_reward_fun.value() != "nonPenalizing_basic")
+            VTR_LOG_WARN("To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n "
+                         "you can specify the reward function using --place_reward_fun.\n"
+                         "Setting the placement reward function to basic\n");
+            args.place_reward_fun.set("basic", Provenance::INFERRED);
+    }
+
 
     //Which placement algorithm to use during placement quench?
     if (args.PlaceQuenchAlgorithm.provenance() != Provenance::SPECIFIED) {
