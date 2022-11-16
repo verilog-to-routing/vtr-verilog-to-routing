@@ -260,3 +260,18 @@ void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_s
     }
     //delete[] cluster_placement_stats_list;
 }
+
+void t_cluster_placement_stats::move_inflight_to_tried() {
+    tried.insert(*in_flight.begin());
+    in_flight.clear();
+}
+
+void t_cluster_placement_stats::invalidate_primitive_and_increment_iterator(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it) {
+    invalid.insert(*it);
+    valid_primitives[pb_type_index].erase(it++);
+}
+
+void t_cluster_placement_stats::move_primitive_to_inflight(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it) {
+    in_flight.insert(*it);
+    valid_primitives[pb_type_index].erase(it);
+}
