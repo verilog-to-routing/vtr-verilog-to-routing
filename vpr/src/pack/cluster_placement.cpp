@@ -5,6 +5,8 @@
  * Initialization - performed once at beginning of packing
  * Reset          - reset state in between packing of clusters
  * In flight      - Speculatively place
+ *
+ *
  * Finalized      - Commit or revert placements
  * Freed          - performed once at end of packing
  *
@@ -65,8 +67,6 @@ t_cluster_placement_stats* alloc_and_load_cluster_placement_stats() {
     for (const auto& type : device_ctx.logical_block_types) {
         cluster_placement_stats_list[type.index] = t_cluster_placement_stats();
         if (!is_empty_type(&type)) {
-            //cluster_placement_stats_list[type.index].valid_primitives.resize(get_max_primitives_in_pb_type(type.pb_type)+1);
-
             /* too much memory allocated but shouldn't be a problem */
             cluster_placement_stats_list[type.index].curr_molecule = nullptr;
             load_cluster_placement_stats_for_pb_graph_node(&cluster_placement_stats_list[type.index],
@@ -100,7 +100,7 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
     int i;
     float cost, lowest_cost;
     //best = nullptr;
-    int best_index = -1;
+    int best_pb_type_index = -1;
 
     if (cluster_placement_stats->curr_molecule != molecule) {
         /* New block, requeue tried primitives and in-flight primitives */
@@ -114,10 +114,8 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
          */
         if (!cluster_placement_stats->in_flight.empty()) {
             /* Hack end */
-
             /* old block, put root primitive currently inflight to tried queue	*/
-            cluster_placement_stats->tried.insert(*cluster_placement_stats->in_flight.begin());
-            cluster_placement_stats->in_flight.clear();
+            cluster_placement_stats->move_inflight_to_tried();
         }
     }
 
@@ -132,10 +130,10 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
     for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
         //for (auto& primitive : cluster_placement_stats->valid_primitives[i]) {
         if (!cluster_placement_stats->valid_primitives[i].empty() && primitive_type_feasible(molecule->atom_block_ids[molecule->root], cluster_placement_stats->valid_primitives[i].begin()->second->pb_graph_node->pb_type)) {
-            for (auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end();) {
+            for (auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end(); /*loop increment is done inside the loop*/) {
+                //Lazily remove invalid primitives
                 if (!it->second->valid) {
-                    cluster_placement_stats->invalid.insert(*it);
-                    cluster_placement_stats->valid_primitives[i].erase(it++);
+                    cluster_placement_stats->invalidate_primitive_and_increment_iterator(i, it);    //iterator is incremented here
                     continue;
                 }
 
@@ -147,7 +145,7 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
                 if (cost < lowest_cost || (init_best && best->second && cost == lowest_cost && it->second->pb_graph_node->total_primitive_count > best->second->pb_graph_node->total_primitive_count)) {
                     lowest_cost = cost;
                     best = it;
-                    best_index = i;
+                    best_pb_type_index = i;
                     init_best = true;
                 }
                 ++it;
@@ -167,7 +165,7 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
 
         /* take out best node and put it in flight */
         cluster_placement_stats->in_flight.insert(*best);
-        cluster_placement_stats->valid_primitives[best_index].erase(best);
+        cluster_placement_stats->valid_primitives[best_pb_type_index].erase(best);
     }
 
     if (!init_best || best->second == nullptr) {
@@ -240,24 +238,24 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
     int i, j, k;
     t_cluster_placement_primitive* placement_primitive;
     const t_pb_type* pb_type = pb_graph_node->pb_type;
+    //if it is primitive
     if (pb_type->modes == nullptr) {
         placement_primitive = new t_cluster_placement_primitive();
         placement_primitive->pb_graph_node = pb_graph_node;
         placement_primitive->valid = true;
         pb_graph_node->cluster_placement_primitive = placement_primitive;
         placement_primitive->base_cost = compute_primitive_base_cost(pb_graph_node);
-        /*
-         * for (auto& type_primitives : cluster_placement_stats->valid_primitives) {
-         * if (type_primitives.empty() || type_primitives[0]->pb_graph_node->pb_type == pb_graph_node->pb_type) {
-         * if (type_primitives.empty())
-         * cluster_placement_stats->num_pb_types++;
-         *
-         * type_primitives.insert({type_primitives.size(), placement_primitive});
-         * break;
-         * }
-         * }
-         */
+
+
         bool success = false;
+        /**
+         * Insert the cluster_placement_primitive in the corresponding valid_primitives location based on its pb_type
+         *
+         *  - Iterate over the elements of valid_prmitives
+         *  - There should be an element with index 0 (otherwise this element will not exist in the vector) --> find it
+         *  - Check the pb_type of this element with the pb_type of pb_graph_node
+         *      - if matched --> insert the primitive
+         */
         for (auto& type_primitives : cluster_placement_stats->valid_primitives) {
             auto first_elem = type_primitives.find(0);
             if (first_elem != type_primitives.end() && first_elem->second->pb_graph_node->pb_type == pb_graph_node->pb_type) {
@@ -266,13 +264,18 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
                 break;
             }
         }
+
+        /**
+         * If the loop is done and we didn't find a match, push an empty map into valid_primitives for this new type
+         * and insert the placement primitive into the new map with index 0
+         */
         if (!success) {
             cluster_placement_stats->valid_primitives.push_back({});
             cluster_placement_stats->valid_primitives[cluster_placement_stats->valid_primitives.size() - 1].insert({0, placement_primitive});
             cluster_placement_stats->num_pb_types++;
         }
 
-    } else {
+    } else { // not a primitive, recursively call the function for all its children
         for (i = 0; i < pb_type->num_modes; i++) {
             for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb;
