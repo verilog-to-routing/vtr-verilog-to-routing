@@ -625,15 +625,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_constraint_subtile = Options.place_constraint_subtile;
     PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
-
-    // Check for correct options combinations
-    // If you are running WLdriven placement, the RL reward function should be
-    // either basic or nonPenalizing basic
-    if (PlacerOpts->RL_agent_placement && PlacerOpts->place_algorithm == BOUNDING_BOX_PLACE)
-        if(PlacerOpts->place_reward_fun != "basic" && PlacerOpts->place_reward_fun != "nonPenalizing_basic")
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE,"To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n "
-                       "Re-run VPR and specify the reward function using --place_reward_fun.\n");
-
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
