@@ -100,7 +100,7 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
     int i;
     float cost, lowest_cost;
     //best = nullptr;
-    int best_index;
+    int best_index = -1;
 
     if (cluster_placement_stats->curr_molecule != molecule) {
         /* New block, requeue tried primitives and in-flight primitives */
@@ -132,7 +132,7 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
     for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
         //for (auto& primitive : cluster_placement_stats->valid_primitives[i]) {
         if (!cluster_placement_stats->valid_primitives[i].empty() && primitive_type_feasible(molecule->atom_block_ids[molecule->root], cluster_placement_stats->valid_primitives[i].begin()->second->pb_graph_node->pb_type)) {
-            for(auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end(); ) {
+            for (auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end();) {
                 if (!it->second->valid) {
                     cluster_placement_stats->invalid.insert(*it);
                     cluster_placement_stats->valid_primitives[i].erase(it++);
@@ -186,14 +186,14 @@ void reset_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_
     flush_intermediate_queues(cluster_placement_stats);
     //cur = cluster_placement_stats->invalid;
     //for(auto& primitive : cluster_placement_stats->invalid) {
-    for(auto it = cluster_placement_stats->invalid.begin(); it != cluster_placement_stats->invalid.end(); ) {
+    for (auto it = cluster_placement_stats->invalid.begin(); it != cluster_placement_stats->invalid.end();) {
         requeue_primitive(cluster_placement_stats, *it);
         cluster_placement_stats->invalid.erase(it++);
     }
 
     /* reset flags and cost */
     for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
-        for(auto& primitive : cluster_placement_stats->valid_primitives[i]) {
+        for (auto& primitive : cluster_placement_stats->valid_primitives[i]) {
             primitive.second->incremental_cost = 0;
             primitive.second->valid = true;
         }
@@ -223,7 +223,6 @@ static void requeue_primitive(t_cluster_placement_stats* cluster_placement_stats
             == cluster_placement_stats->valid_primitives[i].begin()->second->pb_graph_node->pb_type) {
             success = true;
             cluster_placement_stats->valid_primitives[i].insert(cluster_placement_primitive);
-
         }
     }
     if (!success) {
@@ -248,30 +247,30 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
         pb_graph_node->cluster_placement_primitive = placement_primitive;
         placement_primitive->base_cost = compute_primitive_base_cost(pb_graph_node);
         /*
-        for (auto& type_primitives : cluster_placement_stats->valid_primitives) {
-            if (type_primitives.empty() || type_primitives[0]->pb_graph_node->pb_type == pb_graph_node->pb_type) {
-                if (type_primitives.empty())
-                    cluster_placement_stats->num_pb_types++;
-
-                type_primitives.insert({type_primitives.size(), placement_primitive});
-                break;
-            }
-        }
+         * for (auto& type_primitives : cluster_placement_stats->valid_primitives) {
+         * if (type_primitives.empty() || type_primitives[0]->pb_graph_node->pb_type == pb_graph_node->pb_type) {
+         * if (type_primitives.empty())
+         * cluster_placement_stats->num_pb_types++;
+         *
+         * type_primitives.insert({type_primitives.size(), placement_primitive});
+         * break;
+         * }
+         * }
          */
         bool success = false;
         for (auto& type_primitives : cluster_placement_stats->valid_primitives) {
-            if (type_primitives.find(0)->second->pb_graph_node->pb_type == pb_graph_node->pb_type) {
+            auto first_elem = type_primitives.find(0);
+            if (first_elem != type_primitives.end() && first_elem->second->pb_graph_node->pb_type == pb_graph_node->pb_type) {
                 type_primitives.insert({type_primitives.size(), placement_primitive});
                 success = true;
                 break;
             }
         }
-        if(!success) {
+        if (!success) {
             cluster_placement_stats->valid_primitives.push_back({});
-            cluster_placement_stats->valid_primitives[cluster_placement_stats->valid_primitives.size()-1].insert({0,placement_primitive});
+            cluster_placement_stats->valid_primitives[cluster_placement_stats->valid_primitives.size() - 1].insert({0, placement_primitive});
             cluster_placement_stats->num_pb_types++;
         }
-
 
     } else {
         for (i = 0; i < pb_type->num_modes; i++) {
@@ -591,15 +590,14 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
 
 static void flush_intermediate_queues(t_cluster_placement_stats* cluster_placement_stats) {
     //for(auto& primitive : cluster_placement_stats->tried) {
-    for(auto it = cluster_placement_stats->tried.begin(); it != cluster_placement_stats->tried.end(); ) {
+    for (auto it = cluster_placement_stats->tried.begin(); it != cluster_placement_stats->tried.end();) {
         requeue_primitive(cluster_placement_stats, *it);
         cluster_placement_stats->tried.erase(it++);
     }
     VTR_ASSERT(cluster_placement_stats->tried.empty());
 
-
     //for(auto& primitive : cluster_placement_stats->in_flight) {
-    for(auto it = cluster_placement_stats->in_flight.begin(); it != cluster_placement_stats->in_flight.end(); ) {
+    for (auto it = cluster_placement_stats->in_flight.begin(); it != cluster_placement_stats->in_flight.end();) {
         requeue_primitive(cluster_placement_stats, *it);
         cluster_placement_stats->in_flight.erase(it++);
     }

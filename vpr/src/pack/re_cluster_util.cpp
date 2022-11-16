@@ -62,7 +62,7 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
 
     //re-build router_data structure for this cluster
-    if(!router_data_ready)
+    if (!router_data_ready)
         router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, old_clb, old_clb_atoms);
 
     //remove atom from router_data
@@ -70,7 +70,7 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
         if (molecule->atom_block_ids[i_atom]) {
             remove_atom_from_target(router_data, molecule->atom_block_ids[i_atom]);
             auto it = old_clb_atoms->find(molecule->atom_block_ids[i_atom]);
-            if(it != old_clb_atoms->end())
+            if (it != old_clb_atoms->end())
                 old_clb_atoms->erase(molecule->atom_block_ids[i_atom]);
         }
     }
@@ -100,7 +100,7 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
     t_lb_router_data* router_data = alloc_and_load_router_data(&lb_type_rr_graphs[block_type->index], block_type);
 
     //iterate over atoms of the current cluster and add them to router data
-    if(!clb_atoms)
+    if (!clb_atoms)
         return router_data;
 
     for (auto atom_id : *clb_atoms) {
@@ -211,8 +211,8 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
 
     //re-build cluster placement stats
     rebuild_cluster_placement_stats(new_clb, new_clb_atoms);
-    if(!check_free_primitives_for_molecule_atoms(molecule, &(helper_ctx.cluster_placement_stats[block_type->index])))
-            return false;
+    if (!check_free_primitives_for_molecule_atoms(molecule, &(helper_ctx.cluster_placement_stats[block_type->index])))
+        return false;
 
     //re-build router_data structure for this cluster
     if (!is_swap)
@@ -636,11 +636,10 @@ static void rebuild_cluster_placement_stats(const ClusterBlockId& clb_index,
     reset_cluster_placement_stats(cluster_placement_stats);
     set_mode_cluster_placement_stats(cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node, cluster_ctx.clb_nlist.block_pb(clb_index)->mode);
 
-    for(auto& atom: *clb_atoms){
+    for (auto& atom : *clb_atoms) {
         const t_pb* atom_pb = atom_ctx.lookup.atom_pb(atom);
         commit_primitive(cluster_placement_stats, atom_pb->pb_graph_node);
     }
-
 }
 
 bool is_cluster_legal(t_lb_router_data*& router_data) {
@@ -697,10 +696,9 @@ bool check_type_and_mode_compitability(const ClusterBlockId& old_clb,
 static void update_cluster_pb_stats(const t_pack_molecule* molecule,
                                     int molecule_size,
                                     ClusterBlockId clb_index,
-                                    bool is_added){
+                                    bool is_added) {
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    t_pb *cur_pb;
-
+    t_pb* cur_pb;
 
     for (int iblock = 0; iblock < molecule_size; iblock++) {
         auto blk_id = molecule->atom_block_ids[iblock];
@@ -719,7 +717,7 @@ static void update_cluster_pb_stats(const t_pack_molecule* molecule,
         while (cur_pb) {
             /* reset list of feasible blocks */
             cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
-            if(is_added)
+            if (is_added)
                 cur_pb->pb_stats->num_child_blocks_in_pb++;
             else
                 cur_pb->pb_stats->num_child_blocks_in_pb--;

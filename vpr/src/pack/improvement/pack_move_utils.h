@@ -23,7 +23,6 @@ bool pick_molecule_connected_same_type(t_pack_molecule* mol_1, t_pack_molecule*&
 bool pick_molecule_connected_compatible_type(t_pack_molecule* mol_1, t_pack_molecule*& mol_2);
 bool pick_molecule_connected_same_size(t_pack_molecule* mol_1, t_pack_molecule*& mol_2);
 
-
 void build_mol_move_description(std::vector<molMoveDescription>& new_locs,
                                 t_pack_molecule* mol_1,
                                 ClusterBlockId clb_index_1,

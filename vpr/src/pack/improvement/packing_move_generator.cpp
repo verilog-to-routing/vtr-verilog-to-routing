@@ -13,14 +13,14 @@ const int MAX_ITERATIONS = 100;
 /******************* Packing move base class ************************/
 /********************************************************************/
 bool packingMoveGenerator::apply_move(std::vector<molMoveDescription>& new_locs, t_clustering_data& clustering_data) {
-    if(new_locs.size()== 1) {
+    if (new_locs.size() == 1) {
         //We need to move a molecule to an existing CLB
         return (move_mol_to_existing_cluster(new_locs[0].molecule_to_move,
                                              new_locs[1].new_clb,
                                              true,
                                              0,
                                              clustering_data));
-    } else if(new_locs.size() == 2) {
+    } else if (new_locs.size() == 2) {
         //We need to swap two molecules
         return (swap_two_molecules(new_locs[0].molecule_to_move,
                                    new_locs[1].molecule_to_move,
@@ -54,12 +54,12 @@ bool randomPackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) 
         mol_2 = pick_molecule_randomly();
         clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
         block_type_2 = cluster_ctx.clb_nlist.block_type(clb_index_2);
-        if(block_type_1 == block_type_2 && clb_index_1 != clb_index_2 ) {
+        if (block_type_1 == block_type_2 && clb_index_1 != clb_index_2) {
             found = true;
-            build_mol_move_description(new_locs, mol_1,clb_index_1,mol_2,clb_index_2);
+            build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
         }
         ++iteration;
-    } while( !found && iteration < MAX_ITERATIONS );
+    } while (!found && iteration < MAX_ITERATIONS);
 
     return found;
 }
@@ -84,7 +84,7 @@ bool quasiDirectedPackingSwap::propose_move(std::vector<molMoveDescription>& new
     mol_2 = nullptr;
     bool found = pick_molecule_connected(mol_1, mol_2);
 
-    if(found) {
+    if (found) {
         ClusterBlockId clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
         build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
     } else {
@@ -102,11 +102,10 @@ bool quasiDirectedPackingSwap::evaluate_move(const std::vector<molMoveDescriptio
 /***************** Quasi directed same type packing move class *******************/
 /*********************************************************************************/
 bool quasiDirectedSameTypePackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
-    return(evaluate_move_based_on_cutsize(new_locs));
+    return (evaluate_move_based_on_cutsize(new_locs));
 }
 
 bool quasiDirectedSameTypePackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) {
-
     t_pack_molecule *mol_1, *mol_2;
     ClusterBlockId clb_index_1;
 
@@ -118,7 +117,7 @@ bool quasiDirectedSameTypePackingSwap::propose_move(std::vector<molMoveDescripti
     mol_2 = nullptr;
     bool found = pick_molecule_connected_same_type(mol_1, mol_2);
 
-    if(found) {
+    if (found) {
         ClusterBlockId clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
         build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
     }
@@ -128,11 +127,10 @@ bool quasiDirectedSameTypePackingSwap::propose_move(std::vector<molMoveDescripti
 /***************** Quasi directed compatible type packing move class *******************/
 /*********************************************************************************/
 bool quasiDirectedCompatibleTypePackingSwap::evaluate_move(const std::vector<molMoveDescription>& new_locs) {
-    return(evaluate_move_based_on_cutsize(new_locs));
+    return (evaluate_move_based_on_cutsize(new_locs));
 }
 
 bool quasiDirectedCompatibleTypePackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) {
-
     t_pack_molecule *mol_1, *mol_2;
     ClusterBlockId clb_index_1;
 
@@ -144,7 +142,7 @@ bool quasiDirectedCompatibleTypePackingSwap::propose_move(std::vector<molMoveDes
     mol_2 = nullptr;
     bool found = pick_molecule_connected_compatible_type(mol_1, mol_2);
 
-    if(found) {
+    if (found) {
         ClusterBlockId clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
         build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
     }
@@ -169,7 +167,7 @@ bool quasiDirectedSameSizePackingSwap::propose_move(std::vector<molMoveDescripti
     mol_2 = nullptr;
     bool found = pick_molecule_connected_same_size(mol_1, mol_2);
 
-    if(found) {
+    if (found) {
         ClusterBlockId clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
         build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
     }

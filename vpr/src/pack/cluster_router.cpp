@@ -474,11 +474,11 @@ bool try_intra_lb_route(t_lb_router_data* router_data,
                 }
 
                 if (is_impossible) {
-                    VTR_LOGV(verbosity>5, "Routing was impossible!\n");
+                    VTR_LOGV(verbosity > 5, "Routing was impossible!\n");
                 } else if (mode_status->expand_all_modes) {
                     is_impossible = route_has_conflict(lb_nets[idx].rt_tree, router_data);
                     if (is_impossible) {
-                        VTR_LOGV(verbosity>5, "Routing was impossible due to modes!\n");
+                        VTR_LOGV(verbosity > 5, "Routing was impossible due to modes!\n");
                     }
                 }
 

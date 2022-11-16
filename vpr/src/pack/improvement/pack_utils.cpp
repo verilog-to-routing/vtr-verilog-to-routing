@@ -22,19 +22,19 @@ std::mutex apply_mu;
 
 void init_multithreading_locks() {
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
-    auto&helper_ctx = g_vpr_ctx.cl_helper();
+    auto& helper_ctx = g_vpr_ctx.cl_helper();
 
     packing_multithreading_ctx.mu.lock();
     packing_multithreading_ctx.clb_in_flight.resize(helper_ctx.total_clb_num, false);
     packing_multithreading_ctx.mu.unlock();
 }
 
-void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup){
+void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 #ifdef pack_improve_debug
-    vtr::ScopedFinishTimer lookup_timer ("Building CLB atoms lookup");
+    vtr::ScopedFinishTimer lookup_timer("Building CLB atoms lookup");
 #endif
 
     atoms_lookup.resize(cluster_ctx.clb_nlist.blocks().size());
@@ -46,13 +46,12 @@ void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBl
     }
 }
 
-void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_data& clustering_data, int ) {
+void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_data& clustering_data, int) {
     /*
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    */
+     * auto& cluster_ctx = g_vpr_ctx.clustering();
+     * auto& atom_ctx = g_vpr_ctx.atom();
+     */
     t_pack_iterative_stats pack_stats;
-
 
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     init_clb_atoms_lookup(helper_ctx.atoms_lookup);
@@ -72,13 +71,12 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
 
     init_multithreading_locks();
 
-    for(unsigned int i =0; i < num_threads-1; i++) {
+    for (unsigned int i = 0; i < num_threads - 1; i++) {
         my_threads[i] = std::thread(try_n_packing_moves, moves_per_thread, packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
     }
-    my_threads[num_threads-1] = std::thread(try_n_packing_moves, total_num_moves - (moves_per_thread*(num_threads-1)), packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
+    my_threads[num_threads - 1] = std::thread(try_n_packing_moves, total_num_moves - (moves_per_thread * (num_threads - 1)), packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
 
-
-    for(int i = 0; i < num_threads; i++)
+    for (int i = 0; i < num_threads; i++)
         my_threads[i].join();
 
     VTR_LOG("\n### Iterative packing stats: \n\tpack move type = %s\n\ttotal pack moves = %zu\n\tgood pack moves = %zu\n\tlegal pack moves = %zu\n\n",
@@ -86,7 +84,6 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
             packer_opts.pack_num_moves,
             pack_stats.good_moves,
             pack_stats.legal_moves);
-
 }
 
 void try_n_packing_moves(int n, std::string move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats) {
@@ -98,24 +95,24 @@ void try_n_packing_moves(int n, std::string move_type, t_clustering_data& cluste
     int num_legal_moves = 0;
 
     std::unique_ptr<packingMoveGenerator> move_generator;
-    if(strcmp(move_type.c_str(), "randomSwap") == 0 )
+    if (strcmp(move_type.c_str(), "randomSwap") == 0)
         move_generator = std::make_unique<randomPackingSwap>();
-    else if(strcmp(move_type.c_str(), "semiDirectedSwap") == 0)
+    else if (strcmp(move_type.c_str(), "semiDirectedSwap") == 0)
         move_generator = std::make_unique<quasiDirectedPackingSwap>();
-    else if(strcmp(move_type.c_str(), "semiDirectedSameTypeSwap") == 0)
+    else if (strcmp(move_type.c_str(), "semiDirectedSameTypeSwap") == 0)
         move_generator = std::make_unique<quasiDirectedSameTypePackingSwap>();
-    else if(strcmp(move_type.c_str(), "semiDirectedCompatibleTypeSwap") == 0)
+    else if (strcmp(move_type.c_str(), "semiDirectedCompatibleTypeSwap") == 0)
         move_generator = std::make_unique<quasiDirectedCompatibleTypePackingSwap>();
-    else if(strcmp(move_type.c_str(), "semiDirectedSameSizeSwap") == 0)
+    else if (strcmp(move_type.c_str(), "semiDirectedSameSizeSwap") == 0)
         move_generator = std::make_unique<quasiDirectedSameSizePackingSwap>();
 
-    else{
+    else {
         VTR_LOG("Packing move type (%s) is not correct!\n", move_type.c_str());
         VTR_LOG("Packing iterative improvement is aborted\n");
         return;
     }
 
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         new_locs.clear();
         is_proposed = move_generator->propose_move(new_locs);
         if (!is_proposed)
@@ -128,8 +125,7 @@ void try_n_packing_moves(int n, std::string move_type, t_clustering_data& cluste
             packing_multithreading_ctx.clb_in_flight[new_locs[1].new_clb] = false;
             packing_multithreading_ctx.mu.unlock();
             continue;
-        }
-        else
+        } else
             num_good_moves++;
 
         apply_mu.lock();

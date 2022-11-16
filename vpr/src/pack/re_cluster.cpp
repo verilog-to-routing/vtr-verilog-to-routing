@@ -172,7 +172,7 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     ClusterBlockId clb_1 = atom_to_cluster(root_1_atom_id);
     ClusterBlockId clb_2 = atom_to_cluster(root_2_atom_id);
 
-    if(clb_1 == clb_2) {
+    if (clb_1 == clb_2) {
         VTR_LOGV(verbosity > 4, "Swap failed. Both atoms are already in the same cluster.\n");
         return false;
     }
@@ -202,11 +202,11 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
 
     //Add the atom to the new cluster
     mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data);
-    if(!mol_1_success) {
+    if (!mol_1_success) {
         mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data);
         mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data);
 
-        VTR_ASSERT(mol_1_success&&mol_2_success);
+        VTR_ASSERT(mol_1_success && mol_2_success);
         free_router_data(old_1_router_data);
         free_router_data(old_2_router_data);
         old_1_router_data = nullptr;
@@ -215,13 +215,13 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     }
 
     mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data);
-    if(!mol_2_success){
+    if (!mol_2_success) {
         remove_mol_from_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, true, old_2_router_data);
         commit_mol_removal(molecule_1, molecule_1_size, clb_2, during_packing, old_2_router_data, clustering_data);
         mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data);
         mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data);
 
-        VTR_ASSERT(mol_1_success&&mol_2_success);
+        VTR_ASSERT(mol_1_success && mol_2_success);
         free_router_data(old_1_router_data);
         free_router_data(old_2_router_data);
         old_1_router_data = nullptr;
@@ -230,7 +230,7 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     }
 
     //commit the move if succeeded or revert if failed
-    VTR_ASSERT(mol_1_success&&mol_2_success);
+    VTR_ASSERT(mol_1_success && mol_2_success);
 
     //If the move is done after packing not during it, some fixes need to be done on the clustered netlist
     if (!during_packing) {

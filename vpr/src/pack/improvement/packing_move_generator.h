@@ -9,7 +9,6 @@
 #include "cluster_util.h"
 #include "pack_move_utils.h"
 
-
 /**
  * @brief a base class for packing move generators
  *
@@ -36,24 +35,24 @@ class quasiDirectedPackingSwap : public packingMoveGenerator {
     bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
 };
 
-class quasiDirectedSameTypePackingSwap : public  packingMoveGenerator {
+class quasiDirectedSameTypePackingSwap : public packingMoveGenerator {
   public:
     bool propose_move(std::vector<molMoveDescription>& new_locs);
     bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
 };
 
-class quasiDirectedCompatibleTypePackingSwap : public  packingMoveGenerator {
+class quasiDirectedCompatibleTypePackingSwap : public packingMoveGenerator {
   public:
     bool propose_move(std::vector<molMoveDescription>& new_locs);
     bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
 };
 
-class quasiDirectedSameSizePackingSwap : public  packingMoveGenerator {
-  bool propose_move(std::vector<molMoveDescription>& new_locs);
-  bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
+class quasiDirectedSameSizePackingSwap : public packingMoveGenerator {
+    bool propose_move(std::vector<molMoveDescription>& new_locs);
+    bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
 };
 
-class quasiDirectedCompatibleTypeSameSizePackingSwap : public  packingMoveGenerator {
+class quasiDirectedCompatibleTypeSameSizePackingSwap : public packingMoveGenerator {
     bool propose_move(std::vector<molMoveDescription>& new_locs);
     bool evaluate_move(const std::vector<molMoveDescription>& new_locs);
 };
