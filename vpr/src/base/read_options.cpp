@@ -2756,9 +2756,9 @@ void set_conditional_defaults(t_options& args) {
     // either basic or nonPenalizing basic
     if (args.RL_agent_placement && (args.PlaceAlgorithm == BOUNDING_BOX_PLACE || !args.timing_analysis)) {
         if (args.place_reward_fun.value() != "basic" && args.place_reward_fun.value() != "nonPenalizing_basic")
-            VTR_LOG_WARN("To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n "
+            VTR_LOG_WARN("To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n"
                          "you can specify the reward function using --place_reward_fun.\n"
-                         "Setting the placement reward function to basic\n");
+                         "Setting the placement reward function to \"basic\"\n");
             args.place_reward_fun.set("basic", Provenance::INFERRED);
     }
 
