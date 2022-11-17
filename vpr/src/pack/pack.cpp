@@ -24,7 +24,6 @@
 #include "SetupGrid.h"
 #include "re_cluster.h"
 
-#include "pack_utils.h"
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
 
