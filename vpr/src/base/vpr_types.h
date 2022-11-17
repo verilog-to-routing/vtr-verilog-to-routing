@@ -1236,6 +1236,7 @@ struct t_router_opts {
     bool generate_rr_node_overuse_report;
 
     bool flat_routing;
+    bool has_choking_spot;
 
     // Options related to rr_node reordering, for testing and possible cache optimization
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;

@@ -451,6 +451,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->max_logged_overused_rr_nodes = Options.max_logged_overused_rr_nodes;
     RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
     RouterOpts->flat_routing = Options.flat_routing;
+    RouterOpts->has_choking_spot = Options.has_choking_spot;
 }
 
 static void SetupAnnealSched(const t_options& Options,

@@ -2307,6 +2307,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("false")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument(args.has_choking_spot, "--has_choking_spot")
+        .help(""
+            "Some FPGA architectures, due to the lack of full connectivity inside the cluster, may have"
+            " a choking spot inside the cluster. Thus, if routing doesn't converge, enabling this option may"
+            " help it.")
+        .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
