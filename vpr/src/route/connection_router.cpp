@@ -784,25 +784,27 @@ bool ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         //cost.
         cong_cost = 0.;
     }
-
-    if(rr_graph_->node_type(RRNodeId(to_node)) == IPIN) {
-        int group_num = net_terminal_group_num[router_stats_->net_id][router_stats_->target_pin_num];
-        int group_size = 0;
-        t_physical_tile_type_ptr physical_tile =
-            g_vpr_ctx.device().grid[rr_graph_->node_xlow(RRNodeId(to_node))][rr_graph_->node_ylow(RRNodeId(to_node))].type;
-        for(auto sink_num : net_terminal_groups[router_stats_->net_id][group_num]) {
-            if (intra_tile_nodes_connected(physical_tile,
-                                           rr_graph_->node_ptc_num(RRNodeId(to_node)),
-                                           rr_graph_->node_ptc_num(RRNodeId(sink_num)))) {
-                group_size++;
+    if(is_flat_) {
+        if(rr_graph_->node_type(RRNodeId(to_node)) == IPIN) {
+            int group_num = net_terminal_group_num[router_stats_->net_id][router_stats_->target_pin_num];
+            int group_size = 0;
+            t_physical_tile_type_ptr physical_tile =
+                g_vpr_ctx.device().grid[rr_graph_->node_xlow(RRNodeId(to_node))][rr_graph_->node_ylow(RRNodeId(to_node))].type;
+            for(auto sink_num : net_terminal_groups[router_stats_->net_id][group_num]) {
+                if (intra_tile_nodes_connected(physical_tile,
+                                               rr_graph_->node_ptc_num(RRNodeId(to_node)),
+                                               rr_graph_->node_ptc_num(RRNodeId(sink_num)))) {
+                    group_size++;
+                }
             }
-        }
 
-        if(group_size == 0) {
-            return false;
+            if(group_size == 0) {
+                return false;
+            }
+            cong_cost = cong_cost / (float)group_size;
         }
-        cong_cost = cong_cost / (float)group_size;
     }
+
 
     //Update the backward cost (upstream already included)
     to->backward_path_cost += (1. - cost_params.criticality) * cong_cost; //Congestion cost
