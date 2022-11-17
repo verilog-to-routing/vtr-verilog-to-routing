@@ -440,6 +440,12 @@ class t_cluster_placement_stats {
     void move_inflight_to_tried ();
     void move_primitive_to_inflight(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
     void invalidate_primitive_and_increment_iterator(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
+    void requeue_primitive(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive);
+    void flush_intermediate_queues();
+
+  private:
+    void flush_queue(std::unordered_multimap<int, t_cluster_placement_primitive*>& queue);
+
 };
 
 /******************************************************************

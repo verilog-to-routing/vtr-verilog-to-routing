@@ -275,3 +275,43 @@ void t_cluster_placement_stats::move_primitive_to_inflight(int pb_type_index, st
     in_flight.insert(*it);
     valid_primitives[pb_type_index].erase(it);
 }
+
+/**
+ * Put primitive back on queue of valid primitives
+ *  Note that valid status is not changed because if the primitive is not valid, it will get properly collected later
+ */
+void t_cluster_placement_stats::requeue_primitive(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive) {
+    int i;
+    int null_index;
+    bool success;
+    null_index = OPEN;
+
+    success = false;
+    for (i = 0; i < num_pb_types && !success; i++) {
+        if (valid_primitives[i].empty()) {
+            null_index = i;
+            continue;
+        }
+        if (cluster_placement_primitive.second->pb_graph_node->pb_type
+            == valid_primitives[i].begin()->second->pb_graph_node->pb_type) {
+            success = true;
+            valid_primitives[i].insert(cluster_placement_primitive);
+        }
+    }
+    if (!success) {
+        VTR_ASSERT(null_index != OPEN);
+        valid_primitives[null_index].insert(cluster_placement_primitive);
+    }
+}
+
+void t_cluster_placement_stats::flush_queue(std::unordered_multimap<int, t_cluster_placement_primitive*>& queue) {
+    for (auto & it : queue) {
+        requeue_primitive(it);
+    }
+    queue.clear();
+}
+
+void t_cluster_placement_stats::flush_intermediate_queues() {
+    flush_queue(in_flight);
+    flush_queue(tried);
+}
