@@ -339,7 +339,7 @@ static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physic
     /*
      * To get the pb_pin we need to first get the logical number of the pin. Then, we can use a member inside
      * logical block to retrieve the pb_pin
-    */
+     */
     VTR_ASSERT(is_pin_on_tile(physical_type, pin_physical_num));
     const t_sub_tile* sub_tile;
     int rel_cap;
@@ -352,7 +352,7 @@ static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physic
     /* direct_map only shows the mapping of the first instance of the sub_tile to the tile pins. Thus, we
      * have to first reduce the offset of the pin number, if it is not located on the first instance, then, use
      * direct_map. The offset is equal to the number of pins on each instance(cap).
-    */
+     */
     auto result = direct_map.find(t_physical_pin(pin_physical_num));
     if (result == direct_map.inverse_end()) {
         archfpga_throw(__FILE__, __LINE__,
@@ -1461,7 +1461,7 @@ bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
                            int first_class_ptc_num,
                            int second_class_ptc_num,
                            bool is_flat) {
-    if(!is_flat) {
+    if (!is_flat) {
         return true;
     }
     const int NUM_SIMILAR_PB_NODE_THRESHOLD = 2;
@@ -1473,28 +1473,27 @@ bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
 
     std::vector<const t_pb_graph_node*> first_pb_graph_node_chain;
     auto curr_pb_graph_node = first_pb_graph_pin->parent_node;
-    while(curr_pb_graph_node != nullptr) {
+    while (curr_pb_graph_node != nullptr) {
         first_pb_graph_node_chain.push_back(curr_pb_graph_node);
         curr_pb_graph_node = curr_pb_graph_node->parent_pb_graph_node;
     }
 
     int num_shared_pb_graph_node = 0;
     curr_pb_graph_node = second_pb_graph_pin->parent_node;
-    while(curr_pb_graph_node != nullptr) {
+    while (curr_pb_graph_node != nullptr) {
         auto find_res = std::find(first_pb_graph_node_chain.begin(), first_pb_graph_node_chain.end(), curr_pb_graph_node);
-        if(find_res != first_pb_graph_node_chain.end()){
+        if (find_res != first_pb_graph_node_chain.end()) {
             num_shared_pb_graph_node++;
-            if(num_shared_pb_graph_node >= NUM_SIMILAR_PB_NODE_THRESHOLD)
+            if (num_shared_pb_graph_node >= NUM_SIMILAR_PB_NODE_THRESHOLD)
                 break;
         }
         curr_pb_graph_node = curr_pb_graph_node->parent_pb_graph_node;
     }
 
-    if(num_shared_pb_graph_node < NUM_SIMILAR_PB_NODE_THRESHOLD) {
+    if (num_shared_pb_graph_node < NUM_SIMILAR_PB_NODE_THRESHOLD) {
         return false;
     } else {
         return true;
     }
-
 }
 /* */

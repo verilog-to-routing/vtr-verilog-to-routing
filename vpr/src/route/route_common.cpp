@@ -95,7 +95,8 @@ static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RR
                                                                         bool is_flat);
 
 static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
-                  vtr::vector<ParentNetId, std::vector<int>>> load_net_terminal_groups (const RRGraphView& rr_graph,
+                  vtr::vector<ParentNetId, std::vector<int>>>
+load_net_terminal_groups(const RRGraphView& rr_graph,
                          const Netlist<>& net_list,
                          const vtr::vector<ParentNetId, std::vector<int>>& net_rr_terminals,
                          bool is_flat);
@@ -527,13 +528,12 @@ void init_route_structs(const Netlist<>& net_list, int bb_factor, bool is_flat) 
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(net_list.nets().size());
 
-    if(is_flat) {
+    if (is_flat) {
         std::tie(route_ctx.net_terminal_groups, route_ctx.net_terminal_group_num) = load_net_terminal_groups(device_ctx.rr_graph,
                                                                                                              net_list,
                                                                                                              route_ctx.net_rr_terminals,
                                                                                                              is_flat);
     }
-
 }
 
 /* This routine adds the most recently finished wire segment to the         *
@@ -1050,11 +1050,11 @@ static vtr::vector<ParentNetId, std::vector<int>> load_net_rr_terminals(const RR
 }
 
 static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
-                  vtr::vector<ParentNetId, std::vector<int>>> load_net_terminal_groups (const RRGraphView& rr_graph,
+                  vtr::vector<ParentNetId, std::vector<int>>>
+load_net_terminal_groups(const RRGraphView& rr_graph,
                          const Netlist<>& net_list,
                          const vtr::vector<ParentNetId, std::vector<int>>& net_rr_terminals,
                          bool is_flat) {
-
     vtr::vector<ParentNetId, std::vector<std::vector<int>>> net_terminal_groups;
     vtr::vector<ParentNetId, std::vector<int>> net_terminal_group_num;
 
@@ -1068,7 +1068,7 @@ static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
         std::unordered_map<int, int> rr_node_pin_num;
         int pin_count = 0;
         for (auto pin_id : net_list.net_pins(net_id)) {
-            if(pin_count == 0) {
+            if (pin_count == 0) {
                 pin_count++;
                 continue;
             }
@@ -1080,11 +1080,11 @@ static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
             t_block_loc blk_loc;
             blk_loc = get_block_loc(block_id, is_flat);
             int group_num = -1;
-            for(int curr_grp_num = 0; curr_grp_num < net_terminal_groups[net_id].size(); curr_grp_num++){
+            for (int curr_grp_num = 0; curr_grp_num < net_terminal_groups[net_id].size(); curr_grp_num++) {
                 const auto& curr_grp = net_terminal_groups[net_id][curr_grp_num];
                 auto group_loc = get_block_loc(net_pin_blk_id[rr_node_pin_num.at(curr_grp[0])], is_flat);
-                if(blk_loc.loc == group_loc.loc) {
-                    if(classes_in_same_block(block_id,
+                if (blk_loc.loc == group_loc.loc) {
+                    if (classes_in_same_block(block_id,
                                               rr_graph.node_ptc_num(RRNodeId(curr_grp[0])),
                                               rr_graph.node_ptc_num(RRNodeId(net_rr_terminals[net_id][pin_count])),
                                               is_flat)) {
@@ -1094,7 +1094,7 @@ static std::tuple<vtr::vector<ParentNetId, std::vector<std::vector<int>>>,
                 }
             }
 
-            if(group_num == -1) {
+            if (group_num == -1) {
                 std::vector<int> new_group = {rr_node_num};
                 int new_group_num = net_terminal_groups[net_id].size();
                 net_terminal_groups[net_id].push_back(new_group);
