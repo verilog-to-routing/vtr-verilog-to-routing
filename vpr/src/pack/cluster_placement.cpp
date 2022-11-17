@@ -14,19 +14,14 @@
  * March 12, 2012
  *
  * Refactored by Mohamed Elgammal
- *    November 2022
+ * November 17, 2022
  */
-
-#include <cstdio>
-#include <cstring>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
 
-#include "read_xml_arch_file.h"
 #include "vpr_types.h"
 #include "globals.h"
-#include "atom_netlist.h"
 #include "vpr_utils.h"
 #include "hash.h"
 #include "cluster_placement.h"
@@ -37,8 +32,8 @@
 static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_stats* cluster_placement_stats,
                                                            t_pb_graph_node* pb_graph_node);
 static void update_primitive_cost_or_status(const t_pb_graph_node* pb_graph_node,
-                                            const float incremental_cost,
-                                            const bool valid);
+                                            float incremental_cost,
+                                            bool valid);
 static float try_place_molecule(const t_pack_molecule* molecule,
                                 t_pb_graph_node* root,
                                 t_pb_graph_node** primitives_list);
@@ -46,9 +41,9 @@ static bool expand_forced_pack_molecule_placement(const t_pack_molecule* molecul
                                                   const t_pack_pattern_block* pack_pattern_block,
                                                   t_pb_graph_node** primitives_list,
                                                   float* cost);
-static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
+static t_pb_graph_pin* expand_pack_molecule_pin_edge(int pattern_id,
                                                      const t_pb_graph_pin* cur_pin,
-                                                     const bool forward);
+                                                     bool forward);
 
 /****************************************/
 /*Function Definitions					*/
@@ -110,7 +105,7 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
          * I'm going to make the molecule selector more intelligent.
          * TODO: Remove later
          */
-        if (!cluster_placement_stats->in_flight.empty()) {
+        if (!cluster_placement_stats->in_flight_empty()) {
             /* Hack end */
             /* old block, put root primitive currently inflight to tried queue	*/
             cluster_placement_stats->move_inflight_to_tried();
@@ -183,11 +178,7 @@ void reset_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_
 
     /* Requeue primitives */
     cluster_placement_stats->flush_intermediate_queues();
-
-    for (auto it = cluster_placement_stats->invalid.begin(); it != cluster_placement_stats->invalid.end();) {
-        cluster_placement_stats->requeue_primitive(*it);
-        cluster_placement_stats->invalid.erase(it++);
-    }
+    cluster_placement_stats->flush_invalid_queue();
 
     /* reset flags and cost */
     for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
@@ -241,7 +232,7 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
          * and insert the placement primitive into the new map with index 0
          */
         if (!success) {
-            cluster_placement_stats->valid_primitives.push_back({});
+            cluster_placement_stats->valid_primitives.emplace_back();
             cluster_placement_stats->valid_primitives[cluster_placement_stats->valid_primitives.size() - 1].insert({0, placement_primitive});
             cluster_placement_stats->num_pb_types++;
         }
@@ -362,7 +353,7 @@ static float try_place_molecule(const t_pack_molecule* molecule,
 
     if (primitive_type_feasible(molecule->atom_block_ids[molecule->root],
                                 root->pb_type)) {
-        if (root->cluster_placement_primitive->valid == true) {
+        if (root->cluster_placement_primitive->valid) {
             for (i = 0; i < list_size; i++) {
                 primitives_list[i] = nullptr;
             }
@@ -442,7 +433,7 @@ static bool expand_forced_pack_molecule_placement(const t_pack_molecule* molecul
                 next_primitive = next_pin->parent_node;
                 /* Check for legality of placement, if legal, expand from legal placement, if not, return false */
                 if (molecule->atom_block_ids[next_block->block_id] && primitives_list[next_block->block_id] == nullptr) {
-                    if (next_primitive->cluster_placement_primitive->valid == true && primitive_type_feasible(molecule->atom_block_ids[next_block->block_id], next_primitive->pb_type)) {
+                    if (next_primitive->cluster_placement_primitive->valid && primitive_type_feasible(molecule->atom_block_ids[next_block->block_id], next_primitive->pb_type)) {
                         primitives_list[next_block->block_id] = next_primitive;
                         *cost += next_primitive->cluster_placement_primitive->base_cost + next_primitive->cluster_placement_primitive->incremental_cost;
                         if (!expand_forced_pack_molecule_placement(molecule, next_block, primitives_list, cost)) {
@@ -562,20 +553,6 @@ static t_pb_graph_pin* expand_pack_molecule_pin_edge(const int pattern_id,
     return dest_pin;
 }
 
-/*
-static void flush_intermediate_queues(t_cluster_placement_stats* cluster_placement_stats) {
-
-
-    cluster_placement_stats->flush_queue(cluster_placement_stats->tried);
-
-    for (auto it = cluster_placement_stats->in_flight.begin(); it != cluster_placement_stats->in_flight.end();) {
-        cluster_placement_stats->requeue_primitive(*it);
-        cluster_placement_stats->in_flight.erase(it++);
-    }
-    VTR_ASSERT(cluster_placement_stats->in_flight.empty());
-}
-*/
-
 /* Determine max index + 1 of molecule */
 int get_array_size_of_molecule(const t_pack_molecule* molecule) {
     if (molecule->type == MOLECULE_FORCED_PACK) {
@@ -591,9 +568,9 @@ bool exists_free_primitive_for_atom_block(t_cluster_placement_stats* cluster_pla
     int i;
 
     /* might have a primitive in flight that's still valid */
-    if (!cluster_placement_stats->in_flight.empty()) {
+    if (!cluster_placement_stats->in_flight_empty()) {
         if (primitive_type_feasible(blk_id,
-                                    cluster_placement_stats->in_flight.begin()->second->pb_graph_node->pb_type)) {
+                                    cluster_placement_stats->in_flight_type())) {
             return true;
         }
     }

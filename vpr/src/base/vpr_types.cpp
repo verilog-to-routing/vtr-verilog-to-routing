@@ -232,33 +232,9 @@ void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_s
 
     for (const auto& type : device_ctx.logical_block_types) {
         int index = type.index;
-
-        for (auto& primitive : cluster_placement_stats_list[index].tried) {
-            delete primitive.second;
-            //cluster_placement_stats_list[index].tried.erase(primitive.first);
-        }
-
-        for (auto& primitive : cluster_placement_stats_list[index].in_flight) {
-            delete primitive.second;
-            //cluster_placement_stats_list[index].in_flight.erase(primitive.first);
-        }
-
-        for (auto& primitive : cluster_placement_stats_list[index].invalid) {
-            delete primitive.second;
-            //cluster_placement_stats_list[index].invalid.erase(primitive.first);
-        }
-
-        for (int j = 0; j < cluster_placement_stats_list[index].num_pb_types; j++) {
-            for (auto& primitive : cluster_placement_stats_list[index].valid_primitives[j]) {
-                delete primitive.second;
-                //cluster_placement_stats_list[index].valid_primitives[j].erase()
-            }
-
-            //delete cluster_placement_stats_list[index].valid_primitives[j];
-        }
-        //delete[] cluster_placement_stats_list[index].valid_primitives;
+        cluster_placement_stats_list[index].free_primitives();
     }
-    //delete[] cluster_placement_stats_list;
+    delete[] cluster_placement_stats_list;
 }
 
 void t_cluster_placement_stats::move_inflight_to_tried() {
@@ -314,4 +290,33 @@ void t_cluster_placement_stats::flush_queue(std::unordered_multimap<int, t_clust
 void t_cluster_placement_stats::flush_intermediate_queues() {
     flush_queue(in_flight);
     flush_queue(tried);
+}
+
+void t_cluster_placement_stats::flush_invalid_queue() {
+    flush_queue(invalid);
+}
+
+bool t_cluster_placement_stats::in_flight_empty() {
+    return (in_flight.empty());
+}
+
+t_pb_type* t_cluster_placement_stats::in_flight_type() {
+    return (in_flight.begin()->second->pb_graph_node->pb_type);
+}
+
+void t_cluster_placement_stats::free_primitives() {
+    for (auto& primitive : tried)
+        delete primitive.second;
+
+    for (auto& primitive: in_flight)
+        delete primitive.second;
+
+    for(auto& primitive: invalid)
+        delete primitive.second;
+
+    for (int j = 0; j < num_pb_types; j++) {
+        for (auto& primitive : valid_primitives[j]) {
+            delete primitive.second;
+        }
+    }
 }
