@@ -1619,7 +1619,7 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_esti
 
 static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node Parent, t_mode* mode, const pugiutil::loc_data& loc_data) {
     int num_interconnect = 0;
-    int num_complete, num_direct, num_mux;
+    int num_complete, num_direct, num_mux, num_partial;
     int i, j, k, L_index, num_annotations;
     int num_delay_constant, num_delay_matrix, num_C_constant, num_C_matrix,
         num_pack_pattern;
@@ -1634,28 +1634,33 @@ static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node 
     num_complete = count_children(Parent, "complete", loc_data, ReqOpt::OPTIONAL);
     num_direct = count_children(Parent, "direct", loc_data, ReqOpt::OPTIONAL);
     num_mux = count_children(Parent, "mux", loc_data, ReqOpt::OPTIONAL);
-    num_interconnect = num_complete + num_direct + num_mux;
+    num_partial = count_children(Parent, "partial", loc_data, ReqOpt::OPTIONAL);
+    num_interconnect = num_complete + num_direct + num_mux + num_partial;
 
     mode->num_interconnect = num_interconnect;
     mode->interconnect = new t_interconnect[num_interconnect];
 
     i = 0;
-    for (L_index = 0; L_index < 3; L_index++) {
+    for (L_index = 0; L_index < 4; L_index++) {
         if (L_index == 0) {
             Cur = get_first_child(Parent, "complete", loc_data, ReqOpt::OPTIONAL);
         } else if (L_index == 1) {
             Cur = get_first_child(Parent, "direct", loc_data, ReqOpt::OPTIONAL);
-        } else {
+        } else if (L_index == 2) {
             Cur = get_first_child(Parent, "mux", loc_data, ReqOpt::OPTIONAL);
+        } else {
+            Cur = get_first_child(Parent, "partial", loc_data, ReqOpt::OPTIONAL);
         }
         while (Cur != nullptr) {
             if (0 == strcmp(Cur.name(), "complete")) {
                 mode->interconnect[i].type = COMPLETE_INTERC;
             } else if (0 == strcmp(Cur.name(), "direct")) {
                 mode->interconnect[i].type = DIRECT_INTERC;
-            } else {
-                VTR_ASSERT(0 == strcmp(Cur.name(), "mux"));
+            } else if (0 == strcmp(Cur.name(), "mux")) {
                 mode->interconnect[i].type = MUX_INTERC;
+            } else {
+                VTR_ASSERT(0 == strcmp(Cur.name(), "partial"));
+                mode->interconnect[i].type = PARTIAL_INTERC;
             }
 
             mode->interconnect[i].line_num = loc_data.line(Cur);
@@ -1671,6 +1676,9 @@ static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node 
 
             Prop = get_attribute(Cur, "name", loc_data).value();
             mode->interconnect[i].name = vtr::strdup(Prop);
+
+            mode->interconnect[i].fout = get_attribute(Cur, "fout", loc_data, ReqOpt::OPTIONAL).as_int();
+
             mode->interconnect[i].meta = ProcessMetadata(strings, Cur, loc_data);
 
             ret_interc_names = interc_names.insert(std::pair<std::string, int>(mode->interconnect[i].name, 0));
