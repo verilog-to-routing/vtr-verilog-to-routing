@@ -1274,12 +1274,15 @@ static bool timing_driven_pre_route_to_clock_root(ConnectionRouter& router,
 
     bool found_path;
     t_heap cheapest;
+    ConnectionParameters conn_params;
+
     std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(
         rt_root,
         sink_node,
         cost_params,
         bounding_box,
-        router_stats);
+        router_stats,
+        conn_params);
 
     // TODO: Parts of the rest of this function are repetitive to code in timing_driven_route_sink. Should refactor.
     if (!found_path) {
@@ -1381,8 +1384,7 @@ static bool timing_driven_route_sink(ConnectionRouter& router,
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
-    router_stats.net_id = net_id;
-    router_stats.target_pin_num = target_pin;
+    ConnectionParameters conn_params(net_id, target_pin, router_opts.has_choking_spot);
 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
@@ -1393,13 +1395,15 @@ static bool timing_driven_route_sink(ConnectionRouter& router,
                                                                                                            cost_params,
                                                                                                            bounding_box,
                                                                                                            spatial_rt_lookup,
-                                                                                                           router_stats);
+                                                                                                           router_stats,
+                                                                                                           conn_params);
     } else {
         std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root,
                                                                                                sink_node,
                                                                                                cost_params,
                                                                                                bounding_box,
-                                                                                               router_stats);
+                                                                                               router_stats,
+                                                                                               conn_params);
     }
 
     if (!found_path) {

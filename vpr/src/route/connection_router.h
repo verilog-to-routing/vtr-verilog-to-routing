@@ -72,7 +72,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
-        RouterStats& router_stats) final;
+        RouterStats& router_stats,
+        const ConnectionParameters& conn_params) final;
 
     // Finds a path from the route tree rooted at rt_root to sink_node for a
     // high fanout net.
@@ -85,7 +86,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
-        RouterStats& router_stats) final;
+        RouterStats& router_stats,
+        const ConnectionParameters& conn_params) final;
 
     // Finds a path from the route tree rooted at rt_root to all sinks
     // available.
@@ -263,6 +265,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     bool is_flat_;
     std::vector<int> modified_rr_node_inf_;
     RouterStats* router_stats_;
+    const ConnectionParameters* conn_params_;
     HeapImplementation heap_;
     bool router_debug_;
 

@@ -2308,7 +2308,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.has_choking_spot, "--has_choking_spot")
-        .help(""
+        .help(
+            ""
             "Some FPGA architectures, due to the lack of full connectivity inside the cluster, may have"
             " a choking spot inside the cluster. Thus, if routing doesn't converge, enabling this option may"
             " help it.")

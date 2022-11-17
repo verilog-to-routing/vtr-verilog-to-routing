@@ -1080,7 +1080,7 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
             t_block_loc blk_loc;
             blk_loc = get_block_loc(block_id, is_flat);
             int group_num = -1;
-            for (int curr_grp_num = 0; curr_grp_num < net_terminal_groups[net_id].size(); curr_grp_num++) {
+            for (int curr_grp_num = 0; curr_grp_num < (int)net_terminal_groups[net_id].size(); curr_grp_num++) {
                 const auto& curr_grp = net_terminal_groups[net_id][curr_grp_num];
                 auto group_loc = get_block_loc(net_pin_blk_id[rr_node_pin_num.at(curr_grp[0])], is_flat);
                 if (blk_loc.loc == group_loc.loc) {

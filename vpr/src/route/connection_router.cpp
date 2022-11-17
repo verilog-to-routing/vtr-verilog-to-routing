@@ -32,8 +32,10 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     int sink_node,
     const t_conn_cost_params cost_params,
     t_bb bounding_box,
-    RouterStats& router_stats) {
+    RouterStats& router_stats,
+    const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
+    conn_params_ = &conn_params;
     t_heap* cheapest = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
 
     if (cheapest != nullptr) {
@@ -143,8 +145,10 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     const t_conn_cost_params cost_params,
     t_bb net_bounding_box,
     const SpatialRouteTreeLookup& spatial_rt_lookup,
-    RouterStats& router_stats) {
+    RouterStats& router_stats,
+    const ConnectionParameters& conn_params) {
     router_stats_ = &router_stats;
+    conn_params_ = &conn_params;
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
@@ -784,12 +788,12 @@ bool ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         //cost.
         cong_cost = 0.;
     }
-    if (is_flat_) {
+    if (conn_params_->has_choking_spot_ && is_flat_) {
         if (rr_graph_->node_type(RRNodeId(to_node)) == IPIN) {
-            int group_num = net_terminal_group_num[router_stats_->net_id][router_stats_->target_pin_num];
+            int group_num = net_terminal_group_num[conn_params_->net_id_][conn_params_->target_pin_num_];
             int group_size = 0;
             t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid[rr_graph_->node_xlow(RRNodeId(to_node))][rr_graph_->node_ylow(RRNodeId(to_node))].type;
-            for (auto sink_num : net_terminal_groups[router_stats_->net_id][group_num]) {
+            for (auto sink_num : net_terminal_groups[conn_params_->net_id_][group_num]) {
                 if (intra_tile_nodes_connected(physical_tile,
                                                rr_graph_->node_ptc_num(RRNodeId(to_node)),
                                                rr_graph_->node_ptc_num(RRNodeId(sink_num)))) {

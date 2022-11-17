@@ -63,7 +63,13 @@ static float do_one_route(int source_node,
     // Find the cheapest route if possible.
     bool found_path;
     t_heap cheapest;
-    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats);
+    ConnectionParameters conn_params;
+    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root,
+                                                                                           sink_node,
+                                                                                           cost_params,
+                                                                                           bounding_box,
+                                                                                           router_stats,
+                                                                                           conn_params);
 
     // Default delay is infinity, which indicates that a route was not found.
     float delay = std::numeric_limits<float>::infinity();

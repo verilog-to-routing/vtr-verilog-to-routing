@@ -1,5 +1,28 @@
 #pragma once
 
+// This struct instructs the router on how to route the given connection
+struct ConnectionParameters {
+    ConnectionParameters() {
+        net_id_ != ParentNetId::INVALID();
+        target_pin_num_ = OPEN;
+        has_choking_spot_ = false;
+    }
+
+    ConnectionParameters(ParentNetId net_id, int target_pin_num, bool has_choking_spot)
+        : net_id_(net_id)
+        , target_pin_num_(target_pin_num)
+        , has_choking_spot_(has_choking_spot) {}
+
+    // Net id of the connection
+    ParentNetId net_id_;
+    // Net's pin number of the connection's SINK
+    int target_pin_num_;
+
+    // Show whether for the given connection, router should expect a choking point
+    // If this is true, it would increase the routing time since the router has to
+    // take some measures to solve the congestion
+    bool has_choking_spot_;
+};
 struct RouterStats {
     size_t connections_routed = 0;
     size_t nets_routed = 0;
@@ -22,9 +45,6 @@ struct RouterStats {
     size_t add_all_rt_from_high_fanout;
     size_t add_high_fanout_rt;
     size_t add_all_rt;
-
-    ParentNetId net_id;
-    int target_pin_num;
 };
 
 class WirelengthInfo {
