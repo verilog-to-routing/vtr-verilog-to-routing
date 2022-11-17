@@ -641,21 +641,18 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
                 if (draw_state->draw_route_type == GLOBAL)
                     chanx_track[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)]++;
 
-                int itrack = get_track_num(inode, chanx_track, chany_track);
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
 
                 switch (prev_type) {
                     case CHANX: {
                         draw_chanx_to_chanx_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                 itrack, switch_type, g);
+                                                 switch_type, g);
                         break;
                     }
                     case CHANY: {
-                        int prev_track = get_track_num(prev_node, chanx_track,
-                                                       chany_track);
-                        draw_chanx_to_chany_edge(inode, itrack, prev_node,
+                        draw_chanx_to_chany_edge(inode, prev_node,
 
-                                                 prev_track, FROM_Y_TO_X, switch_type, g);
+                                                 FROM_Y_TO_X, switch_type, g);
                         break;
                     }
                     case OPIN: {
@@ -675,20 +672,17 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw, ezgl::renderer
                 if (draw_state->draw_route_type == GLOBAL)
                     chany_track[rr_graph.node_xlow(rr_node)][rr_graph.node_ylow(rr_node)]++;
 
-                int itrack = get_track_num(inode, chanx_track, chany_track);
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
 
                 switch (prev_type) {
                     case CHANX: {
-                        int prev_track = get_track_num(prev_node, chanx_track,
-                                                       chany_track);
-                        draw_chanx_to_chany_edge(prev_node, prev_track, inode,
-                                                 itrack, FROM_X_TO_Y, switch_type, g);
+                        draw_chanx_to_chany_edge(prev_node, inode,
+                                                 FROM_X_TO_Y, switch_type, g);
                         break;
                     }
                     case CHANY: {
                         draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                 itrack, switch_type, g);
+                                                 switch_type, g);
                         break;
                     }
                     case OPIN: {

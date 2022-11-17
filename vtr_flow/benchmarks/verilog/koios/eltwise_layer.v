@@ -320,49 +320,49 @@ module eltwise_layer(
 	wire [`CU_SIZE*`DWIDTH-1:0] bram_rdata_c_4;
 	wire [`CU_SIZE*`DWIDTH-1:0] bram_rdata_c_5;
 
-  always @* begin
+  always @ (posedge clk) begin
     case (bram_select)
   
       0: begin
-      bram_addr_a_0_ext = bram_addr_ext;
-      bram_wdata_a_0_ext = bram_wdata_ext;
-      bram_we_a_0_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_0_ext;
+      bram_addr_a_0_ext <= bram_addr_ext;
+      bram_wdata_a_0_ext <= bram_wdata_ext;
+      bram_we_a_0_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_0_ext;
       end
     
       1: begin
-      bram_addr_a_2_ext = bram_addr_ext;
-      bram_wdata_a_2_ext = bram_wdata_ext;
-      bram_we_a_2_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_2_ext;
+      bram_addr_a_2_ext <= bram_addr_ext;
+      bram_wdata_a_2_ext <= bram_wdata_ext;
+      bram_we_a_2_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_2_ext;
       end
     
       2: begin
-      bram_addr_a_4_ext = bram_addr_ext;
-      bram_wdata_a_4_ext = bram_wdata_ext;
-      bram_we_a_4_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_4_ext;
+      bram_addr_a_4_ext <= bram_addr_ext;
+      bram_wdata_a_4_ext <= bram_wdata_ext;
+      bram_we_a_4_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_4_ext;
       end
 
       3: begin
-      bram_addr_a_1_ext = bram_addr_ext;
-      bram_wdata_a_1_ext = bram_wdata_ext;
-      bram_we_a_1_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_1_ext;
+      bram_addr_a_1_ext <= bram_addr_ext;
+      bram_wdata_a_1_ext <= bram_wdata_ext;
+      bram_we_a_1_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_1_ext;
       end
     
       4: begin
-      bram_addr_a_3_ext = bram_addr_ext;
-      bram_wdata_a_3_ext = bram_wdata_ext;
-      bram_we_a_3_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_3_ext;
+      bram_addr_a_3_ext <= bram_addr_ext;
+      bram_wdata_a_3_ext <= bram_wdata_ext;
+      bram_we_a_3_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_3_ext;
       end
     
       5: begin
-      bram_addr_a_5_ext = bram_addr_ext;
-      bram_wdata_a_5_ext = bram_wdata_ext;
-      bram_we_a_5_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_a_5_ext;
+      bram_addr_a_5_ext <= bram_addr_ext;
+      bram_wdata_a_5_ext <= bram_wdata_ext;
+      bram_we_a_5_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_a_5_ext;
       end
     
       6: begin
@@ -373,84 +373,87 @@ module eltwise_layer(
       end
     
       7: begin
-      bram_addr_b_1_ext = bram_addr_ext;
-      bram_wdata_b_1_ext = bram_wdata_ext;
-      bram_we_b_1_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_1_ext;
+      bram_addr_b_1_ext <= bram_addr_ext;
+      bram_wdata_b_1_ext <= bram_wdata_ext;
+      bram_we_b_1_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_1_ext;
       end
     
       8: begin
-      bram_addr_b_2_ext = bram_addr_ext;
-      bram_wdata_b_2_ext = bram_wdata_ext;
-      bram_we_b_2_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_2_ext;
+      bram_addr_b_2_ext <= bram_addr_ext;
+      bram_wdata_b_2_ext <= bram_wdata_ext;
+      bram_we_b_2_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_2_ext;
       end
     
       9: begin
-      bram_addr_b_3_ext = bram_addr_ext;
-      bram_wdata_b_3_ext = bram_wdata_ext;
-      bram_we_b_3_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_3_ext;
+      bram_addr_b_3_ext <= bram_addr_ext;
+      bram_wdata_b_3_ext <= bram_wdata_ext;
+      bram_we_b_3_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_3_ext;
       end
     
       10: begin
-      bram_addr_b_4_ext = bram_addr_ext;
-      bram_wdata_b_4_ext = bram_wdata_ext;
-      bram_we_b_4_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_4_ext;
+      bram_addr_b_4_ext <= bram_addr_ext;
+      bram_wdata_b_4_ext <= bram_wdata_ext;
+      bram_we_b_4_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_4_ext;
       end
     
       11: begin
-      bram_addr_b_5_ext = bram_addr_ext;
-      bram_wdata_b_5_ext = bram_wdata_ext;
-      bram_we_b_5_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_b_5_ext;
+      bram_addr_b_5_ext <= bram_addr_ext;
+      bram_wdata_b_5_ext <= bram_wdata_ext;
+      bram_we_b_5_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_b_5_ext;
       end
 
       12: begin
-      bram_addr_c_0_ext = bram_addr_ext;
-      bram_wdata_c_0_ext = bram_wdata_ext;
-      bram_we_c_0_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_c_0_ext;
+      bram_addr_c_0_ext <= bram_addr_ext;
+      bram_wdata_c_0_ext <= bram_wdata_ext;
+      bram_we_c_0_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_c_0_ext;
       end
     
       13: begin
-      bram_addr_c_1_ext = bram_addr_ext;
-      bram_wdata_c_1_ext = bram_wdata_ext;
-      bram_we_c_1_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_c_1_ext;
+      bram_addr_c_1_ext <= bram_addr_ext;
+      bram_wdata_c_1_ext <= bram_wdata_ext;
+      bram_we_c_1_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_c_1_ext;
       end
     
       14: begin
-      bram_addr_c_2_ext = bram_addr_ext;
-      bram_wdata_c_2_ext = bram_wdata_ext;
-      bram_we_c_2_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_c_2_ext;
+      bram_addr_c_2_ext <= bram_addr_ext;
+      bram_wdata_c_2_ext <= bram_wdata_ext;
+      bram_we_c_2_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_c_2_ext;
       end
     
       15: begin
-      bram_addr_c_3_ext = bram_addr_ext;
-      bram_wdata_c_3_ext = bram_wdata_ext;
-      bram_we_c_3_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_c_3_ext;
+      bram_addr_c_3_ext <= bram_addr_ext;
+      bram_wdata_c_3_ext <= bram_wdata_ext;
+      bram_we_c_3_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_c_3_ext;
       end
     
       16: begin
-      bram_addr_c_4_ext = bram_addr_ext;
-      bram_wdata_c_4_ext = bram_wdata_ext;
-      bram_we_c_4_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_c_4_ext;
+      bram_addr_c_4_ext <= bram_addr_ext;
+      bram_wdata_c_4_ext <= bram_wdata_ext;
+      bram_we_c_4_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_c_4_ext;
       end
     
       17: begin
-      bram_addr_c_5_ext = bram_addr_ext;
-      bram_wdata_c_5_ext = bram_wdata_ext;
-      bram_we_c_5_ext = bram_we_ext;
-      bram_rdata_ext = bram_rdata_c_5_ext;
+      bram_addr_c_5_ext <= bram_addr_ext;
+      bram_wdata_c_5_ext <= bram_wdata_ext;
+      bram_we_c_5_ext <= bram_we_ext;
+      bram_rdata_ext <= bram_rdata_c_5_ext;
       end
     
       default: begin
-      bram_rdata_ext = 0;
+		bram_addr_c_5_ext <= bram_addr_ext;
+      bram_wdata_c_5_ext <= bram_wdata_ext;
+      bram_we_c_5_ext <= bram_we_ext;
+      bram_rdata_ext <= 0;
       end
     endcase 
   end
@@ -1120,56 +1123,79 @@ output [`CU_SIZE*`DWIDTH-1:0] q0;
 output [`CU_SIZE*`DWIDTH-1:0] q1;
 input clk;
 
-`ifdef VCS
-reg [`CU_SIZE*`DWIDTH-1:0] q0;
-reg [`CU_SIZE*`DWIDTH-1:0] q1;
-reg [`DWIDTH-1:0] ram[((1<<`AWIDTH)-1):0];
-integer i;
+genvar i; 
 
-always @(posedge clk)  
-begin 
-    for (i = 0; i < `CU_SIZE; i=i+1) begin
-        if (we0[i]) ram[addr0+i] <= d0[i*`DWIDTH +: `DWIDTH]; 
-    end    
-    for (i = 0; i < `CU_SIZE; i=i+1) begin
-        q0[i*`DWIDTH +: `DWIDTH] <= ram[addr0+i];
-    end    
+generate
+`ifdef QUARTUS
+   for (i=0;i<`CU_SIZE;i=i+1) begin: gen_dpram
+`else
+   for (i=0;i<`CU_SIZE;i=i+1) begin
+`endif
+     dpram_original #(.AWIDTH(`AWIDTH),.DWIDTH(`DWIDTH),.NUM_WORDS(1<<`AWIDTH)) dp1 (.clk(clk),.address_a(addr0),.address_b(addr1),.wren_a(we0[i]),.wren_b(we1[i]),.data_a(d0[i*`DWIDTH +: `DWIDTH]),.data_b(d1[i*`DWIDTH +: `DWIDTH]),.out_a(q0[i*`DWIDTH +: `DWIDTH]),.out_b(q1[i*`DWIDTH +: `DWIDTH]));
+   end
+endgenerate
+
+endmodule
+
+module dpram_original (
+    clk,
+    address_a,
+    address_b,
+    wren_a,
+    wren_b,
+    data_a,
+    data_b,
+    out_a,
+    out_b
+);
+parameter AWIDTH=10;
+parameter NUM_WORDS=1024;
+parameter DWIDTH=32;
+input clk;
+input [(AWIDTH-1):0] address_a;
+input [(AWIDTH-1):0] address_b;
+input  wren_a;
+input  wren_b;
+input [(DWIDTH-1):0] data_a;
+input [(DWIDTH-1):0] data_b;
+output reg [(DWIDTH-1):0] out_a;
+output reg [(DWIDTH-1):0] out_b;
+
+`ifndef hard_mem
+
+reg [DWIDTH-1:0] ram[NUM_WORDS-1:0];
+always @ (posedge clk) begin 
+  if (wren_a) begin
+      ram[address_a] <= data_a;
+  end
+  out_a <= ram[address_a];
 end
-
-always @(posedge clk)  
-begin 
-    for (i = 0; i < `CU_SIZE; i=i+1) begin
-        if (we1[i]) ram[addr0+i] <= d1[i*`DWIDTH +: `DWIDTH]; 
-    end    
-    for (i = 0; i < `CU_SIZE; i=i+1) begin
-        q1[i*`DWIDTH +: `DWIDTH] <= ram[addr1+i];
-    end    
+  
+always @ (posedge clk) begin 
+  if (wren_b) begin
+      ram[address_b] <= data_b;
+  end 
+  out_b <= ram[address_b];
 end
 
 `else
-//BRAMs available in VTR FPGA architectures have one bit write-enables.
-//So let's combine multiple bits into 1. We don't have a usecase of
-//writing/not-writing only parts of the word anyway.
-wire we0_coalesced;
-assign we0_coalesced = |we0;
-wire we1_coalesced;
-assign we1_coalesced = |we1;
+
+defparam u_dual_port_ram.ADDR_WIDTH = AWIDTH;
+defparam u_dual_port_ram.DATA_WIDTH = DWIDTH;
 
 dual_port_ram u_dual_port_ram(
-.addr1(addr0),
-.we1(we0_coalesced),
-.data1(d0),
-.out1(q0),
-.addr2(addr1),
-.we2(we1_coalesced),
-.data2(d1),
-.out2(q1),
+.addr1(address_a),
+.we1(wren_a),
+.data1(data_a),
+.out1(out_a),
+.addr2(address_b),
+.we2(wren_b),
+.data2(data_b),
+.out2(out_b),
 .clk(clk)
 );
 
 `endif
-
-
 endmodule
 
   
@@ -1637,7 +1663,7 @@ module processing_element(
 
  seq_mul u_mul(.a(in_a), .b(in_b), .out(out_mul), .reset(reset), .clk(clk));
  seq_add u_add(.a(in_a), .b(in_b), .out(out_sum), .reset(reset), .clk(clk));
- seq_sub u_sub(.a(in_a), .b(in_b), .out(out_sum), .reset(reset), .clk(clk));
+ seq_sub u_sub(.a(in_a), .b(in_b), .out(out_sub), .reset(reset), .clk(clk));
 
 endmodule
 
@@ -1671,7 +1697,7 @@ end
 
 //assign mul_out_temp = a * b;
 `ifdef complex_dsp
-multiply_fp_clk mul_u1(.clk(clk), .a(a_flopped), .b(b_flopped), .out(mul_out_temp));
+mult_fp_clk_16 mul_u1(.clk(clk), .a(a_flopped), .b(b_flopped), .out(mul_out_temp));
 `else
 FPMult_16 u_FPMult (.clk(clk), .rst(1'b0), .a(a_flopped), .b(b_flopped), .result(mul_out_temp), .flags());
 `endif
@@ -1718,7 +1744,7 @@ end
 
 //assign sum_out_temp = a + b;
 `ifdef complex_dsp
-adder_fp_clk add_u1(.clk(clk), .a(a_flopped), .b(b_flopped), .out(sum_out_temp));
+addition_fp_clk_16 add_u1(.clk(clk), .a(a_flopped), .b(b_flopped), .out(sum_out_temp));
 `else
 FPAddSub u_FPAddSub (.clk(clk), .rst(1'b0), .a(a_flopped), .b(b_flopped), .operation(1'b0), .result(sum_out_temp), .flags());
 `endif
@@ -1769,7 +1795,7 @@ end
 //We don't provide the name of the mode here though.
 
 `ifdef complex_dsp
-adder_fp_clk sub_u1(.clk(clk), .a(a_flopped), .b(b_flopped), .out(sub_out_temp));
+addition_fp_clk_16 sub_u1(.clk(clk), .a(a_flopped), .b(b_flopped), .out(sub_out_temp));
 `else
 FPAddSub u_FPAddSub2(.clk(clk), .rst(1'b0), .a(a_flopped), .b(b_flopped), .operation(1'b0), .result(sub_out_temp), .flags());
 `endif
@@ -2582,46 +2608,43 @@ module FPAddSub_AlignShift1(
 	wire    [2*`MANTISSA+1:0]    Stage1;	
 	integer           i;                // Loop variable
 
-	wire [`MANTISSA:0] temp_0; 
-
-assign temp_0 = 0;
-
 	always @(*) begin
 		if (bf16 == 1'b1) begin						
 //hardcoding for bfloat16
 	//For bfloat16, we can shift the mantissa by a max of 7 bits since mantissa has a width of 7. 
 	//Hence if either, bit[3]/bit[4]/bit[5]/bit[6]/bit[7] is 1, we can make it 0. This corresponds to bits [5:1] in our updated shift which doesn't contain last 2 bits.
 		//Lvl1 <= (Shift[1]|Shift[2]|Shift[3]|Shift[4]|Shift[5]) ? {temp_0} : {1'b1, MminP};  // MANTISSA + 1 width	
-		Lvl1 <= (|Shift[`EXPONENT-3:1]) ? {temp_0} : {1'b1, MminP};  // MANTISSA + 1 width	
+		Lvl1 <= (|Shift[`EXPONENT-3:1]) ? 'd0 : {1'b1, MminP};  // MANTISSA + 1 width	
 		end
 		else begin
 		//for half precision fp16, 10 bits can be shifted. Hence, only shifts till 10 (01010)can be made. 
-		Lvl1 <= Shift[2] ? {temp_0} : {1'b1, MminP};
+		Lvl1 <= Shift[2] ? 'd0 : {1'b1, MminP};
 		end
 	end
 	
-	assign Stage1 = { temp_0, Lvl1}; //2*MANTISSA + 2 width
+	assign Stage1 = {Lvl1, Lvl1}; //2*MANTISSA + 2 width
 
 	always @(*) begin    					// Rotate {0 | 4 } bits
 	if(bf16 == 1'b1) begin
 	  case (Shift[0])
 			// Rotate by 0	
-			1'b0:  Lvl2 <= Stage1[`MANTISSA:0];       			
+			1'b0: Lvl2 <= Stage1[`MANTISSA:0];       			
 			// Rotate by 4	
-			1'b1:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+4]; end Lvl2[`MANTISSA:`MANTISSA-3] <= 0; end
+			1'b1: Lvl2 <= Stage1[`MANTISSA+4:4];
+			default: Lvl2 <= Stage1[`MANTISSA+4:4];
 	  endcase
 	end
 	else begin
 	  case (Shift[1:0])					// Rotate {0 | 4 | 8} bits
 			// Rotate by 0	
-			2'b00:  Lvl2 <= Stage1[`MANTISSA:0];       			
+			2'b00: Lvl2 <= Stage1[`MANTISSA:0];       			
 			// Rotate by 4	
-			2'b01:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+4]; end Lvl2[`MANTISSA:`MANTISSA-3] <= 0; end
+			2'b01: Lvl2 <= Stage1[`MANTISSA+4:4];
 			// Rotate by 8
-			2'b10:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+8]; end Lvl2[`MANTISSA:`MANTISSA-7] <= 0; end
+			2'b10: Lvl2 <= Stage1[`MANTISSA+8:8];
 			// Rotate by 12	
 			2'b11: Lvl2[`MANTISSA: 0] <= 0; 
-			//2'b11:  begin for (i=0; i<=`MANTISSA; i=i+1) begin Lvl2[i] <= Stage1[i+12]; end Lvl2[`MANTISSA:`MANTISSA-12] <= 0; end
+			default: Lvl2[`MANTISSA: 0] <= 0; 
 	  endcase
 	end
 	end
@@ -2654,18 +2677,18 @@ module FPAddSub_AlignShift2(
 	wire    [2*`MANTISSA+1:0]    Stage2;	
 	integer           j;               // Loop variable
 	
-	assign Stage2 = {11'b0, MminP};
+	assign Stage2 = {MminP, MminP};
 
 	always @(*) begin    // Rotate {0 | 1 | 2 | 3} bits
 	  case (Shift[1:0])
 			// Rotate by 0
-			2'b00:  Lvl3 <= Stage2[`MANTISSA:0];   
+			2'b00: Lvl3 <= Stage2[`MANTISSA:0];   
 			// Rotate by 1
-			2'b01:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+1]; end Lvl3[`MANTISSA] <= 0; end 
+			2'b01: Lvl3 <= Stage2[`MANTISSA+1:1];
 			// Rotate by 2
-			2'b10:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+2]; end Lvl3[`MANTISSA:`MANTISSA-1] <= 0; end 
+			2'b10: Lvl3 <= Stage2[`MANTISSA+2:2];
 			// Rotate by 3
-			2'b11:  begin for (j=0; j<=`MANTISSA; j=j+1)  begin Lvl3[j] <= Stage2[j+3]; end Lvl3[`MANTISSA:`MANTISSA-2] <= 0; end 	  
+			2'b11: Lvl3 <= Stage2[`MANTISSA+3:3]; 
 	  endcase
 	end
 	
@@ -2811,11 +2834,12 @@ module FPAddSub_NormalizeShift1(
 			// Rotate by 0
 			2'b00: Lvl2 <= Stage1[`DWIDTH:0];       		
 			// Rotate by 4
-			2'b01: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-33] <= Stage1[i-4]; end Lvl2[3:0] <= 0; end
+			2'b01: Lvl2 <= Stage1[28:13];
 			// Rotate by 8
-			2'b10: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-33] <= Stage1[i-8]; end Lvl2[7:0] <= 0; end
+			2'b10: Lvl2 <= Stage1[24:9];
 			// Rotate by 12
-			2'b11: begin for (i=33; i>=17; i=i-1) begin Lvl2[i-33] <= Stage1[i-12]; end Lvl2[11:0] <= 0; end
+			2'b11: Lvl2 <= Stage1[20:5];
+			default: Lvl2 <= Stage1[`DWIDTH:0];
 	  endcase
 	end
 	
@@ -2824,13 +2848,14 @@ module FPAddSub_NormalizeShift1(
 	always @(*) begin   				 		// Rotate {0 | 1 | 2 | 3} bits
 	  case (Shift[1:0])
 			// Rotate by 0
-			2'b00:  Lvl3 <= Stage2[`DWIDTH:0];
+			2'b00: Lvl3 <= Stage2[`DWIDTH:0];
 			// Rotate by 1
-			2'b01: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-1]; end Lvl3[0] <= 0; end 
+			2'b01: Lvl3 <= Stage2[31:16];
 			// Rotate by 2
-			2'b10: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-2]; end Lvl3[1:0] <= 0; end
+			2'b10: Lvl3 <= Stage2[30:15];
 			// Rotate by 3
-			2'b11: begin for (i=33; i>=17; i=i-1) begin Lvl3[i-`DWIDTH-1] <= Stage2[i-3]; end Lvl3[2:0] <= 0; end
+			2'b11: Lvl3 <= Stage2[29:14];
+			default: Lvl3 <= Stage2[`DWIDTH:0];
 	  endcase
 	end
 	
@@ -3027,6 +3052,6 @@ module FPAddSub_ExceptionModule(
 	
 endmodule
 
-
 `endif
+
 

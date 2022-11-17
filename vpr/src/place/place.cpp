@@ -535,6 +535,7 @@ void try_place(const Netlist<>& net_list,
     if (placer_opts.enable_analytic_placer) {
         AnalyticPlacer{}.ap_place();
     }
+
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     // Update physical pin values
@@ -731,9 +732,8 @@ void try_place(const Netlist<>& net_list,
                             device_ctx.grid.height() - 1);
     place_move_ctx.first_rlim = first_rlim;
 
-    /* Set the temperature high so essentially all swaps will be accepted   */
-    /* when trying to determine the starting temp for placement inner loop. */
-    first_t = HUGE_POSITIVE_FLOAT;
+    /* Set the temperature low to ensure that initial placement quality will be preserved */
+    first_t = EPSILON;
 
     t_annealing_state state(annealing_sched, first_t, first_rlim,
                             first_move_lim, first_crit_exponent);
@@ -1264,9 +1264,13 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
     VTR_LOG("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
 #endif
 
-    /* Set the initial temperature to 20 times the standard of deviation */
+    /* Set the initial temperature to the standard of deviation divided by 64 */
     /* so that the initial temperature adjusts according to the circuit */
-    return (20. * std_dev);
+    /* and also keep the initial placement qaulity (not destroying it completely) */
+    /* and fine-tune the initial placement with the anneal*/
+    float init_temp = (std_dev / 64);
+
+    return init_temp;
 }
 
 static void update_move_nets(int num_nets_affected) {

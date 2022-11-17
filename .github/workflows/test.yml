@@ -26,16 +26,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {test: "vtr_reg_nightly_test1", cores: "8",  options: "",          cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test2", cores: "16", options: "",          cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test3", cores: "16", options: "",          cmake: ""                                             }
-          - {test: "vtr_reg_nightly_test4", cores: "16", options: "",          cmake: ""                                             }
-          - {test: "vtr_reg_strong",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3"                         }
-          - {test: "vtr_reg_strong",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON"}
-          - {test: "vtr_reg_yosys",         cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON -DYOSYS_SV_UHDM_PLUGIN=ON"    }
-          - {test: "vtr_reg_yosys_odin",    cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON -DYOSYS_SV_UHDM_PLUGIN=ON"}
-          - {test: "odin_tech_strong",      cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON"                          }
-          - {test: "odin_reg_strong",       cores: "16", options: "",          cmake: ""                                             }
+          - {test: "vtr_reg_nightly_test1", cores: "8",  options: "",          cmake: "",                                              extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test2", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test3", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test4", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test5", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test6", cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON",                           extra_pkgs: ""}
+          - {test: "vtr_reg_strong",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                          extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_strong",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON", extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_yosys",         cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON -DYOSYS_SV_UHDM_PLUGIN=ON",     extra_pkgs: ""}
+          - {test: "vtr_reg_yosys_odin",    cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON -DYOSYS_SV_UHDM_PLUGIN=ON", extra_pkgs: ""}
+          - {test: "odin_tech_strong",      cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON",                           extra_pkgs: ""}
+          - {test: "odin_reg_strong",       cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
 
     env:
       DEBIAN_FRONTEND: "noninteractive"
@@ -46,6 +48,10 @@ jobs:
 
     - name: Setup
       run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
+
+    - name: Install external libraries
+      run: apt install -y ${{ matrix.extra_pkgs }}
+      if: ${{ matrix.extra_pkgs }}
 
     - name: Execute test script
       run: stdbuf -i0 -o0 -e0 ./.github/scripts/run-vtr.sh

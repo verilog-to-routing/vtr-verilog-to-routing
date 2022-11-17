@@ -31,10 +31,16 @@
 `define NUM_CHANNEL_BITS $clog2(`NUM_CHANNEL)
 `define LANE_NUM (3 * `NUM_CHANNEL)
 // `define LANE_NUM_BITS $clog2(`LANE_NUM)
-`define NUM_MAT_VALS 8864
+//`define NUM_MAT_VALS 8864
+`define NUM_MAT_VALS 4096
 `define NUM_COL_IDS `NUM_MAT_VALS
 `define NUM_ROW_IDS `NUM_MAT_VALS
 `define NUM_VEC_VALS 128
+
+//`define MAT_VAL_ADDR_WIDTH $clog2(`NUM_MAT_VALS)
+`define MAT_VAL_ADDR_WIDTH 12
+`define COL_ID_ADDR_WIDTH `MAT_VAL_ADDR_WIDTH
+`define ROW_ID_ADDR_WIDTH `MAT_VAL_ADDR_WIDTH
 
 `define FIFO_DEPTH 8
 `define MAX_COLS (1<<`COL_ID_BITS)
@@ -47,7 +53,7 @@
 `define NUM_VEC_VALS_PER_ADDR_PER_BRAM (`BYTES_PER_ADDR_PER_BRAM/`VEC_VAL_BYTES)
 `define NUM_VEC_VALS_PER_ADDR `NUM_VEC_VALS_PER_ADDR_PER_BRAM*`NUM_BRAMS
 `define NUM_VEC_VALS_PER_ADDR_BITS $clog2(`NUM_VEC_VALS_PER_ADDR)
-`define NUM_ADDR (`NUM_VEC_VALS/`NUM_VEC_VALS_PER_ADDR)
+`define NUM_ADDR (`NUM_VEC_VALS/`NUM_VEC_VALS_PER_ADDR)+1
 `define BVB_AWIDTH `COL_ID_BITS
 `define COUNTER_BITS $clog2(`NUM_ADDR)
 `define LOCAL_ID_BITS `NUM_VEC_VALS_PER_ADDR_BITS
@@ -56,9 +62,25 @@ module spmv(
 	input clk,
 	input rst,
 
-	output [`MULT_BITS-1:0] dout_nc,
+	output [`MULT_BITS-1:0] dout,
 
-	output reg done_reg
+	output reg done_reg,
+
+  input [`MAT_VAL_BITS-1:0] mat_val_din,
+  input	[`COL_ID_BITS-1:0] col_id_din,
+  input [`ROW_ID_BITS-1:0] row_id_din,
+
+  input mat_val_wren,
+  input col_id_wren,
+  input row_id_wren,
+
+  input [`MAT_VAL_ADDR_WIDTH-1:0] mat_val_addr_ext,
+  input [`COL_ID_ADDR_WIDTH-1:0] col_id_addr_ext,
+  input [`ROW_ID_ADDR_WIDTH-1:0] row_id_addr_ext,
+
+	input [`NUM_VEC_VALS_PER_ADDR*`VEC_VAL_BITS-1:0] vector_din,
+  input vector_wren,
+  input [`BVB_AWIDTH-1:0] vector_addr_ext
 );
 
 	// Row ID fifo signal
@@ -118,7 +140,7 @@ module spmv(
 
 	wire fetcher_done;
 
-	always@(posedge clk or posedge rst) begin
+	always@(posedge clk) begin
 		if (rst) begin
 			all_empty <= 1;
 			start <= 0;
@@ -139,12 +161,21 @@ module spmv(
 	assign out_rd_en_shifted = out_rd_en >> counter;
 
 	assign data_out_shifted = data_out >> (counter_delay*`MULT_BITS);
+`ifdef QUARTUS
+	genvar loop_idx;
+	generate
+		for (loop_idx = 0; loop_idx < `ROW_ID_BITS; loop_idx = loop_idx + 1) begin: gen_addr_out
+			assign addr_out_shifted[loop_idx] = ^(addr_out[(loop_idx+1)*`NUM_CHANNEL-1:loop_idx*`NUM_CHANNEL]);
+		end
+	endgenerate
+`else
 	assign addr_out_shifted = addr_out >> (counter_delay*`ROW_ID_BITS);
+`endif
 
 	assign wr_data = data_out_shifted;
 	assign wr_addr = addr_out_shifted;
 
-	always @ (posedge clk or posedge rst) begin
+	always @ (posedge clk) begin
 		if(rst) begin
 			counter <= 0;
 			counter_delay <= 0;
@@ -179,7 +210,7 @@ module spmv(
 		.address(wr_addr),
 		.wren(wr_en),
 		.din(wr_data),
-		.dout(dout_nc)
+		.dout(dout)
 	);
 
 	// Assign FIFOs' read enables to the respective wires of fetcher read enable.
@@ -203,7 +234,16 @@ module spmv(
 		.col_id_empty(fetcher_empty[2*`NUM_CHANNEL-1: 1*`NUM_CHANNEL]),
 		.row_id_empty(fetcher_empty[3*`NUM_CHANNEL-1: 2*`NUM_CHANNEL]),
 
-		.done(fetcher_done)
+		.done(fetcher_done),
+    .mat_val_din(mat_val_din),
+    .col_id_din(col_id_din),
+    .row_id_din(row_id_din),
+    .mat_val_wren(mat_val_wren),
+    .col_id_wren(col_id_wren),
+    .row_id_wren(row_id_wren),
+    .mat_val_addr_ext(mat_val_addr_ext),
+    .col_id_addr_ext(col_id_addr_ext),
+    .row_id_addr_ext(row_id_addr_ext)
 	);
 
 	assign row_id = fetcher_out[3*`ROW_ID_BITS*`NUM_CHANNEL-1: 2*`ROW_ID_BITS*`NUM_CHANNEL];
@@ -225,7 +265,10 @@ module spmv(
 		.id_rd_en(col_id_rd_en),
 		.val(vec_val),
 		.val_empty(vec_val_empty),
-		.val_rd_en(vec_val_rd_en)
+		.val_rd_en(vec_val_rd_en),
+    .vector_din(vector_din),
+    .vector_wren(vector_wren),
+    .vector_addr_ext(vector_addr_ext)
 	);
 
 	Big_Channel Big_Channel_ (
@@ -269,7 +312,19 @@ module fetcher(
 	output [`NUM_CHANNEL-1:0] col_id_empty,
 	output [`NUM_CHANNEL-1:0] row_id_empty,
 
-	output done
+	output done,
+  
+  input [`MAT_VAL_BITS-1:0] mat_val_din,
+  input	[`COL_ID_BITS-1:0] col_id_din,
+  input [`ROW_ID_BITS-1:0] row_id_din,
+
+  input mat_val_wren,
+  input col_id_wren,
+  input row_id_wren,
+
+  input [`MAT_VAL_ADDR_WIDTH-1:0] mat_val_addr_ext,
+  input [`COL_ID_ADDR_WIDTH-1:0] col_id_addr_ext,
+  input [`ROW_ID_ADDR_WIDTH-1:0] row_id_addr_ext
 	);
 
 `ifdef SIMULATION
@@ -285,19 +340,19 @@ module fetcher(
 	// parameter ROW_LEN_ROM_NUM_ADDR = `NUM_ROW_LENS/`NUM_CHANNEL;
 	parameter ROW_ID_ROM_DWIDTH = `ROW_ID_BITS;
 	parameter ROW_ID_ROM_NUM_ADDR = `NUM_ROW_IDS;
-	parameter ROW_ID_AWIDTH = $clog2(`NUM_ROW_IDS);
+	parameter ROW_ID_AWIDTH = `ROW_ID_ADDR_WIDTH;
 
 	// parameter MAT_VAL_ROM_DWIDTH = `MAT_VAL_BITS * `NUM_CHANNEL;
 	// parameter MAT_VAL_ROM_NUM_ADDR = `NUM_MAT_VALS/`NUM_CHANNEL;
 	parameter MAT_VAL_ROM_DWIDTH = `MAT_VAL_BITS;
 	parameter MAT_VAL_ROM_NUM_ADDR = `NUM_MAT_VALS;
-	parameter MAT_VAL_AWIDTH = $clog2(`NUM_MAT_VALS);
+	parameter MAT_VAL_AWIDTH = `MAT_VAL_ADDR_WIDTH;
 
 	// parameter COL_ID_ROM_DWIDTH = `COL_ID_BITS * `NUM_CHANNEL;
 	// parameter COL_ID_ROM_NUM_ADDR = `NUM_COL_IDS/`NUM_CHANNEL;
 	parameter COL_ID_ROM_DWIDTH = `COL_ID_BITS;
 	parameter COL_ID_ROM_NUM_ADDR = `NUM_COL_IDS;
-	parameter COL_ID_AWIDTH = $clog2(`NUM_COL_IDS);
+	parameter COL_ID_AWIDTH = `COL_ID_ADDR_WIDTH;
 
 	parameter NUM_CHANNEL_BITS = $clog2(`NUM_CHANNEL);
 
@@ -328,6 +383,14 @@ module fetcher(
 	// wire done;
 	reg [MAT_VAL_AWIDTH:0] counter;
 
+	wire [MAT_VAL_AWIDTH-1:0] mat_val_addr_;
+	wire [COL_ID_AWIDTH-1:0] col_id_addr_;
+	wire [ROW_ID_AWIDTH-1:0] row_id_addr_;
+
+  assign mat_val_addr_ = mat_val_wren ? mat_val_addr_ext : mat_val_addr;
+  assign col_id_addr_ = col_id_wren ? col_id_addr_ext : col_id_addr;
+  assign row_id_addr_ = row_id_wren ? row_id_addr_ext : row_id_addr;
+
 	spram #(
 	`ifdef SIMULATION
 		.INIT(MAT_VAL_FILE),
@@ -337,9 +400,9 @@ module fetcher(
 		.DWIDTH(MAT_VAL_ROM_DWIDTH)
 	) mat_val_rom (
 		.clk(clk),
-		.address(mat_val_addr),
-		.wren(0),
-		.din(0),
+		.address(mat_val_addr_),
+		.wren(mat_val_wren),
+		.din(mat_val_din), //{MAT_VAL_ROM_DWIDTH{1'b0}}),
 		.dout(mat_val_dout)
 	);
 
@@ -352,9 +415,9 @@ module fetcher(
 		.DWIDTH(COL_ID_ROM_DWIDTH)
 	) col_id_rom (
 		.clk(clk),
-		.address(col_id_addr),
-		.wren(0),
-		.din(0),
+		.address(col_id_addr_),
+		.wren(col_id_wren),
+		.din(col_id_din),//  {COL_ID_ROM_DWIDTH{1'b0}}),
 		.dout(col_id_dout)
 	);
 
@@ -367,9 +430,9 @@ module fetcher(
 		.DWIDTH(ROW_ID_ROM_DWIDTH)
 	) row_id_rom (
 		.clk(clk),
-		.address(row_id_addr),
-		.wren(0),
-		.din(0),
+		.address(row_id_addr_),
+		.wren(row_id_wren),
+		.din(row_id_din), //{ROW_ID_ROM_DWIDTH{1'b0}}),
 		.dout(row_id_dout)
 	);
 
@@ -379,7 +442,7 @@ module fetcher(
 	) fifo_mat_val_0 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[0]), // input wr_en 
 		.re(mat_val_rd_en[0]), // input rd_en 
@@ -394,7 +457,7 @@ module fetcher(
 	) fifo_col_id_0 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[0]), // input wr_en 
 		.re(col_id_rd_en[0]), // input rd_en 
@@ -409,7 +472,7 @@ module fetcher(
 	) fifo_row_id_0 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[0]), // input wr_en 
 		.re(row_id_rd_en[0]), // input rd_en 
@@ -424,7 +487,7 @@ module fetcher(
 	) fifo_mat_val_1 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[1]), // input wr_en 
 		.re(mat_val_rd_en[1]), // input rd_en 
@@ -439,7 +502,7 @@ module fetcher(
 	) fifo_col_id_1 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[1]), // input wr_en 
 		.re(col_id_rd_en[1]), // input rd_en 
@@ -454,7 +517,7 @@ module fetcher(
 	) fifo_row_id_1 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[1]), // input wr_en 
 		.re(row_id_rd_en[1]), // input rd_en 
@@ -469,7 +532,7 @@ module fetcher(
 	) fifo_mat_val_2 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[2]), // input wr_en 
 		.re(mat_val_rd_en[2]), // input rd_en 
@@ -484,7 +547,7 @@ module fetcher(
 	) fifo_col_id_2 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[2]), // input wr_en 
 		.re(col_id_rd_en[2]), // input rd_en 
@@ -499,7 +562,7 @@ module fetcher(
 	) fifo_row_id_2 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[2]), // input wr_en 
 		.re(row_id_rd_en[2]), // input rd_en 
@@ -514,7 +577,7 @@ module fetcher(
 	) fifo_mat_val_3 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[3]), // input wr_en 
 		.re(mat_val_rd_en[3]), // input rd_en 
@@ -529,7 +592,7 @@ module fetcher(
 	) fifo_col_id_3 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[3]), // input wr_en 
 		.re(col_id_rd_en[3]), // input rd_en 
@@ -544,7 +607,7 @@ module fetcher(
 	) fifo_row_id_3 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[3]), // input wr_en 
 		.re(row_id_rd_en[3]), // input rd_en 
@@ -559,7 +622,7 @@ module fetcher(
 	) fifo_mat_val_4 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[4]), // input wr_en 
 		.re(mat_val_rd_en[4]), // input rd_en 
@@ -574,7 +637,7 @@ module fetcher(
 	) fifo_col_id_4 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[4]), // input wr_en 
 		.re(col_id_rd_en[4]), // input rd_en 
@@ -589,7 +652,7 @@ module fetcher(
 	) fifo_row_id_4 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[4]), // input wr_en 
 		.re(row_id_rd_en[4]), // input rd_en 
@@ -604,7 +667,7 @@ module fetcher(
 	) fifo_mat_val_5 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[5]), // input wr_en 
 		.re(mat_val_rd_en[5]), // input rd_en 
@@ -619,7 +682,7 @@ module fetcher(
 	) fifo_col_id_5 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[5]), // input wr_en 
 		.re(col_id_rd_en[5]), // input rd_en 
@@ -634,7 +697,7 @@ module fetcher(
 	) fifo_row_id_5 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[5]), // input wr_en 
 		.re(row_id_rd_en[5]), // input rd_en 
@@ -649,7 +712,7 @@ module fetcher(
 	) fifo_mat_val_6 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[6]), // input wr_en 
 		.re(mat_val_rd_en[6]), // input rd_en 
@@ -664,7 +727,7 @@ module fetcher(
 	) fifo_col_id_6 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[6]), // input wr_en 
 		.re(col_id_rd_en[6]), // input rd_en 
@@ -679,7 +742,7 @@ module fetcher(
 	) fifo_row_id_6 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[6]), // input wr_en 
 		.re(row_id_rd_en[6]), // input rd_en 
@@ -694,7 +757,7 @@ module fetcher(
 	) fifo_mat_val_7 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[7]), // input wr_en 
 		.re(mat_val_rd_en[7]), // input rd_en 
@@ -709,7 +772,7 @@ module fetcher(
 	) fifo_col_id_7 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[7]), // input wr_en 
 		.re(col_id_rd_en[7]), // input rd_en 
@@ -724,7 +787,7 @@ module fetcher(
 	) fifo_row_id_7 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[7]), // input wr_en 
 		.re(row_id_rd_en[7]), // input rd_en 
@@ -739,7 +802,7 @@ module fetcher(
 	) fifo_mat_val_8 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[8]), // input wr_en 
 		.re(mat_val_rd_en[8]), // input rd_en 
@@ -754,7 +817,7 @@ module fetcher(
 	) fifo_col_id_8 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[8]), // input wr_en 
 		.re(col_id_rd_en[8]), // input rd_en 
@@ -769,7 +832,7 @@ module fetcher(
 	) fifo_row_id_8 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[8]), // input wr_en 
 		.re(row_id_rd_en[8]), // input rd_en 
@@ -784,7 +847,7 @@ module fetcher(
 	) fifo_mat_val_9 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[9]), // input wr_en 
 		.re(mat_val_rd_en[9]), // input rd_en 
@@ -799,7 +862,7 @@ module fetcher(
 	) fifo_col_id_9 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[9]), // input wr_en 
 		.re(col_id_rd_en[9]), // input rd_en 
@@ -814,7 +877,7 @@ module fetcher(
 	) fifo_row_id_9 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[9]), // input wr_en 
 		.re(row_id_rd_en[9]), // input rd_en 
@@ -829,7 +892,7 @@ module fetcher(
 	) fifo_mat_val_10 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[10]), // input wr_en 
 		.re(mat_val_rd_en[10]), // input rd_en 
@@ -844,7 +907,7 @@ module fetcher(
 	) fifo_col_id_10 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[10]), // input wr_en 
 		.re(col_id_rd_en[10]), // input rd_en 
@@ -859,7 +922,7 @@ module fetcher(
 	) fifo_row_id_10 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[10]), // input wr_en 
 		.re(row_id_rd_en[10]), // input rd_en 
@@ -874,7 +937,7 @@ module fetcher(
 	) fifo_mat_val_11 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[11]), // input wr_en 
 		.re(mat_val_rd_en[11]), // input rd_en 
@@ -889,7 +952,7 @@ module fetcher(
 	) fifo_col_id_11 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[11]), // input wr_en 
 		.re(col_id_rd_en[11]), // input rd_en 
@@ -904,7 +967,7 @@ module fetcher(
 	) fifo_row_id_11 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[11]), // input wr_en 
 		.re(row_id_rd_en[11]), // input rd_en 
@@ -919,7 +982,7 @@ module fetcher(
 	) fifo_mat_val_12 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[12]), // input wr_en 
 		.re(mat_val_rd_en[12]), // input rd_en 
@@ -934,7 +997,7 @@ module fetcher(
 	) fifo_col_id_12 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[12]), // input wr_en 
 		.re(col_id_rd_en[12]), // input rd_en 
@@ -949,7 +1012,7 @@ module fetcher(
 	) fifo_row_id_12 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[12]), // input wr_en 
 		.re(row_id_rd_en[12]), // input rd_en 
@@ -964,7 +1027,7 @@ module fetcher(
 	) fifo_mat_val_13 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[13]), // input wr_en 
 		.re(mat_val_rd_en[13]), // input rd_en 
@@ -979,7 +1042,7 @@ module fetcher(
 	) fifo_col_id_13 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[13]), // input wr_en 
 		.re(col_id_rd_en[13]), // input rd_en 
@@ -994,7 +1057,7 @@ module fetcher(
 	) fifo_row_id_13 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[13]), // input wr_en 
 		.re(row_id_rd_en[13]), // input rd_en 
@@ -1009,7 +1072,7 @@ module fetcher(
 	) fifo_mat_val_14 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[14]), // input wr_en 
 		.re(mat_val_rd_en[14]), // input rd_en 
@@ -1024,7 +1087,7 @@ module fetcher(
 	) fifo_col_id_14 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[14]), // input wr_en 
 		.re(col_id_rd_en[14]), // input rd_en 
@@ -1039,7 +1102,7 @@ module fetcher(
 	) fifo_row_id_14 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[14]), // input wr_en 
 		.re(row_id_rd_en[14]), // input rd_en 
@@ -1054,7 +1117,7 @@ module fetcher(
 	) fifo_mat_val_15 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[15]), // input wr_en 
 		.re(mat_val_rd_en[15]), // input rd_en 
@@ -1069,7 +1132,7 @@ module fetcher(
 	) fifo_col_id_15 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[15]), // input wr_en 
 		.re(col_id_rd_en[15]), // input rd_en 
@@ -1084,7 +1147,7 @@ module fetcher(
 	) fifo_row_id_15 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[15]), // input wr_en 
 		.re(row_id_rd_en[15]), // input rd_en 
@@ -1099,7 +1162,7 @@ module fetcher(
 	) fifo_mat_val_16 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[16]), // input wr_en 
 		.re(mat_val_rd_en[16]), // input rd_en 
@@ -1114,7 +1177,7 @@ module fetcher(
 	) fifo_col_id_16 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[16]), // input wr_en 
 		.re(col_id_rd_en[16]), // input rd_en 
@@ -1129,7 +1192,7 @@ module fetcher(
 	) fifo_row_id_16 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[16]), // input wr_en 
 		.re(row_id_rd_en[16]), // input rd_en 
@@ -1144,7 +1207,7 @@ module fetcher(
 	) fifo_mat_val_17 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[17]), // input wr_en 
 		.re(mat_val_rd_en[17]), // input rd_en 
@@ -1159,7 +1222,7 @@ module fetcher(
 	) fifo_col_id_17 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[17]), // input wr_en 
 		.re(col_id_rd_en[17]), // input rd_en 
@@ -1174,7 +1237,7 @@ module fetcher(
 	) fifo_row_id_17 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[17]), // input wr_en 
 		.re(row_id_rd_en[17]), // input rd_en 
@@ -1189,7 +1252,7 @@ module fetcher(
 	) fifo_mat_val_18 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[18]), // input wr_en 
 		.re(mat_val_rd_en[18]), // input rd_en 
@@ -1204,7 +1267,7 @@ module fetcher(
 	) fifo_col_id_18 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[18]), // input wr_en 
 		.re(col_id_rd_en[18]), // input rd_en 
@@ -1219,7 +1282,7 @@ module fetcher(
 	) fifo_row_id_18 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[18]), // input wr_en 
 		.re(row_id_rd_en[18]), // input rd_en 
@@ -1234,7 +1297,7 @@ module fetcher(
 	) fifo_mat_val_19 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[19]), // input wr_en 
 		.re(mat_val_rd_en[19]), // input rd_en 
@@ -1249,7 +1312,7 @@ module fetcher(
 	) fifo_col_id_19 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[19]), // input wr_en 
 		.re(col_id_rd_en[19]), // input rd_en 
@@ -1264,7 +1327,7 @@ module fetcher(
 	) fifo_row_id_19 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[19]), // input wr_en 
 		.re(row_id_rd_en[19]), // input rd_en 
@@ -1279,7 +1342,7 @@ module fetcher(
 	) fifo_mat_val_20 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[20]), // input wr_en 
 		.re(mat_val_rd_en[20]), // input rd_en 
@@ -1294,7 +1357,7 @@ module fetcher(
 	) fifo_col_id_20 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[20]), // input wr_en 
 		.re(col_id_rd_en[20]), // input rd_en 
@@ -1309,7 +1372,7 @@ module fetcher(
 	) fifo_row_id_20 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[20]), // input wr_en 
 		.re(row_id_rd_en[20]), // input rd_en 
@@ -1324,7 +1387,7 @@ module fetcher(
 	) fifo_mat_val_21 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[21]), // input wr_en 
 		.re(mat_val_rd_en[21]), // input rd_en 
@@ -1339,7 +1402,7 @@ module fetcher(
 	) fifo_col_id_21 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[21]), // input wr_en 
 		.re(col_id_rd_en[21]), // input rd_en 
@@ -1354,7 +1417,7 @@ module fetcher(
 	) fifo_row_id_21 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[21]), // input wr_en 
 		.re(row_id_rd_en[21]), // input rd_en 
@@ -1369,7 +1432,7 @@ module fetcher(
 	) fifo_mat_val_22 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[22]), // input wr_en 
 		.re(mat_val_rd_en[22]), // input rd_en 
@@ -1384,7 +1447,7 @@ module fetcher(
 	) fifo_col_id_22 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[22]), // input wr_en 
 		.re(col_id_rd_en[22]), // input rd_en 
@@ -1399,7 +1462,7 @@ module fetcher(
 	) fifo_row_id_22 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[22]), // input wr_en 
 		.re(row_id_rd_en[22]), // input rd_en 
@@ -1414,7 +1477,7 @@ module fetcher(
 	) fifo_mat_val_23 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[23]), // input wr_en 
 		.re(mat_val_rd_en[23]), // input rd_en 
@@ -1429,7 +1492,7 @@ module fetcher(
 	) fifo_col_id_23 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[23]), // input wr_en 
 		.re(col_id_rd_en[23]), // input rd_en 
@@ -1444,7 +1507,7 @@ module fetcher(
 	) fifo_row_id_23 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[23]), // input wr_en 
 		.re(row_id_rd_en[23]), // input rd_en 
@@ -1459,7 +1522,7 @@ module fetcher(
 	) fifo_mat_val_24 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[24]), // input wr_en 
 		.re(mat_val_rd_en[24]), // input rd_en 
@@ -1474,7 +1537,7 @@ module fetcher(
 	) fifo_col_id_24 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[24]), // input wr_en 
 		.re(col_id_rd_en[24]), // input rd_en 
@@ -1489,7 +1552,7 @@ module fetcher(
 	) fifo_row_id_24 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[24]), // input wr_en 
 		.re(row_id_rd_en[24]), // input rd_en 
@@ -1504,7 +1567,7 @@ module fetcher(
 	) fifo_mat_val_25 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[25]), // input wr_en 
 		.re(mat_val_rd_en[25]), // input rd_en 
@@ -1519,7 +1582,7 @@ module fetcher(
 	) fifo_col_id_25 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[25]), // input wr_en 
 		.re(col_id_rd_en[25]), // input rd_en 
@@ -1534,7 +1597,7 @@ module fetcher(
 	) fifo_row_id_25 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[25]), // input wr_en 
 		.re(row_id_rd_en[25]), // input rd_en 
@@ -1549,7 +1612,7 @@ module fetcher(
 	) fifo_mat_val_26 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[26]), // input wr_en 
 		.re(mat_val_rd_en[26]), // input rd_en 
@@ -1564,7 +1627,7 @@ module fetcher(
 	) fifo_col_id_26 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[26]), // input wr_en 
 		.re(col_id_rd_en[26]), // input rd_en 
@@ -1579,7 +1642,7 @@ module fetcher(
 	) fifo_row_id_26 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[26]), // input wr_en 
 		.re(row_id_rd_en[26]), // input rd_en 
@@ -1594,7 +1657,7 @@ module fetcher(
 	) fifo_mat_val_27 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[27]), // input wr_en 
 		.re(mat_val_rd_en[27]), // input rd_en 
@@ -1609,7 +1672,7 @@ module fetcher(
 	) fifo_col_id_27 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[27]), // input wr_en 
 		.re(col_id_rd_en[27]), // input rd_en 
@@ -1624,7 +1687,7 @@ module fetcher(
 	) fifo_row_id_27 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[27]), // input wr_en 
 		.re(row_id_rd_en[27]), // input rd_en 
@@ -1639,7 +1702,7 @@ module fetcher(
 	) fifo_mat_val_28 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[28]), // input wr_en 
 		.re(mat_val_rd_en[28]), // input rd_en 
@@ -1654,7 +1717,7 @@ module fetcher(
 	) fifo_col_id_28 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[28]), // input wr_en 
 		.re(col_id_rd_en[28]), // input rd_en 
@@ -1669,7 +1732,7 @@ module fetcher(
 	) fifo_row_id_28 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[28]), // input wr_en 
 		.re(row_id_rd_en[28]), // input rd_en 
@@ -1684,7 +1747,7 @@ module fetcher(
 	) fifo_mat_val_29 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[29]), // input wr_en 
 		.re(mat_val_rd_en[29]), // input rd_en 
@@ -1699,7 +1762,7 @@ module fetcher(
 	) fifo_col_id_29 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[29]), // input wr_en 
 		.re(col_id_rd_en[29]), // input rd_en 
@@ -1714,7 +1777,7 @@ module fetcher(
 	) fifo_row_id_29 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[29]), // input wr_en 
 		.re(row_id_rd_en[29]), // input rd_en 
@@ -1729,7 +1792,7 @@ module fetcher(
 	) fifo_mat_val_30 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[30]), // input wr_en 
 		.re(mat_val_rd_en[30]), // input rd_en 
@@ -1744,7 +1807,7 @@ module fetcher(
 	) fifo_col_id_30 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[30]), // input wr_en 
 		.re(col_id_rd_en[30]), // input rd_en 
@@ -1759,7 +1822,7 @@ module fetcher(
 	) fifo_row_id_30 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[30]), // input wr_en 
 		.re(row_id_rd_en[30]), // input rd_en 
@@ -1774,7 +1837,7 @@ module fetcher(
 	) fifo_mat_val_31 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(mat_val_dout), 
 		.we(mat_val_wr_en[31]), // input wr_en 
 		.re(mat_val_rd_en[31]), // input rd_en 
@@ -1789,7 +1852,7 @@ module fetcher(
 	) fifo_col_id_31 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(col_id_dout), 
 		.we(col_id_wr_en[31]), // input wr_en 
 		.re(col_id_rd_en[31]), // input rd_en 
@@ -1804,7 +1867,7 @@ module fetcher(
 	) fifo_row_id_31 ( 
 		.clk(clk), // input clk 
 		.rst(rst), // input clk 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(row_id_dout), 
 		.we(row_id_wr_en[31]), // input wr_en 
 		.re(row_id_rd_en[31]), // input rd_en 
@@ -1820,7 +1883,7 @@ module fetcher(
 	assign col_id_full_shifted = col_id_full>>col_id_lane;
 	assign row_id_full_shifted = row_id_full>>row_id_lane;
 
-	always @ (posedge clk or posedge rst) begin
+	always @ (posedge clk) begin
 		if (rst) begin
 			mat_val_addr <= 0;
 			col_id_addr <= 0;
@@ -1883,7 +1946,10 @@ module bvb(
 	output [(`NUM_CHANNEL*`VEC_VAL_BITS)-1:0] val,
 	output [`NUM_CHANNEL-1:0]   val_empty,
 	// input to vector value FIFO
-	input  [`NUM_CHANNEL-1:0]   val_rd_en
+	input  [`NUM_CHANNEL-1:0]   val_rd_en,
+	input [`NUM_VEC_VALS_PER_ADDR*`VEC_VAL_BITS-1:0] vector_din,
+  input vector_wren,
+  input [`BVB_AWIDTH-1:0] vector_addr_ext
 );
 
 	parameter FIFO_DEPTH_BITS = $clog2(`FIFO_DEPTH);
@@ -1908,6 +1974,9 @@ module bvb(
 	reg [`NUM_CHANNEL_BITS-1:0] counter;
 	reg [`NUM_CHANNEL_BITS-1:0] counter_delay;
 
+  wire [`BVB_AWIDTH-1:0] vector_addr;
+  assign vector_addr = vector_wren ? vector_addr_ext : rd_addr;
+
 	spram #(
 	`ifdef SIMULATION
 		.INIT("/home/aatman/Desktop/SpMV/src/coe/vec_val.txt"),
@@ -1917,9 +1986,9 @@ module bvb(
 		.DWIDTH(`NUM_VEC_VALS_PER_ADDR*`VEC_VAL_BITS)
 		) vector_ram (
 			.clk(clk), 
-			.wren(0),
-			.address(rd_addr), 
-			.din(din_nc), 
+			.wren(vector_wren),
+			.address(vector_addr), 
+			.din(vector_din), 
 			.dout(ram_out)
 		);
 
@@ -1929,7 +1998,7 @@ module bvb(
 	) fifo_bvb_0 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[0]), // input wr_en 
 		.re(val_rd_en[0]), // input rd_en 
@@ -1944,7 +2013,7 @@ module bvb(
 	) fifo_bvb_1 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[1]), // input wr_en 
 		.re(val_rd_en[1]), // input rd_en 
@@ -1959,7 +2028,7 @@ module bvb(
 	) fifo_bvb_2 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[2]), // input wr_en 
 		.re(val_rd_en[2]), // input rd_en 
@@ -1974,7 +2043,7 @@ module bvb(
 	) fifo_bvb_3 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[3]), // input wr_en 
 		.re(val_rd_en[3]), // input rd_en 
@@ -1989,7 +2058,7 @@ module bvb(
 	) fifo_bvb_4 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[4]), // input wr_en 
 		.re(val_rd_en[4]), // input rd_en 
@@ -2004,7 +2073,7 @@ module bvb(
 	) fifo_bvb_5 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[5]), // input wr_en 
 		.re(val_rd_en[5]), // input rd_en 
@@ -2019,7 +2088,7 @@ module bvb(
 	) fifo_bvb_6 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[6]), // input wr_en 
 		.re(val_rd_en[6]), // input rd_en 
@@ -2034,7 +2103,7 @@ module bvb(
 	) fifo_bvb_7 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[7]), // input wr_en 
 		.re(val_rd_en[7]), // input rd_en 
@@ -2049,7 +2118,7 @@ module bvb(
 	) fifo_bvb_8 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[8]), // input wr_en 
 		.re(val_rd_en[8]), // input rd_en 
@@ -2064,7 +2133,7 @@ module bvb(
 	) fifo_bvb_9 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[9]), // input wr_en 
 		.re(val_rd_en[9]), // input rd_en 
@@ -2079,7 +2148,7 @@ module bvb(
 	) fifo_bvb_10 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[10]), // input wr_en 
 		.re(val_rd_en[10]), // input rd_en 
@@ -2094,7 +2163,7 @@ module bvb(
 	) fifo_bvb_11 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[11]), // input wr_en 
 		.re(val_rd_en[11]), // input rd_en 
@@ -2109,7 +2178,7 @@ module bvb(
 	) fifo_bvb_12 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[12]), // input wr_en 
 		.re(val_rd_en[12]), // input rd_en 
@@ -2124,7 +2193,7 @@ module bvb(
 	) fifo_bvb_13 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[13]), // input wr_en 
 		.re(val_rd_en[13]), // input rd_en 
@@ -2139,7 +2208,7 @@ module bvb(
 	) fifo_bvb_14 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[14]), // input wr_en 
 		.re(val_rd_en[14]), // input rd_en 
@@ -2154,7 +2223,7 @@ module bvb(
 	) fifo_bvb_15 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[15]), // input wr_en 
 		.re(val_rd_en[15]), // input rd_en 
@@ -2169,7 +2238,7 @@ module bvb(
 	) fifo_bvb_16 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[16]), // input wr_en 
 		.re(val_rd_en[16]), // input rd_en 
@@ -2184,7 +2253,7 @@ module bvb(
 	) fifo_bvb_17 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[17]), // input wr_en 
 		.re(val_rd_en[17]), // input rd_en 
@@ -2199,7 +2268,7 @@ module bvb(
 	) fifo_bvb_18 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[18]), // input wr_en 
 		.re(val_rd_en[18]), // input rd_en 
@@ -2214,7 +2283,7 @@ module bvb(
 	) fifo_bvb_19 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[19]), // input wr_en 
 		.re(val_rd_en[19]), // input rd_en 
@@ -2229,7 +2298,7 @@ module bvb(
 	) fifo_bvb_20 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[20]), // input wr_en 
 		.re(val_rd_en[20]), // input rd_en 
@@ -2244,7 +2313,7 @@ module bvb(
 	) fifo_bvb_21 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[21]), // input wr_en 
 		.re(val_rd_en[21]), // input rd_en 
@@ -2259,7 +2328,7 @@ module bvb(
 	) fifo_bvb_22 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[22]), // input wr_en 
 		.re(val_rd_en[22]), // input rd_en 
@@ -2274,7 +2343,7 @@ module bvb(
 	) fifo_bvb_23 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[23]), // input wr_en 
 		.re(val_rd_en[23]), // input rd_en 
@@ -2289,7 +2358,7 @@ module bvb(
 	) fifo_bvb_24 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[24]), // input wr_en 
 		.re(val_rd_en[24]), // input rd_en 
@@ -2304,7 +2373,7 @@ module bvb(
 	) fifo_bvb_25 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[25]), // input wr_en 
 		.re(val_rd_en[25]), // input rd_en 
@@ -2319,7 +2388,7 @@ module bvb(
 	) fifo_bvb_26 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[26]), // input wr_en 
 		.re(val_rd_en[26]), // input rd_en 
@@ -2334,7 +2403,7 @@ module bvb(
 	) fifo_bvb_27 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[27]), // input wr_en 
 		.re(val_rd_en[27]), // input rd_en 
@@ -2349,7 +2418,7 @@ module bvb(
 	) fifo_bvb_28 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[28]), // input wr_en 
 		.re(val_rd_en[28]), // input rd_en 
@@ -2364,7 +2433,7 @@ module bvb(
 	) fifo_bvb_29 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[29]), // input wr_en 
 		.re(val_rd_en[29]), // input rd_en 
@@ -2379,7 +2448,7 @@ module bvb(
 	) fifo_bvb_30 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[30]), // input wr_en 
 		.re(val_rd_en[30]), // input rd_en 
@@ -2394,7 +2463,7 @@ module bvb(
 	) fifo_bvb_31 ( 
 		.clk(clk), // input clk 
 		.rst(rst), 
-		.clr(0), 
+		.clr(1'b0), 
 		.din(ram_out), 
 		.we(val_wr_en[31]), // input wr_en 
 		.re(val_rd_en[31]), // input rd_en 
@@ -2408,7 +2477,7 @@ module bvb(
 	assign id_rd_en_local = (start & (~id_empty_shifted) & (~val_full_shifted));
 	assign id_rd_en = id_rd_en_local << counter;
 
-	always @ (posedge clk or posedge rst) begin
+	always @ (posedge clk) begin
 		if (rst) begin
 			counter <= 0;
 			counter_delay <= 0;
@@ -3226,7 +3295,7 @@ module Channel(
 		) fifo_mult (
 		.clk(clk),
 		.rst(rst),
-		.clr(0),
+		.clr(1'b0),
 		.din(mult),
 		.we(mult_wr_en),
 		.re(mult_rd_en),
@@ -3303,7 +3372,7 @@ module Accumulator(
 	) fifo_data_out (
 		.clk(clk),
 		.rst(rst),
-		.clr(0),
+		.clr(1'b0),
 		.din(wr_data_delay),
 		.we(wr_en),
 		.re(out_rd_en),
@@ -3318,7 +3387,7 @@ module Accumulator(
 	) fifo_addr_out (
 		.clk(clk),
 		.rst(rst),
-		.clr(0),
+		.clr(1'b0),
 		.din(wr_addr_delay),
 		.we(wr_en),
 		.re(out_rd_en),
@@ -3330,7 +3399,7 @@ module Accumulator(
 	assign row_id_rd_en = start & (~row_id_empty) & (~mult_empty) & (~data_out_full);
 	assign mult_rd_en = start & (~row_id_empty) & (~mult_empty) & (~data_out_full);
 
-	always@(posedge clk or posedge rst) begin
+	always@(posedge clk) begin
 		if(rst) begin
 			wr_data<=0;
 			wr_en<=0;
@@ -3520,7 +3589,7 @@ module generic_fifo_sc_a
 	(clk, rst, clr, din, we, dout, re,
 	full, empty);
 
-parameter max_size = 1<<aw;
+localparam max_size = 1<<aw;
 
 input 			clk, rst, clr;
 input 	[dw-1:0]	din;
@@ -3552,7 +3621,7 @@ dpram #(
 	) u0 (
 	.clk(clk),
 	.address_a(rp),
-	.wren_a(0),
+	.wren_a(1'b0),
 	.data_a(din_nc),
 	.out_a(dout),
 	.address_b(wp),
@@ -3567,23 +3636,23 @@ dpram #(
 // Misc Logic
 //
 
-always @(posedge clk or posedge rst)
+always @(posedge clk)
 	if(rst)	wp <= {aw{1'b0}};
 	else
 	if(clr)		wp <= {aw{1'b0}};
 	else
 	if(we)		wp <= wp_pl1;
 
-assign wp_pl1 = wp + { {aw-1{1'b0}}, 1'b1};
+assign wp_pl1 = wp + 1'b1;
 
-always @(posedge clk or posedge rst)
+always @(posedge clk)
 	if(rst)		rp <= {aw{1'b0}};
 	else
 	if(clr)		rp <= {aw{1'b0}};
 	else
 	if(re)		rp <= rp_pl1;
 
-assign rp_pl1 = rp + { {aw-1{1'b0}}, 1'b1};
+assign rp_pl1 = rp + 1'b1;
 
 ////////////////////////////////////////////////////////////////////
 //
@@ -3594,7 +3663,7 @@ assign empty = ((wp == rp) & !gb);
 assign full  = ((wp == rp) &  gb);
 
 // Guard Bit ...
-always @(posedge clk or posedge rst)
+always @(posedge clk)
 	if(rst)						gb <= 1'b0;
 	else
 	if(clr)						gb <= 1'b0;
@@ -3621,7 +3690,7 @@ module dpram #(
 	out_b
 );
 
-parameter NUM_WORDS=1<<AWIDTH;
+localparam NUM_WORDS=1<<AWIDTH;
 
 input clk;
 input [(AWIDTH-1):0] address_a;
@@ -3633,7 +3702,7 @@ input [(DWIDTH-1):0] data_b;
 output reg [(DWIDTH-1):0] out_a;
 output reg [(DWIDTH-1):0] out_b;
 
-`ifdef SIMULATION
+`ifndef hard_mem
 
 	reg [DWIDTH-1:0] ram[NUM_WORDS-1:0];
 
@@ -3656,6 +3725,8 @@ output reg [(DWIDTH-1):0] out_b;
 	end
 
 `else
+defparam u_dual_port_ram.ADDR_WIDTH = AWIDTH;
+defparam u_dual_port_ram.DATA_WIDTH = DWIDTH;
 
 	dual_port_ram u_dual_port_ram(
 	.addr1(address_a),
@@ -3688,22 +3759,23 @@ module spram #(
 		input [(DWIDTH-1):0] din,
 		output reg [(DWIDTH-1):0] dout
 	);
-	`ifdef SIMULATION
+	`ifndef hard_mem
 		reg [DWIDTH-1:0] mem [NUM_WORDS-1:0];
 
-		initial begin
-			$readmemh(INIT, mem);
-		end
+//		initial begin
+//			$readmemh(INIT, mem);
+//		end
 
 		always @ (posedge clk) begin 
 			if (wren) begin
 				mem[address] <= din;
 			end
-			else begin
-				dout <= mem[address];
-			end
+			dout <= mem[address];
 		end
 	`else 
+
+defparam u_single_port_ram.ADDR_WIDTH = AWIDTH;
+defparam u_single_port_ram.DATA_WIDTH = DWIDTH;
 
 		single_port_ram u_single_port_ram( 
 		.addr(address),
@@ -3715,4 +3787,5 @@ module spram #(
 
 	`endif 
 endmodule
+
 
