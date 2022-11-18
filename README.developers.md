@@ -273,11 +273,12 @@ $ ./run_reg_test.py vtr_reg_basic
 $ ./run_reg_test.py vtr_reg_strong
 ```
 
-The *nightly* and *weekly* regressions require the Titan and ISPD benchmarks
+The *nightly* and *weekly* regressions require the Titan, ISPD, and Symbiflow benchmarks
 which can be integrated into your VTR tree with:
 ```shell
-make get_titan_benchmarks
-make get_ispd_benchmarks
+$ make get_titan_benchmarks
+$ make get_ispd_benchmarks
+$ make get_symbiflow_benchmarks
 ```
 They can then be run using `run_reg_test.py`:
 ```shell
