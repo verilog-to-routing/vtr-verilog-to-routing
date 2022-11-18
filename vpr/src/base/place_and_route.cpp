@@ -396,6 +396,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
     init_route_structs(router_net_list,
                        router_opts.bb_factor,
+                       router_opts.has_choking_spot,
                        is_flat);
 
     restore_routing(router_net_list,

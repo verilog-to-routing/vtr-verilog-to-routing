@@ -47,7 +47,7 @@ static void SetupSwitches(const t_arch& Arch,
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
-static void alloc_and_load_intra_cluster_resources();
+static void alloc_and_load_intra_cluster_resources(bool reachability_analysis);
 static void add_intra_tile_switches();
 static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,
                                                         t_logical_block_type* logical_block,
@@ -265,7 +265,7 @@ void SetupVPR(const t_options* Options,
     if (RouterOpts->flat_routing) {
         // The following two functions should be called when the data structured related to t_pb_graph_node, t_pb_type,
         // and t_pb_graph_edge are initialized
-        alloc_and_load_intra_cluster_resources();
+        alloc_and_load_intra_cluster_resources(RouterOpts->has_choking_spot);
         add_intra_tile_switches();
     }
 
@@ -717,7 +717,7 @@ static int find_ipin_cblock_switch_index(const t_arch& Arch) {
     return ipin_cblock_switch_index;
 }
 
-static void alloc_and_load_intra_cluster_resources() {
+static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     for (auto& physical_type : device_ctx.physical_tile_types) {
@@ -745,11 +745,13 @@ static void alloc_and_load_intra_cluster_resources() {
                     for (auto& logic_class : logical_classes) {
                         auto result = physical_type.internal_class_inf.insert(std::make_pair(physical_class_num, logic_class));
                         VTR_ASSERT(result.second);
-                        if (logic_class.type == e_pin_type::RECEIVER) {
-                            add_class_to_related_pins(&physical_type,
-                                                      mutable_logical_block,
-                                                      &logic_class,
-                                                      physical_class_num);
+                        if(reachability_analysis) {
+                            if (logic_class.type == e_pin_type::RECEIVER) {
+                                add_class_to_related_pins(&physical_type,
+                                                          mutable_logical_block,
+                                                          &logic_class,
+                                                          physical_class_num);
+                            }
                         }
                         physical_class_num++;
                     }

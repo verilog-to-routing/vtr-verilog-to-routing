@@ -320,6 +320,7 @@ bool try_route(const Netlist<>& net_list,
 
     init_route_structs(net_list,
                        router_opts.bb_factor,
+                       router_opts.has_choking_spot,
                        is_flat);
 
     if (net_list.nets().empty()) {
@@ -502,7 +503,10 @@ float update_pres_fac(float new_pres_fac) {
 
 /* Call this before you route any nets.  It frees any old traceback and   *
  * sets the list of rr_nodes touched to empty.                            */
-void init_route_structs(const Netlist<>& net_list, int bb_factor, bool is_flat) {
+void init_route_structs(const Netlist<>& net_list,
+                        int bb_factor,
+                        bool has_choking_point,
+                        bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -528,7 +532,7 @@ void init_route_structs(const Netlist<>& net_list, int bb_factor, bool is_flat) 
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(net_list.nets().size());
 
-    if (is_flat) {
+    if (has_choking_point && is_flat) {
         std::tie(route_ctx.net_terminal_groups, route_ctx.net_terminal_group_num) = load_net_terminal_groups(device_ctx.rr_graph,
                                                                                                              net_list,
                                                                                                              route_ctx.net_rr_terminals,

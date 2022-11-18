@@ -100,13 +100,12 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
 
     /*Allocate necessary routing structures*/
     alloc_and_load_rr_node_route_structs();
+    const Netlist<>& router_net_list = (router_opts.flat_routing) ? (const Netlist<>&)g_vpr_ctx.atom().nlist :
+        (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     if (router_opts.flat_routing) {
-        init_route_structs((const Netlist<>&)g_vpr_ctx.atom().nlist,
+        init_route_structs(router_net_list,
                            router_opts.bb_factor,
-                           router_opts.flat_routing);
-    } else {
-        init_route_structs((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
-                           router_opts.bb_factor,
+                           router_opts.has_choking_spot,
                            router_opts.flat_routing);
     }
 

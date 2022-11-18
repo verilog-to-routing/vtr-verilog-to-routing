@@ -105,7 +105,10 @@ void free_traceback(t_trace* tptr);
 
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
 
-void init_route_structs(const Netlist<>& net_list, int bb_factor, bool is_flat);
+void init_route_structs(const Netlist<>& net_list,
+                        int bb_factor,
+                        bool has_choking_point,
+                        bool is_flat);
 
 void alloc_and_load_rr_node_route_structs();
 
