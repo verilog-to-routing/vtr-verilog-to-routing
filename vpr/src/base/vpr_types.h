@@ -436,7 +436,7 @@ class t_cluster_placement_stats {
 
   public:
     // Moves primitives that are inflight to the tried map
-    void move_inflight_to_tried ();
+    void move_inflight_to_tried();
 
     // Move the primitive at (it) to inflight and increment the current iterator
     void move_primitive_to_inflight(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
@@ -463,11 +463,10 @@ class t_cluster_placement_stats {
 
   private:
     std::unordered_multimap<int, t_cluster_placement_primitive*> in_flight; ///<ptrs to primitives currently being considered
-    std::unordered_multimap<int, t_cluster_placement_primitive*> tried; ///<ptrs to primitives that are open but current logic block unable to pack to
-    std::unordered_multimap<int, t_cluster_placement_primitive*> invalid; ///<ptrs to primitives that are invalid
+    std::unordered_multimap<int, t_cluster_placement_primitive*> tried;     ///<ptrs to primitives that are open but current logic block unable to pack to
+    std::unordered_multimap<int, t_cluster_placement_primitive*> invalid;   ///<ptrs to primitives that are invalid
 
     void flush_queue(std::unordered_multimap<int, t_cluster_placement_primitive*>& queue);
-
 };
 
 /******************************************************************
