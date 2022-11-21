@@ -1382,14 +1382,16 @@ std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(Cluster
     while (!internal_pbs.empty()) {
         pb = internal_pbs.front();
         internal_pbs.pop_front();
-        auto pb_graph_node_num_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
-                                                                               sub_tile,
-                                                                               logical_block,
-                                                                               rel_cap,
-                                                                               pb->pb_graph_node);
-        for (auto& class_pair : pb_graph_node_num_class_pairs) {
-            auto insert_res = internal_num_class_pairs.insert(std::make_pair(class_pair.first, class_pair.second));
-            VTR_ASSERT(insert_res.second == true);
+        if(pb->pb_graph_node->is_primitive()) {
+            auto pb_graph_node_num_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
+                                                                                   sub_tile,
+                                                                                   logical_block,
+                                                                                   rel_cap,
+                                                                                   pb->pb_graph_node);
+            for (auto& class_pair : pb_graph_node_num_class_pairs) {
+                auto insert_res = internal_num_class_pairs.insert(std::make_pair(class_pair.first, class_pair.second));
+                VTR_ASSERT(insert_res.second == true);
+            }
         }
 
         add_child_to_list(internal_pbs, pb);
