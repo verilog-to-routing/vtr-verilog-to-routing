@@ -281,7 +281,7 @@ void t_cluster_placement_stats::requeue_primitive(std::pair<int, t_cluster_place
 }
 
 void t_cluster_placement_stats::flush_queue(std::unordered_multimap<int, t_cluster_placement_primitive*>& queue) {
-    for (auto & it : queue) {
+    for (auto& it : queue) {
         requeue_primitive(it);
     }
     queue.clear();
@@ -308,10 +308,10 @@ void t_cluster_placement_stats::free_primitives() {
     for (auto& primitive : tried)
         delete primitive.second;
 
-    for (auto& primitive: in_flight)
+    for (auto& primitive : in_flight)
         delete primitive.second;
 
-    for(auto& primitive: invalid)
+    for (auto& primitive : invalid)
         delete primitive.second;
 
     for (int j = 0; j < num_pb_types; j++) {

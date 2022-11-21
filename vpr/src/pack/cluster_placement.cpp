@@ -130,7 +130,7 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
             for (auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end(); /*loop increment is done inside the loop*/) {
                 //Lazily remove invalid primitives
                 if (!it->second->valid) {
-                    cluster_placement_stats->invalidate_primitive_and_increment_iterator(i, it);    //iterator is incremented here
+                    cluster_placement_stats->invalidate_primitive_and_increment_iterator(i, it); //iterator is incremented here
                     continue;
                 }
 
@@ -207,7 +207,6 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
         placement_primitive->valid = true;
         pb_graph_node->cluster_placement_primitive = placement_primitive;
         placement_primitive->base_cost = compute_primitive_base_cost(pb_graph_node);
-
 
         bool success = false;
         /**
