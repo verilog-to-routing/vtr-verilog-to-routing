@@ -2322,11 +2322,9 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
 
 RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             t_physical_tile_type_ptr physical_tile,
-                            const int i,
-                            const int j,
+                            const int root_i,
+                            const int root_j,
                             int pin_physical_num) {
-    VTR_ASSERT(g_vpr_ctx.device().grid[i][j].height_offset == 0);
-    VTR_ASSERT(g_vpr_ctx.device().grid[i][j].width_offset == 0);
     auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
     t_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
     std::vector<int> x_offset;
@@ -2336,8 +2334,8 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     VTR_ASSERT(!x_offset.empty());
     RRNodeId node_id = RRNodeId::INVALID();
     for (int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
-        node_id = rr_spatial_lookup.find_node(i + x_offset[coord_idx],
-                                              j + y_offset[coord_idx],
+        node_id = rr_spatial_lookup.find_node(root_i + x_offset[coord_idx],
+                                              root_j + y_offset[coord_idx],
                                               node_type,
                                               pin_physical_num,
                                               pin_sides[coord_idx]);

@@ -327,6 +327,8 @@ int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical
 inline bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
     return (class_physical_num < (int)physical_tile->class_inf.size());
 }
+
+bool is_primitive_class(t_physical_tile_type_ptr physical_tile, int class_physical_num);
 /** **/
 
 /**

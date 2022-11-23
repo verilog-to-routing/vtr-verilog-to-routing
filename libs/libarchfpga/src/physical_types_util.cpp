@@ -882,6 +882,15 @@ int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical
     }
 }
 
+bool is_primitive_class(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
+    VTR_ASSERT(!is_class_on_tile(physical_tile, class_physical_num));
+    const auto& class_inf = physical_tile->internal_class_inf.at(class_physical_num);
+    auto sample_pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, class_inf.pinlist[0]);
+
+    return sample_pb_pin->is_primitive_pin();
+
+}
+
 std::unordered_map<int, const t_class*> get_pb_graph_node_num_class_pairs(t_physical_tile_type_ptr physical_tile,
                                                                           const t_sub_tile* sub_tile,
                                                                           t_logical_block_type_ptr logical_block,
@@ -964,8 +973,11 @@ std::vector<int> get_flat_tile_primitive_classes(t_physical_tile_type_ptr physic
     class_num_vec.insert(class_num_vec.end(), tile_class.begin(), tile_class.end());
 
     for (const auto& internal_class_pair : physical_type->internal_class_inf) {
-        if (is_class_on_tile(physical_type, internal_class_pair.first))
+        if (is_class_on_tile(physical_type, internal_class_pair.first)
+            || !is_primitive_class(physical_type, internal_class_pair.first)) {
             continue;
+        }
+
         class_num_vec.push_back(internal_class_pair.first);
     }
 

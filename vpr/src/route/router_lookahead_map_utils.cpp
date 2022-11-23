@@ -433,7 +433,11 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
     tile_pins_node_id.reserve(physical_tile->num_pins + physical_tile->internal_pin_class.size());
 
     for (int pin_physical_num = 0; pin_physical_num < physical_tile->num_pins; pin_physical_num++) {
-        RRNodeId pin_node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_tile, x, y, pin_physical_num);
+        RRNodeId pin_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
+                                                  physical_tile,
+                                                  x,
+                                                  y,
+                                                  pin_physical_num);
         VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
     }
     for (const auto& pin_class_pair : physical_tile->internal_pin_class) {
@@ -442,9 +446,11 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
         if (pb_pin->is_root_block_pin()) {
             continue;
         }
-        auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
-        auto rr_type = (pin_type == e_pin_type::RECEIVER) ? t_rr_type::IPIN : t_rr_type::OPIN;
-        RRNodeId pin_node_id = rr_graph.node_lookup().find_node(x, y, rr_type, pin_physical_num, e_side::TOP);
+        RRNodeId pin_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
+                                                  physical_tile,
+                                                  x,
+                                                  y,
+                                                  pin_physical_num);
         VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
         tile_pins_node_id.push_back(pin_node_id);
     }
