@@ -327,15 +327,22 @@ struct ClusteringHelperContext : public Context {
     // the utilization of external input/output pins during packing (between 0 and 1)
     t_ext_pin_util_targets target_external_pin_util;
 
+    // A vector of unordered_sets of AtomBlockIds that are inside each clustered block [0 .. num_clustered_blocks-1]
+    // unordered_set for faster insertion/deletion during the iterative improvement process of packing
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
     ~ClusteringHelperContext() {
         free(primitives_list);
     }
 };
 
+/**
+ * @brief State relating to packing multithreading
+ *
+ * This contain data structures to synchronize multithreading of packing iterative improvement.
+ */
 struct PackingMultithreadingContext : public Context {
     vtr::vector<ClusterBlockId, bool> clb_in_flight;
-    std::mutex mu;
+    vtr::vector<ClusterBlockId, std::mutex> mu;
 };
 
 /**

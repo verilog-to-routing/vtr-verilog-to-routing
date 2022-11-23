@@ -125,7 +125,8 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
 
     // Iterate over each primitive block type in the current cluster_placement_stats
     for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
-        if (!cluster_placement_stats->valid_primitives[i].empty() && primitive_type_feasible(molecule->atom_block_ids[molecule->root], cluster_placement_stats->valid_primitives[i].begin()->second->pb_graph_node->pb_type)) {
+        t_cluster_placement_primitive* cur_cluster_placement_primitive = cluster_placement_stats->valid_primitives[i].begin()->second;
+        if (!cluster_placement_stats->valid_primitives[i].empty() && primitive_type_feasible(molecule->atom_block_ids[molecule->root], cur_cluster_placement_primitive->pb_graph_node->pb_type)) {
             // Iterate over the unordered_multimap of the valid primitives of a specific pb primitive type
             for (auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end(); /*loop increment is done inside the loop*/) {
                 //Lazily remove invalid primitives

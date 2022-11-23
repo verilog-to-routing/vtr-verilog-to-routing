@@ -253,23 +253,24 @@ void t_cluster_placement_stats::move_primitive_to_inflight(int pb_type_index, st
 }
 
 /**
- * Put primitive back on queue of valid primitives
- *  Note that valid status is not changed because if the primitive is not valid, it will get properly collected later
+ * @brief Put primitive back on the correct location of valid primitives vector based on the primitive pb type
+ *
+ * @note that valid status is not changed because if the primitive is not valid, it will get properly collected later
  */
-void t_cluster_placement_stats::requeue_primitive(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive) {
+void t_cluster_placement_stats::insert_primitive_in_valid_primitives(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive) {
     int i;
-    int null_index;
-    bool success;
-    null_index = OPEN;
+    bool success = false;
+    int null_index = OPEN;
+    t_cluster_placement_primitive* input_cluster_placement_primitive = cluster_placement_primitive.second;
 
-    success = false;
     for (i = 0; i < num_pb_types && !success; i++) {
         if (valid_primitives[i].empty()) {
             null_index = i;
             continue;
         }
-        if (cluster_placement_primitive.second->pb_graph_node->pb_type
-            == valid_primitives[i].begin()->second->pb_graph_node->pb_type) {
+        t_cluster_placement_primitive* cur_cluster_placement_primitive = valid_primitives[i].begin()->second;
+        if (input_cluster_placement_primitive->pb_graph_node->pb_type
+            == cur_cluster_placement_primitive->pb_graph_node->pb_type) {
             success = true;
             valid_primitives[i].insert(cluster_placement_primitive);
         }
@@ -282,7 +283,7 @@ void t_cluster_placement_stats::requeue_primitive(std::pair<int, t_cluster_place
 
 void t_cluster_placement_stats::flush_queue(std::unordered_multimap<int, t_cluster_placement_primitive*>& queue) {
     for (auto& it : queue) {
-        requeue_primitive(it);
+        insert_primitive_in_valid_primitives(it);
     }
     queue.clear();
 }
