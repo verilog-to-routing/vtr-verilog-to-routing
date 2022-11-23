@@ -3,7 +3,7 @@
 .outputs out1 out2 out3
 
 .latch to_FFA FFA re clk 0
-.latch to_FFC FFC re clk 0
+.latch to_FFC FFC fe clk 0
 .latch to_FFD FFD re clk2 0
 .latch to_FFB FFB re clk2 0
 
