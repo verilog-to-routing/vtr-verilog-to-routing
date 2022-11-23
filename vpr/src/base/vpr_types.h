@@ -423,7 +423,7 @@ struct t_chain_info {
 /**
  * @brief Stats keeper for placement information during packing
  *
- * Contains linked lists to placement locations based on status of primitive
+ * Contains data structure of placement locations based on status of primitive
  */
 class t_cluster_placement_stats {
   public:
@@ -431,41 +431,76 @@ class t_cluster_placement_stats {
     bool has_long_chain;                  ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
     const t_pack_molecule* curr_molecule; ///<current molecule being considered for packing
 
-    ///<[0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty
+    // Vector of size num_pb_types [0.. num_pb_types-1]. Each element is an unordered_map of the cluster_placement_primitives that are of this pb_type
+    // Each cluster_placement_primitive is associated with and index (key of the map) for easier lookup, insertion and deletion.
     std::vector<std::unordered_map<int, t_cluster_placement_primitive*>> valid_primitives;
 
   public:
     // Moves primitives that are inflight to the tried map
     void move_inflight_to_tried();
 
-    // Move the primitive at (it) to inflight and increment the current iterator
+    /**
+     * @brief Move the primitive at (it) to inflight and increment the current iterator.
+     *
+     * Because the element at (it) is deleted from valid_primitives, (it) is incremented to keep it valid and pointing at the next element.
+     *
+     * @param pb_type_index: is the index of this pb_type in valid_primitives vector
+     * @param it: is the iterator pointing at the element that needs to be moved to inflight
+     */
     void move_primitive_to_inflight(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
 
-    // Move the primitive at (it) to invalid and increment the current iterator
+    /**
+     * @brief Move the primitive at (it) to invalid and increment the current iterator
+     *
+     * Because the element at (it) is deleted from valid_primitives, (it) is incremented to keep it valid and pointing at the next element.
+     *
+     * @param  pb_type_index: is the index of this pb_type in valid_primitives vector
+     * @param it: is the iterator pointing at the element that needs to be moved to invalid
+     */
     void invalidate_primitive_and_increment_iterator(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
 
-    // Add a primitive to valid_primitives
-    void requeue_primitive(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive);
+    /**
+     * @brief Add a primitive in its correct location in valid_primitives vector based on its pb_type
+     *
+     * @param cluster_placement_primitive: a pair of the cluster_placement_primtive and its corresponding index(for reference in pb_graph_node)
+     */
+    void insert_primitive_in_valid_primitives(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive);
 
-    // Requeue all the primitives from (in_flight and tried) maps to valid primitives and clear (in_flight and tried)
+    /**
+     * @brief Move all the primitives from (in_flight and tried) maps to valid primitives and clear (in_flight and tried)
+     */
     void flush_intermediate_queues();
 
-    // Requeue all the primitives from invalid to valid_primitives and clear the invalid map
+    /**
+     * @brief Move all the primitives from invalid to valid_primitives and clear the invalid map
+     */
     void flush_invalid_queue();
 
-    // Return true if the in_flight map is empty (no primitive is in_flight currently)
+    /**
+     * @brief Return true if the in_flight map is empty (no primitive is in_flight currently)
+     */
     bool in_flight_empty();
 
-    // Return the type of the first element of the primitives currently being considered
+    /**
+     * @brief Return the type of the first element of the primitives currently being considered
+     */
     t_pb_type* in_flight_type();
 
+    /**
+     * @brief free the dynamically allocated memory for primitives
+     */
     void free_primitives();
 
   private:
-    std::unordered_multimap<int, t_cluster_placement_primitive*> in_flight; ///<ptrs to primitives currently being considered
-    std::unordered_multimap<int, t_cluster_placement_primitive*> tried;     ///<ptrs to primitives that are open but current logic block unable to pack to
-    std::unordered_multimap<int, t_cluster_placement_primitive*> invalid;   ///<ptrs to primitives that are invalid
+    std::unordered_multimap<int, t_cluster_placement_primitive*> in_flight; ///<ptrs to primitives currently being considered to pack into
+    std::unordered_multimap<int, t_cluster_placement_primitive*> tried;     ///<ptrs to primitives that are already tried but current logic block unable to pack to
+    std::unordered_multimap<int, t_cluster_placement_primitive*> invalid;   ///<ptrs to primitives that are invalid (already occupied by another primitive in this cluster)
 
+    /**
+     * @brief iterate over elements of a queue and move its elements to valid_primitives
+     *
+     * @param queue the unordered_multimap to work on (e.g. in_flight, tried, or invalid)
+     */
     void flush_queue(std::unordered_multimap<int, t_cluster_placement_primitive*>& queue);
 };
 
