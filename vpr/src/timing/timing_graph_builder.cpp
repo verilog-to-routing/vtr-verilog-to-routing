@@ -351,7 +351,10 @@ void TimingGraphBuilder::add_io_to_timing_graph(const AtomBlockId blk) {
         }
     }
 
-    NodeId tnode = tg_->add_node(node_type);
+    AtomPortId port = netlist_.pin_port(pin);
+    const t_model_ports* model_port = netlist_.port_model(port);
+
+    NodeId tnode = tg_->add_node(node_type, model_port->trigg_edge);
 
     netlist_lookup_.set_atom_pin_tnode(pin, tnode, BlockTnode::EXTERNAL);
 }
@@ -413,21 +416,21 @@ std::set<tatum::NodeId> TimingGraphBuilder::create_block_timing_nodes(const Atom
         VTR_ASSERT(!model_port->is_clock);
         if (model_port->clock.empty()) {
             //No clock => combinational input
-            tnode = tg_->add_node(NodeType::IPIN);
+            tnode = tg_->add_node(NodeType::IPIN, model_port->trigg_edge);
 
             //A combinational pin is really both internal and external, mark it internal here
             //and external in the default case below
             netlist_lookup_.set_atom_pin_tnode(input_pin, tnode, BlockTnode::INTERNAL);
         } else {
             //This is a sequential data input (i.e. a sequential data capture point/timing path end-point)
-            tnode = tg_->add_node(NodeType::SINK);
+            tnode = tg_->add_node(NodeType::SINK, model_port->trigg_edge);
 
             if (!model_port->combinational_sink_ports.empty()) {
                 //There is an internal combinational connection starting at this sequential input
                 //pin. This is a new timing path and hence we must create a new SOURCE node.
 
                 //Create the internal source
-                NodeId internal_tnode = tg_->add_node(NodeType::SOURCE);
+                NodeId internal_tnode = tg_->add_node(NodeType::SOURCE, model_port->trigg_edge);
                 netlist_lookup_.set_atom_pin_tnode(input_pin, internal_tnode, BlockTnode::INTERNAL);
             }
         }
@@ -452,7 +455,7 @@ std::set<tatum::NodeId> TimingGraphBuilder::create_block_timing_nodes(const Atom
         VTR_ASSERT(model_port->is_clock);
         VTR_ASSERT(model_port->clock.empty());
 
-        NodeId tnode = tg_->add_node(NodeType::CPIN);
+        NodeId tnode = tg_->add_node(NodeType::CPIN, model_port->trigg_edge);
 
         netlist_lookup_.set_atom_pin_tnode(clock_pin, tnode, BlockTnode::EXTERNAL);
     }
@@ -468,7 +471,7 @@ std::set<tatum::NodeId> TimingGraphBuilder::create_block_timing_nodes(const Atom
         NodeId tnode;
         if (is_netlist_clock_source(output_pin)) {
             //A generated clock source
-            tnode = tg_->add_node(NodeType::SOURCE);
+            tnode = tg_->add_node(NodeType::SOURCE, model_port->trigg_edge);
 
             clock_generator_tnodes.insert(tnode);
 
@@ -488,7 +491,7 @@ std::set<tatum::NodeId> TimingGraphBuilder::create_block_timing_nodes(const Atom
 
             if (model_port->clock.empty()) {
                 //No clock => combinational output
-                tnode = tg_->add_node(NodeType::OPIN);
+                tnode = tg_->add_node(NodeType::OPIN, model_port->trigg_edge);
 
                 //A combinational pin is really both internal and external, mark it internal here
                 //and external in the default case below
@@ -497,13 +500,13 @@ std::set<tatum::NodeId> TimingGraphBuilder::create_block_timing_nodes(const Atom
             } else {
                 VTR_ASSERT(!model_port->clock.empty());
                 //Has an associated clock => sequential output
-                tnode = tg_->add_node(NodeType::SOURCE);
+                tnode = tg_->add_node(NodeType::SOURCE, model_port->trigg_edge);
 
                 if (output_ports_used_as_combinational_sinks.count(model_port->name)) {
                     //There is a combinational path within the primitive terminating at this sequential output
 
                     //Create the internal sink node
-                    NodeId internal_tnode = tg_->add_node(NodeType::SINK);
+                    NodeId internal_tnode = tg_->add_node(NodeType::SINK, model_port->trigg_edge);
                     netlist_lookup_.set_atom_pin_tnode(output_pin, internal_tnode, BlockTnode::INTERNAL);
                 }
             }
