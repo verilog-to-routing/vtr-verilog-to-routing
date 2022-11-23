@@ -104,7 +104,7 @@
         <!-- address lines -->
         <port name="data" clock="clk"/>
         <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-        <port name="clk" is_clock="1"/>
+        <port name="clk" is_clock="1" edge="rising"/>
         <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
@@ -126,7 +126,7 @@
         <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
         <port name="data2" clock="clk"/>
         <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-        <port name="clk" is_clock="1"/>
+        <port name="clk" is_clock="1" edge="falling"/>
         <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
