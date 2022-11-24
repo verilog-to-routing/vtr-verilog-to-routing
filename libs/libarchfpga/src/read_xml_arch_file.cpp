@@ -2433,6 +2433,22 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
                        layout_type_tag.name());
     }
 
+    //Layout can specify which die they are located at by the <layer> tag
+    //If not specified, we only consider one die (die = 0)
+    //This is used for multi-die stacked FPGAs (e.g., LAB block on top of a NoC block)
+    int die_number = 0;
+    auto layout_type_first_child = layout_type_tag.first_child();
+    auto layout_type_first_child_name = layout_type_first_child.name();
+    auto layout_type_blocks_loc = layout_type_tag;
+
+    //layer tage specified, Process the die number to understand which die this layout is located at
+    if (layout_type_first_child_name == std::string("layer")) {
+        die_number = get_attribute(layout_type_first_child, "die", loc_data, ReqOpt::OPTIONAL).as_int(0);
+        //if we have <layer> tag as <auto_layout> or <fixed_layout> child, we need to
+        //loop through <layer> tag to process all the block locations
+        layout_type_blocks_loc = layout_type_first_child;
+    }
+
     //Process all the block location specifications
     for (auto loc_spec_tag : layout_type_tag.children()) {
         auto loc_type = loc_spec_tag.name();
