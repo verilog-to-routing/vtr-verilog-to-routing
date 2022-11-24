@@ -577,10 +577,14 @@ bool exists_free_primitive_for_atom_block(t_cluster_placement_stats* cluster_pla
 
     /* Look through list of available primitives to see if any valid */
     for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
-        for (auto& primitive : cluster_placement_stats->valid_primitives[i]) {
-            if (primitive_type_feasible(blk_id, primitive.second->pb_graph_node->pb_type)) {
-                if (primitive.second->valid)
+        //for (auto& primitive : cluster_placement_stats->valid_primitives[i]) {
+        if (!cluster_placement_stats->valid_primitives[i].empty() && primitive_type_feasible(blk_id, cluster_placement_stats->valid_primitives[i].begin()->second->pb_graph_node->pb_type)) {
+            for (auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end();) {
+                if (it->second->valid)
                     return true;
+                else {
+                    cluster_placement_stats->invalidate_primitive_and_increment_iterator(i, it);
+                }
             }
         }
     }
