@@ -2183,7 +2183,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
     }
 
     if (num_used_type_instances[block_type] > num_instances) {
-        device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
+        device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization, arch->number_of_dies);
     }
 }
 

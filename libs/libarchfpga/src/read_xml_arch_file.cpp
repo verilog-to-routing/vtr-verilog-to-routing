@@ -2397,6 +2397,11 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
         t_grid_def grid_def = ProcessGridLayout(&arch->strings, layout_type_tag, loc_data);
 
         arch->grid_layouts.emplace_back(std::move(grid_def));
+
+        //If a layout is specified in die_number > 0, should keep track of how many dies is available in the arch file
+        if (grid_def.die_number > 0) {
+            arch->number_of_dies = grid_def.die_number + 1;
+        }
     }
 }
 
@@ -2433,253 +2438,263 @@ static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_n
                        layout_type_tag.name());
     }
 
-    //Layout can specify which die they are located at by the <layer> tag
-    //If not specified, we only consider one die (die = 0)
-    //This is used for multi-die stacked FPGAs (e.g., LAB block on top of a NoC block)
-    int die_number = 0;
-    auto layout_type_first_child = layout_type_tag.first_child();
-    auto layout_type_first_child_name = layout_type_first_child.name();
-    auto layout_type_blocks_loc = layout_type_tag;
+    for (auto layout_layer_tag : layout_type_tag.children()) {
+        //Outer loop is executed more than once only if arch file specifies more than one <layer> tag
+        bool single_die_specified = true;
 
-    //layer tage specified, Process the die number to understand which die this layout is located at
-    if (layout_type_first_child_name == std::string("layer")) {
-        die_number = get_attribute(layout_type_first_child, "die", loc_data, ReqOpt::OPTIONAL).as_int(0);
-        //if we have <layer> tag as <auto_layout> or <fixed_layout> child, we need to
-        //loop through <layer> tag to process all the block locations
-        layout_type_blocks_loc = layout_type_first_child;
-    }
+        //Layout can specify which die they are located at by the <layer> tag
+        //If not specified, we only consider one die (die = 0)
+        //This is used for multi-die stacked FPGAs (e.g., LAB block on top of a NoC block)
+        int die_number = 0;
+        auto layout_type_first_child_name = layout_layer_tag.name();
+        auto layout_type_blocks_loc = layout_type_tag;
 
-    //Process all the block location specifications
-    for (auto loc_spec_tag : layout_type_tag.children()) {
-        auto loc_type = loc_spec_tag.name();
-        auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
-        int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
-        t_metadata_dict meta = ProcessMetadata(strings, loc_spec_tag, loc_data);
+        //layer tage specified, Process the die number to understand which die this layout is located at
+        if (layout_type_first_child_name == std::string("layer")) {
+            die_number = get_attribute(layout_layer_tag, "die", loc_data, ReqOpt::OPTIONAL).as_int(0);
+            grid_def.die_number = die_number;
+            //if we have <layer> tag as <auto_layout> or <fixed_layout> child, we need to
+            //loop through <layer> tag children to process all the block locations
+            layout_type_blocks_loc = layout_layer_tag;
+            //found layer tag -> posibility of having multi die FPGA in the arch file
+            single_die_specified = false;
+        }
 
-        if (loc_type == std::string("perimeter")) {
-            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+        //Process all the block location specifications
+        for (auto loc_spec_tag : layout_type_blocks_loc.children()) {
+            auto loc_type = loc_spec_tag.name();
+            auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
+            int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
+            t_metadata_dict meta = ProcessMetadata(strings, loc_spec_tag, loc_data);
 
-            //The edges
-            t_grid_loc_def left_edge(type_name, priority); //Including corners
-            left_edge.x.start_expr = "0";
-            left_edge.x.end_expr = "0";
-            left_edge.y.start_expr = "0";
-            left_edge.y.end_expr = "H - 1";
+            if (loc_type == std::string("perimeter")) {
+                expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
 
-            t_grid_loc_def right_edge(type_name, priority); //Including corners
-            right_edge.x.start_expr = "W - 1";
-            right_edge.x.end_expr = "W - 1";
-            right_edge.y.start_expr = "0";
-            right_edge.y.end_expr = "H - 1";
+                //The edges
+                t_grid_loc_def left_edge(type_name, priority); //Including corners
+                left_edge.x.start_expr = "0";
+                left_edge.x.end_expr = "0";
+                left_edge.y.start_expr = "0";
+                left_edge.y.end_expr = "H - 1";
 
-            t_grid_loc_def bottom_edge(type_name, priority); //Exclucing corners
-            bottom_edge.x.start_expr = "1";
-            bottom_edge.x.end_expr = "W - 2";
-            bottom_edge.y.start_expr = "0";
-            bottom_edge.y.end_expr = "0";
+                t_grid_loc_def right_edge(type_name, priority); //Including corners
+                right_edge.x.start_expr = "W - 1";
+                right_edge.x.end_expr = "W - 1";
+                right_edge.y.start_expr = "0";
+                right_edge.y.end_expr = "H - 1";
 
-            t_grid_loc_def top_edge(type_name, priority); //Excluding corners
-            top_edge.x.start_expr = "1";
-            top_edge.x.end_expr = "W - 2";
-            top_edge.y.start_expr = "H - 1";
-            top_edge.y.end_expr = "H - 1";
+                t_grid_loc_def bottom_edge(type_name, priority); //Exclucing corners
+                bottom_edge.x.start_expr = "1";
+                bottom_edge.x.end_expr = "W - 2";
+                bottom_edge.y.start_expr = "0";
+                bottom_edge.y.end_expr = "0";
 
-            left_edge.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            left_edge.meta = left_edge.owned_meta.get();
-            right_edge.meta = left_edge.owned_meta.get();
-            top_edge.meta = left_edge.owned_meta.get();
-            bottom_edge.meta = left_edge.owned_meta.get();
+                t_grid_loc_def top_edge(type_name, priority); //Excluding corners
+                top_edge.x.start_expr = "1";
+                top_edge.x.end_expr = "W - 2";
+                top_edge.y.start_expr = "H - 1";
+                top_edge.y.end_expr = "H - 1";
 
-            grid_def.loc_defs.emplace_back(std::move(left_edge));
-            grid_def.loc_defs.emplace_back(std::move(right_edge));
-            grid_def.loc_defs.emplace_back(std::move(top_edge));
-            grid_def.loc_defs.emplace_back(std::move(bottom_edge));
+                left_edge.owned_meta = std::make_unique<t_metadata_dict>(meta);
+                left_edge.meta = left_edge.owned_meta.get();
+                right_edge.meta = left_edge.owned_meta.get();
+                top_edge.meta = left_edge.owned_meta.get();
+                bottom_edge.meta = left_edge.owned_meta.get();
 
-        } else if (loc_type == std::string("corners")) {
-            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+                grid_def.loc_defs.emplace_back(std::move(left_edge));
+                grid_def.loc_defs.emplace_back(std::move(right_edge));
+                grid_def.loc_defs.emplace_back(std::move(top_edge));
+                grid_def.loc_defs.emplace_back(std::move(bottom_edge));
 
-            //The corners
-            t_grid_loc_def bottom_left(type_name, priority);
-            bottom_left.x.start_expr = "0";
-            bottom_left.x.end_expr = "0";
-            bottom_left.y.start_expr = "0";
-            bottom_left.y.end_expr = "0";
+            } else if (loc_type == std::string("corners")) {
+                expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
 
-            t_grid_loc_def top_left(type_name, priority);
-            top_left.x.start_expr = "0";
-            top_left.x.end_expr = "0";
-            top_left.y.start_expr = "H-1";
-            top_left.y.end_expr = "H-1";
+                //The corners
+                t_grid_loc_def bottom_left(type_name, priority);
+                bottom_left.x.start_expr = "0";
+                bottom_left.x.end_expr = "0";
+                bottom_left.y.start_expr = "0";
+                bottom_left.y.end_expr = "0";
 
-            t_grid_loc_def bottom_right(type_name, priority);
-            bottom_right.x.start_expr = "W-1";
-            bottom_right.x.end_expr = "W-1";
-            bottom_right.y.start_expr = "0";
-            bottom_right.y.end_expr = "0";
+                t_grid_loc_def top_left(type_name, priority);
+                top_left.x.start_expr = "0";
+                top_left.x.end_expr = "0";
+                top_left.y.start_expr = "H-1";
+                top_left.y.end_expr = "H-1";
 
-            t_grid_loc_def top_right(type_name, priority);
-            top_right.x.start_expr = "W-1";
-            top_right.x.end_expr = "W-1";
-            top_right.y.start_expr = "H-1";
-            top_right.y.end_expr = "H-1";
+                t_grid_loc_def bottom_right(type_name, priority);
+                bottom_right.x.start_expr = "W-1";
+                bottom_right.x.end_expr = "W-1";
+                bottom_right.y.start_expr = "0";
+                bottom_right.y.end_expr = "0";
 
-            bottom_left.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            bottom_left.meta = bottom_left.owned_meta.get();
-            top_left.meta = bottom_left.owned_meta.get();
-            bottom_right.meta = bottom_left.owned_meta.get();
-            top_right.meta = bottom_left.owned_meta.get();
+                t_grid_loc_def top_right(type_name, priority);
+                top_right.x.start_expr = "W-1";
+                top_right.x.end_expr = "W-1";
+                top_right.y.start_expr = "H-1";
+                top_right.y.end_expr = "H-1";
 
-            grid_def.loc_defs.emplace_back(std::move(bottom_left));
-            grid_def.loc_defs.emplace_back(std::move(top_left));
-            grid_def.loc_defs.emplace_back(std::move(bottom_right));
-            grid_def.loc_defs.emplace_back(std::move(top_right));
+                bottom_left.owned_meta = std::make_unique<t_metadata_dict>(meta);
+                bottom_left.meta = bottom_left.owned_meta.get();
+                top_left.meta = bottom_left.owned_meta.get();
+                bottom_right.meta = bottom_left.owned_meta.get();
+                top_right.meta = bottom_left.owned_meta.get();
 
-        } else if (loc_type == std::string("fill")) {
-            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+                grid_def.loc_defs.emplace_back(std::move(bottom_left));
+                grid_def.loc_defs.emplace_back(std::move(top_left));
+                grid_def.loc_defs.emplace_back(std::move(bottom_right));
+                grid_def.loc_defs.emplace_back(std::move(top_right));
 
-            t_grid_loc_def fill(type_name, priority);
-            fill.x.start_expr = "0";
-            fill.x.end_expr = "W - 1";
-            fill.y.start_expr = "0";
-            fill.y.end_expr = "H - 1";
+            } else if (loc_type == std::string("fill")) {
+                expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
 
-            fill.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            fill.meta = fill.owned_meta.get();
+                t_grid_loc_def fill(type_name, priority);
+                fill.x.start_expr = "0";
+                fill.x.end_expr = "W - 1";
+                fill.y.start_expr = "0";
+                fill.y.end_expr = "H - 1";
 
-            grid_def.loc_defs.emplace_back(std::move(fill));
+                fill.owned_meta = std::make_unique<t_metadata_dict>(meta);
+                fill.meta = fill.owned_meta.get();
 
-        } else if (loc_type == std::string("single")) {
-            expect_only_attributes(loc_spec_tag, {"type", "priority", "x", "y"}, loc_data);
+                grid_def.loc_defs.emplace_back(std::move(fill));
 
-            t_grid_loc_def single(type_name, priority);
-            single.x.start_expr = get_attribute(loc_spec_tag, "x", loc_data).value();
-            single.y.start_expr = get_attribute(loc_spec_tag, "y", loc_data).value();
-            single.x.end_expr = single.x.start_expr + " + w - 1";
-            single.y.end_expr = single.y.start_expr + " + h - 1";
+            } else if (loc_type == std::string("single")) {
+                expect_only_attributes(loc_spec_tag, {"type", "priority", "x", "y"}, loc_data);
 
-            single.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            single.meta = single.owned_meta.get();
+                t_grid_loc_def single(type_name, priority);
+                single.x.start_expr = get_attribute(loc_spec_tag, "x", loc_data).value();
+                single.y.start_expr = get_attribute(loc_spec_tag, "y", loc_data).value();
+                single.x.end_expr = single.x.start_expr + " + w - 1";
+                single.y.end_expr = single.y.start_expr + " + h - 1";
 
-            grid_def.loc_defs.emplace_back(std::move(single));
+                single.owned_meta = std::make_unique<t_metadata_dict>(meta);
+                single.meta = single.owned_meta.get();
 
-        } else if (loc_type == std::string("col")) {
-            expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty", "incry"}, loc_data);
+                grid_def.loc_defs.emplace_back(std::move(single));
 
-            t_grid_loc_def col(type_name, priority);
+            } else if (loc_type == std::string("col")) {
+                expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty", "incry"}, loc_data);
 
-            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data);
+                t_grid_loc_def col(type_name, priority);
 
-            col.x.start_expr = startx_attr.value();
-            col.x.end_expr = startx_attr.value() + std::string(" + w - 1"); //end is inclusive so need to include block width
+                auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data);
 
-            auto repeat_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
-            if (repeat_attr) {
-                col.x.repeat_expr = repeat_attr.value();
+                col.x.start_expr = startx_attr.value();
+                col.x.end_expr = startx_attr.value() + std::string(" + w - 1"); //end is inclusive so need to include block width
+
+                auto repeat_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
+                if (repeat_attr) {
+                    col.x.repeat_expr = repeat_attr.value();
+                }
+
+                auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
+                if (starty_attr) {
+                    col.y.start_expr = starty_attr.value();
+                }
+
+                auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
+                if (incry_attr) {
+                    col.y.incr_expr = incry_attr.value();
+                }
+
+                col.owned_meta = std::make_unique<t_metadata_dict>(meta);
+                col.meta = col.owned_meta.get();
+
+                grid_def.loc_defs.emplace_back(std::move(col));
+
+            } else if (loc_type == std::string("row")) {
+                expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx", "incrx"}, loc_data);
+
+                t_grid_loc_def row(type_name, priority);
+
+                auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data);
+
+                row.y.start_expr = starty_attr.value();
+                row.y.end_expr = starty_attr.value() + std::string(" + h - 1"); //end is inclusive so need to include block height
+
+                auto repeat_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
+                if (repeat_attr) {
+                    row.y.repeat_expr = repeat_attr.value();
+                }
+
+                auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
+                if (startx_attr) {
+                    row.x.start_expr = startx_attr.value();
+                }
+
+                auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
+                if (incrx_attr) {
+                    row.x.incr_expr = incrx_attr.value();
+                }
+
+                row.owned_meta = std::make_unique<t_metadata_dict>(meta);
+                row.meta = row.owned_meta.get();
+
+                grid_def.loc_defs.emplace_back(std::move(row));
+            } else if (loc_type == std::string("region")) {
+                expect_only_attributes(loc_spec_tag,
+                                       {"type", "priority",
+                                        "startx", "endx", "repeatx", "incrx",
+                                        "starty", "endy", "repeaty", "incry"},
+                                       loc_data);
+                t_grid_loc_def region(type_name, priority);
+
+                auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
+                if (startx_attr) {
+                    region.x.start_expr = startx_attr.value();
+                }
+
+                auto endx_attr = get_attribute(loc_spec_tag, "endx", loc_data, ReqOpt::OPTIONAL);
+                if (endx_attr) {
+                    region.x.end_expr = endx_attr.value();
+                }
+
+                auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
+                if (starty_attr) {
+                    region.y.start_expr = starty_attr.value();
+                }
+
+                auto endy_attr = get_attribute(loc_spec_tag, "endy", loc_data, ReqOpt::OPTIONAL);
+                if (endy_attr) {
+                    region.y.end_expr = endy_attr.value();
+                }
+
+                auto repeatx_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
+                if (repeatx_attr) {
+                    region.x.repeat_expr = repeatx_attr.value();
+                }
+
+                auto repeaty_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
+                if (repeaty_attr) {
+                    region.y.repeat_expr = repeaty_attr.value();
+                }
+
+                auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
+                if (incrx_attr) {
+                    region.x.incr_expr = incrx_attr.value();
+                }
+
+                auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
+                if (incry_attr) {
+                    region.y.incr_expr = incry_attr.value();
+                }
+
+                region.owned_meta = std::make_unique<t_metadata_dict>(meta);
+                region.meta = region.owned_meta.get();
+
+                grid_def.loc_defs.emplace_back(std::move(region));
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
+                               "Unrecognized grid location specification type '%s'\n", loc_type);
             }
+        }
 
-            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
-            if (starty_attr) {
-                col.y.start_expr = starty_attr.value();
-            }
-
-            auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
-            if (incry_attr) {
-                col.y.incr_expr = incry_attr.value();
-            }
-
-            col.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            col.meta = col.owned_meta.get();
-
-            grid_def.loc_defs.emplace_back(std::move(col));
-
-        } else if (loc_type == std::string("row")) {
-            expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx", "incrx"}, loc_data);
-
-            t_grid_loc_def row(type_name, priority);
-
-            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data);
-
-            row.y.start_expr = starty_attr.value();
-            row.y.end_expr = starty_attr.value() + std::string(" + h - 1"); //end is inclusive so need to include block height
-
-            auto repeat_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
-            if (repeat_attr) {
-                row.y.repeat_expr = repeat_attr.value();
-            }
-
-            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
-            if (startx_attr) {
-                row.x.start_expr = startx_attr.value();
-            }
-
-            auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
-            if (incrx_attr) {
-                row.x.incr_expr = incrx_attr.value();
-            }
-
-            row.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            row.meta = row.owned_meta.get();
-
-            grid_def.loc_defs.emplace_back(std::move(row));
-        } else if (loc_type == std::string("region")) {
-            expect_only_attributes(loc_spec_tag,
-                                   {"type", "priority",
-                                    "startx", "endx", "repeatx", "incrx",
-                                    "starty", "endy", "repeaty", "incry"},
-                                   loc_data);
-            t_grid_loc_def region(type_name, priority);
-
-            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
-            if (startx_attr) {
-                region.x.start_expr = startx_attr.value();
-            }
-
-            auto endx_attr = get_attribute(loc_spec_tag, "endx", loc_data, ReqOpt::OPTIONAL);
-            if (endx_attr) {
-                region.x.end_expr = endx_attr.value();
-            }
-
-            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
-            if (starty_attr) {
-                region.y.start_expr = starty_attr.value();
-            }
-
-            auto endy_attr = get_attribute(loc_spec_tag, "endy", loc_data, ReqOpt::OPTIONAL);
-            if (endy_attr) {
-                region.y.end_expr = endy_attr.value();
-            }
-
-            auto repeatx_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
-            if (repeatx_attr) {
-                region.x.repeat_expr = repeatx_attr.value();
-            }
-
-            auto repeaty_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
-            if (repeaty_attr) {
-                region.y.repeat_expr = repeaty_attr.value();
-            }
-
-            auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
-            if (incrx_attr) {
-                region.x.incr_expr = incrx_attr.value();
-            }
-
-            auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
-            if (incry_attr) {
-                region.y.incr_expr = incry_attr.value();
-            }
-
-            region.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            region.meta = region.owned_meta.get();
-
-            grid_def.loc_defs.emplace_back(std::move(region));
-        } else {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
-                           "Unrecognized grid location specification type '%s'\n", loc_type);
+        //if either one <layer> or none found, do not need to traverse the grid layout more than once
+        if (single_die_specified) {
+            break;
         }
     }
-
-    //Warn if any type has no grid location specifed
 
     return grid_def;
 }

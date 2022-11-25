@@ -439,7 +439,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     //Build the device
     float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
-    device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
+    device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, Arch.number_of_dies, target_device_utilization);
 
     /*
      *Report on the device
@@ -1029,7 +1029,8 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     Fc_in = 0, Fc_out = 0;
 
     //Build a dummy 10x10 device to determine the 'best' block type to use
-    auto grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts, 10, 10);
+    //SARA_TODO: Check this function
+    auto grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts, 10, 10, arch.number_of_dies);
 
     auto type = find_most_common_tile_type(grid);
     /* get Fc_in/out for most common block (e.g. logic blocks) */

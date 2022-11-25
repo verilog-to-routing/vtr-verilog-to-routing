@@ -384,6 +384,8 @@ struct t_grid_def {
                              //grid_type == AUTO)
 
     std::vector<t_grid_loc_def> loc_defs; //The list of grid location definitions for this grid specification
+
+    int die_number = 0; //Specify which die (If the arch file has more than one die), the loc_defs are located at.
 };
 
 /************************* POWER ***********************************/
@@ -1916,6 +1918,9 @@ struct t_arch {
 
     // if we have an embedded NoC in the architecture, then we store it here
     t_noc_inf* noc = nullptr;
+
+    //Number of available dies in the arch files (used to model multi-die stacked FPGAs)
+    int number_of_dies = 1;
 };
 
 #endif
