@@ -1345,6 +1345,9 @@ static void store_min_cost_to_sinks(std::unordered_map<t_physical_tile_type_ptr,
                                          std::numeric_limits<float>::max() / 1e12);
 
         for (int pin_physical_num = 0; pin_physical_num < physical_tile->num_pins; pin_physical_num++) {
+            if(get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num) != e_pin_type::RECEIVER){
+                continue;
+            }
             const auto& pin_delays = tile_pin_delays[pin_physical_num];
             if (pin_delays.find(primitive_sink) != pin_delays.end()) {
                 auto pin_cost = pin_delays.at(primitive_sink);

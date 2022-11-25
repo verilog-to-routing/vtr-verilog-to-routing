@@ -439,6 +439,7 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
                                                   y,
                                                   pin_physical_num);
         VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
+        tile_pins_node_id.push_back(pin_node_id);
     }
     for (const auto& pin_class_pair : physical_tile->internal_pin_class) {
         int pin_physical_num = pin_class_pair.first;

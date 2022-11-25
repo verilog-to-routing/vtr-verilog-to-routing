@@ -973,8 +973,7 @@ std::vector<int> get_flat_tile_primitive_classes(t_physical_tile_type_ptr physic
     class_num_vec.insert(class_num_vec.end(), tile_class.begin(), tile_class.end());
 
     for (const auto& internal_class_pair : physical_type->internal_class_inf) {
-        if (is_class_on_tile(physical_type, internal_class_pair.first)
-            || !is_primitive_class(physical_type, internal_class_pair.first)) {
+        if (is_class_on_tile(physical_type, internal_class_pair.first)) {
             continue;
         }
 

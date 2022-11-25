@@ -20,6 +20,7 @@
 #include "pack_types.h"
 #include "device_grid.h"
 #include "timing_fail_error.h"
+#include "re_cluster_util.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
  * of VPR.  They are VPR-specific utility routines.                          */
@@ -1361,10 +1362,9 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     return std::make_tuple(physical_type, sub_tile, rel_cap, logical_block);
 }
 
-std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(ClusterBlockId cluster_block_id) {
+std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
+                                                                         ClusterBlockId cluster_block_id) {
     std::unordered_map<int, const t_class*> internal_num_class_pairs;
-
-    auto& cluster_net_list = g_vpr_ctx.clustering().clb_nlist;
 
     t_physical_tile_type_ptr physical_tile;
     const t_sub_tile* sub_tile;
@@ -1373,31 +1373,22 @@ std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(Cluster
 
     std::tie(physical_tile, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
 
-    std::list<const t_pb*> internal_pbs;
-    const t_pb* pb = cluster_net_list.block_pb(cluster_block_id);
-
-    // Classes on the tile are already added. Thus, we should ** not ** add the top-level block's classes.
-    add_child_to_list(internal_pbs, pb);
-
-    while (!internal_pbs.empty()) {
-        pb = internal_pbs.front();
-        internal_pbs.pop_front();
-        if(pb->pb_graph_node->is_primitive()) {
-            auto pb_graph_node_num_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
-                                                                                   sub_tile,
-                                                                                   logical_block,
-                                                                                   rel_cap,
-                                                                                   pb->pb_graph_node);
-            for (auto& class_pair : pb_graph_node_num_class_pairs) {
-                auto insert_res = internal_num_class_pairs.insert(std::make_pair(class_pair.first, class_pair.second));
-                VTR_ASSERT(insert_res.second == true);
-            }
+    auto cluster_atoms = cluster_to_atoms(cluster_block_id);
+    for(auto atom_blk_id : cluster_atoms) {
+        auto atom_pb_graph_node = atom_lookup.atom_pb_graph_node(atom_blk_id);
+        auto pb_graph_node_num_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
+                                                                               sub_tile,
+                                                                               logical_block,
+                                                                               rel_cap,
+                                                                               atom_pb_graph_node);
+        for (auto& class_pair : pb_graph_node_num_class_pairs) {
+            auto insert_res = internal_num_class_pairs.insert(std::make_pair(class_pair.first, class_pair.second));
+            VTR_ASSERT(insert_res.second == true);
         }
-
-        add_child_to_list(internal_pbs, pb);
     }
 
     return internal_num_class_pairs;
+
 }
 
 std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id) {
@@ -2393,8 +2384,9 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
                                                                t_physical_tile_type_ptr physical_type) {
     std::vector<int> class_num_vec;
 
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto grid_block = place_ctx.grid_blocks[i][j];
+    const auto& place_ctx = g_vpr_ctx.placement();
+    const auto& atom_lookup = g_vpr_ctx.atom().lookup;
+    const auto& grid_block = place_ctx.grid_blocks[i][j];
 
     class_num_vec.reserve(physical_type->internal_class_inf.size());
 
@@ -2406,7 +2398,8 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
         auto cluster_blk_id = grid_block.blocks[abs_cap];
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
 
-        auto primitive_class_pairs = get_cluster_internal_class_pairs(cluster_blk_id);
+        auto primitive_class_pairs = get_cluster_internal_class_pairs(atom_lookup,
+                                                                      cluster_blk_id);
         /* Initialize SINK/SOURCE nodes and connect them to their respective pins */
         for (auto class_pair : primitive_class_pairs) {
             int class_num = class_pair.first;
