@@ -331,7 +331,7 @@ struct ClusteringHelperContext : public Context {
     // unordered_set for faster insertion/deletion during the iterative improvement process of packing
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
     ~ClusteringHelperContext() {
-        free(primitives_list);
+        delete[] primitives_list;
     }
 };
 

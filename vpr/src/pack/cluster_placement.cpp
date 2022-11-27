@@ -125,33 +125,35 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
 
     // Iterate over each primitive block type in the current cluster_placement_stats
     for (i = 0; i < cluster_placement_stats->num_pb_types; i++) {
-        t_cluster_placement_primitive* cur_cluster_placement_primitive = cluster_placement_stats->valid_primitives[i].begin()->second;
-        if (!cluster_placement_stats->valid_primitives[i].empty() && primitive_type_feasible(molecule->atom_block_ids[molecule->root], cur_cluster_placement_primitive->pb_graph_node->pb_type)) {
-            // Iterate over the unordered_multimap of the valid primitives of a specific pb primitive type
-            for (auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end(); /*loop increment is done inside the loop*/) {
-                //Lazily remove invalid primitives
-                if (!it->second->valid) {
-                    cluster_placement_stats->invalidate_primitive_and_increment_iterator(i, it); //iterator is incremented here
-                    continue;
-                }
+        if (!cluster_placement_stats->valid_primitives[i].empty()) {
+            t_cluster_placement_primitive* cur_cluster_placement_primitive = cluster_placement_stats->valid_primitives[i].begin()->second;
+            if (primitive_type_feasible(molecule->atom_block_ids[molecule->root], cur_cluster_placement_primitive->pb_graph_node->pb_type)) {
+                // Iterate over the unordered_multimap of the valid primitives of a specific pb primitive type
+                for (auto it = cluster_placement_stats->valid_primitives[i].begin(); it != cluster_placement_stats->valid_primitives[i].end(); /*loop increment is done inside the loop*/) {
+                    //Lazily remove invalid primitives
+                    if (!it->second->valid) {
+                        cluster_placement_stats->invalidate_primitive_and_increment_iterator(i, it); //iterator is incremented here
+                        continue;
+                    }
 
-                /* try place molecule at root location cur */
-                cost = try_place_molecule(molecule, it->second->pb_graph_node, primitives_list);
+                    /* try place molecule at root location cur */
+                    cost = try_place_molecule(molecule, it->second->pb_graph_node, primitives_list);
 
-                // if the cost is lower than the best, or is equal to the best but this
-                // primitive is more available in the cluster mark it as the best primitive
-                if (cost < lowest_cost || (found_best && best->second && cost == lowest_cost && it->second->pb_graph_node->total_primitive_count > best->second->pb_graph_node->total_primitive_count)) {
-                    lowest_cost = cost;
-                    best = it;
-                    best_pb_type_index = i;
-                    found_best = true;
+                    // if the cost is lower than the best, or is equal to the best but this
+                    // primitive is more available in the cluster mark it as the best primitive
+                    if (cost < lowest_cost || (found_best && best->second && cost == lowest_cost && it->second->pb_graph_node->total_primitive_count > best->second->pb_graph_node->total_primitive_count)) {
+                        lowest_cost = cost;
+                        best = it;
+                        best_pb_type_index = i;
+                        found_best = true;
+                    }
+                    ++it;
                 }
-                ++it;
             }
         }
     }
 
-    if (!found_best || best->second == nullptr) {
+    if (!found_best) {
         /* failed to find a placement */
         for (i = 0; i < molecule->num_blocks; i++) {
             primitives_list[i] = nullptr;
@@ -165,7 +167,7 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
         cluster_placement_stats->move_primitive_to_inflight(best_pb_type_index, best);
     }
 
-    if (!found_best || best->second == nullptr) {
+    if (!found_best) {
         return false;
     }
     return true;
