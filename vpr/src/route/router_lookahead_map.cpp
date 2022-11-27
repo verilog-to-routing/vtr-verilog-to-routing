@@ -1323,24 +1323,10 @@ static void compute_tile_lookahead(std::unordered_map<t_physical_tile_type_ptr, 
 static void store_min_cost_to_sinks(std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                     t_physical_tile_type_ptr physical_tile,
                                     const std::unordered_map<t_physical_tile_type_ptr, util::t_ipin_primitive_sink_delays>& inter_tile_pin_primitive_pin_delay) {
-    std::unordered_set<int> primitive_sinks;
     const auto& tile_pin_delays = inter_tile_pin_primitive_pin_delay.at(physical_tile);
     std::unordered_map<int, util::Cost_Entry> min_cost_map;
-
-    for (const auto& class_pair : physical_tile->internal_class_inf) {
-        int class_physical_num = class_pair.first;
-        const auto& class_inf = class_pair.second;
-        if (class_inf.type != e_pin_type::RECEIVER) {
-            continue;
-        }
-        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, class_inf.pinlist[0]);
-        if (pb_pin->is_primitive_pin()) {
-            auto insert_res = primitive_sinks.insert(class_physical_num);
-            VTR_ASSERT(insert_res.second);
-        }
-    }
-
-    for (int primitive_sink : primitive_sinks) {
+    for (auto& primitive_sink_pair : physical_tile->primitive_class_inf) {
+        int primitive_sink = primitive_sink_pair.first;
         auto min_cost = util::Cost_Entry(std::numeric_limits<float>::max() / 1e12,
                                          std::numeric_limits<float>::max() / 1e12);
 

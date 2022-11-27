@@ -616,22 +616,20 @@ t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
 
     auto cluster_blk = atom_look_up.atom_clb(atom_blk);
 
-    auto atom_pb = atom_look_up.atom_pb(atom_blk);
-    if (atom_pb->is_root()) {
-        return get_class_range_for_block(cluster_blk);
-    } else {
-        t_physical_tile_type_ptr physical_tile;
-        const t_sub_tile* sub_tile;
-        int sub_tile_cap;
-        t_logical_block_type_ptr logical_block;
-        std::tie(physical_tile, sub_tile, sub_tile_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk);
-        const t_pb_graph_node* pb_graph_node = atom_look_up.atom_pb_graph_node(atom_blk);
-        return get_pb_graph_node_class_physical_range(physical_tile,
-                                                      sub_tile,
-                                                      logical_block,
-                                                      sub_tile_cap,
-                                                      pb_graph_node);
-    }
+
+
+    t_physical_tile_type_ptr physical_tile;
+    const t_sub_tile* sub_tile;
+    int sub_tile_cap;
+    t_logical_block_type_ptr logical_block;
+    std::tie(physical_tile, sub_tile, sub_tile_cap, logical_block) = get_cluster_blk_physical_spec(cluster_blk);
+    const t_pb_graph_node* pb_graph_node = atom_look_up.atom_pb_graph_node(atom_blk);
+    VTR_ASSERT(pb_graph_node != nullptr);
+    return get_pb_graph_node_class_physical_range(physical_tile,
+                                                  sub_tile,
+                                                  logical_block,
+                                                  sub_tile_cap,
+                                                  pb_graph_node);
 }
 
 t_class_range get_class_range_for_block(const ParentBlockId blk_id, bool is_flat) {
@@ -1362,9 +1360,9 @@ std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_typ
     return std::make_tuple(physical_type, sub_tile, rel_cap, logical_block);
 }
 
-std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
-                                                                         ClusterBlockId cluster_block_id) {
-    std::unordered_map<int, const t_class*> internal_num_class_pairs;
+std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
+                                                  ClusterBlockId cluster_block_id) {
+    std::vector<int> class_num_vec;
 
     t_physical_tile_type_ptr physical_tile;
     const t_sub_tile* sub_tile;
@@ -1372,22 +1370,22 @@ std::unordered_map<int, const t_class*> get_cluster_internal_class_pairs(const A
     t_logical_block_type_ptr logical_block;
 
     std::tie(physical_tile, sub_tile, rel_cap, logical_block) = get_cluster_blk_physical_spec(cluster_block_id);
+    class_num_vec.reserve(physical_tile->primitive_class_inf.size());
 
     auto cluster_atoms = cluster_to_atoms(cluster_block_id);
     for(auto atom_blk_id : cluster_atoms) {
         auto atom_pb_graph_node = atom_lookup.atom_pb_graph_node(atom_blk_id);
-        auto pb_graph_node_num_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
-                                                                               sub_tile,
-                                                                               logical_block,
-                                                                               rel_cap,
-                                                                               atom_pb_graph_node);
-        for (auto& class_pair : pb_graph_node_num_class_pairs) {
-            auto insert_res = internal_num_class_pairs.insert(std::make_pair(class_pair.first, class_pair.second));
-            VTR_ASSERT(insert_res.second == true);
+        auto class_range = get_pb_graph_node_class_physical_range(physical_tile,
+                                                                  sub_tile,
+                                                                  logical_block,
+                                                                  rel_cap,
+                                                                  atom_pb_graph_node);
+        for(int class_num = class_range.low; class_num <= class_range.high; class_num++) {
+            class_num_vec.push_back(class_num);
         }
     }
 
-    return internal_num_class_pairs;
+    return class_num_vec;
 
 }
 
@@ -1413,13 +1411,14 @@ std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id) {
         pb = internal_pbs.front();
         internal_pbs.pop_front();
 
-        auto pb_pins = get_pb_pins(physical_tile,
+        auto pin_num_range = get_pb_pins(physical_tile,
                                    sub_tile,
                                    logical_block,
                                    pb,
                                    rel_cap);
-
-        internal_pins.insert(internal_pins.end(), pb_pins.begin(), pb_pins.end());
+        for(int pin_num = pin_num_range.low; pin_num <= pin_num_range.high; pin_num++) {
+            internal_pins.push_back(pin_num);
+        }
 
         add_child_to_list(internal_pbs, pb);
     }
@@ -1428,25 +1427,31 @@ std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id) {
     return internal_pins;
 }
 
-std::vector<int> get_pb_pins(t_physical_tile_type_ptr physical_type,
-                             const t_sub_tile* sub_tile,
-                             t_logical_block_type_ptr logical_block,
-                             const t_pb* pb,
-                             int rel_cap) {
+t_pin_range get_pb_pins(t_physical_tile_type_ptr physical_type,
+                        const t_sub_tile* sub_tile,
+                        t_logical_block_type_ptr logical_block,
+                        const t_pb* pb,
+                        int rel_cap) {
     /* If pb is the root block, pins on the tile is returned */
     VTR_ASSERT(pb->pb_graph_node != nullptr);
+
+    //TODO: This is not working if there is a custom mapping between tile pins and the root-level
+    // pb-block.
+    t_pin_range pin_num_range;
     if (pb->pb_graph_node->is_root()) {
-        int physical_pin_offset = (sub_tile->num_phy_pins / sub_tile->capacity.total()) * rel_cap;
+        int sub_tile_cap_num_pins = sub_tile->num_phy_pins / sub_tile->capacity.total();
+        int physical_pin_offset = sub_tile_cap_num_pins * rel_cap;
         std::vector<int> physical_pin_arr(logical_block->pb_type->num_pins);
         auto& pin_direct_maps = physical_type->tile_block_pin_directs_map.at(logical_block->index);
         auto pin_direct_map = pin_direct_maps.at(sub_tile->index);
         for (int logical_pin_num = 0; logical_pin_num < logical_block->pb_type->num_pins; logical_pin_num++) {
             auto res = pin_direct_map.find(t_logical_pin(logical_pin_num));
             VTR_ASSERT(res != pin_direct_map.end());
-            physical_pin_arr[logical_pin_num] = res->second.pin + physical_pin_offset;
+            VTR_ASSERT(res->second.pin == logical_pin_num);
         }
-
-        return physical_pin_arr;
+        pin_num_range.low = physical_pin_offset;
+        pin_num_range.high = physical_pin_offset + sub_tile_cap_num_pins - 1;
+        return pin_num_range;
 
     } else {
         return get_pb_graph_node_pins(physical_type,
@@ -2388,7 +2393,7 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
     const auto& atom_lookup = g_vpr_ctx.atom().lookup;
     const auto& grid_block = place_ctx.grid_blocks[i][j];
 
-    class_num_vec.reserve(physical_type->internal_class_inf.size());
+    class_num_vec.reserve(physical_type->primitive_class_inf.size());
 
     //iterate over different sub tiles inside a tile
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
@@ -2398,49 +2403,16 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const int i,
         auto cluster_blk_id = grid_block.blocks[abs_cap];
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
 
-        auto primitive_class_pairs = get_cluster_internal_class_pairs(atom_lookup,
-                                                                      cluster_blk_id);
+        auto primitive_classes = get_cluster_internal_class_pairs(atom_lookup,
+                                                                  cluster_blk_id);
         /* Initialize SINK/SOURCE nodes and connect them to their respective pins */
-        for (auto class_pair : primitive_class_pairs) {
-            int class_num = class_pair.first;
+        for (auto class_num : primitive_classes) {
             class_num_vec.push_back(class_num);
         }
     }
 
     class_num_vec.shrink_to_fit();
     return class_num_vec;
-}
-
-std::vector<int> get_cluster_netlist_tile_pins_at_loc(const int i,
-                                                      const int j,
-                                                      t_physical_tile_type_ptr physical_type) {
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto grid_block = place_ctx.grid_blocks[i][j];
-
-    std::vector<int> pin_num_vec;
-    pin_num_vec.reserve(physical_type->num_pins + physical_type->internal_pin_class.size());
-
-    for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
-        std::vector<int> cluster_pins;
-        int num_tile_pin_per_inst = physical_type->num_pins / physical_type->capacity;
-        if (grid_block.subtile_empty(abs_cap)) {
-            cluster_pins.resize(num_tile_pin_per_inst);
-            std::iota(cluster_pins.begin(),
-                      cluster_pins.end(),
-                      abs_cap * num_tile_pin_per_inst);
-        } else {
-            auto cluster_blk_id = grid_block.blocks[abs_cap];
-            VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID() || cluster_blk_id != EMPTY_BLOCK_ID);
-
-            cluster_pins = get_cluster_block_pins(physical_type,
-                                                  cluster_blk_id,
-                                                  abs_cap);
-        }
-        pin_num_vec.insert(pin_num_vec.end(), cluster_pins.begin(), cluster_pins.end());
-    }
-
-    pin_num_vec.shrink_to_fit();
-    return pin_num_vec;
 }
 
 std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
@@ -2450,7 +2422,7 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
     auto grid_block = place_ctx.grid_blocks[i][j];
 
     std::vector<int> pin_num_vec;
-    pin_num_vec.reserve(physical_type->internal_pin_class.size());
+    pin_num_vec.reserve(physical_type->pin_num_to_pb_pin.size());
 
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
         std::vector<int> cluster_internal_pins;
@@ -2473,7 +2445,8 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
 std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
                                         ClusterBlockId cluster_blk_id,
                                         int abs_cap) {
-    int max_num_pin = (int)(physical_tile->num_pins + physical_tile->internal_pin_class.size()) / physical_tile->capacity;
+
+    int max_num_pin = (int)(physical_tile->num_pins + physical_tile->pin_num_to_pb_pin.size()) / physical_tile->capacity;
     int num_tile_pin_per_inst = physical_tile->num_pins / physical_tile->capacity;
     std::vector<int> pin_num_vec(num_tile_pin_per_inst);
     std::iota(pin_num_vec.begin(), pin_num_vec.end(), abs_cap * num_tile_pin_per_inst);

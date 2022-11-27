@@ -327,24 +327,7 @@ int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical
 inline bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
     return (class_physical_num < (int)physical_tile->class_inf.size());
 }
-
-bool is_primitive_class(t_physical_tile_type_ptr physical_tile, int class_physical_num);
 /** **/
-
-/**
- * @brief: To get the pb_graph_node's classes, we need to have all of the requested parameters to determine the physical number of the classes.
- * @param physical_tile
- * @param sub_tile
- * @param logical_block
- * @param sub_tile_relative_cap
- * @param pb_graph_node
- * @return the key of the map is the class physical number and the value the the class obj itself
- */
-std::unordered_map<int, const t_class*> get_pb_graph_node_num_class_pairs(t_physical_tile_type_ptr physical_tile,
-                                                                          const t_sub_tile* sub_tile,
-                                                                          t_logical_block_type_ptr logical_block,
-                                                                          int sub_tile_relative_cap,
-                                                                          const t_pb_graph_node* pb_graph_node);
 
 /**
  * @brief Classes are indexed in a way that the number of classes on the same pb_graph_node is continuous
@@ -366,14 +349,14 @@ t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr ph
  * @param physical_type
  * @return Physical number of classes on the tile
  */
-std::vector<int> get_tile_classes(t_physical_tile_type_ptr physical_type);
+std::vector<int> get_tile_root_classes(t_physical_tile_type_ptr physical_type);
 
 /**
  * Get the number of all classes, on the tile and inside the cluster.
  * @param physical_type
  * @return
  */
-std::vector<int> get_flat_tile_primitive_classes(t_physical_tile_type_ptr physical_type);
+t_class_range get_flat_tile_primitive_classes(t_physical_tile_type_ptr physical_type);
 /** **/
 int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 
@@ -410,17 +393,19 @@ inline bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_
     return (physical_num < physical_tile->num_pins);
 }
 
+int get_pb_graph_node_num_pins(const t_pb_graph_node* pb_graph_node);
+
 std::vector<const t_pb_graph_pin*> get_pb_graph_node_pb_pins(const t_pb_graph_node* pb_graph_node);
 
 std::vector<t_pb_graph_pin*> get_mutable_pb_graph_node_pb_pins(t_pb_graph_node* pb_graph_node);
 
-std::vector<int> get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
+t_pin_range get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
                                         const t_sub_tile* sub_tile,
                                         t_logical_block_type_ptr logical_block,
                                         int relative_cap,
                                         const t_pb_graph_node* pb_graph_node);
 
-std::vector<int> get_tile_pins(t_physical_tile_type_ptr physical_tile);
+std::vector<int> get_tile_root_pins(t_physical_tile_type_ptr physical_tile);
 
 std::vector<int> get_flat_tile_pins(t_physical_tile_type_ptr physical_type);
 
@@ -447,8 +432,6 @@ const t_pb_graph_node* get_pb_graph_node_from_pin_physical_num(t_physical_tile_t
                                                                int pin_physical_num);
 
 int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile);
-
-int get_total_num_tile_internal_pins(t_physical_tile_type_ptr tile);
 
 int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 

@@ -1105,8 +1105,8 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
 
-                class_num_vec = get_tile_classes(physical_type);
-                pin_num_vec = get_tile_pins(physical_type);
+                class_num_vec = get_tile_root_classes(physical_type);
+                pin_num_vec = get_tile_root_pins(physical_type);
                 add_classes_spatial_lookup(rr_graph_builder,
                                            physical_type,
                                            class_num_vec,
@@ -1856,8 +1856,12 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                          int y,
                                          int* num_rr_nodes) {
     std::vector<e_side> wanted_sides{TOP, BOTTOM, LEFT, RIGHT};
-    std::vector<int> class_num_vec = get_flat_tile_primitive_classes(physical_tile);
-    std::vector<int> pin_num_vec = get_flat_tile_pins(physical_tile);
+    auto class_num_range = get_flat_tile_primitive_classes(physical_tile);
+    auto pin_num_vec = get_flat_tile_pins(physical_tile);
+
+    std::vector<int> class_num_vec(class_num_range.total_num());
+    std::iota(class_num_vec.begin(), class_num_vec.end(), class_num_range.low);
+
     add_classes_spatial_lookup(rr_graph_builder,
                                physical_tile,
                                class_num_vec,

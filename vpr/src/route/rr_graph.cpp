@@ -650,10 +650,9 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                           t_physical_tile_type_ptr physical_tile,
                                           int i,
                                           int j) {
-    for (const auto& pin_class_pair : physical_tile->internal_pin_class) {
-        auto pin_physical_num = pin_class_pair.first;
-        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_physical_num);
-        if (pb_pin->is_root_block_pin()) {
+    auto pin_num_vec = get_flat_tile_pins(physical_tile);
+    for (int pin_physical_num : pin_num_vec) {
+        if (is_pin_on_tile(physical_tile, pin_physical_num)) {
             continue;
         }
         auto pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
@@ -1732,8 +1731,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                 t_physical_tile_type_ptr physical_tile = grid[i][j].type;
                 std::vector<int> class_num_vec;
                 std::vector<int> pin_num_vec;
-                class_num_vec = get_tile_classes(physical_tile);
-                pin_num_vec = get_tile_pins(physical_tile);
+                class_num_vec = get_tile_root_classes(physical_tile);
+                pin_num_vec = get_tile_root_pins(physical_tile);
                 add_classes_rr_graph(rr_graph_builder,
                                      class_num_vec,
                                      i,
@@ -2055,8 +2054,12 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                          const int delayless_switch) {
     t_rr_edge_info_set rr_edges_to_create;
 
-    std::vector<int> class_num_vec = get_flat_tile_primitive_classes(physical_tile);
-    std::vector<int> pin_num_vec = get_flat_tile_pins(physical_tile);
+    auto class_num_range = get_flat_tile_primitive_classes(physical_tile);
+    auto pin_num_vec = get_flat_tile_pins(physical_tile);
+
+    std::vector<int> class_num_vec(class_num_range.total_num());
+    std::iota(class_num_vec.begin(), class_num_vec.end(), class_num_range.low);
+
 
     add_classes_rr_graph(rr_graph_builder,
                          class_num_vec,
@@ -2260,13 +2263,13 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          int rel_cap,
                          int i,
                          int j) {
-    auto pin_nums = get_pb_pins(physical_type,
+    auto pin_num_range = get_pb_pins(physical_type,
                                 sub_tile,
                                 logical_block,
                                 pb,
                                 rel_cap);
     const auto& pin_chain_idx = nodes_to_collapse.pin_chain_idx;
-    for (auto pin_physical_num : pin_nums) {
+    for (auto pin_physical_num = pin_num_range.low; pin_physical_num <= pin_num_range.high; pin_physical_num++) {
         // The pin belongs to a chain - outgoing edges from this pin will be added later
         if (pin_chain_idx[pin_physical_num] != OPEN) {
             continue;

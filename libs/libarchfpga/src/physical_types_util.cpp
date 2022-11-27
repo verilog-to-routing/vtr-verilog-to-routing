@@ -184,7 +184,7 @@ static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr
 static int get_sub_tile_num_internal_classes(const t_sub_tile* sub_tile) {
     int num_classes = 0;
     for (auto eq_site : sub_tile->equivalent_sites) {
-        num_classes += (int)eq_site->logical_class_inf.size();
+        num_classes += (int)eq_site->primitive_logical_class_inf.size();
     }
     num_classes *= sub_tile->capacity.total();
 
@@ -685,7 +685,7 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
     if (class_on_tile) {
         class_inf = type->class_inf[class_physical_num];
     } else {
-        class_inf = type->internal_class_inf.at(class_physical_num);
+        class_inf = type->primitive_class_inf.at(class_physical_num);
     }
 
     std::vector<t_pin_inst_port> pin_info;
@@ -848,7 +848,7 @@ const std::vector<int>& get_pin_list_from_class_physical_num(t_physical_tile_typ
         const t_class& pin_class = physical_tile->class_inf[class_physical_num];
         return pin_class.pinlist;
     } else {
-        const t_class& pin_class = physical_tile->internal_class_inf.at(class_physical_num);
+        const t_class& pin_class = physical_tile->primitive_class_inf.at(class_physical_num);
         return pin_class.pinlist;
     }
 }
@@ -858,7 +858,7 @@ PortEquivalence get_port_equivalency_from_class_physical_num(t_physical_tile_typ
         const t_class& pin_class = physical_tile->class_inf[class_physical_num];
         return pin_class.equivalence;
     } else {
-        const t_class& pin_class = physical_tile->internal_class_inf.at(class_physical_num);
+        const t_class& pin_class = physical_tile->primitive_class_inf.at(class_physical_num);
         return pin_class.equivalence;
     }
 }
@@ -868,7 +868,7 @@ e_pin_type get_class_type_from_class_physical_num(t_physical_tile_type_ptr physi
         return physical_tile->class_inf[class_physical_num].type;
 
     } else {
-        const t_class& pin_class = physical_tile->internal_class_inf.at(class_physical_num);
+        const t_class& pin_class = physical_tile->primitive_class_inf.at(class_physical_num);
         return pin_class.type;
     }
 }
@@ -877,85 +877,28 @@ int get_class_num_pins_from_class_physical_num(t_physical_tile_type_ptr physical
     if (is_class_on_tile(physical_tile, class_physical_num)) {
         return physical_tile->class_inf[class_physical_num].num_pins;
     } else {
-        const t_class& pin_class = physical_tile->internal_class_inf.at(class_physical_num);
+        const t_class& pin_class = physical_tile->primitive_class_inf.at(class_physical_num);
         return pin_class.num_pins;
     }
 }
 
-bool is_primitive_class(t_physical_tile_type_ptr physical_tile, int class_physical_num) {
-    VTR_ASSERT(!is_class_on_tile(physical_tile, class_physical_num));
-    const auto& class_inf = physical_tile->internal_class_inf.at(class_physical_num);
-    auto sample_pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, class_inf.pinlist[0]);
-
-    return sample_pb_pin->is_primitive_pin();
-
-}
-
-std::unordered_map<int, const t_class*> get_pb_graph_node_num_class_pairs(t_physical_tile_type_ptr physical_tile,
-                                                                          const t_sub_tile* sub_tile,
-                                                                          t_logical_block_type_ptr logical_block,
-                                                                          int sub_tile_relative_cap,
-                                                                          const t_pb_graph_node* pb_graph_node) {
-    std::unordered_set<int> seen_logical_class_num;
-    std::unordered_map<int, const t_class*> classes_map;
-    const std::unordered_map<const t_pb_graph_pin*, int>& pb_pin_class_map = logical_block->pb_pin_to_class_logical_num_mapping;
-
-    std::vector<const t_pb_graph_pin*> pb_pins = get_pb_graph_node_pb_pins(pb_graph_node);
-
-    for (auto pin : pb_pins) {
-        int class_logical_num = pb_pin_class_map.at(pin);
-        bool is_added;
-        std::tie(std::ignore, is_added) = seen_logical_class_num.emplace(class_logical_num);
-        if (is_added) {
-            int pin_physical_num = get_pb_pin_physical_num(physical_tile,
-                                                           sub_tile,
-                                                           logical_block,
-                                                           sub_tile_relative_cap,
-                                                           pin);
-            int class_physical_num = physical_tile->internal_pin_class.at(pin_physical_num);
-            auto& pin_class = physical_tile->internal_class_inf.at(class_physical_num);
-            classes_map.insert(std::make_pair(class_physical_num, &pin_class));
-        }
-    }
-
-    return classes_map;
-}
-
-t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr physical_tile,
+t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr /*physical_tile*/,
                                                      const t_sub_tile* sub_tile,
                                                      t_logical_block_type_ptr logical_block,
                                                      int sub_tile_relative_cap,
                                                      const t_pb_graph_node* pb_graph_node) {
-    t_class_range class_range;
+    VTR_ASSERT(pb_graph_node->is_primitive());
 
-    // Get class pairs [class num, class obj] of the pb_graph_node
-    auto pb_graph_node_class_pairs = get_pb_graph_node_num_class_pairs(physical_tile,
-                                                                       sub_tile,
-                                                                       logical_block,
-                                                                       sub_tile_relative_cap,
-                                                                       pb_graph_node);
-    // We assume that class ids for each pb_graph_node are continuous
-    int max_key = std::numeric_limits<int>::min();
-    int min_key = std::numeric_limits<int>::max();
+    t_class_range class_range = logical_block->pb_graph_node_class_range.at(pb_graph_node);
+    int logical_block_class_offset = sub_tile->primitive_class_range[sub_tile_relative_cap].at(logical_block).low;
 
-    // Find the lower/upper band of the class range
-    for (auto& class_pair : pb_graph_node_class_pairs) {
-        if (class_pair.first < min_key)
-            min_key = class_pair.first;
-
-        if (class_pair.first > max_key)
-            max_key = class_pair.first;
-    }
-
-    class_range.low = min_key;
-    class_range.high = max_key;
-
-    VTR_ASSERT(class_range.total_num() == (int)pb_graph_node_class_pairs.size());
+    class_range.low += logical_block_class_offset;
+    class_range.high += logical_block_class_offset;
 
     return class_range;
 }
 
-std::vector<int> get_tile_classes(t_physical_tile_type_ptr physical_type) {
+std::vector<int> get_tile_root_classes(t_physical_tile_type_ptr physical_type) {
     // The class numbers are distributed in a way that the classes on the tile are from 0 to the
     // maximum number of classes on the tile. For internal classes, the number starts from class_inf.size()
     std::vector<int> classes(physical_type->class_inf.size());
@@ -964,30 +907,15 @@ std::vector<int> get_tile_classes(t_physical_tile_type_ptr physical_type) {
     return classes;
 }
 
-std::vector<int> get_flat_tile_primitive_classes(t_physical_tile_type_ptr physical_type) {
-    std::vector<int> class_num_vec;
-    size_t num_classes = physical_type->class_inf.size() + physical_type->internal_class_inf.size();
-    class_num_vec.reserve(num_classes);
-
-    auto tile_class = get_tile_classes(physical_type);
-    class_num_vec.insert(class_num_vec.end(), tile_class.begin(), tile_class.end());
-
-    for (const auto& internal_class_pair : physical_type->internal_class_inf) {
-        if (is_class_on_tile(physical_type, internal_class_pair.first)) {
-            continue;
-        }
-
-        class_num_vec.push_back(internal_class_pair.first);
-    }
-
-    class_num_vec.shrink_to_fit();
-    return class_num_vec;
+t_class_range get_flat_tile_primitive_classes(t_physical_tile_type_ptr physical_type) {
+    int low_class_num = physical_type->primitive_class_starting_idx;
+    return {low_class_num, low_class_num+(int)physical_type->primitive_class_inf.size()-1};
 }
 
 /** **/
 int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
     if (is_flat) {
-        return (int)tile->class_inf.size() + (int)tile->internal_class_inf.size();
+        return (int)tile->class_inf.size() + (int)tile->primitive_class_inf.size();
     } else {
         VTR_ASSERT(is_flat == false);
         return (int)tile->class_inf.size();
@@ -1030,9 +958,9 @@ t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile
     std::tie(sub_tile, sub_tile_cap) = get_sub_tile_from_pin_physical_num(physical_tile, physical_num);
     VTR_ASSERT(sub_tile_cap != OPEN);
 
-    for (auto starting_idx : sub_tile->starting_internal_pin_idx[sub_tile_cap]) {
-        if (physical_num >= starting_idx.second) {
-            logical_block = starting_idx.first;
+    for (auto logical_block_pin_range_pair : sub_tile->intra_pin_range[sub_tile_cap]) {
+        if (physical_num >= logical_block_pin_range_pair.second.low) {
+            logical_block = logical_block_pin_range_pair.first;
         }
     }
 
@@ -1043,10 +971,7 @@ const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr 
     // Without providing logical_block to specifies which equivalent site is mapped to the sub_tile, there is no way to
     // get the pb_graph_pin corresponding to the pin on the tile.
     VTR_ASSERT(physical_num >= physical_tile->num_pins);
-    auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, physical_num);
-    VTR_ASSERT(logical_block != nullptr);
-    int pin_logical_num = get_pin_logical_num_from_pin_physical_num(physical_tile, physical_num);
-    return logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
+    return physical_tile->pin_num_to_pb_pin.at(physical_num);
 }
 
 const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr physical_type,
@@ -1076,7 +1001,8 @@ PortEquivalence get_port_equivalency_from_pin_physical_num(t_physical_tile_type_
         const t_class& pin_class = physical_tile->class_inf[physical_tile->pin_class[pin_physical_num]];
         return pin_class.equivalence;
     } else {
-        const t_class& pin_class = physical_tile->internal_class_inf.at(physical_tile->internal_pin_class.at(pin_physical_num));
+        VTR_ASSERT(is_primitive_pin(physical_tile, pin_physical_num));
+        const t_class& pin_class = physical_tile->primitive_class_inf.at(physical_tile->primitive_pin_class.at(pin_physical_num));
         return pin_class.equivalence;
     }
 }
@@ -1086,8 +1012,14 @@ e_pin_type get_pin_type_from_pin_physical_num(t_physical_tile_type_ptr physical_
         const t_class& pin_class = physical_tile->class_inf[physical_tile->pin_class[pin_physical_num]];
         return pin_class.type;
     } else {
-        const t_class& pin_class = physical_tile->internal_class_inf.at(physical_tile->internal_pin_class.at(pin_physical_num));
-        return pin_class.type;
+        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_physical_num);
+        auto port_type = pb_pin->port->type;
+        if(port_type == PORTS::IN_PORT) {
+            return e_pin_type::RECEIVER;
+        } else {
+            VTR_ASSERT(port_type == PORTS::OUT_PORT);
+            return e_pin_type::DRIVER;
+        }
     }
 }
 
@@ -1125,7 +1057,8 @@ int get_class_num_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, 
     if (is_pin_on_tile(physical_tile, pin_physical_num)) {
         return physical_tile->pin_class[pin_physical_num];
     } else {
-        return physical_tile->internal_pin_class.at(pin_physical_num);
+        VTR_ASSERT(is_primitive_pin(physical_tile, pin_physical_num));
+        return physical_tile->primitive_pin_class.at(pin_physical_num);
     }
 }
 
@@ -1137,6 +1070,33 @@ bool is_primitive_pin(t_physical_tile_type_ptr physical_tile, int pin_physical_n
         auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_physical_num);
         return pb_pin->is_primitive_pin();
     }
+}
+
+int get_pb_graph_node_num_pins(const t_pb_graph_node* pb_graph_node) {
+    int num_pb_graph_pins = 0;
+    for (int port_type_idx = 0; port_type_idx < 3; port_type_idx++) {
+        int num_ports;
+        int* num_pins;
+
+        if (port_type_idx == 0) {
+            num_ports = pb_graph_node->num_input_ports;
+            num_pins = pb_graph_node->num_input_pins;
+
+        } else if (port_type_idx == 1) {
+            num_ports = pb_graph_node->num_output_ports;
+            num_pins = pb_graph_node->num_output_pins;
+        } else {
+            VTR_ASSERT(port_type_idx == 2);
+            num_ports = pb_graph_node->num_clock_ports;
+            num_pins = pb_graph_node->num_clock_pins;
+        }
+
+        for (int port_idx = 0; port_idx < num_ports; port_idx++) {
+            num_pb_graph_pins += num_pins[port_idx];
+        }
+    }
+
+    return num_pb_graph_pins;
 }
 
 std::vector<const t_pb_graph_pin*> get_pb_graph_node_pb_pins(const t_pb_graph_node* pb_graph_node) {
@@ -1211,25 +1171,19 @@ std::vector<t_pb_graph_pin*> get_mutable_pb_graph_node_pb_pins(t_pb_graph_node* 
     return pins;
 }
 
-std::vector<int> get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
+t_pin_range get_pb_graph_node_pins(t_physical_tile_type_ptr /*physical_tile*/,
                                         const t_sub_tile* sub_tile,
                                         t_logical_block_type_ptr logical_block,
                                         int relative_cap,
                                         const t_pb_graph_node* pb_graph_node) {
-    std::vector<int> pins_num;
-    auto pins = get_pb_graph_node_pb_pins(pb_graph_node);
-    for (auto pin : pins) {
-        int pin_num = get_pb_pin_physical_num(physical_tile,
-                                              sub_tile,
-                                              logical_block,
-                                              relative_cap,
-                                              pin);
-        pins_num.push_back(pin_num);
-    }
-    return pins_num;
+
+    int physical_pin_offset = sub_tile->intra_pin_range[relative_cap].at(logical_block).low;
+
+    return {physical_pin_offset+pb_graph_node->pin_num_range.low,
+            physical_pin_offset+pb_graph_node->pin_num_range.high};
 }
 
-std::vector<int> get_tile_pins(t_physical_tile_type_ptr physical_tile) {
+std::vector<int> get_tile_root_pins(t_physical_tile_type_ptr physical_tile) {
     std::vector<int> tile_pins(physical_tile->num_pins);
     std::iota(tile_pins.begin(), tile_pins.end(), 0);
 
@@ -1237,22 +1191,23 @@ std::vector<int> get_tile_pins(t_physical_tile_type_ptr physical_tile) {
 }
 
 std::vector<int> get_flat_tile_pins(t_physical_tile_type_ptr physical_type) {
-    std::vector<int> pin_num_vec;
-    size_t num_pins = physical_type->num_pins + physical_type->internal_pin_class.size();
-    pin_num_vec.reserve(num_pins);
+    std::vector<int> tile_pins;
+    tile_pins.reserve(physical_type->num_pins+physical_type->pin_num_to_pb_pin.size());
 
-    auto tile_pins = get_tile_pins(physical_type);
-    pin_num_vec.insert(pin_num_vec.end(), tile_pins.begin(), tile_pins.end());
-
-    for (const auto& internal_pin_class_pair : physical_type->internal_pin_class) {
-        if (is_pin_on_tile(physical_type, internal_pin_class_pair.first)) {
-            continue;
-        }
-        pin_num_vec.push_back(internal_pin_class_pair.first);
+    for(int pin_num = 0; pin_num < physical_type->num_pins; pin_num++) {
+        tile_pins.push_back(pin_num);
     }
 
-    pin_num_vec.shrink_to_fit();
-    return pin_num_vec;
+    for(const auto& pin_num_pb_pin_pair: physical_type->pin_num_to_pb_pin) {
+        auto pb_pin = pin_num_pb_pin_pair.second;
+        if(pb_pin->is_root_block_pin()) {
+            continue;
+        } else {
+            tile_pins.push_back(pin_num_pb_pin_pair.first);
+        }
+    }
+
+    return tile_pins;
 }
 
 std::vector<int> get_physical_pin_src_pins(t_physical_tile_type_ptr physical_type,
@@ -1319,7 +1274,7 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                                                                  sub_tile->capacity.low + relative_cap,
                                                                  pin->pin_count_in_cluster);
     } else {
-        int offset = sub_tile->starting_internal_pin_idx[relative_cap].at(logical_block);
+        int offset = sub_tile->intra_pin_range[relative_cap].at(logical_block).low;
         pin_physical_num = pin->pin_count_in_cluster + offset;
     }
 
@@ -1364,16 +1319,8 @@ const t_pb_graph_node* get_pb_graph_node_from_pin_physical_num(t_physical_tile_t
                                                                int pin_physical_num) {
     VTR_ASSERT(!is_pin_on_tile(physical_type, pin_physical_num));
     t_logical_block_type_ptr logical_block = nullptr;
-    const t_sub_tile* sub_tile = nullptr;
-    int rel_cap = -1;
-    std::tie(sub_tile, rel_cap) = get_sub_tile_from_pin_physical_num(physical_type, pin_physical_num);
-    VTR_ASSERT(sub_tile != nullptr);
 
-    for (auto logical_block_start_pin_num_pair : sub_tile->starting_internal_pin_idx[rel_cap]) {
-        if (pin_physical_num >= logical_block_start_pin_num_pair.second) {
-            logical_block = logical_block_start_pin_num_pair.first;
-        }
-    }
+    logical_block = get_logical_block_from_pin_physical_num(physical_type, pin_physical_num);
     VTR_ASSERT(logical_block != nullptr);
 
     int pin_logical_num = get_pin_logical_num_from_pin_physical_num(physical_type, pin_physical_num);
@@ -1391,18 +1338,9 @@ int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile) {
     return num_pins;
 }
 
-int get_total_num_tile_internal_pins(t_physical_tile_type_ptr tile) {
-    int num_pins = 0;
-    for (const t_sub_tile& sub_tile : tile->sub_tiles) {
-        num_pins += get_total_num_sub_tile_internal_pins(&sub_tile);
-    }
-
-    return num_pins;
-}
-
 int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
     if (is_flat) {
-        return tile->num_pins + get_total_num_tile_internal_pins(tile);
+        return tile->num_pins + (int)tile->pin_num_to_pb_pin.size();
     } else {
         return tile->num_pins;
     }

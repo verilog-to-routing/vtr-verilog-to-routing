@@ -55,16 +55,16 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 static void set_pins_logical_num(t_logical_block_type* logical_block);
 
 /* Return all pb_graph_nodes, in all modes and sub-blocks, contained in the given logical_block */
-static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(t_logical_block_type_ptr logical_block);
+static std::vector<const t_pb_graph_node*> get_primitive_pb_graph_nodes(t_logical_block_type_ptr logical_block);
 
 /* Add SRC/SINK pins for all the ports of the blocks in the logical block */
-static void add_logical_classes(t_logical_block_type* logical_block);
+static void add_primitive_logical_classes(t_logical_block_type* logical_block);
 
 /* Add SRC/SINK pins for the given ports */
-static void add_port_logical_classes(t_logical_block_type* logical_block,
-                                     t_pb_graph_pin** pb_graph_pins,
-                                     int num_ports,
-                                     int* num_pins);
+static int add_port_logical_classes(t_logical_block_type* logical_block,
+                                    t_pb_graph_pin** pb_graph_pins,
+                                    int num_ports,
+                                    int* num_pins);
 
 static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_node,
                                              t_pb_graph_node** pb_graph_children_nodes,
@@ -149,7 +149,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
             if (is_flat) {
                 set_pins_logical_num(&type);
-                add_logical_classes(&type);
+                add_primitive_logical_classes(&type);
             }
         } else {
             type.pb_graph_head = nullptr;
@@ -257,6 +257,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     }
 
     i_input = i_output = i_clockport = 0;
+    pb_graph_node->pin_num_range.low = pin_count_in_cluster;
     for (i = 0; i < pb_type->num_ports; i++) {
         if (pb_type->ports[i].model_port) {
             VTR_ASSERT(pb_type->num_modes == 0);
@@ -320,6 +321,8 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
             i_clockport++;
         }
     }
+
+    pb_graph_node->pin_num_range.high = (pin_count_in_cluster-1);
 
     /* Power */
     if (load_power_structures) {
@@ -434,7 +437,7 @@ static void set_pins_logical_num(t_logical_block_type* logical_block) {
     }
 }
 
-static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(t_logical_block_type_ptr logical_block) {
+static std::vector<const t_pb_graph_node*> get_primitive_pb_graph_nodes(t_logical_block_type_ptr logical_block) {
     std::vector<const t_pb_graph_node*> pb_graph_nodes;
 
     std::list<const t_pb_graph_node*> pb_graph_node_q;
@@ -443,7 +446,9 @@ static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(
     while (!pb_graph_node_q.empty()) {
         auto pb_graph_node = pb_graph_node_q.front();
         pb_graph_node_q.pop_front();
-        pb_graph_nodes.push_back(pb_graph_node);
+        if(pb_graph_node->is_primitive()) {
+            pb_graph_nodes.push_back(pb_graph_node);
+        }
 
         auto pb_type = pb_graph_node->pb_type;
         /* Iterating over different modes of the block */
@@ -464,9 +469,11 @@ static std::vector<const t_pb_graph_node*> get_all_logical_block_pb_graph_nodes(
     return pb_graph_nodes;
 }
 
-static void add_logical_classes(t_logical_block_type* logical_block) {
-    auto pb_graph_nodes = get_all_logical_block_pb_graph_nodes(logical_block);
+static void add_primitive_logical_classes(t_logical_block_type* logical_block) {
+    auto pb_graph_nodes = get_primitive_pb_graph_nodes(logical_block);
     for (auto pb_graph_node : pb_graph_nodes) {
+        int first_class_num = (int)logical_block->primitive_logical_class_inf.size();
+        int num_added_classes = 0;
         /* There are three types of ports which can be defined for each block : Input - Output - Clock
          * In this for loop, we first iterate over the ports of the same type
          */
@@ -490,16 +497,20 @@ static void add_logical_classes(t_logical_block_type* logical_block) {
                 num_pins = pb_graph_node->num_clock_pins;
                 pb_graph_pins = pb_graph_node->clock_pins;
             }
-            add_port_logical_classes(logical_block, pb_graph_pins, num_ports, num_pins);
+            num_added_classes += add_port_logical_classes(logical_block, pb_graph_pins, num_ports, num_pins);
         }
+        logical_block->pb_graph_node_class_range.insert(std::make_pair(pb_graph_node, t_class_range(first_class_num,
+                                                                                                    first_class_num+num_added_classes-1)));
+
     }
 }
 
-void static add_port_logical_classes(t_logical_block_type* logical_block,
-                                     t_pb_graph_pin** pb_graph_pins,
-                                     int num_ports,
-                                     int* num_pins) {
-    std::vector<t_class>& logical_class_inf = logical_block->logical_class_inf;
+static int add_port_logical_classes(t_logical_block_type* logical_block,
+                                    t_pb_graph_pin** pb_graph_pins,
+                                    int num_ports,
+                                    int* num_pins) {
+    int num_added_classes = 0;
+    std::vector<t_class>& primitive_logical_class_inf = logical_block->primitive_logical_class_inf;
 
     for (int port_idx = 0; port_idx < num_ports; port_idx++) {
         if (num_pins[port_idx] == 0)
@@ -507,7 +518,7 @@ void static add_port_logical_classes(t_logical_block_type* logical_block,
         auto port = pb_graph_pins[port_idx][0].port;
         if (port->equivalent != PortEquivalence::NONE) {
             t_class class_inf;
-            int class_num = (int)logical_class_inf.size();
+            int class_num = (int)primitive_logical_class_inf.size();
             class_inf.num_pins = port->num_pins;
             class_inf.equivalence = port->equivalent;
 
@@ -521,13 +532,14 @@ void static add_port_logical_classes(t_logical_block_type* logical_block,
             for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
                 auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
                 class_inf.pinlist.push_back(pb_graph_pin->pin_count_in_cluster);
-                logical_block->pb_pin_to_class_logical_num_mapping.insert(std::make_pair(pb_graph_pin, class_num));
+                logical_block->primitive_pb_pin_to_logical_class_num_mapping.insert(std::make_pair(pb_graph_pin, class_num));
             }
-            logical_class_inf.push_back(class_inf);
+            primitive_logical_class_inf.push_back(class_inf);
+            num_added_classes++;
         } else {
             for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
                 t_class class_inf;
-                int class_num = (int)logical_class_inf.size();
+                int class_num = (int)primitive_logical_class_inf.size();
                 class_inf.num_pins = 1;
                 class_inf.equivalence = port->equivalent;
 
@@ -540,11 +552,14 @@ void static add_port_logical_classes(t_logical_block_type* logical_block,
 
                 auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
                 class_inf.pinlist.push_back(pb_graph_pin->pin_count_in_cluster);
-                logical_block->pb_pin_to_class_logical_num_mapping.insert(std::make_pair(pb_graph_pin, class_num));
-                logical_class_inf.push_back(class_inf);
+                logical_block->primitive_pb_pin_to_logical_class_num_mapping.insert(std::make_pair(pb_graph_pin, class_num));
+                primitive_logical_class_inf.push_back(class_inf);
+                num_added_classes++;
             }
         }
     }
+
+    return num_added_classes;
 }
 
 void free_pb_graph_edges() {

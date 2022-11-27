@@ -429,10 +429,10 @@ void print_block_pins_nets(std::ostream& os,
                            const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
-    std::vector<int> physical_pins;
+    t_pin_range pin_num_range;
     if (is_pin_on_tile(physical_type, pin_physical_num)) {
-        physical_pins.resize(physical_type->num_pins);
-        std::iota(physical_pins.begin(), physical_pins.end(), 0);
+        pin_num_range.low = 0;
+        pin_num_range.high = physical_type->num_pins-1;
     } else {
         const t_sub_tile* sub_tile = nullptr;
         int rel_cap = -1;
@@ -442,14 +442,14 @@ void print_block_pins_nets(std::ostream& os,
         VTR_ASSERT(logical_block != nullptr);
         auto pb_graph_node = get_pb_pin_from_pin_physical_num(physical_type, pin_physical_num);
         VTR_ASSERT(pb_graph_node != nullptr);
-        physical_pins = get_pb_graph_node_pins(physical_type,
+        pin_num_range = get_pb_graph_node_pins(physical_type,
                                                sub_tile,
                                                logical_block,
                                                rel_cap,
                                                pb_graph_node->parent_node);
     }
 
-    for (auto pin : physical_pins) {
+    for (int pin = pin_num_range.low; pin <= pin_num_range.high; pin++) {
         t_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
         RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, root_x, root_y, pin);
         VTR_ASSERT(node_id != RRNodeId::INVALID());

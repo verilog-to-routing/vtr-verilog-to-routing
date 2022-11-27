@@ -455,6 +455,26 @@ struct t_class_range {
     int total_num() const {
         return high - low + 1;
     }
+
+    t_class_range() = default;
+
+    t_class_range(int low_class_num, int high_class_num)
+        : low(low_class_num), high(high_class_num) {}
+
+};
+
+struct t_pin_range {
+    int low = 0;
+    int high = 0;
+    // Returns the total number of classes
+    int total_num() const {
+        return high - low + 1;
+    }
+
+    t_pin_range() = default;
+
+    t_pin_range(int low_class_num, int high_class_num)
+        : low(low_class_num), high(high_class_num) {}
 };
 
 enum e_power_wire_type {
@@ -618,14 +638,17 @@ struct t_physical_tile_type {
 
     std::vector<t_class> class_inf; /* [0..num_class-1] */
 
-    std::unordered_map<int, t_class> internal_class_inf;
+    int primitive_class_starting_idx = -1;
+    std::unordered_map<int, t_class> primitive_class_inf;
 
     std::vector<int> pin_width_offset;  // [0..num_pins-1]
     std::vector<int> pin_height_offset; // [0..num_pins-1]
     std::vector<int> pin_class;         // [0..num_pins-1]
-    std::unordered_map<int, int> internal_pin_class;
+    std::unordered_map<int, int> primitive_pin_class;
     std::vector<bool> is_ignored_pin; // [0..num_pins-1]
     std::vector<bool> is_pin_global;  // [0..num_pins-1]
+
+    std::unordered_map<int, t_pb_graph_pin*> pin_num_to_pb_pin;
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -733,8 +756,8 @@ struct t_sub_tile {
                                ///>      indices ranging from 4 to 7.
     t_class_range class_range;
 
-    std::vector<std::unordered_map<t_logical_block_type_ptr, int>> starting_internal_class_idx;
-    std::vector<std::unordered_map<t_logical_block_type_ptr, int>> starting_internal_pin_idx;
+    std::vector<std::unordered_map<t_logical_block_type_ptr, t_class_range>> primitive_class_range;
+    std::vector<std::unordered_map<t_logical_block_type_ptr, t_pin_range>> intra_pin_range;
 
     int num_phy_pins = 0;
 
@@ -833,7 +856,7 @@ struct t_physical_tile_port {
  * the logical block. The key of this map is the logical number of the pin, and the value is a pointer to the
  * corresponding pb_graph_pin
  *
- * pb_pin_to_class_logical_num_mapping: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
+ * primitive_pb_pin_to_logical_class_num_mapping: Maps each pin to its corresponding class's logical number. To retrieve the actual class, use this number as an
  * index to logical_class_inf.
  *
  * logical_class_inf: Contains all the classes inside the logical block. The index of each class is the logical number associate with the class.
@@ -861,8 +884,9 @@ struct t_logical_block_type {
                                                             ///>place this type of netlist block.
 
     std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;         /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
-    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_to_class_logical_num_mapping; /* pb_pin_to_class_logical_num_mapping[pb_graph_pin ptr] -> class logical number */
-    std::vector<t_class> logical_class_inf;                                             /* logical_class_inf[class_logical_number] -> class */
+    std::unordered_map<const t_pb_graph_pin*, int> primitive_pb_pin_to_logical_class_num_mapping; /* primitive_pb_pin_to_logical_class_num_mapping[pb_graph_pin ptr] -> class logical number */
+    std::vector<t_class> primitive_logical_class_inf;                                             /* primitive_logical_class_inf[class_logical_number] -> class */
+    std::unordered_map<const t_pb_graph_node*, t_class_range> pb_graph_node_class_range;
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
@@ -1187,6 +1211,8 @@ class t_pb_graph_node {
      *        Everytime the mode consistency check fails, the index of the mode that causes the conflict is added to this vector.
      * */
     std::vector<int> illegal_modes;
+
+    t_pin_range pin_num_range;
 
     t_pb_graph_pin** input_pins;  /* [0..num_input_ports-1] [0..num_port_pins-1]*/
     t_pb_graph_pin** output_pins; /* [0..num_output_ports-1] [0..num_port_pins-1]*/

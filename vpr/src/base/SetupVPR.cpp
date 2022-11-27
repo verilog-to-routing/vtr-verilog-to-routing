@@ -48,14 +48,20 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis);
+static void add_logical_pin_to_physical_tile(int physical_pin_offset,
+                                             t_logical_block_type_ptr logical_block_ptr,
+                                             t_physical_tile_type* physical_type);
+static void add_primitive_pin_to_physical_tile(const std::vector<int>& pin_list,
+                                               int physical_class_num,
+                                               t_physical_tile_type* physical_tile);
 static void add_intra_tile_switches();
 static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,
                                                         t_logical_block_type* logical_block,
                                                         t_class* class_inf);
-static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
-                                      t_logical_block_type* logical_block,
-                                      t_class* class_inf,
-                                      int physical_class_num);
+static void do_reachability_analysis(t_physical_tile_type* physical_tile,
+                                     t_logical_block_type* logical_block,
+                                     t_class* class_inf,
+                                     int physical_class_num);
 
 /**
  * @brief Sets VPR parameters and defaults.
@@ -723,55 +729,74 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
     for (auto& physical_type : device_ctx.physical_tile_types) {
         int physical_pin_offset = physical_type.num_pins;
         int physical_class_offset = (int)physical_type.class_inf.size();
+        physical_type.primitive_class_starting_idx = physical_class_offset;
         for (auto& sub_tile : physical_type.sub_tiles) {
-            sub_tile.starting_internal_class_idx.resize(sub_tile.capacity.total());
-            sub_tile.starting_internal_pin_idx.resize(sub_tile.capacity.total());
+            sub_tile.primitive_class_range.resize(sub_tile.capacity.total());
+            sub_tile.intra_pin_range.resize(sub_tile.capacity.total());
             for (int sub_tile_inst = 0; sub_tile_inst < sub_tile.capacity.total(); sub_tile_inst++) {
                 for (auto logic_block_ptr : sub_tile.equivalent_sites) {
+                    int num_classes = (int)logic_block_ptr->primitive_logical_class_inf.size();
+                    int num_pins = (int)logic_block_ptr->pin_logical_num_to_pb_pin_mapping.size();
                     int logical_block_idx = logic_block_ptr->index;
                     t_logical_block_type* mutable_logical_block = &device_ctx.logical_block_types[logical_block_idx];
                     VTR_ASSERT(mutable_logical_block == logic_block_ptr);
-                    sub_tile.starting_internal_class_idx[sub_tile_inst].insert(
-                        std::make_pair(logic_block_ptr, physical_class_offset));
-                    sub_tile.starting_internal_pin_idx[sub_tile_inst].insert(
-                        std::make_pair(logic_block_ptr, physical_pin_offset));
+                    sub_tile.primitive_class_range[sub_tile_inst].insert(
+                        std::make_pair(logic_block_ptr, t_class_range(physical_class_offset,
+                                                                      physical_class_offset+num_classes-1)));
+                    sub_tile.intra_pin_range[sub_tile_inst].insert(
+                        std::make_pair(logic_block_ptr, t_pin_range(physical_pin_offset,
+                                                                    physical_pin_offset+num_pins-1)));
+                    add_logical_pin_to_physical_tile(physical_pin_offset, logic_block_ptr, &physical_type);
 
-                    auto logical_classes = logic_block_ptr->logical_class_inf;
+                    auto logical_classes = logic_block_ptr->primitive_logical_class_inf;
                     std::for_each(logical_classes.begin(), logical_classes.end(),
                                   [&physical_pin_offset](t_class& l_class) { for(auto &pin : l_class.pinlist) {
-                        pin += physical_pin_offset;} });
+                                                                                pin += physical_pin_offset;
+                                                                            }
+                                  });
 
                     int physical_class_num = physical_class_offset;
                     for (auto& logic_class : logical_classes) {
-                        auto result = physical_type.internal_class_inf.insert(std::make_pair(physical_class_num, logic_class));
+                        auto result = physical_type.primitive_class_inf.insert(std::make_pair(physical_class_num, logic_class));
+                        add_primitive_pin_to_physical_tile(logic_class.pinlist,
+                                                           physical_class_num,
+                                                           &physical_type);
                         VTR_ASSERT(result.second);
-                        if(reachability_analysis) {
-                            if (logic_class.type == e_pin_type::RECEIVER) {
-                                add_class_to_related_pins(&physical_type,
-                                                          mutable_logical_block,
-                                                          &logic_class,
-                                                          physical_class_num);
-                            }
+                        if (reachability_analysis && logic_class.type == e_pin_type::RECEIVER) {
+                            do_reachability_analysis(&physical_type,
+                                                     mutable_logical_block,
+                                                     &logic_class,
+                                                     physical_class_num);
                         }
                         physical_class_num++;
                     }
 
-                    vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
-                    for (auto pin_to_pb_pin_map : logic_block_ptr->pin_logical_num_to_pb_pin_mapping) {
-                        int physical_pin_num = pin_to_pb_pin_map.first + physical_pin_offset;
-                        int class_logical_num = logic_block_ptr->pb_pin_to_class_logical_num_mapping.at(pin_to_pb_pin_map.second);
-
-                        auto result = physical_type.internal_pin_class.insert(
-                            std::make_pair(physical_pin_num, class_logical_num + physical_class_offset));
-                        VTR_ASSERT(result.second);
-                    }
-
-                    physical_pin_offset += (int)logic_block_ptr->pin_logical_num_to_pb_pin_mapping.size();
-                    physical_class_offset += (int)logic_block_ptr->logical_class_inf.size();
+                    physical_pin_offset += num_pins;
+                    physical_class_offset += num_classes;
                 }
             }
         }
     }
+}
+
+static void add_logical_pin_to_physical_tile(int physical_pin_offset,
+                                             t_logical_block_type_ptr logical_block_ptr,
+                                             t_physical_tile_type* physical_type) {
+    for(auto logical_pin_pair : logical_block_ptr->pin_logical_num_to_pb_pin_mapping) {
+        auto pin_logical_num = logical_pin_pair.first;
+        auto pb_pin = logical_pin_pair.second;
+        physical_type->pin_num_to_pb_pin.insert(std::make_pair(pin_logical_num+physical_pin_offset, pb_pin));
+    }
+}
+
+static void add_primitive_pin_to_physical_tile(const std::vector<int>& pin_list,
+                                               int physical_class_num,
+                                               t_physical_tile_type* physical_tile) {
+    for(auto pin_num : pin_list) {
+        physical_tile->primitive_pin_class.insert(std::make_pair(pin_num, physical_class_num));
+    }
+
+
 }
 
 static void add_intra_tile_switches() {
@@ -870,21 +895,13 @@ static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* ph
     return relevant_pb_nodes;
 }
 
-static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
+static void do_reachability_analysis(t_physical_tile_type* physical_tile,
                                       t_logical_block_type* logical_block,
                                       t_class* class_inf,
                                       int physical_class_num) {
     std::list<int> pin_list;
     pin_list.insert(pin_list.begin(), class_inf->pinlist.begin(), class_inf->pinlist.end());
 
-    int pin_in_class_physical_num = class_inf->pinlist[0];
-    if (is_pin_on_tile(physical_tile, pin_in_class_physical_num)) {
-        return;
-    } else {
-        auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, pin_in_class_physical_num);
-        if (!pb_pin->is_primitive_pin())
-            return;
-    }
 
     std::set<t_pb_graph_node*> relevant_pb_nodes = get_relevant_pb_nodes(physical_tile,
                                                                          logical_block,
@@ -894,9 +911,7 @@ static void add_class_to_related_pins(t_physical_tile_type* physical_tile,
     while (!pin_list.empty()) {
         int curr_pin_physical_num = pin_list.front();
         pin_list.pop_front();
-        if (is_pin_on_tile(physical_tile, curr_pin_physical_num)) {
-            continue;
-        }
+
         t_pb_graph_pin* curr_pb_graph_pin = get_mutable_pb_pin_from_pin_physical_num(physical_tile, logical_block, curr_pin_physical_num);
 
         auto insert_res = seen_pb_pins.insert(curr_pb_graph_pin);
