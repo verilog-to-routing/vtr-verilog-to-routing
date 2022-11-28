@@ -346,7 +346,7 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_bl
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //Build the device
-    auto grid = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization, arch.number_of_dies);
+    auto grid = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization);
 
     /*
      *Report on the device
