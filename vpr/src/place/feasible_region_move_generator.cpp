@@ -9,20 +9,13 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = g_placer_ctx.mutable_move();
 
-    /* Pick a random block to be swapped with another random block.   */
-    // pick it from the highly critical blocks
-    if (place_move_ctx.highly_crit_pins.size() == 0) {
-        return e_create_move::ABORT; //No critical block
-    }
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
-    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
+    //Pick a random highly critical block to be swapped with another random block
+    ClusterNetId net_from;
+    int pin_from;
+    ClusterBlockId b_from = pick_from_highly_critical_block(net_from, pin_from);
 
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found
-    }
-
-    if (place_ctx.block_locs[b_from].is_fixed) {
-        return e_create_move::ABORT; //Block is fixed, cannot move
     }
 
     //from block data
@@ -69,7 +62,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     xt = 0;
     yt = 0;
 
-    ClusterBlockId b_output = cluster_ctx.clb_nlist.net_pin_block(crit_pin.first, crit_pin.second);
+    ClusterBlockId b_output = cluster_ctx.clb_nlist.net_pin_block(net_from, pin_from);
     t_pl_loc output_loc = place_ctx.block_locs[b_output].loc;
     xt = output_loc.x;
     yt = output_loc.y;

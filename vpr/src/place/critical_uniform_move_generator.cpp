@@ -5,22 +5,14 @@
 e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& /*placer_opts*/, const PlacerCriticalities* /*criticalities*/) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = g_placer_ctx.move();
 
-    /* Pick a random block to be swapped with another random block.   */
-    // pick it from the highly critical blocks
-    if (place_move_ctx.highly_crit_pins.size() == 0) {
-        return e_create_move::ABORT; //No critical block
-    }
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
-    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
+    //Pick a random highly critical block to be swapped with another random block
+    ClusterNetId net_from;
+    int pin_from;
+    ClusterBlockId b_from = pick_from_highly_critical_block(net_from, pin_from);
 
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found
-    }
-
-    if (place_ctx.block_locs[b_from].is_fixed) {
-        return e_create_move::ABORT; //Block is fixed, cannot move
     }
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;

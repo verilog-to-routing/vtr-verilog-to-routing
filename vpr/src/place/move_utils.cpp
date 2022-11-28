@@ -531,6 +531,127 @@ ClusterBlockId pick_from_block() {
     return ClusterBlockId::INVALID();
 }
 
+//Pick a random block with a specific blk_type to be swapped with another random block.
+//If none is found return ClusterBlockId::INVALID()
+ClusterBlockId pick_from_block(t_logical_block_type_ptr blk_type) {
+    /* Some blocks may be fixed, and should never be moved from their *
+     * initial positions. If we randomly selected such a block try    *
+     * another random block.                                          *
+     *                                                                *
+     * We need to track the blocks we have tried to avoid an infinite *
+     * loop if all blocks are fixed.                                  */
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    std::unordered_set<ClusterBlockId> tried_from_blocks;
+
+    //So long as untried blocks remain
+    while (tried_from_blocks.size() < cluster_ctx.clb_nlist.blocks().size()) {
+        //Pick a block at random
+        ClusterBlockId b_from = ClusterBlockId(vtr::irand((int)cluster_ctx.clb_nlist.blocks().size() - 1));
+        //Record it as tried
+        tried_from_blocks.insert(b_from);
+
+        //Check if picked block type matches with the blk_type specified
+        //If it matches, then we can use the picked block if it is not fixed
+        if (cluster_ctx.clb_nlist.block_type(b_from)->index == blk_type->index) {
+            if (place_ctx.block_locs[b_from].is_fixed) {
+                continue; //Fixed location, try again
+            }
+
+            //Found a movable block
+            return b_from;
+        }
+    }
+
+    //No movable blocks found
+    return ClusterBlockId::INVALID();
+}
+
+//Pick a random highly critical block to be swapped with another random block.
+//If none is found return ClusterBlockId::INVALID()
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from) {
+    auto& place_move_ctx = g_placer_ctx.move();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    //Initialize critical net and pin to be invalid
+    net_from = ClusterNetId::INVALID();
+    pin_from = -1;
+
+    //check if any critical block is available
+    if (place_move_ctx.highly_crit_pins.size() == 0) {
+        return ClusterBlockId::INVALID();
+    }
+
+    //Some highly critical blocks might have a different type than blk_type.
+    //Need to keep track of how many blocks we have tried to avoid infinite loop
+    //in case of no moveable critical block
+    std::unordered_set<ClusterBlockId> tried_from_highly_critical_blocks;
+
+    while (tried_from_highly_critical_blocks.size() < place_move_ctx.highly_crit_pins.size()) {
+        //pick a random highly critical pin and find the nets driver block
+        std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
+        ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
+
+        tried_from_highly_critical_blocks.insert(b_from);
+
+        if (place_ctx.block_locs[b_from].is_fixed) {
+            continue; //Block is fixed, cannot move
+        }
+
+        net_from = crit_pin.first;
+        pin_from = crit_pin.second;
+        return b_from;
+    }
+
+    //No critical block with 'blk_type' found
+    return ClusterBlockId::INVALID();
+}
+
+//Pick a random highly critical block with a specified block type to be swapped with another random block.
+//If none is found return ClusterBlockId::INVALID()
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, t_logical_block_type_ptr blk_type) {
+    auto& place_move_ctx = g_placer_ctx.move();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    //Initialize critical net and pin to be invalid
+    net_from = ClusterNetId::INVALID();
+    pin_from = -1;
+
+    //check if any critical block is available
+    if (place_move_ctx.highly_crit_pins.size() == 0) {
+        return ClusterBlockId::INVALID();
+    }
+
+    //Some highly critical blocks might have a different type than blk_type.
+    //Need to keep track of how many blocks we have tried to avoid infinite loop
+    //in case of no critical block with 'blk_type' is found.
+    std::unordered_set<ClusterBlockId> tried_from_highly_critical_blocks;
+
+    while (tried_from_highly_critical_blocks.size() < place_move_ctx.highly_crit_pins.size()) {
+        //pick a random highly critical pin and find the nets driver block
+        std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
+        ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
+        tried_from_highly_critical_blocks.insert(b_from);
+
+        //Check if picked block type matches with the blk_type specified and it is not fixed
+        if (cluster_ctx.clb_nlist.block_type(b_from)->index == blk_type->index) {
+            if (place_ctx.block_locs[b_from].is_fixed) {
+                continue; //Block is fixed, cannot move
+            }
+
+            net_from = crit_pin.first;
+            pin_from = crit_pin.second;
+            return b_from;
+        }
+    }
+
+    //No critical block with 'blk_type' found
+    return ClusterBlockId::INVALID();
+}
+
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc from,

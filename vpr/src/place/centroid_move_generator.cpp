@@ -7,9 +7,11 @@
 e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
+
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found
     }
+
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
