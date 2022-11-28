@@ -4185,8 +4185,9 @@ static std::vector<int> get_sink_pins_in_cluster(const std::unordered_set<int>& 
     auto all_conn_pins = get_physical_pin_sink_pins(physical_type,
                                                     logical_block,
                                                     pin_physical_num);
+    sink_pins_in_cluster.reserve(all_conn_pins.size());
     for (auto conn_pin : all_conn_pins) {
-        if (std::find(pins_in_cluster.begin(), pins_in_cluster.end(), conn_pin) != pins_in_cluster.end()) {
+        if (pins_in_cluster.find(conn_pin) != pins_in_cluster.end()) {
             sink_pins_in_cluster.push_back(conn_pin);
         }
     }
