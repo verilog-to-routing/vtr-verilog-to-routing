@@ -1051,7 +1051,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     highfanout_bb.ymin = std::min<int>(highfanout_bb.ymin, rr_graph_->node_ylow(node));
                     highfanout_bb.xmax = std::max<int>(highfanout_bb.xmax, rr_graph_->node_xhigh(node));
                     highfanout_bb.ymax = std::max<int>(highfanout_bb.ymax, rr_graph_->node_yhigh(node));
-                    if(rr_graph_->node_type(rr_node_to_add)) {
+                    if(rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
                         chan_nodes_added++;
                     }
                     nodes_added++;
