@@ -79,6 +79,9 @@ class NocTrafficFlows {
     /** contains all the traffic flows provided by the user and their information*/
     vtr::vector<NocTrafficFlowId, t_noc_traffic_flow> noc_traffic_flows;
 
+    /** contains the ids of all the router cluster blocks within the design */
+    std::unordered_set<ClusterBlockId> router_cluster_in_netlist;
+
     /**
      * @brief Each traffic flow is composed of a source and destination 
      * router. If the source/destination routers are moved, then the traffic
@@ -205,6 +208,8 @@ class NocTrafficFlows {
      * traffic flow's routed path.
      */
     std::vector<NocLinkId>& get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id);
+
+    const std::unordered_set<ClusterBlockId>& get_router_clusters_in_netlist(void) const;
 
     // setters
 
