@@ -54,8 +54,9 @@ class MoveGenerator {
      *  @param rlim: maximum distance a block can move in x or y direction, in the compressed grid space
      *  @param placer_opts: all the placer options
      *  @param criticalities: the placer criticalities, useful for timing directed moves
+     *  @param blk_type: function proposes a move with given block type if specified.  
      */
-    virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) = 0;
+    virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type_ptr blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) = 0;
 
     /**
      * @brief Recieves feedback about the outcome of the previously proposed move
