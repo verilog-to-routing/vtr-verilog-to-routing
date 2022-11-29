@@ -358,6 +358,30 @@ Use the options below to override this default naming behaviour.
 
     .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
 
+.. option:: --read_vpr_constraints <file>
+
+    Reads the :ref:`floorplanning constraints <vpr_constraints_file>` that packing and placement must respect from the specified XML file.
+
+.. option:: --write_vpr_constraints <file>
+
+    Writes out new :ref:`floorplanning constraints <vpr_constraints_file>` based on current placement to the specified XML file.
+
+.. option:: --read_router_lookahead <file>
+
+    Reads the lookahead data from the specified file instead of computing it.
+
+.. option:: --write_router_lookahead <file>
+
+    Writes the lookahead data to the specified file.
+
+.. option:: --read_placement_delay_lookup <file>
+
+    Reads the placement delay lookup from the specified file instead of computing it.
+
+.. option:: --write_placement_delay_lookup <file>
+
+    Writes the placement delay lookup to the specified file.
+
 .. option:: --outfile_prefix <string>
 
     Prefix for output files
