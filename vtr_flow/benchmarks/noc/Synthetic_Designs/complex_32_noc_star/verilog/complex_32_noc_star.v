@@ -2262,7 +2262,6 @@ register r_valid_31 (
          );
 
 
-
 /*******************Output Logic***************************/
 assign data_out = tp_data_out_32;
 
