@@ -10,10 +10,7 @@
 #include "place_constraints.h"
 #include "move_utils.h"
 #include "region.h"
-<<<<<<< HEAD
 #include "directed_moves_util.h"
-=======
->>>>>>> Within the initial placement function in the vpr flow integrated the NoC placement initialization. This was done in the process to integrate noc optimization during vpr placement.
 #include "noc_place_utils.h"
 
 #include "echo_files.h"
