@@ -4,37 +4,40 @@
 */
 
 module traffic_processor (
-	clk,
-	reset,
-	tdata,
-	tvalid,
-	o_enc
+	clk, 
+	reset, /* synthesis preserve */
+	tdata_in,  /* synthesis preserve */
+	tvalid_in, /* synthesis preserve */
+	tdata_out, /* synthesis preserve */
+	tvalid_out /* synthesis preserve */
 );
 
 /*****************Parameter Declarations********************/
 parameter noc_dw = 32;
 
 /*****************INPUT/OUTPUT Definition*******************/
-input wire clk;
-input wire reset;
-input wire [noc_dw-1:0] tdata;
-input tvalid;
+input wire clk; /* synthesis keep */
+input wire reset; /* synthesis keep */
+input wire [noc_dw-1:0] tdata_in; /* synthesis keep */
+input tvalid_in; /* synthesis keep */
 
-output reg [noc_dw-1:0] o_enc;
+output reg [noc_dw-1:0] tdata_out; /* synthesis keep */
+output reg tvalid_out; /* synthesis keep */
 
 /*******************Internal Variables**********************/
-wire [noc_dw - 1 : 0] sha_out;
-wire [noc_dw - 1 : 0] sha2_out;
+wire [noc_dw - 1 : 0] sha_out; /* synthesis keep */
+wire [noc_dw - 1 : 0] sha2_out; /* synthesis keep */
+reg valid_reg; /* synthesis keep */
 
 /*******************module instantiation*******************/
-sha1 sha1_module
+sha1 sha1_module 
 (
 	.clk_i(clk),
 	.rst_i(reset),
-	.text_i(tdata),
+	.text_i(tdata_in),
 	.text_o(sha_out),
-	.cmd_i({{2{1'b0}},{2{tvalid}}}),
-	.cmd_w_i(tvalid),
+	.cmd_i({{1{1'b0}},{2{tvalid_in}}}),
+	.cmd_w_i(tvalid_in), 
 	.cmd_o()
 );
 
@@ -44,29 +47,31 @@ sha1 sha2_module
 	.rst_i(reset),
 	.text_i(sha_out),
 	.text_o(sha2_out),
-	.cmd_i({{1{1'b0}},{2{tvalid}}}),
-	.cmd_w_i(tvalid), 
+	.cmd_i({{1{1'b0}},{2{tvalid_in}}}),
+	.cmd_w_i(tvalid_in), 
 	.cmd_o()
 );
+
 
 /******************Sequential Logic*************************/
 /*
 	This module will wait on the tvalid signal
 	to indicate whether data is available to read
-	in from the input.
+	in from the input. 
 */
 
 always @(posedge clk)
 begin
 	if (reset)begin
-			o_enc <= 0;
+			tdata_out <= 0;
+			tvalid_out <= 0;
 		end
 	else begin
-			if (tvalid) begin
-				o_enc <= sha2_out;
+			if (tvalid_in) begin
+				tdata_out <= sha2_out;
+				tvalid_out <= 1'b1;
 			end
 		end
 end
 		
 endmodule 
-						

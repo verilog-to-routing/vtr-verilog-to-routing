@@ -26,6 +26,7 @@ output reg [noc_dw-1:0] o_enc;
 wire [noc_dw - 1 : 0] sha_out;
 wire [noc_dw - 1 : 0] sha2_out;
 
+
 /*******************module instantiation*******************/
 sha1 sha1_module
 (
@@ -69,29 +70,3 @@ begin
 end
 		
 endmodule 
-						
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

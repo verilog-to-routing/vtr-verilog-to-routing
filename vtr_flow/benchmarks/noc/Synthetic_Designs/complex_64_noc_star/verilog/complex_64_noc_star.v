@@ -20,7 +20,11 @@ parameter byte_dw = 8;
 input wire clk;
 input wire reset;
 
+<<<<<<< HEAD
 output wire [noc_dw - 1:0] data_out;
+=======
+output wire [noc_dw * 2 - 1:0] data_out;
+>>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
 
 /*******************Internal Variables**********************/
 //traffic generator
@@ -476,6 +480,7 @@ wire [noc_dw - 1: 0] si_data_out_64;
 wire si_valid_out_64;
 
 //traffic processor data - middle routers
+<<<<<<< HEAD
 wire [noc_dw - 1: 0] tp_data_out_2 /* synthesis keep */;
 wire tp_valid_out_2 /* synthesis keep */; 
 
@@ -664,6 +669,196 @@ wire tp_valid_out_63 /* synthesis keep */;
 
 wire [noc_dw - 1: 0] tp_data_out_64 /* synthesis keep */;
 wire tp_valid_out_64 /* synthesis keep */;
+=======
+wire [noc_dw - 1: 0] tp_data_out_2;
+wire tp_valid_out_2;
+
+wire [noc_dw - 1: 0] tp_data_out_3;
+wire tp_valid_out_3;
+
+wire [noc_dw - 1: 0] tp_data_out_4;
+wire tp_valid_out_4;
+
+wire [noc_dw - 1: 0] tp_data_out_5;
+wire tp_valid_out_5;
+
+wire [noc_dw - 1: 0] tp_data_out_6;
+wire tp_valid_out_6;
+
+wire [noc_dw - 1: 0] tp_data_out_7;
+wire tp_valid_out_7;
+
+wire [noc_dw - 1: 0] tp_data_out_8;
+wire tp_valid_out_8;
+
+wire [noc_dw - 1: 0] tp_data_out_9;
+wire tp_valid_out_9;
+
+wire [noc_dw - 1: 0] tp_data_out_10;
+wire tp_valid_out_10;
+
+wire [noc_dw - 1: 0] tp_data_out_11;
+wire tp_valid_out_11;
+
+wire [noc_dw - 1: 0] tp_data_out_12;
+wire tp_valid_out_12;
+
+wire [noc_dw - 1: 0] tp_data_out_13;
+wire tp_valid_out_13;
+
+wire [noc_dw - 1: 0] tp_data_out_14;
+wire tp_valid_out_14;
+
+wire [noc_dw - 1: 0] tp_data_out_15;
+wire tp_valid_out_15;
+
+wire [noc_dw - 1: 0] tp_data_out_16;
+wire tp_valid_out_16;
+
+wire [noc_dw - 1: 0] tp_data_out_17;
+wire tp_valid_out_17;
+
+wire [noc_dw - 1: 0] tp_data_out_18;
+wire tp_valid_out_18;
+
+wire [noc_dw - 1: 0] tp_data_out_19;
+wire tp_valid_out_19;
+
+wire [noc_dw - 1: 0] tp_data_out_20;
+wire tp_valid_out_20;
+
+wire [noc_dw - 1: 0] tp_data_out_21;
+wire tp_valid_out_21;
+
+wire [noc_dw - 1: 0] tp_data_out_22;
+wire tp_valid_out_22;
+
+wire [noc_dw - 1: 0] tp_data_out_23;
+wire tp_valid_out_23;
+
+wire [noc_dw - 1: 0] tp_data_out_24;
+wire tp_valid_out_24;
+
+wire [noc_dw - 1: 0] tp_data_out_25;
+wire tp_valid_out_25;
+
+wire [noc_dw - 1: 0] tp_data_out_26;
+wire tp_valid_out_26;
+
+wire [noc_dw - 1: 0] tp_data_out_27;
+wire tp_valid_out_27;
+
+wire [noc_dw - 1: 0] tp_data_out_28;
+wire tp_valid_out_28;
+
+wire [noc_dw - 1: 0] tp_data_out_29;
+wire tp_valid_out_29;
+
+wire [noc_dw - 1: 0] tp_data_out_30;
+wire tp_valid_out_30;
+
+wire [noc_dw - 1: 0] tp_data_out_31;
+wire tp_valid_out_31;
+
+wire [noc_dw - 1: 0] tp_data_out_32;
+wire tp_valid_out_32;
+
+wire [noc_dw - 1: 0] tp_data_out_33;
+wire tp_valid_out_33;
+
+wire [noc_dw - 1: 0] tp_data_out_34;
+wire tp_valid_out_34;
+
+wire [noc_dw - 1: 0] tp_data_out_35;
+wire tp_valid_out_35;
+
+wire [noc_dw - 1: 0] tp_data_out_36;
+wire tp_valid_out_36;
+
+wire [noc_dw - 1: 0] tp_data_out_37;
+wire tp_valid_out_37;
+
+wire [noc_dw - 1: 0] tp_data_out_38;
+wire tp_valid_out_38;
+
+wire [noc_dw - 1: 0] tp_data_out_39;
+wire tp_valid_out_39;
+
+wire [noc_dw - 1: 0] tp_data_out_40;
+wire tp_valid_out_40;
+
+wire [noc_dw - 1: 0] tp_data_out_41;
+wire tp_valid_out_41;
+
+wire [noc_dw - 1: 0] tp_data_out_42;
+wire tp_valid_out_42;
+
+wire [noc_dw - 1: 0] tp_data_out_43;
+wire tp_valid_out_43;
+
+wire [noc_dw - 1: 0] tp_data_out_44;
+wire tp_valid_out_44;
+
+wire [noc_dw - 1: 0] tp_data_out_45;
+wire tp_valid_out_45;
+
+wire [noc_dw - 1: 0] tp_data_out_46;
+wire tp_valid_out_46;
+
+wire [noc_dw - 1: 0] tp_data_out_47;
+wire tp_valid_out_47;
+
+wire [noc_dw - 1: 0] tp_data_out_48;
+wire tp_valid_out_48;
+
+wire [noc_dw - 1: 0] tp_data_out_49;
+wire tp_valid_out_49;
+
+wire [noc_dw - 1: 0] tp_data_out_50;
+wire tp_valid_out_50;
+
+wire [noc_dw - 1: 0] tp_data_out_51;
+wire tp_valid_out_51;
+
+wire [noc_dw - 1: 0] tp_data_out_52;
+wire tp_valid_out_52;
+
+wire [noc_dw - 1: 0] tp_data_out_53;
+wire tp_valid_out_53;
+
+wire [noc_dw - 1: 0] tp_data_out_54;
+wire tp_valid_out_54;
+
+wire [noc_dw - 1: 0] tp_data_out_55;
+wire tp_valid_out_55;
+
+wire [noc_dw - 1: 0] tp_data_out_56;
+wire tp_valid_out_56;
+
+wire [noc_dw - 1: 0] tp_data_out_57;
+wire tp_valid_out_57;
+
+wire [noc_dw - 1: 0] tp_data_out_58;
+wire tp_valid_out_58;
+
+wire [noc_dw - 1: 0] tp_data_out_59;
+wire tp_valid_out_59;
+
+wire [noc_dw - 1: 0] tp_data_out_60;
+wire tp_valid_out_60;
+
+wire [noc_dw - 1: 0] tp_data_out_61;
+wire tp_valid_out_61;
+
+wire [noc_dw - 1: 0] tp_data_out_62;
+wire tp_valid_out_62;
+
+wire [noc_dw - 1: 0] tp_data_out_63;
+wire tp_valid_out_63;
+
+wire [noc_dw - 1: 0] tp_data_out_64;
+wire tp_valid_out_64;
+>>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
 
 
 /*******************module instantiation********************/
@@ -718,7 +913,11 @@ noc_router_adapter_block noc_router_adapter_block_1(
     .slave_tid(8'd0),
     .slave_tdest(8'd0),
     .slave_tuser(8'd0),
+<<<<<<< HEAD
     .slave_tlast(1'd0)
+=======
+    .slave_tlast(1'd0),
+>>>>>>> 5fc9eef40794a90c3e34201199349c44b938a25d
 
 );
 
@@ -4504,9 +4703,5 @@ register r_valid_63 (
 
 /*******************Output Logic***************************/
 assign data_out = tp_data_out_64;
-
-
-
-
 
 endmodule
