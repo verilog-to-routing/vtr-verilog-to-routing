@@ -24,4 +24,5 @@ crit_path_total_sta_time;vpr.out;Flow timing analysis took .* seconds \((.*) STA
 
 #Run-time Metrics
 router_lookahead_mem;vpr.out;.*router lookahead map took.*\(max_rss (.*), .*\)
+tile_lookahead_computation_time;vpr.out;\s*Computing tile lookahead took (.*) seconds
 router_lookahead_computation_time;vpr.out;\s*Computing router lookahead map took (.*) seconds

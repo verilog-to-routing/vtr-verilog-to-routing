@@ -502,6 +502,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 
     if (is_flat_) {
+        vtr::ScopedStartFinishTimer timer("Computing tile lookahead");
         compute_tiles_lookahead(inter_tile_pin_primitive_pin_delay,
                                 tile_min_cost,
                                 det_routing_arch_,
@@ -1268,7 +1269,7 @@ static void compute_tiles_lookahead(std::unordered_map<t_physical_tile_type_ptr,
                                     std::unordered_map<t_physical_tile_type_ptr, std::unordered_map<int, util::Cost_Entry>>& tile_min_cost,
                                     const t_det_routing_arch& det_routing_arch,
                                     const DeviceContext& device_ctx) {
-    vtr::ScopedStartFinishTimer timer("Computing tile lookahead");
+
     const auto& tiles = device_ctx.physical_tile_types;
 
     for (const auto& tile : tiles) {
