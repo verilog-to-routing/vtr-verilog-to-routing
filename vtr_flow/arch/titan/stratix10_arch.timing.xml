@@ -3947,14 +3947,14 @@
             </interconnect>
           </pb_type>
 
-          <pb_type blif_model=".subckt fourteennm_ff" name="oe_ff" num_pb="1">
-            <input name="clrn" num_pins="1"/> <!-- driver signal for clrn, sclr, ena, and d comes from the core logic -->
+          <!-- <pb_type blif_model=".subckt fourteennm_ff" name="oe_ff" num_pb="1">
+            <input name="clrn" num_pins="1"/> 
             <input name="sclr" num_pins="1"/>
             <input name="ena" num_pins="1"/>
             <input name="d" num_pins="1"/>
-            <output name="q" num_pins="1"/> <!-- driving the output enable port of the output buffer -->
+            <output name="q" num_pins="1"/>
             <clock name="clk" num_pins="1"/>
-          </pb_type>
+          </pb_type> -->
 
           <pb_type blif_model=".subckt fourteennm_io_obuf" name="obuf" num_pb="1">
             <input name="i" num_pins="1"/> <!-- can be driven by the core logic through obuf_i port of the parent pb_type or by the dataout port of the ddio_out -->
@@ -4030,8 +4030,8 @@
 
           <interconnect>
             <!-- inputs coming from the FPGA core and going to OE flip flop -->
-            <complete input="io_cell.data_in" name="core_to_ff" output="oe_ff.clrn oe_ff.sclr oe_ff.ena oe_ff.d"/>
-            <direct input="io_cell.clk" name="ff_clk" num_pins="1" output="oe_ff.clk"/>
+            <!-- <complete input="io_cell.data_in" name="core_to_ff" output="oe_ff.clrn oe_ff.sclr oe_ff.ena oe_ff.d"/> -->
+            <!-- <direct input="io_cell.clk" name="ff_clk" num_pins="1" output="oe_ff.clk"/> -->
 
             <!-- inputs coming from the FPGA core and going to ddio out primitive -->
             <complete input="io_cell.data_in" name="core_to_ddio_out" num_pins="1" output="ddio_out.areset ddio_out.sreset ddio_out.ena ddio_out.clkhi ddio_out.clklo ddio_out.muxsel ddio_out.datainlo ddio_out.datainhi"/>
@@ -4042,7 +4042,7 @@
             <!-- the i port of the output buffer can be driven by the output of the ddio out module or the core logic or the o output of the pseudo diff out-->
             <complete input="io_cell.data_in ddio_out.dataout pseudo_diff_out.o" name="i_obuff" num_pins="1" output="obuf.i"/>
             <!-- the oe port of the output buffer can be driven by the output of the oe flip flop or the core logic or the oeout output of the pseudo diff out-->
-            <complete input="io_cell.data_in oe_ff.q pseudo_diff_out.oeout" name="oe_obuff" num_pins="1" output="obuf.oe"/>
+            <complete input="io_cell.data_in pseudo_diff_out.oeout" name="oe_obuff" num_pins="1" output="obuf.oe"/>
 
             <!-- inputs coming from the FPGA core and going to the input buffer -->
             <complete input="io_cell.data_in" name="core_to_ibuff" output="ibuf.ibar ibuf.dynamicterminationcontrol ibuf.seriesterminationcontrol ibuf.parallelterminationcontrol"/>
@@ -4056,7 +4056,7 @@
             <!-- the i port of the  pseudo diff out can be driven by the output of the ddio out module or the core logic -->
             <complete input="io_cell.data_in ddio_out.dataout" name="i_pseudo_diff" num_pins="1" output=" pseudo_diff_out.i"/>
             <!-- the oein port of the pseudo diff out can be driven by the output of the oe flip flop or the core logic -->
-            <complete input="io_cell.data_in oe_ff.q" name="oe_pseudo_diff" num_pins="1" output="pseudo_diff_out.oein"/>
+            <complete input="io_cell.data_in" name="oe_pseudo_diff" num_pins="1" output="pseudo_diff_out.oein"/>
 
             <!-- inputs coming from the FPGA core and going to ddio in primitive -->
             <complete input="io_cell.data_in" name="core_to_ddio_in" num_pins="1" output="ddio_in.clkn ddio_in.areset ddio_in.sreset ddio_in.ena"/>
