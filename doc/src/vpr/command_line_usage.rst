@@ -47,7 +47,12 @@ By default VPR will perform a binary search routing to find the minimum channel 
 
 Detailed Command-line Options
 -----------------------------
-VPR has a lot of options.
+VPR has a lot of options. Running :option:`vpr --help` will display all the available options and their usage information. 
+
+.. option:: -h, --help
+
+    Display help message then exit.
+    
 The options most people will be interested in are:
 
 * :option:`--route_chan_width` (route at a fixed channel width), and
@@ -172,10 +177,6 @@ Graphics Options
 
 General Options
 ^^^^^^^^^^^^^^^
-.. option:: -h, --help
-
-    Display help message then exit.
-
 .. option:: --version
 
     Display version information then exit.
