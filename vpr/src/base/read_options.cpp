@@ -2703,6 +2703,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
+        .help(
+            "Controls the number of NoC router block swap attemps relative to the total number of swaps attempted by the placer."
+            "This value is an integer ranging from 0-100. 0 means that no swaps attempted are NoC router blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     return parser;
 }
 

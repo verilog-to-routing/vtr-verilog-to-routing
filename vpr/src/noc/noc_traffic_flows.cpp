@@ -44,6 +44,10 @@ std::vector<NocLinkId>& NocTrafficFlows::get_mutable_traffic_flow_route(NocTraff
     return traffic_flow_routes[traffic_flow_id];
 }
 
+const std::unordered_set<ClusterBlockId>& NocTrafficFlows::get_router_clusters_in_netlist(void) const {
+    return router_cluster_in_netlist;
+}
+
 // setters for the traffic flows
 
 void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_name, std::string sink_router_module_name, ClusterBlockId source_router_cluster_id, ClusterBlockId sink_router_cluster_id, double traffic_flow_bandwidth, double traffic_flow_latency, int traffic_flow_priority) {
@@ -58,6 +62,11 @@ void NocTrafficFlows::create_noc_traffic_flow(std::string source_router_module_n
     // now add the new traffic flow to flows associated with the current source and sink router
     add_traffic_flow_to_associated_routers(curr_traffic_flow_id, source_router_cluster_id);
     add_traffic_flow_to_associated_routers(curr_traffic_flow_id, sink_router_cluster_id);
+
+    // insert the clusters to the local collection of all router clusters in the netlist
+    // duplicates should not be added multiple times
+    router_cluster_in_netlist.insert(source_router_cluster_id);
+    router_cluster_in_netlist.insert(sink_router_cluster_id);
 
     return;
 }

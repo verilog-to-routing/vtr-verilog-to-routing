@@ -9,6 +9,8 @@
 #include "vtr_log.h"
 #include "noc_routing_algorithm_creator.h"
 #include "move_utils.h"
+#include "vtr_random.h"
+#include "place_constraints.h"
 
 // represent the maximum values of the NoC cost normalization factors //
 // we need to handle the case where the agggregate bandwidth is 0, so we set this to some arbritary positive number that is greater than 1.e-9, since that is the range we expect the normalization factor to be (in Gbps)
@@ -260,6 +262,38 @@ double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic
 void allocate_and_load_noc_placement_structs(void);
 
 void free_noc_placement_structs(void);
+
+/* Below are functions related to the feature that forces to the placer to swap router blocks for a certain percentage of the total number of swaps */
+
+/**
+ * @brief User supplied a number that represents the percentage of router 
+ * block swaps relative to the total number of swaps. A random number  
+ * between 0-100 is generated here and compared the user supplied value.
+ * If the random number is less than the user supplied value we indicate
+ * that a router block should be swapped. By doing this we now only swap
+ * router blocks for the percentage of time the user supplied.
+ * 
+ * @param user_supplied_noc_router_swap_percentage The expected number of 
+ * noc router block swaps as a percentage of the total number of swaps
+ * attempted by the placer.
+ * @return true This indicates that a router block should be swapped
+ * @return false This indicates that a router block should not be swapped
+ */
+bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
+
+/**
+ * @brief Generates a placement move by choosing two rouer cluster blocks to 
+ * swap. First, a random router cluster block is chosen and then another router
+ * cluster block is chosen that cqan be swapped with the initial block such that
+ * the distance travelled by either blocks does not exceed rlim. 
+ * 
+ * @param blocks_affected The two router cluster blocks that are proposed to be
+ * swapped
+ * @param rlim The maximum distance in the x and y direction that a router 
+ * cluster block can travel 
+ * @return e_create_move Result of proposing the move
+ */
+e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim);
 
 /* Below are functions related to modifying and retreiving the NoC placement stats dastructure*/
 

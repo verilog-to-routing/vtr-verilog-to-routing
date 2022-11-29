@@ -445,6 +445,63 @@ void free_noc_placement_structs(void) {
     return;
 }
 
+/* Below are functions related to the feature that forces to the placer to swap router blocks for a certain percentage of the total number of swaps */
+bool check_for_router_swap(int user_supplied_noc_router_swap_percentage){
+
+    // generate random number between 0-99 and compare it to the user supplied value
+    return (vtr::irand(99) < user_supplied_noc_router_swap_percentage) ? true : false;
+}
+
+e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
+
+    // need to access all the router cluster blocks int he design
+    auto& noc_ctx = g_vpr_ctx.noc();
+    // get a reference to the collection of router cluster blocks in the design
+    const std::unordered_set<ClusterBlockId>& router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+
+    // if there are no router cluster blocks to swap then abort
+    if (router_clusters.empty()){
+        return e_create_move::ABORT;
+    }
+
+    int number_of_router_blocks = router_clusters.size();
+
+    /* We will choose a random number between 0-number_of_router_blocks-1.
+    Then we will iterate through the router cluster blocks and stop when we 
+    have iterated through the chosen random number of blocks. The cluster
+    we have stopped at will be the cluster to swap.*/ 
+    int random_cluster_block_index = vtr::irand(number_of_router_blocks-1);
+    auto router_cluster_block_to_swap_ref = router_clusters.begin();
+    std::advance(router_cluster_block_to_swap_ref, random_cluster_block_index);
+
+    ClusterBlockId b_from = *router_cluster_block_to_swap_ref;
+
+    // now choose a compatible block to swap with
+    
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    t_pl_loc from = place_ctx.block_locs[b_from].loc;
+    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
+    auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
+    VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
+
+    t_pl_loc to;
+
+    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from)) {
+        return e_create_move::ABORT;
+    }
+
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to);
+
+    //Check that all of the blocks affected by the move would still be in a legal floorplan region after the swap
+    if (!floorplan_legal(blocks_affected)) {
+        return e_create_move::ABORT;
+    }
+
+    return create_move;
+}
+
 /* Below are functions related to modifying and printing the NoC placement
 statistical data */
 void initialize_noc_placement_stats(const t_placer_opts& placer_opts){

@@ -1434,6 +1434,12 @@ static e_move_result try_swap(const t_annealing_state* state,
     double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
     double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
 
+    // Determine whether we need to force swap two router blocks
+    bool router_block_move = false;
+    if (noc_opts.noc){
+        router_block_move = check_for_router_swap(noc_opts.noc_swap_percentage);
+    }
+    
     /* Allow some fraction of moves to not be restricted by rlim, */
     /* in the hopes of better escaping local minima.              */
     float rlim;
@@ -1450,6 +1456,10 @@ static e_move_result try_swap(const t_annealing_state* state,
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator, blocks_affected, move_type, rlim, placer_opts, criticalities);
 #endif //NO_GRAPHICS
+    } else if (router_block_move) {
+        // generate a move where two random router blocks are swapped
+        create_move_outcome = propose_router_swap(blocks_affected, rlim);
+        move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
         create_move_outcome = move_generator.propose_move(blocks_affected, move_type, rlim, placer_opts, criticalities);
@@ -1667,8 +1677,11 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
     move_outcome_stats.outcome = move_outcome;
 
-    calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
+    // dont update the move generator state if we force a router block move
+    if (!router_block_move){
+        calculate_reward_and_process_outcome(placer_opts, move_outcome_stats,
                                          delta_c, timing_bb_factor, move_generator);
+    }
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    ifndef NO_GRAPHICS
