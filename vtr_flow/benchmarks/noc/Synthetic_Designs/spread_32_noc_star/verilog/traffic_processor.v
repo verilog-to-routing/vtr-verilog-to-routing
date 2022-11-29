@@ -52,6 +52,7 @@ sha1 sha2_module
 	.cmd_o()
 );
 
+
 /******************Sequential Logic*************************/
 /*
 	This module will wait on the tvalid signal
