@@ -1439,20 +1439,10 @@ t_pin_range get_pb_pins(t_physical_tile_type_ptr physical_type,
     // pb-block.
     t_pin_range pin_num_range;
     if (pb->pb_graph_node->is_root()) {
-        int sub_tile_cap_num_pins = sub_tile->num_phy_pins / sub_tile->capacity.total();
-        int physical_pin_offset = sub_tile_cap_num_pins * rel_cap;
-        std::vector<int> physical_pin_arr(logical_block->pb_type->num_pins);
-        auto& pin_direct_maps = physical_type->tile_block_pin_directs_map.at(logical_block->index);
-        auto pin_direct_map = pin_direct_maps.at(sub_tile->index);
-        for (int logical_pin_num = 0; logical_pin_num < logical_block->pb_type->num_pins; logical_pin_num++) {
-            auto res = pin_direct_map.find(t_logical_pin(logical_pin_num));
-            VTR_ASSERT(res != pin_direct_map.end());
-            VTR_ASSERT(res->second.pin == logical_pin_num);
-        }
-        pin_num_range.low = physical_pin_offset;
-        pin_num_range.high = physical_pin_offset + sub_tile_cap_num_pins - 1;
-        return pin_num_range;
+        int num_pins = sub_tile->num_phy_pins / sub_tile->capacity.total();
+        int first_num_node = sub_tile->sub_tile_to_tile_pin_indices[0] + num_pins*rel_cap;
 
+        return {first_num_node, first_num_node+num_pins-1};
     } else {
         return get_pb_graph_node_pins(physical_type,
                                       sub_tile,

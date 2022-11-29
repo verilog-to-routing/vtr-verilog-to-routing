@@ -48,6 +48,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis);
+static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type);
 static void add_logical_pin_to_physical_tile(int physical_pin_offset,
                                              t_logical_block_type_ptr logical_block_ptr,
                                              t_physical_tile_type* physical_type);
@@ -269,6 +270,7 @@ void SetupVPR(const t_options* Options,
     }
 
     if (RouterOpts->flat_routing) {
+        vtr::ScopedStartFinishTimer timer("Allocate intra-cluster resources");
         // The following two functions should be called when the data structured related to t_pb_graph_node, t_pb_type,
         // and t_pb_graph_edge are initialized
         alloc_and_load_intra_cluster_resources(RouterOpts->has_choking_spot);
@@ -727,6 +729,7 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     for (auto& physical_type : device_ctx.physical_tile_types) {
+        set_root_pin_to_pb_pin_map(&physical_type);
         int physical_pin_offset = physical_type.num_pins;
         int physical_class_offset = (int)physical_type.class_inf.size();
         physical_type.primitive_class_starting_idx = physical_class_offset;
@@ -774,6 +777,37 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
                     physical_pin_offset += num_pins;
                     physical_class_offset += num_classes;
                 }
+            }
+        }
+    }
+}
+
+static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type) {
+    for(int sub_tile_idx = 0; sub_tile_idx < (int)physical_type->sub_tiles.size(); sub_tile_idx++) {
+        auto& sub_tile = physical_type->sub_tiles[sub_tile_idx];
+        int inst_num_pin = sub_tile.num_phy_pins / sub_tile.capacity.total();
+        // Later in the code, I've assumed that pins of a subtile are mapped in a continuous fashion to
+        // the tile pins - Usage case: vpr_utils.cpp:get_pb_pins
+        VTR_ASSERT(sub_tile.sub_tile_to_tile_pin_indices[0] + sub_tile.num_phy_pins - 1 ==
+                   sub_tile.sub_tile_to_tile_pin_indices[sub_tile.num_phy_pins-1]);
+        for(int sub_tile_pin_num = 0; sub_tile_pin_num < sub_tile.num_phy_pins; sub_tile_pin_num++) {
+            for(auto& eq_site : sub_tile.equivalent_sites) {
+                t_physical_pin sub_tile_physical_pin = t_physical_pin(sub_tile_pin_num % inst_num_pin);
+                int physical_pin_num = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_num];
+                auto direct_map = physical_type->tile_block_pin_directs_map.at(eq_site->index).at(sub_tile.index);
+                auto find_res = direct_map.find(sub_tile_physical_pin);
+                VTR_ASSERT(find_res != direct_map.inverse_end());
+                t_logical_pin logical_pin = find_res->second;
+                t_pb_graph_pin* pb_pin = eq_site->pin_logical_num_to_pb_pin_mapping.at(logical_pin.pin);
+
+                auto map_find_res = physical_type->on_tile_pin_num_to_pb_pin.find(physical_pin_num);
+                if(map_find_res == physical_type->on_tile_pin_num_to_pb_pin.end()) {
+                    physical_type->on_tile_pin_num_to_pb_pin.insert(std::make_pair(physical_pin_num,
+                                                                                   std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>()));
+                }
+                auto insert_res = physical_type->on_tile_pin_num_to_pb_pin.at(physical_pin_num).insert(std::make_pair(eq_site, pb_pin));
+                VTR_ASSERT(insert_res.second);
+
             }
         }
     }

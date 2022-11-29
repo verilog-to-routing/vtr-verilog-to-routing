@@ -336,32 +336,8 @@ static std::vector<int> get_pb_pin_sink_pins(t_physical_tile_type_ptr physical_t
 static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physical_type,
                                                  t_logical_block_type_ptr logical_block,
                                                  int pin_physical_num) {
-    /*
-     * To get the pb_pin we need to first get the logical number of the pin. Then, we can use a member inside
-     * logical block to retrieve the pb_pin
-     */
     VTR_ASSERT(is_pin_on_tile(physical_type, pin_physical_num));
-    const t_sub_tile* sub_tile;
-    int rel_cap;
-    std::tie(sub_tile, rel_cap) = get_sub_tile_from_pin_physical_num(physical_type, pin_physical_num);
-    VTR_ASSERT(sub_tile != nullptr);
-    /* get the mapping between sub_tile pins and pins on the tile */
-    auto direct_map = (physical_type->tile_block_pin_directs_map).at(logical_block->index).at(sub_tile->index);
-    int sub_tile_inst_num_pins = sub_tile->num_phy_pins / sub_tile->capacity.total();
-    pin_physical_num -= (sub_tile_inst_num_pins * rel_cap);
-    /* direct_map only shows the mapping of the first instance of the sub_tile to the tile pins. Thus, we
-     * have to first reduce the offset of the pin number, if it is not located on the first instance, then, use
-     * direct_map. The offset is equal to the number of pins on each instance(cap).
-     */
-    auto result = direct_map.find(t_physical_pin(pin_physical_num));
-    if (result == direct_map.inverse_end()) {
-        archfpga_throw(__FILE__, __LINE__,
-                       "Couldn't find the corresponding logical sub tile pin of the physical block pin %d."
-                       "Physical Tile Type: %s, Logical Block Type: %s.\n",
-                       pin_physical_num, physical_type->name, logical_block->name);
-    }
-    int pin_logical_num = result->second.pin;
-    return logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
+    return physical_type->on_tile_pin_num_to_pb_pin.at(pin_physical_num).at(logical_block);
 }
 
 /******************** End Subroutine declarations and definition ************************/
@@ -1176,6 +1152,7 @@ t_pin_range get_pb_graph_node_pins(t_physical_tile_type_ptr /*physical_tile*/,
                                         t_logical_block_type_ptr logical_block,
                                         int relative_cap,
                                         const t_pb_graph_node* pb_graph_node) {
+    VTR_ASSERT(!pb_graph_node->is_root());
 
     int physical_pin_offset = sub_tile->intra_pin_range[relative_cap].at(logical_block).low;
 
@@ -1286,7 +1263,6 @@ int get_edge_sw_arch_idx(t_physical_tile_type_ptr physical_tile,
                          int from_pin_physical_num,
                          int to_pin_physical_num) {
     bool find_edge = false;
-    int sw_idx = -1;
     const t_pb_graph_pin* from_pb_pin;
     const t_pb_graph_pin* to_pb_pin;
     if (is_pin_on_tile(physical_tile, from_pin_physical_num)) {
@@ -1301,18 +1277,10 @@ int get_edge_sw_arch_idx(t_physical_tile_type_ptr physical_tile,
         to_pb_pin = get_pb_pin_from_pin_physical_num(physical_tile, to_pin_physical_num);
     }
 
-    for (int out_edge_id = 0; out_edge_id < from_pb_pin->num_output_edges; out_edge_id++) {
-        auto pb_edge = from_pb_pin->output_edges[out_edge_id];
-        VTR_ASSERT(pb_edge->num_output_pins == 1);
-        auto conn_pins = pb_edge->output_pins[0];
-        if (to_pb_pin == conn_pins) {
-            sw_idx = pb_edge->switch_type_idx;
-            find_edge = true;
-            break;
-        }
-    }
-    VTR_ASSERT(find_edge);
-    return sw_idx;
+    int edge_idx = from_pb_pin->sink_pin_edge_idx_map.at(to_pb_pin);
+    int new_sw_idx = from_pb_pin->output_edges[edge_idx]->switch_type_idx;
+
+    return new_sw_idx;
 }
 
 const t_pb_graph_node* get_pb_graph_node_from_pin_physical_num(t_physical_tile_type_ptr physical_type,

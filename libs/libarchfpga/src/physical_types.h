@@ -648,6 +648,7 @@ struct t_physical_tile_type {
     std::vector<bool> is_ignored_pin; // [0..num_pins-1]
     std::vector<bool> is_pin_global;  // [0..num_pins-1]
 
+    std::unordered_map<int , std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>> on_tile_pin_num_to_pb_pin;
     std::unordered_map<int, t_pb_graph_pin*> pin_num_to_pb_pin;
 
     std::vector<t_fc_specification> fc_specs;
@@ -1287,10 +1288,13 @@ class t_pb_graph_pin {
   public:
     t_port* port = nullptr;
     int pin_number = 0;
+    std::unordered_map<const t_pb_graph_pin*, int> src_pin_edge_idx_map;
     std::vector<t_pb_graph_edge*> input_edges; /* [0..num_input_edges] */
     int num_input_edges = 0;
+    std::unordered_map<const t_pb_graph_pin*, int> sink_pin_edge_idx_map;
     std::vector<t_pb_graph_edge*> output_edges; /* [0..num_output_edges] */
     int num_output_edges = 0;
+
 
     t_pb_graph_node* parent_node = nullptr;
     int pin_count_in_cluster = 0;

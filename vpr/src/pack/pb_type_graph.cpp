@@ -967,21 +967,30 @@ static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
         for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
             for (i_outset = 0; i_outset < num_output_sets; i_outset++) {
                 for (i_outpin = 0; i_outpin < num_output_ptrs[i_outset]; i_outpin++) {
-                    input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges[input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges] = &edges[i_edge];
-                    input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges++;
-                    output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->input_edges[output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->num_input_edges] = &edges[i_edge];
-                    output_pb_graph_node_pin_ptrs[i_outset][i_outpin]->num_input_edges++;
+                    auto in_pin = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
+                    auto out_pin = output_pb_graph_node_pin_ptrs[i_outset][i_outpin];
+                    in_pin->output_edges[in_pin->num_output_edges] = &edges[i_edge];
+                    in_pin->num_output_edges++;
+                    out_pin->input_edges[out_pin->num_input_edges] = &edges[i_edge];
+                    out_pin->num_input_edges++;
 
                     edges[i_edge].num_input_pins = 1;
                     edges[i_edge].input_pins = new t_pb_graph_pin*[1];
-                    edges[i_edge].input_pins[0] = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
+                    edges[i_edge].input_pins[0] = in_pin;
                     edges[i_edge].num_output_pins = 1;
                     edges[i_edge].output_pins = new t_pb_graph_pin*[1];
-                    edges[i_edge].output_pins[0] = output_pb_graph_node_pin_ptrs[i_outset][i_outpin];
+                    edges[i_edge].output_pins[0] = out_pin;
 
                     edges[i_edge].interconnect = interconnect;
                     edges[i_edge].driver_set = i_inset;
                     edges[i_edge].driver_pin = i_inpin;
+
+                    auto insert_res = in_pin->sink_pin_edge_idx_map.insert(std::make_pair(out_pin,
+                                                                                          in_pin->num_output_edges-1));
+                    VTR_ASSERT(insert_res.second);
+                    insert_res = out_pin->src_pin_edge_idx_map.insert(std::make_pair(in_pin,
+                                                                                     out_pin->num_input_edges-1));
+                    VTR_ASSERT(insert_res.second);
 
                     i_edge++;
                 }
@@ -1063,17 +1072,31 @@ static void alloc_and_load_direct_interc_edges(t_interconnect* interconnect,
         for (int ipin = 0; ipin < pins_per_set; ++ipin) {
             int iedge = iset * pins_per_set + ipin;
 
+            auto in_pin = input_pb_graph_node_pin_ptrs[0][ipin];
+            auto out_pin = output_pb_graph_node_pin_ptrs[iset][ipin];
+
+            int in_pin_edge_offset = in_pin->num_output_edges - num_output_sets;
+            int out_pin_edge_offset = out_pin->num_input_edges - num_output_sets*pins_per_set;
+
             edges[iedge].num_input_pins = 1;
             edges[iedge].input_pins = new t_pb_graph_pin*[1];
-            edges[iedge].input_pins[0] = input_pb_graph_node_pin_ptrs[0][ipin];
+            edges[iedge].input_pins[0] = in_pin;
             edges[iedge].num_output_pins = 1;
             edges[iedge].output_pins = new t_pb_graph_pin*[1];
-            edges[iedge].output_pins[0] = output_pb_graph_node_pin_ptrs[iset][ipin];
+            edges[iedge].output_pins[0] = out_pin;
 
             edges[iedge].interconnect = interconnect;
             edges[iedge].driver_set = 0;
             edges[iedge].driver_pin = ipin;
             edges[iedge].infer_pattern = interconnect->infer_annotations;
+
+
+            auto insert_res = in_pin->sink_pin_edge_idx_map.insert(std::make_pair(out_pin,
+                                                                                 in_pin_edge_offset+iset));
+            VTR_ASSERT(insert_res.second);
+            insert_res = out_pin->src_pin_edge_idx_map.insert(std::make_pair(in_pin,
+                                                                             out_pin_edge_offset+iedge));
+            VTR_ASSERT(insert_res.second);
         }
     }
 }
@@ -1136,13 +1159,15 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
         edges[i_inset].num_input_pins = num_output_ptrs[0];
         edges[i_inset].num_output_pins = num_output_ptrs[0];
         for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
-            input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->output_edges[input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges] = &edges[i_inset];
-            input_pb_graph_node_pin_ptrs[i_inset][i_inpin]->num_output_edges++;
-            output_pb_graph_node_pin_ptrs[0][i_inpin]->input_edges[output_pb_graph_node_pin_ptrs[0][i_inpin]->num_input_edges] = &edges[i_inset];
-            output_pb_graph_node_pin_ptrs[0][i_inpin]->num_input_edges++;
+            auto in_pin = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
+            auto out_pin = output_pb_graph_node_pin_ptrs[0][i_inpin];
+            in_pin->output_edges[in_pin->num_output_edges] = &edges[i_inset];
+            in_pin->num_output_edges++;
+            out_pin->input_edges[out_pin->num_input_edges] = &edges[i_inset];
+            out_pin->num_input_edges++;
 
-            edges[i_inset].input_pins[i_inpin] = input_pb_graph_node_pin_ptrs[i_inset][i_inpin];
-            edges[i_inset].output_pins[i_inpin] = output_pb_graph_node_pin_ptrs[0][i_inpin];
+            edges[i_inset].input_pins[i_inpin] = in_pin;
+            edges[i_inset].output_pins[i_inpin] = out_pin;
 
             if (i_inpin != 0) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), interconnect->line_num,
@@ -1151,6 +1176,13 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
             edges[i_inset].interconnect = interconnect;
             edges[i_inset].driver_set = i_inset;
             edges[i_inset].driver_pin = i_inpin;
+
+            auto insert_res = in_pin->sink_pin_edge_idx_map.insert(std::make_pair(out_pin,
+                                                                                  in_pin->num_output_edges-1));
+            VTR_ASSERT(insert_res.second);
+            insert_res = out_pin->src_pin_edge_idx_map.insert(std::make_pair(in_pin,
+                                                                             out_pin->num_input_edges-1));
+            VTR_ASSERT(insert_res.second);
         }
     }
 }
