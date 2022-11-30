@@ -491,7 +491,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 }
 
 void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
+    vtr::ScopedStartFinishTimer timer_0("Computing router lookahead map");
 
     //First compute the delay map when starting from the various wire types
     //(CHANX/CHANY)in the routing architecture
@@ -502,7 +502,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
 
     if (is_flat_) {
-        vtr::ScopedStartFinishTimer timer("Computing tile lookahead");
+        vtr::ScopedStartFinishTimer timer_1("Computing tile lookahead");
         compute_tiles_lookahead(inter_tile_pin_primitive_pin_delay,
                                 tile_min_cost,
                                 det_routing_arch_,
