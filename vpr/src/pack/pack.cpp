@@ -267,7 +267,7 @@ bool try_pack(t_packer_opts* packer_opts,
     /*       Use the re-cluster API to edit it        */
     /******************* Start *************************/
     VTR_LOG("Start the iterative improvement process\n");
-    //iteratively_improve_packing(*packer_opts, clustering_data, 2);
+    iteratively_improve_packing(*packer_opts, clustering_data, 2);
     VTR_LOG("the iterative improvement process is done\n");
 
     /*
