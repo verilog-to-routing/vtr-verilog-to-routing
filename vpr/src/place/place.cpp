@@ -1336,7 +1336,8 @@ static e_move_result try_swap(const t_annealing_state* state,
     crit_params.crit_exponent = state->crit_exponent;
     crit_params.crit_limit = placer_opts.place_crit_limit;
 
-    e_move_type move_type; //move type number
+    e_move_type move_type;             //move type number
+    t_logical_block_type_ptr blk_type; // blk type that is choosed to be moved by the agent
 
     num_ts_called++;
 
@@ -1367,9 +1368,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif //NO_GRAPHICS
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
-        //Agent now doesn't care about move type, passing an empty blk_type to propose move to make it resume its past functionality
-        t_logical_block_type blk_type;
-        create_move_outcome = move_generator.propose_move(blocks_affected, move_type, &blk_type, rlim, placer_opts, criticalities);
+        create_move_outcome = move_generator.propose_move(blocks_affected, move_type, blk_type, rlim, placer_opts, criticalities);
     }
 
     ++move_type_stat.num_moves[(int)move_type];

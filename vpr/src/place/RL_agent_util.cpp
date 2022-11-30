@@ -34,7 +34,6 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
          *                  Region / CriticalUniform)                          *
          *                                                                     *
          *      This state is activated late in the anneale and in the Quench  */
-
         if (placer_opts.place_agent_algorithm == E_GREEDY) {
             VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent1, karmed_bandit_agent2;

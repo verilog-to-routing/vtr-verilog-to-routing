@@ -36,6 +36,17 @@ enum class e_create_move {
 };
 
 /**
+ * @brief Stores KArmedBanditAgent propose_action output to decide which
+ *        move_type and which block_type should be choosen for the next action.
+ *        propose_action function can also leave blk_type empty to allow any
+ *        random block type to be choosen to be swapped.
+ */
+struct t_propose_action {
+    e_move_type move_type;         //move type that propose_action choose to perform
+    t_logical_block_type blk_type; //propose_action can choose block type or leave it empty to allow any block type to be choosen
+};
+
+/**
  * @brief Stores a bounding box edge of a net with the timing
  *        criticality of the net terminal that caused this edge
  */

@@ -15,12 +15,14 @@
 class KArmedBanditAgent {
   public:
     virtual ~KArmedBanditAgent() {}
-    virtual size_t propose_action() = 0;
+    //SARA_TODO
+    virtual t_propose_action propose_action() = 0;
     void process_outcome(double, e_reward_function);
 
   protected:
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
     size_t num_available_actions_;          //Number of arms of the karmed bandit problem (k)
+    size_t num_available_types_;            //Number of types that each arm of the karmed bandit problem can pull with
     std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
     std::vector<float> q_;                  //Estimated value of each arm (Q)
     size_t last_action_ = 0;                //type of the last action (move type) proposed
@@ -42,14 +44,16 @@ class KArmedBanditAgent {
 class EpsilonGreedyAgent : public KArmedBanditAgent {
   public:
     EpsilonGreedyAgent(size_t num_actions, float epsilon);
+    EpsilonGreedyAgent(size_t num_actions, size_t num_types, float epsilon);
     ~EpsilonGreedyAgent();
 
-    size_t propose_action() override; //Returns the type of the next action the agent wishes to perform
+    t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
 
   public:
     void set_epsilon(float epsilon);
     void set_epsilon_action_prob();
     void set_step(float gamma, int move_lim);
+    void init_q_scores();
 
   private:
     float epsilon_ = 0.1;                         //How often to perform a non-greedy exploration action
@@ -66,14 +70,16 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
 class SoftmaxAgent : public KArmedBanditAgent {
   public:
     SoftmaxAgent(size_t num_actions);
+    SoftmaxAgent(size_t num_actions, size_t num_types);
     ~SoftmaxAgent();
 
     //void process_outcome(double reward, std::string reward_fun) override; //Updates the agent based on the reward of the last proposed action
-    size_t propose_action() override; //Returns the type of the next action the agent wishes to perform
+    t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
 
   public:
     void set_action_prob();
     void set_step(float gamma, int move_lim);
+    void init_q_scores();
 
   private:
     std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action

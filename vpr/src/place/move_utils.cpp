@@ -554,7 +554,8 @@ ClusterBlockId pick_from_block(t_logical_block_type_ptr blk_type) {
 
         //Check if picked block type matches with the blk_type specified
         //If it matches, then we can use the picked block if it is not fixed
-        if (cluster_ctx.clb_nlist.block_type(b_from)->index == blk_type->index) {
+        //blk_type from propose move doesn't account for the EMPTY type
+        if (cluster_ctx.clb_nlist.block_type(b_from)->index == blk_type->index + 1) {
             if (place_ctx.block_locs[b_from].is_fixed) {
                 continue; //Fixed location, try again
             }
@@ -637,7 +638,8 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
         tried_from_highly_critical_blocks.insert(b_from);
 
         //Check if picked block type matches with the blk_type specified and it is not fixed
-        if (cluster_ctx.clb_nlist.block_type(b_from)->index == blk_type->index) {
+        //blk_type from propose move doesn't account for the EMPTY type
+        if (cluster_ctx.clb_nlist.block_type(b_from)->index == blk_type->index + 1) {
             if (place_ctx.block_locs[b_from].is_fixed) {
                 continue; //Block is fixed, cannot move
             }
