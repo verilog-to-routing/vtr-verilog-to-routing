@@ -350,8 +350,8 @@ struct ClusteringHelperContext : public Context {
  * This contain data structures to synchronize multithreading of packing iterative improvement.
  */
 struct PackingMultithreadingContext : public Context {
-    vtr::vector<ClusterBlockId, bool> clb_in_flight;
-    vtr::vector<ClusterBlockId, std::mutex> mu;
+    //vtr::vector<ClusterBlockId, bool> clb_in_flight;
+    vtr::vector<ClusterBlockId, std::mutex*> mu;
 };
 
 /**

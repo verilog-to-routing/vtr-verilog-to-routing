@@ -1674,7 +1674,6 @@ void store_cluster_info_and_free(const t_packer_opts& packer_opts,
 
     //print clustering progress incrementally
     //print_pack_status(num_clb, num_molecules, num_molecules_processed, mols_since_last_print, device_ctx.grid.width(), device_ctx.grid.height());
-    free_pb_stats_recursive(cur_pb);
 }
 
 /* Free up data structures and requeue used molecules */

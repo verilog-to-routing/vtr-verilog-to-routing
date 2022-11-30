@@ -88,9 +88,7 @@ bool quasiDirectedPackingSwap::propose_move(std::vector<molMoveDescription>& new
         ClusterBlockId clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
         build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
     } else {
-        packing_multithreading_ctx.mu.lock();
-        packing_multithreading_ctx.clb_in_flight[clb_index_1] = false;
-        packing_multithreading_ctx.mu.unlock();
+        packing_multithreading_ctx.mu[clb_index_1]->unlock();
     }
     return found;
 }

@@ -15,7 +15,7 @@
 #include "vtr_time.h"
 //#include <mutex>
 #include <thread>
-void try_n_packing_moves(int n, std::string move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats);
+void try_n_packing_moves(int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats);
 void init_multithreading_locks();
 
 std::mutex apply_mu;
@@ -24,9 +24,10 @@ void init_multithreading_locks() {
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
     auto& helper_ctx = g_vpr_ctx.cl_helper();
 
-    packing_multithreading_ctx.mu.lock();
-    packing_multithreading_ctx.clb_in_flight.resize(helper_ctx.total_clb_num, false);
-    packing_multithreading_ctx.mu.unlock();
+    packing_multithreading_ctx.mu.resize(helper_ctx.total_clb_num);
+    for(auto& m : packing_multithreading_ctx.mu) {
+        m = new std::mutex;
+    }
 }
 
 void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
@@ -76,8 +77,8 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
     }
     my_threads[num_threads - 1] = std::thread(try_n_packing_moves, total_num_moves - (moves_per_thread * (num_threads - 1)), packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
 
-    for (int i = 0; i < num_threads; i++)
-        my_threads[i].join();
+    for (auto & my_thread : my_threads)
+        my_thread.join();
 
     VTR_LOG("\n### Iterative packing stats: \n\tpack move type = %s\n\ttotal pack moves = %zu\n\tgood pack moves = %zu\n\tlegal pack moves = %zu\n\n",
             packer_opts.pack_move_type.c_str(),
@@ -86,7 +87,7 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
             pack_stats.legal_moves);
 }
 
-void try_n_packing_moves(int n, std::string move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats) {
+void try_n_packing_moves(int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats) {
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
 
     bool is_proposed, is_valid, is_successful;
@@ -120,24 +121,19 @@ void try_n_packing_moves(int n, std::string move_type, t_clustering_data& cluste
 
         is_valid = move_generator->evaluate_move(new_locs);
         if (!is_valid) {
-            packing_multithreading_ctx.mu.lock();
-            packing_multithreading_ctx.clb_in_flight[new_locs[0].new_clb] = false;
-            packing_multithreading_ctx.clb_in_flight[new_locs[1].new_clb] = false;
-            packing_multithreading_ctx.mu.unlock();
+            packing_multithreading_ctx.mu[new_locs[0].new_clb]->unlock();
+            packing_multithreading_ctx.mu[new_locs[1].new_clb]->unlock();
             continue;
         } else
             num_good_moves++;
 
-        apply_mu.lock();
         is_successful = move_generator->apply_move(new_locs, clustering_data);
-        apply_mu.unlock();
         if (is_successful)
             num_legal_moves++;
 
-        packing_multithreading_ctx.mu.lock();
-        packing_multithreading_ctx.clb_in_flight[new_locs[0].new_clb] = false;
-        packing_multithreading_ctx.clb_in_flight[new_locs[1].new_clb] = false;
-        packing_multithreading_ctx.mu.unlock();
+        packing_multithreading_ctx.mu[new_locs[0].new_clb]->unlock();
+        packing_multithreading_ctx.mu[new_locs[1].new_clb]->unlock();
+
     }
 
     pack_stats.mu.lock();
