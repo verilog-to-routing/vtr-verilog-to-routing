@@ -46,7 +46,7 @@ struct MemRd : RTLIL::AttrObject {
 	std::vector<bool> collision_x_mask;
 	SigSpec clk, en, arst, srst, addr, data;
 
-	MemRd() : removed(false), cell(nullptr) {}
+	MemRd() : removed(false), cell(nullptr), wide_log2(0), clk_enable(false), clk_polarity(true), ce_over_srst(false), clk(State::Sx), en(State::S1), arst(State::S0), srst(State::S0) {}
 
 	// Returns the address of given subword index accessed by this port.
 	SigSpec sub_addr(int sub) {
@@ -74,6 +74,9 @@ struct MemWr : RTLIL::AttrObject {
 			res[i] = State(sub >> i & 1);
 		return res;
 	}
+
+	std::pair<SigSpec, std::vector<int>> compress_en();
+	SigSpec decompress_en(const std::vector<int> &swizzle, SigSpec sig);
 };
 
 struct MemInit : RTLIL::AttrObject {
@@ -190,6 +193,33 @@ struct Mem : RTLIL::AttrObject {
 	// and masking enable bits with decoders on the low part of the
 	// original address.
 	void widen_wr_port(int idx, int wide_log2);
+
+	// Emulates a sync read port's enable functionality in soft logic,
+	// changing the actual read port's enable to be always-on.
+	void emulate_rden(int idx, FfInitVals *initvals);
+
+	// Emulates a sync read port's initial/reset value functionality in
+	// soft logic, removing it from the actual read port.
+	void emulate_reset(int idx, bool emu_init, bool emu_arst, bool emu_srst, FfInitVals *initvals);
+
+	// Given a read port with ce_over_srst set, converts it to a port
+	// with ce_over_srst unset without changing its behavior by adding
+	// emulation logic.
+	void emulate_rd_ce_over_srst(int idx);
+
+	// Given a read port with ce_over_srst unset, converts it to a port
+	// with ce_over_srst set without changing its behavior by adding
+	// emulation logic.
+	void emulate_rd_srst_over_ce(int idx);
+
+	// Returns true iff emulate_read_first makes sense to call.
+	bool emulate_read_first_ok();
+
+	// Emulates all read-first read-write port relationships in terms of
+	// all-transparent ports, by delaying all write ports by one cycle.
+	// This can only be used when all read ports and all write ports are
+	// in the same clock domain.
+	void emulate_read_first(FfInitVals *initvals);
 
 	Mem(Module *module, IdString memid, int width, int start_offset, int size) : module(module), memid(memid), packed(false), mem(nullptr), cell(nullptr), width(width), start_offset(start_offset), size(size) {}
 };

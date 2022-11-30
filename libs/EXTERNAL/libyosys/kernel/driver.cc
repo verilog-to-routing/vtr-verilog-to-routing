@@ -33,6 +33,10 @@
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
+#ifndef __STDC_FORMAT_MACROS
+#  define __STDC_FORMAT_MACROS
+#endif
+#include <inttypes.h>
 
 #if defined (__linux__) || defined(__FreeBSD__)
 #  include <sys/resource.h>
@@ -118,7 +122,7 @@ int main(int argc, char **argv)
 	if (argc == 2)
 	{
 		// Run the first argument as a script file
-		run_frontend(argv[1], "script", 0, 0, 0);
+		run_frontend(argv[1], "script");
 	}
 }
 
@@ -192,6 +196,13 @@ void yosys_atexit()
 #endif
 }
 
+#if defined(__OpenBSD__)
+namespace Yosys {
+extern char *yosys_argv0;
+extern char yosys_path[PATH_MAX];
+};
+#endif
+
 int main(int argc, char **argv)
 {
 	std::string frontend_command = "auto";
@@ -202,12 +213,14 @@ int main(int argc, char **argv)
 	std::string output_filename = "";
 	std::string scriptfile = "";
 	std::string depsfile = "";
+	std::string topmodule = "";
+	std::string perffile = "";
 	bool scriptfile_tcl = false;
-	bool got_output_filename = false;
 	bool print_banner = true;
 	bool print_stats = true;
 	bool call_abort = false;
 	bool timing_details = false;
+	bool run_shell = true;
 	bool mode_v = false;
 	bool mode_q = false;
 
@@ -288,6 +301,9 @@ int main(int argc, char **argv)
 		printf("    -A\n");
 		printf("        will call abort() at the end of the script. for debugging\n");
 		printf("\n");
+		printf("    -r <module_name>\n");
+		printf("        elaborate command line arguments using the specified top module\n");
+		printf("\n");
 		printf("    -D <macro>[=<value>]\n");
 		printf("        set the specified Verilog define (via \"read -define\")\n");
 		printf("\n");
@@ -342,7 +358,7 @@ int main(int argc, char **argv)
 	}
 
 	int opt;
-	while ((opt = getopt(argc, argv, "MXAQTVSgm:f:Hh:b:o:p:l:L:qv:tds:c:W:w:e:D:P:E:x:")) != -1)
+	while ((opt = getopt(argc, argv, "MXAQTVSgm:f:Hh:b:o:p:l:L:qv:tds:c:W:w:e:r:D:P:E:x:B:")) != -1)
 	{
 		switch (opt)
 		{
@@ -366,6 +382,7 @@ int main(int argc, char **argv)
 			exit(0);
 		case 'S':
 			passes_commands.push_back("synth");
+			run_shell = false;
 			break;
 		case 'g':
 			log_force_debug++;
@@ -378,19 +395,23 @@ int main(int argc, char **argv)
 			break;
 		case 'H':
 			passes_commands.push_back("help");
+			run_shell = false;
 			break;
 		case 'h':
 			passes_commands.push_back(stringf("help %s", optarg));
+			run_shell = false;
 			break;
 		case 'b':
 			backend_command = optarg;
+			run_shell = false;
 			break;
 		case 'p':
 			passes_commands.push_back(optarg);
+			run_shell = false;
 			break;
 		case 'o':
 			output_filename = optarg;
-			got_output_filename = true;
+			run_shell = false;
 			break;
 		case 'l':
 		case 'L':
@@ -422,10 +443,12 @@ int main(int argc, char **argv)
 		case 's':
 			scriptfile = optarg;
 			scriptfile_tcl = false;
+			run_shell = false;
 			break;
 		case 'c':
 			scriptfile = optarg;
 			scriptfile_tcl = true;
+			run_shell = false;
 			break;
 		case 'W':
 			log_warn_regexes.push_back(YS_REGEX_COMPILE(optarg));
@@ -435,6 +458,9 @@ int main(int argc, char **argv)
 			break;
 		case 'e':
 			log_werror_regexes.push_back(YS_REGEX_COMPILE(optarg));
+			break;
+		case 'r':
+			topmodule = optarg;
 			break;
 		case 'D':
 			vlog_defines.push_back(optarg);
@@ -467,6 +493,9 @@ int main(int argc, char **argv)
 		case 'x':
 			log_experimentals_ignored.insert(optarg);
 			break;
+		case 'B':
+			perffile = optarg;
+			break;
 		default:
 			fprintf(stderr, "Run '%s -h' for help.\n", argv[0]);
 			exit(1);
@@ -483,6 +512,12 @@ int main(int argc, char **argv)
 
 	if (print_stats)
 		log_hasher = new SHA1;
+
+#if defined(__OpenBSD__)
+	// save the executable origin for proc_self_dirname()
+	yosys_argv0 = argv[0];
+	realpath(yosys_argv0, yosys_path);
+#endif
 
 #if defined(__linux__)
 	// set stack size to >= 128 MB
@@ -506,12 +541,6 @@ int main(int argc, char **argv)
 	for (auto &fn : plugin_filenames)
 		load_plugin(fn, {});
 
-	if (optind == argc && passes_commands.size() == 0 && scriptfile.empty()) {
-		if (!got_output_filename)
-			backend_command = "";
-		shell(yosys_design);
-	}
-
 	if (!vlog_defines.empty()) {
 		std::string vdef_cmd = "read -define";
 		for (auto vdef : vlog_defines)
@@ -520,7 +549,11 @@ int main(int argc, char **argv)
 	}
 
 	while (optind < argc)
-		run_frontend(argv[optind++], frontend_command, output_filename == "-" ? &backend_command : NULL);
+		if (run_frontend(argv[optind++], frontend_command))
+			run_shell = false;
+
+	if (!topmodule.empty())
+		run_pass("hierarchy -top " + topmodule);
 
 	if (!scriptfile.empty()) {
 		if (scriptfile_tcl) {
@@ -531,13 +564,15 @@ int main(int argc, char **argv)
 			log_error("Can't exectue TCL script: this version of yosys is not built with TCL support enabled.\n");
 #endif
 		} else
-			run_frontend(scriptfile, "script", output_filename == "-" ? &backend_command : NULL);
+			run_frontend(scriptfile, "script");
 	}
 
 	for (auto it = passes_commands.begin(); it != passes_commands.end(); it++)
 		run_pass(*it);
 
-	if (!backend_command.empty())
+	if (run_shell)
+		shell(yosys_design);
+	else
 		run_backend(output_filename, backend_command);
 
 	yosys_design->check();
@@ -647,6 +682,29 @@ int main(int argc, char **argv)
 			}
 			log("%s\n", out_count ? "" : " no commands executed");
 		}
+		if(!perffile.empty())
+		{
+			FILE *f = fopen(perffile.c_str(), "wt");
+			if (f == nullptr)
+				log_error("Can't open performance log file for writing: %s\n", strerror(errno));
+
+			fprintf(f, "{\n");
+			fprintf(f, "  \"generator\": \"%s\",\n", yosys_version_str);
+			fprintf(f, "  \"total_ns\": %" PRIu64 ",\n", total_ns);
+			fprintf(f, "  \"passes\": {");
+
+			bool first = true;
+			for (auto it = timedat.rbegin(); it != timedat.rend(); it++) {
+				if (!first)
+					fprintf(f, ",");
+				fprintf(f, "\n    \"%s\": {\n", std::get<2>(*it).c_str());
+				fprintf(f, "      \"runtime_ns\": %" PRIu64 ",\n", std::get<0>(*it));
+				fprintf(f, "      \"num_calls\": %u\n", std::get<1>(*it));
+				fprintf(f, "    }");
+				first = false;
+			}
+			fprintf(f, "\n  }\n}\n");
+		}
 	}
 
 #if defined(YOSYS_ENABLE_COVER) && (defined(__linux__) || defined(__FreeBSD__))
@@ -697,4 +755,3 @@ int main(int argc, char **argv)
 }
 
 #endif /* EMSCRIPTEN */
-

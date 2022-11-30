@@ -1,6 +1,6 @@
 `timescale 1ps / 1ps
-`define SB_DFF_REG reg Q = 0
-// `define SB_DFF_REG reg Q
+`define SB_DFF_INIT initial Q = 0;
+// `define SB_DFF_INIT
 
 `ifndef NO_ICE40_DEFAULT_ASSIGNMENTS
 `define ICE40_DEFAULT_ASSIGNMENT_V(v) = v
@@ -244,7 +244,7 @@ module SB_CARRY (output CO, input I0, I1, CI);
 		// https://github.com/YosysHQ/icestorm/blob/be0bca0230d6fe1102e0a360b953fbb0d273a39f/icefuzz/timings_lp1k.txt#L82
 		(I0 => CO) = (382, 362);
 		// https://github.com/YosysHQ/icestorm/blob/be0bca0230d6fe1102e0a360b953fbb0d273a39f/icefuzz/timings_lp1k.txt#L85
-		(I0 => CO) = (341, 196);
+		(I1 => CO) = (341, 196);
 	endspecify
 `endif
 `ifdef ICE40_U
@@ -254,7 +254,7 @@ module SB_CARRY (output CO, input I0, I1, CI);
 		// https://github.com/YosysHQ/icestorm/blob/be0bca0230d6fe1102e0a360b953fbb0d273a39f/icefuzz/timings_up5k.txt#L94
 		(I0 => CO) = (675, 662);
 		// https://github.com/YosysHQ/icestorm/blob/be0bca0230d6fe1102e0a360b953fbb0d273a39f/icefuzz/timings_up5k.txt#L97
-		(I0 => CO) = (609, 358);
+		(I1 => CO) = (609, 358);
 	endspecify
 `endif
 endmodule
@@ -263,9 +263,11 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFF (
-	output `SB_DFF_REG,
+	output reg Q,
 	input C, D
 );
+	`SB_DFF_INIT
+
 	always @(posedge C)
 		Q <= D;
 `ifdef ICE40_HX
@@ -299,9 +301,13 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFE (
-	output `SB_DFF_REG,
-	input C, E `ICE40_DEFAULT_ASSIGNMENT_1, D
+	output reg Q,
+	input C,
+	input E `ICE40_DEFAULT_ASSIGNMENT_1,
+	input D
 );
+	`SB_DFF_INIT
+
 	always @(posedge C)
 		if (E)
 			Q <= D;
@@ -342,9 +348,11 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFSR (
-	output `SB_DFF_REG,
+	output reg Q,
 	input C, R, D
 );
+	`SB_DFF_INIT
+
 	always @(posedge C)
 		if (R)
 			Q <= 0;
@@ -390,9 +398,11 @@ endmodule
 
 (* abc9_box, lib_whitebox *)
 module SB_DFFR (
-	output `SB_DFF_REG,
+	output reg Q,
 	input C, R, D
 );
+	`SB_DFF_INIT
+
 	always @(posedge C, posedge R)
 		if (R)
 			Q <= 0;
@@ -459,9 +469,11 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFSS (
-	output `SB_DFF_REG,
+	output reg Q,
 	input C, S, D
 );
+	`SB_DFF_INIT
+
 	always @(posedge C)
 		if (S)
 			Q <= 1;
@@ -507,9 +519,11 @@ endmodule
 
 (* abc9_box, lib_whitebox *)
 module SB_DFFS (
-	output `SB_DFF_REG,
+	output reg Q,
 	input C, S, D
 );
+	`SB_DFF_INIT
+
 	always @(posedge C, posedge S)
 		if (S)
 			Q <= 1;
@@ -576,9 +590,14 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFESR (
-	output `SB_DFF_REG,
-	input C, E `ICE40_DEFAULT_ASSIGNMENT_1, R, D
+	output reg Q,
+	input C,
+	input E `ICE40_DEFAULT_ASSIGNMENT_1,
+	input R,
+	input D
 );
+	`SB_DFF_INIT
+
 	always @(posedge C)
 		if (E) begin
 			if (R)
@@ -632,9 +651,14 @@ endmodule
 
 (* abc9_box, lib_whitebox *)
 module SB_DFFER (
-	output `SB_DFF_REG,
-	input C, E `ICE40_DEFAULT_ASSIGNMENT_1, R, D
+	output reg Q,
+	input C,
+	input E `ICE40_DEFAULT_ASSIGNMENT_1,
+	input R,
+	input D
 );
+	`SB_DFF_INIT
+
 	always @(posedge C, posedge R)
 		if (R)
 			Q <= 0;
@@ -707,9 +731,14 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFESS (
-	output `SB_DFF_REG,
-	input C, E `ICE40_DEFAULT_ASSIGNMENT_1, S, D
+	output reg Q,
+	input C,
+	input E `ICE40_DEFAULT_ASSIGNMENT_1,
+	input S,
+	input D
 );
+	`SB_DFF_INIT
+
 	always @(posedge C)
 		if (E) begin
 			if (S)
@@ -763,9 +792,14 @@ endmodule
 
 (* abc9_box, lib_whitebox *)
 module SB_DFFES (
-	output `SB_DFF_REG,
-	input C, E `ICE40_DEFAULT_ASSIGNMENT_1, S, D
+	output reg Q,
+	input C,
+	input E `ICE40_DEFAULT_ASSIGNMENT_1,
+	input S,
+	input D
 );
+	`SB_DFF_INIT
+
 	always @(posedge C, posedge S)
 		if (S)
 			Q <= 1;
@@ -840,9 +874,11 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFN (
-	output `SB_DFF_REG,
+	output reg Q,
 	input C, D
 );
+	`SB_DFF_INIT
+
 	always @(negedge C)
 		Q <= D;
 `ifdef ICE40_HX
@@ -876,9 +912,13 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFNE (
-	output `SB_DFF_REG,
-	input C, E `ICE40_DEFAULT_ASSIGNMENT_1, D
+	output reg Q,
+	input C,
+	input E `ICE40_DEFAULT_ASSIGNMENT_1,
+	input D
 );
+	`SB_DFF_INIT
+
 	always @(negedge C)
 		if (E)
 			Q <= D;
@@ -919,9 +959,11 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFNSR (
-	output `SB_DFF_REG,
+	output reg Q,
 	input C, R, D
 );
+	`SB_DFF_INIT
+
 	always @(negedge C)
 		if (R)
 			Q <= 0;
@@ -967,9 +1009,11 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFNR (
-	output `SB_DFF_REG,
+	output reg Q,
 	input C, R, D
 );
+	`SB_DFF_INIT
+
 	always @(negedge C, posedge R)
 		if (R)
 			Q <= 0;
@@ -1036,9 +1080,11 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFNSS (
-	output `SB_DFF_REG,
+	output reg Q,
 	input C, S, D
 );
+	`SB_DFF_INIT
+
 	always @(negedge C)
 		if (S)
 			Q <= 1;
@@ -1084,9 +1130,11 @@ endmodule
 
 (* abc9_box, lib_whitebox *)
 module SB_DFFNS (
-	output `SB_DFF_REG,
+	output reg Q,
 	input C, S, D
 );
+	`SB_DFF_INIT
+
 	always @(negedge C, posedge S)
 		if (S)
 			Q <= 1;
@@ -1153,9 +1201,14 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFNESR (
-	output `SB_DFF_REG,
-	input C, E `ICE40_DEFAULT_ASSIGNMENT_1, R, D
+	output reg Q,
+	input C,
+	input E `ICE40_DEFAULT_ASSIGNMENT_1,
+	input R,
+	input D
 );
+	`SB_DFF_INIT
+
 	always @(negedge C)
 		if (E) begin
 			if (R)
@@ -1209,9 +1262,14 @@ endmodule
 
 (* abc9_box, lib_whitebox *)
 module SB_DFFNER (
-	output `SB_DFF_REG,
-	input C, E `ICE40_DEFAULT_ASSIGNMENT_1, R, D
+	output reg Q,
+	input C,
+	input E `ICE40_DEFAULT_ASSIGNMENT_1,
+	input R,
+	input D
 );
+	`SB_DFF_INIT
+
 	always @(negedge C, posedge R)
 		if (R)
 			Q <= 0;
@@ -1284,9 +1342,14 @@ endmodule
 
 (* abc9_flop, lib_whitebox *)
 module SB_DFFNESS (
-	output `SB_DFF_REG,
-	input C, E `ICE40_DEFAULT_ASSIGNMENT_1, S, D
+	output reg Q,
+	input C,
+	input E `ICE40_DEFAULT_ASSIGNMENT_1,
+	input S,
+	input D
 );
+	`SB_DFF_INIT
+
 	always @(negedge C)
 		if (E) begin
 			if (S)
@@ -1340,9 +1403,14 @@ endmodule
 
 (* abc9_box, lib_whitebox *)
 module SB_DFFNES (
-	output `SB_DFF_REG,
-	input C, E `ICE40_DEFAULT_ASSIGNMENT_1, S, D
+	output reg Q,
+	input C,
+	input E `ICE40_DEFAULT_ASSIGNMENT_1,
+	input S,
+	input D
 );
+	`SB_DFF_INIT
+
 	always @(negedge C, posedge S)
 		if (S)
 			Q <= 1;
