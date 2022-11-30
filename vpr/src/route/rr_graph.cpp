@@ -278,6 +278,7 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
 static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                              t_rr_edge_info_set& rr_edges_to_create,
                                              const DeviceGrid& grid,
+                                             int& num_edges,
                                              bool is_flat);
 
 static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -619,6 +620,7 @@ void create_rr_graph(const t_graph_type graph_type,
 static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                              t_rr_edge_info_set& rr_edges_to_create,
                                              const DeviceGrid& grid,
+                                             int& num_edges,
                                              bool is_flat) {
     VTR_ASSERT(is_flat);
     /* This function should be called if placement is done! */
@@ -640,6 +642,10 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                      rr_edges_to_create,
                                      grid,
                                      is_flat);
+        uniquify_edges(rr_edges_to_create);
+        alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+        num_edges += rr_edges_to_create.size();
+        rr_edges_to_create.clear();
     }
 
     VTR_LOG("Number of collapsed nodes: %d\n", num_collapsed_nodes);
@@ -1913,11 +1919,8 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
         add_intra_cluster_edges_rr_graph(rr_graph_builder,
                                          rr_edges_to_create,
                                          grid,
+                                         num_edges,
                                          is_flat);
-        uniquify_edges(rr_edges_to_create);
-        alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
-        num_edges += rr_edges_to_create.size();
-        rr_edges_to_create.clear();
     }
 
     VTR_LOG("Internal edge count:%d\n", num_edges);
