@@ -393,11 +393,15 @@ void t_rr_graph_storage::init_fan_in() {
     //Reset all fan-ins to zero
     edges_read_ = true;
     node_fan_in_.resize(node_storage_.size(), 0);
+    seen_node_.resize(node_storage_.size(), false);
     node_fan_in_.shrink_to_fit();
-
+    seen_node_.shrink_to_fit();
     //Walk the graph and increment fanin on all downstream nodes
     for (const auto& dest_node : edge_dest_node_) {
-        node_fan_in_[dest_node] += 1;
+        if(!seen_node_[dest_node]) {
+            node_fan_in_[dest_node] += 1;
+            seen_node_[dest_node] = true;
+        }
     }
 }
 
@@ -834,8 +838,10 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
     }
     {
         auto old_node_fan_in = node_fan_in_;
+        auto old_seen_node_ = seen_node_;
         for (size_t i = 0; i < node_fan_in_.size(); i++) {
             node_fan_in_[order[RRNodeId(i)]] = old_node_fan_in[RRNodeId(i)];
+            seen_node_[order[RRNodeId(i)]] = old_seen_node_[RRNodeId(i)];
         }
     }
 }
