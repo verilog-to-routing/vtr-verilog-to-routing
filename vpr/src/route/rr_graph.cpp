@@ -1192,7 +1192,6 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
 
     vtr::ScopedStartFinishTimer timer("Build intra-cluster routing resource graph");
 
-    invalidate_router_lookahead_cache();
     rr_graph_builder.reset_rr_graph_flags();
 
     int num_rr_nodes = rr_graph.num_nodes();

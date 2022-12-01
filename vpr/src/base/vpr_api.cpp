@@ -888,19 +888,16 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
                               NetPinsMatrix<float>& net_delay,
                               bool is_flat) {
-    // If flat-routing is enabled, rr_graph will be created from scratch anyway. Thus, there is no use to build lookahead here!
-    if (!is_flat) {
-        if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
-            // Prime lookahead cache to avoid adding lookahead computation cost to
-            // the routing timer.
-            get_cached_router_lookahead(
-                vpr_setup.RoutingArch,
-                vpr_setup.RouterOpts.lookahead_type,
-                vpr_setup.RouterOpts.write_router_lookahead,
-                vpr_setup.RouterOpts.read_router_lookahead,
-                vpr_setup.Segments,
-                is_flat);
-        }
+    if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
+        // Prime lookahead cache to avoid adding lookahead computation cost to
+        // the routing timer.
+        get_cached_router_lookahead(
+            vpr_setup.RoutingArch,
+            vpr_setup.RouterOpts.lookahead_type,
+            vpr_setup.RouterOpts.write_router_lookahead,
+            vpr_setup.RouterOpts.read_router_lookahead,
+            vpr_setup.Segments,
+            is_flat);
     }
 
     vtr::ScopedStartFinishTimer timer("Routing");

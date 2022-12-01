@@ -18,6 +18,8 @@ class RouterLookahead {
     // Compute router lookahead (if needed).
     virtual void compute(const std::vector<t_segment_inf>& segment_inf) = 0;
 
+    virtual void compute_intra_tile() = 0;
+
     // Read router lookahead data (if any) from specified file.
     // May be unimplemented, in which case method should throw an exception.
     virtual void read(const std::string& file) = 0;
@@ -62,6 +64,10 @@ class ClassicLookahead : public RouterLookahead {
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
 
+    void compute_intra_tile() override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::compute_intra_time unimplemented");
+    }
+
     void read(const std::string& /*file*/) override {
         VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::read unimplemented");
     }
@@ -80,6 +86,11 @@ class NoOpLookahead : public RouterLookahead {
 
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
+
+    void compute_intra_tile() override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::compute_intra_time unimplemented");
+    }
+
     void read(const std::string& /*file*/) override {
         VPR_THROW(VPR_ERROR_ROUTE, "Read not supported for NoOpLookahead");
     }

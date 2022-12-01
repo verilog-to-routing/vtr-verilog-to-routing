@@ -76,6 +76,10 @@ class ExtendedMapLookahead : public RouterLookahead {
      */
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
 
+    void compute_intra_tile() override {
+        VPR_THROW(VPR_ERROR_ROUTE, "ClassicLookahead::compute_intra_time unimplemented");
+    }
+
     /**
      * @brief Reads the extended lookahead map
      */
