@@ -79,7 +79,7 @@
         "latch": 532,
         "Adder": 3351,
         "generic logic size": 4,
-        "Longest Path": 330,
+        "Longest Path": 340,
         "Average Path": 4,
         "Estimated LUTs": 19113,
         "Total Node": 21647
@@ -278,7 +278,7 @@
         "latch": 199,
         "Memory": 8,
         "generic logic size": 4,
-        "Longest Path": 54,
+        "Longest Path": 51,
         "Average Path": 3,
         "Estimated LUTs": 462,
         "Total Node": 645
@@ -430,16 +430,16 @@
         "Latch Drivers": 1,
         "Pi": 113,
         "Po": 102,
-        "logic element": 52847,
+        "logic element": 52848,
         "latch": 6468,
         "Adder": 4682,
         "Multiplier": 8,
         "Memory": 1409,
         "generic logic size": 4,
-        "Longest Path": 4878,
+        "Longest Path": 4908,
         "Average Path": 4,
-        "Estimated LUTs": 56141,
-        "Total Node": 65415
+        "Estimated LUTs": 56142,
+        "Total Node": 65416
     },
     "full/matmul/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/matmul/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -651,14 +651,14 @@
         "Latch Drivers": 1,
         "Pi": 37,
         "Po": 36,
-        "logic element": 4836,
+        "logic element": 4838,
         "latch": 910,
         "Adder": 309,
         "generic logic size": 4,
         "Longest Path": 2422,
         "Average Path": 4,
-        "Estimated LUTs": 5059,
-        "Total Node": 6056
+        "Estimated LUTs": 5061,
+        "Total Node": 6058
     },
     "full/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision0/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -674,14 +674,14 @@
         "Pi": 104,
         "Po": 104,
         "logic element": 11027,
-        "latch": 11897,
-        "Adder": 2727,
+        "latch": 11890,
+        "Adder": 2729,
         "Memory": 1024,
         "generic logic size": 4,
         "Longest Path": 183,
         "Average Path": 4,
         "Estimated LUTs": 11171,
-        "Total Node": 26676
+        "Total Node": 26671
     },
     "full/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision1/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -721,13 +721,13 @@
         "Po": 182,
         "logic element": 10343,
         "latch": 15833,
-        "Adder": 12471,
+        "Adder": 12486,
         "Multiplier": 468,
         "generic logic size": 4,
         "Longest Path": 138,
         "Average Path": 4,
         "Estimated LUTs": 10357,
-        "Total Node": 39116
+        "Total Node": 39131
     },
     "full/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "full/stereovision3/k6_frac_N10_frac_chain_mem32K_40nm",

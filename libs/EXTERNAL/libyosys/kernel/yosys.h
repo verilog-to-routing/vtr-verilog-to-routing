@@ -147,9 +147,7 @@ extern Tcl_Obj *Tcl_ObjSetVar2(Tcl_Interp *interp, Tcl_Obj *part1Ptr, Tcl_Obj *p
 #  define YS_ATTRIBUTE(...)
 #endif
 
-#if __cplusplus >= 201703L
-#  define YS_MAYBE_UNUSED [[maybe_unused]];
-#elif defined(__GNUC__) || defined(__clang__)
+#if defined(__GNUC__) || defined(__clang__)
 #  define YS_MAYBE_UNUSED __attribute__((__unused__))
 #else
 #  define YS_MAYBE_UNUSED
@@ -280,15 +278,16 @@ bool patmatch(const char *pattern, const char *string);
 #if !defined(YOSYS_DISABLE_SPAWN)
 int run_command(const std::string &command, std::function<void(const std::string&)> process_line = std::function<void(const std::string&)>());
 #endif
-std::string make_temp_file(std::string template_str = "/tmp/yosys_XXXXXX");
-std::string make_temp_dir(std::string template_str = "/tmp/yosys_XXXXXX");
+std::string get_base_tmpdir();
+std::string make_temp_file(std::string template_str = get_base_tmpdir() + "/yosys_XXXXXX");
+std::string make_temp_dir(std::string template_str = get_base_tmpdir() + "/yosys_XXXXXX");
 bool check_file_exists(std::string filename, bool is_exec = false);
 bool is_absolute_path(std::string filename);
 void remove_directory(std::string dirname);
 std::string escape_filename_spaces(const std::string& filename);
 
 template<typename T> int GetSize(const T &obj) { return obj.size(); }
-int GetSize(RTLIL::Wire *wire);
+inline int GetSize(RTLIL::Wire *wire);
 
 extern int autoidx;
 extern int yosys_xtrace;
@@ -324,9 +323,12 @@ Tcl_Interp *yosys_get_tcl_interp();
 extern RTLIL::Design *yosys_design;
 
 RTLIL::IdString new_id(std::string file, int line, std::string func);
+RTLIL::IdString new_id_suffix(std::string file, int line, std::string func, std::string suffix);
 
 #define NEW_ID \
 	YOSYS_NAMESPACE_PREFIX new_id(__FILE__, __LINE__, __FUNCTION__)
+#define NEW_ID_SUFFIX(suffix) \
+	YOSYS_NAMESPACE_PREFIX new_id_suffix(__FILE__, __LINE__, __FUNCTION__, suffix)
 
 // Create a statically allocated IdString object, using for example ID::A or ID($add).
 //
@@ -349,8 +351,7 @@ std::vector<std::string> glob_filename(const std::string &filename_pattern);
 void rewrite_filename(std::string &filename);
 
 void run_pass(std::string command, RTLIL::Design *design = nullptr);
-void run_frontend(std::string filename, std::string command, std::string *backend_command, std::string *from_to_label = nullptr, RTLIL::Design *design = nullptr);
-void run_frontend(std::string filename, std::string command, RTLIL::Design *design = nullptr);
+bool run_frontend(std::string filename, std::string command, RTLIL::Design *design = nullptr, std::string *from_to_label = nullptr);
 void run_backend(std::string filename, std::string command, RTLIL::Design *design = nullptr);
 void shell(RTLIL::Design *design);
 

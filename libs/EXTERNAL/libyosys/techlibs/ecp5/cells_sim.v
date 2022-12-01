@@ -204,7 +204,7 @@ module TRELLIS_DPR16X4 (
 	integer i;
 	initial begin
 		for (i = 0; i < 16; i = i + 1)
-			mem[i] <= {INITVAL[i+3], INITVAL[i+2], INITVAL[i+1], INITVAL[i]};
+			mem[i] <= INITVAL[4*i +: 4];
 	end
 
 	wire muxwck = (WCKMUX == "INV") ? ~WCK : WCK;
@@ -355,37 +355,24 @@ module TRELLIS_FF(input CLK, LSR, CE, DI, M, output reg Q);
 		end
 	endgenerate
 
-	generate
-		// TODO
-		if (CLKMUX == "INV")
-			specify
-				$setup(DI, negedge CLK, 0);
-				$setup(CE, negedge CLK, 0);
-				$setup(LSR, negedge CLK, 0);
+	specify
+		$setup(DI, negedge CLK &&& CLKMUX == "INV", 0);
+		$setup(CE, negedge CLK &&& CLKMUX == "INV", 0);
+		$setup(LSR, negedge CLK &&& CLKMUX == "INV", 0);
+		$setup(DI, posedge CLK &&& CLKMUX != "INV", 0);
+		$setup(CE, posedge CLK &&& CLKMUX != "INV", 0);
+		$setup(LSR, posedge CLK &&& CLKMUX != "INV", 0);
 `ifndef YOSYS
-				if (SRMODE == "ASYNC" && muxlsr) (negedge CLK => (Q : srval)) = 0;
+		if (SRMODE == "ASYNC" && muxlsr && CLKMUX == "INV") (negedge CLK => (Q : srval)) = 0;
+		if (SRMODE == "ASYNC" && muxlsr && CLKMUX != "INV") (posedge CLK => (Q : srval)) = 0;
 `else
-				if (SRMODE == "ASYNC" && muxlsr) (LSR => Q) = 0; 	// Technically, this should be an edge sensitive path
-											// but for facilitating a bypass box, let's pretend it's
-											// a simple path
+		if (SRMODE == "ASYNC" && muxlsr) (LSR => Q) = 0; 	// Technically, this should be an edge sensitive path
+									// but for facilitating a bypass box, let's pretend it's
+									// a simple path
 `endif
-				if (!muxlsr && muxce) (negedge CLK => (Q : DI)) = 0;
-			endspecify
-		else
-			specify
-				$setup(DI, posedge CLK, 0);
-				$setup(CE, posedge CLK, 0);
-				$setup(LSR, posedge CLK, 0);
-`ifndef YOSYS
-				if (SRMODE == "ASYNC" && muxlsr) (posedge CLK => (Q : srval)) = 0;
-`else
-				if (SRMODE == "ASYNC" && muxlsr) (LSR => Q) = 0; 	// Technically, this should be an edge sensitive path
-											// but for facilitating a bypass box, let's pretend it's
-											// a simple path
-`endif
-				if (!muxlsr && muxce) (posedge CLK => (Q : DI)) = 0;
-			endspecify
-	endgenerate
+		if (!muxlsr && muxce && CLKMUX == "INV") (negedge CLK => (Q : DI)) = 0;
+		if (!muxlsr && muxce && CLKMUX != "INV") (posedge CLK => (Q : DI)) = 0;
+	endspecify
 endmodule
 
 // ---------------------------------------
@@ -812,6 +799,7 @@ module DP16KD(
 	parameter INITVAL_3D = 320'h00000000000000000000000000000000000000000000000000000000000000000000000000000000;
 	parameter INITVAL_3E = 320'h00000000000000000000000000000000000000000000000000000000000000000000000000000000;
 	parameter INITVAL_3F = 320'h00000000000000000000000000000000000000000000000000000000000000000000000000000000;
+	parameter INIT_DATA = "STATIC";
 endmodule
 
 `ifndef NO_INCLUDES

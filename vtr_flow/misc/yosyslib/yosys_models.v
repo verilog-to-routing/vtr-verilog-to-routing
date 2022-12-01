@@ -138,6 +138,129 @@ module \$mem (RD_CLK, RD_EN, RD_ADDR, RD_DATA, WR_CLK, WR_EN, WR_ADDR, WR_DATA);
 	);
 endmodule
 
+module \$mem_v2 (RD_CLK, RD_EN, RD_ADDR, RD_ARST, RD_SRST, RD_DATA, WR_CLK, WR_EN, WR_ADDR, WR_DATA);
+	parameter MEMID = "";
+	parameter SIZE = 256;
+	parameter OFFSET = 0;
+	parameter ABITS = 8;
+	parameter WIDTH = 8;
+	parameter signed INIT = 1'bx;
+
+	parameter RD_PORTS = 1;
+	parameter RD_CLK_ENABLE = 1'b1;
+	parameter RD_CLK_POLARITY = 1'b1;
+	parameter RD_TRANSPARENT = 1'b0;
+	parameter RD_TRANSPARENCY_MASK = 1'b1;
+	parameter RD_COLLISION_X_MASK = 1'b1;
+	parameter RD_WIDE_CONTINUATION = 1'b1;
+	parameter RD_CE_OVER_SRST = 1'b1;
+	parameter RD_ARST_VALUE = 1'b1;
+	parameter RD_SRST_VALUE = 1'b1;
+	parameter RD_INIT_VALUE = 1'b1;
+
+	parameter WR_PORTS = 1;
+	parameter WR_CLK_ENABLE = 1'b1;
+	parameter WR_CLK_POLARITY = 1'b1;
+	parameter WR_WIDE_CONTINUATION = 1'b1;
+	parameter WR_PRIORITY_MASK = 1'b1;
+
+	input [RD_PORTS-1:0] RD_CLK;
+	input [RD_PORTS-1:0] RD_EN;
+	input [RD_PORTS-1:0] RD_ARST;
+	input [RD_PORTS-1:0] RD_SRST;
+	input [RD_PORTS*ABITS-1:0] RD_ADDR;
+	output reg [RD_PORTS*WIDTH-1:0] RD_DATA;
+
+	input [WR_PORTS-1:0] WR_CLK;
+	input [WR_PORTS*WIDTH-1:0] WR_EN;
+	input [WR_PORTS*ABITS-1:0] WR_ADDR;
+	input [WR_PORTS*WIDTH-1:0] WR_DATA;
+
+	wire [1023:0] _TECHMAP_DO_ = "proc; clean";
+	
+	parameter _TECHMAP_CONNMAP_RD_CLK_ = 0;
+	parameter _TECHMAP_CONNMAP_WR_CLK_ = 0;
+	
+	parameter _TECHMAP_CONNMAP_RD_ADDR_ = 0;
+	parameter _TECHMAP_CONNMAP_WR_ADDR_ = 0;
+
+	parameter _TECHMAP_CONNMAP_WR_EN_ = 0;
+	parameter _TECHMAP_CONSTVAL_RD_EN_ = 0;
+
+	parameter _TECHMAP_BITS_CONNMAP_ = 0;
+	//parameter _TECHMAP_CONNMAP_RD_PORTS_ = 0;
+	//parameter _TECHMAP_CONNMAP_WR_PORTS_ = 0;
+	
+	reg _TECHMAP_FAIL_;
+	initial begin
+		_TECHMAP_FAIL_ <= 0;
+	
+		// only map cells with only one read and one write port
+		if (RD_PORTS > 2 || WR_PORTS > 2)
+			_TECHMAP_FAIL_ <= 1;
+	
+		// read enable must not be constant low
+		if (_TECHMAP_CONSTVAL_RD_EN_[0] == 1'b0)
+			_TECHMAP_FAIL_ <= 1;
+
+		// we expect positive read clock and non-transparent reads
+		if (RD_TRANSPARENT || !RD_CLK_ENABLE || !RD_CLK_POLARITY)
+			_TECHMAP_FAIL_ <= 1;
+	
+		// we expect positive write clock
+		if (!WR_CLK_ENABLE || !WR_CLK_POLARITY)
+			_TECHMAP_FAIL_ <= 1;
+	
+		// read and write must be in same clock domain
+		if (_TECHMAP_CONNMAP_RD_CLK_ != _TECHMAP_CONNMAP_WR_CLK_)
+			_TECHMAP_FAIL_ <= 1;
+	
+		// we don't do small memories or memories with offsets
+		if (OFFSET != 0 || ABITS < `MEM_MINWIDTH || SIZE < 2**`MEM_MINWIDTH)
+			_TECHMAP_FAIL_ <= 1;
+	
+	end
+
+	genvar i;
+	for (i = 0; i < `MAX(RD_PORTS, WR_PORTS); i = i+1) begin
+		initial begin
+			// check each pair of read and write port are the same
+			if (RD_PORTS >= i && WR_PORTS >= i) begin
+				if (_TECHMAP_CONNMAP_RD_ADDR_[i*ABITS*_TECHMAP_BITS_CONNMAP_ +: ABITS*_TECHMAP_BITS_CONNMAP_] != 
+					_TECHMAP_CONNMAP_WR_ADDR_[i*ABITS*_TECHMAP_BITS_CONNMAP_ +: ABITS*_TECHMAP_BITS_CONNMAP_])
+						_TECHMAP_FAIL_ <= 1;
+			end
+		end
+		// check all bits of write enable are the same
+		if (i < WR_PORTS) begin
+			genvar j;
+			for (j = 1; j < WIDTH; j = j+1) begin
+				initial begin
+					if (_TECHMAP_CONNMAP_WR_EN_[0 +: _TECHMAP_BITS_CONNMAP_] !=
+							_TECHMAP_CONNMAP_WR_EN_[j*_TECHMAP_BITS_CONNMAP_ +: _TECHMAP_BITS_CONNMAP_])
+						_TECHMAP_FAIL_ <= 1;
+				end
+			end
+		end
+	end
+
+	
+	\$__mem_gen #(
+		.MEMID(MEMID), .SIZE(SIZE), .OFFSET(OFFSET), .ABITS(ABITS), .WIDTH(WIDTH),
+		.RD_PORTS(RD_PORTS), .RD_CLK_ENABLE(RD_CLK_ENABLE), .RD_CLK_POLARITY(RD_CLK_POLARITY), .RD_TRANSPARENT(RD_TRANSPARENT),
+		.WR_PORTS(WR_PORTS), .WR_CLK_ENABLE(WR_CLK_ENABLE), .WR_CLK_POLARITY(WR_CLK_POLARITY)
+	) _TECHMAP_REPLACE_ (
+		.RD_CLK(RD_CLK),
+		.RD_EN(RD_EN),
+		.RD_ADDR(RD_ADDR),
+		.RD_DATA(RD_DATA),
+		.WR_CLK(WR_CLK),
+		.WR_EN(WR_EN),
+		.WR_ADDR(WR_ADDR),
+		.WR_DATA(WR_DATA)
+	);
+endmodule
+
 module \$__mem_gen (RD_CLK, RD_EN, RD_ADDR, RD_DATA, WR_CLK, WR_EN, WR_ADDR, WR_DATA);
 	parameter MEMID = "";
 	parameter SIZE = 256;

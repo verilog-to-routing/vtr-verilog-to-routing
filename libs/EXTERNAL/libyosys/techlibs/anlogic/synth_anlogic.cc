@@ -63,6 +63,9 @@ struct SynthAnlogicPass : public ScriptPass
 		log("    -nolutram\n");
 		log("        do not use EG_LOGIC_DRAM16X4 cells in output netlist\n");
 		log("\n");
+		log("    -nobram\n");
+		log("        do not use EG_PHY_BRAM or EG_PHY_BRAM32K cells in output netlist\n");
+		log("\n");
 		log("\n");
 		log("The following commands are executed by this synthesis command:\n");
 		help_script();
@@ -70,7 +73,7 @@ struct SynthAnlogicPass : public ScriptPass
 	}
 
 	string top_opt, edif_file, json_file;
-	bool flatten, retime, nolutram;
+	bool flatten, retime, nolutram, nobram;
 
 	void clear_flags() override
 	{
@@ -80,6 +83,7 @@ struct SynthAnlogicPass : public ScriptPass
 		flatten = true;
 		retime = false;
 		nolutram = false;
+		nobram = false;
 	}
 
 	void execute(std::vector<std::string> args, RTLIL::Design *design) override
@@ -116,6 +120,10 @@ struct SynthAnlogicPass : public ScriptPass
 			}
 			if (args[argidx] == "-nolutram") {
 				nolutram = true;
+				continue;
+			}
+			if (args[argidx] == "-nobram") {
+				nobram = true;
 				continue;
 			}
 			if (args[argidx] == "-retime") {
@@ -158,11 +166,17 @@ struct SynthAnlogicPass : public ScriptPass
 			run("synth -run coarse");
 		}
 
-		if (!nolutram && check_label("map_lutram", "(skip if -nolutram)"))
+		if (check_label("map_ram"))
 		{
-			run("memory_bram -rules +/anlogic/lutrams.txt");
-			run("techmap -map +/anlogic/lutrams_map.v");
-			run("setundef -zero -params t:EG_LOGIC_DRAM16X4");
+			std::string args = "";
+			if (nobram)
+				args += " -no-auto-block";
+			if (nolutram)
+				args += " -no-auto-distributed";
+			if (help_mode)
+				args += " [-no-auto-block] [-no-auto-distributed]";
+			run("memory_libmap -lib +/anlogic/lutrams.txt -lib +/anlogic/brams.txt" + args, "(-no-auto-block if -nobram, -no-auto-distributed if -nolutram)");
+			run("techmap -map +/anlogic/lutrams_map.v -map +/anlogic/brams_map.v");
 		}
 
 		if (check_label("map_ffram"))
