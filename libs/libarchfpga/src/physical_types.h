@@ -1242,7 +1242,11 @@ class t_pb_graph_node {
     int total_pb_pins; /* only valid for top-level */
 
     void* temp_scratch_pad;                                     /* temporary data, useful for keeping track of things when traversing data structure */
-    t_cluster_placement_primitive* cluster_placement_primitive; /* pointer to indexing structure useful during packing stage */
+
+    /* indeces for cluster_placement_primitive in the cluster_placement_stats structure (useful during packing) */
+    int cluster_placement_primitive_index;
+    int cluster_placement_type_index;
+    int lb_type_index;
 
     int* input_pin_class_size;  /* Stores the number of pins that belong to a particular input pin class */
     int num_input_pin_class;    /* number of input pin classes that this pb_graph_node has */
