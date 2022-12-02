@@ -202,6 +202,8 @@ struct DeviceContext : public Context {
 
     int delayless_switch_idx = OPEN;
 
+    bool rr_graph_is_flat = false;
+
     /*
      * Clock Networks
      */

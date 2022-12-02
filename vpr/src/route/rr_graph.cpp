@@ -542,7 +542,7 @@ void create_rr_graph(const t_graph_type graph_type,
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty()) {
             //No change in channel width, so skip re-building RR graph
-            if (is_flat) {
+            if (is_flat && !device_ctx.rr_graph_is_flat) {
                 VTR_LOG("RR graph channel widths unchanged, intra-cluster resources should be added...\n");
             } else {
                 VTR_LOG("RR graph channel widths unchanged, skipping RR graph rebuild\n");
@@ -586,6 +586,8 @@ void create_rr_graph(const t_graph_type graph_type,
                                                               router_opts.reorder_rr_graph_nodes_threshold,
                                                               router_opts.reorder_rr_graph_nodes_seed);
         }
+
+        mutable_device_ctx.rr_graph_is_flat = true;
     }
 
     process_non_config_sets();
@@ -2183,6 +2185,8 @@ void free_rr_graph() {
     device_ctx.rr_indexed_data.clear();
 
     device_ctx.switch_fanin_remap.clear();
+
+    device_ctx.rr_graph_is_flat = false;
 
     invalidate_router_lookahead_cache();
 }
