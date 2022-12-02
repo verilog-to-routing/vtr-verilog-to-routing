@@ -503,7 +503,7 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
 }
 
 void MapLookahead::compute_intra_tile() {
-    VTR_ASSERT(is_flat_);
+    is_flat_ = true;
     vtr::ScopedStartFinishTimer timer("Computing tile lookahead");
     VTR_ASSERT(inter_tile_pin_primitive_pin_delay.empty());
     VTR_ASSERT(tile_min_cost.empty());
