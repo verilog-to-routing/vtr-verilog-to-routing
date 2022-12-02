@@ -60,22 +60,29 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
             VTR_LOG("Using simple RL 'Softmax agent' for choosing move types\n");
             std::unique_ptr<SoftmaxAgent> karmed_bandit_agent1, karmed_bandit_agent2;
 
+            //passing block type as well as number of available actions to the agents
+            //should change this to a command-line options, hence the user can choose
+            //the level of the agent intelligent
+            //default option now becomes considering move_type as well as block_types
+            auto& device_ctx = g_vpr_ctx.device();
+            int logical_blk_types_count = device_ctx.logical_block_types.size() - 1;//excluding the EMPTY type
+
             if (placer_opts.place_algorithm.is_timing_driven()) {
                 //agent's 1st state
-                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_PL_1ST_STATE_MOVE_TYPES);
+                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_PL_1ST_STATE_MOVE_TYPES, logical_blk_types_count);
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
                 //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_PL_MOVE_TYPES);
+                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_PL_MOVE_TYPES, logical_blk_types_count);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             } else {
                 //agent's 1st state
-                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_PL_NONTIMING_MOVE_TYPES);
+                karmed_bandit_agent1 = std::make_unique<SoftmaxAgent>(NUM_PL_NONTIMING_MOVE_TYPES, logical_blk_types_count);
                 karmed_bandit_agent1->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent1);
                 //agent's 2nd state
-                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_PL_NONTIMING_MOVE_TYPES);
+                karmed_bandit_agent2 = std::make_unique<SoftmaxAgent>(NUM_PL_NONTIMING_MOVE_TYPES, logical_blk_types_count);
                 karmed_bandit_agent2->set_step(placer_opts.place_agent_gamma, move_lim);
                 move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent2);
             }

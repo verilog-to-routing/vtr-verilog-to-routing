@@ -139,6 +139,9 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ///@brief Returns the type of CLB (Logic block, RAM, DSP, etc.)
     t_logical_block_type_ptr block_type(const ClusterBlockId id) const;
 
+    ///@brief Returns the blocks with the specific block types in the netlist
+    std::vector<ClusterBlockId> blocks_per_type(const t_logical_block_type blk_type) const;
+
     ///@brief Returns the net of the block attached to the specific pin index
     ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
 
@@ -348,6 +351,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     vtr::vector_map<ClusterBlockId, t_pb*> block_pbs_;                              ///<Physical block representing the clustering & internal hierarchy of each CLB
     vtr::vector_map<ClusterBlockId, t_logical_block_type_ptr> block_types_;         ///<The type of logical block this user circuit block is mapped to
     vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; ///<The logical pin associated with each physical tile pin
+    std::unordered_map<int,std::vector<ClusterBlockId>> blocks_per_type_;           //Blocks per specific block types
 
     //Pins
     /**

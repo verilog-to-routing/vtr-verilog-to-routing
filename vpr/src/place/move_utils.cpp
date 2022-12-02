@@ -9,6 +9,7 @@
 #include "draw.h"
 
 #include "place_constraints.h"
+#include "placer_globals.h"
 
 //f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached. When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
@@ -542,30 +543,27 @@ ClusterBlockId pick_from_block(t_logical_block_type_ptr blk_type) {
      * loop if all blocks are fixed.                                  */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(*blk_type);
 
     std::unordered_set<ClusterBlockId> tried_from_blocks;
 
+
     //So long as untried blocks remain
-    while (tried_from_blocks.size() < cluster_ctx.clb_nlist.blocks().size()) {
+    while (tried_from_blocks.size() < blocks_per_type.size()) {
         //Pick a block at random
-        ClusterBlockId b_from = ClusterBlockId(vtr::irand((int)cluster_ctx.clb_nlist.blocks().size() - 1));
+        ClusterBlockId b_from = ClusterBlockId(blocks_per_type[vtr::irand((int) blocks_per_type.size() - 1)]);
         //Record it as tried
         tried_from_blocks.insert(b_from);
 
-        //Check if picked block type matches with the blk_type specified
-        //If it matches, then we can use the picked block if it is not fixed
-        //blk_type from propose move doesn't account for the EMPTY type
-        if (cluster_ctx.clb_nlist.block_type(b_from)->index == blk_type->index + 1) {
-            if (place_ctx.block_locs[b_from].is_fixed) {
-                continue; //Fixed location, try again
-            }
-
-            //Found a movable block
-            return b_from;
+        if (place_ctx.block_locs[b_from].is_fixed) {
+            continue; //Fixed location, try again
         }
+        //Found a movable block
+        return b_from;
     }
 
     //No movable blocks found
+    //Unreachable statement
     return ClusterBlockId::INVALID();
 }
 
@@ -585,28 +583,20 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
         return ClusterBlockId::INVALID();
     }
 
-    //Some highly critical blocks might have a different type than blk_type.
-    //Need to keep track of how many blocks we have tried to avoid infinite loop
-    //in case of no moveable critical block
-    std::unordered_set<ClusterBlockId> tried_from_highly_critical_blocks;
+    //pick a random highly critical pin and find the nets driver block
+    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
+    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
-    while (tried_from_highly_critical_blocks.size() < place_move_ctx.highly_crit_pins.size()) {
-        //pick a random highly critical pin and find the nets driver block
-        std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
-        ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
-
-        tried_from_highly_critical_blocks.insert(b_from);
-
-        if (place_ctx.block_locs[b_from].is_fixed) {
-            continue; //Block is fixed, cannot move
-        }
-
-        net_from = crit_pin.first;
-        pin_from = crit_pin.second;
-        return b_from;
+    if (place_ctx.block_locs[b_from].is_fixed) {
+        return ClusterBlockId::INVALID(); //Block is fixed, cannot move
     }
 
+    net_from = crit_pin.first;
+    pin_from = crit_pin.second;
+    return b_from;
+
     //No critical block with 'blk_type' found
+    //Unreachable statement
     return ClusterBlockId::INVALID();
 }
 
@@ -626,31 +616,25 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
         return ClusterBlockId::INVALID();
     }
 
-    //Some highly critical blocks might have a different type than blk_type.
-    //Need to keep track of how many blocks we have tried to avoid infinite loop
-    //in case of no critical block with 'blk_type' is found.
-    std::unordered_set<ClusterBlockId> tried_from_highly_critical_blocks;
+    //pick a random highly critical pin and find the nets driver block
+    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
+    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
-    while (tried_from_highly_critical_blocks.size() < place_move_ctx.highly_crit_pins.size()) {
-        //pick a random highly critical pin and find the nets driver block
-        std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
-        ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
-        tried_from_highly_critical_blocks.insert(b_from);
-
-        //Check if picked block type matches with the blk_type specified and it is not fixed
-        //blk_type from propose move doesn't account for the EMPTY type
-        if (cluster_ctx.clb_nlist.block_type(b_from)->index == blk_type->index + 1) {
-            if (place_ctx.block_locs[b_from].is_fixed) {
-                continue; //Block is fixed, cannot move
-            }
-
-            net_from = crit_pin.first;
-            pin_from = crit_pin.second;
-            return b_from;
+    //Check if picked block type matches with the blk_type specified, and it is not fixed
+    //blk_type from propose move doesn't account for the EMPTY type
+    auto b_from_type = cluster_ctx.clb_nlist.block_type(b_from);
+    if (b_from_type->index == blk_type->index + 1) {
+        if (place_ctx.block_locs[b_from].is_fixed) {
+            return ClusterBlockId::INVALID(); //Block is fixed, cannot move
         }
+
+        net_from = crit_pin.first;
+        pin_from = crit_pin.second;
+        return b_from;
     }
 
     //No critical block with 'blk_type' found
+    //Unreachable statement
     return ClusterBlockId::INVALID();
 }
 
