@@ -333,22 +333,23 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
 
     route_budgets budgeting_inf(net_list, is_flat);
 
-    if(is_flat) {
-        auto cache_key = std::make_tuple(router_opts.lookahead_type,
-                                         router_opts.read_router_lookahead,
-                                         segment_inf);
-        std::unique_ptr<RouterLookahead> mut_router_lookahead(route_ctx.cached_router_lookahead_.release());
-        route_ctx.cached_router_lookahead_.clear();
-        mut_router_lookahead->compute_intra_tile();
-        route_ctx.cached_router_lookahead_.set(cache_key, std::move(mut_router_lookahead));
-    }
-
     const RouterLookahead* router_lookahead = get_cached_router_lookahead(det_routing_arch,
                                                                           router_opts.lookahead_type,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
                                                                           segment_inf,
                                                                           is_flat);
+
+    if(is_flat) {
+        auto cache_key = route_ctx.router_lookahead_cache_key_;
+        std::unique_ptr<RouterLookahead> mut_router_lookahead(route_ctx.cached_router_lookahead_.release());
+        VTR_ASSERT(mut_router_lookahead);
+        route_ctx.cached_router_lookahead_.clear();
+        mut_router_lookahead->compute_intra_tile();
+        route_ctx.cached_router_lookahead_.set(cache_key, std::move(mut_router_lookahead));
+    }
+
+
     VTR_ASSERT(router_lookahead != nullptr);
 
     /*

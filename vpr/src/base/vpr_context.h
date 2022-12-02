@@ -415,6 +415,9 @@ struct RoutingContext : public Context {
      */
     std::string routing_id;
 
+    // Cache key used to create router lookahead
+    std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>> router_lookahead_cache_key_;
+
     /**
      * @brief Cache of router lookahead object.
      *

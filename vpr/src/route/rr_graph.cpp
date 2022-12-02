@@ -2235,14 +2235,7 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                      i,
                      j);
 
-        int num_child_pb_type = pb->get_num_child_types();
-        for (int child_pb_type_idx = 0; child_pb_type_idx < num_child_pb_type; child_pb_type_idx++) {
-            int num_children = pb->get_num_children_of_type(child_pb_type_idx);
-            for (int child_idx = 0; child_idx < num_children; child_idx++) {
-                const t_pb* child_pb = &pb->child_pbs[child_pb_type_idx][child_idx];
-                pb_q.push_back(child_pb);
-            }
-        }
+        add_pb_child_to_list(pb_q, pb);
     }
 
     num_collapsed_nodes += add_edges_for_collapsed_nodes(rr_graph_builder,

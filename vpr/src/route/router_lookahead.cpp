@@ -203,16 +203,16 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                                    const std::vector<t_segment_inf>& segment_inf,
                                                    bool is_flat) {
     auto& router_ctx = g_vpr_ctx.routing();
+    auto& mut_router_ctx = g_vpr_ctx.mutable_routing();
 
     auto cache_key = std::make_tuple(router_lookahead_type, read_lookahead, segment_inf);
+    mut_router_ctx.router_lookahead_cache_key_ = cache_key;
 
     // Check if cache is valid.
     const RouterLookahead* router_lookahead = router_ctx.cached_router_lookahead_.get(cache_key);
     if (router_lookahead) {
         return router_lookahead;
     } else {
-        // Cache is not valid, compute cached object.
-        auto& mut_router_ctx = g_vpr_ctx.mutable_routing();
 
         return mut_router_ctx.cached_router_lookahead_.set(
             cache_key,

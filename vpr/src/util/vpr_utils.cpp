@@ -77,8 +77,6 @@ static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::reg
 static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
 static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 
-static void add_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
-
 /******************** Subroutine definitions *********************************/
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required) {
@@ -1267,16 +1265,6 @@ static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lo
     delete[] pb_graph_pin_lookup_from_type;
 }
 
-static void add_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb) {
-    for (int child_pb_type_idx = 0; child_pb_type_idx < parent_pb->get_num_child_types(); child_pb_type_idx++) {
-        int num_children = parent_pb->get_num_children_of_type(child_pb_type_idx);
-        for (int child_idx = 0; child_idx < num_children; child_idx++) {
-            const t_pb* child_pb = &parent_pb->child_pbs[child_pb_type_idx][child_idx];
-            pb_list.push_back(child_pb);
-        }
-    }
-}
-
 /**
  * Create lookup table that returns a pointer to the pb given [index to block][pin_id].
  */
@@ -1405,7 +1393,7 @@ std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id) {
     std::list<const t_pb*> internal_pbs;
     const t_pb* pb = cluster_net_list.block_pb(cluster_blk_id);
     // Pins on the tile are already added. Thus, we should ** not ** at the top-level block's classes.
-    add_child_to_list(internal_pbs, pb);
+    add_pb_child_to_list(internal_pbs, pb);
 
     while (!internal_pbs.empty()) {
         pb = internal_pbs.front();
@@ -1420,7 +1408,7 @@ std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id) {
             internal_pins.push_back(pin_num);
         }
 
-        add_child_to_list(internal_pbs, pb);
+        add_pb_child_to_list(internal_pbs, pb);
     }
     internal_pins.shrink_to_fit();
     VTR_ASSERT(internal_pins.size() <= logical_block->pin_logical_num_to_pb_pin_mapping.size());
@@ -2466,4 +2454,19 @@ t_arch_switch_inf create_internal_arch_sw(float delay) {
     arch_switch_inf.buf_size = 0.;
 
     return arch_switch_inf;
+}
+
+void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb) {
+    for (int child_pb_type_idx = 0; child_pb_type_idx < parent_pb->get_num_child_types(); child_pb_type_idx++) {
+        int num_children = parent_pb->get_num_children_of_type(child_pb_type_idx);
+        for (int child_idx = 0; child_idx < num_children; child_idx++) {
+            const t_pb* child_pb = &parent_pb->child_pbs[child_pb_type_idx][child_idx];
+            // We are adding a child, thus it is for sure not a root pb.
+            // If parent_pb for a non-root pb is null, it means this pb doesn't contain
+            // any atom block
+            if(child_pb->parent_pb != nullptr) {
+                pb_list.push_back(child_pb);
+            }
+        }
+    }
 }

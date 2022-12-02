@@ -293,4 +293,6 @@ std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
 
 t_arch_switch_inf create_internal_arch_sw(float delay);
 
+void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
+
 #endif
