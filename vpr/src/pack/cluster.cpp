@@ -200,7 +200,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 	check_for_duplicate_inputs ();
 #endif
     alloc_and_init_clustering(max_molecule_stats,
-                              &(helper_ctx.cluster_placement_stats), &(helper_ctx.primitives_list), molecule_head,
+                              &(helper_ctx.cluster_placement_stats[0]), &(helper_ctx.primitives_list), molecule_head,
                               clustering_data, net_output_feeds_driving_block_input,
                               unclustered_list_head_size, cluster_stats.num_molecules);
 
@@ -247,7 +247,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
              * stores PartitionRegion information while the cluster is packed*/
             PartitionRegion temp_cluster_pr;
 
-            start_new_cluster(helper_ctx.cluster_placement_stats, helper_ctx.primitives_list,
+            start_new_cluster(helper_ctx.cluster_placement_stats[0], helper_ctx.primitives_list,
                               clb_index, istart,
                               num_used_type_instances,
                               packer_opts.target_device_utilization,
@@ -300,7 +300,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                 /*it doesn't make sense to do a timing analysis here since there*
                  *is only one atom block clustered it would not change anything      */
             }
-            cur_cluster_placement_stats_ptr = &(helper_ctx.cluster_placement_stats[cluster_ctx.clb_nlist.block_type(clb_index)->index]);
+            cur_cluster_placement_stats_ptr = &(helper_ctx.cluster_placement_stats[0][cluster_ctx.clb_nlist.block_type(clb_index)->index]);
             cluster_stats.num_unrelated_clustering_attempts = 0;
             next_molecule = get_molecule_for_cluster(cluster_ctx.clb_nlist.block_pb(clb_index),
                                                      attraction_groups,

@@ -338,7 +338,7 @@ static void update_primitive_cost_or_status(const t_pb_graph_node* pb_graph_node
     t_cluster_placement_primitive* placement_primitive;
     if (pb_graph_node->is_primitive()) {
         /* is primitive */
-        placement_primitive = helper_ctx.cluster_placement_stats[pb_graph_node->lb_type_index].get_cluster_placement_primitive_from_pb_graph_node(pb_graph_node);
+        placement_primitive = helper_ctx.cluster_placement_stats[0][pb_graph_node->lb_type_index].get_cluster_placement_primitive_from_pb_graph_node(pb_graph_node);
         if (valid) {
             placement_primitive->incremental_cost += incremental_cost;
         } else {
@@ -369,7 +369,7 @@ static float try_place_molecule(const t_pack_molecule* molecule,
 
     if (primitive_type_feasible(molecule->atom_block_ids[molecule->root],
                                 root->pb_type)) {
-        t_cluster_placement_primitive* cur_primitive = helper_ctx.cluster_placement_stats[root->lb_type_index].get_cluster_placement_primitive_from_pb_graph_node(root);
+        t_cluster_placement_primitive* cur_primitive = helper_ctx.cluster_placement_stats[0][root->lb_type_index].get_cluster_placement_primitive_from_pb_graph_node(root);
         if (cur_primitive->valid) {
             for (i = 0; i < list_size; i++) {
                 primitives_list[i] = nullptr;
@@ -451,7 +451,7 @@ static bool expand_forced_pack_molecule_placement(const t_pack_molecule* molecul
                 next_primitive = next_pin->parent_node;
                 /* Check for legality of placement, if legal, expand from legal placement, if not, return false */
                 if (molecule->atom_block_ids[next_block->block_id] && primitives_list[next_block->block_id] == nullptr) {
-                    t_cluster_placement_primitive* placement_primitive = helper_ctx.cluster_placement_stats[next_primitive->lb_type_index].get_cluster_placement_primitive_from_pb_graph_node(next_primitive);
+                    t_cluster_placement_primitive* placement_primitive = helper_ctx.cluster_placement_stats[0][next_primitive->lb_type_index].get_cluster_placement_primitive_from_pb_graph_node(next_primitive);
                     if (placement_primitive->valid && primitive_type_feasible(molecule->atom_block_ids[next_block->block_id], next_primitive->pb_type)) {
                         primitives_list[next_block->block_id] = next_primitive;
                         *cost += placement_primitive->base_cost + placement_primitive->incremental_cost;

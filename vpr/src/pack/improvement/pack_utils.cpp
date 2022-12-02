@@ -15,10 +15,8 @@
 #include "vtr_time.h"
 //#include <mutex>
 #include <thread>
-void try_n_packing_moves(int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats);
+void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats);
 void init_multithreading_locks();
-
-std::mutex apply_mu;
 
 void init_multithreading_locks() {
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
@@ -73,9 +71,9 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
     init_multithreading_locks();
 
     for (unsigned int i = 0; i < num_threads - 1; i++) {
-        my_threads[i] = std::thread(try_n_packing_moves, moves_per_thread, packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
+        my_threads[i] = std::thread(try_n_packing_moves, i, moves_per_thread, packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
     }
-    my_threads[num_threads - 1] = std::thread(try_n_packing_moves, total_num_moves - (moves_per_thread * (num_threads - 1)), packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
+    my_threads[num_threads - 1] = std::thread(try_n_packing_moves, num_threads-1, total_num_moves - (moves_per_thread * (num_threads - 1)), packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
 
     for (auto & my_thread : my_threads)
         my_thread.join();
@@ -87,7 +85,7 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
             pack_stats.legal_moves);
 }
 
-void try_n_packing_moves(int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats) {
+void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_clustering_data& clustering_data, t_pack_iterative_stats& pack_stats) {
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
 
     bool is_proposed, is_valid, is_successful;
@@ -127,7 +125,7 @@ void try_n_packing_moves(int n, const std::string& move_type, t_clustering_data&
         } else
             num_good_moves++;
 
-        is_successful = move_generator->apply_move(new_locs, clustering_data);
+        is_successful = move_generator->apply_move(new_locs, clustering_data, thread_num);
         if (is_successful)
             num_legal_moves++;
 
