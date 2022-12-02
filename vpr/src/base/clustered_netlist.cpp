@@ -29,6 +29,10 @@ t_logical_block_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) c
 }
 
 std::vector<ClusterBlockId> ClusteredNetlist::blocks_per_type(const t_logical_block_type blk_type) const{
+    if(blocks_per_type_.count(blk_type.index) == 0) {
+        std::vector<ClusterBlockId> empty_vector;
+        return empty_vector;
+    }
     return blocks_per_type_.at(blk_type.index);
 }
 
@@ -123,7 +127,7 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_logi
         block_pbs_.insert(blk_id, pb);
         block_types_.insert(blk_id, type);
 
-        blocks_per_type_[type->index-1].push_back(blk_id);
+        blocks_per_type_[type->index].push_back(blk_id);
 
         //Allocate and initialize every potential pin of the block
         block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(get_max_num_pins(type), ClusterPinId::INVALID()));
@@ -206,7 +210,7 @@ void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
     delete block_pbs_[blk_id];
     block_pbs_.insert(blk_id, NULL);
     block_types_.insert(blk_id, NULL);
-    std::remove(blocks_per_type_[blk_type->index - 1].begin(), blocks_per_type_[blk_type->index - 1].end(),blk_id);
+    std::remove(blocks_per_type_[blk_type->index].begin(), blocks_per_type_[blk_type->index].end(),blk_id);
     block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>());
 }
 

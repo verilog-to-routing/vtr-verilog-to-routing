@@ -543,7 +543,14 @@ ClusterBlockId pick_from_block(t_logical_block_type_ptr blk_type) {
      * loop if all blocks are fixed.                                  */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(*blk_type);
+    t_logical_block_type blk_type_temp = *blk_type;
+    blk_type_temp.index++;
+    auto blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
+
+    //no blocks with this type is available
+    if(blocks_per_type.size() == 0){
+        return ClusterBlockId::INVALID();
+    }
 
     std::unordered_set<ClusterBlockId> tried_from_blocks;
 
