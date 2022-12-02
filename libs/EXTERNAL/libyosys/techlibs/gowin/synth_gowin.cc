@@ -81,6 +81,11 @@ struct SynthGowinPass : public ScriptPass
 		log("    -abc9\n");
 		log("        use new ABC9 flow (EXPERIMENTAL)\n");
 		log("\n");
+		log("    -no-rw-check\n");
+		log("        marks all recognized read ports as \"return don't-care value on\n");
+		log("        read/write collision\" (same result as setting the no_rw_check\n");
+		log("        attribute on all memories).\n");
+		log("\n");
 		log("\n");
 		log("The following commands are executed by this synthesis command:\n");
 		help_script();
@@ -88,7 +93,7 @@ struct SynthGowinPass : public ScriptPass
 	}
 
 	string top_opt, vout_file, json_file;
-	bool retime, nobram, nolutram, flatten, nodffe, nowidelut, abc9, noiopads, noalu;
+	bool retime, nobram, nolutram, flatten, nodffe, nowidelut, abc9, noiopads, noalu, no_rw_check;
 
 	void clear_flags() override
 	{
@@ -104,6 +109,7 @@ struct SynthGowinPass : public ScriptPass
 		abc9 = false;
 		noiopads = false;
 		noalu = false;
+		no_rw_check = false;
 	}
 
 	void execute(std::vector<std::string> args, RTLIL::Design *design) override
@@ -125,9 +131,6 @@ struct SynthGowinPass : public ScriptPass
 			if (args[argidx] == "-json" && argidx+1 < args.size()) {
 				json_file = args[++argidx];
 				nobram = true;
-				nolutram = true;
-				nowidelut = true;
-				noalu = true;
 				continue;
 			}
 			if (args[argidx] == "-run" && argidx+1 < args.size()) {
@@ -174,6 +177,10 @@ struct SynthGowinPass : public ScriptPass
 				noiopads = true;
 				continue;
 			}
+			if (args[argidx] == "-no-rw-check") {
+				no_rw_check = true;
+				continue;
+			}
 			break;
 		}
 		extra_args(args, argidx, design);
@@ -191,6 +198,12 @@ struct SynthGowinPass : public ScriptPass
 
 	void script() override
 	{
+		std::string no_rw_check_opt = "";
+		if (no_rw_check)
+			no_rw_check_opt = " -no-rw-check";
+		if (help_mode)
+			no_rw_check_opt = " [-no-rw-check]";
+
 		if (check_label("begin"))
 		{
 			run("read_verilog -specify -lib +/gowin/cells_sim.v");
@@ -207,20 +220,20 @@ struct SynthGowinPass : public ScriptPass
 
 		if (check_label("coarse"))
 		{
-			run("synth -run coarse");
+			run("synth -run coarse" + no_rw_check_opt);
 		}
 
-		if (!nobram && check_label("map_bram", "(skip if -nobram)"))
+		if (check_label("map_ram"))
 		{
-			run("memory_bram -rules +/gowin/brams.txt");
-			run("techmap -map +/gowin/brams_map.v");
-		}
-
-		if (!nolutram && check_label("map_lutram", "(skip if -nolutram)"))
-		{
-			run("memory_bram -rules +/gowin/lutrams.txt");
-			run("techmap -map +/gowin/lutrams_map.v");
-			run("setundef -params -zero t:RAM16S4");
+			std::string args = "";
+			if (nobram)
+				args += " -no-auto-block";
+			if (nolutram)
+				args += " -no-auto-distributed";
+			if (help_mode)
+				args += " [-no-auto-block] [-no-auto-distributed]";
+			run("memory_libmap -lib +/gowin/lutrams.txt -lib +/gowin/brams.txt" + args, "(-no-auto-block if -nobram, -no-auto-distributed if -nolutram)");
+			run("techmap -map +/gowin/lutrams_map.v -map +/gowin/brams_map.v");
 		}
 
 		if (check_label("map_ffram"))
@@ -240,7 +253,9 @@ struct SynthGowinPass : public ScriptPass
 			run("opt -fast");
 			if (retime || help_mode)
 				run("abc -dff -D 1", "(only if -retime)");
-			run("splitnets");
+			if (!noiopads || help_mode)
+				run("iopadmap -bits -inpad IBUF O:I -outpad OBUF I:O "
+					"-toutpad TBUF ~OEN:I:O -tinoutpad IOBUF ~OEN:O:I:IO", "(unless -noiopads)");
 		}
 
 		if (check_label("map_ffs"))
@@ -277,9 +292,8 @@ struct SynthGowinPass : public ScriptPass
 			run("opt_lut_ins -tech gowin");
 			run("setundef -undriven -params -zero");
 			run("hilomap -singleton -hicell VCC V -locell GND G");
-			if (!noiopads || help_mode)
-				run("iopadmap -bits -inpad IBUF O:I -outpad OBUF I:O "
-					"-toutpad TBUF OEN:I:O -tinoutpad IOBUF OEN:O:I:IO", "(unless -noiopads)");
+			if (!vout_file.empty() || help_mode) // vendor output requires 1-bit wires
+				run("splitnets -ports", "(only if -vout used)");
 			run("clean");
 			run("autoname");
 		}
@@ -295,7 +309,7 @@ struct SynthGowinPass : public ScriptPass
 		if (check_label("vout"))
 		{
 			if (!vout_file.empty() || help_mode)
-				 run(stringf("write_verilog -decimal -attr2comment -defparam -renameprefix gen %s",
+				 run(stringf("write_verilog -simple-lhs -decimal -attr2comment -defparam -renameprefix gen %s",
 						help_mode ? "<file-name>" : vout_file.c_str()));
 			if (!json_file.empty() || help_mode)
 				 run(stringf("write_json %s",

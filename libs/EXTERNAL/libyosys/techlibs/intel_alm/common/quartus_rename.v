@@ -2,14 +2,25 @@
 `define LCELL cyclonev_lcell_comb
 `define MAC cyclonev_mac
 `define MLAB cyclonev_mlab_cell
+`define RAM_BLOCK cyclonev_ram_block
 `define IBUF cyclonev_io_ibuf
 `define OBUF cyclonev_io_obuf
 `define CLKENA cyclonev_clkena
+`endif
+`ifdef arriav
+`define LCELL arriav_lcell_comb
+`define MAC arriav_mac
+`define MLAB arriav_mlab_cell
+`define RAM_BLOCK arriav_ram_block
+`define IBUF arriav_io_ibuf
+`define OBUF arriav_io_obuf
+`define CLKENA arriav_clkena
 `endif
 `ifdef cyclone10gx
 `define LCELL cyclone10gx_lcell_comb
 `define MAC cyclone10gx_mac
 `define MLAB cyclone10gx_mlab_cell
+`define RAM_BLOCK cyclone10gx_ram_block
 `define IBUF cyclone10gx_io_ibuf
 `define OBUF cyclone10gx_io_obuf
 `define CLKENA cyclone10gx_clkena
@@ -146,7 +157,12 @@ output [CFG_DBITS-1:0] B1DATA;
 // Much like the MLAB, the M10K has mem_init[01234] parameters which would let
 // you initialise the RAM cell via hex literals. If they were implemented.
 
-cyclonev_ram_block #(
+// Since the MISTRAL_M10K block has an inverted write-enable (like the real hardware)
+// but the Quartus primitive expects a normal write-enable, we add an inverter.
+wire A1EN_N;
+NOT wren_inv (.IN(A1EN), .OUT(A1EN_N));
+
+`RAM_BLOCK #(
     .operation_mode("dual_port"),
     .logical_ram_name(_TECHMAP_CELLNAME_),
     .port_a_address_width(CFG_ABITS),
@@ -165,10 +181,10 @@ cyclonev_ram_block #(
     .port_b_first_bit_number(0),
     .port_b_address_clock("clock0"),
     .port_b_read_enable_clock("clock0")
-) _TECHMAP_REPLACE_ (
+) ram_block (
     .portaaddr(A1ADDR),
     .portadatain(A1DATA),
-    .portawe(A1EN),
+    .portawe(A1EN_N),
     .portbaddr(B1ADDR),
     .portbdataout(B1DATA),
     .portbre(B1EN),

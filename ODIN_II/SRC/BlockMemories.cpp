@@ -70,7 +70,9 @@ static void create_2r2w_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
 static void create_nrmw_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
 
 static nnode_t* ymem_to_rom(nnode_t* node, uintptr_t traverse_mark_number);
+static nnode_t* ymem2_to_rom(nnode_t* node, uintptr_t traverse_mark_number);
 static nnode_t* ymem_to_bram(nnode_t* node, uintptr_t traverse_mark_number);
+static nnode_t* ymem2_to_bram(nnode_t* node, uintptr_t traverse_mark_number);
 
 static bool check_same_addrs(block_memory_t* bram);
 static void perform_optimization(block_memory_t* memory);
@@ -1322,6 +1324,16 @@ void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* 
     block_memories_info.read_only_memory_list = insert_in_vptr_list(block_memories_info.read_only_memory_list, rom);
 }
 
+/* YMEM and YMEM2 represent Yosys $mem and $mem_v2 types respectively.
+ * yosys memory types are abstract compared to low-level hard memories available in Odin.
+ * specifically, Yosys $mem and mem_v2 types differ in number of ports
+ * and high-level features exclusive to Yosys. To resolve Yosys memories,
+ * we only coennect identical ports utilized in Odin by first detecting
+ * memory type (memrd or memwr) based on its port count and then resolving
+ * them to rom (resolve_rom_node) and bram respectively (resolve_bram_node).
+ * Correct port width and boundries is measured by comparing port offsets.
+ */
+
 /**
  * (function: resolve_ymem_node)
  * 
@@ -1347,6 +1359,27 @@ void resolve_ymem_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t*
     else if ((node->num_input_port_sizes == 3) && (node->num_output_port_sizes == 1)) {
         /* create BRAM node */
         transformed_mem = ymem_to_rom(node, traverse_mark_number);
+        /* resolve bram node */
+        resolve_rom_node(transformed_mem, traverse_mark_number, netlist);
+    }
+}
+
+void resolve_ymem2_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    nnode_t* transformed_mem = NULL;
+
+    /* check for BRAM */
+    if ((node->num_input_port_sizes == 9) && (node->num_output_port_sizes == 1)) {
+        /* create BRAM node */
+        transformed_mem = ymem2_to_bram(node, traverse_mark_number);
+        /* resolve bram node */
+        resolve_bram_node(transformed_mem, traverse_mark_number, netlist);
+    }
+    /* check for ROM */
+    else if ((node->num_input_port_sizes == 5) && (node->num_output_port_sizes == 1)) {
+        /* create BRAM node */
+        transformed_mem = ymem2_to_rom(node, traverse_mark_number);
         /* resolve bram node */
         resolve_rom_node(transformed_mem, traverse_mark_number, netlist);
     }
@@ -1496,7 +1529,91 @@ static nnode_t* ymem_to_rom(nnode_t* node, uintptr_t traverse_mark_number) {
 
     return (transformed_mem);
 }
+static nnode_t* ymem2_to_rom(nnode_t* node, uintptr_t traverse_mark_number) {
+    oassert(node->traverse_visited == traverse_mark_number);
 
+    int i;
+    int offset, new_offset = 0;
+    int addr_width = node->attributes->ABITS;
+    int data_width = node->attributes->DBITS;
+    int num_rd_ports = node->attributes->RD_PORTS;
+
+    int RD_ADDR_width = node->input_port_sizes[0];
+    int RD_ARST_width = node->input_port_sizes[1];
+    int RD_CLK_width = node->input_port_sizes[2];
+    int RD_DATA_width = node->output_port_sizes[0];
+    int RD_ENABLE_width = node->input_port_sizes[3];
+    int RD_SRST_width = node->input_port_sizes[4];
+
+    /* check for BRAM */
+    oassert(node->num_input_port_sizes == 5);
+    oassert(node->num_output_port_sizes == 1);
+
+    /* create BRAM node */
+    nnode_t* transformed_mem = allocate_nnode(node->loc);
+    transformed_mem->traverse_visited = traverse_mark_number;
+    transformed_mem->type = ROM;
+    copy_attribute(transformed_mem->attributes, node->attributes);
+    transformed_mem->name = node_name(transformed_mem, node->name);
+    transformed_mem->related_ast_node = node->related_ast_node;
+    /* ARST */
+    offset = RD_ADDR_width;
+    for (i = 0; i < RD_ARST_width; i++) {
+        delete_npin(node->input_pins[offset + i]);
+    }
+    /* SRST */
+    offset = RD_ADDR_width + RD_ARST_width + RD_CLK_width + RD_ENABLE_width;
+    for (i = 0; i < RD_SRST_width; i++) {
+        delete_npin(node->input_pins[offset + i]);
+    }
+    /* CLK */
+    offset = RD_ADDR_width + RD_ARST_width;
+    add_input_port_information(transformed_mem, 1);
+    allocate_more_input_pins(transformed_mem, 1);
+    for (i = 0; i < RD_CLK_width; i++) {
+        if (i == 0) {
+            remap_pin_to_new_node(node->input_pins[i + offset], transformed_mem, 0);
+        } else {
+            /* delete extra pins */
+            delete_npin(node->input_pins[i + offset]);
+        }
+    }
+    new_offset += 1;
+
+    /* RD_ADDR */
+    offset = 0;
+    oassert(RD_ADDR_width == num_rd_ports * addr_width);
+    add_input_port_information(transformed_mem, RD_ADDR_width);
+    allocate_more_input_pins(transformed_mem, RD_ADDR_width);
+    for (i = 0; i < RD_ADDR_width; i++) {
+        remap_pin_to_new_node(node->input_pins[i + offset], transformed_mem, i + new_offset);
+    }
+    new_offset += RD_ADDR_width;
+
+    /* RD_ENABLE */
+    offset = RD_ADDR_width + RD_ARST_width + RD_CLK_width;
+    oassert(RD_ENABLE_width == num_rd_ports);
+    add_input_port_information(transformed_mem, RD_ENABLE_width);
+    allocate_more_input_pins(transformed_mem, RD_ENABLE_width);
+    for (i = 0; i < RD_ENABLE_width; i++) {
+        remap_pin_to_new_node(node->input_pins[i + offset], transformed_mem, i + new_offset);
+    }
+    new_offset += RD_ENABLE_width;
+
+    /* RD_DATA */
+    offset = 0;
+    oassert(RD_DATA_width == num_rd_ports * data_width);
+    add_output_port_information(transformed_mem, RD_DATA_width);
+    allocate_more_output_pins(transformed_mem, RD_DATA_width);
+    for (i = 0; i < RD_DATA_width; i++) {
+        remap_pin_to_new_node(node->output_pins[i + offset], transformed_mem, i);
+    }
+
+    // CLEAN UP
+    free_nnode(node);
+
+    return (transformed_mem);
+}
 /**
  * (function: ymem_to_bram)
  * 
@@ -1611,6 +1728,137 @@ static nnode_t* ymem_to_bram(nnode_t* node, uintptr_t traverse_mark_number) {
 
     /* WR_ENABLE */
     offset = RD_ADDR_width + RD_CLK_width + RD_ENABLE_width + WR_ADDR_width + WR_CLK_width + WR_DATA_width;
+    oassert(WR_ENABLE_width == num_wr_ports * data_width);
+    add_input_port_information(transformed_mem, num_wr_ports);
+    allocate_more_input_pins(transformed_mem, num_wr_ports);
+    for (i = 0; i < WR_ENABLE_width; i++) {
+        if (i % data_width == 0)
+            remap_pin_to_new_node(node->input_pins[i + offset], transformed_mem, new_offset++);
+        else
+            delete_npin(node->input_pins[i + offset]);
+    }
+
+    /* RD_DATA */
+    offset = 0;
+    oassert(RD_DATA_width == num_rd_ports * data_width);
+    add_output_port_information(transformed_mem, RD_DATA_width);
+    allocate_more_output_pins(transformed_mem, RD_DATA_width);
+    for (i = 0; i < RD_DATA_width; i++) {
+        remap_pin_to_new_node(node->output_pins[i + offset], transformed_mem, i);
+    }
+
+    // CLEAN UP
+    free_nnode(node);
+
+    return (transformed_mem);
+}
+
+static nnode_t* ymem2_to_bram(nnode_t* node, uintptr_t traverse_mark_number) {
+    oassert(node->traverse_visited == traverse_mark_number);
+
+    int i;
+    int offset, new_offset = 0;
+    int addr_width = node->attributes->ABITS;
+    int data_width = node->attributes->DBITS;
+    int num_rd_ports = node->attributes->RD_PORTS;
+    int num_wr_ports = node->attributes->WR_PORTS;
+
+    int RD_ADDR_width = node->input_port_sizes[0];
+    int RD_ARST_width = node->input_port_sizes[1];
+    int RD_CLK_width = node->input_port_sizes[2];
+    int RD_DATA_width = node->output_port_sizes[0];
+    int RD_ENABLE_width = node->input_port_sizes[3];
+    int RD_SRST_width = node->input_port_sizes[4];
+    int WR_ADDR_width = node->input_port_sizes[5];
+    int WR_CLK_width = node->input_port_sizes[6];
+    int WR_DATA_width = node->input_port_sizes[7];
+    int WR_ENABLE_width = node->input_port_sizes[8];
+
+    /* check for BRAM */
+    oassert(node->num_input_port_sizes == 9);
+    oassert(node->num_output_port_sizes == 1);
+
+    /* create BRAM node */
+    nnode_t* transformed_mem = allocate_nnode(node->loc);
+    transformed_mem->traverse_visited = traverse_mark_number;
+    transformed_mem->type = BRAM;
+    copy_attribute(transformed_mem->attributes, node->attributes);
+    transformed_mem->name = node_name(transformed_mem, node->name);
+    transformed_mem->related_ast_node = node->related_ast_node;
+    /* ARST */
+    offset = RD_ADDR_width;
+    for (i = 0; i < RD_ARST_width; i++) {
+        delete_npin(node->input_pins[offset + i]);
+    }
+    /* SRST */
+    offset = RD_ADDR_width + RD_ARST_width + RD_CLK_width + RD_ENABLE_width;
+    for (i = 0; i < RD_SRST_width; i++) {
+        delete_npin(node->input_pins[offset + i]);
+    }
+
+    /* CLK */
+    offset = RD_ADDR_width + RD_ARST_width + RD_CLK_width + RD_ENABLE_width + RD_SRST_width + WR_ADDR_width;
+    add_input_port_information(transformed_mem, 1);
+    allocate_more_input_pins(transformed_mem, 1);
+    for (i = 0; i < WR_CLK_width; i++) {
+        if (i == 0) {
+            remap_pin_to_new_node(node->input_pins[i + offset], transformed_mem, 0);
+        } else {
+            /* delete extra pins */
+            delete_npin(node->input_pins[i + offset]);
+        }
+    }
+    new_offset += 1;
+
+    /* RD_ADDR */
+    offset = 0;
+    oassert(RD_ADDR_width == num_rd_ports * addr_width);
+    add_input_port_information(transformed_mem, RD_ADDR_width);
+    allocate_more_input_pins(transformed_mem, RD_ADDR_width);
+    for (i = 0; i < RD_ADDR_width; i++) {
+        remap_pin_to_new_node(node->input_pins[i + offset], transformed_mem, i + new_offset);
+    }
+    new_offset += RD_ADDR_width;
+
+    /* RD_CLK */
+    offset = RD_ADDR_width + RD_ARST_width;
+    oassert(RD_CLK_width == num_rd_ports);
+    for (i = 0; i < RD_CLK_width; i++) {
+        delete_npin(node->input_pins[i + offset]);
+    }
+
+    /* RD_ENABLE */
+    offset = RD_ADDR_width + RD_ARST_width + RD_CLK_width;
+    oassert(RD_ENABLE_width == num_rd_ports);
+    add_input_port_information(transformed_mem, RD_ENABLE_width);
+    allocate_more_input_pins(transformed_mem, RD_ENABLE_width);
+    for (i = 0; i < RD_ENABLE_width; i++) {
+        remap_pin_to_new_node(node->input_pins[i + offset], transformed_mem, i + new_offset);
+    }
+    new_offset += RD_ENABLE_width;
+
+    /* WR_ADDR */
+    offset = RD_ADDR_width + RD_ARST_width + RD_CLK_width + RD_ENABLE_width + RD_SRST_width;
+    oassert(WR_ADDR_width == num_wr_ports * addr_width);
+    add_input_port_information(transformed_mem, WR_ADDR_width);
+    allocate_more_input_pins(transformed_mem, WR_ADDR_width);
+    for (i = 0; i < WR_ADDR_width; i++) {
+        remap_pin_to_new_node(node->input_pins[i + offset], transformed_mem, i + new_offset);
+    }
+    new_offset += WR_ADDR_width;
+
+    /* WR_DATA */
+    offset = RD_ADDR_width + RD_ARST_width + RD_CLK_width + RD_ENABLE_width + RD_SRST_width + WR_ADDR_width + WR_CLK_width;
+    oassert(WR_DATA_width == num_wr_ports * data_width);
+    add_input_port_information(transformed_mem, WR_DATA_width);
+    allocate_more_input_pins(transformed_mem, WR_DATA_width);
+    for (i = 0; i < WR_DATA_width; i++) {
+        remap_pin_to_new_node(node->input_pins[i + offset], transformed_mem, i + new_offset);
+    }
+    new_offset += WR_DATA_width;
+
+    /* WR_ENABLE */
+    offset = RD_ADDR_width + RD_ARST_width + RD_CLK_width + RD_ENABLE_width + RD_SRST_width + WR_ADDR_width + WR_CLK_width + WR_DATA_width;
     oassert(WR_ENABLE_width == num_wr_ports * data_width);
     add_input_port_information(transformed_mem, num_wr_ports);
     allocate_more_input_pins(transformed_mem, num_wr_ports);

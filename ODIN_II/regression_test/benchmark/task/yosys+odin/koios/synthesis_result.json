@@ -4791,16 +4791,16 @@
         "Latch Drivers": 1,
         "Pi": 177,
         "Po": 150,
-        "logic element": 62114,
-        "latch": 32779,
+        "logic element": 60854,
+        "latch": 32149,
         "Adder": 9829,
         "Multiplier": 1088,
         "Memory": 9344,
         "generic logic size": 4,
         "Longest Path": 5835,
         "Average Path": 5,
-        "Estimated LUTs": 66167,
-        "Total Node": 115155
+        "Estimated LUTs": 64907,
+        "Total Node": 113265
     },
     "koios/bwave_like.fixed.small/k6FracN10LB_mem20K_complexDSP_customSB_22nm": {
         "test_name": "koios/bwave_like.fixed.small/k6FracN10LB_mem20K_complexDSP_customSB_22nm",
@@ -4815,16 +4815,16 @@
         "Latch Drivers": 1,
         "Pi": 111,
         "Po": 86,
-        "logic element": 18462,
-        "latch": 8895,
+        "logic element": 17842,
+        "latch": 8585,
         "Adder": 2521,
         "Multiplier": 272,
         "Memory": 2720,
         "generic logic size": 4,
         "Longest Path": 1479,
         "Average Path": 4,
-        "Estimated LUTs": 19748,
-        "Total Node": 32871
+        "Estimated LUTs": 19128,
+        "Total Node": 31941
     },
     "koios/bwave_like.float.large/k6FracN10LB_mem20K_complexDSP_customSB_22nm": {
         "test_name": "koios/bwave_like.float.large/k6FracN10LB_mem20K_complexDSP_customSB_22nm",
@@ -4839,16 +4839,16 @@
         "Latch Drivers": 1,
         "Pi": 560,
         "Po": 532,
-        "logic element": 340247,
-        "latch": 150049,
+        "logic element": 337961,
+        "latch": 148906,
         "Adder": 57318,
         "Multiplier": 1088,
         "Memory": 21504,
         "generic logic size": 4,
         "Longest Path": 5614,
         "Average Path": 5,
-        "Estimated LUTs": 359515,
-        "Total Node": 570207
+        "Estimated LUTs": 357229,
+        "Total Node": 566778
     },
     "koios/bwave_like.float.small/k6FracN10LB_mem20K_complexDSP_customSB_22nm": {
         "test_name": "koios/bwave_like.float.small/k6FracN10LB_mem20K_complexDSP_customSB_22nm",
@@ -4863,16 +4863,16 @@
         "Latch Drivers": 1,
         "Pi": 113,
         "Po": 86,
-        "logic element": 82889,
-        "latch": 37591,
+        "logic element": 81629,
+        "latch": 36961,
         "Adder": 13599,
         "Multiplier": 264,
         "Memory": 5696,
         "generic logic size": 4,
         "Longest Path": 3106,
         "Average Path": 4,
-        "Estimated LUTs": 88225,
-        "Total Node": 140040
+        "Estimated LUTs": 86965,
+        "Total Node": 138150
     },
     "koios/proxy.5/k6FracN10LB_mem20K_complexDSP_customSB_22nm": {
         "test_name": "koios/proxy.5/k6FracN10LB_mem20K_complexDSP_customSB_22nm",

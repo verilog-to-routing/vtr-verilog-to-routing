@@ -35,7 +35,7 @@ struct MemoryShareWorker
 	ModWalker modwalker;
 	FfInitVals initvals;
 	bool flag_widen;
-
+	bool flag_sat;
 
 	// --------------------------------------------------
 	// Consolidate read ports that read the same address
@@ -82,6 +82,11 @@ struct MemoryShareWorker
 		log("Consolidating read ports of memory %s.%s by address:\n", log_id(module), log_id(mem.memid));
 
 		bool changed = false;
+		int abits = 0;
+		for (auto &port: mem.rd_ports) {
+			if (GetSize(port.addr) > abits)
+				abits = GetSize(port.addr);
+		}
 		for (int i = 0; i < GetSize(mem.rd_ports); i++)
 		{
 			auto &port1 = mem.rd_ports[i];
@@ -112,25 +117,29 @@ struct MemoryShareWorker
 				// merged by widening the narrow one.  Check if the conditions
 				// hold for that.
 				int wide_log2 = std::max(port1.wide_log2, port2.wide_log2);
-				if (GetSize(port1.addr) <= wide_log2)
+				SigSpec addr1 = sigmap_xmux(port1.addr);
+				SigSpec addr2 = sigmap_xmux(port2.addr);
+				addr1.extend_u0(abits);
+				addr2.extend_u0(abits);
+				if (GetSize(addr1) <= wide_log2)
 					continue;
-				if (GetSize(port2.addr) <= wide_log2)
+				if (GetSize(addr2) <= wide_log2)
 					continue;
-				if (!port1.addr.extract(0, wide_log2).is_fully_const())
+				if (!addr1.extract(0, wide_log2).is_fully_const())
 					continue;
-				if (!port2.addr.extract(0, wide_log2).is_fully_const())
+				if (!addr2.extract(0, wide_log2).is_fully_const())
 					continue;
-				if (sigmap_xmux(port1.addr.extract_end(wide_log2)) != sigmap_xmux(port2.addr.extract_end(wide_log2))) {
+				if (addr1.extract_end(wide_log2) != addr2.extract_end(wide_log2)) {
 					// Incompatible addresses after widening.  Last chance — widen both
 					// ports by one more bit to merge them.
 					if (!flag_widen)
 						continue;
 					wide_log2++;
-					if (sigmap_xmux(port1.addr.extract_end(wide_log2)) != sigmap_xmux(port2.addr.extract_end(wide_log2)))
+					if (addr1.extract_end(wide_log2) != addr2.extract_end(wide_log2))
 						continue;
-					if (!port1.addr.extract(0, wide_log2).is_fully_const())
+					if (!addr1.extract(0, wide_log2).is_fully_const())
 						continue;
-					if (!port2.addr.extract(0, wide_log2).is_fully_const())
+					if (!addr2.extract(0, wide_log2).is_fully_const())
 						continue;
 				}
 				// Combine init/reset values.
@@ -150,12 +159,13 @@ struct MemoryShareWorker
 				// At this point we are committed to the merge.
 				{
 					log("  Merging ports %d, %d (address %s).\n", i, j, log_signal(port1.addr));
+					port1.addr = addr1;
+					port2.addr = addr2;
 					mem.prepare_rd_merge(i, j, &initvals);
 					mem.widen_prep(wide_log2);
 					SigSpec new_data = module->addWire(NEW_ID, mem.width << wide_log2);
 					module->connect(port1.data, new_data.extract(sub1 * mem.width, mem.width << port1.wide_log2));
 					module->connect(port2.data, new_data.extract(sub2 * mem.width, mem.width << port2.wide_log2));
-					port1.addr = sigmap_xmux(port1.addr);
 					for (int k = 0; k < wide_log2; k++)
 						port1.addr[k] = State::S0;
 					port1.init_value = init_value;
@@ -189,6 +199,11 @@ struct MemoryShareWorker
 		log("Consolidating write ports of memory %s.%s by address:\n", log_id(module), log_id(mem.memid));
 
 		bool changed = false;
+		int abits = 0;
+		for (auto &port: mem.wr_ports) {
+			if (GetSize(port.addr) > abits)
+				abits = GetSize(port.addr);
+		}
 		for (int i = 0; i < GetSize(mem.wr_ports); i++)
 		{
 			auto &port1 = mem.wr_ports[i];
@@ -211,31 +226,35 @@ struct MemoryShareWorker
 				// merged by widening the narrow one.  Check if the conditions
 				// hold for that.
 				int wide_log2 = std::max(port1.wide_log2, port2.wide_log2);
-				if (GetSize(port1.addr) <= wide_log2)
+				SigSpec addr1 = sigmap_xmux(port1.addr);
+				SigSpec addr2 = sigmap_xmux(port2.addr);
+				addr1.extend_u0(abits);
+				addr2.extend_u0(abits);
+				if (GetSize(addr1) <= wide_log2)
 					continue;
-				if (GetSize(port2.addr) <= wide_log2)
+				if (GetSize(addr2) <= wide_log2)
 					continue;
-				if (!port1.addr.extract(0, wide_log2).is_fully_const())
+				if (!addr1.extract(0, wide_log2).is_fully_const())
 					continue;
-				if (!port2.addr.extract(0, wide_log2).is_fully_const())
+				if (!addr2.extract(0, wide_log2).is_fully_const())
 					continue;
-				if (sigmap_xmux(port1.addr.extract_end(wide_log2)) != sigmap_xmux(port2.addr.extract_end(wide_log2))) {
+				if (addr1.extract_end(wide_log2) != addr2.extract_end(wide_log2)) {
 					// Incompatible addresses after widening.  Last chance — widen both
 					// ports by one more bit to merge them.
 					if (!flag_widen)
 						continue;
 					wide_log2++;
-					if (sigmap_xmux(port1.addr.extract_end(wide_log2)) != sigmap_xmux(port2.addr.extract_end(wide_log2)))
+					if (addr1.extract_end(wide_log2) != addr2.extract_end(wide_log2))
 						continue;
-					if (!port1.addr.extract(0, wide_log2).is_fully_const())
+					if (!addr1.extract(0, wide_log2).is_fully_const())
 						continue;
-					if (!port2.addr.extract(0, wide_log2).is_fully_const())
+					if (!addr2.extract(0, wide_log2).is_fully_const())
 						continue;
 				}
-				log("  Merging ports %d, %d (address %s).\n", i, j, log_signal(port1.addr));
+				log("  Merging ports %d, %d (address %s).\n", i, j, log_signal(addr1));
+				port1.addr = addr1;
+				port2.addr = addr2;
 				mem.prepare_wr_merge(i, j, &initvals);
-				port1.addr = sigmap_xmux(port1.addr);
-				port2.addr = sigmap_xmux(port2.addr);
 				mem.widen_wr_port(i, wide_log2);
 				mem.widen_wr_port(j, wide_log2);
 				int pos = 0;
@@ -411,7 +430,9 @@ struct MemoryShareWorker
 					else
 						this_addr.extend_u0(GetSize(last_addr));
 
-					port1.addr = module->Mux(NEW_ID, last_addr, this_addr, this_en_active);
+					SigSpec new_addr = module->Mux(NEW_ID, last_addr.extract_end(port1.wide_log2), this_addr.extract_end(port1.wide_log2), this_en_active);
+
+					port1.addr = SigSpec({new_addr, port1.addr.extract(0, port1.wide_log2)});
 					port1.data = module->Mux(NEW_ID, last_data, this_data, this_en_active);
 
 					std::map<std::pair<RTLIL::SigBit, RTLIL::SigBit>, int> groups_en;
@@ -447,7 +468,7 @@ struct MemoryShareWorker
 	// Setup and run
 	// -------------
 
-	MemoryShareWorker(RTLIL::Design *design, bool flag_widen) : design(design), modwalker(design), flag_widen(flag_widen) {}
+	MemoryShareWorker(RTLIL::Design *design, bool flag_widen, bool flag_sat) : design(design), modwalker(design), flag_widen(flag_widen), flag_sat(flag_sat) {}
 
 	void operator()(RTLIL::Module* module)
 	{
@@ -477,6 +498,9 @@ struct MemoryShareWorker
 			while (consolidate_wr_by_addr(mem));
 		}
 
+		if (!flag_sat)
+			return;
+
 		modwalker.setup(module);
 
 		for (auto &mem : memories)
@@ -490,7 +514,7 @@ struct MemorySharePass : public Pass {
 	{
 		//   |---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|---v---|
 		log("\n");
-		log("    memory_share [selection]\n");
+		log("    memory_share [-nosat] [-nowiden] [selection]\n");
 		log("\n");
 		log("This pass merges share-able memory ports into single memory ports.\n");
 		log("\n");
@@ -499,9 +523,13 @@ struct MemorySharePass : public Pass {
 		log("  - When multiple write ports access the same address then this is converted\n");
 		log("    to a single write port with a more complex data and/or enable logic path.\n");
 		log("\n");
+		log("  - When multiple read or write ports access adjacent aligned addresses, they\n");
+		log("    are merged to a single wide read or write port.  This transformation can be\n");
+		log("    disabled with the \"-nowiden\" option.\n");
+		log("\n");
 		log("  - When multiple write ports are never accessed at the same time (a SAT\n");
 		log("    solver is used to determine this), then the ports are merged into a single\n");
-		log("    write port.\n");
+		log("    write port.  This transformation can be disabled with the \"-nosat\" option.\n");
 		log("\n");
 		log("Note that in addition to the algorithms implemented in this pass, the $memrd\n");
 		log("and $memwr cells are also subject to generic resource sharing passes (and other\n");
@@ -509,11 +537,26 @@ struct MemorySharePass : public Pass {
 		log("\n");
 	}
 	void execute(std::vector<std::string> args, RTLIL::Design *design) override {
+		bool flag_widen = true;
+		bool flag_sat = true;
 		log_header(design, "Executing MEMORY_SHARE pass (consolidating $memrd/$memwr cells).\n");
-		// TODO: expose when wide ports are actually supported.
-		bool flag_widen = false;
-		extra_args(args, 1, design);
-		MemoryShareWorker msw(design, flag_widen);
+		size_t argidx;
+		for (argidx = 1; argidx < args.size(); argidx++)
+		{
+			if (args[argidx] == "-nosat")
+			{
+				flag_sat = false;
+				continue;
+			}
+			if (args[argidx] == "-nowiden")
+			{
+				flag_widen = false;
+				continue;
+			}
+			break;
+		}
+		extra_args(args, argidx, design);
+		MemoryShareWorker msw(design, flag_widen, flag_sat);
 
 		for (auto module : design->selected_modules())
 			msw(module);

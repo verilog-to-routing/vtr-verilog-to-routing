@@ -260,6 +260,7 @@ struct SubmodWorker
 		}
 
 		ct.setup_internals();
+		ct.setup_internals_anyinit();
 		ct.setup_internals_mem();
 		ct.setup_stdcells();
 		ct.setup_stdcells_mem();
@@ -347,8 +348,8 @@ struct SubmodPass : public Pass {
 		log("\n");
 		log("    -hidden\n");
 		log("        instead of creating submodule ports with public names, create ports with\n");
-		log("        private names so that a subsequent 'flatten; clean' call will restore the\n");
-		log("        original module with original public names.\n");
+		log("        private names so that a subsequent 'flatten; clean' call will restore\n");
+		log("        the original module with original public names.\n");
 		log("\n");
 	}
 	void execute(std::vector<std::string> args, RTLIL::Design *design) override

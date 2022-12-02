@@ -439,7 +439,8 @@ void check_cell_connections(const RTLIL::Module &module, RTLIL::Cell &cell, RTLI
 	}
 }
 
-bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check, bool flag_simcheck, std::vector<std::string> &libdirs)
+bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check, bool flag_simcheck, bool flag_smtcheck,
+		   std::vector<std::string> &libdirs)
 {
 	bool did_something = false;
 	std::map<RTLIL::Cell*, std::pair<int, int>> array_cells;
@@ -477,7 +478,7 @@ bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check
 		RTLIL::Module *mod = design->module(cell->type);
 		if (!mod)
 		{
-			mod = get_module(*design, *cell, *module, flag_check || flag_simcheck, libdirs);
+			mod = get_module(*design, *cell, *module, flag_check || flag_simcheck || flag_smtcheck, libdirs);
 
 			// If we still don't have a module, treat the cell as a black box and skip
 			// it. Otherwise, we either loaded or derived something so should set the
@@ -495,11 +496,11 @@ bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check
 		// interfaces.
 		if_expander.visit_connections(*cell, *mod);
 
-		if (flag_check || flag_simcheck)
+		if (flag_check || flag_simcheck || flag_smtcheck)
 			check_cell_connections(*module, *cell, *mod);
 
 		if (mod->get_blackbox_attribute()) {
-			if (flag_simcheck)
+			if (flag_simcheck || (flag_smtcheck && !mod->get_bool_attribute(ID::smtlib2_module)))
 				log_error("Module `%s' referenced in module `%s' in cell `%s' is a blackbox/whitebox module.\n",
 						cell->type.c_str(), module->name.c_str(), cell->name.c_str());
 			continue;
@@ -554,10 +555,14 @@ bool expand_module(RTLIL::Design *design, RTLIL::Module *module, bool flag_check
 
 	// If any interface instances or interface ports were found in the module, we need to rederive it completely:
 	if ((if_expander.interfaces_in_module.size() > 0 || has_interface_ports) && !module->get_bool_attribute(ID::interfaces_replaced_in_module)) {
-		module->reprocess_module(design, if_expander.interfaces_in_module);
+		module->expand_interfaces(design, if_expander.interfaces_in_module);
 		return did_something;
 	}
 
+	// Now that modules have been derived, we may want to reprocess this
+	// module given the additional available context.
+	if (module->reprocess_if_necessary(design))
+		return true;
 
 	for (auto &it : array_cells)
 	{
@@ -733,6 +738,9 @@ struct HierarchyPass : public Pass {
 		log("        like -check, but also throw an error if blackbox modules are\n");
 		log("        instantiated, and throw an error if the design has no top module.\n");
 		log("\n");
+		log("    -smtcheck\n");
+		log("        like -simcheck, but allow smtlib2_module modules.\n");
+		log("\n");
 		log("    -purge_lib\n");
 		log("        by default the hierarchy command will not remove library (blackbox)\n");
 		log("        modules. use this option to also remove unused blackbox modules.\n");
@@ -799,6 +807,7 @@ struct HierarchyPass : public Pass {
 
 		bool flag_check = false;
 		bool flag_simcheck = false;
+		bool flag_smtcheck = false;
 		bool purge_lib = false;
 		RTLIL::Module *top_mod = NULL;
 		std::string load_top_mod;
@@ -817,7 +826,7 @@ struct HierarchyPass : public Pass {
 		size_t argidx;
 		for (argidx = 1; argidx < args.size(); argidx++)
 		{
-			if (args[argidx] == "-generate" && !flag_check && !flag_simcheck && !top_mod) {
+			if (args[argidx] == "-generate" && !flag_check && !flag_simcheck && !flag_smtcheck && !top_mod) {
 				generate_mode = true;
 				log("Entering generate mode.\n");
 				while (++argidx < args.size()) {
@@ -862,6 +871,10 @@ struct HierarchyPass : public Pass {
 			}
 			if (args[argidx] == "-simcheck") {
 				flag_simcheck = true;
+				continue;
+			}
+			if (args[argidx] == "-smtcheck") {
+				flag_smtcheck = true;
 				continue;
 			}
 			if (args[argidx] == "-purge_lib") {
@@ -972,6 +985,19 @@ struct HierarchyPass : public Pass {
 				if (mod->get_bool_attribute(ID::top))
 					top_mod = mod;
 
+		if (top_mod == nullptr && auto_top_mode) {
+			log_header(design, "Finding top of design hierarchy..\n");
+			dict<Module*, int> db;
+			for (Module *mod : design->selected_modules()) {
+				int score = find_top_mod_score(design, mod, db);
+				log("root of %3d design levels: %-20s\n", score, log_id(mod));
+				if (!top_mod || score > db[top_mod])
+					top_mod = mod;
+			}
+			if (top_mod != nullptr)
+				log("Automatically selected %s as design top module.\n", log_id(top_mod));
+		}
+
 		if (top_mod != nullptr && top_mod->name.begins_with("$abstract")) {
 			IdString top_name = top_mod->name.substr(strlen("$abstract"));
 
@@ -996,20 +1022,7 @@ struct HierarchyPass : public Pass {
 			}
 		}
 
-		if (top_mod == nullptr && auto_top_mode) {
-			log_header(design, "Finding top of design hierarchy..\n");
-			dict<Module*, int> db;
-			for (Module *mod : design->selected_modules()) {
-				int score = find_top_mod_score(design, mod, db);
-				log("root of %3d design levels: %-20s\n", score, log_id(mod));
-				if (!top_mod || score > db[top_mod])
-					top_mod = mod;
-			}
-			if (top_mod != nullptr)
-				log("Automatically selected %s as design top module.\n", log_id(top_mod));
-		}
-
-		if (flag_simcheck && top_mod == nullptr)
+		if ((flag_simcheck || flag_smtcheck) && top_mod == nullptr)
 			log_error("Design has no top module.\n");
 
 		if (top_mod != NULL) {
@@ -1035,7 +1048,7 @@ struct HierarchyPass : public Pass {
 			}
 
 			for (auto module : used_modules) {
-				if (expand_module(design, module, flag_check, flag_simcheck, libdirs))
+				if (expand_module(design, module, flag_check, flag_simcheck, flag_smtcheck, libdirs))
 					did_something = true;
 			}
 
@@ -1045,6 +1058,7 @@ struct HierarchyPass : public Pass {
 			if (tmp_top_mod != NULL) {
 				if (tmp_top_mod != top_mod){
 					top_mod = tmp_top_mod;
+					top_mod->attributes[ID::initial_top] = RTLIL::Const(1);
 					did_something = true;
 				}
 			}
