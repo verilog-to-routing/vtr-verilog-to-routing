@@ -45,8 +45,8 @@ struct SynthIce40Pass : public ScriptPass
 		log("This command runs synthesis for iCE40 FPGAs.\n");
 		log("\n");
 		log("    -device < hx | lp | u >\n");
-		log("        relevant only for '-abc9' flow, optimise timing for the specified device.\n");
-		log("        default: hx\n");
+		log("        relevant only for '-abc9' flow, optimise timing for the specified\n");
+		log("        device. default: hx\n");
 		log("\n");
 		log("    -top <module>\n");
 		log("        use the specified module as top module\n");
@@ -90,6 +90,9 @@ struct SynthIce40Pass : public ScriptPass
 		log("    -nobram\n");
 		log("        do not use SB_RAM40_4K* cells in output netlist\n");
 		log("\n");
+		log("    -spram\n");
+		log("        enable automatic inference of SB_SPRAM256KA\n");
+		log("\n");
 		log("    -dsp\n");
 		log("        use iCE40 UltraPlus DSP cells for large arithmetic\n");
 		log("\n");
@@ -109,6 +112,11 @@ struct SynthIce40Pass : public ScriptPass
 		log("    -flowmap\n");
 		log("        use FlowMap LUT techmapping instead of abc (EXPERIMENTAL)\n");
 		log("\n");
+		log("    -no-rw-check\n");
+		log("        marks all recognized read ports as \"return don't-care value on\n");
+		log("        read/write collision\" (same result as setting the no_rw_check\n");
+		log("        attribute on all memories).\n");
+		log("\n");
 		log("\n");
 		log("The following commands are executed by this synthesis command:\n");
 		help_script();
@@ -116,7 +124,7 @@ struct SynthIce40Pass : public ScriptPass
 	}
 
 	string top_opt, blif_file, edif_file, json_file, device_opt;
-	bool nocarry, nodffe, nobram, dsp, flatten, retime, noabc, abc2, vpr, abc9, dff, flowmap;
+	bool nocarry, nodffe, nobram, spram, dsp, flatten, retime, noabc, abc2, vpr, abc9, dff, flowmap, no_rw_check;
 	int min_ce_use;
 
 	void clear_flags() override
@@ -129,6 +137,7 @@ struct SynthIce40Pass : public ScriptPass
 		nodffe = false;
 		min_ce_use = -1;
 		nobram = false;
+		spram = false;
 		dsp = false;
 		flatten = true;
 		retime = false;
@@ -138,6 +147,7 @@ struct SynthIce40Pass : public ScriptPass
 		abc9 = false;
 		flowmap = false;
 		device_opt = "hx";
+		no_rw_check = false;
 	}
 
 	void execute(std::vector<std::string> args, RTLIL::Design *design) override
@@ -204,6 +214,10 @@ struct SynthIce40Pass : public ScriptPass
 				nobram = true;
 				continue;
 			}
+			if (args[argidx] == "-spram") {
+				spram = true;
+				continue;
+			}
 			if (args[argidx] == "-dsp") {
 				dsp = true;
 				continue;
@@ -234,6 +248,10 @@ struct SynthIce40Pass : public ScriptPass
 			}
 			if (args[argidx] == "-flowmap") {
 				flowmap = true;
+				continue;
+			}
+			if (args[argidx] == "-no-rw-check") {
+				no_rw_check = true;
 				continue;
 			}
 			break;
@@ -271,6 +289,12 @@ struct SynthIce40Pass : public ScriptPass
 			define = "-D ICE40_U";
 		else
 			define = "-D ICE40_HX";
+		std::string no_rw_check_opt = "";
+		if (no_rw_check)
+			no_rw_check_opt = " -no-rw-check";
+		if (help_mode)
+			no_rw_check_opt = " [-no-rw-check]";
+
 		if (check_label("begin"))
 		{
 			run("read_verilog " + define + " -lib -specify +/ice40/cells_sim.v");
@@ -303,7 +327,7 @@ struct SynthIce40Pass : public ScriptPass
 			run("opt_expr");
 			run("opt_clean");
 			if (help_mode || dsp) {
-				run("memory_dff"); // ice40_dsp will merge registers, reserve memory port registers first
+				run("memory_dff" + no_rw_check_opt); // ice40_dsp will merge registers, reserve memory port registers first
 				run("wreduce t:$mul");
 				run("techmap -map +/mul2dsp.v -map +/ice40/dsp_map.v -D DSP_A_MAXWIDTH=16 -D DSP_B_MAXWIDTH=16 "
 						"-D DSP_A_MINWIDTH=2 -D DSP_B_MINWIDTH=2 -D DSP_Y_MINWIDTH=11 "
@@ -318,23 +342,28 @@ struct SynthIce40Pass : public ScriptPass
 			}
 			run("alumacc");
 			run("opt");
-			run("memory -nomap");
+			run("memory -nomap" + no_rw_check_opt);
 			run("opt_clean");
 		}
 
-		if (!nobram && check_label("map_bram", "(skip if -nobram)"))
+		if (check_label("map_ram"))
 		{
-			run("memory_bram -rules +/ice40/brams.txt");
-			run("techmap -map +/ice40/brams_map.v");
+			std::string args = "";
+			if (!spram)
+				args += " -no-auto-huge";
+			if (nobram)
+				args += " -no-auto-block";
+			if (help_mode)
+				args += " [-no-auto-huge] [-no-auto-block]";
+			run("memory_libmap -lib +/ice40/brams.txt -lib +/ice40/spram.txt" + args, "(-no-auto-huge unless -spram, -no-auto-block if -nobram)");
+			run("techmap -map +/ice40/brams_map.v -map +/ice40/spram_map.v");
 			run("ice40_braminit");
 		}
 
 		if (check_label("map_ffram"))
 		{
 			run("opt -fast -mux_undef -undriven -fine");
-			run("memory_map -iattr -attr !ram_block -attr !rom_block -attr logic_block "
-			    "-attr syn_ramstyle=auto -attr syn_ramstyle=registers "
-			    "-attr syn_romstyle=auto -attr syn_romstyle=logic");
+			run("memory_map");
 			run("opt -undriven -fine");
 		}
 

@@ -155,6 +155,9 @@ void prep_hier(RTLIL::Design *design, bool dff_mode)
 		r.first->second = new Design;
 	Design *unmap_design = r.first->second;
 
+	// Keep track of derived versions of modules that we haven't used, to prevent these being used for unwanted techmaps later on.
+	pool<IdString> unused_derived;
+
 	for (auto module : design->selected_modules())
 		for (auto cell : module->cells()) {
 			auto inst_module = design->module(cell->type);
@@ -167,12 +170,9 @@ void prep_hier(RTLIL::Design *design, bool dff_mode)
 				derived_module = inst_module;
 			}
 			else {
-				// Check potential for any one of those three
-				//   (since its value may depend on a parameter, but not its existence)
-				if (!inst_module->has_attribute(ID::abc9_flop) && !inst_module->has_attribute(ID::abc9_box) && !inst_module->get_bool_attribute(ID::abc9_bypass))
-					continue;
 				derived_type = inst_module->derive(design, cell->parameters);
 				derived_module = design->module(derived_type);
+				unused_derived.insert(derived_type);
 			}
 
 			if (derived_module->get_bool_attribute(ID::abc9_flop)) {
@@ -180,8 +180,26 @@ void prep_hier(RTLIL::Design *design, bool dff_mode)
 					continue;
 			}
 			else {
-				if (!derived_module->get_bool_attribute(ID::abc9_box) && !derived_module->get_bool_attribute(ID::abc9_bypass))
+				bool has_timing = false;
+				for (auto derived_cell : derived_module->cells()) {
+					if (derived_cell->type.in(ID($specify2), ID($specify3), ID($specrule))) {
+						// If the module contains timing; then we potentially care about deriving its content too,
+						// as timings (or associated port widths) could be dependent on parameters.
+						has_timing = true;
+						break;
+					}
+				}
+				if (!derived_module->get_bool_attribute(ID::abc9_box) && !derived_module->get_bool_attribute(ID::abc9_bypass) && !has_timing) {
+					if (unmap_design->module(derived_type)) {
+						// If derived_type is present in unmap_design, it means that it was processed previously, but found to be incompatible -- e.g. if
+						// it contained a non-zero initial state. In this case, continue to replace the cell type/parameters so that it has the same properties
+						// as a compatible type, yet will be safely unmapped later
+						cell->type = derived_type;
+						cell->parameters.clear();
+						unused_derived.erase(derived_type);
+					}
 					continue;
+				}
 			}
 
 			if (!unmap_design->module(derived_type)) {
@@ -237,7 +255,11 @@ void prep_hier(RTLIL::Design *design, bool dff_mode)
 
 			cell->type = derived_type;
 			cell->parameters.clear();
+			unused_derived.erase(derived_type);
 		}
+	for (auto unused : unused_derived) {
+		design->remove(design->module(unused));
+	}
 }
 
 void prep_bypass(RTLIL::Design *design)
@@ -424,6 +446,8 @@ void prep_bypass(RTLIL::Design *design)
 				}
 			}
 			unmap_module->fixup_ports();
+
+			design->scratchpad_set_bool("abc9_ops.prep_bypass.did_something", true);
 		}
 }
 
@@ -442,7 +466,14 @@ void prep_dff(RTLIL::Design *design)
 			if (!inst_module->get_bool_attribute(ID::abc9_flop))
 				continue;
 			log_assert(!inst_module->get_blackbox_attribute(true /* ignore_wb */));
-			log_assert(cell->parameters.empty());
+			if (!cell->parameters.empty())
+			{
+				// At this stage of the ABC9 flow, cells instantiating (* abc9_flop *) modules must not contain any parameters -- instead it should
+				// be instantiating the derived module which will have had any parameters constant-propagated.
+				// This task is expected to be performed by `abc9_ops -prep_hier`, but it looks like it failed to do so for this design.
+				// Please file a bug report!
+				log_error("Not expecting parameters on cell '%s' instantiating module '%s' marked (* abc9_flop *)\n", log_id(cell->name), log_id(cell->type));
+			}
 			modules_sel.select(inst_module);
 		}
 }
@@ -631,40 +662,38 @@ void prep_delays(RTLIL::Design *design, bool dff_mode)
 		auto inst_module = design->module(cell->type);
 		log_assert(inst_module);
 
-		auto &t = timing.at(cell->type).required;
-		for (auto &conn : cell->connections_) {
-			auto port_wire = inst_module->wire(conn.first);
+		for (auto &i : timing.at(cell->type).required) {
+			auto port_wire = inst_module->wire(i.first.name);
 			if (!port_wire)
 				log_error("Port %s in cell %s (type %s) from module %s does not actually exist",
-						log_id(conn.first), log_id(cell), log_id(cell->type), log_id(module));
-			if (!port_wire->port_input)
-				continue;
-			if (conn.second.is_fully_const())
+						log_id(i.first.name), log_id(cell), log_id(cell->type), log_id(module));
+			log_assert(port_wire->port_input);
+
+			auto d = i.second.first;
+			if (d == 0)
 				continue;
 
-			SigSpec O = module->addWire(NEW_ID, GetSize(conn.second));
-			for (int i = 0; i < GetSize(conn.second); i++) {
-				auto d = t.at(TimingInfo::NameBit(conn.first,i), 0);
-				if (d == 0)
-					continue;
+			auto offset = i.first.offset;
+			auto O = module->addWire(NEW_ID);
+			auto rhs = cell->getPort(i.first.name);
 
 #ifndef NDEBUG
-				if (ys_debug(1)) {
-					static std::set<std::tuple<IdString,IdString,int>> seen;
-					if (seen.emplace(cell->type, conn.first, i).second) log("%s.%s[%d] abc9_required = %d\n",
-							log_id(cell->type), log_id(conn.first), i, d);
-				}
-#endif
-				auto r = box_cache.insert(d);
-				if (r.second) {
-					r.first->second = delay_module->derive(design, {{ID::DELAY, d}});
-					log_assert(r.first->second.begins_with("$paramod$__ABC9_DELAY\\DELAY="));
-				}
-				auto box = module->addCell(NEW_ID, r.first->second);
-				box->setPort(ID::I, conn.second[i]);
-				box->setPort(ID::O, O[i]);
-				conn.second[i] = O[i];
+			if (ys_debug(1)) {
+				static pool<std::pair<IdString,TimingInfo::NameBit>> seen;
+				if (seen.emplace(cell->type, i.first).second) log("%s.%s[%d] abc9_required = %d\n",
+						log_id(cell->type), log_id(i.first.name), offset, d);
 			}
+#endif
+			auto r = box_cache.insert(d);
+			if (r.second) {
+				r.first->second = delay_module->derive(design, {{ID::DELAY, d}});
+				log_assert(r.first->second.begins_with("$paramod$__ABC9_DELAY\\DELAY="));
+			}
+			auto box = module->addCell(NEW_ID, r.first->second);
+			box->setPort(ID::I, rhs[offset]);
+			box->setPort(ID::O, O);
+			rhs[offset] = O;
+			cell->setPort(i.first.name, rhs);
 		}
 	}
 }
@@ -783,10 +812,11 @@ void prep_xaiger(RTLIL::Module *module, bool dff)
 			continue;
 		if (!cell->parameters.empty())
 		{
-		    // At this stage of the ABC9 flow, all modules must be nonparametric, because ABC itself requires concrete netlists, and the presence of
-		    // parameters implies a non-concrete netlist. This means an (* abc9_box *) parametric module but due to a bug somewhere this hasn't been
-		    // uniquified into a concrete parameter-free module. This is a bug, and a bug report would be welcomed.
-		    log_error("Not expecting parameters on module '%s'  marked (* abc9_box *)\n", log_id(cell_name));
+			// At this stage of the ABC9 flow, cells instantiating (* abc9_box *) modules must not contain any parameters -- instead it should
+			// be instantiating the derived module which will have had any parameters constant-propagated.
+			// This task is expected to be performed by `abc9_ops -prep_hier`, but it looks like it failed to do so for this design.
+			// Please file a bug report!
+			log_error("Not expecting parameters on cell '%s' instantiating module '%s' marked (* abc9_box *)\n", log_id(cell_name), log_id(cell->type));
 		}
 		log_assert(box_module->get_blackbox_attribute());
 
@@ -796,7 +826,7 @@ void prep_xaiger(RTLIL::Module *module, bool dff)
 		auto &holes_cell = r.first->second;
 		if (r.second) {
 			if (box_module->get_bool_attribute(ID::whitebox)) {
-				holes_cell = holes_module->addCell(cell->name, cell->type);
+				holes_cell = holes_module->addCell(NEW_ID, cell->type);
 
 				if (box_module->has_processes())
 					Pass::call_on_module(design, box_module, "proc");
@@ -926,15 +956,8 @@ void prep_box(RTLIL::Design *design)
 {
 	TimingInfo timing;
 
-	std::stringstream ss;
 	int abc9_box_id = 1;
-	for (auto module : design->modules()) {
-		auto it = module->attributes.find(ID::abc9_box_id);
-		if (it == module->attributes.end())
-			continue;
-		abc9_box_id = std::max(abc9_box_id, it->second.as_int());
-	}
-
+	std::stringstream ss;
 	dict<IdString,std::vector<IdString>> box_ports;
 	for (auto module : design->modules()) {
 		auto it = module->attributes.find(ID::abc9_box);
@@ -995,16 +1018,16 @@ void prep_box(RTLIL::Design *design)
 				log_assert(GetSize(wire) == 1);
 				auto it = t.find(TimingInfo::NameBit(port_name,0));
 				if (it == t.end())
-					// Assume no connectivity if no setup time
-					ss << "-";
+					// Assume that no setup time means zero
+					ss << 0;
 				else {
-					ss << it->second;
+					ss << it->second.first;
 
 #ifndef NDEBUG
 					if (ys_debug(1)) {
 						static std::set<std::pair<IdString,IdString>> seen;
 						if (seen.emplace(module->name, port_name).second) log("%s.%s abc9_required = %d\n", log_id(module),
-								log_id(port_name), it->second);
+								log_id(port_name), it->second.first);
 					}
 #endif
 				}
@@ -1549,14 +1572,14 @@ struct Abc9OpsPass : public Pass {
 		log("the `abc9' script pass. Only fully-selected modules are supported.\n");
 		log("\n");
 		log("    -check\n");
-		log("        check that the design is valid, e.g. (* abc9_box_id *) values are unique,\n");
-		log("        (* abc9_carry *) is only given for one input/output port, etc.\n");
+		log("        check that the design is valid, e.g. (* abc9_box_id *) values are\n");
+		log("        unique, (* abc9_carry *) is only given for one input/output port, etc.\n");
 		log("\n");
 		log("    -prep_hier\n");
 		log("        derive all used (* abc9_box *) or (* abc9_flop *) (if -dff option)\n");
 		log("        whitebox modules. with (* abc9_flop *) modules, only those containing\n");
-		log("        $dff/$_DFF_[NP]_ cells with zero initial state -- due to an ABC limitation\n");
-		log("        -- will be derived.\n");
+		log("        $dff/$_DFF_[NP]_ cells with zero initial state -- due to an ABC\n");
+		log("        limitation -- will be derived.\n");
 		log("\n");
 		log("    -prep_bypass\n");
 		log("        create techmap rules in the '$abc9_map' and '$abc9_unmap' designs for\n");
@@ -1574,33 +1597,35 @@ struct Abc9OpsPass : public Pass {
 		log("    -prep_dff_submod\n");
 		log("        within (* abc9_flop *) modules, rewrite all edge-sensitive path\n");
 		log("        declarations and $setup() timing checks ($specify3 and $specrule cells)\n");
-		log("        that share a 'DST' port with the $_DFF_[NP]_.Q port from this 'Q' port to\n");
-		log("        the DFF's 'D' port. this is to prepare such specify cells to be moved\n");
+		log("        that share a 'DST' port with the $_DFF_[NP]_.Q port from this 'Q' port\n");
+		log("        to the DFF's 'D' port. this is to prepare such specify cells to be moved\n");
 		log("        into the flop box.\n");
 		log("\n");
 		log("    -prep_dff_unmap\n");
-		log("        populate the '$abc9_unmap' design with techmap rules for mapping *_$abc9_flop\n");
-		log("        cells back into their derived cell types (where the rules created by\n");
-		log("        -prep_hier will then map back to the original cell with parameters).\n");
+		log("        populate the '$abc9_unmap' design with techmap rules for mapping\n");
+		log("        *_$abc9_flop cells back into their derived cell types (where the rules\n");
+		log("        created by -prep_hier will then map back to the original cell with\n");
+		log("        parameters).\n");
 		log("\n");
 		log("    -prep_delays\n");
 		log("        insert `$__ABC9_DELAY' blackbox cells into the design to account for\n");
 		log("        certain required times.\n");
 		log("\n");
 		log("    -break_scc\n");
-		log("        for an arbitrarily chosen cell in each unique SCC of each selected module\n");
-		log("        (tagged with an (* abc9_scc_id = <int> *) attribute) interrupt all wires\n");
-		log("        driven by this cell's outputs with a temporary $__ABC9_SCC_BREAKER cell\n");
-		log("        to break the SCC.\n");
+		log("        for an arbitrarily chosen cell in each unique SCC of each selected\n");
+		log("        module (tagged with an (* abc9_scc_id = <int> *) attribute) interrupt\n");
+		log("        all wires driven by this cell's outputs with a temporary\n");
+		log("        $__ABC9_SCC_BREAKER cell to break the SCC.\n");
 		log("\n");
 		log("    -prep_xaiger\n");
 		log("        prepare the design for XAIGER output. this includes computing the\n");
-		log("        topological ordering of ABC9 boxes, as well as preparing the '$abc9_holes'\n");
-		log("        design that contains the logic behaviour of ABC9 whiteboxes.\n");
+		log("        topological ordering of ABC9 boxes, as well as preparing the \n");
+		log("        '$abc9_holes' design that contains the logic behaviour of ABC9\n");
+		log("        whiteboxes.\n");
 		log("\n");
 		log("    -dff\n");
-		log("        consider flop cells (those instantiating modules marked with (* abc9_flop *))\n");
-		log("        during -prep_{delays,xaiger,box}.\n");
+		log("        consider flop cells (those instantiating modules marked with\n");
+		log("        (* abc9_flop *)) during -prep_{delays,xaiger,box}.\n");
 		log("\n");
 		log("    -prep_lut <maxlut>\n");
 		log("        pre-compute the lut library by analysing all modules marked with\n");
@@ -1618,8 +1643,8 @@ struct Abc9OpsPass : public Pass {
 		log("\n");
 		log("    -reintegrate\n");
 		log("        for each selected module, re-intergrate the module '<module-name>$abc9'\n");
-		log("        by first recovering ABC9 boxes, and then stitching in the remaining primary\n");
-		log("        inputs and outputs.\n");
+		log("        by first recovering ABC9 boxes, and then stitching in the remaining\n");
+		log("        primary inputs and outputs.\n");
 		log("\n");
 	}
 	void execute(std::vector<std::string> args, RTLIL::Design *design) override

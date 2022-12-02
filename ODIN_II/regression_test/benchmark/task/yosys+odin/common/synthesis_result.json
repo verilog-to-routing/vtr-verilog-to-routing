@@ -553,13 +553,13 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 10,
+        "logic element": 2,
         "latch": 2,
         "generic logic size": 4,
-        "Longest Path": 6,
+        "Longest Path": 4,
         "Average Path": 4,
-        "Estimated LUTs": 10,
-        "Total Node": 13
+        "Estimated LUTs": 2,
+        "Total Node": 5
     },
     "common/dffsr/no_arch": {
         "test_name": "common/dffsr/no_arch",
@@ -573,12 +573,12 @@
         "Latch Drivers": 1,
         "Pi": 5,
         "Po": 2,
-        "logic element": 10,
+        "logic element": 2,
         "latch": 2,
-        "Longest Path": 6,
+        "Longest Path": 4,
         "Average Path": 4,
-        "Estimated LUTs": 10,
-        "Total Node": 13
+        "Estimated LUTs": 2,
+        "Total Node": 5
     },
     "common/div_by_const/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "common/div_by_const/k6_frac_N10_frac_chain_mem32K_40nm",
