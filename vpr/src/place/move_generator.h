@@ -23,14 +23,17 @@ struct MoveOutcomeStats {
 /**
  * @brief A Struct to hold statistics about the different move types
  *
- * num_moves:      save the number of proposed moves of each type (e.g. indexed from 0 to NUM_PL_MOVE_TYPES-1 )
- * accepted_moves: save the number of accepted moves of each type (e.g. indexed from 0 to NUM_PL_MOVE_TYPES-1 )
- * aborted_moves:  save the number of aborted moves of each type (e.g. indexed from 0 to NUM_PL_MOVE_TYPES-1 )
+ * num_moves:      save the number of proposed moves of each type (e.g. [0..NUM_PL_MOVE_TYPES-1])
+ * blk_type_moves: save the block type index of each proposed move (e.g. [0..NUM_PL_MOVE_TYPES-1][0..t_logical_block_type.size()-2])
+ *                 The RL agent will not perform any move with 'EMPTY' type, available block types wil be t_logical_block_type.size()-2.
+ * accepted_moves: save the number of accepted moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES-1][0..t_logical_block_type.size()-2] )
+ * aborted_moves:  save the number of aborted moves of each move and block type (e.g. [0..NUM_PL_MOVE_TYPES-1][0..t_logical_block_type.size()-2] )
  */
 struct MoveTypeStat {
-    std::vector<int> num_moves;
-    std::vector<int> accepted_moves;
-    std::vector<int> aborted_moves;
+    std::vector<int> num_moves; // SARA_TODO: seems to be redundant
+    std::vector<std::vector<int>> blk_type_moves;
+    std::vector<std::vector<int>> accepted_moves;
+    std::vector<std::vector<int>> aborted_moves;
 };
 
 /**
@@ -56,7 +59,7 @@ class MoveGenerator {
      *  @param criticalities: the placer criticalities, useful for timing directed moves
      *  @param blk_type: function proposes a move with given block type if specified.  
      */
-    virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type_ptr blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) = 0;
+    virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) = 0;
 
     /**
      * @brief Recieves feedback about the outcome of the previously proposed move

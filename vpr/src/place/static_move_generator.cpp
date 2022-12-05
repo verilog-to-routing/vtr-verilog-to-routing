@@ -26,7 +26,7 @@ void StaticMoveGenerator::initialize_move_prob(const std::vector<float>& prob) {
     total_prob = cumm_move_probs[cumm_move_probs.size() - 1];
 }
 
-e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, t_logical_block_type_ptr blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
+e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities) {
     float rand_num = vtr::frand() * total_prob;
     for (size_t i = 0; i < cumm_move_probs.size(); i++) {
         if (rand_num <= cumm_move_probs[i]) {

@@ -122,7 +122,7 @@ ClusterBlockId pick_from_block();
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_block(t_logical_block_type_ptr blk_type);
+ClusterBlockId pick_from_block(t_logical_block_type blk_type);
 
 /**
  * @brief Select a random highly critical block to be swapped with another block
@@ -138,7 +138,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, t_logical_block_type_ptr blk_type);
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, t_logical_block_type blk_type);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,

@@ -4,9 +4,9 @@
 #include "directed_moves_util.h"
 #include "place_constraints.h"
 
-e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type_ptr blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
+e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& /*move_type*/, t_logical_block_type& blk_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* /*criticalities*/) {
     ClusterBlockId b_from;
-    if (blk_type->index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
+    if (blk_type.index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         b_from = pick_from_block();
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         b_from = pick_from_block(blk_type);

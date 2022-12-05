@@ -534,7 +534,7 @@ ClusterBlockId pick_from_block() {
 
 //Pick a random block with a specific blk_type to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_block(t_logical_block_type_ptr blk_type) {
+ClusterBlockId pick_from_block(t_logical_block_type blk_type) {
     /* Some blocks may be fixed, and should never be moved from their *
      * initial positions. If we randomly selected such a block try    *
      * another random block.                                          *
@@ -543,7 +543,7 @@ ClusterBlockId pick_from_block(t_logical_block_type_ptr blk_type) {
      * loop if all blocks are fixed.                                  */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    t_logical_block_type blk_type_temp = *blk_type;
+    t_logical_block_type blk_type_temp = blk_type;
     blk_type_temp.index++;
     auto blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
 
@@ -609,7 +609,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
 
 //Pick a random highly critical block with a specified block type to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, t_logical_block_type_ptr blk_type) {
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, t_logical_block_type blk_type) {
     auto& place_move_ctx = g_placer_ctx.move();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -630,7 +630,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
     //Check if picked block type matches with the blk_type specified, and it is not fixed
     //blk_type from propose move doesn't account for the EMPTY type
     auto b_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    if (b_from_type->index == blk_type->index + 1) {
+    if (b_from_type->index == blk_type.index + 1) {
         if (place_ctx.block_locs[b_from].is_fixed) {
             return ClusterBlockId::INVALID(); //Block is fixed, cannot move
         }
