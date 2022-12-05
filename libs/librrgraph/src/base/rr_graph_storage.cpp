@@ -393,14 +393,16 @@ void t_rr_graph_storage::init_fan_in() {
     //Reset all fan-ins to zero
     edges_read_ = true;
     node_fan_in_.resize(node_storage_.size(), 0);
-    seen_node_.resize(node_storage_.size(), false);
+    // This array is used to avoid initializing fan-in of the nodes which are already seen.
+    // This would reduce the run-time of flat rr graph generation since this function is called twice.
+    seen_edge_.resize(edge_dest_node_.size(), false);
     node_fan_in_.shrink_to_fit();
-    seen_node_.shrink_to_fit();
+    seen_edge_.shrink_to_fit();
     //Walk the graph and increment fanin on all downstream nodes
-    for (const auto& dest_node : edge_dest_node_) {
-        if(!seen_node_[dest_node]) {
-            node_fan_in_[dest_node] += 1;
-            seen_node_[dest_node] = true;
+    for(const auto& edge_id : edge_dest_node_.keys()) {
+        if(!seen_edge_[edge_id]) {
+            node_fan_in_[edge_dest_node_[edge_id]] += 1;
+            seen_edge_[edge_id] = true;
         }
     }
 }
@@ -466,6 +468,9 @@ size_t t_rr_graph_storage::count_rr_switches(
 
     } while (first_edge != edge_dest_node_.end());
 
+    // We assign a rr switch for other arch switches. This is done mainly for flat-routing,
+    // to avoid allocating switches again. We assume that internal switches' delay are not
+    // dependent on their fan-in
     for(size_t iswitch = 0; iswitch < arch_switch_counts.size(); ++iswitch) {
         if(arch_switch_fanins[iswitch].empty()){
             if(arch_switch_inf[iswitch].fixed_Tdel()){
@@ -813,6 +818,7 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         auto old_edge_dest_node = edge_dest_node_;
         auto old_edge_switch = edge_switch_;
         auto old_edge_remapped = edge_remapped_;
+        auto old_seen_edge = seen_edge_;
         RREdgeId cur_edge(0);
 
         // Reorder edges by source node
@@ -826,6 +832,7 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                 edge_dest_node_[cur_edge] = order[old_edge_dest_node[e]];
                 edge_switch_[cur_edge] = old_edge_switch[e];
                 edge_remapped_[cur_edge] = old_edge_remapped[e];
+                seen_edge_[cur_edge] = old_seen_edge[e];
                 cur_edge = RREdgeId(size_t(cur_edge) + 1);
             }
         }
@@ -838,10 +845,8 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
     }
     {
         auto old_node_fan_in = node_fan_in_;
-        auto old_seen_node_ = seen_node_;
         for (size_t i = 0; i < node_fan_in_.size(); i++) {
             node_fan_in_[order[RRNodeId(i)]] = old_node_fan_in[RRNodeId(i)];
-            seen_node_[order[RRNodeId(i)]] = old_seen_node_[RRNodeId(i)];
         }
     }
 }
