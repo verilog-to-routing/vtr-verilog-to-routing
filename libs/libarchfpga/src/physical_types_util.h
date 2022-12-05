@@ -435,6 +435,10 @@ int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile);
 
 int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 
+int get_tile_num_internal_pin(t_physical_tile_type_ptr tile);
+
+int get_tile_total_num_pin(t_physical_tile_type_ptr tile);
+
 // Check whether the pin corresponding to pin_physical_num is directly or indirectly connected to the sink corresponding to sink_physical_num
 bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
                                 int pin_physical_num,

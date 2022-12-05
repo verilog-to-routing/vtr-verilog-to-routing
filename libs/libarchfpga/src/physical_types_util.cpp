@@ -104,6 +104,10 @@ static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physic
                                                  t_logical_block_type_ptr logical_block,
                                                  int pin_physical_num);
 
+static t_pb_graph_pin* get_mutable_tile_pin_pb_pin(t_physical_tile_type* physical_type,
+                                                   t_logical_block_type* logical_block,
+                                                   int pin_physical_num);
+
 static std::tuple<int, int, int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat) {
     int max_ptc = get_tile_pin_max_ptc(type, is_flat);
     VTR_ASSERT(pin_physical_num < max_ptc);
@@ -336,6 +340,13 @@ static std::vector<int> get_pb_pin_sink_pins(t_physical_tile_type_ptr physical_t
 static const t_pb_graph_pin* get_tile_pin_pb_pin(t_physical_tile_type_ptr physical_type,
                                                  t_logical_block_type_ptr logical_block,
                                                  int pin_physical_num) {
+    VTR_ASSERT(is_pin_on_tile(physical_type, pin_physical_num));
+    return physical_type->on_tile_pin_num_to_pb_pin.at(pin_physical_num).at(logical_block);
+}
+
+static t_pb_graph_pin* get_mutable_tile_pin_pb_pin(t_physical_tile_type* physical_type,
+                                                   t_logical_block_type* logical_block,
+                                                   int pin_physical_num) {
     VTR_ASSERT(is_pin_on_tile(physical_type, pin_physical_num));
     return physical_type->on_tile_pin_num_to_pb_pin.at(pin_physical_num).at(logical_block);
 }
@@ -967,9 +978,11 @@ const t_pb_graph_pin* get_pb_pin_from_pin_physical_num(t_physical_tile_type_ptr 
 }
 
 t_pb_graph_pin* get_mutable_pb_pin_from_pin_physical_num(t_physical_tile_type* physical_tile, t_logical_block_type* logical_block, int physical_num) {
-    VTR_ASSERT(physical_num >= physical_tile->num_pins);
-    int logical_num = get_pin_logical_num_from_pin_physical_num(physical_tile, physical_num);
-    return logical_block->pin_logical_num_to_pb_pin_mapping.at(logical_num);
+    if(is_pin_on_tile(physical_tile, physical_num)) {
+        return get_mutable_tile_pin_pb_pin(physical_tile, logical_block, physical_num);
+    } else {
+        return physical_tile->pin_num_to_pb_pin.at(physical_num);
+    }
 }
 
 PortEquivalence get_port_equivalency_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int pin_physical_num) {
@@ -1311,6 +1324,14 @@ int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
     } else {
         return tile->num_pins;
     }
+}
+
+int get_tile_num_internal_pin(t_physical_tile_type_ptr tile) {
+    return (int)tile->pin_num_to_pb_pin.size();
+}
+
+int get_tile_total_num_pin(t_physical_tile_type_ptr tile) {
+    return (int)(tile->num_pins + tile->pin_num_to_pb_pin.size());
 }
 
 bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,

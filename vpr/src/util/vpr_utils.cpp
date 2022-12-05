@@ -2400,7 +2400,7 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int i,
     auto grid_block = place_ctx.grid_blocks[i][j];
 
     std::vector<int> pin_num_vec;
-    pin_num_vec.reserve(physical_type->pin_num_to_pb_pin.size());
+    pin_num_vec.reserve(get_tile_num_internal_pin(physical_type));
 
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
         std::vector<int> cluster_internal_pins;
@@ -2424,7 +2424,7 @@ std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
                                         ClusterBlockId cluster_blk_id,
                                         int abs_cap) {
 
-    int max_num_pin = (int)(physical_tile->num_pins + physical_tile->pin_num_to_pb_pin.size()) / physical_tile->capacity;
+    int max_num_pin = get_tile_total_num_pin(physical_tile) / physical_tile->capacity;
     int num_tile_pin_per_inst = physical_tile->num_pins / physical_tile->capacity;
     std::vector<int> pin_num_vec(num_tile_pin_per_inst);
     std::iota(pin_num_vec.begin(), pin_num_vec.end(), abs_cap * num_tile_pin_per_inst);
