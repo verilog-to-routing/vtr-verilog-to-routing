@@ -34,6 +34,7 @@ YOSYS_PARSERS = ["yosys", "surelog", "yosys-plugin"]
 
 YOSYS_MAPPERS = ["parmys", "yosys"]
 
+
 def create_circuits_list(main_circuit, include_files):
     """Create a list of supported HDL files"""
     circuit_list = []
@@ -108,6 +109,7 @@ def init_script_file(
     vtr.file_replace(yosys_spram_rename_full_path, {"PPP": memory_addr_width})
     vtr.file_replace(yosys_dpram_rename_full_path, {"PPP": memory_addr_width})
 
+
 # pylint: disable=too-many-arguments, too-many-locals
 def init_config_file(
     odin_config_full_path,
@@ -158,6 +160,7 @@ def init_config_file(
 
     # update the config file with new values
     config_file.write(odin_config_full_path)
+
 
 # pylint: disable=too-many-arguments, too-many-locals, too-many-statements, too-many-branches
 def run(
@@ -229,7 +232,7 @@ def run(
         yosys_exec = str(vtr.paths.yosys_exe_path)
 
     if yosys_script is None:
-        if yosys_args["mapper"] == 'parmys':
+        if yosys_args["mapper"] == "parmys":
             yosys_base_script = str(vtr.paths.yosys_parmys_script_path)
         else:
             yosys_base_script = str(vtr.paths.yosys_script_path)
