@@ -252,8 +252,7 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
     } else { // not a primitive, recursively call the function for all its children
         for (i = 0; i < pb_type->num_modes; i++) {
             for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-                for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb;
-                     k++) {
+                for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
                     load_cluster_placement_stats_for_pb_graph_node(cluster_placement_stats,
                                                                    &pb_graph_node->child_pb_graph_nodes[i][j][k],
                                                                    lb_type_index);

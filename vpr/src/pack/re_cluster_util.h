@@ -77,17 +77,7 @@ void remove_mol_from_cluster(const t_pack_molecule* molecule,
  * @param router_data: returns the intra logic block router data.
  * @param temp_cluster_pr: returns the partition region of the new cluster.
  */
-bool start_new_cluster_for_mol(t_pack_molecule* molecule,
-                               const t_logical_block_type_ptr& type,
-                               const int mode,
-                               const int feasible_block_array_size,
-                               bool enable_pin_feasibility_filter,
-                               ClusterBlockId clb_index,
-                               bool during_packing,
-                               int verbosity,
-                               t_clustering_data& clustering_data,
-                               t_lb_router_data** router_data,
-                               PartitionRegion& temp_cluster_pr);
+bool start_new_cluster_for_mol(t_pack_molecule* molecule, const t_logical_block_type_ptr& type, const int mode, const int feasible_block_array_size, bool enable_pin_feasibility_filter, ClusterBlockId clb_index, bool during_packing, int verbosity, t_clustering_data& clustering_data, t_lb_router_data** router_data, PartitionRegion& temp_cluster_pr, int thread_id);
 
 /**
  * @brief A function that packs a molecule into an existing cluster
@@ -100,14 +90,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
  *                          (is updated if this function is called during packing, especially intra_lb_routing data member).
  * @param router_data: returns the intra logic block router data.
  */
-bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
-                                  int molecule_size,
-                                  const ClusterBlockId clb_index,
-                                  std::unordered_set<AtomBlockId>* clb_atoms,
-                                  bool during_packing,
-                                  bool is_swap,
-                                  t_clustering_data& clustering_data,
-                                  t_lb_router_data*& router_data);
+bool pack_mol_in_existing_cluster(t_pack_molecule* molecule, int molecule_size, const ClusterBlockId new_clb, std::unordered_set<AtomBlockId>* new_clb_atoms, bool during_packing, bool is_swap, t_clustering_data& clustering_data, t_lb_router_data*& router_data, int thread_id);
 
 /**
  * @brief A function that fix the clustered netlist if the move is performed
@@ -133,11 +116,7 @@ void commit_mol_move(const ClusterBlockId& old_clb,
                      bool during_packing,
                      bool new_clb_created);
 
-void revert_mol_move(const ClusterBlockId& old_clb,
-                     t_pack_molecule* molecule,
-                     t_lb_router_data*& old_router_data,
-                     bool during_packing,
-                     t_clustering_data& clustering_data);
+void revert_mol_move(const ClusterBlockId& old_clb, t_pack_molecule* molecule, t_lb_router_data*& old_router_data, bool during_packing, t_clustering_data& clustering_data, int thread_id);
 
 bool is_cluster_legal(t_lb_router_data*& router_data);
 

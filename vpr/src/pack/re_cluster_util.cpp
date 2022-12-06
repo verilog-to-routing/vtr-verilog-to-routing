@@ -35,8 +35,7 @@ static void fix_cluster_net_after_moving(const t_pack_molecule* molecule,
                                          const ClusterBlockId& old_clb,
                                          const ClusterBlockId& new_clb);
 
-static void rebuild_cluster_placement_stats(const ClusterBlockId& clb_index,
-                                            const std::unordered_set<AtomBlockId>* clb_atoms);
+static void rebuild_cluster_placement_stats(const ClusterBlockId& clb_index, const std::unordered_set<AtomBlockId>* clb_atoms, int thread_id);
 
 static void update_cluster_pb_stats(const t_pack_molecule* molecule,
                                     int molecule_size,
@@ -114,17 +113,7 @@ t_lb_router_data* lb_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_rr
     return (router_data);
 }
 
-bool start_new_cluster_for_mol(t_pack_molecule* molecule,
-                               const t_logical_block_type_ptr& type,
-                               const int mode,
-                               const int feasible_block_array_size,
-                               bool enable_pin_feasibility_filter,
-                               ClusterBlockId clb_index,
-                               bool during_packing,
-                               int verbosity,
-                               t_clustering_data& clustering_data,
-                               t_lb_router_data** router_data,
-                               PartitionRegion& temp_cluster_pr) {
+bool start_new_cluster_for_mol(t_pack_molecule* molecule, const t_logical_block_type_ptr& type, const int mode, const int feasible_block_array_size, bool enable_pin_feasibility_filter, ClusterBlockId clb_index, bool during_packing, int verbosity, t_clustering_data& clustering_data, t_lb_router_data** router_data, PartitionRegion& temp_cluster_pr, int thread_id) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
@@ -148,10 +137,10 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
 
     e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
     pb->mode = mode;
-    reset_cluster_placement_stats(&(helper_ctx.cluster_placement_stats[0][type->index]));
+    reset_cluster_placement_stats(&(helper_ctx.cluster_placement_stats[thread_id][type->index]));
     set_mode_cluster_placement_stats(pb->pb_graph_node, mode);
 
-    pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[0][type->index]),
+    pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[thread_id][type->index]),
                                     molecule,
                                     helper_ctx.primitives_list,
                                     pb,
@@ -197,14 +186,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
     return (pack_result == BLK_PASSED);
 }
 
-bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
-                                  int molecule_size,
-                                  const ClusterBlockId new_clb,
-                                  std::unordered_set<AtomBlockId>* new_clb_atoms,
-                                  bool during_packing,
-                                  bool is_swap,
-                                  t_clustering_data& clustering_data,
-                                  t_lb_router_data*& router_data) {
+bool pack_mol_in_existing_cluster(t_pack_molecule* molecule, int molecule_size, const ClusterBlockId new_clb, std::unordered_set<AtomBlockId>* new_clb_atoms, bool during_packing, bool is_swap, t_clustering_data& clustering_data, t_lb_router_data*& router_data, int thread_id) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
@@ -215,15 +197,15 @@ bool pack_mol_in_existing_cluster(t_pack_molecule* molecule,
     t_pb* temp_pb = cluster_ctx.clb_nlist.block_pb(new_clb);
 
     //re-build cluster placement stats
-    rebuild_cluster_placement_stats(new_clb, new_clb_atoms);
-    if (!check_free_primitives_for_molecule_atoms(molecule, &(helper_ctx.cluster_placement_stats[0][block_type->index])))
+    rebuild_cluster_placement_stats(new_clb, new_clb_atoms, thread_id);
+    if (!check_free_primitives_for_molecule_atoms(molecule, &(helper_ctx.cluster_placement_stats[thread_id][block_type->index])))
         return false;
 
     //re-build router_data structure for this cluster
     if (!is_swap)
         router_data = lb_load_router_data(helper_ctx.lb_type_rr_graphs, new_clb, new_clb_atoms);
 
-    pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[0][block_type->index]),
+    pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[thread_id][block_type->index]),
                                     molecule,
                                     helper_ctx.primitives_list,
                                     temp_pb,
@@ -280,12 +262,13 @@ void revert_mol_move(const ClusterBlockId& old_clb,
                      t_pack_molecule* molecule,
                      t_lb_router_data*& old_router_data,
                      bool during_packing,
-                     t_clustering_data& clustering_data) {
+                     t_clustering_data& clustering_data,
+                     int thread_id) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     PartitionRegion temp_cluster_pr_original;
-    e_block_pack_status pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[0][cluster_ctx.clb_nlist.block_type(old_clb)->index]),
+    e_block_pack_status pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[thread_id][cluster_ctx.clb_nlist.block_type(old_clb)->index]),
                                                         molecule,
                                                         helper_ctx.primitives_list,
                                                         cluster_ctx.clb_nlist.block_pb(old_clb),
@@ -631,13 +614,12 @@ static bool count_children_pbs(const t_pb* pb) {
 }
 #endif
 
-static void rebuild_cluster_placement_stats(const ClusterBlockId& clb_index,
-                                            const std::unordered_set<AtomBlockId>* clb_atoms) {
+static void rebuild_cluster_placement_stats(const ClusterBlockId& clb_index, const std::unordered_set<AtomBlockId>* clb_atoms, int thread_id) {
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    t_cluster_placement_stats* cluster_placement_stats = &(helper_ctx.cluster_placement_stats[0][cluster_ctx.clb_nlist.block_type(clb_index)->index]);
+    t_cluster_placement_stats* cluster_placement_stats = &(helper_ctx.cluster_placement_stats[thread_id][cluster_ctx.clb_nlist.block_type(clb_index)->index]);
     reset_cluster_placement_stats(cluster_placement_stats);
     set_mode_cluster_placement_stats(cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node, cluster_ctx.clb_nlist.block_pb(clb_index)->mode);
 

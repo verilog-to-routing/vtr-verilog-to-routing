@@ -12,21 +12,23 @@ const int MAX_ITERATIONS = 100;
 
 /******************* Packing move base class ************************/
 /********************************************************************/
-bool packingMoveGenerator::apply_move(std::vector<molMoveDescription>& new_locs, t_clustering_data& clustering_data, int num_thread = 0) {
+bool packingMoveGenerator::apply_move(std::vector<molMoveDescription>& new_locs, t_clustering_data& clustering_data, int thread_id) {
     if (new_locs.size() == 1) {
         //We need to move a molecule to an existing CLB
         return (move_mol_to_existing_cluster(new_locs[0].molecule_to_move,
                                              new_locs[1].new_clb,
                                              true,
                                              0,
-                                             clustering_data));
+                                             clustering_data,
+                                             thread_id));
     } else if (new_locs.size() == 2) {
         //We need to swap two molecules
         return (swap_two_molecules(new_locs[0].molecule_to_move,
                                    new_locs[1].molecule_to_move,
                                    true,
                                    0,
-                                   clustering_data));
+                                   clustering_data,
+                                   thread_id));
     } else {
         //We have a more complicated move (moving multiple molecules at once)
         //TODO: This case is not supported yet

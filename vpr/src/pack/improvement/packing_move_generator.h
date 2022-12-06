@@ -20,7 +20,7 @@ class packingMoveGenerator {
     virtual ~packingMoveGenerator() = default;
     virtual bool propose_move(std::vector<molMoveDescription>& new_locs) = 0;
     virtual bool evaluate_move(const std::vector<molMoveDescription>& new_locs) = 0;
-    bool apply_move(std::vector<molMoveDescription>& new_locs, t_clustering_data& clustering_data, int num_thread);
+    bool apply_move(std::vector<molMoveDescription>& new_locs, t_clustering_data& clustering_data, int thread_id);
 };
 
 class randomPackingSwap : public packingMoveGenerator {

@@ -7,7 +7,8 @@
 bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                              bool during_packing,
                              int verbosity,
-                             t_clustering_data& clustering_data) {
+                             t_clustering_data& clustering_data,
+                             int thread_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
     auto& device_ctx = g_vpr_ctx.device();
@@ -66,14 +67,15 @@ bool move_mol_to_new_cluster(t_pack_molecule* molecule,
                                            verbosity,
                                            clustering_data,
                                            &router_data,
-                                           temp_cluster_pr);
+                                           temp_cluster_pr,
+                                           thread_id);
 
     //Commit or revert the move
     if (is_created) {
         commit_mol_move(old_clb, new_clb, during_packing, true);
         VTR_LOGV(verbosity > 4, "Atom:%zu is moved to a new cluster\n", molecule->atom_block_ids[molecule->root]);
     } else {
-        revert_mol_move(old_clb, molecule, old_router_data, during_packing, clustering_data);
+        revert_mol_move(old_clb, molecule, old_router_data, during_packing, clustering_data, thread_id);
         VTR_LOGV(verbosity > 4, "Atom:%zu move failed. Can't start a new cluster of the same type and mode\n", molecule->atom_block_ids[molecule->root]);
     }
 
@@ -93,7 +95,8 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
                                   const ClusterBlockId& new_clb,
                                   bool during_packing,
                                   int verbosity,
-                                  t_clustering_data& clustering_data) {
+                                  t_clustering_data& clustering_data,
+                                  int thread_id) {
     //define local variables
     bool is_removed, is_added;
     AtomBlockId root_atom_id = molecule->atom_block_ids[molecule->root];
@@ -128,14 +131,14 @@ bool move_mol_to_existing_cluster(t_pack_molecule* molecule,
 
     //Add the atom to the new cluster
     t_lb_router_data* new_router_data = nullptr;
-    is_added = pack_mol_in_existing_cluster(molecule, molecule_size, new_clb, new_clb_atoms, during_packing, false, clustering_data, new_router_data);
+    is_added = pack_mol_in_existing_cluster(molecule, molecule_size, new_clb, new_clb_atoms, during_packing, false, clustering_data, new_router_data, thread_id);
 
     //Commit or revert the move
     if (is_added) {
         commit_mol_move(old_clb, new_clb, during_packing, false);
         VTR_LOGV(verbosity > 4, "Atom:%zu is moved to a new cluster\n", molecule->atom_block_ids[molecule->root]);
     } else {
-        revert_mol_move(old_clb, molecule, old_router_data, during_packing, clustering_data);
+        revert_mol_move(old_clb, molecule, old_router_data, during_packing, clustering_data, thread_id);
         VTR_LOGV(verbosity > 4, "Atom:%zu move failed. Can't start a new cluster of the same type and mode\n", molecule->atom_block_ids[molecule->root]);
     }
 
@@ -156,7 +159,8 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
                         t_pack_molecule* molecule_2,
                         bool during_packing,
                         int verbosity,
-                        t_clustering_data& clustering_data) {
+                        t_clustering_data& clustering_data,
+                        int thread_id) {
     //define local variables
     PartitionRegion temp_cluster_pr_1, temp_cluster_pr_2;
 
@@ -201,10 +205,10 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
     commit_mol_removal(molecule_2, molecule_2_size, clb_2, during_packing, old_2_router_data, clustering_data);
 
     //Add the atom to the new cluster
-    mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data);
+    mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data, thread_id);
     if (!mol_1_success) {
-        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data);
-        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data);
+        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data, thread_id);
+        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data, thread_id);
 
         VTR_ASSERT(mol_1_success && mol_2_success);
         free_router_data(old_1_router_data);
@@ -214,12 +218,12 @@ bool swap_two_molecules(t_pack_molecule* molecule_1,
         return false;
     }
 
-    mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data);
+    mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data, thread_id);
     if (!mol_2_success) {
         remove_mol_from_cluster(molecule_1, molecule_1_size, clb_2, clb_2_atoms, true, old_2_router_data);
         commit_mol_removal(molecule_1, molecule_1_size, clb_2, during_packing, old_2_router_data, clustering_data);
-        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data);
-        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data);
+        mol_1_success = pack_mol_in_existing_cluster(molecule_1, molecule_1_size, clb_1, clb_1_atoms, during_packing, true, clustering_data, old_1_router_data, thread_id);
+        mol_2_success = pack_mol_in_existing_cluster(molecule_2, molecule_2_size, clb_2, clb_2_atoms, during_packing, true, clustering_data, old_2_router_data, thread_id);
 
         VTR_ASSERT(mol_1_success && mol_2_success);
         free_router_data(old_1_router_data);
