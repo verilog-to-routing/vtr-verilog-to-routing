@@ -2347,6 +2347,9 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
 
 
     vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> choking_spots(net_list.nets().size());
+    for(const auto& net_id : net_list.nets()) {
+        choking_spots[net_id].resize(net_list.net_pins(net_id).size());
+    }
 
     if(!has_choking_spot) {
         return choking_spots;
@@ -2360,8 +2363,10 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
     const auto& net_rr_terminal = route_ctx.net_rr_terminals;
 
     for(const auto& net_id : net_list.nets()) {
-        choking_spots[net_id].resize(net_list.net_pins(net_id).size());
         int pin_count = 0;
+        if(net_list.net_is_global(net_id)) {
+            continue;
+        }
         for(auto pin_id : net_list.net_pins(net_id)) {
             if(pin_count == 0) {
                 pin_count++;

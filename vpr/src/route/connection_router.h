@@ -206,7 +206,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const int target_node);
 
     // Calculates the cost of reaching to_node
-    bool evaluate_timing_driven_node_costs(
+    void evaluate_timing_driven_node_costs(
         t_heap* to,
         const t_conn_cost_params cost_params,
         const int from_node,

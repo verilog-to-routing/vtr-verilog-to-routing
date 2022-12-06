@@ -212,6 +212,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
                                                   const int delayless_switch,
+                                                  float R_minW_nmos,
+                                                  float R_minW_pmos,
                                                   bool is_flat);
 
 static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -278,6 +280,8 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
 static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                              t_rr_edge_info_set& rr_edges_to_create,
                                              const DeviceGrid& grid,
+                                             float R_minW_nmos,
+                                             float R_minW_pmos,
                                              int& num_edges,
                                              bool is_flat);
 
@@ -296,6 +300,8 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                          const int i,
                                          const int j,
                                          const int cap,
+                                         float R_minW_nmos,
+                                         float R_minW_pmos,
                                          t_rr_edge_info_set& rr_edges_to_create,
                                          const DeviceGrid& grid,
                                          bool is_flat);
@@ -320,6 +326,8 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          t_logical_block_type_ptr logical_block,
                                          const std::vector<int>& cluster_pins,
                                          const t_cluster_pin_chain& nodes_to_collapse,
+                                         float R_minW_nmos,
+                                         float R_minW_pmos,
                                          int i,
                                          int j);
 
@@ -331,6 +339,8 @@ static void add_chain_edges(RRGraphBuilder& rr_graph_builder,
                             const t_cluster_pin_chain& nodes_to_collapse,
                             const std::unordered_set<int>& cluster_pins,
                             const std::vector<int>& chain_pins,
+                            float R_minW_nmos,
+                            float R_minW_pmos,
                             int chain_idx,
                             int node_idx,
                             int sink_pin_num,
@@ -451,7 +461,11 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
                           bool is_new_chain);
 
 static int find_create_intra_cluster_sw_arch_idx(std::map<int, t_arch_switch_inf>& arch_sw_inf,
+                                                 RRGraphBuilder& rr_graph_builder,
+                                                 std::vector<std::map<int, int>>& switch_fanin_remap,
                                                  int start_internal_edge_idx,
+                                                 float R_minW_nmos,
+                                                 float R_minW_pmos,
                                                  float delay);
 
 static float get_delay_directly_connected_pins(t_physical_tile_type_ptr physical_type,
@@ -488,6 +502,8 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                          const std::vector<t_physical_tile_type>& types,
                                          const RRGraphView& rr_graph,
                                          const int delayless_switch,
+                                         float R_minW_nmos,
+                                         float R_minW_pmos,
                                          RRGraphBuilder& rr_graph_builder,
                                          bool is_flat);
 
@@ -578,6 +594,8 @@ void create_rr_graph(const t_graph_type graph_type,
                                      block_types,
                                      device_ctx.rr_graph,
                                      det_routing_arch->delayless_switch,
+                                     det_routing_arch->R_minW_nmos,
+                                     det_routing_arch->R_minW_pmos,
                                      mutable_device_ctx.rr_graph_builder,
                                      is_flat);
 
@@ -622,6 +640,8 @@ void create_rr_graph(const t_graph_type graph_type,
 static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                              t_rr_edge_info_set& rr_edges_to_create,
                                              const DeviceGrid& grid,
+                                             float R_minW_nmos,
+                                             float R_minW_pmos,
                                              int& num_edges,
                                              bool is_flat) {
     VTR_ASSERT(is_flat);
@@ -641,6 +661,8 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                      i,
                                      j,
                                      abs_cap,
+                                     R_minW_nmos,
+                                     R_minW_pmos,
                                      rr_edges_to_create,
                                      grid,
                                      is_flat);
@@ -1188,6 +1210,8 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
                                          const std::vector<t_physical_tile_type>& types,
                                          const RRGraphView& rr_graph,
                                          const int delayless_switch,
+                                         float R_minW_nmos,
+                                         float R_minW_pmos,
                                          RRGraphBuilder& rr_graph_builder,
                                          bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -1206,6 +1230,8 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
     alloc_and_load_intra_cluster_rr_graph(rr_graph_builder,
                                           grid,
                                           delayless_switch,
+                                          R_minW_nmos,
+                                          R_minW_pmos,
                                           is_flat);
 
     /* AA: Note that in the case of dedicated networks, we are currently underestimating the additional node count due to the clock networks.
@@ -1872,6 +1898,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                   const DeviceGrid& grid,
                                                   const int delayless_switch,
+                                                  float R_minW_nmos,
+                                                  float R_minW_pmos,
                                                   bool is_flat) {
     t_rr_edge_info_set rr_edges_to_create;
     int num_edges = 0;
@@ -1920,6 +1948,8 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
         add_intra_cluster_edges_rr_graph(rr_graph_builder,
                                          rr_edges_to_create,
                                          grid,
+                                         R_minW_nmos,
+                                         R_minW_pmos,
                                          num_edges,
                                          is_flat);
     }
@@ -2197,6 +2227,8 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                          const int i,
                                          const int j,
                                          const int abs_cap,
+                                         float R_minW_nmos,
+                                         float R_minW_pmos,
                                          t_rr_edge_info_set& rr_edges_to_create,
                                          const DeviceGrid& grid,
                                          bool is_flat) {
@@ -2248,6 +2280,8 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                                          logical_block,
                                                          cluster_pins,
                                                          nodes_to_collapse,
+                                                         R_minW_nmos,
+                                                         R_minW_pmos,
                                                          i,
                                                          j);
 }
@@ -2315,6 +2349,8 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          t_logical_block_type_ptr logical_block,
                                          const std::vector<int>& cluster_pins,
                                          const t_cluster_pin_chain& nodes_to_collapse,
+                                         float R_minW_nmos,
+                                         float R_minW_pmos,
                                          int i,
                                          int j) {
     std::unordered_set<int> cluster_pins_set(cluster_pins.begin(), cluster_pins.end());
@@ -2357,6 +2393,8 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                             nodes_to_collapse,
                             cluster_pins_set,
                             chain_pins[chain_idx],
+                            R_minW_nmos,
+                            R_minW_pmos,
                             chain_idx,
                             node_idx,
                             chain_sink_pin[chain_idx],
@@ -2375,6 +2413,8 @@ static void add_chain_edges(RRGraphBuilder& rr_graph_builder,
                             const t_cluster_pin_chain& nodes_to_collapse,
                             const std::unordered_set<int>& cluster_pins,
                             const std::vector<int>& chain_pins,
+                            float R_minW_nmos,
+                            float R_minW_pmos,
                             int chain_idx,
                             int node_idx,
                             int sink_pin_num,
@@ -2411,7 +2451,11 @@ static void add_chain_edges(RRGraphBuilder& rr_graph_builder,
                                               pin_num);
 
             int sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
+                                                           rr_graph_builder,
+                                                           g_vpr_ctx.mutable_device().switch_fanin_remap,
                                                            start_internal_edge_num,
+                                                           R_minW_nmos,
+                                                           R_minW_pmos,
                                                            edge_delay);
 
             rr_edges_to_create.emplace_back(sink_rr_node_id, rr_node_id, sw);
@@ -2462,7 +2506,11 @@ static void add_chain_edges(RRGraphBuilder& rr_graph_builder,
         for (auto src_pair : src_node_edge_pair) {
             VTR_ASSERT(src_pair.first != RRNodeId::INVALID());
             int sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
+                                                           rr_graph_builder,
+                                                           g_vpr_ctx.mutable_device().switch_fanin_remap,
                                                            start_internal_edge_num,
+                                                           R_minW_nmos,
+                                                           R_minW_pmos,
                                                            src_pair.second);
             rr_edges_to_create.emplace_back(src_pair.first, sink_rr_node_id, sw);
         }
@@ -4299,7 +4347,11 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
 }
 
 static int find_create_intra_cluster_sw_arch_idx(std::map<int, t_arch_switch_inf>& arch_sw_inf,
+                                                 RRGraphBuilder& rr_graph_builder,
+                                                 std::vector<std::map<int, int>>& switch_fanin_remap,
                                                  int start_internal_edge_idx,
+                                                 float R_minW_nmos,
+                                                 float R_minW_pmos,
                                                  float delay) {
     std::map<int, t_arch_switch_inf> internal_arch_sw_inf_map;
     std::for_each(arch_sw_inf.begin(), arch_sw_inf.end(), [&internal_arch_sw_inf_map, start_internal_edge_idx](std::pair<int, t_arch_switch_inf> sw_inf) {
@@ -4327,6 +4379,17 @@ static int find_create_intra_cluster_sw_arch_idx(std::map<int, t_arch_switch_inf
         }
         int new_key_num = ++max_key_num;
         arch_sw_inf.insert(std::make_pair(new_key_num, arch_sw));
+        const t_rr_switch_inf& rr_switch = create_rr_switch_from_arch_switch(arch_sw,
+                                                                             R_minW_nmos,
+                                                                             R_minW_pmos);
+        // We assume that the delay of internal switches is not dependent on their fan-in
+        // If this assumptions prvoen to be not accurate, the implementation needs to be changed.
+        VTR_ASSERT(arch_sw.fixed_Tdel());
+        // Since all other normal switches are already allocated, this new switch needs to be added to the data structures which
+        // are later used to remap the remaining edges.
+        auto rr_switch_id = rr_graph_builder.add_rr_switch(rr_switch);
+        switch_fanin_remap.push_back({{UNDEFINED, size_t(rr_switch_id)}});
+        VTR_ASSERT(((int)switch_fanin_remap.size()-1) == new_key_num);
         return new_key_num;
     } else {
         return find_res->first;

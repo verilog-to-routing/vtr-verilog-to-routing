@@ -570,15 +570,12 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
 
     next.R_upstream = current->R_upstream;
 
-    bool add_the_node = evaluate_timing_driven_node_costs(&next,
-                                                          cost_params,
-                                                          from_node,
-                                                          to_node,
-                                                          from_edge,
-                                                          target_node);
-    if (!add_the_node) {
-        return;
-    }
+    evaluate_timing_driven_node_costs(&next,
+                                      cost_params,
+                                      from_node,
+                                      to_node,
+                                      from_edge,
+                                      target_node);
 
     float best_total_cost = rr_node_route_inf_[to_node].path_cost;
     float best_back_cost = rr_node_route_inf_[to_node].backward_path_cost;
@@ -711,7 +708,7 @@ void ConnectionRouter<Heap>::set_rcv_enabled(bool enable) {
 
 //Calculates the cost of reaching to_node
 template<typename Heap>
-bool ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
+void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
                                                                const t_conn_cost_params cost_params,
                                                                const int from_node,
                                                                const int to_node,
@@ -831,8 +828,6 @@ bool ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
     }
     to->cost = total_cost;
-
-    return true;
 }
 
 template<typename Heap>
