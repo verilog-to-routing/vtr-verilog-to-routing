@@ -98,6 +98,7 @@ static bool timing_driven_route_sink(ConnectionRouter& router,
                                      RouterStats& router_stats,
                                      route_budgets& budgeting_inf,
                                      const RoutingPredictor& routing_predictor,
+                                     const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
                                      bool is_flat);
 
 template<typename ConnectionRouter>
@@ -206,6 +207,14 @@ static void update_route_stats(RouterStats& router_stats, RouterStats& router_it
 
 static void init_route_stats(RouterStats& router_stats);
 
+vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(const Netlist<>& net_list,
+                                                                                                const vtr::vector<ParentNetId,
+                                                                                                                  std::vector<std::vector<int>>>& net_terminal_groups,
+                                                                                                const vtr::vector<ParentNetId,
+                                                                                                                  std::vector<int>>& net_terminal_group_num,
+                                                                                                bool has_choking_spot,
+                                                                                                bool is_flat);
+
 #ifndef NO_GRAPHICS
 void update_router_info_and_check_bp(bp_router_type type, int net_id);
 #endif
@@ -291,6 +300,13 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& atom_ctx = g_vpr_ctx.atom();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+
+    auto choking_spots = set_nets_choking_spots(net_list,
+                                                route_ctx.net_terminal_groups,
+                                                route_ctx.net_terminal_group_num,
+                                                router_opts.has_choking_spot,
+                                                is_flat);
 
     //Initially, the router runs normally trying to reduce congestion while
     //balancing other metrics (timing, wirelength, run-time etc.)
@@ -511,6 +527,7 @@ bool try_timing_driven_route_tmpl(const Netlist<>& net_list,
                                                            was_rerouted,
                                                            worst_negative_slack,
                                                            routing_predictor,
+                                                           choking_spots[net_id],
                                                            is_flat);
 
             if (!is_routable) {
@@ -907,6 +924,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  bool& was_rerouted,
                                  float worst_negative_slack,
                                  const RoutingPredictor& routing_predictor,
+                                 const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
                                  bool is_flat) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -947,6 +965,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                             budgeting_inf,
                                             worst_negative_slack,
                                             routing_predictor,
+                                            choking_spots,
                                             is_flat);
 
         profiling::net_fanout_end(net_list.net_sinks(net_id).size());
@@ -1054,6 +1073,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              route_budgets& budgeting_inf,
                              float worst_neg_slack,
                              const RoutingPredictor& routing_predictor,
+                             const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
                              bool is_flat) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -1212,6 +1232,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       router_stats,
                                       budgeting_inf,
                                       routing_predictor,
+                                      choking_spots,
                                       is_flat))
             return false;
 
@@ -1286,7 +1307,10 @@ static bool timing_driven_pre_route_to_clock_root(ConnectionRouter& router,
 
     bool found_path;
     t_heap cheapest;
-    ConnectionParameters conn_params;
+    ConnectionParameters conn_params (net_id,
+                                     -1,
+                                     false,
+                                     std::unordered_map<RRNodeId, int>());
 
     std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(
         rt_root,
@@ -1371,6 +1395,7 @@ static bool timing_driven_route_sink(ConnectionRouter& router,
                                      RouterStats& router_stats,
                                      route_budgets& budgeting_inf,
                                      const RoutingPredictor& routing_predictor,
+                                     const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
                                      bool is_flat) {
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
@@ -1396,7 +1421,8 @@ static bool timing_driven_route_sink(ConnectionRouter& router,
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
-    ConnectionParameters conn_params(net_id, target_pin, router_opts.has_choking_spot);
+    bool has_choking_spot = ((int)choking_spots[target_pin].size() != 0) && router_opts.has_choking_spot;
+    ConnectionParameters conn_params(net_id, target_pin, has_choking_spot, choking_spots[target_pin]);
 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
@@ -2309,6 +2335,73 @@ static void init_route_stats(RouterStats& router_stats) {
     router_stats.add_all_rt = 0;
     router_stats.add_high_fanout_rt = 0;
     router_stats.add_all_rt_from_high_fanout = 0;
+}
+
+vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(const Netlist<>& net_list,
+                                                                                                const vtr::vector<ParentNetId,
+                                                                                                                  std::vector<std::vector<int>>>& net_terminal_groups,
+                                                                                                const vtr::vector<ParentNetId,
+                                                                                                                  std::vector<int>>& net_terminal_group_num,
+                                                                                                bool has_choking_spot,
+                                                                                                bool is_flat) {
+
+
+    vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> choking_spots(net_list.nets().size());
+
+    if(!has_choking_spot) {
+        return choking_spots;
+    }
+
+    VTR_ASSERT(is_flat);
+
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    const auto& route_ctx = g_vpr_ctx.routing();
+    const auto& net_rr_terminal = route_ctx.net_rr_terminals;
+
+    for(const auto& net_id : net_list.nets()) {
+        choking_spots[net_id].resize(net_list.net_pins(net_id).size());
+        int pin_count = 0;
+        for(auto pin_id : net_list.net_pins(net_id)) {
+            if(pin_count == 0) {
+                pin_count++;
+                continue;
+            }
+            auto block_id = net_list.pin_block(pin_id);
+            auto blk_loc = get_block_loc(block_id, is_flat);
+            int group_num = net_terminal_group_num[net_id][pin_count];
+            const auto& sink_grp = net_terminal_groups[net_id][group_num];
+            VTR_ASSERT((int)sink_grp.size() >= 1);
+            if(sink_grp.size() == 1) {
+                continue;
+            } else {
+                auto physical_type = device_ctx.grid[blk_loc.loc.x][blk_loc.loc.y].type;
+                auto sink_choking_spots = get_sink_choking_points(physical_type,
+                                                                  rr_graph.node_ptc_num(RRNodeId(net_rr_terminal[net_id][pin_count])),
+                                                                  sink_grp);
+                for(const auto& choking_spot : sink_choking_spots) {
+                    int pin_physical_num = choking_spot.first;
+                    int num_reachable_sinks = choking_spot.second;
+                    std::vector<int> x_offset_vec;
+                    std::vector<int> y_offset_vec;
+                    std::vector<e_side> pin_sides_vec;
+                    std::tie(x_offset_vec, y_offset_vec, pin_sides_vec) = get_pin_coordinates(physical_type,
+                                                                                              pin_physical_num,
+                                                                                              std::vector<e_side>(SIDES.begin(), SIDES.end()));
+                    VTR_ASSERT(!pin_sides_vec.empty());
+                    auto pin_rr_node_id = rr_graph.node_lookup().find_node(blk_loc.loc.x + x_offset_vec[0],
+                                                                           blk_loc.loc.y + y_offset_vec[0],
+                                                                           t_rr_type::IPIN,
+                                                                           pin_physical_num,
+                                                                           pin_sides_vec[0]);
+                    choking_spots[net_id][pin_count].insert(std::make_pair(pin_rr_node_id, num_reachable_sinks));
+                }
+            }
+            pin_count++;
+        }
+    }
+
+    return choking_spots;
 }
 
 #ifndef NO_GRAPHICS

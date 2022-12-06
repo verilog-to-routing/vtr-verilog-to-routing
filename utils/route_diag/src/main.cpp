@@ -114,7 +114,10 @@ static void do_one_route(const Netlist<>& net_list,
     enable_router_debug(router_opts, ParentNetId(), sink_node, 1, &router);
     bool found_path;
     t_heap cheapest;
-    ConnectionParameters conn_params;
+    ConnectionParameters conn_params(ParentNetId::INVALID(),
+                                     -1,
+                                     false,
+                                     std::unordered_map<RRNodeId, int>());
     std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root,
                                                                                            sink_node,
                                                                                            cost_params,

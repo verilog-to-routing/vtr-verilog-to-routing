@@ -49,6 +49,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  bool& was_rerouted,
                                  float worst_negative_slack,
                                  const RoutingPredictor& routing_predictor,
+                                 const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
                                  bool is_flat);
 
 template<typename ConnectionRouter>
@@ -69,6 +70,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              route_budgets& budgeting_inf,
                              float worst_neg_slack,
                              const RoutingPredictor& routing_predictor,
+                             const std::vector<std::unordered_map<RRNodeId, int>>& choking_spots,
                              bool is_flat);
 
 void alloc_timing_driven_route_structs(float** pin_criticality_ptr,

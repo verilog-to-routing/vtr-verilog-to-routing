@@ -56,9 +56,7 @@ static void add_primitive_pin_to_physical_tile(const std::vector<int>& pin_list,
                                                int physical_class_num,
                                                t_physical_tile_type* physical_tile);
 static void add_intra_tile_switches();
-static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,
-                                                        t_logical_block_type* logical_block,
-                                                        t_class* class_inf);
+
 static void do_reachability_analysis(t_physical_tile_type* physical_tile,
                                      t_logical_block_type* logical_block,
                                      t_class* class_inf,
@@ -897,49 +895,14 @@ static void add_intra_tile_switches() {
     }
 }
 
-static std::set<t_pb_graph_node*> get_relevant_pb_nodes(t_physical_tile_type* physical_tile,
-                                                        t_logical_block_type* logical_block,
-                                                        t_class* class_inf) {
-    std::set<t_pb_graph_node*> relevant_pb_nodes;
-    int conn_pin_physical_num = class_inf->pinlist[0];
-    t_pb_graph_pin* conn_pb_pin = get_mutable_pb_pin_from_pin_physical_num(physical_tile,
-                                                                           logical_block,
-                                                                           conn_pin_physical_num);
-    t_pb_graph_node* curr_pb_graph_node = conn_pb_pin->parent_node;
-    relevant_pb_nodes.insert(curr_pb_graph_node);
-
-    if (!curr_pb_graph_node->is_root()) {
-        t_pb_graph_node* first_parent = curr_pb_graph_node->parent_pb_graph_node;
-
-        for (int mode_num = 0; mode_num < first_parent->pb_type->num_modes; mode_num++) {
-            auto mode = first_parent->pb_type->modes[mode_num];
-            for (int type_idx = 0; type_idx < mode.num_pb_type_children; type_idx++) {
-                for (int pb_idx = 0; pb_idx < mode.pb_type_children[type_idx].num_pb; pb_idx++) {
-                    relevant_pb_nodes.insert(&first_parent->child_pb_graph_nodes[mode_num][type_idx][pb_idx]);
-                }
-            }
-        }
-    }
-
-    while (!curr_pb_graph_node->is_root()) {
-        relevant_pb_nodes.insert(curr_pb_graph_node);
-        curr_pb_graph_node = curr_pb_graph_node->parent_pb_graph_node;
-    }
-
-    return relevant_pb_nodes;
-}
-
 static void do_reachability_analysis(t_physical_tile_type* physical_tile,
                                       t_logical_block_type* logical_block,
                                       t_class* class_inf,
                                       int physical_class_num) {
+    VTR_ASSERT(class_inf->type == e_pin_type::RECEIVER);
     std::list<int> pin_list;
     pin_list.insert(pin_list.begin(), class_inf->pinlist.begin(), class_inf->pinlist.end());
 
-
-    std::set<t_pb_graph_node*> relevant_pb_nodes = get_relevant_pb_nodes(physical_tile,
-                                                                         logical_block,
-                                                                         class_inf);
 
     std::set<t_pb_graph_pin*> seen_pb_pins;
     while (!pin_list.empty()) {
@@ -947,17 +910,23 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
         pin_list.pop_front();
 
         t_pb_graph_pin* curr_pb_graph_pin = get_mutable_pb_pin_from_pin_physical_num(physical_tile, logical_block, curr_pin_physical_num);
-
-        auto insert_res = seen_pb_pins.insert(curr_pb_graph_pin);
-        if (!insert_res.second || relevant_pb_nodes.find(curr_pb_graph_pin->parent_node) == relevant_pb_nodes.end()) {
+        if(curr_pb_graph_pin->port->type != PORTS::IN_PORT) {
             continue;
+        } else {
+            auto insert_res = seen_pb_pins.insert(curr_pb_graph_pin);
+            if(insert_res.second) {
+                curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
+                auto driving_pins = get_physical_pin_src_pins(physical_tile,
+                                                              logical_block,
+                                                              curr_pin_physical_num);
+                for (auto driving_pin_physical_num : driving_pins) {
+                    if(get_pin_type_from_pin_physical_num(physical_tile, driving_pin_physical_num) == e_pin_type::RECEIVER) {
+                        pin_list.push_back(driving_pin_physical_num);
+                    }
+                }
+            }
+
         }
-        curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
-        auto driving_pins = get_physical_pin_src_pins(physical_tile,
-                                                      logical_block,
-                                                      curr_pin_physical_num);
-        for (auto driving_pin_physical_num : driving_pins) {
-            pin_list.push_back(driving_pin_physical_num);
-        }
+
     }
 }

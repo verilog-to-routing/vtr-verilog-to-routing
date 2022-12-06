@@ -2,16 +2,14 @@
 
 // This struct instructs the router on how to route the given connection
 struct ConnectionParameters {
-    ConnectionParameters() {
-        net_id_ != ParentNetId::INVALID();
-        target_pin_num_ = OPEN;
-        has_choking_spot_ = false;
-    }
-
-    ConnectionParameters(ParentNetId net_id, int target_pin_num, bool has_choking_spot)
+    ConnectionParameters(ParentNetId net_id,
+                         int target_pin_num,
+                         bool has_choking_spot,
+                         const std::unordered_map<RRNodeId, int>& connection_choking_spots)
         : net_id_(net_id)
         , target_pin_num_(target_pin_num)
-        , has_choking_spot_(has_choking_spot) {}
+        , has_choking_spot_(has_choking_spot)
+        , connection_choking_spots_(connection_choking_spots) {}
 
     // Net id of the connection
     ParentNetId net_id_;
@@ -22,6 +20,8 @@ struct ConnectionParameters {
     // If this is true, it would increase the routing time since the router has to
     // take some measures to solve the congestion
     bool has_choking_spot_;
+
+    const std::unordered_map<RRNodeId, int>& connection_choking_spots_;
 };
 struct RouterStats {
     size_t connections_routed = 0;

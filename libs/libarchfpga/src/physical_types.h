@@ -36,6 +36,7 @@
 #include <limits>
 #include <numeric>
 #include <set>
+#include <unordered_set>
 
 #include "vtr_ndmatrix.h"
 #include "vtr_hash.h"
@@ -1310,8 +1311,12 @@ class t_pb_graph_pin {
     float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
     t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
 
-    /* This member is used when flat-routing is enabled in order to prevent router from expanding to pins which don't lead to the desired sink */
-    std::set<int> connected_sinks_ptc; /* ptc numbers of sinks which are directly or indirectly connected to this pin */
+    /* This member is used when flat-routing and has_choking_spot are enabled.
+     * It is used to identify choke points.
+     * This is only valid for IPINs, and it only contain the pins that are reachable to the pin by a forwarding path.
+     * It doesn't take into account feed-back connection.
+     * */
+    std::unordered_set<int> connected_sinks_ptc; /* ptc numbers of sinks which are directly or indirectly connected to this pin */
 
     /* combinational timing information */
     int num_pin_timing = 0;                   /* Number of ipin to opin timing edges*/

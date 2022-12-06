@@ -310,6 +310,8 @@ const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
 /** get information given class physical num **/
 std::tuple<const t_sub_tile*, int> get_sub_tile_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int physical_class_num);
 
+t_logical_block_type_ptr get_logical_block_from_class_physical_num(t_physical_tile_type_ptr physical_tile, int class_physical_num);
+
 /**
  *
  * @param physical_tile physical_tile which the given class belongs to
@@ -395,8 +397,6 @@ inline bool is_pin_on_tile(t_physical_tile_type_ptr physical_tile, int physical_
 
 int get_pb_graph_node_num_pins(const t_pb_graph_node* pb_graph_node);
 
-std::vector<const t_pb_graph_pin*> get_pb_graph_node_pb_pins(const t_pb_graph_node* pb_graph_node);
-
 std::vector<t_pb_graph_pin*> get_mutable_pb_graph_node_pb_pins(t_pb_graph_node* pb_graph_node);
 
 t_pin_range get_pb_graph_node_pins(t_physical_tile_type_ptr physical_tile,
@@ -453,6 +453,10 @@ bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
                            int first_class_ptc_num,
                            int second_class_ptc_num,
                            bool is_flat);
+
+std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_tile,
+                                           int sink_ptc_num,
+                                           const std::vector<int>& grp);
 
 /* */
 

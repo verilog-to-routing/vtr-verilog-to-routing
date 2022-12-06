@@ -788,23 +788,10 @@ bool ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         //cost.
         cong_cost = 0.;
     }
-    if (conn_params_->has_choking_spot_ && is_flat_) {
-        if (rr_graph_->node_type(RRNodeId(to_node)) == IPIN) {
-            int group_num = net_terminal_group_num[conn_params_->net_id_][conn_params_->target_pin_num_];
-            int group_size = 0;
-            t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid[rr_graph_->node_xlow(RRNodeId(to_node))][rr_graph_->node_ylow(RRNodeId(to_node))].type;
-            for (auto sink_num : net_terminal_groups[conn_params_->net_id_][group_num]) {
-                if (intra_tile_nodes_connected(physical_tile,
-                                               rr_graph_->node_ptc_num(RRNodeId(to_node)),
-                                               rr_graph_->node_ptc_num(RRNodeId(sink_num)))) {
-                    group_size++;
-                }
-            }
-
-            if (group_size == 0) {
-                return false;
-            }
-            cong_cost = cong_cost / (float)group_size;
+    if (conn_params_->has_choking_spot_ && is_flat_ && rr_graph_->node_type(RRNodeId(to_node)) == IPIN) {
+        auto find_res = conn_params_->connection_choking_spots_.find(RRNodeId(to_node));
+        if(find_res != conn_params_->connection_choking_spots_.end()) {
+            cong_cost = cong_cost / (float)find_res->second;
         }
     }
 

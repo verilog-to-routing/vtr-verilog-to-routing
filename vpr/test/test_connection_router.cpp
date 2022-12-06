@@ -63,7 +63,10 @@ static float do_one_route(int source_node,
     // Find the cheapest route if possible.
     bool found_path;
     t_heap cheapest;
-    ConnectionParameters conn_params;
+    ConnectionParameters conn_params (ParentNetId::INVALID(),
+                                     -1,
+                                     false,
+                                     std::unordered_map<RRNodeId, int>());
     std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root,
                                                                                            sink_node,
                                                                                            cost_params,
