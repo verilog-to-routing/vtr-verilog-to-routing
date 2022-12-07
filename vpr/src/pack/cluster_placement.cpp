@@ -138,7 +138,7 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
             continue; /* no more primitives of this type available */
         }
         if (primitive_type_feasible(molecule->atom_block_ids[molecule->root],
-                                    cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node->pb_type)) {
+                                    cluster_placement_stats->valid_primitives[i]->next_primitive->pb_graph_node)) {
             prev = cluster_placement_stats->valid_primitives[i];
             cur = cluster_placement_stats->valid_primitives[i]->next_primitive;
             while (cur) {
@@ -397,7 +397,7 @@ static float try_place_molecule(const t_pack_molecule* molecule,
     list_size = get_array_size_of_molecule(molecule);
 
     if (primitive_type_feasible(molecule->atom_block_ids[molecule->root],
-                                root->pb_type)) {
+                                root)) {
         if (root->cluster_placement_primitive->valid == true) {
             for (i = 0; i < list_size; i++) {
                 primitives_list[i] = nullptr;

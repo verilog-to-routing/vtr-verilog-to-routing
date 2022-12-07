@@ -914,24 +914,23 @@ bool primitive_type_feasible(const AtomBlockId blk_id, t_pb_graph_node* curr_pb_
 
     auto& atom_ctx = g_vpr_ctx.atom();
     if (cur_pb_type->model != atom_ctx.nlist.block_model(blk_id)) {
-        if ((strcmp(atom_ctx.nlist.block_model(blk_id)->name, MODEL_LATCH) == 0) &&
-            (strcmp(atom_ctx.nlist.block_model(blk_id)->name, cur_pb_type->model->name) == 0)) {
-           /**
-            * Special case for .latch: this model exists in 2 variations which are
-            * defined one after another in linked list, check if the second variant match
-            */
+        if ((strcmp(atom_ctx.nlist.block_model(blk_id)->name, MODEL_LATCH) == 0) && (strcmp(atom_ctx.nlist.block_model(blk_id)->name, cur_pb_type->model->name) == 0)) {
+            /**
+             * Special case for .latch: this model exists in 2 variations which are
+             * defined one after another in linked list, check if the second variant match
+             */
 
             if (cur_pb_type->model->next == atom_ctx.nlist.block_model(blk_id) && atom_ctx.nlist.block_model(blk_id)->inputs[1].trigg_edge == TriggeringEdge::FALLING_EDGE) {
                 //Next primitive match atom - add secondary references
                 if (!curr_pb_graph_node->has_secondary)
-                        curr_pb_graph_node->update_pins();
+                    curr_pb_graph_node->update_pins();
             } else {
                 //Next primitive and atom do not match
                 return false;
             }
         } else {
-          //Primitive and atom do not match
-          return false;
+            //Primitive and atom do not match
+            return false;
         }
     }
 
@@ -948,10 +947,10 @@ bool primitive_type_feasible(const AtomBlockId blk_id, t_pb_graph_node* curr_pb_
     //as the atom requires
     for (int iport = 0; iport < cur_pb_type->num_ports; ++iport) {
         t_port* pb_port;
-        if(curr_pb_graph_node->has_secondary)
-                pb_port = &cur_pb_type->ports_sec[iport];
+        if (curr_pb_graph_node->has_secondary)
+            pb_port = &cur_pb_type->ports_sec[iport];
         else
-                pb_port = &cur_pb_type->ports[iport];
+            pb_port = &cur_pb_type->ports[iport];
 
         const t_model_ports* pb_model_port = pb_port->model_port;
 

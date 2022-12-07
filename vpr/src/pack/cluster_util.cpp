@@ -631,7 +631,7 @@ bool primitive_feasible(const AtomBlockId blk_id, t_pb* cur_pb) {
     }
 
     //Generic feasibility check
-    return primitive_type_feasible(blk_id, cur_pb_type);
+    return primitive_type_feasible(blk_id, cur_pb->pb_graph_node);
 }
 
 bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_type, const AtomBlockId sibling_blk_id) {
