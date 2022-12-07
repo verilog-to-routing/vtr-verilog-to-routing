@@ -5,8 +5,8 @@ import os
 import shutil
 from collections import OrderedDict
 from pathlib import Path
-import vtr
 import xml.etree.ElementTree as ET
+import vtr
 
 # supported input file type by Yosys
 FILE_TYPES = {
