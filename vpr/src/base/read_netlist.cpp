@@ -1171,8 +1171,18 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
         VTR_ASSERT_MSG(pb, "Atom block must have a matching PB");
 
         const t_pb_graph_node* gnode = pb->pb_graph_node;
-        VTR_ASSERT_MSG(gnode->pb_type->model == atom_ctx.nlist.block_model(blk),
-                       "Atom block PB must match BLIF model");
+        if (strcmp(atom_ctx.nlist.block_model(blk)->name, MODEL_LATCH) == 0) {
+            if (atom_ctx.nlist.block_model(blk)->inputs->trigg_edge == TriggeringEdge::FALLING_EDGE) {
+                VTR_ASSERT_MSG(gnode->pb_type->model_sec == atom_ctx.nlist.block_model(blk),
+                               "Atom block PB must match BLIF model");
+            } else {
+                VTR_ASSERT_MSG(gnode->pb_type->model == atom_ctx.nlist.block_model(blk),
+                               "Atom block PB must match BLIF model");
+            }
+        } else {
+            VTR_ASSERT_MSG(gnode->pb_type->model == atom_ctx.nlist.block_model(blk),
+                           "Atom block PB must match BLIF model");
+        }
 
         // Always assign primary pins
         t_pb_graph_pin* pins;
