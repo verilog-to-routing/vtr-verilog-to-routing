@@ -910,9 +910,12 @@ struct t_logical_block_type {
  *      name: name of the physical block type
  *      num_pb: maximum number of instances of this physical block type sharing one parent
  *      blif_model: the string in the blif circuit that corresponds with this pb type
+ *      model: logical model
+ *      model_sec: secondary logical model - used for pb_types matched to 2 available .latch models
  *      class_type: Special library name
  *      modes: Different modes accepted
  *      ports: I/O and clock ports
+ *      ports_sec: secondary I/O and clock ports - used for pb_types matched to 2 available .latch models
  *      num_clock_pins: A count of the total number of clock pins
  *      num_input_pins: A count of the total number of input pins
  *      num_output_pins: A count of the total number of output pins
@@ -927,12 +930,15 @@ struct t_pb_type {
     int num_pb = 0;
     char* blif_model = nullptr;
     t_model* model = nullptr;
+    t_model* model_sec = nullptr;
     enum e_pb_type_class class_type = UNKNOWN_CLASS;
 
     t_mode* modes = nullptr; /* [0..num_modes-1] */
     int num_modes = 0;
     t_port* ports = nullptr; /* [0..num_ports] */
     int num_ports = 0;
+    t_port* ports_sec = nullptr; /* [0..num_ports] */
+    int num_ports_sec = 0;
 
     int num_clock_pins = 0;
     int num_input_pins = 0; /* inputs not including clock pins */
@@ -1166,6 +1172,7 @@ struct t_pin_to_pin_annotation {
 class t_pb_graph_node {
   public:
     t_pb_type* pb_type;
+    bool has_secondary;
 
     int placement_index;
 
@@ -1189,9 +1196,12 @@ class t_pb_graph_node {
      * */
     std::vector<int> illegal_modes;
 
-    t_pb_graph_pin** input_pins;  /* [0..num_input_ports-1] [0..num_port_pins-1]*/
-    t_pb_graph_pin** output_pins; /* [0..num_output_ports-1] [0..num_port_pins-1]*/
-    t_pb_graph_pin** clock_pins;  /* [0..num_clock_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** input_pins;      /* [0..num_input_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** output_pins;     /* [0..num_output_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** clock_pins;      /* [0..num_clock_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** input_pins_sec;  /* [0..num_input_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** output_pins_sec; /* [0..num_output_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** clock_pins_sec;  /* [0..num_clock_ports-1] [0..num_port_pins-1]*/
 
     int num_input_ports;
     int num_output_ports;
@@ -1234,6 +1244,8 @@ class t_pb_graph_node {
     // Returns a string containing the hierarchical type name of the pb_graph_node
     // Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
     std::string hierarchical_type_name() const;
+
+    void update_pins();
 };
 
 /* Identify pb pin type for timing purposes */

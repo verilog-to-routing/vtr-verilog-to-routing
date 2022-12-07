@@ -326,6 +326,8 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
                 delete[] pb_graph_node->input_pins[i][j].parent_pin_class;
         }
         delete[] pb_graph_node->input_pins[i];
+        if (pb_graph_node->has_secondary)
+            delete[] pb_graph_node->input_pins_sec[i];
     }
     for (i = 0; i < pb_graph_node->num_output_ports; i++) {
         for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
@@ -343,6 +345,8 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
                 delete[] pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins;
         }
         delete[] pb_graph_node->output_pins[i];
+        if (pb_graph_node->has_secondary)
+            delete[] pb_graph_node->output_pins_sec[i];
     }
     for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
         for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
@@ -350,11 +354,19 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
                 delete[] pb_graph_node->clock_pins[i][j].parent_pin_class;
         }
         delete[] pb_graph_node->clock_pins[i];
+        if (pb_graph_node->has_secondary)
+            delete[] pb_graph_node->clock_pins_sec[i];
     }
 
     delete[] pb_graph_node->input_pins;
     delete[] pb_graph_node->output_pins;
     delete[] pb_graph_node->clock_pins;
+
+    if (pb_graph_node->has_secondary) {
+        delete[] pb_graph_node->input_pins_sec;
+        delete[] pb_graph_node->output_pins_sec;
+        delete[] pb_graph_node->clock_pins_sec;
+    }
 
     delete[] pb_graph_node->num_input_pins;
     delete[] pb_graph_node->num_output_pins;
@@ -472,14 +484,22 @@ static void free_pb_type(t_pb_type* pb_type) {
 
     for (int i = 0; i < pb_type->num_ports; ++i) {
         vtr::free(pb_type->ports[i].name);
+        if (pb_type->class_type == LATCH_CLASS)
+            vtr::free(pb_type->ports_sec[i].name);
         if (pb_type->ports[i].port_class) {
             vtr::free(pb_type->ports[i].port_class);
+            if (pb_type->class_type == LATCH_CLASS)
+                vtr::free(pb_type->ports_sec[i].port_class);
         }
         if (pb_type->ports[i].port_power) {
             vtr::free(pb_type->ports[i].port_power);
+            if (pb_type->class_type == LATCH_CLASS)
+                vtr::free(pb_type->ports_sec[i].port_power);
         }
     }
     vtr::free(pb_type->ports);
+    if (pb_type->class_type == LATCH_CLASS)
+        vtr::free(pb_type->ports_sec);
 }
 
 t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, int* low_index) {
@@ -620,6 +640,35 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
                    == POWER_METHOD_SPECIFY_SIZES) {
             copy->ports[i].port_power->wire_type = POWER_WIRE_TYPE_IGNORED;
             copy->ports[i].port_power->buffer_type = POWER_BUFFER_TYPE_NONE;
+        }
+    }
+    // Special case for latch - fill secondary data fields
+    if (pb_type->class_type == LATCH_CLASS) {
+        copy->num_ports_sec = pb_type->num_ports;
+        copy->ports_sec = (t_port*)vtr::calloc(pb_type->num_ports, sizeof(t_port));
+        for (i = 0; i < pb_type->num_ports; i++) {
+            copy->ports_sec[i].is_clock = pb_type->ports[i].is_clock;
+            copy->ports_sec[i].model_port = pb_type->ports[i].model_port;
+            copy->ports_sec[i].type = pb_type->ports[i].type;
+            copy->ports_sec[i].num_pins = pb_type->ports[i].num_pins;
+            copy->ports_sec[i].parent_pb_type = copy;
+            copy->ports_sec[i].name = vtr::strdup(pb_type->ports[i].name);
+            copy->ports_sec[i].port_class = vtr::strdup(pb_type->ports[i].port_class);
+            copy->ports_sec[i].port_index_by_type = pb_type->ports[i].port_index_by_type;
+            copy->ports_sec[i].index = pb_type->ports[i].index;
+            copy->ports_sec[i].absolute_first_pin_index = pb_type->ports[i].absolute_first_pin_index;
+
+            copy->ports_sec[i].port_power = (t_port_power*)vtr::calloc(1,
+                                                                       sizeof(t_port_power));
+            //Defaults
+            if (copy->pb_type_power->estimation_method == POWER_METHOD_AUTO_SIZES) {
+                copy->ports_sec[i].port_power->wire_type = POWER_WIRE_TYPE_AUTO;
+                copy->ports_sec[i].port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
+            } else if (copy->pb_type_power->estimation_method
+                       == POWER_METHOD_SPECIFY_SIZES) {
+                copy->ports_sec[i].port_power->wire_type = POWER_WIRE_TYPE_IGNORED;
+                copy->ports_sec[i].port_power->buffer_type = POWER_BUFFER_TYPE_NONE;
+            }
         }
     }
 

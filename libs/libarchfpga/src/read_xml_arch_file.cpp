@@ -1191,6 +1191,8 @@ static void ProcessPb_Type(vtr::string_internment* strings, pugi::xml_node Paren
     num_clock_ports = count_children(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
     num_ports = num_in_ports + num_out_ports + num_clock_ports;
     pb_type->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+    if (pb_type->class_type == LATCH_CLASS)
+        pb_type->ports_sec = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
     pb_type->num_ports = num_ports;
 
     /* Enforce VPR's definition of LUT/FF by checking number of ports */
@@ -1226,21 +1228,28 @@ static void ProcessPb_Type(vtr::string_internment* strings, pugi::xml_node Paren
             Cur = get_first_child(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
         }
         while (Cur) {
-            pb_type->ports[j].parent_pb_type = pb_type;
-            pb_type->ports[j].index = j;
-            pb_type->ports[j].port_index_by_type = k;
-            ProcessPb_TypePort(Cur, &pb_type->ports[j],
-                               pb_type->pb_type_power->estimation_method, is_root_pb_type, loc_data);
+            t_port* pb_type_ports = pb_type->ports;
+            int l = 0;
+            do {
+                pb_type_ports[j].parent_pb_type = pb_type;
+                pb_type_ports[j].index = j;
+                pb_type_ports[j].port_index_by_type = k;
+                ProcessPb_TypePort(Cur, &pb_type_ports[j],
+                                   pb_type->pb_type_power->estimation_method, is_root_pb_type, loc_data);
 
-            pb_type->ports[j].absolute_first_pin_index = absolute_port_first_pin_index;
-            absolute_port_first_pin_index += pb_type->ports[j].num_pins;
+                pb_type_ports[j].absolute_first_pin_index = absolute_port_first_pin_index;
+                absolute_port_first_pin_index += pb_type_ports[j].num_pins;
+
+                pb_type_ports = pb_type->ports_sec;
+                l++;
+            } while ((pb_type->class_type == LATCH_CLASS) && (l <= 1));
 
             //Check port name duplicates
             ret_pb_ports = pb_port_names.insert(std::pair<std::string, int>(pb_type->ports[j].name, 0));
             if (!ret_pb_ports.second) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "Duplicate port names in pb_type '%s': port '%s'\n",
-                               pb_type->name, pb_type->ports[j].name);
+                               pb_type->name, pb_type_ports[j].name);
             }
 
             /* get next iteration */
@@ -1254,18 +1263,24 @@ static void ProcessPb_Type(vtr::string_internment* strings, pugi::xml_node Paren
 
     /* Count stats on the number of each type of pin */
     pb_type->num_clock_pins = pb_type->num_input_pins = pb_type->num_output_pins = 0;
-    for (i = 0; i < pb_type->num_ports; i++) {
-        if (pb_type->ports[i].type == IN_PORT
-            && pb_type->ports[i].is_clock == false) {
-            pb_type->num_input_pins += pb_type->ports[i].num_pins;
-        } else if (pb_type->ports[i].type == OUT_PORT) {
-            pb_type->num_output_pins += pb_type->ports[i].num_pins;
-        } else {
-            VTR_ASSERT(pb_type->ports[i].is_clock
-                       && pb_type->ports[i].type == IN_PORT);
-            pb_type->num_clock_pins += pb_type->ports[i].num_pins;
+    t_port* pb_type_ports = pb_type->ports;
+    int l = 0;
+    do {
+        for (i = 0; i < pb_type->num_ports; i++) {
+            if (pb_type_ports[i].type == IN_PORT
+                && pb_type_ports[i].is_clock == false) {
+                pb_type->num_input_pins += pb_type_ports[i].num_pins;
+            } else if (pb_type_ports[i].type == OUT_PORT) {
+                pb_type->num_output_pins += pb_type_ports[i].num_pins;
+            } else {
+                VTR_ASSERT(pb_type_ports[i].is_clock
+                           && pb_type_ports[i].type == IN_PORT);
+                pb_type->num_clock_pins += pb_type_ports[i].num_pins;
+            }
         }
-    }
+        pb_type_ports = pb_type->ports_sec;
+        l++;
+    } while ((pb_type->class_type == LATCH_CLASS) && (l <= 1));
 
     pb_type->num_pins = pb_type->num_input_pins + pb_type->num_output_pins + pb_type->num_clock_pins;
 
