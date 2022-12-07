@@ -257,18 +257,25 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     }
 
     i_input = i_output = i_clockport = 0;
+    t_port* pb_type_ports;
     for (i = 0; i < pb_type->num_ports; i++) {
-        if (pb_type->ports[i].model_port) {
+        if (pb_graph_node->has_secondary) {
+            pb_type_ports = pb_type->ports_sec;
+        } else {
+            pb_type_ports = pb_type->ports;
+        }
+
+        if (pb_type_ports[i].model_port) {
             VTR_ASSERT(pb_type->num_modes == 0);
         } else {
-            VTR_ASSERT(pb_type->num_modes != 0 || pb_type->ports[i].is_clock);
+            VTR_ASSERT(pb_type->num_modes != 0 || pb_type_ports[i].is_clock);
         }
-        if (pb_type->ports[i].type == IN_PORT && !pb_type->ports[i].is_clock) {
-            pb_graph_node->input_pins[i_input] = new t_pb_graph_pin[pb_type->ports[i].num_pins];
-            pb_graph_node->num_input_pins[i_input] = pb_type->ports[i].num_pins;
-            for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+        if (pb_type_ports[i].type == IN_PORT && !pb_type_ports[i].is_clock) {
+            pb_graph_node->input_pins[i_input] = new t_pb_graph_pin[pb_type_ports[i].num_pins];
+            pb_graph_node->num_input_pins[i_input] = pb_type_ports[i].num_pins;
+            for (j = 0; j < pb_type_ports[i].num_pins; j++) {
                 pb_graph_node->input_pins[i_input][j].pin_number = j;
-                pb_graph_node->input_pins[i_input][j].port = &pb_type->ports[i];
+                pb_graph_node->input_pins[i_input][j].port = &pb_type_ports[i];
                 pb_graph_node->input_pins[i_input][j].parent_node = pb_graph_node;
                 pb_graph_node->input_pins[i_input][j].pin_count_in_cluster = pin_count_in_cluster;
                 if (pb_graph_node->pb_type->blif_model != nullptr) {
@@ -283,12 +290,12 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                 pin_count_in_cluster++;
             }
             i_input++;
-        } else if (pb_type->ports[i].type == OUT_PORT) {
-            pb_graph_node->output_pins[i_output] = new t_pb_graph_pin[pb_type->ports[i].num_pins];
-            pb_graph_node->num_output_pins[i_output] = pb_type->ports[i].num_pins;
-            for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+        } else if (pb_type_ports[i].type == OUT_PORT) {
+            pb_graph_node->output_pins[i_output] = new t_pb_graph_pin[pb_type_ports[i].num_pins];
+            pb_graph_node->num_output_pins[i_output] = pb_type_ports[i].num_pins;
+            for (j = 0; j < pb_type_ports[i].num_pins; j++) {
                 pb_graph_node->output_pins[i_output][j].pin_number = j;
-                pb_graph_node->output_pins[i_output][j].port = &pb_type->ports[i];
+                pb_graph_node->output_pins[i_output][j].port = &pb_type_ports[i];
                 pb_graph_node->output_pins[i_output][j].parent_node = pb_graph_node;
                 pb_graph_node->output_pins[i_output][j].pin_count_in_cluster = pin_count_in_cluster;
                 if (pb_graph_node->pb_type->blif_model != nullptr) {
@@ -304,12 +311,12 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
             }
             i_output++;
         } else {
-            VTR_ASSERT(pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT);
-            pb_graph_node->clock_pins[i_clockport] = new t_pb_graph_pin[pb_type->ports[i].num_pins];
-            pb_graph_node->num_clock_pins[i_clockport] = pb_type->ports[i].num_pins;
-            for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+            VTR_ASSERT(pb_type_ports[i].is_clock && pb_type_ports[i].type == IN_PORT);
+            pb_graph_node->clock_pins[i_clockport] = new t_pb_graph_pin[pb_type_ports[i].num_pins];
+            pb_graph_node->num_clock_pins[i_clockport] = pb_type_ports[i].num_pins;
+            for (j = 0; j < pb_type_ports[i].num_pins; j++) {
                 pb_graph_node->clock_pins[i_clockport][j].pin_number = j;
-                pb_graph_node->clock_pins[i_clockport][j].port = &pb_type->ports[i];
+                pb_graph_node->clock_pins[i_clockport][j].port = &pb_type_ports[i];
                 pb_graph_node->clock_pins[i_clockport][j].parent_node = pb_graph_node;
                 pb_graph_node->clock_pins[i_clockport][j].pin_count_in_cluster = pin_count_in_cluster;
                 if (pb_graph_node->pb_type->blif_model != nullptr) {
