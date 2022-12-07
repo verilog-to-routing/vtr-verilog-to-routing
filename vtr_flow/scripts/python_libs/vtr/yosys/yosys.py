@@ -339,7 +339,7 @@ def run(
     else:
         raise vtr.VtrError(
             "Invalid partial mapper is specified for Yosys, available parsers are [{}]".format(
-                " ".join(str(x) for x in YOSYS_MAPPERs)
+                " ".join(str(x) for x in YOSYS_MAPPERS)
             )
         )
 
