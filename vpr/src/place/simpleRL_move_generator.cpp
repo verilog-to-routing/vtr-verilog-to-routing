@@ -293,7 +293,7 @@ void SoftmaxAgent::set_action_prob() {
     float sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
 
     if (sum_q == 0.0) { //action probabilities need to be initialized with equal values
-        std::fill(action_prob_.begin(), action_prob_.end(), 1.0 / num_available_actions_ * num_available_types_);
+        std::fill(action_prob_.begin(), action_prob_.end(), 1.0 / (num_available_actions_ * num_available_types_));
     } else {
         // calculate the probability of each action as the ratio of scaled_clipped_exp(action(i))/sum(scaled_clipped_exponentials)
         for (size_t i = 0; i < num_available_actions_ * num_available_types_; ++i) {
