@@ -1021,20 +1021,32 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
 
     if (model_port->dir == IN_PORT) {
         if (model_port->is_clock == false) {
+            t_pb_graph_pin** input_pins;
+            if (model_port->trigg_edge == TriggeringEdge::FALLING_EDGE)
+                input_pins = pb_graph_node->input_pins_sec;
+            else
+                input_pins = pb_graph_node->input_pins;
+
             for (i = 0; i < pb_graph_node->num_input_ports; i++) {
-                if (pb_graph_node->input_pins[i][0].port->model_port == model_port) {
+                if (input_pins[i][0].port->model_port == model_port) {
                     if (pb_graph_node->num_input_pins[i] > model_pin) {
-                        return &pb_graph_node->input_pins[i][model_pin];
+                        return &input_pins[i][model_pin];
                     } else {
                         return nullptr;
                     }
                 }
             }
         } else {
+            t_pb_graph_pin** clock_pins;
+            if (model_port->trigg_edge == TriggeringEdge::FALLING_EDGE)
+                clock_pins = pb_graph_node->clock_pins_sec;
+            else
+                clock_pins = pb_graph_node->clock_pins;
+
             for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
-                if (pb_graph_node->clock_pins[i][0].port->model_port == model_port) {
+                if (clock_pins[i][0].port->model_port == model_port) {
                     if (pb_graph_node->num_clock_pins[i] > model_pin) {
-                        return &pb_graph_node->clock_pins[i][model_pin];
+                        return &clock_pins[i][model_pin];
                     } else {
                         return nullptr;
                     }
@@ -1043,10 +1055,16 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
         }
     } else {
         VTR_ASSERT(model_port->dir == OUT_PORT);
+        t_pb_graph_pin** output_pins;
+        if (model_port->trigg_edge == TriggeringEdge::FALLING_EDGE)
+            output_pins = pb_graph_node->output_pins_sec;
+        else
+            output_pins = pb_graph_node->output_pins;
+
         for (i = 0; i < pb_graph_node->num_output_ports; i++) {
-            if (pb_graph_node->output_pins[i][0].port->model_port == model_port) {
+            if (output_pins[i][0].port->model_port == model_port) {
                 if (pb_graph_node->num_output_pins[i] > model_pin) {
-                    return &pb_graph_node->output_pins[i][model_pin];
+                    return &output_pins[i][model_pin];
                 } else {
                     return nullptr;
                 }
@@ -1096,7 +1114,14 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLo
     VTR_ASSERT(pb_gnode);
 
     //The graph node and pin/block should agree on the model they represent
-    VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model);
+    if (strcmp(netlist.block_model(blk_id)->name, MODEL_LATCH) == 0) {
+        if (netlist.block_model(blk_id)->inputs->trigg_edge == TriggeringEdge::FALLING_EDGE)
+            VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model_sec);
+        else
+            VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model);
+    } else {
+        VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model);
+    }
 
     //Get the pin index
     AtomPortId port_id = netlist.pin_port(pin_id);
