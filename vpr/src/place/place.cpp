@@ -3013,8 +3013,6 @@ static void print_placement_move_types_stats(
     std::string move_name;
     VTR_LOG("\n\nPercentage of different move types:\n");
 
-
-
     for(auto itype : device_ctx.logical_block_types){
         if(itype.index == 0){
             continue; //EMPTY type
