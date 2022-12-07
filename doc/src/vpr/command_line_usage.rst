@@ -47,7 +47,12 @@ By default VPR will perform a binary search routing to find the minimum channel 
 
 Detailed Command-line Options
 -----------------------------
-VPR has a lot of options.
+VPR has a lot of options. Running :option:`vpr --help` will display all the available options and their usage information. 
+
+.. option:: -h, --help
+
+    Display help message then exit.
+    
 The options most people will be interested in are:
 
 * :option:`--route_chan_width` (route at a fixed channel width), and
@@ -172,10 +177,6 @@ Graphics Options
 
 General Options
 ^^^^^^^^^^^^^^^
-.. option:: -h, --help
-
-    Display help message then exit.
-
 .. option:: --version
 
     Display version information then exit.
@@ -356,6 +357,30 @@ Use the options below to override this default naming behaviour.
     The file can be obtained through :option:`--write_rr_graph`.
 
     .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
+
+.. option:: --read_vpr_constraints <file>
+
+    Reads the :ref:`floorplanning constraints <vpr_constraints_file>` that packing and placement must respect from the specified XML file.
+
+.. option:: --write_vpr_constraints <file>
+
+    Writes out new :ref:`floorplanning constraints <vpr_constraints_file>` based on current placement to the specified XML file.
+
+.. option:: --read_router_lookahead <file>
+
+    Reads the lookahead data from the specified file instead of computing it.
+
+.. option:: --write_router_lookahead <file>
+
+    Writes the lookahead data to the specified file.
+
+.. option:: --read_placement_delay_lookup <file>
+
+    Reads the placement delay lookup from the specified file instead of computing it.
+
+.. option:: --write_placement_delay_lookup <file>
+
+    Writes the placement delay lookup to the specified file.
 
 .. option:: --outfile_prefix <string>
 

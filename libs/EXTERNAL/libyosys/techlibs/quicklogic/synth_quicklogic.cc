@@ -48,8 +48,8 @@ struct SynthQuickLogicPass : public ScriptPass {
 		log("        is omitted if this parameter is not specified.\n");
 		log("\n");
 		log("    -verilog <file>\n");
-		log("        write the design to the specified verilog file. writing of an output file\n");
-		log("        is omitted if this parameter is not specified.\n");
+		log("        write the design to the specified verilog file. writing of an output\n");
+		log("        file is omitted if this parameter is not specified.\n");
 		log("\n");
 		log("    -abc\n");
 		log("        use old ABC flow, which has generally worse mapping results but is less\n");
@@ -225,8 +225,8 @@ struct SynthQuickLogicPass : public ScriptPass {
 		}
 
 		if (check_label("verilog")) {
-			if (!verilog_file.empty()) {
-				run("write_verilog -noattr -nohex " + verilog_file);
+			if (!verilog_file.empty() || help_mode) {
+				run(stringf("write_verilog -noattr -nohex %s", help_mode ? "<file-name>" : verilog_file.c_str()));
 			}
 		}
 	}

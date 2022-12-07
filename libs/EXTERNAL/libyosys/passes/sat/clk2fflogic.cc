@@ -26,6 +26,11 @@
 USING_YOSYS_NAMESPACE
 PRIVATE_NAMESPACE_BEGIN
 
+struct SampledSig {
+	SigSpec sampled, current;
+	SigSpec &operator[](bool get_current) { return get_current ? current : sampled; }
+};
+
 struct Clk2fflogicPass : public Pass {
 	Clk2fflogicPass() : Pass("clk2fflogic", "convert clocked FFs to generic $ff cells") { }
 	void help() override
@@ -38,30 +43,65 @@ struct Clk2fflogicPass : public Pass {
 		log("implicit global clock. This is useful for formal verification of designs with\n");
 		log("multiple clocks.\n");
 		log("\n");
+		log("This pass assumes negative hold time for the async FF inputs. For example when\n");
+		log("a reset deasserts with the clock edge, then the FF output will still drive the\n");
+		log("reset value in the next cycle regardless of the data-in value at the time of\n");
+		log("the clock edge.\n");
+		log("\n");
 	}
-	SigSpec wrap_async_control(Module *module, SigSpec sig, bool polarity) {
-		Wire *past_sig = module->addWire(NEW_ID, GetSize(sig));
-		module->addFf(NEW_ID, sig, past_sig);
-		if (polarity)
-			sig = module->Or(NEW_ID, sig, past_sig);
+	// Active-high sampled and current value of a level-triggered control signal. Initial sampled values is low/non-asserted.
+	SampledSig sample_control(Module *module, SigSpec sig, bool polarity, bool is_fine) {
+		if (!polarity) {
+			if (is_fine)
+				sig = module->NotGate(NEW_ID, sig);
+			else
+				sig = module->Not(NEW_ID, sig);
+		}
+		std::string sig_str = log_signal(sig);
+		sig_str.erase(std::remove(sig_str.begin(), sig_str.end(), ' '), sig_str.end());
+		Wire *sampled_sig = module->addWire(NEW_ID_SUFFIX(stringf("%s#sampled", sig_str.c_str())), GetSize(sig));
+		sampled_sig->attributes[ID::init] = RTLIL::Const(State::S0, GetSize(sig));
+		if (is_fine)
+			module->addFfGate(NEW_ID, sig, sampled_sig);
 		else
-			sig = module->And(NEW_ID, sig, past_sig);
-		if (polarity)
-			return sig;
-		else
-			return module->Not(NEW_ID, sig);
+			module->addFf(NEW_ID, sig, sampled_sig);
+		return {sampled_sig, sig};
 	}
-	SigSpec wrap_async_control_gate(Module *module, SigSpec sig, bool polarity) {
-		Wire *past_sig = module->addWire(NEW_ID);
-		module->addFfGate(NEW_ID, sig, past_sig);
-		if (polarity)
-			sig = module->OrGate(NEW_ID, sig, past_sig);
+	// Active-high trigger signal for an edge-triggered control signal. Initial values is low/non-edge.
+	SigSpec sample_control_edge(Module *module, SigSpec sig, bool polarity, bool is_fine) {
+		std::string sig_str = log_signal(sig);
+		sig_str.erase(std::remove(sig_str.begin(), sig_str.end(), ' '), sig_str.end());
+		Wire *sampled_sig = module->addWire(NEW_ID_SUFFIX(stringf("%s#sampled", sig_str.c_str())), GetSize(sig));
+		sampled_sig->attributes[ID::init] = RTLIL::Const(polarity ? State::S1 : State::S0, GetSize(sig));
+		if (is_fine)
+			module->addFfGate(NEW_ID, sig, sampled_sig);
 		else
-			sig = module->AndGate(NEW_ID, sig, past_sig);
-		if (polarity)
-			return sig;
+			module->addFf(NEW_ID, sig, sampled_sig);
+		return module->Eqx(NEW_ID, {sampled_sig, sig}, polarity ? SigSpec {State::S0, State::S1} : SigSpec {State::S1, State::S0});
+	}
+	// Sampled and current value of a data signal.
+	SampledSig sample_data(Module *module, SigSpec sig, RTLIL::Const init, bool is_fine) {
+		std::string sig_str = log_signal(sig);
+		sig_str.erase(std::remove(sig_str.begin(), sig_str.end(), ' '), sig_str.end());
+		Wire *sampled_sig = module->addWire(NEW_ID_SUFFIX(stringf("%s#sampled", sig_str.c_str())), GetSize(sig));
+		sampled_sig->attributes[ID::init] = init;
+		if (is_fine)
+			module->addFfGate(NEW_ID, sig, sampled_sig);
 		else
-			return module->NotGate(NEW_ID, sig);
+			module->addFf(NEW_ID, sig, sampled_sig);
+		return {sampled_sig, sig};
+	}
+	SigSpec mux(Module *module, SigSpec a, SigSpec b, SigSpec s, bool is_fine) {
+		if (is_fine)
+			return module->MuxGate(NEW_ID, a, b, s);
+		else
+			return module->Mux(NEW_ID, a, b, s);
+	}
+	SigSpec bitwise_sr(Module *module, SigSpec a, SigSpec s, SigSpec r, bool is_fine) {
+		if (is_fine)
+			return module->AndGate(NEW_ID, module->OrGate(NEW_ID, a, s), module->NotGate(NEW_ID, r));
+		else
+			return module->And(NEW_ID, module->Or(NEW_ID, a, s), module->Not(NEW_ID, r));
 	}
 	void execute(std::vector<std::string> args, RTLIL::Design *design) override
 	{
@@ -105,7 +145,7 @@ struct Clk2fflogicPass : public Pass {
 							i, log_id(module), log_id(mem.memid), log_signal(port.clk),
 							log_signal(port.addr), log_signal(port.data));
 
-					Wire *past_clk = module->addWire(NEW_ID);
+					Wire *past_clk = module->addWire(NEW_ID_SUFFIX(stringf("%s#%d#past_clk#%s", log_id(mem.memid), i, log_signal(port.clk))));
 					past_clk->attributes[ID::init] = port.clk_polarity ? State::S1 : State::S0;
 					module->addFf(NEW_ID, port.clk, past_clk);
 
@@ -121,13 +161,13 @@ struct Clk2fflogicPass : public Pass {
 
 					SigSpec clock_edge = module->Eqx(NEW_ID, {port.clk, SigSpec(past_clk)}, clock_edge_pattern);
 
-					SigSpec en_q = module->addWire(NEW_ID, GetSize(port.en));
+					SigSpec en_q = module->addWire(NEW_ID_SUFFIX(stringf("%s#%d#en_q", log_id(mem.memid), i)), GetSize(port.en));
 					module->addFf(NEW_ID, port.en, en_q);
 
-					SigSpec addr_q = module->addWire(NEW_ID, GetSize(port.addr));
+					SigSpec addr_q = module->addWire(NEW_ID_SUFFIX(stringf("%s#%d#addr_q", log_id(mem.memid), i)), GetSize(port.addr));
 					module->addFf(NEW_ID, port.addr, addr_q);
 
-					SigSpec data_q = module->addWire(NEW_ID, GetSize(port.data));
+					SigSpec data_q = module->addWire(NEW_ID_SUFFIX(stringf("%s#%d#data_q", log_id(mem.memid), i)), GetSize(port.data));
 					module->addFf(NEW_ID, port.data, data_q);
 
 					port.clk = State::S0;
@@ -148,106 +188,69 @@ struct Clk2fflogicPass : public Pass {
 				if (RTLIL::builtin_ff_cell_types().count(cell->type)) {
 					FfData ff(&initvals, cell);
 
-					if (ff.has_d && !ff.has_clk && !ff.has_en) {
+					if (ff.has_gclk) {
 						// Already a $ff or $_FF_ cell.
 						continue;
 					}
 
-					Wire *past_q = module->addWire(NEW_ID, ff.width);
-					if (!ff.is_fine) {
-						module->addFf(NEW_ID, ff.sig_q, past_q);
-					} else {
-						module->addFfGate(NEW_ID, ff.sig_q, past_q);
-					}
-					if (!ff.val_init.is_fully_undef())
-						initvals.set_init(past_q, ff.val_init);
-
 					if (ff.has_clk) {
-						ff.unmap_ce_srst(module);
-
-						Wire *past_clk = module->addWire(NEW_ID);
-						initvals.set_init(past_clk, ff.pol_clk ? State::S1 : State::S0);
-
-						if (!ff.is_fine)
-							module->addFf(NEW_ID, ff.sig_clk, past_clk);
-						else
-							module->addFfGate(NEW_ID, ff.sig_clk, past_clk);
-
 						log("Replacing %s.%s (%s): CLK=%s, D=%s, Q=%s\n",
 								log_id(module), log_id(cell), log_id(cell->type),
 								log_signal(ff.sig_clk), log_signal(ff.sig_d), log_signal(ff.sig_q));
-
-						SigSpec clock_edge_pattern;
-
-						if (ff.pol_clk) {
-							clock_edge_pattern.append(State::S0);
-							clock_edge_pattern.append(State::S1);
-						} else {
-							clock_edge_pattern.append(State::S1);
-							clock_edge_pattern.append(State::S0);
-						}
-
-						SigSpec clock_edge = module->Eqx(NEW_ID, {ff.sig_clk, SigSpec(past_clk)}, clock_edge_pattern);
-
-						Wire *past_d = module->addWire(NEW_ID, ff.width);
-						if (!ff.is_fine)
-							module->addFf(NEW_ID, ff.sig_d, past_d);
-						else
-							module->addFfGate(NEW_ID, ff.sig_d, past_d);
-
-						if (!ff.val_init.is_fully_undef())
-							initvals.set_init(past_d, ff.val_init);
-
-						if (!ff.is_fine)
-							qval = module->Mux(NEW_ID, past_q, past_d, clock_edge);
-						else
-							qval = module->MuxGate(NEW_ID, past_q, past_d, clock_edge);
-					} else if (ff.has_d) {
-
+					} else if (ff.has_aload) {
 						log("Replacing %s.%s (%s): EN=%s, D=%s, Q=%s\n",
 								log_id(module), log_id(cell), log_id(cell->type),
-								log_signal(ff.sig_en), log_signal(ff.sig_d), log_signal(ff.sig_q));
-
-						SigSpec sig_en = wrap_async_control(module, ff.sig_en, ff.pol_en);
-
-						if (!ff.is_fine)
-							qval = module->Mux(NEW_ID, past_q, ff.sig_d, sig_en);
-						else
-							qval = module->MuxGate(NEW_ID, past_q, ff.sig_d, sig_en);
+								log_signal(ff.sig_aload), log_signal(ff.sig_ad), log_signal(ff.sig_q));
 					} else {
-
+						// $sr.
 						log("Replacing %s.%s (%s): SET=%s, CLR=%s, Q=%s\n",
 								log_id(module), log_id(cell), log_id(cell->type),
 								log_signal(ff.sig_set), log_signal(ff.sig_clr), log_signal(ff.sig_q));
-
-						qval = past_q;
 					}
 
+					ff.remove();
+
+					if (ff.has_clk)
+						ff.unmap_ce_srst();
+
+					auto next_q = sample_data(module, ff.sig_q, ff.val_init, ff.is_fine).sampled;
+
+					if (ff.has_clk) {
+						// The init value for the sampled d is never used, so we can set it to fixed zero, reducing uninit'd FFs
+						auto sampled_d = sample_data(module, ff.sig_d, RTLIL::Const(State::S0, ff.width), ff.is_fine);
+						auto clk_edge = sample_control_edge(module, ff.sig_clk, ff.pol_clk, ff.is_fine);
+						next_q = mux(module, next_q, sampled_d.sampled, clk_edge, ff.is_fine);
+					}
+
+					SampledSig sampled_aload, sampled_ad, sampled_set, sampled_clr, sampled_arst;
+					// The check for a constant sig_aload is also done by opt_dff, but when using verific and running
+					// clk2fflogic before opt_dff (which does more and possibly unwanted optimizations) this check avoids
+					// generating a lot of extra logic.
+					bool has_nonconst_aload = ff.has_aload && ff.sig_aload != (ff.pol_aload ? State::S0 : State::S1);
+					if (has_nonconst_aload) {
+						sampled_aload = sample_control(module, ff.sig_aload, ff.pol_aload, ff.is_fine);
+						// The init value for the sampled ad is never used, so we can set it to fixed zero, reducing uninit'd FFs
+						sampled_ad = sample_data(module, ff.sig_ad, RTLIL::Const(State::S0, ff.width), ff.is_fine);
+					}
 					if (ff.has_sr) {
-						SigSpec setval = wrap_async_control(module, ff.sig_set, ff.pol_set);
-						SigSpec clrval = wrap_async_control(module, ff.sig_clr, ff.pol_clr);
-						if (!ff.is_fine) {
-							clrval = module->Not(NEW_ID, clrval);
-							qval = module->Or(NEW_ID, qval, setval);
-							module->addAnd(NEW_ID, qval, clrval, ff.sig_q);
-						} else {
-							clrval = module->NotGate(NEW_ID, clrval);
-							qval = module->OrGate(NEW_ID, qval, setval);
-							module->addAndGate(NEW_ID, qval, clrval, ff.sig_q);
-						}
-					} else if (ff.has_arst) {
-						SigSpec arst = wrap_async_control(module, ff.sig_arst, ff.pol_arst);
-						if (!ff.is_fine)
-							module->addMux(NEW_ID, qval, ff.val_arst, arst, ff.sig_q);
-						else
-							module->addMuxGate(NEW_ID, qval, ff.val_arst[0], arst, ff.sig_q);
-					} else {
-						module->connect(ff.sig_q, qval);
+						sampled_set = sample_control(module, ff.sig_set, ff.pol_set, ff.is_fine);
+						sampled_clr = sample_control(module, ff.sig_clr, ff.pol_clr, ff.is_fine);
+					}
+					if (ff.has_arst)
+						sampled_arst = sample_control(module, ff.sig_arst, ff.pol_arst, ff.is_fine);
+
+					// First perform updates using _only_ sampled values, then again using _only_ current values. Unlike the previous
+					// implementation, this approach correctly handles all the cases of multiple signals changing simultaneously.
+					for (int current = 0; current < 2; current++) {
+						if (has_nonconst_aload)
+							next_q = mux(module, next_q, sampled_ad[current], sampled_aload[current], ff.is_fine);
+						if (ff.has_sr)
+							next_q = bitwise_sr(module, next_q, sampled_set[current], sampled_clr[current], ff.is_fine);
+						if (ff.has_arst)
+							next_q = mux(module, next_q, ff.val_arst, sampled_arst[current], ff.is_fine);
 					}
 
-					initvals.remove_init(ff.sig_q);
-					module->remove(cell);
-					continue;
+					module->connect(ff.sig_q, next_q);
 				}
 			}
 		}

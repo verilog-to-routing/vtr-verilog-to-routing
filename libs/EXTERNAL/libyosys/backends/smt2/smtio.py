@@ -16,11 +16,11 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #
 
-import sys, re, os, signal
+import sys, re, os, signal, json
 import subprocess
 if os.name == "posix":
     import resource
-from copy import deepcopy
+from copy import copy
 from select import select
 from time import time
 from queue import Queue, Empty
@@ -108,6 +108,7 @@ class SmtModInfo:
         self.allconsts = dict()
         self.allseqs = dict()
         self.asize = dict()
+        self.witness = []
 
 
 class SmtIo:
@@ -123,6 +124,7 @@ class SmtIo:
         self.forall = False
         self.timeout = 0
         self.produce_models = True
+        self.recheck = False
         self.smt2cache = [list()]
         self.smt2_options = dict()
         self.p = None
@@ -176,7 +178,10 @@ class SmtIo:
             self.unroll = False
 
         if self.solver == "yices":
-            if self.noincr or self.forall:
+            if self.forall:
+                self.noincr = True
+
+            if self.noincr:
                 self.popen_vargs = ['yices-smt2'] + self.solver_opts
             else:
                 self.popen_vargs = ['yices-smt2', '--incremental'] + self.solver_opts
@@ -189,11 +194,12 @@ class SmtIo:
             if self.timeout != 0:
                 self.popen_vargs.append('-T:%d' % self.timeout);
 
-        if self.solver == "cvc4":
+        if self.solver in ["cvc4", "cvc5"]:
+            self.recheck = True
             if self.noincr:
-                self.popen_vargs = ['cvc4', '--lang', 'smt2.6' if self.logic_dt else 'smt2'] + self.solver_opts
+                self.popen_vargs = [self.solver, '--lang', 'smt2.6' if self.logic_dt else 'smt2'] + self.solver_opts
             else:
-                self.popen_vargs = ['cvc4', '--incremental', '--lang', 'smt2.6' if self.logic_dt else 'smt2'] + self.solver_opts
+                self.popen_vargs = [self.solver, '--incremental', '--lang', 'smt2.6' if self.logic_dt else 'smt2'] + self.solver_opts
             if self.timeout != 0:
                 self.popen_vargs.append('--tlimit=%d000' % self.timeout);
 
@@ -301,7 +307,7 @@ class SmtIo:
 
             key = tuple(stmt)
             if key not in self.unroll_cache:
-                decl = deepcopy(self.unroll_decls[key[0]])
+                decl = copy(self.unroll_decls[key[0]])
 
                 self.unroll_cache[key] = "|UNROLL#%d|" % self.unroll_idcnt
                 decl[1] = self.unroll_cache[key]
@@ -332,7 +338,7 @@ class SmtIo:
 
     def p_thread_main(self):
         while True:
-            data = self.p.stdout.readline().decode("ascii")
+            data = self.p.stdout.readline().decode("utf-8")
             if data == "": break
             self.p_queue.put(data)
         self.p_queue.put("")
@@ -354,7 +360,7 @@ class SmtIo:
 
     def p_write(self, data, flush):
         assert self.p is not None
-        self.p.stdin.write(bytes(data, "ascii"))
+        self.p.stdin.write(bytes(data, "utf-8"))
         if flush: self.p.stdin.flush()
 
     def p_read(self):
@@ -404,6 +410,15 @@ class SmtIo:
             stmt = re.sub(r" *;.*", "", stmt)
             if stmt == "": return
 
+        recheck = None
+
+        if self.solver != "dummy":
+            if self.noincr:
+                # Don't close the solver yet, if we're just unrolling definitions
+                # required for a (get-...) statement
+                if self.p is not None and not stmt.startswith("(get-") and unroll:
+                    self.p_close()
+
         if unroll and self.unroll:
             stmt = self.unroll_buffer + stmt
             self.unroll_buffer = ""
@@ -414,6 +429,9 @@ class SmtIo:
                 return
 
             s = self.parse(stmt)
+
+            if self.recheck and s and s[0].startswith("get-"):
+                recheck = self.unroll_idcnt
 
             if self.debug_print:
                 print("-> %s" % s)
@@ -440,12 +458,15 @@ class SmtIo:
 
             stmt = self.unparse(self.unroll_stmt(s))
 
+            if recheck is not None and recheck != self.unroll_idcnt:
+                self.check_sat(["sat"])
+
             if stmt == "(push 1)":
                 self.unroll_stack.append((
-                    deepcopy(self.unroll_sorts),
-                    deepcopy(self.unroll_objs),
-                    deepcopy(self.unroll_decls),
-                    deepcopy(self.unroll_cache),
+                    copy(self.unroll_sorts),
+                    copy(self.unroll_objs),
+                    copy(self.unroll_decls),
+                    copy(self.unroll_cache),
                 ))
 
             if stmt == "(pop 1)":
@@ -460,8 +481,6 @@ class SmtIo:
 
         if self.solver != "dummy":
             if self.noincr:
-                if self.p is not None and not stmt.startswith("(get-"):
-                    self.p_close()
                 if stmt == "(push 1)":
                     self.smt2cache.append(list())
                 elif stmt == "(pop 1)":
@@ -536,10 +555,16 @@ class SmtIo:
                     self.modinfo[self.curmod].clocks[fields[2]] = "event"
 
         if fields[1] == "yosys-smt2-assert":
-            self.modinfo[self.curmod].asserts["%s_a %s" % (self.curmod, fields[2])] = fields[3]
+            if len(fields) > 4:
+                self.modinfo[self.curmod].asserts["%s_a %s" % (self.curmod, fields[2])] = f'{fields[4]} ({fields[3]})'
+            else:
+                self.modinfo[self.curmod].asserts["%s_a %s" % (self.curmod, fields[2])] = fields[3]
 
         if fields[1] == "yosys-smt2-cover":
-            self.modinfo[self.curmod].covers["%s_c %s" % (self.curmod, fields[2])] = fields[3]
+            if len(fields) > 4:
+                self.modinfo[self.curmod].covers["%s_c %s" % (self.curmod, fields[2])] = f'{fields[4]} ({fields[3]})'
+            else:
+                self.modinfo[self.curmod].covers["%s_c %s" % (self.curmod, fields[2])] = fields[3]
 
         if fields[1] == "yosys-smt2-maximize":
             self.modinfo[self.curmod].maximize.add(fields[2])
@@ -562,6 +587,11 @@ class SmtIo:
         if fields[1] == "yosys-smt2-allseq":
             self.modinfo[self.curmod].allseqs[fields[2]] = (fields[4], None if len(fields) <= 5 else fields[5])
             self.modinfo[self.curmod].asize[fields[2]] = int(fields[3])
+
+        if fields[1] == "yosys-smt2-witness":
+            data = json.loads(stmt.split(None, 2)[2])
+            if data.get("type") in ["cell", "mem", "posedge", "negedge", "input", "reg", "init", "seq", "blackbox"]:
+                self.modinfo[self.curmod].witness.append(data)
 
     def hiernets(self, top, regs_only=False):
         def hiernets_worker(nets, mod, cursor):
@@ -633,6 +663,57 @@ class SmtIo:
         mems = list()
         hiermems_worker(mems, top, [])
         return mems
+
+    def hierwitness(self, top, allregs=False, blackbox=True):
+        init_witnesses = []
+        seq_witnesses = []
+        clk_witnesses = []
+        mem_witnesses = []
+
+        def absolute(path, cursor, witness):
+            return {
+                **witness,
+                "path": path + tuple(witness["path"]),
+                "smtpath": cursor + [witness["smtname"]],
+            }
+
+        for witness in self.modinfo[top].witness:
+            if witness["type"] == "input":
+                seq_witnesses.append(absolute((), [], witness))
+            if witness["type"] in ("posedge", "negedge"):
+                clk_witnesses.append(absolute((), [], witness))
+
+        init_types = ["init"]
+        if allregs:
+            init_types.append("reg")
+
+        seq_types = ["seq"]
+        if blackbox:
+            seq_types.append("blackbox")
+
+        def worker(mod, path, cursor):
+            cell_paths = {}
+            for witness in self.modinfo[mod].witness:
+                if witness["type"] in init_types:
+                    init_witnesses.append(absolute(path, cursor, witness))
+                if witness["type"] in seq_types:
+                    seq_witnesses.append(absolute(path, cursor, witness))
+                if witness["type"] == "mem":
+                    if allregs and not witness["rom"]:
+                        width, size = witness["width"], witness["size"]
+                        witness = {**witness, "uninitialized": [{"width": width * size, "offset": 0}]}
+                    if not witness["uninitialized"]:
+                        continue
+
+                    mem_witnesses.append(absolute(path, cursor, witness))
+                if witness["type"] == "cell":
+                    cell_paths[witness["smtname"]] = tuple(witness["path"])
+
+            for cellname, celltype in sorted(self.modinfo[mod].cells.items()):
+                worker(celltype, path + cell_paths.get(cellname, ("?" + cellname,)), cursor + [cellname])
+
+        worker(top, (), [])
+        return init_witnesses, seq_witnesses, clk_witnesses, mem_witnesses
 
     def read(self):
         stmt = []
@@ -766,31 +847,28 @@ class SmtIo:
         return result
 
     def parse(self, stmt):
-        def worker(stmt):
-            if stmt[0] == '(':
+        def worker(stmt, cursor=0):
+            while stmt[cursor] in [" ", "\t", "\r", "\n"]:
+                cursor += 1
+
+            if stmt[cursor] == '(':
                 expr = []
-                cursor = 1
+                cursor += 1
                 while stmt[cursor] != ')':
-                    el, le = worker(stmt[cursor:])
+                    el, cursor = worker(stmt, cursor)
                     expr.append(el)
-                    cursor += le
                 return expr, cursor+1
 
-            if stmt[0] == '|':
+            if stmt[cursor] == '|':
                 expr = "|"
-                cursor = 1
+                cursor += 1
                 while stmt[cursor] != '|':
                     expr += stmt[cursor]
                     cursor += 1
                 expr += "|"
                 return expr, cursor+1
 
-            if stmt[0] in [" ", "\t", "\r", "\n"]:
-                el, le = worker(stmt[1:])
-                return el, le+1
-
             expr = ""
-            cursor = 0
             while stmt[cursor] not in ["(", ")", "|", " ", "\t", "\r", "\n"]:
                 expr += stmt[cursor]
                 cursor += 1
@@ -863,6 +941,8 @@ class SmtIo:
             assert mod in self.modinfo
             if path[0] == "":
                 return base
+            if isinstance(path[0], int):
+                return "(|%s#%d| %s)" % (mod, path[0], base)
             if path[0] in self.modinfo[mod].cells:
                 return "(|%s_h %s| %s)" % (mod, path[0], base)
             if path[0] in self.modinfo[mod].wsize:
@@ -878,6 +958,15 @@ class SmtIo:
         nextbase = "(|%s_h %s| %s)" % (mod, path[0], base)
         return self.net_expr(nextmod, nextbase, path[1:])
 
+    def witness_net_expr(self, mod, base, witness):
+        net = self.net_expr(mod, base, witness["smtpath"])
+        is_bool = self.net_width(mod, witness["smtpath"]) == 1
+        if is_bool:
+            assert witness["width"] == 1
+            assert witness["smtoffset"] == 0
+            return net
+        return "((_ extract %d %d) %s)" % (witness["smtoffset"] + witness["width"] - 1, witness["smtoffset"], net)
+
     def net_width(self, mod, net_path):
         for i in range(len(net_path)-1):
             assert mod in self.modinfo
@@ -885,6 +974,8 @@ class SmtIo:
             mod = self.modinfo[mod].cells[net_path[i]]
 
         assert mod in self.modinfo
+        if isinstance(net_path[-1], int):
+            return None
         assert net_path[-1] in self.modinfo[mod].wsize
         return self.modinfo[mod].wsize[net_path[-1]]
 

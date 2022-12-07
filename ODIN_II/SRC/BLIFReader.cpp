@@ -2092,6 +2092,10 @@ hard_block_model* BLIF::Reader::create_hard_block_model(const char* name, operat
             model = create_model(name, ports, 2, 3);
             break;
         }
+        case (YMEM2): {
+            model = create_model(name, ports, 3, 4);
+            break;
+        }
         default: {
             error_message(PARSE_BLIF, my_location, "A subcircuit model for '%s' with matching ports was not found.", name);
         }
@@ -2348,6 +2352,7 @@ bool BLIF::Reader::need_params(operation_list type) {
         case (SPRAM):   //fallthrough
         case (DPRAM):   //fallthrough
         case (YMEM):    //fallthrough
+        case (YMEM2):   //fallthrough
         case (BRAM):    //fallthrough
         case (ROM):     //fallthrough
         case (FF_NODE): {
