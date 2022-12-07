@@ -1194,6 +1194,82 @@ void CreateModelLibrary(t_arch* arch) {
     arch->model_library = model_library;
 }
 
+void SyncModel(t_pb_type* pb_type, t_model* model_match_prim, bool is_secondary_model) {
+    vtr::t_linked_vptr* old;
+    bool found;
+    t_model_ports* model_port;
+    t_port* pb_type_ports;
+    int p;
+
+    if (is_secondary_model) {
+        pb_type->model_sec = model_match_prim;
+        pb_type_ports = pb_type->ports_sec;
+    } else {
+        pb_type->model = model_match_prim;
+        pb_type_ports = pb_type->ports;
+    }
+
+    old = model_match_prim->pb_types;
+    model_match_prim->pb_types = (vtr::t_linked_vptr*)vtr::malloc(sizeof(vtr::t_linked_vptr));
+    model_match_prim->pb_types->next = old;
+    model_match_prim->pb_types->data_vptr = pb_type;
+    for (p = 0; p < pb_type->num_ports; p++) {
+        found = false;
+        /* TODO: Parse error checking - check if INPUT matches INPUT and OUTPUT matches OUTPUT (not yet done) */
+        model_port = model_match_prim->inputs;
+        while (model_port && !found) {
+            if (strcmp(model_port->name, pb_type_ports[p].name) == 0) {
+                if (model_port->size < pb_type_ports[p].num_pins) {
+                    model_port->size = pb_type_ports[p].num_pins;
+                }
+                if (model_port->min_size > pb_type_ports[p].num_pins
+                    || model_port->min_size == -1) {
+                    model_port->min_size = pb_type_ports[p].num_pins;
+                }
+                pb_type_ports[p].model_port = model_port;
+                if (pb_type_ports[p].type != model_port->dir) {
+                    archfpga_throw(get_arch_file_name(), 0,
+                                   "Direction for port '%s' on model does not match port direction in pb_type '%s', secondary: %d\n",
+                                   pb_type_ports[p].name, pb_type->name, is_secondary_model);
+                }
+                if (pb_type_ports[p].is_clock != model_port->is_clock) {
+                    archfpga_throw(get_arch_file_name(), 0,
+                                   "Port '%s' on model does not match is_clock in pb_type '%s', secondary: %d\n",
+                                   pb_type_ports[p].name, pb_type->name, is_secondary_model);
+                }
+                found = true;
+            }
+            model_port = model_port->next;
+        }
+        model_port = model_match_prim->outputs;
+        while (model_port && !found) {
+            if (strcmp(model_port->name, pb_type_ports[p].name) == 0) {
+                if (model_port->size < pb_type_ports[p].num_pins) {
+                    model_port->size = pb_type_ports[p].num_pins;
+                }
+                if (model_port->min_size > pb_type_ports[p].num_pins
+                    || model_port->min_size == -1) {
+                    model_port->min_size = pb_type_ports[p].num_pins;
+                }
+
+                pb_type_ports[p].model_port = model_port;
+                if (pb_type_ports[p].type != model_port->dir) {
+                    archfpga_throw(get_arch_file_name(), 0,
+                                   "Direction for port '%s' on model does not match port direction in pb_type '%s', secondary: %d\n",
+                                   pb_type_ports[p].name, pb_type->name, is_secondary_model);
+                }
+                found = true;
+            }
+            model_port = model_port->next;
+        }
+        if (found != true) {
+            archfpga_throw(get_arch_file_name(), 0,
+                           "No matching model port for port %s in pb_type %s, secondary: %d\n",
+                           pb_type_ports[p].name, pb_type->name, is_secondary_model);
+        }
+    }
+}
+
 void SyncModelsPbTypes(t_arch* arch,
                        const std::vector<t_logical_block_type>& Types) {
     for (auto& Type : Types) {
@@ -1205,12 +1281,10 @@ void SyncModelsPbTypes(t_arch* arch,
 
 void SyncModelsPbTypes_rec(t_arch* arch,
                            t_pb_type* pb_type) {
-    int i, j, p;
+    int i, j;
     t_model *model_match_prim, *cur_model;
-    t_model_ports* model_port;
-    vtr::t_linked_vptr* old;
     char* blif_model_name = nullptr;
-
+    bool sync_secondary_model = false;
     bool found;
 
     if (pb_type->blif_model != nullptr) {
@@ -1239,6 +1313,15 @@ void SyncModelsPbTypes_rec(t_arch* arch,
         while (cur_model && !found) {
             /* blif model always starts with .subckt so need to skip first 8 characters */
             if (strcmp(blif_model_name, cur_model->name) == 0) {
+                if (strcmp(blif_model_name, MODEL_LATCH) == 0) {
+                    /**
+                     * Special case for .latch: this model exists in 2 variations which are
+                     * defined one after another in linked list, make sure the second variant match
+                     * and mark secondary model for sync.
+                     */
+                    VTR_ASSERT(strcmp(blif_model_name, cur_model->next->name) == 0);
+                    sync_secondary_model = true;
+                }
                 found = true;
                 model_match_prim = cur_model;
             }
@@ -1249,67 +1332,11 @@ void SyncModelsPbTypes_rec(t_arch* arch,
                            "No matching model for pb_type %s\n", pb_type->blif_model);
         }
 
-        pb_type->model = model_match_prim;
-        old = model_match_prim->pb_types;
-        model_match_prim->pb_types = (vtr::t_linked_vptr*)vtr::malloc(sizeof(vtr::t_linked_vptr));
-        model_match_prim->pb_types->next = old;
-        model_match_prim->pb_types->data_vptr = pb_type;
+        SyncModel(pb_type, model_match_prim, false);
+        // Synchronize secondary model
+        if (sync_secondary_model)
+            SyncModel(pb_type, model_match_prim->next, true);
 
-        for (p = 0; p < pb_type->num_ports; p++) {
-            found = false;
-            /* TODO: Parse error checking - check if INPUT matches INPUT and OUTPUT matches OUTPUT (not yet done) */
-            model_port = model_match_prim->inputs;
-            while (model_port && !found) {
-                if (strcmp(model_port->name, pb_type->ports[p].name) == 0) {
-                    if (model_port->size < pb_type->ports[p].num_pins) {
-                        model_port->size = pb_type->ports[p].num_pins;
-                    }
-                    if (model_port->min_size > pb_type->ports[p].num_pins
-                        || model_port->min_size == -1) {
-                        model_port->min_size = pb_type->ports[p].num_pins;
-                    }
-                    pb_type->ports[p].model_port = model_port;
-                    if (pb_type->ports[p].type != model_port->dir) {
-                        archfpga_throw(get_arch_file_name(), 0,
-                                       "Direction for port '%s' on model does not match port direction in pb_type '%s'\n",
-                                       pb_type->ports[p].name, pb_type->name);
-                    }
-                    if (pb_type->ports[p].is_clock != model_port->is_clock) {
-                        archfpga_throw(get_arch_file_name(), 0,
-                                       "Port '%s' on model does not match is_clock in pb_type '%s'\n",
-                                       pb_type->ports[p].name, pb_type->name);
-                    }
-                    found = true;
-                }
-                model_port = model_port->next;
-            }
-            model_port = model_match_prim->outputs;
-            while (model_port && !found) {
-                if (strcmp(model_port->name, pb_type->ports[p].name) == 0) {
-                    if (model_port->size < pb_type->ports[p].num_pins) {
-                        model_port->size = pb_type->ports[p].num_pins;
-                    }
-                    if (model_port->min_size > pb_type->ports[p].num_pins
-                        || model_port->min_size == -1) {
-                        model_port->min_size = pb_type->ports[p].num_pins;
-                    }
-
-                    pb_type->ports[p].model_port = model_port;
-                    if (pb_type->ports[p].type != model_port->dir) {
-                        archfpga_throw(get_arch_file_name(), 0,
-                                       "Direction for port '%s' on model does not match port direction in pb_type '%s'\n",
-                                       pb_type->ports[p].name, pb_type->name);
-                    }
-                    found = true;
-                }
-                model_port = model_port->next;
-            }
-            if (found != true) {
-                archfpga_throw(get_arch_file_name(), 0,
-                               "No matching model port for port %s in pb_type %s\n",
-                               pb_type->ports[p].name, pb_type->name);
-            }
-        }
     } else {
         for (i = 0; i < pb_type->num_modes; i++) {
             for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {

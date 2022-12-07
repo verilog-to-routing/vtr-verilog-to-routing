@@ -86,6 +86,10 @@ e_power_estimation_method power_method_inherited(e_power_estimation_method paren
 
 void CreateModelLibrary(t_arch* arch);
 
+void SyncModel(t_pb_type* pb_type,
+               t_model* model_match_prim,
+               bool is_secondary_model);
+
 void SyncModelsPbTypes(t_arch* arch,
                        const std::vector<t_logical_block_type>& Types);
 
