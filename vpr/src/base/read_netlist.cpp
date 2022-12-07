@@ -1174,14 +1174,18 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
         VTR_ASSERT_MSG(gnode->pb_type->model == atom_ctx.nlist.block_model(blk),
                        "Atom block PB must match BLIF model");
 
+        // Always assign primary pins
+        t_pb_graph_pin* pins;
+
         for (int iport = 0; iport < gnode->num_input_ports; ++iport) {
             if (gnode->num_input_pins[iport] <= 0) continue;
+            pins = gnode->input_pins[iport];
 
-            const AtomPortId port = atom_ctx.nlist.find_atom_port(blk, gnode->input_pins[iport][0].port->model_port);
+            const AtomPortId port = atom_ctx.nlist.find_atom_port(blk, pins[0].port->model_port);
             if (!port) continue;
 
             for (int ipin = 0; ipin < gnode->num_input_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* gpin = &gnode->input_pins[iport][ipin];
+                const t_pb_graph_pin* gpin = &pins[ipin];
                 VTR_ASSERT(gpin);
 
                 set_atom_pin_mapping(clb_nlist, blk, port, gpin);
@@ -1190,12 +1194,13 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
 
         for (int iport = 0; iport < gnode->num_output_ports; ++iport) {
             if (gnode->num_output_pins[iport] <= 0) continue;
+            pins = gnode->output_pins[iport];
 
-            const AtomPortId port = atom_ctx.nlist.find_atom_port(blk, gnode->output_pins[iport][0].port->model_port);
+            const AtomPortId port = atom_ctx.nlist.find_atom_port(blk, pins[0].port->model_port);
             if (!port) continue;
 
             for (int ipin = 0; ipin < gnode->num_output_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* gpin = &gnode->output_pins[iport][ipin];
+                const t_pb_graph_pin* gpin = &pins[ipin];
                 VTR_ASSERT(gpin);
 
                 set_atom_pin_mapping(clb_nlist, blk, port, gpin);
@@ -1204,12 +1209,13 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
 
         for (int iport = 0; iport < gnode->num_clock_ports; ++iport) {
             if (gnode->num_clock_pins[iport] <= 0) continue;
+            pins = gnode->clock_pins[iport];
 
-            const AtomPortId port = atom_ctx.nlist.find_atom_port(blk, gnode->clock_pins[iport][0].port->model_port);
+            const AtomPortId port = atom_ctx.nlist.find_atom_port(blk, pins[0].port->model_port);
             if (!port) continue;
 
             for (int ipin = 0; ipin < gnode->num_clock_pins[iport]; ++ipin) {
-                const t_pb_graph_pin* gpin = &gnode->clock_pins[iport][ipin];
+                const t_pb_graph_pin* gpin = &pins[ipin];
                 VTR_ASSERT(gpin);
 
                 set_atom_pin_mapping(clb_nlist, blk, port, gpin);
