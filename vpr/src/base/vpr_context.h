@@ -322,7 +322,7 @@ struct ClusteringHelperContext : public Context {
     int num_models;
 
     int max_cluster_size;
-    t_pb_graph_node** primitives_list;
+    std::vector<t_pb_graph_node**> primitives_list;
 
     bool enable_pin_feasibility_filter;
     int feasible_block_array_size;
@@ -341,10 +341,12 @@ struct ClusteringHelperContext : public Context {
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
     ClusteringHelperContext() {
         cluster_placement_stats.resize(2);
+        primitives_list.resize(2);
     }
 
     ~ClusteringHelperContext() {
-        delete[] primitives_list;
+        delete[] primitives_list[0];
+        delete[] primitives_list[1];
     }
 };
 

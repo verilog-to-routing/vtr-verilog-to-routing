@@ -200,7 +200,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 	check_for_duplicate_inputs ();
 #endif
     alloc_and_init_clustering(max_molecule_stats,
-                              &(helper_ctx.cluster_placement_stats[0]), &(helper_ctx.primitives_list), molecule_head,
+                              &(helper_ctx.cluster_placement_stats[0]), &(helper_ctx.primitives_list[0]), molecule_head,
                               clustering_data, net_output_feeds_driving_block_input,
                               unclustered_list_head_size, cluster_stats.num_molecules);
 
@@ -249,7 +249,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
              * stores PartitionRegion information while the cluster is packed*/
             PartitionRegion temp_cluster_pr;
 
-            start_new_cluster(helper_ctx.cluster_placement_stats[0], helper_ctx.primitives_list,
+            start_new_cluster(helper_ctx.cluster_placement_stats[0], helper_ctx.primitives_list[0],
                               clb_index, istart,
                               num_used_type_instances,
                               packer_opts.target_device_utilization,
@@ -344,7 +344,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  prev_molecule,
                                  next_molecule,
                                  num_repeated_molecules,
-                                 helper_ctx.primitives_list,
+                                 helper_ctx.primitives_list[0],
                                  cluster_stats,
                                  helper_ctx.total_clb_num,
                                  num_models,

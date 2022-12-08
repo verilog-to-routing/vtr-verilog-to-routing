@@ -580,6 +580,11 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
     *primitives_list = new t_pb_graph_node*[max_molecule_size];
     for (int i = 0; i < max_molecule_size; i++)
         (*primitives_list)[i] = nullptr;
+
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    helper_ctx.primitives_list[1] = new t_pb_graph_node*[max_molecule_size];
+    for (int i = 0; i < max_molecule_size; i++)
+        helper_ctx.primitives_list[1][i] = nullptr;
 }
 
 /*****************************************/

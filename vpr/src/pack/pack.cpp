@@ -259,7 +259,8 @@ bool try_pack(t_packer_opts* packer_opts,
 
         free_cluster_placement_stats(helper_ctx.cluster_placement_stats[0]);
         free_cluster_placement_stats(helper_ctx.cluster_placement_stats[1]);
-        delete[] helper_ctx.primitives_list;
+        delete[] helper_ctx.primitives_list[0];
+        delete[] helper_ctx.primitives_list[1];
 
         ++pack_iteration;
     }
