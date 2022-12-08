@@ -1691,18 +1691,16 @@
         <input name="core_in" num_pins="55" equivalent="none"/>
         <output name="core_out" num_pins="24" equivalent="none"/>
         <clock name="clk" num_pins="1"/>
-        <!-- 
-          Stratix 10 is a 3 sided architecture, the iolanes can connect to routing on their
-          left, top, and right. 
-          We model that all the pins can connect to each vertical channel (left/right),
-          and the top horizontal channel.
-          The pins located on the left and right side of the block are uniformly distributed across
-          the legnths of 4   
-        -->
+          <!-- 
+            Stratix 10 is a 3 sided architecture, the LABs can connect to routing on their
+            left, top, and right. 
+            We model that half the pins can connect to each vertical channel (left/right),
+            and all the pins connect to the top horizontal channel.
+          -->
         <pinlocations pattern="custom">
           <loc side="top">   iolane.core_in  iolane.core_out iolane.clk</loc>
-          <loc side="left">  iolane.core_in  iolane.core_out  iolane.clk</loc>
-          <loc side="right">  iolane.core_in  iolane.core_out  iolane.clk</loc>
+          <loc side="left">  iolane.core_in[22:0]  iolane.core_out[11:0]  iolane.clk</loc>
+          <loc side="right">  iolane.core_in[54:23]  iolane.core_out[23:12]  iolane.clk</loc>
        </pinlocations>
         
         <!-- 
@@ -1725,7 +1723,7 @@
           For every short H wire, 5 inputs come from adjacent blocks outputs. 
           Assuming there are 24 pins on the top side of the iolane block: fc_out(H wires) = 5/24 = 0.21
 
-          For every short V wire, 6 inputs come block outputs. Assuming 3 inputs come from the block
+          For every short V wire, 6 inputs come from block outputs. Assuming 3 inputs come from the block
           located on either side of the channel, with 6 pins coming from a unit length on the left and right
           side of the iolane block we have fc_out(V wires) = (3/6) = 0.5
         -->
@@ -1738,22 +1736,22 @@
         -->
 
         <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.21" >
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="4" >
           <!-- Specifying fc values for H4 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.018" segment_name="H4"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.21" segment_name="H4"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="6" segment_name="H4"/>
           <!-- Specifying fc values for H10 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.015" segment_name="H10"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.21" segment_name="H10"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="4" segment_name="H10"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="4" segment_name="H10"/>
           <!-- Specifying fc values for V2 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.042" segment_name="V2"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.5" segment_name="V2"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="6" segment_name="V2"/>
           <!-- Specifying fc values for V3 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.028" segment_name="V3"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.5" segment_name="V3"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="12" segment_name="V3"/>
           <!-- Specifying fc values for V4 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.047" segment_name="V4"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.5" segment_name="V4"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="4" segment_name="V4"/>
         </fc>
 
       </sub_tile>
@@ -1784,12 +1782,12 @@
           <!-- 
             Stratix 10 is a 3 sided architecture, the LABs can connect to routing on their
             left, top, and right. 
-            We model that all the pins can connect to each vertical channel (left/right),
-            and the top horizontal channel.
+            We model that half the pins can connect to each vertical channel (left/right),
+            and all the pins connect to the top horizontal channel.
             The exceptions to the above are the LAB chain ports, which propogate downward between blocks.   
           -->
-          <loc side="left">  LAB.data_in LAB.control_in LAB.data_out LAB.clk</loc>
-          <loc side="right"> LAB.data_in LAB.control_in LAB.data_out LAB.clk</loc>
+          <loc side="left">  LAB.data_in[59:30] LAB.control_in[2:0] LAB.data_out[19:0] LAB.clk</loc>
+          <loc side="right"> LAB.data_in[29:0] LAB.control_in[4:3] LAB.data_out[39:20] LAB.clk</loc>
           <loc side="top">   LAB.data_in LAB.control_in LAB.data_out LAB.clk LAB.cin</loc>
           <loc side="bottom">LAB.cout</loc>
         </pinlocations>
@@ -1825,35 +1823,35 @@
           For every short H wire, 5 inputs come from adjacent blocks outputs. 
           Assuming there are 40 output pins on the top side of the logic block: fc_out(H wires) = 5/40 = 0.125
 
-          For every short V wire, 6 inputs come block outputs. Assuming 3 inputs come from the block
+          For every short V wire, 6 inputs come from block outputs. Assuming 3 inputs come from the block
           located on either side of the channel, with 40 output pins coming from the left and right
           side of the logic block we have fc_out(V wires) = (3/40) = 0.075 
         -->
         <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="4" >
           <!--Chains do not connect to general global routing-->
           <fc_override port_name="cin" fc_type="frac" fc_val="0"/>
           <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
           <!-- Specifying fc values for H4 wires -->
-          <fc_override port_name="data_in" fc_type="frac" fc_val="0.018" segment_name="H4"/>
-          <fc_override port_name="control_in" fc_type="frac" fc_val="0.18" segment_name="H4"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <fc_override port_name="data_in" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="control_in" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="4" segment_name="H4"/>
           <!-- Specifying fc values for H10 wires -->
-          <fc_override port_name="data_in" fc_type="frac" fc_val="0.015" segment_name="H10"/>
-          <fc_override port_name="control_in" fc_type="frac" fc_val="0.15" segment_name="H10"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <fc_override port_name="data_in" fc_type="abs" fc_val="4" segment_name="H10"/>
+          <fc_override port_name="control_in" fc_type="abs" fc_val="4" segment_name="H10"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="2" segment_name="H10"/>
           <!-- Specifying fc values for V2 wires -->
-          <fc_override port_name="data_in" fc_type="frac" fc_val="0.042" segment_name="V2"/>
-          <fc_override port_name="control_in" fc_type="frac" fc_val="0.42" segment_name="V2"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <fc_override port_name="data_in" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="control_in" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="2" segment_name="V2"/>
           <!-- Specifying fc values for V3 wires -->
-          <fc_override port_name="data_in" fc_type="frac" fc_val="0.028" segment_name="V3"/>
-          <fc_override port_name="control_in" fc_type="frac" fc_val="0.28" segment_name="V3"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <fc_override port_name="data_in" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="control_in" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="4" segment_name="V3"/>
           <!-- Specifying fc values for V4 wires -->
-          <fc_override port_name="data_in" fc_type="frac" fc_val="0.047" segment_name="V4"/>
-          <fc_override port_name="control_in" fc_type="frac" fc_val="0.47" segment_name="V4"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+          <fc_override port_name="data_in" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="control_in" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="2" segment_name="V4"/>
         </fc>
       </sub_tile>
     </tile>
@@ -1881,14 +1879,14 @@
 
         <pinlocations pattern="custom">
           <!-- 
-            Stratix 10 is a 3 sided architecture, the LABMLABs can connect to routing on their
+            Stratix 10 is a 3 sided architecture, the LABs can connect to routing on their
             left, top, and right. 
-            We model that all the pins can connect to each vertical channel (left/right),
-            and the top horizontal channel.
-            The exceptions to the above are the LABMLAB chain ports, which propogate downward between blocks.   
+            We model that half the pins can connect to each vertical channel (left/right),
+            and all the pins connect to the top horizontal channel.
+            The exceptions to the above are the LAB chain ports, which propogate downward between blocks.   
           -->
-          <loc side="left">  LABMLAB.data_in LABMLAB.control_in LABMLAB.data_out LABMLAB.clk</loc>
-          <loc side="right"> LABMLAB.data_in LABMLAB.control_in LABMLAB.data_out LABMLAB.clk</loc>
+          <loc side="left">  LABMLAB.data_in[59:30] LABMLAB.control_in[2:0] LABMLAB.data_out[19:0] LABMLAB.clk</loc>
+          <loc side="right"> LABMLAB.data_in[29:0] LABMLAB.control_in[4:3] LABMLAB.data_out[39:20] LABMLAB.clk</loc>
           <loc side="top">   LABMLAB.data_in LABMLAB.control_in LABMLAB.data_out LABMLAB.clk LABMLAB.cin</loc>
           <loc side="bottom">LABMLAB.cout</loc>
         </pinlocations>
@@ -1929,30 +1927,30 @@
           side of the logic block we have fc_out(V wires) = (3/40) = 0.075 
         -->
         <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="4" >
           <!--Chains do not connect to general global routing-->
           <fc_override port_name="cin" fc_type="frac" fc_val="0"/>
           <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
           <!-- Specifying fc values for H4 wires -->
-          <fc_override port_name="data_in" fc_type="frac" fc_val="0.018" segment_name="H4"/>
-          <fc_override port_name="control_in" fc_type="frac" fc_val="0.18" segment_name="H4"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <fc_override port_name="data_in" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="control_in" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="4" segment_name="H4"/>
           <!-- Specifying fc values for H10 wires -->
-          <fc_override port_name="data_in" fc_type="frac" fc_val="0.015" segment_name="H10"/>
-          <fc_override port_name="control_in" fc_type="frac" fc_val="0.15" segment_name="H10"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <fc_override port_name="data_in" fc_type="abs" fc_val="4" segment_name="H10"/>
+          <fc_override port_name="control_in" fc_type="abs" fc_val="4" segment_name="H10"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="2" segment_name="H10"/>
           <!-- Specifying fc values for V2 wires -->
-          <fc_override port_name="data_in" fc_type="frac" fc_val="0.042" segment_name="V2"/>
-          <fc_override port_name="control_in" fc_type="frac" fc_val="0.42" segment_name="V2"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <fc_override port_name="data_in" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="control_in" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="2" segment_name="V2"/>
           <!-- Specifying fc values for V3 wires -->
-          <fc_override port_name="data_in" fc_type="frac" fc_val="0.028" segment_name="V3"/>
-          <fc_override port_name="control_in" fc_type="frac" fc_val="0.28" segment_name="V3"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <fc_override port_name="data_in" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="control_in" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="4" segment_name="V3"/>
           <!-- Specifying fc values for V4 wires -->
-          <fc_override port_name="data_in" fc_type="frac" fc_val="0.047" segment_name="V4"/>
-          <fc_override port_name="control_in" fc_type="frac" fc_val="0.47" segment_name="V4"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+          <fc_override port_name="data_in" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="control_in" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="2" segment_name="V4"/>
         </fc>
       </sub_tile>
     </tile>
@@ -1991,35 +1989,35 @@
         <input name="core_in" num_pins="40"/>
         <output name="core_out" num_pins="36"/>
         <clock name="clk" num_pins="2"/>
-        <!-- 
-          Stratix 10 is a 3 sided architecture, the iolanes can connect to routing on their
-          left, top, and right. 
-          We model that all the pins can connect to each vertical channel (left/right),
-          and the top horizontal channel.
-        -->
+          <!-- 
+            Stratix 10 is a 3 sided architecture, the LABs can connect to routing on their
+            left, top, and right. 
+            We model that half the pins can connect to each vertical channel (left/right),
+            and all the pins connect to the top horizontal channel.
+          -->
         <pinlocations pattern="custom">
-          <loc side="left">PLL.core_in PLL.core_out PLL.clk </loc>
-          <loc side="right">PLL.core_in PLL.core_out PLL.clk </loc>
+          <loc side="left">PLL.core_in[19:0] PLL.core_out[17:0] PLL.clk </loc>
+          <loc side="right">PLL.core_in[39:20] PLL.core_out[35:18] PLL.clk </loc>
           <loc side="top">PLL.core_in PLL.core_out PLL.clk </loc>
         </pinlocations>
 
         <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="2" >
           <!-- Specifying fc values for H4 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.018" segment_name="H4"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="2" segment_name="H4"/>
           <!-- Specifying fc values for H10 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.015" segment_name="H10"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="4" segment_name="H10"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="2" segment_name="H10"/>
           <!-- Specifying fc values for V2 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.042" segment_name="V2"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="12" segment_name="V2"/>
           <!-- Specifying fc values for V3 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.028" segment_name="V3"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="24" segment_name="V3"/>
           <!-- Specifying fc values for V4 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.047" segment_name="V4"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="32" segment_name="V4"/>
         </fc>
       </sub_tile>
       <sub_tile name="clock_div">
@@ -2044,22 +2042,22 @@
         </pinlocations>
 
         <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="2" >
           <!-- Specifying fc values for H4 wires -->
-          <fc_override port_name="inclk" fc_type="frac" fc_val="0.018" segment_name="H4"/>
-          <fc_override port_name="clock_div_out" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="2" segment_name="H4"/>
           <!-- Specifying fc values for H10 wires -->
-          <fc_override port_name="inclk" fc_type="frac" fc_val="0.015" segment_name="H10"/>
-          <fc_override port_name="clock_div_out" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="4" segment_name="H10"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="2" segment_name="H10"/>
           <!-- Specifying fc values for V2 wires -->
-          <fc_override port_name="inclk" fc_type="frac" fc_val="0.042" segment_name="V2"/>
-          <fc_override port_name="clock_div_out" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="12" segment_name="V2"/>
           <!-- Specifying fc values for V3 wires -->
-          <fc_override port_name="inclk" fc_type="frac" fc_val="0.028" segment_name="V3"/>
-          <fc_override port_name="clock_div_out" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="24" segment_name="V3"/>
           <!-- Specifying fc values for V4 wires -->
-          <fc_override port_name="inclk" fc_type="frac" fc_val="0.047" segment_name="V4"/>
-          <fc_override port_name="clock_div_out" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="32" segment_name="V4"/>
         </fc>
       </sub_tile>
       <sub_tile name="clock_gate">
@@ -2085,27 +2083,22 @@
         </pinlocations>
         
         <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="2" >
           <!-- Specifying fc values for H4 wires -->
-          <fc_override port_name="inclk" fc_type="frac" fc_val="0.018" segment_name="H4"/>
-          <fc_override port_name="enable" fc_type="frac" fc_val="0.018" segment_name="H4"/>
-          <fc_override port_name="outclk" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="2" segment_name="H4"/>
           <!-- Specifying fc values for H10 wires -->
-          <fc_override port_name="inclk" fc_type="frac" fc_val="0.015" segment_name="H10"/>
-          <fc_override port_name="enable" fc_type="frac" fc_val="0.015" segment_name="H10"/>
-          <fc_override port_name="outclk" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="4" segment_name="H10"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="2" segment_name="H10"/>
           <!-- Specifying fc values for V2 wires -->
-          <fc_override port_name="inclk" fc_type="frac" fc_val="0.042" segment_name="V2"/>
-          <fc_override port_name="enable" fc_type="frac" fc_val="0.042" segment_name="V2"/>
-          <fc_override port_name="outclk" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="12" segment_name="V2"/>
           <!-- Specifying fc values for V3 wires -->
-          <fc_override port_name="inclk" fc_type="frac" fc_val="0.028" segment_name="V3"/>
-          <fc_override port_name="enable" fc_type="frac" fc_val="0.028" segment_name="V3"/>
-          <fc_override port_name="outclk" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="24" segment_name="V3"/>
           <!-- Specifying fc values for V4 wires -->
-          <fc_override port_name="inclk" fc_type="frac" fc_val="0.047" segment_name="V4"/>
-          <fc_override port_name="enable" fc_type="frac" fc_val="0.047" segment_name="V4"/>
-          <fc_override port_name="outclk" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="32" segment_name="V4"/>
         </fc>
       </sub_tile>
       <sub_tile name="OCT">
@@ -2115,17 +2108,15 @@
         <input name="core_in" num_pins="10"/>
         <output name="core_out" num_pins="36"/>
         <clock name="clk" num_pins="1"/>
-        <!-- 
-          Stratix 10 is a 3 sided architecture, the iolanes can connect to routing on their
-          left, top, and right. 
-          We model that all the pins can connect to each vertical channel (left/right),
-          and the top horizontal channel.
-          The pins located on the left and right side of the block are uniformly distributed across
-          the legnths of 4   
-        -->
+          <!-- 
+            Stratix 10 is a 3 sided architecture, the LABs can connect to routing on their
+            left, top, and right. 
+            We model that half the pins can connect to each vertical channel (left/right),
+            and all the pins connect to the top horizontal channel. 
+          -->
         <pinlocations pattern="custom">
-          <loc side="left">OCT.core_in OCT.core_out OCT.clk </loc>
-          <loc side="right">OCT.core_in OCT.core_out OCT.clk </loc>
+          <loc side="left">OCT.core_in[4:0] OCT.core_out[35:18] OCT.clk </loc>
+          <loc side="right">OCT.core_in[9:5] OCT.core_out[17:0] OCT.clk </loc>
           <loc side="top">OCT.core_in OCT.core_out OCT.clk </loc>
         </pinlocations>
 
@@ -2154,22 +2145,22 @@
           side of the OCT block we have fc_out(V wires) = (3/36) = 0.083
         -->
         <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.14" >
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="2" >
           <!-- Specifying fc values for H4 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.018" segment_name="H4"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.14" segment_name="H4"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="2" segment_name="H4"/>
           <!-- Specifying fc values for H10 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.015" segment_name="H10"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.14" segment_name="H10"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="4" segment_name="H10"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="2" segment_name="H10"/>
           <!-- Specifying fc values for V2 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.042" segment_name="V2"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.083" segment_name="V2"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="12" segment_name="V2"/>
           <!-- Specifying fc values for V3 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.028" segment_name="V3"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.083" segment_name="V3"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="24" segment_name="V3"/>
           <!-- Specifying fc values for V4 wires -->
-          <fc_override port_name="core_in" fc_type="frac" fc_val="0.047" segment_name="V4"/>
-          <fc_override port_name="core_out" fc_type="frac" fc_val="0.083" segment_name="V4"/>
+          <fc_override port_name="core_in" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="core_out" fc_type="abs" fc_val="32" segment_name="V4"/>
         </fc>
       </sub_tile>
     </tile>
@@ -2188,16 +2179,16 @@
         <output name="scanout" num_pins="27" />
         <output name="dftout" num_pins="1" />
 
-        <!-- 
-          Stratix 10 is a 3 sided architecture, the DSPs can connect to routing on their
-          left, top, and right. 
-          We model that all the pins can connect to each vertical channel (left/right),
-          and the top horizontal channel.
-          The exceptions to the above are the DSP chain and scan ports, which propogate downward between blocks.   
-        -->
+          <!-- 
+            Stratix 10 is a 3 sided architecture, the LABs can connect to routing on their
+            left, top, and right. 
+            We model that half the pins can connect to each vertical channel (left/right),
+            and all the pins connect to the top horizontal channel.
+            The exceptions to the above are the DSP chain ports, which propogate downward between blocks.   
+          -->
         <pinlocations pattern="custom">
-          <loc side="left">DSP.dspin DSP.clk DSP.result DSP.dftout</loc>
-          <loc side="right">DSP.dspin DSP.clk DSP.result DSP.dftout</loc>
+          <loc side="left">DSP.dspin[119:0] DSP.clk DSP.result[36:0] DSP.dftout</loc>
+          <loc side="right">DSP.dspin[239:120] DSP.clk DSP.result[73:37] DSP.dftout</loc>
           <loc side="top">DSP.dspin DSP.chainin DSP.scanin DSP.clk DSP.result DSP.dftout</loc>
           <loc side="bottom">DSP.chainout DSP.scanout</loc>
         </pinlocations>
@@ -2225,33 +2216,32 @@
           to the same value as that of logic blocks. This approximation will lead to bigger mus sizes for wire segments adjacent to the DSP blocks 
           but it will ensure there is enough connectivty to route the DSP primitives
         -->
-        <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="4" >
           <!--Chains do not connect to general global routing-->
           <fc_override port_name="chainin" fc_type="frac" fc_val="0"/>
           <fc_override port_name="scanin" fc_type="frac" fc_val="0"/>
           <fc_override port_name="chainout" fc_type="frac" fc_val="0"/>
           <fc_override port_name="scanout" fc_type="frac" fc_val="0"/>
           <!-- Specifying fc values for H4 wires -->
-          <fc_override port_name="dspin" fc_type="frac" fc_val="0.018" segment_name="H4"/>
-          <fc_override port_name="dftout" fc_type="frac" fc_val="0.125" segment_name="H4"/>
-          <fc_override port_name="result" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <fc_override port_name="dspin" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="dftout" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="result" fc_type="abs" fc_val="4" segment_name="H4"/>
           <!-- Specifying fc values for H10 wires -->
-          <fc_override port_name="dspin" fc_type="frac" fc_val="0.015" segment_name="H10"/>
-          <fc_override port_name="dftout" fc_type="frac" fc_val="0.125" segment_name="H10"/>
-          <fc_override port_name="result" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <fc_override port_name="dspin" fc_type="abs" fc_val="4" segment_name="H10"/>
+          <fc_override port_name="dftout" fc_type="abs" fc_val="2" segment_name="H10"/>
+          <fc_override port_name="result" fc_type="abs" fc_val="2" segment_name="H10"/>
           <!-- Specifying fc values for V2 wires -->
-          <fc_override port_name="dspin" fc_type="frac" fc_val="0.042" segment_name="V2"/>
-          <fc_override port_name="dftout" fc_type="frac" fc_val="0.75" segment_name="V2"/>
-          <fc_override port_name="result" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <fc_override port_name="dspin" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="dftout" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="result" fc_type="abs" fc_val="2" segment_name="V2"/>
           <!-- Specifying fc values for V3 wires -->
-          <fc_override port_name="dspin" fc_type="frac" fc_val="0.028" segment_name="V3"/>
-          <fc_override port_name="dftout" fc_type="frac" fc_val="0.75" segment_name="V3"/>
-          <fc_override port_name="result" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <fc_override port_name="dspin" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="dftout" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="result" fc_type="abs" fc_val="4" segment_name="V3"/>
           <!-- Specifying fc values for V4 wires -->
-          <fc_override port_name="dspin" fc_type="frac" fc_val="0.047" segment_name="V4"/>
-          <fc_override port_name="dftout" fc_type="frac" fc_val="0.75" segment_name="V4"/>
-          <fc_override port_name="result" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+          <fc_override port_name="dspin" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="dftout" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="result" fc_type="abs" fc_val="2" segment_name="V4"/>
         </fc>
       </sub_tile>
     </tile>
@@ -2267,8 +2257,14 @@
         <clock name="clk_in" num_pins="2" />
 
         <pinlocations pattern="custom">
-          <loc side="left">  M20K.data_addr_control_in  M20K.control_out M20K.data_out  M20K.clk_in </loc>
-          <loc side="right">  M20K.data_addr_control_in  M20K.control_out M20K.data_out  M20K.clk_in </loc>
+          <!-- 
+            Stratix 10 is a 3 sided architecture, the LABs can connect to routing on their
+            left, top, and right. 
+            We model that half the pins can connect to each vertical channel (left/right),
+            and all the pins connect to the top horizontal channel.  
+          -->
+          <loc side="left">  M20K.data_addr_control_in[59:0]  M20K.control_out[0] M20K.data_out[19:0]  M20K.clk_in </loc>
+          <loc side="right">  M20K.data_addr_control_in[119:60]  M20K.control_out[1] M20K.data_out[39:20]  M20K.clk_in </loc>
           <loc side="top">  M20K.data_addr_control_in  M20K.control_out M20K.data_out  M20K.clk_in </loc>
         </pinlocations>
 
@@ -2292,27 +2288,27 @@
           It's assumed that RAM block has the same fc_out value as LAB. 
         -->
         <!-- Specifying the default fc values for H2 wires and overriding these values for the remaining segments-->
-        <fc in_type="frac" in_val="0.025" out_type="frac" out_val="0.125" >
+        <fc in_type="abs" in_val="2" out_type="abs" out_val="4" >
           <!-- Specifying fc values for H4 wires -->
-          <fc_override port_name="data_addr_control_in" fc_type="frac" fc_val="0.018" segment_name="H4"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.125" segment_name="H4"/>
-          <fc_override port_name="control_out" fc_type="frac" fc_val="0.125" segment_name="H4"/>
+          <fc_override port_name="data_addr_control_in" fc_type="abs" fc_val="2" segment_name="H4"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="4" segment_name="H4"/>
+          <fc_override port_name="control_out" fc_type="abs" fc_val="4" segment_name="H4"/>
           <!-- Specifying fc values for H10 wires -->
-          <fc_override port_name="data_addr_control_in" fc_type="frac" fc_val="0.015" segment_name="H10"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.125" segment_name="H10"/>
-          <fc_override port_name="control_out" fc_type="frac" fc_val="0.125" segment_name="H10"/>
+          <fc_override port_name="data_addr_control_in" fc_type="abs" fc_val="4" segment_name="H10"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="2" segment_name="H10"/>
+          <fc_override port_name="control_out" fc_type="abs" fc_val="2" segment_name="H10"/>
           <!-- Specifying fc values for V2 wires -->
-          <fc_override port_name="data_addr_control_in" fc_type="frac" fc_val="0.042" segment_name="V2"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V2"/>
-          <fc_override port_name="control_out" fc_type="frac" fc_val="0.75" segment_name="V2"/>
+          <fc_override port_name="data_addr_control_in" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="2" segment_name="V2"/>
+          <fc_override port_name="control_out" fc_type="abs" fc_val="2" segment_name="V2"/>
           <!-- Specifying fc values for V3 wires -->
-          <fc_override port_name="data_addr_control_in" fc_type="frac" fc_val="0.028" segment_name="V3"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V3"/>
-          <fc_override port_name="control_out" fc_type="frac" fc_val="0.75" segment_name="V3"/>
+          <fc_override port_name="data_addr_control_in" fc_type="abs" fc_val="2" segment_name="V3"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="4" segment_name="V3"/>
+          <fc_override port_name="control_out" fc_type="abs" fc_val="4" segment_name="V3"/>
           <!-- Specifying fc values for V4 wires -->
-          <fc_override port_name="data_addr_control_in" fc_type="frac" fc_val="0.047" segment_name="V4"/>
-          <fc_override port_name="data_out" fc_type="frac" fc_val="0.75" segment_name="V4"/>
-          <fc_override port_name="control_out" fc_type="frac" fc_val="0.75" segment_name="V4"/>
+          <fc_override port_name="data_addr_control_in" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="data_out" fc_type="abs" fc_val="2" segment_name="V4"/>
+          <fc_override port_name="control_out" fc_type="abs" fc_val="2" segment_name="V4"/>
         </fc>
       </sub_tile>
     </tile>
@@ -2373,7 +2369,7 @@
       <fill type="LAB" priority="10"/>
       <!--One quarter of the LAB blocks can also be used as MLABs-->
       <!--One out of every for logic columns is of the type LABMLAB-->
-      <col type="LABMLAB" startx="3" starty="0" repeatx="4" priority="11"/>
+      <col type="LABMLAB" startx="0" starty="0" repeatx="4" priority="11"/>
 
       <!--Column of 'DSP'-->
       <col type="DSP" startx="38" starty="0" repeatx="18" priority="150"/>
@@ -2591,60 +2587,60 @@
         30 outputs have a single self-sneak fan-out adding up to 50 self-sneaks overall 
     -->
     <!-- two fan-outs from data_out[0:0] -->
-    <direct name="LAB_self_sneak0" from_pin="LAB.data_out[0:0]" from_side="right" to_pin="LAB.data_in[0:0]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak1" from_pin="LAB.data_out[0:0]" from_side="right" to_pin="LAB.data_in[1:1]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak2" from_pin="LAB.data_out[3:1]" from_side="right" to_pin="LAB.data_in[4:2]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak0" from_pin="LAB.data_out[0:0]" from_side="top" to_pin="LAB.data_in[0:0]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak1" from_pin="LAB.data_out[0:0]" from_side="top" to_pin="LAB.data_in[1:1]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak2" from_pin="LAB.data_out[3:1]" from_side="top" to_pin="LAB.data_in[4:2]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- two fan-outs from data_out[4:4] -->
-    <direct name="LAB_self_sneak3" from_pin="LAB.data_out[4:4]" from_side="right" to_pin="LAB.data_in[5:5]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak4" from_pin="LAB.data_out[4:4]" from_side="right" to_pin="LAB.data_in[6:6]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak5" from_pin="LAB.data_out[7:5]" from_side="right" to_pin="LAB.data_in[9:7]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak3" from_pin="LAB.data_out[4:4]" from_side="top" to_pin="LAB.data_in[5:5]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak4" from_pin="LAB.data_out[4:4]" from_side="top" to_pin="LAB.data_in[6:6]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak5" from_pin="LAB.data_out[7:5]" from_side="top" to_pin="LAB.data_in[9:7]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- two fan-outs from data_out[8:8] -->
-    <direct name="LAB_self_sneak6" from_pin="LAB.data_out[8:8]" from_side="right" to_pin="LAB.data_in[10:10]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak6" from_pin="LAB.data_out[8:8]" from_side="top" to_pin="LAB.data_in[10:10]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- skipping data_in[11:11] -->
-    <direct name="LAB_self_sneak7" from_pin="LAB.data_out[8:8]" from_side="right" to_pin="LAB.data_in[12:12]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak8" from_pin="LAB.data_out[10:9]" from_side="right" to_pin="LAB.data_in[14:13]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak7" from_pin="LAB.data_out[8:8]" from_side="top" to_pin="LAB.data_in[12:12]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak8" from_pin="LAB.data_out[10:9]" from_side="top" to_pin="LAB.data_in[14:13]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- skipping data_in[15:15] -->
-    <direct name="LAB_self_sneak9" from_pin="LAB.data_out[11:11]" from_side="right" to_pin="LAB.data_in[16:16]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak9" from_pin="LAB.data_out[11:11]" from_side="top" to_pin="LAB.data_in[16:16]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- two fan-outs from data_out[12:12] -->
-    <direct name="LAB_self_sneak10" from_pin="LAB.data_out[12:12]" from_side="right" to_pin="LAB.data_in[17:17]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak11" from_pin="LAB.data_out[12:12]" from_side="right" to_pin="LAB.data_in[18:18]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak10" from_pin="LAB.data_out[12:12]" from_side="top" to_pin="LAB.data_in[17:17]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak11" from_pin="LAB.data_out[12:12]" from_side="top" to_pin="LAB.data_in[18:18]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- skipping data_in[19:19] -->
-    <direct name="LAB_self_sneak12" from_pin="LAB.data_out[15:13]" from_side="right" to_pin="LAB.data_in[22:20]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak12" from_pin="LAB.data_out[15:13]" from_side="top" to_pin="LAB.data_in[22:20]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- two fan-outs from data_out[16:16] -->
     <!-- skipping data_in[23:23] -->
-    <direct name="LAB_self_sneak13" from_pin="LAB.data_out[16:16]" from_side="right" to_pin="LAB.data_in[24:24]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak14" from_pin="LAB.data_out[16:16]" from_side="right" to_pin="LAB.data_in[25:25]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak15" from_pin="LAB.data_out[17:17]" from_side="right" to_pin="LAB.data_in[26:26]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak13" from_pin="LAB.data_out[16:16]" from_side="top" to_pin="LAB.data_in[24:24]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak14" from_pin="LAB.data_out[16:16]" from_side="top" to_pin="LAB.data_in[25:25]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak15" from_pin="LAB.data_out[17:17]" from_side="top" to_pin="LAB.data_in[26:26]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- skipping data_in[27:27] -->
-    <direct name="LAB_self_sneak16" from_pin="LAB.data_out[19:18]" from_side="right" to_pin="LAB.data_in[29:28]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak16" from_pin="LAB.data_out[19:18]" from_side="top" to_pin="LAB.data_in[29:28]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- two fan-outs from data_out[20:20] -->
-    <direct name="LAB_self_sneak17" from_pin="LAB.data_out[20:20]" from_side="right" to_pin="LAB.data_in[30:30]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak17" from_pin="LAB.data_out[20:20]" from_side="top" to_pin="LAB.data_in[30:30]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- skipping data_in[31:31] -->
-    <direct name="LAB_self_sneak18" from_pin="LAB.data_out[20:20]" from_side="right" to_pin="LAB.data_in[32:32]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak19" from_pin="LAB.data_out[22:21]" from_side="right" to_pin="LAB.data_in[34:33]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak18" from_pin="LAB.data_out[20:20]" from_side="top" to_pin="LAB.data_in[32:32]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak19" from_pin="LAB.data_out[22:21]" from_side="top" to_pin="LAB.data_in[34:33]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- skipping data_in[35:35] -->
-    <direct name="LAB_self_sneak20" from_pin="LAB.data_out[23:23]" from_side="right" to_pin="LAB.data_in[36:36]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak20" from_pin="LAB.data_out[23:23]" from_side="top" to_pin="LAB.data_in[36:36]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- two fan-outs from data_out[24:24] -->
-    <direct name="LAB_self_sneak21" from_pin="LAB.data_out[24:24]" from_side="right" to_pin="LAB.data_in[37:37]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak22" from_pin="LAB.data_out[24:24]" from_side="right" to_pin="LAB.data_in[38:38]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak21" from_pin="LAB.data_out[24:24]" from_side="top" to_pin="LAB.data_in[37:37]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak22" from_pin="LAB.data_out[24:24]" from_side="top" to_pin="LAB.data_in[38:38]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- skipping data_in[39:39] -->
-    <direct name="LAB_self_sneak23" from_pin="LAB.data_out[27:25]" from_side="right" to_pin="LAB.data_in[42:40]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak23" from_pin="LAB.data_out[27:25]" from_side="top" to_pin="LAB.data_in[42:40]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- two fan-outs from data_out[28:28] -->
     <!-- skipping data_in[43:43] -->
-    <direct name="LAB_self_sneak24" from_pin="LAB.data_out[28:28]" from_side="right" to_pin="LAB.data_in[44:44]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak25" from_pin="LAB.data_out[28:28]" from_side="right" to_pin="LAB.data_in[45:45]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak26" from_pin="LAB.data_out[29:29]" from_side="right" to_pin="LAB.data_in[46:46]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak24" from_pin="LAB.data_out[28:28]" from_side="top" to_pin="LAB.data_in[44:44]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak25" from_pin="LAB.data_out[28:28]" from_side="top" to_pin="LAB.data_in[45:45]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak26" from_pin="LAB.data_out[29:29]" from_side="top" to_pin="LAB.data_in[46:46]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- skipping data_in[47:47] -->
-    <direct name="LAB_self_sneak27" from_pin="LAB.data_out[31:30]" from_side="right" to_pin="LAB.data_in[49:48]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak27" from_pin="LAB.data_out[31:30]" from_side="top" to_pin="LAB.data_in[49:48]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- two fan-outs from data_out[32:32] -->
-    <direct name="LAB_self_sneak28" from_pin="LAB.data_out[32:32]" from_side="right" to_pin="LAB.data_in[50:50]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak29" from_pin="LAB.data_out[32:32]" from_side="right" to_pin="LAB.data_in[51:51]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak30" from_pin="LAB.data_out[35:33]" from_side="right" to_pin="LAB.data_in[54:52]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak28" from_pin="LAB.data_out[32:32]" from_side="top" to_pin="LAB.data_in[50:50]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak29" from_pin="LAB.data_out[32:32]" from_side="top" to_pin="LAB.data_in[51:51]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak30" from_pin="LAB.data_out[35:33]" from_side="top" to_pin="LAB.data_in[54:52]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
     <!-- two fan-outs from data_out[36:36] -->
-    <direct name="LAB_self_sneak31" from_pin="LAB.data_out[36:36]" from_side="right" to_pin="LAB.data_in[55:55]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak32" from_pin="LAB.data_out[36:36]" from_side="right" to_pin="LAB.data_in[56:56]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-    <direct name="LAB_self_sneak33" from_pin="LAB.data_out[39:37]" from_side="right" to_pin="LAB.data_in[59:57]" to_side="left" x_offset="0" y_offset="0" z_offset="0"/>
-
+    <direct name="LAB_self_sneak31" from_pin="LAB.data_out[36:36]" from_side="top" to_pin="LAB.data_in[55:55]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak32" from_pin="LAB.data_out[36:36]" from_side="top" to_pin="LAB.data_in[56:56]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LAB_self_sneak33" from_pin="LAB.data_out[39:37]" from_side="top" to_pin="LAB.data_in[59:57]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    
     <!-- 
       It's assumed that for the case where the adjacent block is an IO periphal other than iolane 
       there are no incoming direct connections to the adjacent LAB  
@@ -2671,129 +2667,385 @@
     -->
 
     <!-- 20 direct connections coming from the odd pin numbers of the adjacent LAB located to the left of the LAB-->
-    <direct name="LAB_side_sneak_LAB_1" from_pin="LAB.data_out[1:1]" from_side="right" to_pin="LAB.data_in[11:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_3" from_pin="LAB.data_out[3:3]" from_side="right" to_pin="LAB.data_in[13:13]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_5" from_pin="LAB.data_out[5:5]" from_side="right" to_pin="LAB.data_in[15:15]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_7" from_pin="LAB.data_out[7:7]" from_side="right" to_pin="LAB.data_in[17:17]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_9" from_pin="LAB.data_out[9:9]" from_side="right" to_pin="LAB.data_in[19:19]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_11" from_pin="LAB.data_out[11:11]" from_side="right" to_pin="LAB.data_in[21:21]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_13" from_pin="LAB.data_out[13:13]" from_side="right" to_pin="LAB.data_in[23:23]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_15" from_pin="LAB.data_out[15:15]" from_side="right" to_pin="LAB.data_in[25:25]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_17" from_pin="LAB.data_out[17:17]" from_side="right" to_pin="LAB.data_in[27:27]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_19" from_pin="LAB.data_out[19:19]" from_side="right" to_pin="LAB.data_in[29:29]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_21" from_pin="LAB.data_out[21:21]" from_side="right" to_pin="LAB.data_in[31:31]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_23" from_pin="LAB.data_out[23:23]" from_side="right" to_pin="LAB.data_in[33:33]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_25" from_pin="LAB.data_out[25:25]" from_side="right" to_pin="LAB.data_in[35:35]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_27" from_pin="LAB.data_out[27:27]" from_side="right" to_pin="LAB.data_in[37:37]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_29" from_pin="LAB.data_out[29:29]" from_side="right" to_pin="LAB.data_in[39:39]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_31" from_pin="LAB.data_out[31:31]" from_side="right" to_pin="LAB.data_in[41:41]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_33" from_pin="LAB.data_out[33:33]" from_side="right" to_pin="LAB.data_in[43:43]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_35" from_pin="LAB.data_out[35:35]" from_side="right" to_pin="LAB.data_in[45:45]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_37" from_pin="LAB.data_out[37:37]" from_side="right" to_pin="LAB.data_in[47:47]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_39" from_pin="LAB.data_out[39:39]" from_side="right" to_pin="LAB.data_in[49:49]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_1" from_pin="LAB.data_out[1:1]" from_side="top" to_pin="LAB.data_in[11:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_3" from_pin="LAB.data_out[3:3]" from_side="top" to_pin="LAB.data_in[13:13]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_5" from_pin="LAB.data_out[5:5]" from_side="top" to_pin="LAB.data_in[15:15]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_7" from_pin="LAB.data_out[7:7]" from_side="top" to_pin="LAB.data_in[17:17]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_9" from_pin="LAB.data_out[9:9]" from_side="top" to_pin="LAB.data_in[19:19]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_11" from_pin="LAB.data_out[11:11]" from_side="top" to_pin="LAB.data_in[21:21]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_13" from_pin="LAB.data_out[13:13]" from_side="top" to_pin="LAB.data_in[23:23]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_15" from_pin="LAB.data_out[15:15]" from_side="top" to_pin="LAB.data_in[25:25]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_17" from_pin="LAB.data_out[17:17]" from_side="top" to_pin="LAB.data_in[27:27]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_19" from_pin="LAB.data_out[19:19]" from_side="top" to_pin="LAB.data_in[29:29]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_21" from_pin="LAB.data_out[21:21]" from_side="top" to_pin="LAB.data_in[31:31]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_23" from_pin="LAB.data_out[23:23]" from_side="top" to_pin="LAB.data_in[33:33]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_25" from_pin="LAB.data_out[25:25]" from_side="top" to_pin="LAB.data_in[35:35]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_27" from_pin="LAB.data_out[27:27]" from_side="top" to_pin="LAB.data_in[37:37]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_29" from_pin="LAB.data_out[29:29]" from_side="top" to_pin="LAB.data_in[39:39]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_31" from_pin="LAB.data_out[31:31]" from_side="top" to_pin="LAB.data_in[41:41]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_33" from_pin="LAB.data_out[33:33]" from_side="top" to_pin="LAB.data_in[43:43]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_35" from_pin="LAB.data_out[35:35]" from_side="top" to_pin="LAB.data_in[45:45]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_37" from_pin="LAB.data_out[37:37]" from_side="top" to_pin="LAB.data_in[47:47]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_39" from_pin="LAB.data_out[39:39]" from_side="top" to_pin="LAB.data_in[49:49]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
 
     <!-- 20 direct connections coming from the even pin numbers of the adjacent LAB located to the right of the LAB-->
-    <direct name="LAB_side_sneak_LAB_0" from_pin="LAB.data_out[0:0]" from_side="left" to_pin="LAB.data_in[12:12]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_2" from_pin="LAB.data_out[2:2]" from_side="left" to_pin="LAB.data_in[14:14]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_4" from_pin="LAB.data_out[4:4]" from_side="left" to_pin="LAB.data_in[16:16]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_6" from_pin="LAB.data_out[6:6]" from_side="left" to_pin="LAB.data_in[18:18]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_8" from_pin="LAB.data_out[8:8]" from_side="left" to_pin="LAB.data_in[20:20]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_10" from_pin="LAB.data_out[10:10]" from_side="left" to_pin="LAB.data_in[22:22]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_12" from_pin="LAB.data_out[12:12]" from_side="left" to_pin="LAB.data_in[24:24]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_14" from_pin="LAB.data_out[14:14]" from_side="left" to_pin="LAB.data_in[26:26]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_16" from_pin="LAB.data_out[16:16]" from_side="left" to_pin="LAB.data_in[28:28]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_18" from_pin="LAB.data_out[18:18]" from_side="left" to_pin="LAB.data_in[30:30]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_20" from_pin="LAB.data_out[20:20]" from_side="left" to_pin="LAB.data_in[32:32]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_22" from_pin="LAB.data_out[22:22]" from_side="left" to_pin="LAB.data_in[34:34]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_24" from_pin="LAB.data_out[24:24]" from_side="left" to_pin="LAB.data_in[36:36]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_26" from_pin="LAB.data_out[26:26]" from_side="left" to_pin="LAB.data_in[38:38]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_28" from_pin="LAB.data_out[28:28]" from_side="left" to_pin="LAB.data_in[40:40]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_30" from_pin="LAB.data_out[30:30]" from_side="left" to_pin="LAB.data_in[42:42]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_32" from_pin="LAB.data_out[32:32]" from_side="left" to_pin="LAB.data_in[44:44]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_34" from_pin="LAB.data_out[34:34]" from_side="left" to_pin="LAB.data_in[46:46]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_36" from_pin="LAB.data_out[36:36]" from_side="left" to_pin="LAB.data_in[48:48]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_LAB_38" from_pin="LAB.data_out[38:38]" from_side="left" to_pin="LAB.data_in[50:50]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
- 
+    <direct name="LAB_side_sneak_LAB_0" from_pin="LAB.data_out[0:0]" from_side="top" to_pin="LAB.data_in[12:12]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_2" from_pin="LAB.data_out[2:2]" from_side="top" to_pin="LAB.data_in[14:14]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_4" from_pin="LAB.data_out[4:4]" from_side="top" to_pin="LAB.data_in[16:16]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_6" from_pin="LAB.data_out[6:6]" from_side="top" to_pin="LAB.data_in[18:18]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_8" from_pin="LAB.data_out[8:8]" from_side="top" to_pin="LAB.data_in[20:20]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_10" from_pin="LAB.data_out[10:10]" from_side="top" to_pin="LAB.data_in[22:22]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_12" from_pin="LAB.data_out[12:12]" from_side="top" to_pin="LAB.data_in[24:24]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_14" from_pin="LAB.data_out[14:14]" from_side="top" to_pin="LAB.data_in[26:26]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_16" from_pin="LAB.data_out[16:16]" from_side="top" to_pin="LAB.data_in[28:28]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_18" from_pin="LAB.data_out[18:18]" from_side="top" to_pin="LAB.data_in[30:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_20" from_pin="LAB.data_out[20:20]" from_side="top" to_pin="LAB.data_in[32:32]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_22" from_pin="LAB.data_out[22:22]" from_side="top" to_pin="LAB.data_in[34:34]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_24" from_pin="LAB.data_out[24:24]" from_side="top" to_pin="LAB.data_in[36:36]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_26" from_pin="LAB.data_out[26:26]" from_side="top" to_pin="LAB.data_in[38:38]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_28" from_pin="LAB.data_out[28:28]" from_side="top" to_pin="LAB.data_in[40:40]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_30" from_pin="LAB.data_out[30:30]" from_side="top" to_pin="LAB.data_in[42:42]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_32" from_pin="LAB.data_out[32:32]" from_side="top" to_pin="LAB.data_in[44:44]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_34" from_pin="LAB.data_out[34:34]" from_side="top" to_pin="LAB.data_in[46:46]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_36" from_pin="LAB.data_out[36:36]" from_side="top" to_pin="LAB.data_in[48:48]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LAB_38" from_pin="LAB.data_out[38:38]" from_side="top" to_pin="LAB.data_in[50:50]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+
+    <!-- 20 direct connections coming from the odd pin numbers of the adjacent LABMLAB located to the left of the LAB-->
+    <direct name="LABMLAB_side_sneak_LAB_1" from_pin="LABMLAB.data_out[1:1]" from_side="top" to_pin="LAB.data_in[11:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_3" from_pin="LABMLAB.data_out[3:3]" from_side="top" to_pin="LAB.data_in[13:13]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_5" from_pin="LABMLAB.data_out[5:5]" from_side="top" to_pin="LAB.data_in[15:15]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_7" from_pin="LABMLAB.data_out[7:7]" from_side="top" to_pin="LAB.data_in[17:17]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_9" from_pin="LABMLAB.data_out[9:9]" from_side="top" to_pin="LAB.data_in[19:19]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_11" from_pin="LABMLAB.data_out[11:11]" from_side="top" to_pin="LAB.data_in[21:21]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_13" from_pin="LABMLAB.data_out[13:13]" from_side="top" to_pin="LAB.data_in[23:23]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_15" from_pin="LABMLAB.data_out[15:15]" from_side="top" to_pin="LAB.data_in[25:25]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_17" from_pin="LABMLAB.data_out[17:17]" from_side="top" to_pin="LAB.data_in[27:27]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_19" from_pin="LABMLAB.data_out[19:19]" from_side="top" to_pin="LAB.data_in[29:29]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_21" from_pin="LABMLAB.data_out[21:21]" from_side="top" to_pin="LAB.data_in[31:31]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_23" from_pin="LABMLAB.data_out[23:23]" from_side="top" to_pin="LAB.data_in[33:33]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_25" from_pin="LABMLAB.data_out[25:25]" from_side="top" to_pin="LAB.data_in[35:35]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_27" from_pin="LABMLAB.data_out[27:27]" from_side="top" to_pin="LAB.data_in[37:37]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_29" from_pin="LABMLAB.data_out[29:29]" from_side="top" to_pin="LAB.data_in[39:39]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_31" from_pin="LABMLAB.data_out[31:31]" from_side="top" to_pin="LAB.data_in[41:41]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_33" from_pin="LABMLAB.data_out[33:33]" from_side="top" to_pin="LAB.data_in[43:43]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_35" from_pin="LABMLAB.data_out[35:35]" from_side="top" to_pin="LAB.data_in[45:45]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_37" from_pin="LABMLAB.data_out[37:37]" from_side="top" to_pin="LAB.data_in[47:47]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_39" from_pin="LABMLAB.data_out[39:39]" from_side="top" to_pin="LAB.data_in[49:49]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 20 direct connections coming from the even pin numbers of the adjacent LABMLAB located to the right of the LAB-->
+    <direct name="LABMLAB_side_sneak_LAB_0" from_pin="LABMLAB.data_out[0:0]" from_side="top" to_pin="LAB.data_in[12:12]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_2" from_pin="LABMLAB.data_out[2:2]" from_side="top" to_pin="LAB.data_in[14:14]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_4" from_pin="LABMLAB.data_out[4:4]" from_side="top" to_pin="LAB.data_in[16:16]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_6" from_pin="LABMLAB.data_out[6:6]" from_side="top" to_pin="LAB.data_in[18:18]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_8" from_pin="LABMLAB.data_out[8:8]" from_side="top" to_pin="LAB.data_in[20:20]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_10" from_pin="LABMLAB.data_out[10:10]" from_side="top" to_pin="LAB.data_in[22:22]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_12" from_pin="LABMLAB.data_out[12:12]" from_side="top" to_pin="LAB.data_in[24:24]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_14" from_pin="LABMLAB.data_out[14:14]" from_side="top" to_pin="LAB.data_in[26:26]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_16" from_pin="LABMLAB.data_out[16:16]" from_side="top" to_pin="LAB.data_in[28:28]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_18" from_pin="LABMLAB.data_out[18:18]" from_side="top" to_pin="LAB.data_in[30:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_20" from_pin="LABMLAB.data_out[20:20]" from_side="top" to_pin="LAB.data_in[32:32]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_22" from_pin="LABMLAB.data_out[22:22]" from_side="top" to_pin="LAB.data_in[34:34]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_24" from_pin="LABMLAB.data_out[24:24]" from_side="top" to_pin="LAB.data_in[36:36]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_26" from_pin="LABMLAB.data_out[26:26]" from_side="top" to_pin="LAB.data_in[38:38]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_28" from_pin="LABMLAB.data_out[28:28]" from_side="top" to_pin="LAB.data_in[40:40]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_30" from_pin="LABMLAB.data_out[30:30]" from_side="top" to_pin="LAB.data_in[42:42]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_32" from_pin="LABMLAB.data_out[32:32]" from_side="top" to_pin="LAB.data_in[44:44]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_34" from_pin="LABMLAB.data_out[34:34]" from_side="top" to_pin="LAB.data_in[46:46]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_36" from_pin="LABMLAB.data_out[36:36]" from_side="top" to_pin="LAB.data_in[48:48]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LAB_38" from_pin="LABMLAB.data_out[38:38]" from_side="top" to_pin="LAB.data_in[50:50]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+  
 
 
     <!-- 20 direct connections coming from the the adjacent memory block located to the left of the LAB-->
-    <direct name="Mem_side_sneak_LAB0" from_pin="M20K.data_out[19:0]" from_side="right" to_pin="LAB.data_in[30:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_LAB0" from_pin="M20K.data_out[19:0]" from_side="top" to_pin="LAB.data_in[30:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <!-- 20 direct connections coming from the the adjacent memory block located to the right of the LAB-->
-    <direct name="Mem_side_sneak_LAB1" from_pin="M20K.data_out[39:20]" from_side="left" to_pin="LAB.data_in[50:31]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_LAB1" from_pin="M20K.data_out[39:20]" from_side="top" to_pin="LAB.data_in[50:31]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
 
     <!-- 30 direct connections coming from the the adjacent DSP located to the left of the LAB-->
-    <direct name="DSP_side_sneak_LAB0" from_pin="DSP.result[29:0]" from_side="right" to_pin="LAB.data_in[29:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_LAB0" from_pin="DSP.result[29:0]" from_side="top" to_pin="LAB.data_in[29:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <!-- 30 direct connections coming from the the adjacent DSP located to the right of the LAB-->
-    <direct name="DSP_side_sneak_LAB1" from_pin="DSP.result[59:30]" from_side="left" to_pin="LAB.data_in[59:30]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_LAB1" from_pin="DSP.result[59:30]" from_side="top" to_pin="LAB.data_in[59:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
   
     <!-- 24 direct connections coming from the the adjacent iolane located to the left of the LAB-->
     <!-- all the LAB lines that don't have self-sneaks have an input coming from adjacent block - plus some of the LAB lines that have a self-sneak-->
-    <direct name="iolane_side_sneak_LAB_0" from_pin="iolane.core_out[23:0]" from_side="right" to_pin="LAB.data_in[34:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB_0" from_pin="iolane.core_out[23:0]" from_side="top" to_pin="LAB.data_in[34:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
 
     <!-- 24 direct connections coming from the the adjacent iolane located to the right of the LAB-->
     <!-- all the LAB lines that don't have self-sneaks have an input coming from adjacent block - plus some of the LAB lines that have a self-sneak-->
-    <direct name="iolane_side_sneak_LAB_1" from_pin="iolane.core_out[23:0]" from_side="left" to_pin="LAB.data_in[58:35]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
- 
+    <direct name="iolane_side_sneak_LAB_1" from_pin="iolane.core_out[23:0]" from_side="top" to_pin="LAB.data_in[58:35]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    
+    <!-- ############### Directlinks to LABMLABs ############### -->
+    <!-- Exactly similar to the connections made for LABs -->
+
+    <!-- self-sneaks -->
+    <!-- two fan-outs from data_out[0:0] -->
+    <direct name="LABMLAB_self_sneak0" from_pin="LABMLAB.data_out[0:0]" from_side="top" to_pin="LABMLAB.data_in[0:0]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak1" from_pin="LABMLAB.data_out[0:0]" from_side="top" to_pin="LABMLAB.data_in[1:1]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak2" from_pin="LABMLAB.data_out[3:1]" from_side="top" to_pin="LABMLAB.data_in[4:2]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[4:4] -->
+    <direct name="LABMLAB_self_sneak3" from_pin="LABMLAB.data_out[4:4]" from_side="top" to_pin="LABMLAB.data_in[5:5]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak4" from_pin="LABMLAB.data_out[4:4]" from_side="top" to_pin="LABMLAB.data_in[6:6]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak5" from_pin="LABMLAB.data_out[7:5]" from_side="top" to_pin="LABMLAB.data_in[9:7]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[8:8] -->
+    <direct name="LABMLAB_self_sneak6" from_pin="LABMLAB.data_out[8:8]" from_side="top" to_pin="LABMLAB.data_in[10:10]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[11:11] -->
+    <direct name="LABMLAB_self_sneak7" from_pin="LABMLAB.data_out[8:8]" from_side="top" to_pin="LABMLAB.data_in[12:12]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak8" from_pin="LABMLAB.data_out[10:9]" from_side="top" to_pin="LABMLAB.data_in[14:13]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[15:15] -->
+    <direct name="LABMLAB_self_sneak9" from_pin="LABMLAB.data_out[11:11]" from_side="top" to_pin="LABMLAB.data_in[16:16]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[12:12] -->
+    <direct name="LABMLAB_self_sneak10" from_pin="LABMLAB.data_out[12:12]" from_side="top" to_pin="LABMLAB.data_in[17:17]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak11" from_pin="LABMLAB.data_out[12:12]" from_side="top" to_pin="LABMLAB.data_in[18:18]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[19:19] -->
+    <direct name="LABMLAB_self_sneak12" from_pin="LABMLAB.data_out[15:13]" from_side="top" to_pin="LABMLAB.data_in[22:20]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[16:16] -->
+    <!-- skipping data_in[23:23] -->
+    <direct name="LABMLAB_self_sneak13" from_pin="LABMLAB.data_out[16:16]" from_side="top" to_pin="LABMLAB.data_in[24:24]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak14" from_pin="LABMLAB.data_out[16:16]" from_side="top" to_pin="LABMLAB.data_in[25:25]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak15" from_pin="LABMLAB.data_out[17:17]" from_side="top" to_pin="LABMLAB.data_in[26:26]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[27:27] -->
+    <direct name="LABMLAB_self_sneak16" from_pin="LABMLAB.data_out[19:18]" from_side="top" to_pin="LABMLAB.data_in[29:28]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[20:20] -->
+    <direct name="LABMLAB_self_sneak17" from_pin="LABMLAB.data_out[20:20]" from_side="top" to_pin="LABMLAB.data_in[30:30]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[31:31] -->
+    <direct name="LABMLAB_self_sneak18" from_pin="LABMLAB.data_out[20:20]" from_side="top" to_pin="LABMLAB.data_in[32:32]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak19" from_pin="LABMLAB.data_out[22:21]" from_side="top" to_pin="LABMLAB.data_in[34:33]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[35:35] -->
+    <direct name="LABMLAB_self_sneak20" from_pin="LABMLAB.data_out[23:23]" from_side="top" to_pin="LABMLAB.data_in[36:36]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[24:24] -->
+    <direct name="LABMLAB_self_sneak21" from_pin="LABMLAB.data_out[24:24]" from_side="top" to_pin="LABMLAB.data_in[37:37]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak22" from_pin="LABMLAB.data_out[24:24]" from_side="top" to_pin="LABMLAB.data_in[38:38]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[39:39] -->
+    <direct name="LABMLAB_self_sneak23" from_pin="LABMLAB.data_out[27:25]" from_side="top" to_pin="LABMLAB.data_in[42:40]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[28:28] -->
+    <!-- skipping data_in[43:43] -->
+    <direct name="LABMLAB_self_sneak24" from_pin="LABMLAB.data_out[28:28]" from_side="top" to_pin="LABMLAB.data_in[44:44]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak25" from_pin="LABMLAB.data_out[28:28]" from_side="top" to_pin="LABMLAB.data_in[45:45]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak26" from_pin="LABMLAB.data_out[29:29]" from_side="top" to_pin="LABMLAB.data_in[46:46]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- skipping data_in[47:47] -->
+    <direct name="LABMLAB_self_sneak27" from_pin="LABMLAB.data_out[31:30]" from_side="top" to_pin="LABMLAB.data_in[49:48]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[32:32] -->
+    <direct name="LABMLAB_self_sneak28" from_pin="LABMLAB.data_out[32:32]" from_side="top" to_pin="LABMLAB.data_in[50:50]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak29" from_pin="LABMLAB.data_out[32:32]" from_side="top" to_pin="LABMLAB.data_in[51:51]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak30" from_pin="LABMLAB.data_out[35:33]" from_side="top" to_pin="LABMLAB.data_in[54:52]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <!-- two fan-outs from data_out[36:36] -->
+    <direct name="LABMLAB_self_sneak31" from_pin="LABMLAB.data_out[36:36]" from_side="top" to_pin="LABMLAB.data_in[55:55]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak32" from_pin="LABMLAB.data_out[36:36]" from_side="top" to_pin="LABMLAB.data_in[56:56]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_self_sneak33" from_pin="LABMLAB.data_out[39:37]" from_side="top" to_pin="LABMLAB.data_in[59:57]" to_side="top" x_offset="0" y_offset="0" z_offset="0"/>
+    
+   
+    <!-- 20 direct connections coming from the odd pin numbers of the adjacent LABMLAB located to the left of the LABMLAB-->
+    <direct name="LABMLAB_side_sneak_LABMLAB_1" from_pin="LABMLAB.data_out[1:1]" from_side="top" to_pin="LABMLAB.data_in[11:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_3" from_pin="LABMLAB.data_out[3:3]" from_side="top" to_pin="LABMLAB.data_in[13:13]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_5" from_pin="LABMLAB.data_out[5:5]" from_side="top" to_pin="LABMLAB.data_in[15:15]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_7" from_pin="LABMLAB.data_out[7:7]" from_side="top" to_pin="LABMLAB.data_in[17:17]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_9" from_pin="LABMLAB.data_out[9:9]" from_side="top" to_pin="LABMLAB.data_in[19:19]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_11" from_pin="LABMLAB.data_out[11:11]" from_side="top" to_pin="LABMLAB.data_in[21:21]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_13" from_pin="LABMLAB.data_out[13:13]" from_side="top" to_pin="LABMLAB.data_in[23:23]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_15" from_pin="LABMLAB.data_out[15:15]" from_side="top" to_pin="LABMLAB.data_in[25:25]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_17" from_pin="LABMLAB.data_out[17:17]" from_side="top" to_pin="LABMLAB.data_in[27:27]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_19" from_pin="LABMLAB.data_out[19:19]" from_side="top" to_pin="LABMLAB.data_in[29:29]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_21" from_pin="LABMLAB.data_out[21:21]" from_side="top" to_pin="LABMLAB.data_in[31:31]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_23" from_pin="LABMLAB.data_out[23:23]" from_side="top" to_pin="LABMLAB.data_in[33:33]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_25" from_pin="LABMLAB.data_out[25:25]" from_side="top" to_pin="LABMLAB.data_in[35:35]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_27" from_pin="LABMLAB.data_out[27:27]" from_side="top" to_pin="LABMLAB.data_in[37:37]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_29" from_pin="LABMLAB.data_out[29:29]" from_side="top" to_pin="LABMLAB.data_in[39:39]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_31" from_pin="LABMLAB.data_out[31:31]" from_side="top" to_pin="LABMLAB.data_in[41:41]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_33" from_pin="LABMLAB.data_out[33:33]" from_side="top" to_pin="LABMLAB.data_in[43:43]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_35" from_pin="LABMLAB.data_out[35:35]" from_side="top" to_pin="LABMLAB.data_in[45:45]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_37" from_pin="LABMLAB.data_out[37:37]" from_side="top" to_pin="LABMLAB.data_in[47:47]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_39" from_pin="LABMLAB.data_out[39:39]" from_side="top" to_pin="LABMLAB.data_in[49:49]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 20 direct connections coming from the even pin numbers of the adjacent LABMLAB located to the right of the LABMLAB-->
+    <direct name="LABMLAB_side_sneak_LABMLAB_0" from_pin="LABMLAB.data_out[0:0]" from_side="top" to_pin="LABMLAB.data_in[12:12]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_2" from_pin="LABMLAB.data_out[2:2]" from_side="top" to_pin="LABMLAB.data_in[14:14]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_4" from_pin="LABMLAB.data_out[4:4]" from_side="top" to_pin="LABMLAB.data_in[16:16]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_6" from_pin="LABMLAB.data_out[6:6]" from_side="top" to_pin="LABMLAB.data_in[18:18]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_8" from_pin="LABMLAB.data_out[8:8]" from_side="top" to_pin="LABMLAB.data_in[20:20]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_10" from_pin="LABMLAB.data_out[10:10]" from_side="top" to_pin="LABMLAB.data_in[22:22]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_12" from_pin="LABMLAB.data_out[12:12]" from_side="top" to_pin="LABMLAB.data_in[24:24]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_14" from_pin="LABMLAB.data_out[14:14]" from_side="top" to_pin="LABMLAB.data_in[26:26]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_16" from_pin="LABMLAB.data_out[16:16]" from_side="top" to_pin="LABMLAB.data_in[28:28]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_18" from_pin="LABMLAB.data_out[18:18]" from_side="top" to_pin="LABMLAB.data_in[30:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_20" from_pin="LABMLAB.data_out[20:20]" from_side="top" to_pin="LABMLAB.data_in[32:32]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_22" from_pin="LABMLAB.data_out[22:22]" from_side="top" to_pin="LABMLAB.data_in[34:34]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_24" from_pin="LABMLAB.data_out[24:24]" from_side="top" to_pin="LABMLAB.data_in[36:36]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_26" from_pin="LABMLAB.data_out[26:26]" from_side="top" to_pin="LABMLAB.data_in[38:38]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_28" from_pin="LABMLAB.data_out[28:28]" from_side="top" to_pin="LABMLAB.data_in[40:40]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_30" from_pin="LABMLAB.data_out[30:30]" from_side="top" to_pin="LABMLAB.data_in[42:42]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_32" from_pin="LABMLAB.data_out[32:32]" from_side="top" to_pin="LABMLAB.data_in[44:44]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_34" from_pin="LABMLAB.data_out[34:34]" from_side="top" to_pin="LABMLAB.data_in[46:46]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_36" from_pin="LABMLAB.data_out[36:36]" from_side="top" to_pin="LABMLAB.data_in[48:48]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_LABMLAB_38" from_pin="LABMLAB.data_out[38:38]" from_side="top" to_pin="LABMLAB.data_in[50:50]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+
+    <!-- 20 direct connections coming from the odd pin numbers of the adjacent LAB located to the left of the LABMLAB-->
+    <direct name="LAB_side_sneak_LABMLAB_1" from_pin="LAB.data_out[1:1]" from_side="top" to_pin="LABMLAB.data_in[11:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_3" from_pin="LAB.data_out[3:3]" from_side="top" to_pin="LABMLAB.data_in[13:13]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_5" from_pin="LAB.data_out[5:5]" from_side="top" to_pin="LABMLAB.data_in[15:15]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_7" from_pin="LAB.data_out[7:7]" from_side="top" to_pin="LABMLAB.data_in[17:17]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_9" from_pin="LAB.data_out[9:9]" from_side="top" to_pin="LABMLAB.data_in[19:19]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_11" from_pin="LAB.data_out[11:11]" from_side="top" to_pin="LABMLAB.data_in[21:21]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_13" from_pin="LAB.data_out[13:13]" from_side="top" to_pin="LABMLAB.data_in[23:23]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_15" from_pin="LAB.data_out[15:15]" from_side="top" to_pin="LABMLAB.data_in[25:25]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_17" from_pin="LAB.data_out[17:17]" from_side="top" to_pin="LABMLAB.data_in[27:27]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_19" from_pin="LAB.data_out[19:19]" from_side="top" to_pin="LABMLAB.data_in[29:29]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_21" from_pin="LAB.data_out[21:21]" from_side="top" to_pin="LABMLAB.data_in[31:31]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_23" from_pin="LAB.data_out[23:23]" from_side="top" to_pin="LABMLAB.data_in[33:33]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_25" from_pin="LAB.data_out[25:25]" from_side="top" to_pin="LABMLAB.data_in[35:35]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_27" from_pin="LAB.data_out[27:27]" from_side="top" to_pin="LABMLAB.data_in[37:37]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_29" from_pin="LAB.data_out[29:29]" from_side="top" to_pin="LABMLAB.data_in[39:39]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_31" from_pin="LAB.data_out[31:31]" from_side="top" to_pin="LABMLAB.data_in[41:41]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_33" from_pin="LAB.data_out[33:33]" from_side="top" to_pin="LABMLAB.data_in[43:43]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_35" from_pin="LAB.data_out[35:35]" from_side="top" to_pin="LABMLAB.data_in[45:45]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_37" from_pin="LAB.data_out[37:37]" from_side="top" to_pin="LABMLAB.data_in[47:47]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_39" from_pin="LAB.data_out[39:39]" from_side="top" to_pin="LABMLAB.data_in[49:49]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 20 direct connections coming from the even pin numbers of the adjacent LAB located to the right of the LABMLAB-->
+    <direct name="LAB_side_sneak_LABMLAB_0" from_pin="LAB.data_out[0:0]" from_side="top" to_pin="LABMLAB.data_in[12:12]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_2" from_pin="LAB.data_out[2:2]" from_side="top" to_pin="LABMLAB.data_in[14:14]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_4" from_pin="LAB.data_out[4:4]" from_side="top" to_pin="LABMLAB.data_in[16:16]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_6" from_pin="LAB.data_out[6:6]" from_side="top" to_pin="LABMLAB.data_in[18:18]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_8" from_pin="LAB.data_out[8:8]" from_side="top" to_pin="LABMLAB.data_in[20:20]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_10" from_pin="LAB.data_out[10:10]" from_side="top" to_pin="LABMLAB.data_in[22:22]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_12" from_pin="LAB.data_out[12:12]" from_side="top" to_pin="LABMLAB.data_in[24:24]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_14" from_pin="LAB.data_out[14:14]" from_side="top" to_pin="LABMLAB.data_in[26:26]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_16" from_pin="LAB.data_out[16:16]" from_side="top" to_pin="LABMLAB.data_in[28:28]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_18" from_pin="LAB.data_out[18:18]" from_side="top" to_pin="LABMLAB.data_in[30:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_20" from_pin="LAB.data_out[20:20]" from_side="top" to_pin="LABMLAB.data_in[32:32]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_22" from_pin="LAB.data_out[22:22]" from_side="top" to_pin="LABMLAB.data_in[34:34]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_24" from_pin="LAB.data_out[24:24]" from_side="top" to_pin="LABMLAB.data_in[36:36]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_26" from_pin="LAB.data_out[26:26]" from_side="top" to_pin="LABMLAB.data_in[38:38]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_28" from_pin="LAB.data_out[28:28]" from_side="top" to_pin="LABMLAB.data_in[40:40]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_30" from_pin="LAB.data_out[30:30]" from_side="top" to_pin="LABMLAB.data_in[42:42]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_32" from_pin="LAB.data_out[32:32]" from_side="top" to_pin="LABMLAB.data_in[44:44]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_34" from_pin="LAB.data_out[34:34]" from_side="top" to_pin="LABMLAB.data_in[46:46]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_36" from_pin="LAB.data_out[36:36]" from_side="top" to_pin="LABMLAB.data_in[48:48]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_LABMLAB_38" from_pin="LAB.data_out[38:38]" from_side="top" to_pin="LABMLAB.data_in[50:50]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+  
+
+
+    <!-- 20 direct connections coming from the the adjacent memory block located to the left of the LAB-->
+    <direct name="Mem_side_sneak_LABMLAB0" from_pin="M20K.data_out[19:0]" from_side="top" to_pin="LABMLAB.data_in[30:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 20 direct connections coming from the the adjacent memory block located to the right of the LAB-->
+    <direct name="Mem_side_sneak_LABMLAB1" from_pin="M20K.data_out[39:20]" from_side="top" to_pin="LABMLAB.data_in[50:31]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+
+    <!-- 30 direct connections coming from the the adjacent DSP located to the left of the LAB-->
+    <direct name="DSP_side_sneak_LABMLAB0" from_pin="DSP.result[29:0]" from_side="top" to_pin="LABMLAB.data_in[29:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 30 direct connections coming from the the adjacent DSP located to the right of the LAB-->
+    <direct name="DSP_side_sneak_LABMLAB1" from_pin="DSP.result[59:30]" from_side="top" to_pin="LABMLAB.data_in[59:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+  
+    <!-- 24 direct connections coming from the the adjacent iolane located to the left of the LAB-->
+    <!-- all the LAB lines that don't have self-sneaks have an input coming from adjacent block - plus some of the LAB lines that have a self-sneak-->
+    <direct name="iolane_side_sneak_LABMLAB_0" from_pin="iolane.core_out[23:0]" from_side="top" to_pin="LABMLAB.data_in[34:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 24 direct connections coming from the the adjacent iolane located to the right of the LAB-->
+    <!-- all the LAB lines that don't have self-sneaks have an input coming from adjacent block - plus some of the LAB lines that have a self-sneak-->
+    <direct name="iolane_side_sneak_LABMLAB_1" from_pin="iolane.core_out[23:0]" from_side="top" to_pin="LABMLAB.data_in[58:35]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+
     <!-- ############### Directlinks to DSPs ############### -->
 
     <!-- 20 direct connections coming from the odd pin numbers of the adjacent LAB located to the left of the DSP-->
-    <direct name="LAB_side_sneak_DSP_1" from_pin="LAB.data_out[1:1]" from_side="right" to_pin="DSP.dspin[1:1]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_3" from_pin="LAB.data_out[3:3]" from_side="right" to_pin="DSP.dspin[3:3]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_5" from_pin="LAB.data_out[5:5]" from_side="right" to_pin="DSP.dspin[5:5]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_7" from_pin="LAB.data_out[7:7]" from_side="right" to_pin="DSP.dspin[7:7]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_9" from_pin="LAB.data_out[9:9]" from_side="right" to_pin="DSP.dspin[9:9]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_11" from_pin="LAB.data_out[11:11]" from_side="right" to_pin="DSP.dspin[11:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_13" from_pin="LAB.data_out[13:13]" from_side="right" to_pin="DSP.dspin[13:13]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_15" from_pin="LAB.data_out[15:15]" from_side="right" to_pin="DSP.dspin[15:15]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_17" from_pin="LAB.data_out[17:17]" from_side="right" to_pin="DSP.dspin[17:17]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_19" from_pin="LAB.data_out[19:19]" from_side="right" to_pin="DSP.dspin[19:19]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_21" from_pin="LAB.data_out[21:21]" from_side="right" to_pin="DSP.dspin[21:21]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_23" from_pin="LAB.data_out[23:23]" from_side="right" to_pin="DSP.dspin[23:23]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_25" from_pin="LAB.data_out[25:25]" from_side="right" to_pin="DSP.dspin[25:25]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_27" from_pin="LAB.data_out[27:27]" from_side="right" to_pin="DSP.dspin[27:27]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_29" from_pin="LAB.data_out[29:29]" from_side="right" to_pin="DSP.dspin[29:29]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_31" from_pin="LAB.data_out[31:31]" from_side="right" to_pin="DSP.dspin[31:31]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_33" from_pin="LAB.data_out[33:33]" from_side="right" to_pin="DSP.dspin[33:33]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_35" from_pin="LAB.data_out[35:35]" from_side="right" to_pin="DSP.dspin[35:35]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_37" from_pin="LAB.data_out[37:37]" from_side="right" to_pin="DSP.dspin[37:37]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_39" from_pin="LAB.data_out[39:39]" from_side="right" to_pin="DSP.dspin[39:39]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_1" from_pin="LAB.data_out[1:1]" from_side="top" to_pin="DSP.dspin[1:1]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_3" from_pin="LAB.data_out[3:3]" from_side="top" to_pin="DSP.dspin[3:3]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_5" from_pin="LAB.data_out[5:5]" from_side="top" to_pin="DSP.dspin[5:5]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_7" from_pin="LAB.data_out[7:7]" from_side="top" to_pin="DSP.dspin[7:7]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_9" from_pin="LAB.data_out[9:9]" from_side="top" to_pin="DSP.dspin[9:9]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_11" from_pin="LAB.data_out[11:11]" from_side="top" to_pin="DSP.dspin[11:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_13" from_pin="LAB.data_out[13:13]" from_side="top" to_pin="DSP.dspin[13:13]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_15" from_pin="LAB.data_out[15:15]" from_side="top" to_pin="DSP.dspin[15:15]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_17" from_pin="LAB.data_out[17:17]" from_side="top" to_pin="DSP.dspin[17:17]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_19" from_pin="LAB.data_out[19:19]" from_side="top" to_pin="DSP.dspin[19:19]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_21" from_pin="LAB.data_out[21:21]" from_side="top" to_pin="DSP.dspin[21:21]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_23" from_pin="LAB.data_out[23:23]" from_side="top" to_pin="DSP.dspin[23:23]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_25" from_pin="LAB.data_out[25:25]" from_side="top" to_pin="DSP.dspin[25:25]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_27" from_pin="LAB.data_out[27:27]" from_side="top" to_pin="DSP.dspin[27:27]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_29" from_pin="LAB.data_out[29:29]" from_side="top" to_pin="DSP.dspin[29:29]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_31" from_pin="LAB.data_out[31:31]" from_side="top" to_pin="DSP.dspin[31:31]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_33" from_pin="LAB.data_out[33:33]" from_side="top" to_pin="DSP.dspin[33:33]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_35" from_pin="LAB.data_out[35:35]" from_side="top" to_pin="DSP.dspin[35:35]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_37" from_pin="LAB.data_out[37:37]" from_side="top" to_pin="DSP.dspin[37:37]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_39" from_pin="LAB.data_out[39:39]" from_side="top" to_pin="DSP.dspin[39:39]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
 
     <!-- 20 direct connections coming from the even pin numbers of the adjacent LAB located to the right of the DSP-->
-    <direct name="LAB_side_sneak_DSP_0" from_pin="LAB.data_out[0:0]" from_side="left" to_pin="DSP.dspin[0:0]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_2" from_pin="LAB.data_out[2:2]" from_side="left" to_pin="DSP.dspin[2:2]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_4" from_pin="LAB.data_out[4:4]" from_side="left" to_pin="DSP.dspin[4:4]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_6" from_pin="LAB.data_out[6:6]" from_side="left" to_pin="DSP.dspin[6:6]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_8" from_pin="LAB.data_out[8:8]" from_side="left" to_pin="DSP.dspin[8:8]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_10" from_pin="LAB.data_out[10:10]" from_side="left" to_pin="DSP.dspin[10:10]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_12" from_pin="LAB.data_out[12:12]" from_side="left" to_pin="DSP.dspin[12:12]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_14" from_pin="LAB.data_out[14:14]" from_side="left" to_pin="DSP.dspin[14:14]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_16" from_pin="LAB.data_out[16:16]" from_side="left" to_pin="DSP.dspin[16:16]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_18" from_pin="LAB.data_out[18:18]" from_side="left" to_pin="DSP.dspin[18:18]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_20" from_pin="LAB.data_out[20:20]" from_side="left" to_pin="DSP.dspin[20:20]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_22" from_pin="LAB.data_out[22:22]" from_side="left" to_pin="DSP.dspin[22:22]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_24" from_pin="LAB.data_out[24:24]" from_side="left" to_pin="DSP.dspin[24:24]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_26" from_pin="LAB.data_out[26:26]" from_side="left" to_pin="DSP.dspin[26:26]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_28" from_pin="LAB.data_out[28:28]" from_side="left" to_pin="DSP.dspin[28:28]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_30" from_pin="LAB.data_out[30:30]" from_side="left" to_pin="DSP.dspin[30:30]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_32" from_pin="LAB.data_out[32:32]" from_side="left" to_pin="DSP.dspin[32:32]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_34" from_pin="LAB.data_out[34:34]" from_side="left" to_pin="DSP.dspin[34:34]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_36" from_pin="LAB.data_out[36:36]" from_side="left" to_pin="DSP.dspin[36:36]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_DSP_38" from_pin="LAB.data_out[38:38]" from_side="left" to_pin="DSP.dspin[38:38]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_0" from_pin="LAB.data_out[0:0]" from_side="top" to_pin="DSP.dspin[0:0]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_2" from_pin="LAB.data_out[2:2]" from_side="top" to_pin="DSP.dspin[2:2]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_4" from_pin="LAB.data_out[4:4]" from_side="top" to_pin="DSP.dspin[4:4]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_6" from_pin="LAB.data_out[6:6]" from_side="top" to_pin="DSP.dspin[6:6]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_8" from_pin="LAB.data_out[8:8]" from_side="top" to_pin="DSP.dspin[8:8]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_10" from_pin="LAB.data_out[10:10]" from_side="top" to_pin="DSP.dspin[10:10]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_12" from_pin="LAB.data_out[12:12]" from_side="top" to_pin="DSP.dspin[12:12]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_14" from_pin="LAB.data_out[14:14]" from_side="top" to_pin="DSP.dspin[14:14]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_16" from_pin="LAB.data_out[16:16]" from_side="top" to_pin="DSP.dspin[16:16]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_18" from_pin="LAB.data_out[18:18]" from_side="top" to_pin="DSP.dspin[18:18]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_20" from_pin="LAB.data_out[20:20]" from_side="top" to_pin="DSP.dspin[20:20]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_22" from_pin="LAB.data_out[22:22]" from_side="top" to_pin="DSP.dspin[22:22]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_24" from_pin="LAB.data_out[24:24]" from_side="top" to_pin="DSP.dspin[24:24]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_26" from_pin="LAB.data_out[26:26]" from_side="top" to_pin="DSP.dspin[26:26]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_28" from_pin="LAB.data_out[28:28]" from_side="top" to_pin="DSP.dspin[28:28]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_30" from_pin="LAB.data_out[30:30]" from_side="top" to_pin="DSP.dspin[30:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_32" from_pin="LAB.data_out[32:32]" from_side="top" to_pin="DSP.dspin[32:32]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_34" from_pin="LAB.data_out[34:34]" from_side="top" to_pin="DSP.dspin[34:34]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_36" from_pin="LAB.data_out[36:36]" from_side="top" to_pin="DSP.dspin[36:36]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_DSP_38" from_pin="LAB.data_out[38:38]" from_side="top" to_pin="DSP.dspin[38:38]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    
+    <!-- 20 direct connections coming from the odd pin numbers of the adjacent LABMLAB located to the left of the DSP-->
+    <direct name="LABMLAB_side_sneak_DSP_1" from_pin="LABMLAB.data_out[1:1]" from_side="top" to_pin="DSP.dspin[1:1]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_3" from_pin="LABMLAB.data_out[3:3]" from_side="top" to_pin="DSP.dspin[3:3]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_5" from_pin="LABMLAB.data_out[5:5]" from_side="top" to_pin="DSP.dspin[5:5]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_7" from_pin="LABMLAB.data_out[7:7]" from_side="top" to_pin="DSP.dspin[7:7]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_9" from_pin="LABMLAB.data_out[9:9]" from_side="top" to_pin="DSP.dspin[9:9]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_11" from_pin="LABMLAB.data_out[11:11]" from_side="top" to_pin="DSP.dspin[11:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_13" from_pin="LABMLAB.data_out[13:13]" from_side="top" to_pin="DSP.dspin[13:13]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_15" from_pin="LABMLAB.data_out[15:15]" from_side="top" to_pin="DSP.dspin[15:15]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_17" from_pin="LABMLAB.data_out[17:17]" from_side="top" to_pin="DSP.dspin[17:17]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_19" from_pin="LABMLAB.data_out[19:19]" from_side="top" to_pin="DSP.dspin[19:19]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_21" from_pin="LABMLAB.data_out[21:21]" from_side="top" to_pin="DSP.dspin[21:21]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_23" from_pin="LABMLAB.data_out[23:23]" from_side="top" to_pin="DSP.dspin[23:23]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_25" from_pin="LABMLAB.data_out[25:25]" from_side="top" to_pin="DSP.dspin[25:25]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_27" from_pin="LABMLAB.data_out[27:27]" from_side="top" to_pin="DSP.dspin[27:27]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_29" from_pin="LABMLAB.data_out[29:29]" from_side="top" to_pin="DSP.dspin[29:29]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_31" from_pin="LABMLAB.data_out[31:31]" from_side="top" to_pin="DSP.dspin[31:31]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_33" from_pin="LABMLAB.data_out[33:33]" from_side="top" to_pin="DSP.dspin[33:33]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_35" from_pin="LABMLAB.data_out[35:35]" from_side="top" to_pin="DSP.dspin[35:35]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_37" from_pin="LABMLAB.data_out[37:37]" from_side="top" to_pin="DSP.dspin[37:37]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_39" from_pin="LABMLAB.data_out[39:39]" from_side="top" to_pin="DSP.dspin[39:39]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 20 direct connections coming from the even pin numbers of the adjacent LABMLAB located to the right of the DSP-->
+    <direct name="LABMLAB_side_sneak_DSP_0" from_pin="LABMLAB.data_out[0:0]" from_side="top" to_pin="DSP.dspin[0:0]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_2" from_pin="LABMLAB.data_out[2:2]" from_side="top" to_pin="DSP.dspin[2:2]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_4" from_pin="LABMLAB.data_out[4:4]" from_side="top" to_pin="DSP.dspin[4:4]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_6" from_pin="LABMLAB.data_out[6:6]" from_side="top" to_pin="DSP.dspin[6:6]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_8" from_pin="LABMLAB.data_out[8:8]" from_side="top" to_pin="DSP.dspin[8:8]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_10" from_pin="LABMLAB.data_out[10:10]" from_side="top" to_pin="DSP.dspin[10:10]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_12" from_pin="LABMLAB.data_out[12:12]" from_side="top" to_pin="DSP.dspin[12:12]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_14" from_pin="LABMLAB.data_out[14:14]" from_side="top" to_pin="DSP.dspin[14:14]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_16" from_pin="LABMLAB.data_out[16:16]" from_side="top" to_pin="DSP.dspin[16:16]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_18" from_pin="LABMLAB.data_out[18:18]" from_side="top" to_pin="DSP.dspin[18:18]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_20" from_pin="LABMLAB.data_out[20:20]" from_side="top" to_pin="DSP.dspin[20:20]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_22" from_pin="LABMLAB.data_out[22:22]" from_side="top" to_pin="DSP.dspin[22:22]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_24" from_pin="LABMLAB.data_out[24:24]" from_side="top" to_pin="DSP.dspin[24:24]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_26" from_pin="LABMLAB.data_out[26:26]" from_side="top" to_pin="DSP.dspin[26:26]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_28" from_pin="LABMLAB.data_out[28:28]" from_side="top" to_pin="DSP.dspin[28:28]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_30" from_pin="LABMLAB.data_out[30:30]" from_side="top" to_pin="DSP.dspin[30:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_32" from_pin="LABMLAB.data_out[32:32]" from_side="top" to_pin="DSP.dspin[32:32]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_34" from_pin="LABMLAB.data_out[34:34]" from_side="top" to_pin="DSP.dspin[34:34]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_36" from_pin="LABMLAB.data_out[36:36]" from_side="top" to_pin="DSP.dspin[36:36]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_DSP_38" from_pin="LABMLAB.data_out[38:38]" from_side="top" to_pin="DSP.dspin[38:38]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
  
     <!-- 40 direct connections coming from the the adjacent memory block located to the left of the DSP-->
-    <direct name="Mem_side_sneak_DSP0" from_pin="M20K.data_out[39:0]" from_side="right" to_pin="DSP.dspin[153:114]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_DSP0" from_pin="M20K.data_out[39:0]" from_side="top" to_pin="DSP.dspin[153:114]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <!-- 40 direct connections coming from the the adjacent memory block located to the right of the DSP-->
-    <direct name="Mem_side_sneak_DSP1" from_pin="M20K.data_out[39:0]" from_side="left" to_pin="DSP.dspin[79:40]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_DSP1" from_pin="M20K.data_out[39:0]" from_side="top" to_pin="DSP.dspin[79:40]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
 
     <!-- 74 direct connections coming from the the adjacent DSP located to the left of the DSP-->
-    <direct name="DSP_side_sneak_DSP0" from_pin="DSP.result[73:0]" from_side="right" to_pin="DSP.dspin[187:114]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_DSP0" from_pin="DSP.result[73:0]" from_side="top" to_pin="DSP.dspin[187:114]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <!-- 74 direct connections coming from the the adjacent DSP located to the right of the DSP-->
-    <direct name="DSP_side_sneak_DSP1" from_pin="DSP.result[73:0]" from_side="left" to_pin="DSP.dspin[113:40]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_DSP1" from_pin="DSP.result[73:0]" from_side="top" to_pin="DSP.dspin[113:40]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
 
     <!-- 24 direct connections coming from the the adjacent iolane located to the left of the DSP-->
-    <direct name="iolane_side_sneak_LAB0" from_pin="iolane.core_out[23:0]" from_side="right" to_pin="DSP.dspin[137:114]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB0" from_pin="iolane.core_out[23:0]" from_side="top" to_pin="DSP.dspin[137:114]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <!-- 24 direct connections coming from the the adjacent iolane located to the right of the DSP-->
-    <direct name="iolane_side_sneak_LAB1" from_pin="iolane.core_out[23:0]" from_side="left" to_pin="DSP.dspin[63:40]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_LAB1" from_pin="iolane.core_out[23:0]" from_side="top" to_pin="DSP.dspin[63:40]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
 
 
     <!-- ############### Directlinks to RAMs ############### -->
@@ -2805,150 +3057,237 @@
     -->
 
     <!-- 20 direct connections coming from the odd pin numbers of the adjacent LAB located to the left of the RAM-->
-    <direct name="LAB_side_sneak_Mem_1" from_pin="LAB.data_out[1:1]" from_side="right" to_pin="M20K.data_addr_control_in[0:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_3" from_pin="LAB.data_out[3:3]" from_side="right" to_pin="M20K.data_addr_control_in[18:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_5" from_pin="LAB.data_out[5:5]" from_side="right" to_pin="M20K.data_addr_control_in[36:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_7" from_pin="LAB.data_out[7:7]" from_side="right" to_pin="M20K.data_addr_control_in[54:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_9" from_pin="LAB.data_out[9:9]" from_side="right" to_pin="M20K.data_addr_control_in[72:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_11" from_pin="LAB.data_out[11:11]" from_side="right" to_pin="M20K.data_addr_control_in[90:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_13" from_pin="LAB.data_out[13:13]" from_side="right" to_pin="M20K.data_addr_control_in[108:108]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_15" from_pin="LAB.data_out[15:15]" from_side="right" to_pin="M20K.data_addr_control_in[1:1]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_17" from_pin="LAB.data_out[17:17]" from_side="right" to_pin="M20K.data_addr_control_in[19:19]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_19" from_pin="LAB.data_out[19:19]" from_side="right" to_pin="M20K.data_addr_control_in[37:37]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_21" from_pin="LAB.data_out[21:21]" from_side="right" to_pin="M20K.data_addr_control_in[55:55]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_23" from_pin="LAB.data_out[23:23]" from_side="right" to_pin="M20K.data_addr_control_in[73:73]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_25" from_pin="LAB.data_out[25:25]" from_side="right" to_pin="M20K.data_addr_control_in[91:91]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_27" from_pin="LAB.data_out[27:27]" from_side="right" to_pin="M20K.data_addr_control_in[109:109]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_29" from_pin="LAB.data_out[29:29]" from_side="right" to_pin="M20K.data_addr_control_in[2:2]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_31" from_pin="LAB.data_out[31:31]" from_side="right" to_pin="M20K.data_addr_control_in[20:20]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_33" from_pin="LAB.data_out[33:33]" from_side="right" to_pin="M20K.data_addr_control_in[38:38]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_35" from_pin="LAB.data_out[35:35]" from_side="right" to_pin="M20K.data_addr_control_in[56:56]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_37" from_pin="LAB.data_out[37:37]" from_side="right" to_pin="M20K.data_addr_control_in[74:74]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_39" from_pin="LAB.data_out[39:39]" from_side="right" to_pin="M20K.data_addr_control_in[92:92]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_1" from_pin="LAB.data_out[1:1]" from_side="top" to_pin="M20K.data_addr_control_in[0:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_3" from_pin="LAB.data_out[3:3]" from_side="top" to_pin="M20K.data_addr_control_in[18:18]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_5" from_pin="LAB.data_out[5:5]" from_side="top" to_pin="M20K.data_addr_control_in[36:36]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_7" from_pin="LAB.data_out[7:7]" from_side="top" to_pin="M20K.data_addr_control_in[54:54]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_9" from_pin="LAB.data_out[9:9]" from_side="top" to_pin="M20K.data_addr_control_in[72:72]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_11" from_pin="LAB.data_out[11:11]" from_side="top" to_pin="M20K.data_addr_control_in[90:90]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_13" from_pin="LAB.data_out[13:13]" from_side="top" to_pin="M20K.data_addr_control_in[108:108]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_15" from_pin="LAB.data_out[15:15]" from_side="top" to_pin="M20K.data_addr_control_in[1:1]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_17" from_pin="LAB.data_out[17:17]" from_side="top" to_pin="M20K.data_addr_control_in[19:19]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_19" from_pin="LAB.data_out[19:19]" from_side="top" to_pin="M20K.data_addr_control_in[37:37]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_21" from_pin="LAB.data_out[21:21]" from_side="top" to_pin="M20K.data_addr_control_in[55:55]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_23" from_pin="LAB.data_out[23:23]" from_side="top" to_pin="M20K.data_addr_control_in[73:73]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_25" from_pin="LAB.data_out[25:25]" from_side="top" to_pin="M20K.data_addr_control_in[91:91]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_27" from_pin="LAB.data_out[27:27]" from_side="top" to_pin="M20K.data_addr_control_in[109:109]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_29" from_pin="LAB.data_out[29:29]" from_side="top" to_pin="M20K.data_addr_control_in[2:2]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_31" from_pin="LAB.data_out[31:31]" from_side="top" to_pin="M20K.data_addr_control_in[20:20]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_33" from_pin="LAB.data_out[33:33]" from_side="top" to_pin="M20K.data_addr_control_in[38:38]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_35" from_pin="LAB.data_out[35:35]" from_side="top" to_pin="M20K.data_addr_control_in[56:56]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_37" from_pin="LAB.data_out[37:37]" from_side="top" to_pin="M20K.data_addr_control_in[74:74]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_39" from_pin="LAB.data_out[39:39]" from_side="top" to_pin="M20K.data_addr_control_in[92:92]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <!-- 20 direct connections coming from the even pin numbers of the adjacent LAB located to the right of the RAM-->
-    <direct name="LAB_side_sneak_Mem_0" from_pin="LAB.data_out[0:0]" from_side="left" to_pin="M20K.data_addr_control_in[17:17]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_2" from_pin="LAB.data_out[2:2]" from_side="left" to_pin="M20K.data_addr_control_in[35:35]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_4" from_pin="LAB.data_out[4:4]" from_side="left" to_pin="M20K.data_addr_control_in[53:53]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_6" from_pin="LAB.data_out[6:6]" from_side="left" to_pin="M20K.data_addr_control_in[71:71]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_8" from_pin="LAB.data_out[8:8]" from_side="left" to_pin="M20K.data_addr_control_in[89:89]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_10" from_pin="LAB.data_out[10:10]" from_side="left" to_pin="M20K.data_addr_control_in[107:107]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_12" from_pin="LAB.data_out[12:12]" from_side="left" to_pin="M20K.data_addr_control_in[119:119]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_14" from_pin="LAB.data_out[14:14]" from_side="left" to_pin="M20K.data_addr_control_in[16:16]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_16" from_pin="LAB.data_out[16:16]" from_side="left" to_pin="M20K.data_addr_control_in[34:34]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_18" from_pin="LAB.data_out[18:18]" from_side="left" to_pin="M20K.data_addr_control_in[52:52]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_20" from_pin="LAB.data_out[20:20]" from_side="left" to_pin="M20K.data_addr_control_in[70:70]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_22" from_pin="LAB.data_out[22:22]" from_side="left" to_pin="M20K.data_addr_control_in[88:88]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_24" from_pin="LAB.data_out[24:24]" from_side="left" to_pin="M20K.data_addr_control_in[106:106]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_26" from_pin="LAB.data_out[26:26]" from_side="left" to_pin="M20K.data_addr_control_in[118:118]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_28" from_pin="LAB.data_out[28:28]" from_side="left" to_pin="M20K.data_addr_control_in[15:15]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_30" from_pin="LAB.data_out[30:30]" from_side="left" to_pin="M20K.data_addr_control_in[33:33]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_32" from_pin="LAB.data_out[32:32]" from_side="left" to_pin="M20K.data_addr_control_in[51:51]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_34" from_pin="LAB.data_out[34:34]" from_side="left" to_pin="M20K.data_addr_control_in[69:69]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_36" from_pin="LAB.data_out[36:36]" from_side="left" to_pin="M20K.data_addr_control_in[87:87]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_Mem_38" from_pin="LAB.data_out[38:38]" from_side="left" to_pin="M20K.data_addr_control_in[105:105]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_0" from_pin="LAB.data_out[0:0]" from_side="top" to_pin="M20K.data_addr_control_in[17:17]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_2" from_pin="LAB.data_out[2:2]" from_side="top" to_pin="M20K.data_addr_control_in[35:35]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_4" from_pin="LAB.data_out[4:4]" from_side="top" to_pin="M20K.data_addr_control_in[53:53]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_6" from_pin="LAB.data_out[6:6]" from_side="top" to_pin="M20K.data_addr_control_in[71:71]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_8" from_pin="LAB.data_out[8:8]" from_side="top" to_pin="M20K.data_addr_control_in[89:89]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_10" from_pin="LAB.data_out[10:10]" from_side="top" to_pin="M20K.data_addr_control_in[107:107]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_12" from_pin="LAB.data_out[12:12]" from_side="top" to_pin="M20K.data_addr_control_in[119:119]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_14" from_pin="LAB.data_out[14:14]" from_side="top" to_pin="M20K.data_addr_control_in[16:16]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_16" from_pin="LAB.data_out[16:16]" from_side="top" to_pin="M20K.data_addr_control_in[34:34]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_18" from_pin="LAB.data_out[18:18]" from_side="top" to_pin="M20K.data_addr_control_in[52:52]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_20" from_pin="LAB.data_out[20:20]" from_side="top" to_pin="M20K.data_addr_control_in[70:70]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_22" from_pin="LAB.data_out[22:22]" from_side="top" to_pin="M20K.data_addr_control_in[88:88]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_24" from_pin="LAB.data_out[24:24]" from_side="top" to_pin="M20K.data_addr_control_in[106:106]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_26" from_pin="LAB.data_out[26:26]" from_side="top" to_pin="M20K.data_addr_control_in[118:118]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_28" from_pin="LAB.data_out[28:28]" from_side="top" to_pin="M20K.data_addr_control_in[15:15]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_30" from_pin="LAB.data_out[30:30]" from_side="top" to_pin="M20K.data_addr_control_in[33:33]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_32" from_pin="LAB.data_out[32:32]" from_side="top" to_pin="M20K.data_addr_control_in[51:51]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_34" from_pin="LAB.data_out[34:34]" from_side="top" to_pin="M20K.data_addr_control_in[69:69]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_36" from_pin="LAB.data_out[36:36]" from_side="top" to_pin="M20K.data_addr_control_in[87:87]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_Mem_38" from_pin="LAB.data_out[38:38]" from_side="top" to_pin="M20K.data_addr_control_in[105:105]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    
+    <!-- 20 direct connections coming from the odd pin numbers of the adjacent LABMLAB located to the left of the RAM-->
+    <direct name="LABMLAB_side_sneak_Mem_1" from_pin="LABMLAB.data_out[1:1]" from_side="top" to_pin="M20K.data_addr_control_in[0:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_3" from_pin="LABMLAB.data_out[3:3]" from_side="top" to_pin="M20K.data_addr_control_in[18:18]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_5" from_pin="LABMLAB.data_out[5:5]" from_side="top" to_pin="M20K.data_addr_control_in[36:36]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_7" from_pin="LABMLAB.data_out[7:7]" from_side="top" to_pin="M20K.data_addr_control_in[54:54]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_9" from_pin="LABMLAB.data_out[9:9]" from_side="top" to_pin="M20K.data_addr_control_in[72:72]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_11" from_pin="LABMLAB.data_out[11:11]" from_side="top" to_pin="M20K.data_addr_control_in[90:90]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_13" from_pin="LABMLAB.data_out[13:13]" from_side="top" to_pin="M20K.data_addr_control_in[108:108]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_15" from_pin="LABMLAB.data_out[15:15]" from_side="top" to_pin="M20K.data_addr_control_in[1:1]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_17" from_pin="LABMLAB.data_out[17:17]" from_side="top" to_pin="M20K.data_addr_control_in[19:19]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_19" from_pin="LABMLAB.data_out[19:19]" from_side="top" to_pin="M20K.data_addr_control_in[37:37]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_21" from_pin="LABMLAB.data_out[21:21]" from_side="top" to_pin="M20K.data_addr_control_in[55:55]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_23" from_pin="LABMLAB.data_out[23:23]" from_side="top" to_pin="M20K.data_addr_control_in[73:73]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_25" from_pin="LABMLAB.data_out[25:25]" from_side="top" to_pin="M20K.data_addr_control_in[91:91]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_27" from_pin="LABMLAB.data_out[27:27]" from_side="top" to_pin="M20K.data_addr_control_in[109:109]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_29" from_pin="LABMLAB.data_out[29:29]" from_side="top" to_pin="M20K.data_addr_control_in[2:2]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_31" from_pin="LABMLAB.data_out[31:31]" from_side="top" to_pin="M20K.data_addr_control_in[20:20]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_33" from_pin="LABMLAB.data_out[33:33]" from_side="top" to_pin="M20K.data_addr_control_in[38:38]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_35" from_pin="LABMLAB.data_out[35:35]" from_side="top" to_pin="M20K.data_addr_control_in[56:56]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_37" from_pin="LABMLAB.data_out[37:37]" from_side="top" to_pin="M20K.data_addr_control_in[74:74]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_39" from_pin="LABMLAB.data_out[39:39]" from_side="top" to_pin="M20K.data_addr_control_in[92:92]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <!-- 20 direct connections coming from the even pin numbers of the adjacent LABMLAB located to the right of the RAM-->
+    <direct name="LABMLAB_side_sneak_Mem_0" from_pin="LABMLAB.data_out[0:0]" from_side="top" to_pin="M20K.data_addr_control_in[17:17]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_2" from_pin="LABMLAB.data_out[2:2]" from_side="top" to_pin="M20K.data_addr_control_in[35:35]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_4" from_pin="LABMLAB.data_out[4:4]" from_side="top" to_pin="M20K.data_addr_control_in[53:53]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_6" from_pin="LABMLAB.data_out[6:6]" from_side="top" to_pin="M20K.data_addr_control_in[71:71]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_8" from_pin="LABMLAB.data_out[8:8]" from_side="top" to_pin="M20K.data_addr_control_in[89:89]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_10" from_pin="LABMLAB.data_out[10:10]" from_side="top" to_pin="M20K.data_addr_control_in[107:107]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_12" from_pin="LABMLAB.data_out[12:12]" from_side="top" to_pin="M20K.data_addr_control_in[119:119]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_14" from_pin="LABMLAB.data_out[14:14]" from_side="top" to_pin="M20K.data_addr_control_in[16:16]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_16" from_pin="LABMLAB.data_out[16:16]" from_side="top" to_pin="M20K.data_addr_control_in[34:34]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_18" from_pin="LABMLAB.data_out[18:18]" from_side="top" to_pin="M20K.data_addr_control_in[52:52]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_20" from_pin="LABMLAB.data_out[20:20]" from_side="top" to_pin="M20K.data_addr_control_in[70:70]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_22" from_pin="LABMLAB.data_out[22:22]" from_side="top" to_pin="M20K.data_addr_control_in[88:88]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_24" from_pin="LABMLAB.data_out[24:24]" from_side="top" to_pin="M20K.data_addr_control_in[106:106]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_26" from_pin="LABMLAB.data_out[26:26]" from_side="top" to_pin="M20K.data_addr_control_in[118:118]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_28" from_pin="LABMLAB.data_out[28:28]" from_side="top" to_pin="M20K.data_addr_control_in[15:15]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_30" from_pin="LABMLAB.data_out[30:30]" from_side="top" to_pin="M20K.data_addr_control_in[33:33]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_32" from_pin="LABMLAB.data_out[32:32]" from_side="top" to_pin="M20K.data_addr_control_in[51:51]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_34" from_pin="LABMLAB.data_out[34:34]" from_side="top" to_pin="M20K.data_addr_control_in[69:69]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_36" from_pin="LABMLAB.data_out[36:36]" from_side="top" to_pin="M20K.data_addr_control_in[87:87]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_Mem_38" from_pin="LABMLAB.data_out[38:38]" from_side="top" to_pin="M20K.data_addr_control_in[105:105]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
  
     <!-- 40 direct connections coming from the the adjacent memory block located to the left of the M20K-->
-    <direct name="Mem_side_sneak_Mem0" from_pin="M20K.data_out[6:0]" from_side="right" to_pin="M20K.data_addr_control_in[6:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem1" from_pin="M20K.data_out[13:7]" from_side="right" to_pin="M20K.data_addr_control_in[24:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem2" from_pin="M20K.data_out[20:14]" from_side="right" to_pin="M20K.data_addr_control_in[42:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem3" from_pin="M20K.data_out[27:21]" from_side="right" to_pin="M20K.data_addr_control_in[60:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem4" from_pin="M20K.data_out[34:28]" from_side="right" to_pin="M20K.data_addr_control_in[78:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem5" from_pin="M20K.data_out[39:34]" from_side="right" to_pin="M20K.data_addr_control_in[95:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem0" from_pin="M20K.data_out[6:0]" from_side="top" to_pin="M20K.data_addr_control_in[6:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem1" from_pin="M20K.data_out[13:7]" from_side="top" to_pin="M20K.data_addr_control_in[24:18]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem2" from_pin="M20K.data_out[20:14]" from_side="top" to_pin="M20K.data_addr_control_in[42:36]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem3" from_pin="M20K.data_out[27:21]" from_side="top" to_pin="M20K.data_addr_control_in[60:54]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem4" from_pin="M20K.data_out[34:28]" from_side="top" to_pin="M20K.data_addr_control_in[78:72]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem5" from_pin="M20K.data_out[39:34]" from_side="top" to_pin="M20K.data_addr_control_in[95:90]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <!-- 40 direct connections coming from the the adjacent memory block located to the right of the M20K-->
-    <direct name="Mem_side_sneak_Mem6" from_pin="M20K.data_out[6:0]" from_side="left" to_pin="M20K.data_addr_control_in[17:11]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem7" from_pin="M20K.data_out[13:7]" from_side="left" to_pin="M20K.data_addr_control_in[35:29]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem8" from_pin="M20K.data_out[20:14]" from_side="left" to_pin="M20K.data_addr_control_in[53:47]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem9" from_pin="M20K.data_out[27:21]" from_side="left" to_pin="M20K.data_addr_control_in[71:65]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem10" from_pin="M20K.data_out[34:28]" from_side="left" to_pin="M20K.data_addr_control_in[89:83]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="Mem_side_sneak_Mem11" from_pin="M20K.data_out[39:34]" from_side="left" to_pin="M20K.data_addr_control_in[119:114]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem6" from_pin="M20K.data_out[6:0]" from_side="top" to_pin="M20K.data_addr_control_in[17:11]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem7" from_pin="M20K.data_out[13:7]" from_side="top" to_pin="M20K.data_addr_control_in[35:29]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem8" from_pin="M20K.data_out[20:14]" from_side="top" to_pin="M20K.data_addr_control_in[53:47]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem9" from_pin="M20K.data_out[27:21]" from_side="top" to_pin="M20K.data_addr_control_in[71:65]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem10" from_pin="M20K.data_out[34:28]" from_side="top" to_pin="M20K.data_addr_control_in[89:83]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_Mem11" from_pin="M20K.data_out[39:34]" from_side="top" to_pin="M20K.data_addr_control_in[119:114]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
 
 
     <!-- 74 direct connections coming from the the adjacent DSP located to the left of the M20K-->
-    <direct name="DSP_side_sneak_Mem0" from_pin="DSP.result[11:0]" from_side="right" to_pin="M20K.data_addr_control_in[11:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem1" from_pin="DSP.result[23:12]" from_side="right" to_pin="M20K.data_addr_control_in[29:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem2" from_pin="DSP.result[35:24]" from_side="right" to_pin="M20K.data_addr_control_in[47:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem3" from_pin="DSP.result[47:36]" from_side="right" to_pin="M20K.data_addr_control_in[65:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem4" from_pin="DSP.result[59:48]" from_side="right" to_pin="M20K.data_addr_control_in[83:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem5" from_pin="DSP.result[73:60]" from_side="right" to_pin="M20K.data_addr_control_in[103:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem0" from_pin="DSP.result[11:0]" from_side="top" to_pin="M20K.data_addr_control_in[11:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem1" from_pin="DSP.result[23:12]" from_side="top" to_pin="M20K.data_addr_control_in[29:18]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem2" from_pin="DSP.result[35:24]" from_side="top" to_pin="M20K.data_addr_control_in[47:36]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem3" from_pin="DSP.result[47:36]" from_side="top" to_pin="M20K.data_addr_control_in[65:54]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem4" from_pin="DSP.result[59:48]" from_side="top" to_pin="M20K.data_addr_control_in[83:72]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem5" from_pin="DSP.result[73:60]" from_side="top" to_pin="M20K.data_addr_control_in[103:90]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <!-- 74 direct connections coming from the the adjacent DSP located to the left of the M20K-->
-    <direct name="DSP_side_sneak_Mem6" from_pin="DSP.result[11:0]" from_side="left" to_pin="M20K.data_addr_control_in[17:6]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem7" from_pin="DSP.result[23:12]" from_side="left" to_pin="M20K.data_addr_control_in[35:24]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem8" from_pin="DSP.result[35:24]" from_side="left" to_pin="M20K.data_addr_control_in[53:42]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem9" from_pin="DSP.result[47:36]" from_side="left" to_pin="M20K.data_addr_control_in[71:60]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem10" from_pin="DSP.result[59:48]" from_side="left" to_pin="M20K.data_addr_control_in[89:78]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="DSP_side_sneak_Mem11" from_pin="DSP.result[73:60]" from_side="left" to_pin="M20K.data_addr_control_in[119:106]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem6" from_pin="DSP.result[11:0]" from_side="top" to_pin="M20K.data_addr_control_in[17:6]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem7" from_pin="DSP.result[23:12]" from_side="top" to_pin="M20K.data_addr_control_in[35:24]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem8" from_pin="DSP.result[35:24]" from_side="top" to_pin="M20K.data_addr_control_in[53:42]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem9" from_pin="DSP.result[47:36]" from_side="top" to_pin="M20K.data_addr_control_in[71:60]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem10" from_pin="DSP.result[59:48]" from_side="top" to_pin="M20K.data_addr_control_in[89:78]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_Mem11" from_pin="DSP.result[73:60]" from_side="top" to_pin="M20K.data_addr_control_in[119:106]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
       
     <!-- 24 direct connections coming from the the adjacent iolane located to the left of the M20K-->
-    <direct name="iolane_side_sneak_Mem0" from_pin="iolane.core_out[3:0]" from_side="right" to_pin="M20K.data_addr_control_in[3:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem1" from_pin="iolane.core_out[7:4]" from_side="right" to_pin="M20K.data_addr_control_in[21:18]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem2" from_pin="iolane.core_out[11:8]" from_side="right" to_pin="M20K.data_addr_control_in[39:36]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem3" from_pin="iolane.core_out[15:12]" from_side="right" to_pin="M20K.data_addr_control_in[57:54]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem4" from_pin="iolane.core_out[19:16]" from_side="right" to_pin="M20K.data_addr_control_in[75:72]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem5" from_pin="iolane.core_out[23:20]" from_side="right" to_pin="M20K.data_addr_control_in[93:90]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem0" from_pin="iolane.core_out[3:0]" from_side="top" to_pin="M20K.data_addr_control_in[3:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem1" from_pin="iolane.core_out[7:4]" from_side="top" to_pin="M20K.data_addr_control_in[21:18]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem2" from_pin="iolane.core_out[11:8]" from_side="top" to_pin="M20K.data_addr_control_in[39:36]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem3" from_pin="iolane.core_out[15:12]" from_side="top" to_pin="M20K.data_addr_control_in[57:54]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem4" from_pin="iolane.core_out[19:16]" from_side="top" to_pin="M20K.data_addr_control_in[75:72]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem5" from_pin="iolane.core_out[23:20]" from_side="top" to_pin="M20K.data_addr_control_in[93:90]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <!-- 24 direct connections coming from the the adjacent iolane located to the left of the M20K-->
-    <direct name="iolane_side_sneak_Mem6" from_pin="iolane.core_out[3:0]" from_side="left" to_pin="M20K.data_addr_control_in[17:14]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem7" from_pin="iolane.core_out[7:4]" from_side="left" to_pin="M20K.data_addr_control_in[35:32]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem8" from_pin="iolane.core_out[11:8]" from_side="left" to_pin="M20K.data_addr_control_in[53:50]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem9" from_pin="iolane.core_out[15:12]" from_side="left" to_pin="M20K.data_addr_control_in[71:68]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem10" from_pin="iolane.core_out[19:16]" from_side="left" to_pin="M20K.data_addr_control_in[89:86]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="iolane_side_sneak_Mem11" from_pin="iolane.core_out[23:20]" from_side="left" to_pin="M20K.data_addr_control_in[119:116]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem6" from_pin="iolane.core_out[3:0]" from_side="top" to_pin="M20K.data_addr_control_in[17:14]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem7" from_pin="iolane.core_out[7:4]" from_side="top" to_pin="M20K.data_addr_control_in[35:32]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem8" from_pin="iolane.core_out[11:8]" from_side="top" to_pin="M20K.data_addr_control_in[53:50]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem9" from_pin="iolane.core_out[15:12]" from_side="top" to_pin="M20K.data_addr_control_in[71:68]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem10" from_pin="iolane.core_out[19:16]" from_side="top" to_pin="M20K.data_addr_control_in[89:86]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="iolane_side_sneak_Mem11" from_pin="iolane.core_out[23:20]" from_side="top" to_pin="M20K.data_addr_control_in[119:116]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
         
 
     <!-- ############### Directlinks to iolanes ############### -->
 
     <!-- 20 direct connections coming from the odd pin numbers of the adjacent LAB located to the left of the DSP-->
-    <direct name="LAB_side_sneak_iolane_1" from_pin="LAB.data_out[1:1]" from_side="right" to_pin="iolane.core_in[1:1]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_3" from_pin="LAB.data_out[3:3]" from_side="right" to_pin="iolane.core_in[3:3]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_5" from_pin="LAB.data_out[5:5]" from_side="right" to_pin="iolane.core_in[5:5]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_7" from_pin="LAB.data_out[7:7]" from_side="right" to_pin="iolane.core_in[7:7]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_9" from_pin="LAB.data_out[9:9]" from_side="right" to_pin="iolane.core_in[9:9]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_11" from_pin="LAB.data_out[11:11]" from_side="right" to_pin="iolane.core_in[11:11]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_13" from_pin="LAB.data_out[13:13]" from_side="right" to_pin="iolane.core_in[13:13]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_15" from_pin="LAB.data_out[15:15]" from_side="right" to_pin="iolane.core_in[15:15]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_17" from_pin="LAB.data_out[17:17]" from_side="right" to_pin="iolane.core_in[17:17]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_19" from_pin="LAB.data_out[19:19]" from_side="right" to_pin="iolane.core_in[19:19]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_21" from_pin="LAB.data_out[21:21]" from_side="right" to_pin="iolane.core_in[21:21]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_23" from_pin="LAB.data_out[23:23]" from_side="right" to_pin="iolane.core_in[23:23]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_25" from_pin="LAB.data_out[25:25]" from_side="right" to_pin="iolane.core_in[25:25]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_27" from_pin="LAB.data_out[27:27]" from_side="right" to_pin="iolane.core_in[27:27]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_29" from_pin="LAB.data_out[29:29]" from_side="right" to_pin="iolane.core_in[29:29]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_31" from_pin="LAB.data_out[31:31]" from_side="right" to_pin="iolane.core_in[31:31]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_33" from_pin="LAB.data_out[33:33]" from_side="right" to_pin="iolane.core_in[33:33]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_35" from_pin="LAB.data_out[35:35]" from_side="right" to_pin="iolane.core_in[35:35]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_37" from_pin="LAB.data_out[37:37]" from_side="right" to_pin="iolane.core_in[37:37]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_39" from_pin="LAB.data_out[39:39]" from_side="right" to_pin="iolane.core_in[39:39]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_1" from_pin="LAB.data_out[1:1]" from_side="top" to_pin="iolane.core_in[1:1]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_3" from_pin="LAB.data_out[3:3]" from_side="top" to_pin="iolane.core_in[3:3]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_5" from_pin="LAB.data_out[5:5]" from_side="top" to_pin="iolane.core_in[5:5]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_7" from_pin="LAB.data_out[7:7]" from_side="top" to_pin="iolane.core_in[7:7]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_9" from_pin="LAB.data_out[9:9]" from_side="top" to_pin="iolane.core_in[9:9]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_11" from_pin="LAB.data_out[11:11]" from_side="top" to_pin="iolane.core_in[11:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_13" from_pin="LAB.data_out[13:13]" from_side="top" to_pin="iolane.core_in[13:13]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_15" from_pin="LAB.data_out[15:15]" from_side="top" to_pin="iolane.core_in[15:15]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_17" from_pin="LAB.data_out[17:17]" from_side="top" to_pin="iolane.core_in[17:17]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_19" from_pin="LAB.data_out[19:19]" from_side="top" to_pin="iolane.core_in[19:19]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_21" from_pin="LAB.data_out[21:21]" from_side="top" to_pin="iolane.core_in[21:21]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_23" from_pin="LAB.data_out[23:23]" from_side="top" to_pin="iolane.core_in[23:23]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_25" from_pin="LAB.data_out[25:25]" from_side="top" to_pin="iolane.core_in[25:25]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_27" from_pin="LAB.data_out[27:27]" from_side="top" to_pin="iolane.core_in[27:27]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_29" from_pin="LAB.data_out[29:29]" from_side="top" to_pin="iolane.core_in[29:29]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_31" from_pin="LAB.data_out[31:31]" from_side="top" to_pin="iolane.core_in[31:31]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_33" from_pin="LAB.data_out[33:33]" from_side="top" to_pin="iolane.core_in[33:33]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_35" from_pin="LAB.data_out[35:35]" from_side="top" to_pin="iolane.core_in[35:35]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_37" from_pin="LAB.data_out[37:37]" from_side="top" to_pin="iolane.core_in[37:37]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_39" from_pin="LAB.data_out[39:39]" from_side="top" to_pin="iolane.core_in[39:39]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
 
     <!-- 20 direct connections coming from the even pin numbers of the adjacent LAB located to the right of the DSP-->
-    <direct name="LAB_side_sneak_iolane_0" from_pin="LAB.data_out[0:0]" from_side="left" to_pin="iolane.core_in[0:0]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_2" from_pin="LAB.data_out[2:2]" from_side="left" to_pin="iolane.core_in[2:2]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_4" from_pin="LAB.data_out[4:4]" from_side="left" to_pin="iolane.core_in[4:4]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_6" from_pin="LAB.data_out[6:6]" from_side="left" to_pin="iolane.core_in[6:6]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_8" from_pin="LAB.data_out[8:8]" from_side="left" to_pin="iolane.core_in[8:8]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_10" from_pin="LAB.data_out[10:10]" from_side="left" to_pin="iolane.core_in[10:10]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_12" from_pin="LAB.data_out[12:12]" from_side="left" to_pin="iolane.core_in[12:12]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_14" from_pin="LAB.data_out[14:14]" from_side="left" to_pin="iolane.core_in[14:14]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_16" from_pin="LAB.data_out[16:16]" from_side="left" to_pin="iolane.core_in[16:16]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_18" from_pin="LAB.data_out[18:18]" from_side="left" to_pin="iolane.core_in[18:18]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_20" from_pin="LAB.data_out[20:20]" from_side="left" to_pin="iolane.core_in[20:20]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_22" from_pin="LAB.data_out[22:22]" from_side="left" to_pin="iolane.core_in[22:22]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_24" from_pin="LAB.data_out[24:24]" from_side="left" to_pin="iolane.core_in[24:24]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_26" from_pin="LAB.data_out[26:26]" from_side="left" to_pin="iolane.core_in[26:26]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_28" from_pin="LAB.data_out[28:28]" from_side="left" to_pin="iolane.core_in[28:28]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_30" from_pin="LAB.data_out[30:30]" from_side="left" to_pin="iolane.core_in[30:30]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_32" from_pin="LAB.data_out[32:32]" from_side="left" to_pin="iolane.core_in[32:32]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_34" from_pin="LAB.data_out[34:34]" from_side="left" to_pin="iolane.core_in[34:34]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_36" from_pin="LAB.data_out[36:36]" from_side="left" to_pin="iolane.core_in[36:36]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
-    <direct name="LAB_side_sneak_iolane_38" from_pin="LAB.data_out[38:38]" from_side="left" to_pin="iolane.core_in[38:38]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_0" from_pin="LAB.data_out[0:0]" from_side="top" to_pin="iolane.core_in[0:0]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_2" from_pin="LAB.data_out[2:2]" from_side="top" to_pin="iolane.core_in[2:2]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_4" from_pin="LAB.data_out[4:4]" from_side="top" to_pin="iolane.core_in[4:4]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_6" from_pin="LAB.data_out[6:6]" from_side="top" to_pin="iolane.core_in[6:6]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_8" from_pin="LAB.data_out[8:8]" from_side="top" to_pin="iolane.core_in[8:8]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_10" from_pin="LAB.data_out[10:10]" from_side="top" to_pin="iolane.core_in[10:10]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_12" from_pin="LAB.data_out[12:12]" from_side="top" to_pin="iolane.core_in[12:12]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_14" from_pin="LAB.data_out[14:14]" from_side="top" to_pin="iolane.core_in[14:14]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_16" from_pin="LAB.data_out[16:16]" from_side="top" to_pin="iolane.core_in[16:16]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_18" from_pin="LAB.data_out[18:18]" from_side="top" to_pin="iolane.core_in[18:18]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_20" from_pin="LAB.data_out[20:20]" from_side="top" to_pin="iolane.core_in[20:20]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_22" from_pin="LAB.data_out[22:22]" from_side="top" to_pin="iolane.core_in[22:22]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_24" from_pin="LAB.data_out[24:24]" from_side="top" to_pin="iolane.core_in[24:24]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_26" from_pin="LAB.data_out[26:26]" from_side="top" to_pin="iolane.core_in[26:26]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_28" from_pin="LAB.data_out[28:28]" from_side="top" to_pin="iolane.core_in[28:28]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_30" from_pin="LAB.data_out[30:30]" from_side="top" to_pin="iolane.core_in[30:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_32" from_pin="LAB.data_out[32:32]" from_side="top" to_pin="iolane.core_in[32:32]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_34" from_pin="LAB.data_out[34:34]" from_side="top" to_pin="iolane.core_in[34:34]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_36" from_pin="LAB.data_out[36:36]" from_side="top" to_pin="iolane.core_in[36:36]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LAB_side_sneak_iolane_38" from_pin="LAB.data_out[38:38]" from_side="top" to_pin="iolane.core_in[38:38]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    
+    <!-- 20 direct connections coming from the odd pin numbers of the adjacent LABMLAB located to the left of the DSP-->
+    <direct name="LABMLAB_side_sneak_iolane_1" from_pin="LABMLAB.data_out[1:1]" from_side="top" to_pin="iolane.core_in[1:1]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_3" from_pin="LABMLAB.data_out[3:3]" from_side="top" to_pin="iolane.core_in[3:3]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_5" from_pin="LABMLAB.data_out[5:5]" from_side="top" to_pin="iolane.core_in[5:5]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_7" from_pin="LABMLAB.data_out[7:7]" from_side="top" to_pin="iolane.core_in[7:7]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_9" from_pin="LABMLAB.data_out[9:9]" from_side="top" to_pin="iolane.core_in[9:9]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_11" from_pin="LABMLAB.data_out[11:11]" from_side="top" to_pin="iolane.core_in[11:11]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_13" from_pin="LABMLAB.data_out[13:13]" from_side="top" to_pin="iolane.core_in[13:13]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_15" from_pin="LABMLAB.data_out[15:15]" from_side="top" to_pin="iolane.core_in[15:15]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_17" from_pin="LABMLAB.data_out[17:17]" from_side="top" to_pin="iolane.core_in[17:17]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_19" from_pin="LABMLAB.data_out[19:19]" from_side="top" to_pin="iolane.core_in[19:19]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_21" from_pin="LABMLAB.data_out[21:21]" from_side="top" to_pin="iolane.core_in[21:21]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_23" from_pin="LABMLAB.data_out[23:23]" from_side="top" to_pin="iolane.core_in[23:23]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_25" from_pin="LABMLAB.data_out[25:25]" from_side="top" to_pin="iolane.core_in[25:25]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_27" from_pin="LABMLAB.data_out[27:27]" from_side="top" to_pin="iolane.core_in[27:27]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_29" from_pin="LABMLAB.data_out[29:29]" from_side="top" to_pin="iolane.core_in[29:29]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_31" from_pin="LABMLAB.data_out[31:31]" from_side="top" to_pin="iolane.core_in[31:31]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_33" from_pin="LABMLAB.data_out[33:33]" from_side="top" to_pin="iolane.core_in[33:33]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_35" from_pin="LABMLAB.data_out[35:35]" from_side="top" to_pin="iolane.core_in[35:35]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_37" from_pin="LABMLAB.data_out[37:37]" from_side="top" to_pin="iolane.core_in[37:37]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_39" from_pin="LABMLAB.data_out[39:39]" from_side="top" to_pin="iolane.core_in[39:39]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
+
+    <!-- 20 direct connections coming from the even pin numbers of the adjacent LABMLAB located to the right of the DSP-->
+    <direct name="LABMLAB_side_sneak_iolane_0" from_pin="LABMLAB.data_out[0:0]" from_side="top" to_pin="iolane.core_in[0:0]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_2" from_pin="LABMLAB.data_out[2:2]" from_side="top" to_pin="iolane.core_in[2:2]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_4" from_pin="LABMLAB.data_out[4:4]" from_side="top" to_pin="iolane.core_in[4:4]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_6" from_pin="LABMLAB.data_out[6:6]" from_side="top" to_pin="iolane.core_in[6:6]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_8" from_pin="LABMLAB.data_out[8:8]" from_side="top" to_pin="iolane.core_in[8:8]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_10" from_pin="LABMLAB.data_out[10:10]" from_side="top" to_pin="iolane.core_in[10:10]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_12" from_pin="LABMLAB.data_out[12:12]" from_side="top" to_pin="iolane.core_in[12:12]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_14" from_pin="LABMLAB.data_out[14:14]" from_side="top" to_pin="iolane.core_in[14:14]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_16" from_pin="LABMLAB.data_out[16:16]" from_side="top" to_pin="iolane.core_in[16:16]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_18" from_pin="LABMLAB.data_out[18:18]" from_side="top" to_pin="iolane.core_in[18:18]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_20" from_pin="LABMLAB.data_out[20:20]" from_side="top" to_pin="iolane.core_in[20:20]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_22" from_pin="LABMLAB.data_out[22:22]" from_side="top" to_pin="iolane.core_in[22:22]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_24" from_pin="LABMLAB.data_out[24:24]" from_side="top" to_pin="iolane.core_in[24:24]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_26" from_pin="LABMLAB.data_out[26:26]" from_side="top" to_pin="iolane.core_in[26:26]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_28" from_pin="LABMLAB.data_out[28:28]" from_side="top" to_pin="iolane.core_in[28:28]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_30" from_pin="LABMLAB.data_out[30:30]" from_side="top" to_pin="iolane.core_in[30:30]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_32" from_pin="LABMLAB.data_out[32:32]" from_side="top" to_pin="iolane.core_in[32:32]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_34" from_pin="LABMLAB.data_out[34:34]" from_side="top" to_pin="iolane.core_in[34:34]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_36" from_pin="LABMLAB.data_out[36:36]" from_side="top" to_pin="iolane.core_in[36:36]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="LABMLAB_side_sneak_iolane_38" from_pin="LABMLAB.data_out[38:38]" from_side="top" to_pin="iolane.core_in[38:38]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
 
     <!-- 40 direct connections coming from the the adjacent memory block located to the left of the iolane-->
-    <direct name="Mem_side_sneak_iolane0" from_pin="M20K.data_out[39:0]" from_side="right" to_pin="iolane.core_in[39:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_iolane0" from_pin="M20K.data_out[39:0]" from_side="top" to_pin="iolane.core_in[39:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <!-- 40 direct connections coming from the the adjacent memory block located to the right of the iolane-->
-    <direct name="Mem_side_sneak_iolane1" from_pin="M20K.data_out[39:0]" from_side="left" to_pin="iolane.core_in[39:0]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="Mem_side_sneak_iolane1" from_pin="M20K.data_out[39:0]" from_side="top" to_pin="iolane.core_in[39:0]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
 
     <!-- 55 direct connections coming from the the adjacent DSP located to the left of the iolane-->
-    <direct name="DSP_side_sneak_iolane0" from_pin="DSP.result[54:0]" from_side="right" to_pin="iolane.core_in[54:0]" to_side="left" x_offset="1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_iolane0" from_pin="DSP.result[54:0]" from_side="top" to_pin="iolane.core_in[54:0]" to_side="top" x_offset="1" y_offset="0" z_offset="0"/>
     <!-- 55 direct connections coming from the the adjacent DSP located to the right of the iolane-->
-    <direct name="DSP_side_sneak_iolane1" from_pin="DSP.result[54:0]" from_side="left" to_pin="iolane.core_in[54:0]" to_side="right" x_offset="-1" y_offset="0" z_offset="0"/>
+    <direct name="DSP_side_sneak_iolane1" from_pin="DSP.result[54:0]" from_side="top" to_pin="iolane.core_in[54:0]" to_side="top" x_offset="-1" y_offset="0" z_offset="0"/>
 
 
 
@@ -7178,10 +7517,10 @@
     <switchblock name="wilton_turn_straight_v2v_core" type="unidir">
       <switchblock_location type="EVERYWHERE"/>
       <switchfuncs>
-        <func type="lr" formula="t"/>
-        <!-- left to right -->
-        <func type="rl" formula="t"/>
-        <!-- right to left -->
+        <func type="tb" formula="t"/>
+        <!-- top to bottom -->
+        <func type="bt" formula="t"/>
+        <!-- bottom to top -->
       </switchfuncs>
       
       <!--  V2 drivers -->
