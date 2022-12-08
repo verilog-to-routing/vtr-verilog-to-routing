@@ -310,7 +310,7 @@ void SoftmaxAgent::set_action_prob() {
             action_prob_[i] = exp_q_[i] / sum_q;
         }
     }
-
+    //sara_TODO  : rename num_available_actions_ to moves
     // normalize all the action probabilities to guarantee the sum(all actyion probs) = 1
     float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(), 0.0);
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),

@@ -155,6 +155,11 @@ static int num_swap_accepted = 0;
 static int num_swap_aborted = 0;
 static int num_ts_called = 0;
 
+/* This variable keeps track of each move type and block type frequency
+ proposed by the RL agent at any specific temperature.*/
+static std::vector<int> proposed_move_per_temp;
+static FILE* proposed_move_agent_per_temp;
+
 /* Expected crossing counts for nets with different #'s of pins.  From *
  * ICCAD 94 pp. 690 - 695 (with linear interpolation applied by me).   *
  * Multiplied to bounding box of a net to better estimate wire length  *
@@ -416,6 +421,8 @@ static void print_placement_swaps_stats(const t_annealing_state& state);
 
 static void print_placement_move_types_stats(
     const MoveTypeStat& move_type_stat);
+
+static void save_proposed_move_per_temp ();
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -708,11 +715,15 @@ void try_place(const t_placer_opts& placer_opts,
 
     //allocate move type statistics vectors
     MoveTypeStat move_type_stat;
-    move_type_stat.num_moves.resize(placer_opts.place_static_move_prob.size() + 1,
+    move_type_stat.num_moves.resize(placer_opts.place_static_move_prob.size(),
                                     0);
-    move_type_stat.blk_type_moves.resize(placer_opts.place_static_move_prob.size() + 1, std::vector<int>(device_ctx.logical_block_types.size(), 0.) );
-    move_type_stat.accepted_moves.resize(placer_opts.place_static_move_prob.size() + 1, std::vector<int>(device_ctx.logical_block_types.size(), 0.) );
-    move_type_stat.aborted_moves.resize(placer_opts.place_static_move_prob.size() + 1, std::vector<int>(device_ctx.logical_block_types.size(), 0.) );
+    move_type_stat.blk_type_moves.resize(placer_opts.place_static_move_prob.size(), std::vector<int>(device_ctx.logical_block_types.size(), 0.) );
+    move_type_stat.accepted_moves.resize(placer_opts.place_static_move_prob.size(), std::vector<int>(device_ctx.logical_block_types.size(), 0.) );
+    move_type_stat.aborted_moves.resize(placer_opts.place_static_move_prob.size(), std::vector<int>(device_ctx.logical_block_types.size(), 0.) );
+
+    //allocate move type statistics vector performed by the agent for each temperature
+    proposed_move_per_temp.resize((device_ctx.logical_block_types.size()-1) * (placer_opts.place_static_move_prob.size()),0);
+    proposed_move_agent_per_temp = vtr::fopen("agent_move_info.txt","w");
 
     /* Get the first range limiter */
     first_rlim = (float)max(device_ctx.grid.width() - 1,
@@ -811,6 +822,9 @@ void try_place(const t_placer_opts& placer_opts,
 
             print_place_status(state, stats, temperature_timer.elapsed_sec(),
                                critical_path.delay(), sTNS, sWNS, tot_iter);
+
+            save_proposed_move_per_temp();
+
             if (placer_opts.place_algorithm.is_timing_driven()
                 && placer_opts.place_agent_multistate
                 && agent_state == EARLY_IN_THE_ANNEAL) {
@@ -980,6 +994,8 @@ void try_place(const t_placer_opts& placer_opts,
                        pre_quench_timing_stats);
     print_timing_stats("Placement Total ", timing_ctx.stats,
                        pre_place_timing_stats);
+
+    fclose(proposed_move_agent_per_temp);
 
     VTR_LOG("update_td_costs: connections %g nets %g sum_nets %g total %g\n",
             p_runtime_ctx.f_update_td_costs_connections_elapsed_sec,
@@ -1372,6 +1388,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     ++move_type_stat.num_moves[(int)move_type];
     ++move_type_stat.blk_type_moves[(int)move_type][move_blk_type.index];
+    ++proposed_move_per_temp[(move_blk_type.index * (move_type_stat.blk_type_moves.size())) + (int)move_type];
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
@@ -2871,6 +2888,16 @@ void print_clb_placement(const char* fname) {
     fclose(fp);
 }
 #endif
+
+static void save_proposed_move_per_temp(){
+    if(proposed_move_agent_per_temp){
+        for(auto iaction = 0; iaction < proposed_move_per_temp.size(); iaction++){
+            fprintf(proposed_move_agent_per_temp,"%d\t",proposed_move_per_temp[iaction]);
+            proposed_move_per_temp[iaction] = 0;
+        }
+        fprintf(proposed_move_agent_per_temp,"\n");
+    }
+}
 
 static void free_try_swap_arrays() {
     g_vpr_ctx.mutable_placement().compressed_block_grids.clear();
