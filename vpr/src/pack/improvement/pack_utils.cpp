@@ -23,7 +23,7 @@ void init_multithreading_locks() {
     auto& helper_ctx = g_vpr_ctx.cl_helper();
 
     packing_multithreading_ctx.mu.resize(helper_ctx.total_clb_num);
-    for(auto& m : packing_multithreading_ctx.mu) {
+    for (auto& m : packing_multithreading_ctx.mu) {
         m = new std::mutex;
     }
 }
@@ -63,19 +63,18 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
 #endif
 
     unsigned int total_num_moves = packer_opts.pack_num_moves;
-    //unsigned int num_threads = std::thread::hardware_concurrency();
-    const int num_threads = 2;
+    const int num_threads = packer_opts.pack_num_threads;
     unsigned int moves_per_thread = total_num_moves / num_threads;
     std::thread my_threads[num_threads];
 
     init_multithreading_locks();
 
-    for (unsigned int i = 0; i < num_threads - 1; i++) {
+    for (int i = 0; i < (num_threads - 1); i++) {
         my_threads[i] = std::thread(try_n_packing_moves, i, moves_per_thread, packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
     }
-    my_threads[num_threads - 1] = std::thread(try_n_packing_moves, num_threads-1, total_num_moves - (moves_per_thread * (num_threads - 1)), packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
+    my_threads[num_threads - 1] = std::thread(try_n_packing_moves, num_threads - 1, total_num_moves - (moves_per_thread * (num_threads - 1)), packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
 
-    for (auto & my_thread : my_threads)
+    for (auto& my_thread : my_threads)
         my_thread.join();
 
     VTR_LOG("\n### Iterative packing stats: \n\tpack move type = %s\n\ttotal pack moves = %zu\n\tgood pack moves = %zu\n\tlegal pack moves = %zu\n\n",
@@ -131,7 +130,6 @@ void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_
 
         packing_multithreading_ctx.mu[new_locs[0].new_clb]->unlock();
         packing_multithreading_ctx.mu[new_locs[1].new_clb]->unlock();
-
     }
 
     pack_stats.mu.lock();

@@ -219,7 +219,7 @@ static void load_cluster_placement_stats_for_pb_graph_node(t_cluster_placement_s
          *  - Check the pb_type of this element with the pb_type of pb_graph_node
          *      - if matched --> insert the primitive
          */
-        for(size_t type_index = 0; type_index < cluster_placement_stats->valid_primitives.size(); type_index++) {
+        for (size_t type_index = 0; type_index < cluster_placement_stats->valid_primitives.size(); type_index++) {
             auto& type_primitives = cluster_placement_stats->valid_primitives[type_index];
             auto first_elem = type_primitives.find(0);
             if (first_elem != type_primitives.end() && first_elem->second->pb_graph_node->pb_type == pb_graph_node->pb_type) {
@@ -343,7 +343,7 @@ static void update_primitive_cost_or_status(t_cluster_placement_stats* cluster_p
         for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
             for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
                 for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                    update_primitive_cost_or_status(cluster_placement_stats,&pb_graph_node->child_pb_graph_nodes[i][j][k],
+                    update_primitive_cost_or_status(cluster_placement_stats, &pb_graph_node->child_pb_graph_nodes[i][j][k],
                                                     incremental_cost, valid);
                 }
             }

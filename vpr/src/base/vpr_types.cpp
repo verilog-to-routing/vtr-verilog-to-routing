@@ -258,7 +258,6 @@ void t_cluster_placement_stats::move_primitive_to_inflight(int pb_type_index, st
  * @note that valid status is not changed because if the primitive is not valid, it will get properly collected later
  */
 void t_cluster_placement_stats::insert_primitive_in_valid_primitives(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive) {
-
     int pb_type_index = cluster_placement_primitive.second->pb_graph_node->cluster_placement_type_index;
     valid_primitives[pb_type_index].insert(cluster_placement_primitive);
 }
@@ -305,25 +304,24 @@ void t_cluster_placement_stats::free_primitives() {
 }
 
 t_cluster_placement_primitive* t_cluster_placement_stats::get_cluster_placement_primitive_from_pb_graph_node(const t_pb_graph_node* pb_graph_node) {
-
     auto it = valid_primitives[pb_graph_node->cluster_placement_type_index].find(pb_graph_node->cluster_placement_primitive_index);
     if (it != valid_primitives[pb_graph_node->cluster_placement_type_index].end())
         return valid_primitives[pb_graph_node->cluster_placement_type_index][pb_graph_node->cluster_placement_primitive_index];
 
-   for(auto itr = tried.find(pb_graph_node->cluster_placement_primitive_index); itr != tried.end(); itr++) {
-       if(itr->second->pb_graph_node->cluster_placement_type_index == pb_graph_node->cluster_placement_type_index)
-           return itr->second;
-   }
+    for (auto itr = tried.find(pb_graph_node->cluster_placement_primitive_index); itr != tried.end(); itr++) {
+        if (itr->second->pb_graph_node->cluster_placement_type_index == pb_graph_node->cluster_placement_type_index)
+            return itr->second;
+    }
 
-   for(auto itr = invalid.find(pb_graph_node->cluster_placement_primitive_index); itr != invalid.end(); itr++) {
-       if(itr->second->pb_graph_node->cluster_placement_type_index == pb_graph_node->cluster_placement_type_index)
-           return itr->second;
-   }
+    for (auto itr = invalid.find(pb_graph_node->cluster_placement_primitive_index); itr != invalid.end(); itr++) {
+        if (itr->second->pb_graph_node->cluster_placement_type_index == pb_graph_node->cluster_placement_type_index)
+            return itr->second;
+    }
 
-   for(auto itr = in_flight.find(pb_graph_node->cluster_placement_primitive_index); itr != in_flight.end(); itr++) {
-       if(itr->second->pb_graph_node->cluster_placement_type_index == pb_graph_node->cluster_placement_type_index)
-           return itr->second;
-   }
+    for (auto itr = in_flight.find(pb_graph_node->cluster_placement_primitive_index); itr != in_flight.end(); itr++) {
+        if (itr->second->pb_graph_node->cluster_placement_type_index == pb_graph_node->cluster_placement_type_index)
+            return itr->second;
+    }
 
     return nullptr;
 }

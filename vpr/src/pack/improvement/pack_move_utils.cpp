@@ -156,7 +156,7 @@ t_pack_molecule* pick_molecule_randomly() {
         ClusterBlockId clb_index = atom_to_cluster(random_atom);
         if (!clb_index)
             continue;
-        if(packing_multithreading_ctx.mu[clb_index]->try_lock()){
+        if (packing_multithreading_ctx.mu[clb_index]->try_lock()) {
             auto rng = atom_ctx.atom_molecules.equal_range(random_atom);
             for (const auto& kv : vtr::make_range(rng.first, rng.second)) {
                 molecule = kv.second;
@@ -186,7 +186,7 @@ bool pick_molecule_connected(t_pack_molecule* mol_1, t_pack_molecule*& mol_2) {
     while (clb2_not_found && iteration < 20) {
         int rand_num = vtr::irand((int)connected_blocks.size() - 1);
         clb_index_2 = connected_blocks[rand_num];
-        if(packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
+        if (packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
             clb2_not_found = false;
         }
         iteration++;
@@ -227,13 +227,13 @@ bool pick_molecule_connected_compatible_type(t_pack_molecule* mol_1, t_pack_mole
     int iteration = 0;
     while (clb2_not_found && iteration < 10) {
         clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size() - 1)];
-        if(packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
+        if (packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
             clb2_not_found = false;
         }
         iteration++;
     }
 
-    if(clb2_not_found)
+    if (clb2_not_found)
         return false;
 
     //pick a random molecule for the chosen block
@@ -275,13 +275,13 @@ bool pick_molecule_connected_same_type(t_pack_molecule* mol_1, t_pack_molecule*&
     int iteration = 0;
     while (clb2_not_found && iteration < 10) {
         clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size() - 1)];
-        if(packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
+        if (packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
             clb2_not_found = false;
         }
         iteration++;
     }
 
-    if(clb2_not_found)
+    if (clb2_not_found)
         return false;
 
     //pick a random molecule for the chosen block
@@ -325,13 +325,13 @@ bool pick_molecule_connected_same_size(t_pack_molecule* mol_1, t_pack_molecule*&
     int iteration = 0;
     while (clb2_not_found && iteration < 10) {
         clb_index_2 = connected_blocks[vtr::irand((int)connected_blocks.size() - 1)];
-        if(packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
+        if (packing_multithreading_ctx.mu[clb_index_2]->try_lock()) {
             clb2_not_found = false;
         }
         ++iteration;
     }
 
-    if(clb2_not_found)
+    if (clb2_not_found)
         return false;
 
     //pick a random molecule for the chosen block

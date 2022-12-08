@@ -858,6 +858,7 @@ struct t_packer_opts {
     e_timing_update_type timing_update_type;
     bool use_attraction_groups;
     int pack_num_moves;
+    int pack_num_threads;
     std::string pack_move_type;
 };
 

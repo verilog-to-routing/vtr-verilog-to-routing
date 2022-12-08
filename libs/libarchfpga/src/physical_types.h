@@ -1241,7 +1241,7 @@ class t_pb_graph_node {
 
     int total_pb_pins; /* only valid for top-level */
 
-    void* temp_scratch_pad;                                     /* temporary data, useful for keeping track of things when traversing data structure */
+    void* temp_scratch_pad; /* temporary data, useful for keeping track of things when traversing data structure */
 
     /* indeces for cluster_placement_primitive in the cluster_placement_stats structure (useful during packing) */
     int cluster_placement_primitive_index;

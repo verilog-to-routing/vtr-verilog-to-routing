@@ -494,9 +494,8 @@ void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
 }
 
 /*****************************************/
-void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
-                               t_cluster_placement_stats** cluster_placement_stats,
-                               t_pb_graph_node*** primitives_list,
+void alloc_and_init_clustering(const t_packer_opts& packer_opts,
+                               const t_molecule_stats& max_molecule_stats,
                                t_pack_molecule* molecules_head,
                                t_clustering_data& clustering_data,
                                std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
@@ -504,6 +503,15 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
                                int num_molecules) {
     /* Allocates the main data structures used for clustering and properly *
      * initializes them.                                                   */
+
+    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
+    if (packer_opts.pack_num_moves > 0) {
+        helper_ctx.primitives_list.resize(packer_opts.pack_num_threads);
+        helper_ctx.cluster_placement_stats.resize(packer_opts.pack_num_threads);
+    } else {
+        helper_ctx.primitives_list.resize(1);
+        helper_ctx.cluster_placement_stats.resize(1);
+    }
 
     t_molecule_link* next_ptr;
     t_pack_molecule* cur_molecule;
@@ -563,7 +571,8 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
     }
 
     /* alloc and load cluster placement info */
-    *cluster_placement_stats = alloc_and_load_cluster_placement_stats();
+    for (int thread_id = 0; thread_id < packer_opts.pack_num_threads; thread_id++)
+        helper_ctx.cluster_placement_stats[thread_id] = alloc_and_load_cluster_placement_stats();
 
     /* alloc array that will store primitives that a molecule gets placed to,
      * primitive_list is referenced by index, for example a atom block in index 2 of a molecule matches to a primitive in index 2 in primitive_list
@@ -577,14 +586,12 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
         }
         cur_molecule = cur_molecule->next;
     }
-    *primitives_list = new t_pb_graph_node*[max_molecule_size];
-    for (int i = 0; i < max_molecule_size; i++)
-        (*primitives_list)[i] = nullptr;
 
-    auto& helper_ctx = g_vpr_ctx.mutable_cl_helper();
-    helper_ctx.primitives_list[1] = new t_pb_graph_node*[max_molecule_size];
-    for (int i = 0; i < max_molecule_size; i++)
-        helper_ctx.primitives_list[1][i] = nullptr;
+    for (int thread_id = 0; thread_id < packer_opts.pack_num_threads; thread_id++) {
+        helper_ctx.primitives_list[thread_id] = new t_pb_graph_node*[max_molecule_size];
+        for (int i = 0; i < max_molecule_size; i++)
+            helper_ctx.primitives_list[thread_id][i] = nullptr;
+    }
 }
 
 /*****************************************/

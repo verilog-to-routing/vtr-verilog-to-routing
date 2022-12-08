@@ -1787,6 +1787,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("100000")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument(args.pack_num_threads, "--pack_num_threads")
+        .help(
+            "The number of threads used in the packing iterative improvement")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument(args.pack_move_type, "--pack_move_type")
         .help(
             "The move type used in packing."
