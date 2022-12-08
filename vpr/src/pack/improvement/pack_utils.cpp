@@ -65,7 +65,7 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
     unsigned int total_num_moves = packer_opts.pack_num_moves;
     const int num_threads = packer_opts.pack_num_threads;
     unsigned int moves_per_thread = total_num_moves / num_threads;
-    std::thread my_threads[num_threads];
+    std::thread* my_threads = new std::thread[num_threads];
 
     init_multithreading_locks();
 
@@ -74,8 +74,8 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
     }
     my_threads[num_threads - 1] = std::thread(try_n_packing_moves, num_threads - 1, total_num_moves - (moves_per_thread * (num_threads - 1)), packer_opts.pack_move_type, std::ref(clustering_data), std::ref(pack_stats));
 
-    for (auto& my_thread : my_threads)
-        my_thread.join();
+    for (int i =0; i < num_threads; i++)
+        my_threads[i].join();
 
     VTR_LOG("\n### Iterative packing stats: \n\tpack move type = %s\n\ttotal pack moves = %zu\n\tgood pack moves = %zu\n\tlegal pack moves = %zu\n\n",
             packer_opts.pack_move_type.c_str(),
