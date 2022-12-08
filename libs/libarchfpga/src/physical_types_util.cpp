@@ -1456,17 +1456,37 @@ std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_til
                                               logical_block,
                                               sub_tile_rel_cap,
                                               pb_graph_node);
+        std::unordered_map<int , int> reachability_inf;
+        bool has_unique_val = false;
+        int prev_val = -1;
         for(int pin_num = pb_pins.low; pin_num <= pb_pins.high; pin_num++) {
             if(get_pin_type_from_pin_physical_num(physical_tile, pin_num) == e_pin_type::RECEIVER) {
                 int num_reachable_sinks = get_num_reachable_sinks(physical_tile,
                                                                   pin_num,
                                                                   grp);
 
-                if(num_reachable_sinks > 1) {
-                    choking_point.insert(std::make_pair(pin_num, num_reachable_sinks));
+
+                if(num_reachable_sinks != 0) {
+                    if(prev_val == -1) {
+                        prev_val = num_reachable_sinks;
+                    } else {
+                        if(prev_val != num_reachable_sinks) {
+                            has_unique_val = true;
+                        }
+                    }
+                    if(num_reachable_sinks > 1) {
+                        reachability_inf.insert(std::make_pair(pin_num, num_reachable_sinks));
+                    }
                 }
             }
         }
+
+        if(has_unique_val) {
+            for(const auto& reachability_it : reachability_inf) {
+                choking_point.insert(std::make_pair(reachability_it.first, reachability_it.second));
+            }
+        }
+
 
     }
 

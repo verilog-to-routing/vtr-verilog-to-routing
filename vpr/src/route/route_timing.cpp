@@ -2375,11 +2375,15 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
             auto block_id = net_list.pin_block(pin_id);
             auto blk_loc = get_block_loc(block_id, is_flat);
             int group_num = net_terminal_group_num[net_id][pin_count];
-            const auto& sink_grp = net_terminal_groups[net_id][group_num];
+            std::vector<int> sink_grp = net_terminal_groups[net_id][group_num];
             VTR_ASSERT((int)sink_grp.size() >= 1);
             if(sink_grp.size() == 1) {
+                pin_count++;
                 continue;
             } else {
+                std::for_each(sink_grp.begin(), sink_grp.end(), [&rr_graph](int& sink_rr_num) {
+                    sink_rr_num = rr_graph.node_ptc_num(RRNodeId(sink_rr_num));
+                });
                 auto physical_type = device_ctx.grid[blk_loc.loc.x][blk_loc.loc.y].type;
                 auto sink_choking_spots = get_sink_choking_points(physical_type,
                                                                   rr_graph.node_ptc_num(RRNodeId(net_rr_terminal[net_id][pin_count])),
