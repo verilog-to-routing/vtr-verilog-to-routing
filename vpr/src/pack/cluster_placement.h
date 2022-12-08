@@ -14,8 +14,7 @@ bool get_next_primitive_list(
     t_pb_graph_node** primitives_list);
 void commit_primitive(t_cluster_placement_stats* cluster_placement_stats,
                       const t_pb_graph_node* primitive);
-void set_mode_cluster_placement_stats(const t_pb_graph_node* complex_block,
-                                      int mode);
+void set_mode_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats, const t_pb_graph_node* pb_graph_node, int mode);
 void reset_cluster_placement_stats(
     t_cluster_placement_stats* cluster_placement_stats);
 

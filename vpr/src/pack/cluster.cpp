@@ -204,6 +204,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               clustering_data, net_output_feeds_driving_block_input,
                               unclustered_list_head_size, cluster_stats.num_molecules);
 
+    helper_ctx.cluster_placement_stats[1] = alloc_and_load_cluster_placement_stats();
+
     auto primitive_candidate_block_types = identify_primitive_candidate_block_types();
     // find the cluster type that has lut primitives
     auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types);

@@ -137,10 +137,11 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule, const t_logical_block_
 
     e_block_pack_status pack_result = BLK_STATUS_UNDEFINED;
     pb->mode = mode;
-    reset_cluster_placement_stats(&(helper_ctx.cluster_placement_stats[thread_id][type->index]));
-    set_mode_cluster_placement_stats(pb->pb_graph_node, mode);
+    t_cluster_placement_stats* cluster_placement_stats = &(helper_ctx.cluster_placement_stats[thread_id][type->index]);
+    reset_cluster_placement_stats(cluster_placement_stats);
+    set_mode_cluster_placement_stats(cluster_placement_stats, pb->pb_graph_node, mode);
 
-    pack_result = try_pack_molecule(&(helper_ctx.cluster_placement_stats[thread_id][type->index]),
+    pack_result = try_pack_molecule(cluster_placement_stats,
                                     molecule,
                                     helper_ctx.primitives_list,
                                     pb,
@@ -621,7 +622,7 @@ static void rebuild_cluster_placement_stats(const ClusterBlockId& clb_index, con
 
     t_cluster_placement_stats* cluster_placement_stats = &(helper_ctx.cluster_placement_stats[thread_id][cluster_ctx.clb_nlist.block_type(clb_index)->index]);
     reset_cluster_placement_stats(cluster_placement_stats);
-    set_mode_cluster_placement_stats(cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node, cluster_ctx.clb_nlist.block_pb(clb_index)->mode);
+    set_mode_cluster_placement_stats(cluster_placement_stats, cluster_ctx.clb_nlist.block_pb(clb_index)->pb_graph_node, cluster_ctx.clb_nlist.block_pb(clb_index)->mode);
 
     for (auto& atom : *clb_atoms) {
         const t_pb* atom_pb = atom_ctx.lookup.atom_pb(atom);

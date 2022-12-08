@@ -64,7 +64,7 @@ void iteratively_improve_packing(const t_packer_opts& packer_opts, t_clustering_
 
     unsigned int total_num_moves = packer_opts.pack_num_moves;
     //unsigned int num_threads = std::thread::hardware_concurrency();
-    const int num_threads = 1;
+    const int num_threads = 2;
     unsigned int moves_per_thread = total_num_moves / num_threads;
     std::thread my_threads[num_threads];
 

@@ -2113,7 +2113,7 @@ void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats,
             pb->mode = j;
 
             reset_cluster_placement_stats(&cluster_placement_stats[type->index]);
-            set_mode_cluster_placement_stats(pb->pb_graph_node, j);
+            set_mode_cluster_placement_stats(&cluster_placement_stats[type->index], pb->pb_graph_node, j);
 
             //Note that since we are starting a new cluster, we use FULL_EXTERNAL_PIN_UTIL,
             //which allows all cluster pins to be used. This ensures that if we have a large
