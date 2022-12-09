@@ -15,13 +15,12 @@
 class KArmedBanditAgent {
   public:
     virtual ~KArmedBanditAgent() {}
-    //SARA_TODO
     virtual t_propose_action propose_action() = 0;
     void process_outcome(double, e_reward_function);
 
   protected:
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
-    size_t num_available_actions_;          //Number of arms of the karmed bandit problem (k)
+    size_t num_available_moves_;            //Number of arms of the karmed bandit problem (k)
     size_t num_available_types_;            //Number of types that each arm of the karmed bandit problem can pull with
     std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
     std::vector<float> q_;                  //Estimated value of each arm (Q)
@@ -43,8 +42,8 @@ class KArmedBanditAgent {
  */
 class EpsilonGreedyAgent : public KArmedBanditAgent {
   public:
-    EpsilonGreedyAgent(size_t num_actions, float epsilon);
-    EpsilonGreedyAgent(size_t num_actions, size_t num_types, float epsilon);
+    EpsilonGreedyAgent(size_t num_moves, float epsilon);
+    EpsilonGreedyAgent(size_t num_moves, size_t num_types, float epsilon);
     ~EpsilonGreedyAgent();
 
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
@@ -69,8 +68,8 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
  */
 class SoftmaxAgent : public KArmedBanditAgent {
   public:
-    SoftmaxAgent(size_t num_actions);
-    SoftmaxAgent(size_t num_actions, size_t num_types);
+    SoftmaxAgent(size_t num_moves);
+    SoftmaxAgent(size_t num_moves, size_t num_types);
     ~SoftmaxAgent();
 
     //void process_outcome(double reward, std::string reward_fun) override; //Updates the agent based on the reward of the last proposed action
