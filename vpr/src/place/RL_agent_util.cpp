@@ -64,8 +64,22 @@ void create_move_generators(std::unique_ptr<MoveGenerator>& move_generator, std:
             //should change this to a command-line options, hence the user can choose
             //the level of the agent intelligent
             //default option now becomes considering move_type as well as block_types
+
             auto& device_ctx = g_vpr_ctx.device();
-            int logical_blk_types_count = device_ctx.logical_block_types.size() - 1;//excluding the EMPTY type
+            //int logical_blk_types_count = device_ctx.logical_block_types.size() - 1;//excluding the EMPTY type
+            auto& cluster_ctx = g_vpr_ctx.clustering();
+            int logical_blk_types_count = 0;
+            int agent_type_index = 0;
+            for(auto itype : device_ctx.logical_block_types){
+                if(itype.index == 0) //ignore empty type
+                    continue;
+                auto blk_per_type = cluster_ctx.clb_nlist.blocks_per_type(itype);
+                if(blk_per_type.size() != 0){
+                    logical_to_agent_map.insert(std::pair<int,int>(agent_type_index,itype.index));
+                    agent_type_index++;
+                    logical_blk_types_count++;
+                }
+            }
 
             if (placer_opts.place_algorithm.is_timing_driven()) {
                 //agent's 1st state

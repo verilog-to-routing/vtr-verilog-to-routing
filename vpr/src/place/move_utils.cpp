@@ -497,6 +497,15 @@ std::set<t_pl_loc> determine_locations_emptied_by_move(t_pl_blocks_to_be_moved& 
 
     return empty_locs;
 }
+//SARA_TODO:
+std::unordered_map<int,int> logical_to_agent_map;
+int convert_agent_to_logical_block_type(int agent_block_type_index){
+    if(logical_to_agent_map.count(agent_block_type_index)){
+        return logical_to_agent_map[agent_block_type_index];
+    }
+    //invalid block type
+    return -1;
+}
 
 //Pick a random block to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
@@ -543,8 +552,10 @@ ClusterBlockId pick_from_block(t_logical_block_type blk_type) {
      * loop if all blocks are fixed.                                  */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    t_logical_block_type blk_type_temp = blk_type;
-    blk_type_temp.index++;
+//    t_logical_block_type blk_type_temp = blk_type;
+//    blk_type_temp.index++;
+    t_logical_block_type blk_type_temp;
+    blk_type_temp.index = convert_agent_to_logical_block_type(blk_type.index);
     auto blocks_per_type = cluster_ctx.clb_nlist.blocks_per_type(blk_type_temp);
 
     //no blocks with this type is available
