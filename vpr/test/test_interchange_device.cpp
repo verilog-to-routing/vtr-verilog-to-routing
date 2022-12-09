@@ -29,13 +29,14 @@ TEST_CASE("read_interchange_models", "[vpr]") {
 
     REQUIRE(models.size() == 0);
 
-    std::unordered_set<std::string> lib_models = {MODEL_INPUT, MODEL_OUTPUT, MODEL_LATCH, MODEL_NAMES};
+    std::vector<std::string> lib_models = {MODEL_INPUT, MODEL_OUTPUT, MODEL_LATCH, MODEL_LATCH, MODEL_NAMES};
 
     // Check that there are exactly the expected models
     for (auto* model = arch.model_library; model != nullptr; model = model->next) {
         std::string name = model->name;
-        REQUIRE(lib_models.find(name) != lib_models.end());
-        lib_models.erase(name);
+        auto it = std::find(lib_models.begin(), lib_models.end(), name);
+        REQUIRE(it != lib_models.end());
+        lib_models.erase(it);
     }
 
     REQUIRE(lib_models.size() == 0);
