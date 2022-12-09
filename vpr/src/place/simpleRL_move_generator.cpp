@@ -201,7 +201,7 @@ void EpsilonGreedyAgent::set_epsilon(float epsilon) {
 
 void EpsilonGreedyAgent::set_epsilon_action_prob() {
     //initialize to equal probabilities
-    std::vector<float> epsilon_prob(num_available_moves_ * num_available_types_, 1.0 / num_available_moves_ * num_available_types_);
+    std::vector<float> epsilon_prob(num_available_moves_ * num_available_types_, 1.0 / (num_available_moves_ * num_available_types_));
 
     float accum = 0;
     for (size_t i = 0; i < num_available_moves_ * num_available_types_; ++i) {
