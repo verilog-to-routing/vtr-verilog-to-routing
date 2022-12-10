@@ -264,6 +264,14 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
 double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route, const NocStorage& noc_model, const t_noc_traffic_flow& traffic_flow_info, const t_noc_opts& noc_opts);
 
 /**
+ * @brief Goes through all the traffic flows and determines whether the
+ * latency constraints have been met for each traffic flow. 
+ * 
+ * @return The total number of traffic flows with latency constraints being met
+ */
+int get_number_of_traffic_flows_with_latency_cons_met(void);
+
+/**
  * @brief THis verifies whether we need to compare the recomputed noc latency
  * cost to the current noc latency cost. During placement there is a function
  * called "recompute_costs_from_scratch" that regularily checks whether the
