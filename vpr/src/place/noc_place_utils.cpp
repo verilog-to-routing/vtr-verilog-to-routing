@@ -422,6 +422,42 @@ double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic
     return (single_traffic_flow_latency_cost * traffic_flow_info.traffic_flow_priority);
 }
 
+int get_number_of_traffic_flows_with_latency_cons_met(void){
+    // used to get traffic flow route information
+    auto& noc_ctx = g_vpr_ctx.mutable_noc();
+    // datastructure that stores all the traffic flow routes
+    const NocTrafficFlows* noc_traffic_flows_storage = &noc_ctx.noc_traffic_flows_storage;
+
+    int number_of_traffic_flows = noc_traffic_flows_storage->get_number_of_traffic_flows();
+
+    int count_of_achieved_latency_cons = 0;
+
+    // now go through each traffic flow route and check if its latency constraint was met
+    for (int traffic_flow_id = 0; traffic_flow_id < number_of_traffic_flows; traffic_flow_id++) {
+        const t_noc_traffic_flow& curr_traffic_flow = noc_traffic_flows_storage->get_single_noc_traffic_flow((NocTrafficFlowId)traffic_flow_id);
+        const std::vector<NocLinkId>& curr_traffic_flow_route = noc_traffic_flows_storage->get_traffic_flow_route((NocTrafficFlowId)traffic_flow_id);
+
+        // there will always be one more router than links in a traffic flow
+        int num_of_links_in_traffic_flow = curr_traffic_flow_route.size();
+        int num_of_routers_in_traffic_flow = num_of_links_in_traffic_flow + 1;
+        double max_latency = curr_traffic_flow.max_traffic_flow_latency;
+
+        // latencies of the noc
+        double noc_link_latency = noc_ctx.noc_model.get_noc_link_latency();
+        double noc_router_latency = noc_ctx.noc_model.get_noc_router_latency();
+
+        // calculate the traffic flow_latency
+        double latency = (noc_link_latency * num_of_links_in_traffic_flow) + (noc_router_latency * num_of_routers_in_traffic_flow);
+
+        // we check whether the latency constraint was met here
+        if ((std::max(0., latency - max_latency)) < MIN_EXPECTED_NOC_LATENCY_COST){
+            count_of_achieved_latency_cons++;
+        }
+    }
+
+    return count_of_achieved_latency_cons;
+}
+
 bool check_recomputed_noc_latency_cost(float recomputed_cost){
 
     return (recomputed_cost < MIN_EXPECTED_NOC_LATENCY_COST) ? false : true;
