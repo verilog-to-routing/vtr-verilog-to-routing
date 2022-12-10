@@ -379,14 +379,16 @@ int check_noc_placement_costs(const t_placer_costs& costs, double error_toleranc
         error++;
     }
 
-    // check whether the latency placement cost is within the error tolerance
-    if (fabs(noc_latency_cost_check - costs.noc_latency_cost) > costs.noc_latency_cost * error_tolerance) {
-        VTR_LOG_ERROR(
-            "noc_latency_cost_check: %g and noc_latency_cost: %g differ in check_noc_placement_costs.\n",
-            noc_latency_cost_check, costs.noc_latency_cost);
-        error++;
+    // only check the recomputed cost if it is above our expected latency cost threshold of 1 picosecond, otherwise there is no point in checking it
+    if (check_recomputed_noc_latency_cost(noc_latency_cost_check)){
+        // check whether the latency placement cost is within the error tolerance
+        if (fabs(noc_latency_cost_check - costs.noc_latency_cost) > costs.noc_latency_cost * error_tolerance) {
+            VTR_LOG_ERROR(
+                "noc_latency_cost_check: %g and noc_latency_cost: %g differ in check_noc_placement_costs.\n",
+                noc_latency_cost_check, costs.noc_latency_cost);
+            error++;
+        }
     }
-
     // delete the temporary routing algorithm
     delete temp_noc_routing_algorithm;
 
@@ -418,6 +420,11 @@ double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic
 
     // scale the latency cost by its priority to indicate its importance
     return (single_traffic_flow_latency_cost * traffic_flow_info.traffic_flow_priority);
+}
+
+bool check_recomputed_noc_latency_cost(float recomputed_cost){
+
+    return (recomputed_cost < MIN_EXPECTED_NOC_LATENCY_COST) ? false : true;
 }
 
 void allocate_and_load_noc_placement_structs(void) {
