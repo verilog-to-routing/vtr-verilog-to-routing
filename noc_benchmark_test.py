@@ -44,6 +44,7 @@ PLACE_BB_COST = "bb_cost"
 PLACE_CPD = "post_place_cpd"
 NOC_AGGREGATE_BANDWIDTH_COST = "noc_aggregate_bandwidth_cost"
 NOC_LATENCY_COST = "noc_latency_cost"
+NOC_LATENCY_CONSTRAINT_COST = "noc_latency_constraint_cost"
 NOC_PLACEMENT_WEIGHT = "noc_placement_weight"
 
 #phrases to identify lines that contain palcement data
@@ -54,7 +55,7 @@ POST_PLACE_CRITICAL_PATH_DELAY_PHRASE = "post-quench CPD"
 
 # regex match strings to extract placement info
 PLACEMENT_COST_REGEX = 'Placement cost: (.*), bb_cost: (.*), td_cost: (.*),'
-NOC_PLACEMENT_COST_REGEX = 'NoC Placement Costs. noc_aggregate_bandwidth_cost: (.*), noc_latency_cost: (.*),'
+NOC_PLACEMENT_COST_REGEX = 'NoC Placement Costs. noc_aggregate_bandwidth_cost: (.*), noc_latency_cost: (.*), noc_latency_constraints_cost: (.*),'
 PLACEMENT_TIME_REGEX = '# Placement took (.*) seconds.*'
 POST_PLACE_CRITICAL_PATH_DELAY_REGEX = 'post-quench CPD = (.*) \(ns\)'
 
@@ -234,13 +235,14 @@ def process_noc_placement_costs(placement_data, line_with_data):
     found_placement_metrics = regex.search(NOC_PLACEMENT_COST_REGEX, line_with_data)
 
     # quick check that the regex worked properly
-    if (found_placement_metrics is None) or (found_placement_metrics.lastindex != 2):
+    if (found_placement_metrics is None) or (found_placement_metrics.lastindex != 3):
         raise Exception("Placement noc cost not written out correctly")
 
     # we know the order of the different noc placement costs as they are found within the extracted metric list above
     # 1st element is the noc aggregate bandwidth cost and the second element is the noc latency cost
     placement_data[NOC_AGGREGATE_BANDWIDTH_COST] = float(found_placement_metrics.group(1))
     placement_data[NOC_LATENCY_COST] = float(found_placement_metrics.group(2))
+    placement_data[NOC_LATENCY_CONSTRAINT_COST] = int(found_placement_metrics.group(3))
     
     return
 
@@ -329,6 +331,7 @@ def execute_vpr_and_process_output(vpr_location, arch_file, design_file, design_
     vpr_average_place_data[PLACE_CPD] = 0.0
     vpr_average_place_data[NOC_AGGREGATE_BANDWIDTH_COST] = 0.0
     vpr_average_place_data[NOC_LATENCY_COST] = 0.0
+    vpr_average_place_data[NOC_LATENCY_CONSTRAINT_COST] = 0.0
 
     for single_run_args in run_args:
 
@@ -342,6 +345,7 @@ def execute_vpr_and_process_output(vpr_location, arch_file, design_file, design_
         vpr_average_place_data[PLACE_CPD] = vpr_average_place_data[PLACE_CPD] + curr_vpr_place_data[PLACE_CPD]
         vpr_average_place_data[NOC_AGGREGATE_BANDWIDTH_COST] = vpr_average_place_data[NOC_AGGREGATE_BANDWIDTH_COST] + curr_vpr_place_data[NOC_AGGREGATE_BANDWIDTH_COST]
         vpr_average_place_data[NOC_LATENCY_COST] = vpr_average_place_data[NOC_LATENCY_COST] + curr_vpr_place_data[NOC_LATENCY_COST]
+        vpr_average_place_data[NOC_LATENCY_CONSTRAINT_COST] = vpr_average_place_data[NOC_LATENCY_CONSTRAINT_COST] + curr_vpr_place_data[NOC_LATENCY_CONSTRAINT_COST]
 
         # delete the net file associated with the current run
         os.remove(single_run_args[8])
@@ -404,11 +408,11 @@ def write_csv_file(data, csv_file_name):
         # add the table column headers
         # It will look like follows:
         # noc_placement_weight place_cost bb_cost td_cost place_time noc_aggregate_bandwidth_cost noc_latency_cost
-        csv_writer.writerow([NOC_PLACEMENT_WEIGHT, PLACE_COST, PLACE_BB_COST, PLACE_CPD, PLACE_TIME, NOC_AGGREGATE_BANDWIDTH_COST, NOC_LATENCY_COST])
+        csv_writer.writerow([NOC_PLACEMENT_WEIGHT, PLACE_COST, PLACE_BB_COST, PLACE_CPD, PLACE_TIME, NOC_AGGREGATE_BANDWIDTH_COST, NOC_LATENCY_COST, NOC_LATENCY_CONSTRAINT_COST])
 
         # now go through the sorted data for the design and write each run within a single row
         for single_run_data in sorted_data:
-            csv_writer.writerow([single_run_data[NOC_PLACEMENT_WEIGHT], single_run_data[PLACE_COST], single_run_data[PLACE_BB_COST], single_run_data[PLACE_CPD], single_run_data[PLACE_TIME], single_run_data[NOC_AGGREGATE_BANDWIDTH_COST], single_run_data[NOC_LATENCY_COST]])
+            csv_writer.writerow([single_run_data[NOC_PLACEMENT_WEIGHT], single_run_data[PLACE_COST], single_run_data[PLACE_BB_COST], single_run_data[PLACE_CPD], single_run_data[PLACE_TIME], single_run_data[NOC_AGGREGATE_BANDWIDTH_COST], single_run_data[NOC_LATENCY_COST], single_run_data[NOC_LATENCY_CONSTRAINT_COST]])
 
         file.close()
 
@@ -490,13 +494,13 @@ if __name__ == "__main__":
         # the test failed
         error_message = error
         test_status = False  
-    
+
     # need to reinitiate a connection to the server
     email_setup['sender_method'] = smtplib.SMTP(host='smtp.office365.com', port=587)
     email_setup['sender_method'].starttls()
     email_setup['sender_method'].login(email_setup['user_email'], email_setup['email_password'])
     send_notification(test_status=test_status, error_message=error_message, email_related_info=email_setup)
-    
+
 
 
 
