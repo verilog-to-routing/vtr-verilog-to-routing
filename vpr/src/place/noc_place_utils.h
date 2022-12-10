@@ -19,6 +19,10 @@ constexpr double MAX_INV_NOC_AGGREGATE_BANDWIDTH_COST = 1.;
 // This should be updated if the delays become lower
 constexpr double MAX_INV_NOC_LATENCY_COST = 1.e12;
 
+// we don't expect the noc_latency cost to ever go below 1 pico second.
+// So this value represents the lowest possible latency cost.
+constexpr double MIN_EXPECTED_NOC_LATENCY_COST = 1.e-12;
+
 /* Stores statistical data about how the NoC blocks were moved during placement
 */
 struct NocPlaceStats{
@@ -258,6 +262,24 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
  * latency and its constraint parameters for the cost calculation.
  */
 double calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route, const NocStorage& noc_model, const t_noc_traffic_flow& traffic_flow_info, const t_noc_opts& noc_opts);
+
+/**
+ * @brief THis verifies whether we need to compare the recomputed noc latency
+ * cost to the current noc latency cost. During placement there is a function
+ * called "recompute_costs_from_scratch" that regularily checks whether the
+ * NoC latency cost updates after each move match a complete recalculation of
+ * the NoC latency cost at the current state. This will fail when the latency
+ * costs get really low. So we expect the latency costs to never actually go 
+ * below one picosecond, so we check whether a recomputed cost is below this
+ * threshold and if it is then indicate that there is no need to verify the
+ * NoC latency cost. This is acceptable since the only case where the NoC
+ * latency cost will be below one picosecond is when the weighting on the 
+ * latency component of the cost is extremely low (ie. 0) and when most if not 
+ * all the latency constraints have been met (so this is also close to 0). There
+ * is no need to check and compare the cost here.
+ * 
+ */
+bool check_recomputed_noc_latency_cost(float recomputed_cost);
 
 void allocate_and_load_noc_placement_structs(void);
 

@@ -1229,15 +1229,19 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
             VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
         }
         costs->noc_aggregate_bandwidth_cost = new_noc_aggregate_bandwidth_cost;
-
-        if (fabs(
-                new_noc_latency_cost
-                - costs->noc_latency_cost)
-            > costs->noc_latency_cost * ERROR_TOL) {
-            std::string msg = vtr::string_fmt(
-                "in recompute_costs_from_scratch: new_noc_latency_cost = %g, old noc_latency_cost = %g, ERROR_TOL = %g\n",
-                new_noc_latency_cost, costs->noc_latency_cost, ERROR_TOL);
-            VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
+        
+        // only check if the recomputed cost and the current noc latency cost are within the error tolerance if the cost is above 1 picosecond.
+        // Otherwise there is no need to check (we expect the latency cost to be above the threshold of 1 picosecond) 
+        if (check_recomputed_noc_latency_cost(new_noc_latency_cost)){
+            if (fabs(
+                    new_noc_latency_cost
+                    - costs->noc_latency_cost)
+                > costs->noc_latency_cost * ERROR_TOL) {
+                std::string msg = vtr::string_fmt(
+                    "in recompute_costs_from_scratch: new_noc_latency_cost = %g, old noc_latency_cost = %g, ERROR_TOL = %g\n",
+                    new_noc_latency_cost, costs->noc_latency_cost, ERROR_TOL);
+                VPR_ERROR(VPR_ERROR_PLACE, msg.c_str());
+            }
         }
         costs->noc_latency_cost = new_noc_latency_cost;
     }
