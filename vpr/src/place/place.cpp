@@ -960,6 +960,9 @@ void try_place(const t_placer_opts& placer_opts,
     check_place(costs, place_delay_model.get(), placer_criticalities.get(),
                 placer_opts.place_algorithm, noc_opts);
 
+    // get statistical data about the number of traffic flows that had their latency constraints met
+    int noc_latency_constraints_cost = get_number_of_traffic_flows_with_latency_cons_met();
+
     //Some stats
     VTR_LOG("\n");
     VTR_LOG("Swaps called: %d\n", num_ts_called);
@@ -1002,8 +1005,8 @@ void try_place(const t_placer_opts& placer_opts,
     // print the noc costs info
     if (noc_opts.noc){
         sprintf(msg,
-            "\nNoC Placement Costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g ", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost);
-        VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, noc_latency_cost: %g, \n", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost);
+            "\nNoC Placement Costs. noc_aggregate_bandwidth_cost: %g noc_latency_cost: %g noc_latency_constraints_cost: %d", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost, noc_latency_constraints_cost);
+        VTR_LOG("NoC Placement Costs. noc_aggregate_bandwidth_cost: %g, noc_latency_cost: %g, noc_latency_constraints_cost: %d, \n", costs.noc_aggregate_bandwidth_cost, costs.noc_latency_cost, noc_latency_constraints_cost);
     }
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
     // Print out swap statistics
