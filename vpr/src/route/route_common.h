@@ -148,12 +148,6 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               const t_conn_cost_params cost_params,
                               bool is_flat);
 
-void update_router_stats(const DeviceContext& device_ctx,
-                         const RRGraphView* rr_graph,
-                         RouterStats* router_stats,
-                         RRNodeId rr_node_id,
-                         bool is_push);
-
 /* Creates a new t_heap object to be placed on the heap, if the new cost    *
  * given is lower than the current path_cost to this channel segment.  The  *
  * index of its predecessor is stored to make traceback easy.  The index of *

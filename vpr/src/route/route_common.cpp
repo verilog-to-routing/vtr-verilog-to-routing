@@ -1900,39 +1900,4 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
     return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
 }
 
-void update_router_stats(const DeviceContext& device_ctx,
-                         const RRGraphView* rr_graph,
-                         RouterStats* router_stats,
-                         RRNodeId rr_node_id,
-                         bool is_push) {
-    if (is_push) {
-        router_stats->heap_pushes++;
-    } else {
-        router_stats->heap_pops++;
-    }
 
-    auto node_type = rr_graph->node_type(rr_node_id);
-    VTR_ASSERT(node_type != NUM_RR_TYPES);
-    t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph->node_xlow(rr_node_id)][rr_graph->node_ylow(rr_node_id)].type;
-
-    if (is_inter_cluster_node(physical_type,
-                              node_type,
-                              rr_graph->node_ptc_num(rr_node_id))) {
-        if (is_push) {
-            router_stats->inter_cluster_node_pushes++;
-            router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
-        } else {
-            router_stats->inter_cluster_node_pops++;
-            router_stats->inter_cluster_node_type_cnt_pops[node_type]++;
-        }
-
-    } else {
-        if (is_push) {
-            router_stats->intra_cluster_node_pushes++;
-            router_stats->intra_cluster_node_type_cnt_pushes[node_type]++;
-        } else {
-            router_stats->intra_cluster_node_pops++;
-            router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
-        }
-    }
-}

@@ -26,6 +26,43 @@ inline static bool relevant_node_to_target(const RRGraphView* rr_graph,
     return false;
 }
 
+inline void update_router_stats(const DeviceContext& device_ctx,
+                                const RRGraphView* rr_graph,
+                                RouterStats* router_stats,
+                                RRNodeId rr_node_id,
+                                bool is_push) {
+    if (is_push) {
+        router_stats->heap_pushes++;
+    } else {
+        router_stats->heap_pops++;
+    }
+
+    auto node_type = rr_graph->node_type(rr_node_id);
+    VTR_ASSERT(node_type != NUM_RR_TYPES);
+    t_physical_tile_type_ptr physical_type = device_ctx.grid[rr_graph->node_xlow(rr_node_id)][rr_graph->node_ylow(rr_node_id)].type;
+
+    if (is_inter_cluster_node(physical_type,
+                              node_type,
+                              rr_graph->node_ptc_num(rr_node_id))) {
+        if (is_push) {
+            router_stats->inter_cluster_node_pushes++;
+            router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
+        } else {
+            router_stats->inter_cluster_node_pops++;
+            router_stats->inter_cluster_node_type_cnt_pops[node_type]++;
+        }
+
+    } else {
+        if (is_push) {
+            router_stats->intra_cluster_node_pushes++;
+            router_stats->intra_cluster_node_type_cnt_pushes[node_type]++;
+        } else {
+            router_stats->intra_cluster_node_pops++;
+            router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
+        }
+    }
+}
+
 template<typename Heap>
 std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_from_route_tree(
     t_rt_node* rt_root,
