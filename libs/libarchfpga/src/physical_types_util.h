@@ -449,11 +449,27 @@ float get_edge_delay(t_physical_tile_type_ptr physical_type,
                      int src_pin_physical_num,
                      int sink_pin_physical_num);
 
+/**
+ * @brief This function is used during reachability analysis to check whether two classes should be put in the same group
+ * @param physical_tile
+ * @param first_class_ptc_num
+ * @param second_class_ptc_num
+ * @param is_flat
+ * @return
+ */
 bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
                            int first_class_ptc_num,
                            int second_class_ptc_num,
                            bool is_flat);
 
+/**
+ * @brief Given the sink group, identify the pins which can reach both sink_ptc_num and at least one of the sinks,
+ * in the grp.
+ * @param physical_tile
+ * @param sink_ptc_num
+ * @param grp
+ * @return Key is the pin number and value is the number of sinks, including sink_ptc_num, in the grp reachable by the pin
+ */
 std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_tile,
                                            int sink_ptc_num,
                                            const std::vector<int>& grp);

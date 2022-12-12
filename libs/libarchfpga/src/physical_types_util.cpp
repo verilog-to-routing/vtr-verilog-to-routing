@@ -113,6 +113,7 @@ static std::vector<const t_pb_graph_node*> get_sink_hierarchical_parents(t_physi
 
 static int get_num_reachable_sinks(t_physical_tile_type_ptr physical_tile,
                                    const int pin_physcial_num,
+                                   const int ref_sink_num,
                                    const std::vector<int>& sink_grp);
 
 static std::tuple<int, int, int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat) {
@@ -378,12 +379,17 @@ static std::vector<const t_pb_graph_node*> get_sink_hierarchical_parents(t_physi
 
 static int get_num_reachable_sinks(t_physical_tile_type_ptr physical_tile,
                                    const int pin_physcial_num,
+                                   const int ref_sink_num,
                                    const std::vector<int>& sink_grp) {
     int num_reachable_sinks = 0;
 
     auto pb_pin = get_pb_pin_from_pin_physical_num(physical_tile,
                                                    pin_physcial_num);
     const auto& connected_sinks = pb_pin->connected_sinks_ptc;
+
+    if(connected_sinks.find(ref_sink_num) == connected_sinks.end()) {
+        return 0;
+    }
 
     for(auto sink_num : sink_grp) {
         if(connected_sinks.find(sink_num) != connected_sinks.end()) {
@@ -1399,9 +1405,12 @@ bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
                            int first_class_ptc_num,
                            int second_class_ptc_num,
                            bool is_flat) {
+    // We don't do reachability analysis if flat-routing is not enabled
     if (!is_flat) {
         return true;
     }
+
+    // Two functions are considered to be in the same group if share at least two level of blocks
     const int NUM_SIMILAR_PB_NODE_THRESHOLD = 2;
     auto first_class_pin_list = get_pin_list_from_class_physical_num(physical_tile, first_class_ptc_num);
     auto second_class_pin_list = get_pin_list_from_class_physical_num(physical_tile, second_class_ptc_num);
@@ -1463,6 +1472,7 @@ std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_til
             if(get_pin_type_from_pin_physical_num(physical_tile, pin_num) == e_pin_type::RECEIVER) {
                 int num_reachable_sinks = get_num_reachable_sinks(physical_tile,
                                                                   pin_num,
+                                                                  sink_ptc_num,
                                                                   grp);
 
 
