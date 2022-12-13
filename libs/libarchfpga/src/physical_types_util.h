@@ -449,6 +449,10 @@ float get_edge_delay(t_physical_tile_type_ptr physical_type,
                      int src_pin_physical_num,
                      int sink_pin_physical_num);
 
+float get_pin_primitive_comb_delay(t_physical_tile_type_ptr physical_type,
+                                   t_logical_block_type_ptr logical_block,
+                                   int pin_physical_num);
+
 /**
  * @brief This function is used during reachability analysis to check whether two classes should be put in the same group
  * @param physical_tile
