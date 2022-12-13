@@ -57,7 +57,7 @@ rt_node_CHANY_entire_tree_pushes;vpr.out;Router Stats: .*rt_node_CHANY_entire_tr
 
 adding_all_rt;vpr.out;Router Stats: .*total_number_of_adding_all_rt: (\d+) .*
 adding_high_fanout_rt;vpr.out;Router Stats: .*total_number_of_adding_high_fanout_rt: (\d+) .*
-adding_all_rt_from_high_fanout_rt;vpr.out;Router Stats: .*total_number_of_adding_all_rt_from_calling_high_fanout_rt: (\d+) .*
+total_number_of_adding_all_rt_from_calling_high_fanout_rt;vpr.out;Router Stats: .*total_number_of_adding_all_rt_from_calling_high_fanout_rt: (\d+) .*
 
 #Area Metrics
 logic_block_area_total;vpr.out;\s*Total logic block area .*: (.*)

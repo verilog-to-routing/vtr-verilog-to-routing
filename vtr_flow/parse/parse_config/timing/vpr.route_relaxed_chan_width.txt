@@ -49,7 +49,7 @@ crit_path_rt_node_CHANY_pushes;vpr.crit_path.out;Router Stats: .*rt_node_CHANY_p
 
 crit_path_adding_all_rt;vpr.crit_path.out;Router Stats: .*total_number_of_adding_all_rt: (\d+) .*
 crit_path_adding_high_fanout_rt;vpr.crit_path.out;Router Stats: .*total_number_of_adding_high_fanout_rt: (\d+) .*
-crit_path_adding_all_rt_from_high_fanout_rt;vpr.crit_path.out;Router Stats: .*total_number_of_adding_all_rt_from_calling_high_fanout_rt: (\d+)
+crit_path_total_number_of_adding_all_rt_from_calling_high_fanout_rt;vpr.crit_path.out;Router Stats: .*total_number_of_adding_all_rt_from_calling_high_fanout_rt: (\d+)
 
 #VPR Analysis (final implementation) Metrics
 critical_path_delay;vpr.crit_path.out;Final critical path delay \(least slack\): (.*) ns
