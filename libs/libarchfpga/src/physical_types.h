@@ -1627,6 +1627,8 @@ struct t_arch_switch_inf {
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
     float power_buffer_size = 0.;
 
+    bool intra_tile = false;
+
   public:
     //Returns the type of switch
     SwitchType type() const;

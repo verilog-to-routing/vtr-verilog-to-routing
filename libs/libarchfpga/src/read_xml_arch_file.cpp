@@ -4021,6 +4021,8 @@ static void ProcessSwitches(pugi::xml_node Parent,
                 arch_switch.power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
                 arch_switch.power_buffer_size = (float)vtr::atof(power_buf_size);
             }
+
+            arch_switch.intra_tile = false;
         }
 
         //Load the Tdel (which may be specfied with sub-tags)

@@ -2452,6 +2452,7 @@ t_arch_switch_inf create_internal_arch_sw(float delay) {
     arch_switch_inf.mux_trans_size = 0.;
     arch_switch_inf.buf_size_type = BufferSize::ABSOLUTE;
     arch_switch_inf.buf_size = 0.;
+    arch_switch_inf.intra_tile = true;
 
     return arch_switch_inf;
 }
