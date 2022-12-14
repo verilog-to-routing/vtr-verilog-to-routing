@@ -4360,7 +4360,7 @@ static int find_create_intra_cluster_sw_arch_idx(std::map<int, t_arch_switch_inf
     auto find_res = std::find_if(arch_sw_inf.begin(), arch_sw_inf.end(),
                                  [delay](const std::pair<int, t_arch_switch_inf>& sw_inf_pair) {
                                      const t_arch_switch_inf& sw_inf = std::get<1>(sw_inf_pair);
-                                     if (sw_inf.Tdel() == delay && sw_inf.intra_tile) {
+                                     if (sw_inf.intra_tile && sw_inf.Tdel() == delay) {
                                          return true;
                                      } else {
                                          return false;
