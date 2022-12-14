@@ -300,11 +300,11 @@ void SoftmaxAgent::set_action_prob() {
             t_logical_block_type blk_type;
             blk_type.index = i / num_available_moves_ + 1; //excluding the EMPTY type by adding one to the blk type index
             auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
-            q_[i] = (float) num_blocks / num_total_blocks;
-            q_[i] /= (num_available_moves_ * num_available_types_);
+            //q_[i] = (float) num_blocks / num_total_blocks;
+//            q_[i] /= (num_available_moves_ * num_available_types_);
 
             action_prob_[i] = (float) num_blocks / num_total_blocks;
-            action_prob_[i] /= (num_available_moves_ * num_available_types_);
+            action_prob_[i] /= (num_available_moves_);
         }
     } else {
         // calculate the probability of each action as the ratio of scaled_clipped_exp(action(i))/sum(scaled_clipped_exponentials)
