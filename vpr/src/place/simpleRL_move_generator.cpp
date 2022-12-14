@@ -300,6 +300,9 @@ void SoftmaxAgent::set_action_prob() {
             t_logical_block_type blk_type;
             blk_type.index = i / num_available_moves_ + 1; //excluding the EMPTY type by adding one to the blk type index
             auto num_blocks = cluster_ctx.clb_nlist.blocks_per_type(blk_type).size();
+            q_[i] = (float) num_blocks / num_total_blocks;
+            q_[i] /= (num_available_moves_ * num_available_types_);
+
             action_prob_[i] = (float) num_blocks / num_total_blocks;
             action_prob_[i] /= (num_available_moves_ * num_available_types_);
         }
@@ -309,7 +312,7 @@ void SoftmaxAgent::set_action_prob() {
             action_prob_[i] = exp_q_[i] / sum_q; //SARA_TODO: check its logic with Mohamed.
         }
     }
-    // normalize all the action probabilities to guarantee the sum(all actyion probs) = 1
+    // normalize all the action probabilities to guarantee the sum(all action probs) = 1
     float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(), 0.0);
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
                    bind2nd(std::plus<float>(), (1.0 - sum_prob) / (num_available_moves_ * num_available_types_)));

@@ -722,7 +722,7 @@ void try_place(const t_placer_opts& placer_opts,
     move_type_stat.aborted_moves.resize(placer_opts.place_static_move_prob.size(), std::vector<int>(device_ctx.logical_block_types.size(), 0.) );
 
     //allocate move type statistics vector performed by the agent for each temperature
-    proposed_move_per_temp.resize((device_ctx.logical_block_types.size()-1) * (placer_opts.place_static_move_prob.size()),0);
+    proposed_move_per_temp.resize((get_num_agent_types()) * (placer_opts.place_static_move_prob.size()),0);
     proposed_move_agent_per_temp = vtr::fopen("agent_move_info.txt","w");
 
     /* Get the first range limiter */
@@ -1386,8 +1386,9 @@ static e_move_result try_swap(const t_annealing_state* state,
         create_move_outcome = move_generator.propose_move(blocks_affected, move_type, move_blk_type , rlim, placer_opts, criticalities);
     }
 
+    auto logical_type = convert_agent_to_logical_block_type(move_blk_type.index);
     ++move_type_stat.num_moves[(int)move_type];
-    ++move_type_stat.blk_type_moves[(int)move_type][move_blk_type.index];
+    ++move_type_stat.blk_type_moves[(int)move_type][logical_type];
     ++proposed_move_per_temp[(move_blk_type.index * (move_type_stat.blk_type_moves.size())) + (int)move_type];
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
@@ -1402,7 +1403,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
         move_outcome = ABORTED;
 
-        ++move_type_stat.aborted_moves[(int)move_type][move_blk_type.index];
+        ++move_type_stat.aborted_moves[(int)move_type][logical_type];
     } else {
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
@@ -1513,7 +1514,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
 
-            ++move_type_stat.accepted_moves[(int)move_type][move_blk_type.index];
+            ++move_type_stat.accepted_moves[(int)move_type][logical_type];
 
             //Highlights the new block when manual move is selected.
 #ifndef NO_GRAPHICS
@@ -3046,10 +3047,10 @@ static void print_placement_move_types_stats(
         }
         for(size_t imove = 0; imove < move_type_stat.num_moves.size(); imove++){
             move_name = move_type_to_string(e_move_type(imove));
-            moves = move_type_stat.blk_type_moves[imove][itype.index-1];
+            moves = move_type_stat.blk_type_moves[imove][itype.index];
             if(moves != 0) {
-                accepted = move_type_stat.accepted_moves[imove][itype.index - 1];
-                aborted = move_type_stat.aborted_moves[imove][itype.index - 1];
+                accepted = move_type_stat.accepted_moves[imove][itype.index];
+                aborted = move_type_stat.aborted_moves[imove][itype.index];
                 rejected = moves - (accepted + aborted);
                 VTR_LOG(
                         "\t%.17s move with type %.17s: %2.6f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n",

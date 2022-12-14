@@ -507,6 +507,10 @@ int convert_agent_to_logical_block_type(int agent_block_type_index){
     return -1;
 }
 
+int get_num_agent_types(){
+    return logical_to_agent_map.size();
+}
+
 //Pick a random block to be swapped with another random block.
 //If none is found return ClusterBlockId::INVALID()
 ClusterBlockId pick_from_block() {
