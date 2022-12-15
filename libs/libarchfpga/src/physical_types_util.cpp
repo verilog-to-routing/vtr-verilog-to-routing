@@ -1404,11 +1404,12 @@ float get_edge_delay(t_physical_tile_type_ptr physical_type,
 float get_pin_primitive_comb_delay(t_physical_tile_type_ptr physical_type,
                                    t_logical_block_type_ptr logical_block,
                                    int pin_physical_num) {
-    float delay = std::numeric_limits<float>::max();
+    float delay = std::numeric_limits<float>::min();
 
     const t_pb_graph_pin* pb_pin = get_pb_pin_from_pin_physical_num(physical_type,
                                                                          logical_block,
                                                                          pin_physical_num);
+    VTR_ASSERT(pb_pin->is_primitive_pin());
 
     if(pb_pin->num_pin_timing == 0) {
         return 0.;

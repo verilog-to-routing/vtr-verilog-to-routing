@@ -238,6 +238,7 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                      t_physical_tile_type_ptr physical_type_ptr);
 
 static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                         std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                          t_physical_tile_type_ptr physical_tile,
                                          int root_x,
                                          int root_y,
@@ -288,6 +289,7 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
 
 static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                           t_rr_edge_info_set& rr_edges_to_create,
+                                          std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                           t_physical_tile_type_ptr physical_tile,
                                           int i,
                                           int j);
@@ -683,6 +685,7 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
 
 static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                           t_rr_edge_info_set& rr_edges_to_create,
+                                          std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                           t_physical_tile_type_ptr physical_tile,
                                           int i,
                                           int j) {
@@ -699,6 +702,12 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
         VTR_ASSERT(pin_rr_node_id != RRNodeId::INVALID());
         auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, pin_physical_num);
         auto driving_pins = get_physical_pin_src_pins(physical_tile, logical_block, pin_physical_num);
+        float primitive_comb_delay = 0.;
+        if(is_primitive_pin(physical_tile, pin_physical_num)) {
+            primitive_comb_delay = get_pin_primitive_comb_delay(physical_tile,
+                                                                logical_block,
+                                                                pin_physical_num);
+        }
         for (auto driving_pin : driving_pins) {
             auto driving_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
                                                           physical_tile,
@@ -706,10 +715,22 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                           j,
                                                           driving_pin);
             VTR_ASSERT(driving_pin_node_id != RRNodeId::INVALID());
-            int sw_idx = get_edge_sw_arch_idx(physical_tile,
+            int sw_idx = -1;
+
+            if(primitive_comb_delay != 0.) {
+                float edge_delay = get_edge_delay(physical_tile,
+                                                  logical_block,
+                                                  driving_pin,
+                                                  pin_physical_num);
+                sw_idx = find_create_intra_cluster_sw_arch_idx(arch_sw_inf_map,
+                                                               edge_delay + primitive_comb_delay);
+            } else {
+                sw_idx = get_edge_sw_arch_idx(physical_tile,
                                               logical_block,
                                               driving_pin,
                                               pin_physical_num);
+            }
+
             VTR_ASSERT(sw_idx != -1);
             rr_edges_to_create.emplace_back(driving_pin_node_id, pin_rr_node_id, sw_idx);
         }
@@ -1268,6 +1289,9 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                          int x,
                          int y,
                          const int delayless_switch) {
+
+    std::map<int, t_arch_switch_inf> sw_map = g_vpr_ctx.device().all_sw_inf;
+
     int num_rr_nodes = 0;
     alloc_and_load_tile_rr_node_indices(rr_graph_builder,
                                         physical_tile,
@@ -1277,6 +1301,7 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
     rr_graph_builder.resize_nodes(num_rr_nodes);
 
     alloc_and_load_tile_rr_graph(rr_graph_builder,
+                                 sw_map,
                                  physical_tile,
                                  x,
                                  y,
@@ -1286,7 +1311,7 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
     int dummy_int;
     alloc_and_load_rr_switch_inf(rr_graph_builder,
                                  switch_fanin_remap,
-                                 g_vpr_ctx.device().all_sw_inf,
+                                 sw_map,
                                  det_routing_arch.R_minW_nmos,
                                  det_routing_arch.R_minW_pmos,
                                  det_routing_arch.wire_to_arch_ipin_switch,
@@ -2088,6 +2113,7 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
 }
 
 static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
+                                         std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
                                          t_physical_tile_type_ptr physical_tile,
                                          int root_x,
                                          int root_y,
@@ -2127,6 +2153,7 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
 
     add_intra_tile_edges_rr_graph(rr_graph_builder,
                                   rr_edges_to_create,
+                                  arch_sw_inf_map,
                                   physical_tile,
                                   root_x,
                                   root_y);
@@ -2453,18 +2480,18 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                               sink_pin_num,
                                               pin_num);
 
-            int sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
+            int arch_sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
                                                            edge_delay);
 
             find_create_rr_switch(rr_graph_builder,
                                   g_vpr_ctx.mutable_device().switch_fanin_remap,
                                   R_minW_nmos,
                                   R_minW_pmos,
-                                  all_sw_inf[sw],
-                                  sw);
+                                  all_sw_inf[arch_sw],
+                                  arch_sw);
 
 
-            rr_edges_to_create.emplace_back(sink_rr_node_id, rr_node_id, sw);
+            rr_edges_to_create.emplace_back(sink_rr_node_id, rr_node_id, arch_sw);
         }
     } else {
         if (is_pin_on_tile(physical_type, pin_physical_num)) {
@@ -2511,15 +2538,15 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
 
         for (auto src_pair : src_node_edge_pair) {
             VTR_ASSERT(src_pair.first != RRNodeId::INVALID());
-            int sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
+            int arch_sw = find_create_intra_cluster_sw_arch_idx(all_sw_inf,
                                                            src_pair.second);
             find_create_rr_switch(rr_graph_builder,
                                   g_vpr_ctx.mutable_device().switch_fanin_remap,
                                   R_minW_nmos,
                                   R_minW_pmos,
-                                  all_sw_inf[sw],
-                                  sw);
-            rr_edges_to_create.emplace_back(src_pair.first, sink_rr_node_id, sw);
+                                  all_sw_inf[arch_sw],
+                                  arch_sw);
+            rr_edges_to_create.emplace_back(src_pair.first, sink_rr_node_id, arch_sw);
         }
     }
 }
@@ -4367,7 +4394,7 @@ static int find_create_intra_cluster_sw_arch_idx(std::map<int, t_arch_switch_inf
                                      }
                                  });
 
-    // There isn't any oter intra-tile edge with the same delay - Create a new one!
+    // There isn't any other intra-tile edge with the same delay - Create a new one!
     if (find_res == arch_sw_inf.end()) {
         auto arch_sw = create_internal_arch_sw(delay);
         int max_key_num = std::numeric_limits<int>::min();
