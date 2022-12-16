@@ -93,6 +93,7 @@ extern block_memory_t* lookup_block_memory(char* instance_name_prefix, char* ide
 extern void free_block_memories();
 
 extern void resolve_ymem_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
+extern void resolve_ymem2_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void resolve_bram_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 extern void resolve_rom_node(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 

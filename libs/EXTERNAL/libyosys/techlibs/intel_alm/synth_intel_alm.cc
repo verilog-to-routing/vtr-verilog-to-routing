@@ -43,20 +43,24 @@ struct SynthIntelALMPass : public ScriptPass {
 		log("    -family <family>\n");
 		log("        target one of:\n");
 		log("        \"cyclonev\"    - Cyclone V (default)\n");
+		log("        \"arriav\"      - Arria V (non-GZ)\n");
 		log("        \"cyclone10gx\" - Cyclone 10GX\n");
 		log("\n");
 		log("    -vqm <file>\n");
-		log("        write the design to the specified Verilog Quartus Mapping File. Writing of an\n");
-		log("        output file is omitted if this parameter is not specified. Implies -quartus.\n");
+		log("        write the design to the specified Verilog Quartus Mapping File. Writing\n");
+		log("        of an output file is omitted if this parameter is not specified. Implies\n");
+		log("        -quartus.\n");
 		log("\n");
 		log("    -noflatten\n");
-		log("        do not flatten design before synthesis; useful for per-module area statistics\n");
+		log("        do not flatten design before synthesis; useful for per-module area\n");
+		log("        statistics\n");
 		log("\n");
 		log("    -quartus\n");
 		log("        output a netlist using Quartus cells instead of MISTRAL_* cells\n");
 		log("\n");
 		log("    -dff\n");
-		log("        pass DFFs to ABC to perform sequential logic optimisations (EXPERIMENTAL)\n");
+		log("        pass DFFs to ABC to perform sequential logic optimisations\n");
+		log("        (EXPERIMENTAL)\n");
 		log("\n");
 		log("    -run <from_label>:<to_label>\n");
 		log("        only run the commands between the labels (see below). an empty\n");
@@ -169,10 +173,14 @@ struct SynthIntelALMPass : public ScriptPass {
 		if (!design->full_selection())
 			log_cmd_error("This command only operates on fully selected designs!\n");
 
-		if (family_opt == "cyclonev") {
+		if (family_opt == "cyclonev" || family_opt == "arriav") {
 			bram_type = "m10k";
 		} else if (family_opt == "cyclone10gx") {
 			bram_type = "m20k";
+		} else if (family_opt == "arriva") {
+			// I have typoed "arriav" as "arriva" (a local bus company)
+			// so many times I thought it would be funny to have an easter egg.
+			log_cmd_error("synth_intel_alm cannot synthesize for bus companies. (did you mean '-family arriav'?)\n");
 		} else {
 			log_cmd_error("Invalid family specified: '%s'\n", family_opt.c_str());
 		}
@@ -229,12 +237,12 @@ struct SynthIntelALMPass : public ScriptPass {
 			if (help_mode) {
 				run("techmap -map +/mul2dsp.v [...]", "(unless -nodsp)");
 			} else if (!nodsp) {
-				// Cyclone V supports 9x9 multiplication, Cyclone 10 GX does not.
+				// Cyclone V/Arria V supports 9x9 multiplication, Cyclone 10 GX does not.
 				run("techmap -map +/mul2dsp.v -D DSP_A_MAXWIDTH=27 -D DSP_B_MAXWIDTH=27  -D DSP_A_MINWIDTH=19 -D DSP_B_MINWIDTH=4 -D DSP_NAME=__MUL27X27");
 				run("chtype -set $mul t:$__soft_mul");
 				run("techmap -map +/mul2dsp.v -D DSP_A_MAXWIDTH=27 -D DSP_B_MAXWIDTH=27  -D DSP_A_MINWIDTH=4 -D DSP_B_MINWIDTH=19 -D DSP_NAME=__MUL27X27");
 				run("chtype -set $mul t:$__soft_mul");
-				if (family_opt == "cyclonev") {
+				if (family_opt == "cyclonev" || family_opt == "arriav") {
 					run("techmap -map +/mul2dsp.v -D DSP_A_MAXWIDTH=18 -D DSP_B_MAXWIDTH=18  -D DSP_A_MINWIDTH=10 -D DSP_B_MINWIDTH=4 -D DSP_NAME=__MUL18X18");
 					run("chtype -set $mul t:$__soft_mul");
 					run("techmap -map +/mul2dsp.v -D DSP_A_MAXWIDTH=18 -D DSP_B_MAXWIDTH=18  -D DSP_A_MINWIDTH=4 -D DSP_B_MINWIDTH=10 -D DSP_NAME=__MUL18X18");
@@ -257,8 +265,7 @@ struct SynthIntelALMPass : public ScriptPass {
 
 		if (!nobram && check_label("map_bram", "(skip if -nobram)")) {
 			run(stringf("memory_bram -rules +/intel_alm/common/bram_%s.txt", bram_type.c_str()));
-			if (help_mode || bram_type != "m10k")
-				run(stringf("techmap -map +/intel_alm/common/bram_%s_map.v", bram_type.c_str()));
+			run(stringf("techmap -map +/intel_alm/common/bram_%s_map.v", bram_type.c_str()));
 		}
 
 		if (!nolutram && check_label("map_lutram", "(skip if -nolutram)")) {

@@ -223,7 +223,7 @@ endmodule
 
 (* blackbox *)
 module IDDRX2F(
-	input D, SCLK, ECLK, RST,
+	input D, SCLK, ECLK, RST, ALIGNWD,
 	output Q0, Q1, Q2, Q3
 );
 	parameter GSR = "ENABLED";
@@ -337,6 +337,15 @@ module DDRDLLA(
 );
 	parameter FORCE_MAX_DELAY = "NO";
 	parameter GSR = "ENABLED";
+endmodule
+
+(* blackbox *)
+module DLLDELD(
+	input A, DDRDEL, LOADN, MOVE, DIRECTION,
+	output Z, CFLAG
+);
+	parameter DEL_ADJ = "PLUS";
+	parameter DEL_VAL = 0;
 endmodule
 
 (* blackbox *)

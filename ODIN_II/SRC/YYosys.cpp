@@ -301,7 +301,7 @@ void YYosys::execute() {
         }
 
         // Translate processes to netlist components such as MUXs, FFs and latches
-        run_pass(std::string("proc; opt;"));
+        run_pass(std::string("proc -norom; opt;"));
         // Extraction and optimization of finite state machines
         run_pass(std::string("fsm; opt;"));
         // Collects memories, their port and create multiport memory cells
@@ -317,6 +317,8 @@ void YYosys::execute() {
         // Transform asynchronous dffs to synchronous dffs using techlib files provided by Yosys
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adff2dff.v"));
         run_pass(std::string("techmap -map " + this->odin_techlib + "/adffe2dff.v"));
+        run_pass(std::string("techmap -map " + this->odin_techlib + "/aldff2dff.v"));
+        run_pass(std::string("techmap -map " + this->odin_techlib + "/aldffe2dff.v"));
         // To resolve Yosys internal indexed part-select circuitries
         run_pass(std::string("techmap */t:$shift */t:$shiftx"));
 
