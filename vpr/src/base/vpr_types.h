@@ -1269,6 +1269,7 @@ struct t_noc_opts {
     double noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow contraints range:[0-inf)]
     double noc_latency_weighting;             ///<constrols the significance of the traffic flow latencies relative to the other NoC placement costs
     int noc_swap_percentage; ///<constrols the number of NoC router block swap attemps relative to the total number of swaps attempted by the placer
+    std::string noc_placement_file_name; ///<is the name of the output file that contains the NoC placement information
 };
 
 /**

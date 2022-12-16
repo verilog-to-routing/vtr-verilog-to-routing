@@ -11,6 +11,7 @@
 #include "move_utils.h"
 #include "vtr_random.h"
 #include "place_constraints.h"
+#include "fstream"
 
 // represent the maximum values of the NoC cost normalization factors //
 // we need to handle the case where the agggregate bandwidth is 0, so we set this to some arbritary positive number that is greater than 1.e-9, since that is the range we expect the normalization factor to be (in Gbps)
@@ -355,4 +356,21 @@ void update_noc_placement_stats(int move_type);
  */
 void print_noc_placement_stats(void);
 
+/**
+ * @brief Writes out the locations of the router cluster blocks in the
+ * final placement. This information is written out in a format that is
+ * compatible with the RADsim simulator place file. The output of this
+ * function is a .place file.
+ * 
+ * Sample placement file output:
+ *      router_cluster_name layer_number physical_router_id
+ *      ...
+ *      ...
+ *      ...
+ * 
+ * @param The name of the output file that contain the NoC placement
+ * information.
+ * 
+ */
+void write_noc_placement_file(std::string file_name);
 #endif
