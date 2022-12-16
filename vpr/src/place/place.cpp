@@ -1029,6 +1029,7 @@ void try_place(const Netlist<>& net_list,
     print_placement_move_types_stats(move_type_stat);
     if (noc_opts.noc){
         print_noc_placement_stats();
+        write_noc_placement_file(noc_opts.noc_placement_file_name);
     }
 
     free_placement_structs(placer_opts, noc_opts);

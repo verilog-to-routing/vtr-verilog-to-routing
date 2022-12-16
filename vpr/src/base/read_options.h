@@ -150,6 +150,7 @@ struct t_options {
     argparse::ArgValue<double> noc_latency_constraints_weighting;
     argparse::ArgValue<double> noc_latency_weighting;
     argparse::ArgValue<double> noc_swap_percentage;
+    argparse::ArgValue<std::string> noc_placement_file_name;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;

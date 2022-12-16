@@ -588,3 +588,65 @@ void print_noc_placement_stats(void){
 
     return;
 }
+
+void write_noc_placement_file(std::string file_name) {
+
+    // we need the clustered netlist to get the names of all the NoC router cluster blocks
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    // we need to the placement context to determine the final placed locations of the NoC router cluster blocks
+    auto& placement_ctx = g_vpr_ctx.placement();
+    // we need the NoC context to identify the physical router ids based on their locations on the device
+    auto& noc_ctx = g_vpr_ctx.noc();
+
+    // file to write the placement information to
+    std::fstream noc_placement_file;
+
+    // open file for write and check if it opened correctly
+    noc_placement_file.open(file_name.c_str(), std::ios::out);
+    if (!noc_placement_file) {
+        VTR_LOG_ERROR(
+                "Failed to open the placement file '%s' to write out the NoC router placement information.\n",
+                file_name);
+    }
+
+    // assume that the FPGA device has a single layer (2-D), so when we write the palcement file the layer value will be constant
+    int layer_number = 0;
+
+    // get a reference to the collection of router cluster blocks in the design
+    const std::unordered_set<ClusterBlockId>& router_clusters = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+    //get the noc model to determine the physical routers where clusters are placed
+    const NocStorage& noc_model = noc_ctx.noc_model;
+
+    // get a reference to the clustered netlist
+    const ClusteredNetlist& cluster_block_netlist = cluster_ctx.clb_nlist;
+
+    // get a reference to the clustered block placement locations
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& clustered_block_placed_locations = placement_ctx.block_locs;
+
+    // go through all the cluster blocks and write out their information in the placement file
+    for(const auto& single_cluster_id : router_clusters) {
+
+        // check if the current cluster id is valid
+        if (single_cluster_id == ClusterBlockId::INVALID()){
+            VTR_LOG_ERROR(
+                "A cluster block id stored as an identifier for a NoC router block was invalid.\n");
+        }
+
+        // get the name of the router cluster block
+        const std::string& cluster_name = cluster_block_netlist.block_name(single_cluster_id);
+
+        //get the placement location of the curren router cluster block
+        const t_block_loc& cluster_location = clustered_block_placed_locations[single_cluster_id];
+
+        // now get the corresping physical router block id the cluster is located on
+        NocRouterId physical_router_cluster_is_placed_on = noc_model.get_router_at_grid_location(cluster_location.loc);
+
+        // write the current cluster information to the output file
+        noc_placement_file << cluster_name << " " << layer_number << " " << (size_t)physical_router_cluster_is_placed_on << "\n";
+    } 
+
+    // finished writing placement information so close the file
+    noc_placement_file.close();
+
+    return;
+}
