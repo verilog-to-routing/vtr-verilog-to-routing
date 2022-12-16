@@ -100,6 +100,40 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
         ) 
     endif() 
 
+    if(${YOSYS_PARMYS_PLUGIN}) 
+        set(YOSYS_DATDIR ${libyosys_BINARY_DIR}/share/yosys) 
+        set(PARMYS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/parmys-plugin) 
+
+        ExternalProject_Add(parmys-plugin 
+            PREFIX "" 
+
+            GIT_REPOSITORY    https://github.com/CAS-Atlantic/parmys-plugin.git
+            GIT_TAG           v1.0
+            GIT_PROGRESS      TRUE 
+            
+            # setting source, build and install directories 
+            SOURCE_DIR "${PARMYS_SOURCE_DIR}" 
+            BUILD_IN_SOURCE TRUE 
+            INSTALL_DIR "" 
+
+            INSTALL_COMMAND "" 
+            CONFIGURE_COMMAND "" 
+            BUILD_COMMAND ${MAKE_PROGRAM} -C ${PARMYS_SOURCE_DIR} 
+                                        PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH} 
+                                        install -j${CMAKE_BUILD_PARALLEL_LEVEL} 
+            
+            # redirect logs to a logfile
+            LOG_BUILD ON
+            LOG_UPDATE ON
+            LOG_INSTALL ON
+            LOG_CONFIGURE ON
+            LOG_OUTPUT_ON_FAILURE ON
+            
+            # dependency
+            DEPENDS yosys 
+        ) 
+    endif()
+
     # In addition to libyosys in the build folder, we copy the libyosys directory
     # into a temporary folder in the VTR root, named Yosys, to have access to Yosys 
     # (plugins) execs for using in VTR scripts (similar to VPR/vpr or ODIN_II/odin_II)
@@ -114,6 +148,9 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
                             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     if(${YOSYS_SV_UHDM_PLUGIN})
         add_dependencies(vtr-yosys yosys-plugins)
+    endif()
+    if(${YOSYS_PARMYS_PLUGIN})
+        add_dependencies(vtr-yosys parmys-plugin)
     endif()
 
 endif()

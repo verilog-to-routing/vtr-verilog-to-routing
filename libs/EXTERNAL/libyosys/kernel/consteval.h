@@ -135,8 +135,6 @@ struct ConstEval
 
 		if (cell->hasPort(ID::S)) {
 			sig_s = cell->getPort(ID::S);
-			if (!eval(sig_s, undef, cell))
-				return false;
 		}
 
 		if (cell->hasPort(ID::A))
@@ -148,8 +146,10 @@ struct ConstEval
 		if (cell->type.in(ID($mux), ID($pmux), ID($_MUX_), ID($_NMUX_)))
 		{
 			std::vector<RTLIL::SigSpec> y_candidates;
-			int count_maybe_set_s_bits = 0;
 			int count_set_s_bits = 0;
+
+			if (!eval(sig_s, undef, cell))
+				return false;
 
 			for (int i = 0; i < sig_s.size(); i++)
 			{
@@ -158,9 +158,6 @@ struct ConstEval
 
 				if (s_bit == RTLIL::State::Sx || s_bit == RTLIL::State::S1)
 					y_candidates.push_back(b_slice);
-
-				if (s_bit == RTLIL::State::S1 || s_bit == RTLIL::State::Sx)
-					count_maybe_set_s_bits++;
 
 				if (s_bit == RTLIL::State::S1)
 					count_set_s_bits++;
@@ -197,6 +194,36 @@ struct ConstEval
 			}
 			else
 				set(sig_y, y_values.front());
+		}
+		else if (cell->type == ID($bmux))
+		{
+			if (!eval(sig_s, undef, cell))
+				return false;
+
+			if (sig_s.is_fully_def()) {
+				int sel = sig_s.as_int();
+				int width = GetSize(sig_y);
+				SigSpec res = sig_a.extract(sel * width, width);
+				if (!eval(res, undef, cell))
+					return false;
+				set(sig_y, res.as_const());
+			} else {
+				if (!eval(sig_a, undef, cell))
+					return false;
+				set(sig_y, const_bmux(sig_a.as_const(), sig_s.as_const()));
+			}
+		}
+		else if (cell->type == ID($demux))
+		{
+			if (!eval(sig_a, undef, cell))
+				return false;
+			if (sig_a.is_fully_zero()) {
+				set(sig_y, Const(0, GetSize(sig_y)));
+			} else {
+				if (!eval(sig_s, undef, cell))
+					return false;
+				set(sig_y, const_demux(sig_a.as_const(), sig_s.as_const()));
+			}
 		}
 		else if (cell->type == ID($fa))
 		{

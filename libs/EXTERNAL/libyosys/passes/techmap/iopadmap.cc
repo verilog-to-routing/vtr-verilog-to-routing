@@ -43,26 +43,28 @@ struct IopadmapPass : public Pass {
 		log("can only map to very simple PAD cells. Use 'techmap' to further map\n");
 		log("the resulting cells to more sophisticated PAD cells.\n");
 		log("\n");
-		log("    -inpad <celltype> <portname>[:<portname>]\n");
+		log("    -inpad <celltype> <in_port>[:<ext_port>]\n");
 		log("        Map module input ports to the given cell type with the\n");
 		log("        given output port name. if a 2nd portname is given, the\n");
-		log("        signal is passed through the pad call, using the 2nd\n");
+		log("        signal is passed through the pad cell, using the 2nd\n");
 		log("        portname as the port facing the module port.\n");
 		log("\n");
-		log("    -outpad <celltype> <portname>[:<portname>]\n");
-		log("    -inoutpad <celltype> <portname>[:<portname>]\n");
+		log("    -outpad <celltype> <out_port>[:<ext_port>]\n");
+		log("    -inoutpad <celltype> <io_port>[:<ext_port>]\n");
 		log("        Similar to -inpad, but for output and inout ports.\n");
 		log("\n");
-		log("    -toutpad <celltype> <portname>:<portname>[:<portname>]\n");
+		log("    -toutpad <celltype> <oe_port>:<out_port>[:<ext_port>]\n");
 		log("        Merges $_TBUF_ cells into the output pad cell. This takes precedence\n");
 		log("        over the other -outpad cell. The first portname is the enable input\n");
-		log("        of the tristate driver.\n");
+		log("        of the tristate driver, which can be prefixed with `~` for negative\n");
+		log("        polarity enable.\n");
 		log("\n");
-		log("    -tinoutpad <celltype> <portname>:<portname>:<portname>[:<portname>]\n");
+		log("    -tinoutpad <celltype> <oe_port>:<in_port>:<out_port>[:<ext_port>]\n");
 		log("        Merges $_TBUF_ cells into the inout pad cell. This takes precedence\n");
 		log("        over the other -inoutpad cell. The first portname is the enable input\n");
 		log("        of the tristate driver and the 2nd portname is the internal output\n");
-		log("        buffering the external signal.\n");
+		log("        buffering the external signal.  Like with `-toutpad`, the enable can\n");
+		log("        be marked as negative polarity by prefixing the name with `~`.\n");
 		log("\n");
 		log("    -ignore <celltype> <portname>[:<portname>]*\n");
 		log("        Skips mapping inputs/outputs that are already connected to given\n");
@@ -106,6 +108,7 @@ struct IopadmapPass : public Pass {
 		std::string inoutpad_celltype, inoutpad_portname_io, inoutpad_portname_pad;
 		std::string toutpad_celltype, toutpad_portname_oe, toutpad_portname_i, toutpad_portname_pad;
 		std::string tinoutpad_celltype, tinoutpad_portname_oe, tinoutpad_portname_o, tinoutpad_portname_i, tinoutpad_portname_pad;
+		bool toutpad_neg_oe = false, tinoutpad_neg_oe = false;
 		std::string widthparam, nameparam;
 		pool<pair<IdString, IdString>> ignore;
 		bool flag_bits = false;
@@ -137,6 +140,10 @@ struct IopadmapPass : public Pass {
 				toutpad_portname_oe = args[++argidx];
 				split_portname_pair(toutpad_portname_oe, toutpad_portname_i);
 				split_portname_pair(toutpad_portname_i, toutpad_portname_pad);
+				if (toutpad_portname_oe[0] == '~') {
+					toutpad_neg_oe = true;
+					toutpad_portname_oe = toutpad_portname_oe.substr(1);
+				}
 				continue;
 			}
 			if (arg == "-tinoutpad" && argidx+2 < args.size()) {
@@ -145,6 +152,10 @@ struct IopadmapPass : public Pass {
 				split_portname_pair(tinoutpad_portname_oe, tinoutpad_portname_o);
 				split_portname_pair(tinoutpad_portname_o, tinoutpad_portname_i);
 				split_portname_pair(tinoutpad_portname_i, tinoutpad_portname_pad);
+				if (tinoutpad_portname_oe[0] == '~') {
+					tinoutpad_neg_oe = true;
+					tinoutpad_portname_oe = tinoutpad_portname_oe.substr(1);
+				}
 				continue;
 			}
 			if (arg == "-ignore" && argidx+2 < args.size()) {
@@ -229,13 +240,13 @@ struct IopadmapPass : public Pass {
 		for (auto module : design->selected_modules())
 		{
 			dict<Wire *, dict<int, pair<Cell *, IdString>>> rewrite_bits;
-			pool<SigSig> remove_conns;
+			dict<SigSig, pool<int>> remove_conns;
 
 			if (!toutpad_celltype.empty() || !tinoutpad_celltype.empty())
 			{
 				dict<SigBit, Cell *> tbuf_bits;
 				pool<SigBit> driven_bits;
-				dict<SigBit, SigSig> z_conns;
+				dict<SigBit, std::pair<SigSig, int>> z_conns;
 
 				// Gather tristate buffers and always-on drivers.
 				for (auto cell : module->cells())
@@ -255,7 +266,7 @@ struct IopadmapPass : public Pass {
 						SigBit dstbit = conn.first[i];
 						SigBit srcbit = conn.second[i];
 						if (!srcbit.wire && srcbit.data == State::Sz) {
-							z_conns[dstbit] = conn;
+							z_conns[dstbit] = {conn, i};
 							continue;
 						}
 						driven_bits.insert(dstbit);
@@ -306,8 +317,9 @@ struct IopadmapPass : public Pass {
 							// enable.
 							en_sig = SigBit(State::S0);
 							data_sig = SigBit(State::Sx);
-							if (z_conns.count(wire_bit))
-								remove_conns.insert(z_conns[wire_bit]);
+							auto it = z_conns.find(wire_bit);
+							if (it != z_conns.end())
+								remove_conns[it->second.first].insert(it->second.second);
 						}
 
 						if (wire->port_input)
@@ -318,6 +330,8 @@ struct IopadmapPass : public Pass {
 								module->uniquify(stringf("$iopadmap$%s.%s[%d]", log_id(module), log_id(wire), i)),
 								RTLIL::escape_id(tinoutpad_celltype));
 
+							if (tinoutpad_neg_oe)
+								en_sig = module->NotGate(NEW_ID, en_sig);
 							cell->setPort(RTLIL::escape_id(tinoutpad_portname_oe), en_sig);
 							cell->attributes[ID::keep] = RTLIL::Const(1);
 
@@ -340,6 +354,8 @@ struct IopadmapPass : public Pass {
 								module->uniquify(stringf("$iopadmap$%s.%s[%d]", log_id(module), log_id(wire), i)),
 								RTLIL::escape_id(toutpad_celltype));
 
+							if (toutpad_neg_oe)
+								en_sig = module->NotGate(NEW_ID, en_sig);
 							cell->setPort(RTLIL::escape_id(toutpad_portname_oe), en_sig);
 							cell->setPort(RTLIL::escape_id(toutpad_portname_i), data_sig);
 							cell->attributes[ID::keep] = RTLIL::Const(1);
@@ -462,9 +478,22 @@ struct IopadmapPass : public Pass {
 
 			if (!remove_conns.empty()) {
 				std::vector<SigSig> new_conns;
-				for (auto &conn : module->connections())
-					if (!remove_conns.count(conn))
+				for (auto &conn : module->connections()) {
+					auto it = remove_conns.find(conn);
+					if (it == remove_conns.end()) {
 						new_conns.push_back(conn);
+					} else {
+						SigSpec lhs, rhs;
+						for (int i = 0; i < GetSize(conn.first); i++) {
+							if (!it->second.count(i)) {
+								lhs.append(conn.first[i]);
+								rhs.append(conn.second[i]);
+							}
+						}
+						new_conns.push_back(SigSig(lhs, rhs));
+
+					}
+				}
 				module->new_connections(new_conns);
 			}
 

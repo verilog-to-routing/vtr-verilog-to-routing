@@ -550,7 +550,6 @@ module GND(output G);
 	assign G = 0;
 endmodule
 
-(* abc9_box *)
 module IBUF(output O, input I);
 
 	specify
@@ -560,7 +559,6 @@ module IBUF(output O, input I);
 	assign O = I;
 endmodule
 
-(* abc9_box *)
 module OBUF(output O, input I);
 
 	specify
@@ -573,15 +571,48 @@ endmodule
 module TBUF (O, I, OEN);
   input I, OEN;
   output O;
-  assign O = OEN ? I : 1'bz;
+  assign O = OEN ? 1'bz : I;
 endmodule
 
 module IOBUF (O, IO, I, OEN);
   input I,OEN;
   output O;
   inout IO;
-  assign IO = OEN ? I : 1'bz;
+  assign IO = OEN ? 1'bz : I;
   assign I = IO;
+endmodule
+
+module TLVDS_OBUF (I, O, OB);
+  input I;
+  output O;
+  output OB;
+  assign O = I;
+  assign OB = ~I;
+endmodule
+
+(* blackbox *)
+module ODDR(D0, D1, TX, CLK, Q0, Q1);
+	input D0;
+	input D1;
+	input TX;
+	input CLK;
+	output Q0;
+	output Q1;
+	parameter TXCLK_POL = 0;
+	parameter INIT = 0;
+endmodule
+
+(* blackbox *)
+module ODDRC(D0, D1, CLEAR, TX, CLK, Q0, Q1);
+	input D0;
+	input D1;
+	input CLEAR;
+	input TX;
+	input CLK;
+	output Q0;
+	output Q1;
+	parameter TXCLK_POL = 0;
+	parameter INIT = 0;
 endmodule
 
 module GSR (input GSRI);
@@ -674,134 +705,509 @@ end
 
 endmodule
 
-module RAM16S4 (DO, DI, AD, WRE, CLK);
-   parameter WIDTH  = 4;
-   parameter INIT_0 = 16'h0000;
-   parameter INIT_1 = 16'h0000;
-   parameter INIT_2 = 16'h0000;
-   parameter INIT_3 = 16'h0000;
-   
-   input  [WIDTH-1:0] AD;
-   input  [WIDTH-1:0] DI;
-   output [WIDTH-1:0] DO;
-   input 	      CLK;
-   input 	      WRE;
 
-  specify
-    (AD => DO) = (270, 405);
+module RAM16S1 (DO, DI, AD, WRE, CLK);
+
+parameter INIT_0 = 16'h0000;
+
+input [3:0] AD;
+input DI;
+output DO;
+input CLK;
+input WRE;
+
+specify
+	(AD *> DO) = (270, 405);
 	$setup(DI, posedge CLK, 62);
 	$setup(WRE, posedge CLK, 62);
 	$setup(AD, posedge CLK, 62);
-	(posedge CLK => (DO : {WIDTH{1'bx}})) = (474, 565);
-  endspecify
+	(posedge CLK => (DO : 1'bx)) = (474, 565);
+endspecify
 
-   reg [15:0] 	    mem0, mem1, mem2, mem3;
-   
-   initial begin
-      mem0 = INIT_0;
-      mem1 = INIT_1;
-      mem2 = INIT_2;
-      mem3 = INIT_3;	
-   end
-   
-   assign	DO[0] = mem0[AD];
-   assign	DO[1] = mem1[AD];
-   assign	DO[2] = mem2[AD];
-   assign	DO[3] = mem3[AD];
-   
-   always @(posedge CLK) begin
-      if (WRE) begin
-	 mem0[AD] <= DI[0];
-	 mem1[AD] <= DI[1];
-	 mem2[AD] <= DI[2];
-	 mem3[AD] <= DI[3];
-      end
-   end
-   
-endmodule // RAM16S4
+reg [15:0] mem;
+
+initial begin
+	mem = INIT_0;
+end
+
+assign DO = mem[AD];
+
+always @(posedge CLK) begin
+	if (WRE) begin
+		mem[AD] <= DI;
+	end
+end
+
+endmodule
+
+
+module RAM16S2 (DO, DI, AD, WRE, CLK);
+
+parameter INIT_0 = 16'h0000;
+parameter INIT_1 = 16'h0000;
+
+input [3:0] AD;
+input [1:0] DI;
+output [1:0] DO;
+input CLK;
+input WRE;
+
+specify
+	(AD *> DO) = (270, 405);
+	$setup(DI, posedge CLK, 62);
+	$setup(WRE, posedge CLK, 62);
+	$setup(AD, posedge CLK, 62);
+	(posedge CLK => (DO : 2'bx)) = (474, 565);
+endspecify
+
+reg [15:0] mem0, mem1;
+
+initial begin
+	mem0 = INIT_0;
+	mem1 = INIT_1;
+end
+
+assign DO[0] = mem0[AD];
+assign DO[1] = mem1[AD];
+
+always @(posedge CLK) begin
+	if (WRE) begin
+		mem0[AD] <= DI[0];
+		mem1[AD] <= DI[1];
+	end
+end
+
+endmodule
+
+
+module RAM16S4 (DO, DI, AD, WRE, CLK);
+
+parameter INIT_0 = 16'h0000;
+parameter INIT_1 = 16'h0000;
+parameter INIT_2 = 16'h0000;
+parameter INIT_3 = 16'h0000;
+
+input [3:0] AD;
+input [3:0] DI;
+output [3:0] DO;
+input CLK;
+input WRE;
+
+specify
+	(AD *> DO) = (270, 405);
+	$setup(DI, posedge CLK, 62);
+	$setup(WRE, posedge CLK, 62);
+	$setup(AD, posedge CLK, 62);
+	(posedge CLK => (DO : 4'bx)) = (474, 565);
+endspecify
+
+reg [15:0] mem0, mem1, mem2, mem3;
+
+initial begin
+	mem0 = INIT_0;
+	mem1 = INIT_1;
+	mem2 = INIT_2;
+	mem3 = INIT_3;
+end
+
+assign DO[0] = mem0[AD];
+assign DO[1] = mem1[AD];
+assign DO[2] = mem2[AD];
+assign DO[3] = mem3[AD];
+
+always @(posedge CLK) begin
+	if (WRE) begin
+		mem0[AD] <= DI[0];
+		mem1[AD] <= DI[1];
+		mem2[AD] <= DI[2];
+		mem3[AD] <= DI[3];
+	end
+end
+
+endmodule
+
+
+module RAM16SDP1 (DO, DI, WAD, RAD, WRE, CLK);
+
+parameter INIT_0 = 16'h0000;
+
+input [3:0] WAD;
+input [3:0] RAD;
+input DI;
+output DO;
+input CLK;
+input WRE;
+
+specify
+	(RAD *> DO) = (270, 405);
+	$setup(DI, posedge CLK, 62);
+	$setup(WRE, posedge CLK, 62);
+	$setup(WAD, posedge CLK, 62);
+	(posedge CLK => (DO : 1'bx)) = (474, 565);
+endspecify
+
+reg [15:0] mem;
+
+initial begin
+	mem = INIT_0;
+end
+
+assign DO = mem[RAD];
+
+always @(posedge CLK) begin
+	if (WRE) begin
+		mem[WAD] <= DI;
+	end
+end
+
+endmodule
+
+
+module RAM16SDP2 (DO, DI, WAD, RAD, WRE, CLK);
+
+parameter INIT_0 = 16'h0000;
+parameter INIT_1 = 16'h0000;
+
+input [3:0] WAD;
+input [3:0] RAD;
+input [1:0] DI;
+output [1:0] DO;
+input CLK;
+input WRE;
+
+specify
+	(RAD *> DO) = (270, 405);
+	$setup(DI, posedge CLK, 62);
+	$setup(WRE, posedge CLK, 62);
+	$setup(WAD, posedge CLK, 62);
+	(posedge CLK => (DO : 2'bx)) = (474, 565);
+endspecify
+
+reg [15:0] mem0, mem1;
+
+initial begin
+	mem0 = INIT_0;
+	mem1 = INIT_1;
+end
+
+assign DO[0] = mem0[RAD];
+assign DO[1] = mem1[RAD];
+
+always @(posedge CLK) begin
+	if (WRE) begin
+		mem0[WAD] <= DI[0];
+		mem1[WAD] <= DI[1];
+	end
+end
+
+endmodule
+
+
+module RAM16SDP4 (DO, DI, WAD, RAD, WRE, CLK);
+
+parameter INIT_0 = 16'h0000;
+parameter INIT_1 = 16'h0000;
+parameter INIT_2 = 16'h0000;
+parameter INIT_3 = 16'h0000;
+
+input [3:0] WAD;
+input [3:0] RAD;
+input [3:0] DI;
+output [3:0] DO;
+input CLK;
+input WRE;
+
+specify
+	(RAD *> DO) = (270, 405);
+	$setup(DI, posedge CLK, 62);
+	$setup(WRE, posedge CLK, 62);
+	$setup(WAD, posedge CLK, 62);
+	(posedge CLK => (DO : 4'bx)) = (474, 565);
+endspecify
+
+reg [15:0] mem0, mem1, mem2, mem3;
+
+initial begin
+	mem0 = INIT_0;
+	mem1 = INIT_1;
+	mem2 = INIT_2;
+	mem3 = INIT_3;
+end
+
+assign DO[0] = mem0[RAD];
+assign DO[1] = mem1[RAD];
+assign DO[2] = mem2[RAD];
+assign DO[3] = mem3[RAD];
+
+always @(posedge CLK) begin
+	if (WRE) begin
+		mem0[WAD] <= DI[0];
+		mem1[WAD] <= DI[1];
+		mem2[WAD] <= DI[2];
+		mem3[WAD] <= DI[3];
+	end
+end
+
+endmodule
+
+
+(* blackbox *)
+module SP (DO, DI, BLKSEL, AD, WRE, CLK, CE, OCE, RESET);
+
+// 1 Enables output pipeline registers.
+parameter READ_MODE = 1'b0;
+// 0: no read on write, 1: transparent, 2: read-before-write
+parameter WRITE_MODE = 2'b00;
+parameter BIT_WIDTH = 32; // 1, 2, 4, 8, 16, 32
+parameter BLK_SEL = 3'b000;
+parameter RESET_MODE = "SYNC";
+parameter INIT_RAM_00 = 256'h0;
+parameter INIT_RAM_01 = 256'h0;
+parameter INIT_RAM_02 = 256'h0;
+parameter INIT_RAM_03 = 256'h0;
+parameter INIT_RAM_04 = 256'h0;
+parameter INIT_RAM_05 = 256'h0;
+parameter INIT_RAM_06 = 256'h0;
+parameter INIT_RAM_07 = 256'h0;
+parameter INIT_RAM_08 = 256'h0;
+parameter INIT_RAM_09 = 256'h0;
+parameter INIT_RAM_0A = 256'h0;
+parameter INIT_RAM_0B = 256'h0;
+parameter INIT_RAM_0C = 256'h0;
+parameter INIT_RAM_0D = 256'h0;
+parameter INIT_RAM_0E = 256'h0;
+parameter INIT_RAM_0F = 256'h0;
+parameter INIT_RAM_10 = 256'h0;
+parameter INIT_RAM_11 = 256'h0;
+parameter INIT_RAM_12 = 256'h0;
+parameter INIT_RAM_13 = 256'h0;
+parameter INIT_RAM_14 = 256'h0;
+parameter INIT_RAM_15 = 256'h0;
+parameter INIT_RAM_16 = 256'h0;
+parameter INIT_RAM_17 = 256'h0;
+parameter INIT_RAM_18 = 256'h0;
+parameter INIT_RAM_19 = 256'h0;
+parameter INIT_RAM_1A = 256'h0;
+parameter INIT_RAM_1B = 256'h0;
+parameter INIT_RAM_1C = 256'h0;
+parameter INIT_RAM_1D = 256'h0;
+parameter INIT_RAM_1E = 256'h0;
+parameter INIT_RAM_1F = 256'h0;
+parameter INIT_RAM_20 = 256'h0;
+parameter INIT_RAM_21 = 256'h0;
+parameter INIT_RAM_22 = 256'h0;
+parameter INIT_RAM_23 = 256'h0;
+parameter INIT_RAM_24 = 256'h0;
+parameter INIT_RAM_25 = 256'h0;
+parameter INIT_RAM_26 = 256'h0;
+parameter INIT_RAM_27 = 256'h0;
+parameter INIT_RAM_28 = 256'h0;
+parameter INIT_RAM_29 = 256'h0;
+parameter INIT_RAM_2A = 256'h0;
+parameter INIT_RAM_2B = 256'h0;
+parameter INIT_RAM_2C = 256'h0;
+parameter INIT_RAM_2D = 256'h0;
+parameter INIT_RAM_2E = 256'h0;
+parameter INIT_RAM_2F = 256'h0;
+parameter INIT_RAM_30 = 256'h0;
+parameter INIT_RAM_31 = 256'h0;
+parameter INIT_RAM_32 = 256'h0;
+parameter INIT_RAM_33 = 256'h0;
+parameter INIT_RAM_34 = 256'h0;
+parameter INIT_RAM_35 = 256'h0;
+parameter INIT_RAM_36 = 256'h0;
+parameter INIT_RAM_37 = 256'h0;
+parameter INIT_RAM_38 = 256'h0;
+parameter INIT_RAM_39 = 256'h0;
+parameter INIT_RAM_3A = 256'h0;
+parameter INIT_RAM_3B = 256'h0;
+parameter INIT_RAM_3C = 256'h0;
+parameter INIT_RAM_3D = 256'h0;
+parameter INIT_RAM_3E = 256'h0;
+parameter INIT_RAM_3F = 256'h0;
+
+output [31:0] DO;
+input [31:0] DI;
+input [2:0] BLKSEL;
+input [13:0] AD;
+input WRE;
+input CLK;
+input CE;
+input OCE;
+input RESET;
+
+endmodule
+
+(* blackbox *)
+module SPX9 (DO, DI, BLKSEL, AD, WRE, CLK, CE, OCE, RESET);
+
+// 1 Enables output pipeline registers.
+parameter READ_MODE = 1'b0;
+// 0: no read on write, 1: transparent, 2: read-before-write
+parameter WRITE_MODE = 2'b00;
+parameter BIT_WIDTH = 36; // 9, 18, 36
+parameter BLK_SEL = 3'b000;
+parameter RESET_MODE = "SYNC";
+parameter INIT_RAM_00 = 288'h0;
+parameter INIT_RAM_01 = 288'h0;
+parameter INIT_RAM_02 = 288'h0;
+parameter INIT_RAM_03 = 288'h0;
+parameter INIT_RAM_04 = 288'h0;
+parameter INIT_RAM_05 = 288'h0;
+parameter INIT_RAM_06 = 288'h0;
+parameter INIT_RAM_07 = 288'h0;
+parameter INIT_RAM_08 = 288'h0;
+parameter INIT_RAM_09 = 288'h0;
+parameter INIT_RAM_0A = 288'h0;
+parameter INIT_RAM_0B = 288'h0;
+parameter INIT_RAM_0C = 288'h0;
+parameter INIT_RAM_0D = 288'h0;
+parameter INIT_RAM_0E = 288'h0;
+parameter INIT_RAM_0F = 288'h0;
+parameter INIT_RAM_10 = 288'h0;
+parameter INIT_RAM_11 = 288'h0;
+parameter INIT_RAM_12 = 288'h0;
+parameter INIT_RAM_13 = 288'h0;
+parameter INIT_RAM_14 = 288'h0;
+parameter INIT_RAM_15 = 288'h0;
+parameter INIT_RAM_16 = 288'h0;
+parameter INIT_RAM_17 = 288'h0;
+parameter INIT_RAM_18 = 288'h0;
+parameter INIT_RAM_19 = 288'h0;
+parameter INIT_RAM_1A = 288'h0;
+parameter INIT_RAM_1B = 288'h0;
+parameter INIT_RAM_1C = 288'h0;
+parameter INIT_RAM_1D = 288'h0;
+parameter INIT_RAM_1E = 288'h0;
+parameter INIT_RAM_1F = 288'h0;
+parameter INIT_RAM_20 = 288'h0;
+parameter INIT_RAM_21 = 288'h0;
+parameter INIT_RAM_22 = 288'h0;
+parameter INIT_RAM_23 = 288'h0;
+parameter INIT_RAM_24 = 288'h0;
+parameter INIT_RAM_25 = 288'h0;
+parameter INIT_RAM_26 = 288'h0;
+parameter INIT_RAM_27 = 288'h0;
+parameter INIT_RAM_28 = 288'h0;
+parameter INIT_RAM_29 = 288'h0;
+parameter INIT_RAM_2A = 288'h0;
+parameter INIT_RAM_2B = 288'h0;
+parameter INIT_RAM_2C = 288'h0;
+parameter INIT_RAM_2D = 288'h0;
+parameter INIT_RAM_2E = 288'h0;
+parameter INIT_RAM_2F = 288'h0;
+parameter INIT_RAM_30 = 288'h0;
+parameter INIT_RAM_31 = 288'h0;
+parameter INIT_RAM_32 = 288'h0;
+parameter INIT_RAM_33 = 288'h0;
+parameter INIT_RAM_34 = 288'h0;
+parameter INIT_RAM_35 = 288'h0;
+parameter INIT_RAM_36 = 288'h0;
+parameter INIT_RAM_37 = 288'h0;
+parameter INIT_RAM_38 = 288'h0;
+parameter INIT_RAM_39 = 288'h0;
+parameter INIT_RAM_3A = 288'h0;
+parameter INIT_RAM_3B = 288'h0;
+parameter INIT_RAM_3C = 288'h0;
+parameter INIT_RAM_3D = 288'h0;
+parameter INIT_RAM_3E = 288'h0;
+parameter INIT_RAM_3F = 288'h0;
+
+output [35:0] DO;
+input [35:0] DI;
+input [2:0] BLKSEL;
+input [13:0] AD;
+input WRE;
+input CLK;
+input CE;
+input OCE;
+input RESET;
+
+endmodule
 
 
 (* blackbox *)
 module SDP (DO, DI, BLKSEL, ADA, ADB, WREA, WREB, CLKA, CLKB, CEA, CEB, OCE, RESETA, RESETB);
-//1'b0: Bypass mode; 1'b1 Pipeline mode
+
 parameter READ_MODE = 1'b0;
 parameter BIT_WIDTH_0 = 32; // 1, 2, 4, 8, 16, 32
 parameter BIT_WIDTH_1 = 32; // 1, 2, 4, 8, 16, 32
 parameter BLK_SEL = 3'b000;
 parameter RESET_MODE = "SYNC";
-parameter INIT_RAM_00 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_01 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_02 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_03 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_04 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_05 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_06 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_07 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_08 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_09 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_0A = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_0B = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_0C = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_0D = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_0E = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_0F = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_10 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_11 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_12 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_13 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_14 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_15 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_16 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_17 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_18 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_19 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_1A = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_1B = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_1C = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_1D = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_1E = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_1F = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_20 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_21 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_22 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_23 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_24 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_25 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_26 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_27 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_28 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_29 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_2A = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_2B = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_2C = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_2D = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_2E = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_2F = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_30 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_31 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_32 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_33 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_34 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_35 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_36 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_37 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_38 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_39 = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_3A = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_3B = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_3C = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_3D = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_3E = 256'h0000000000000000000000000000000000000000000000000000000000000000;
-parameter INIT_RAM_3F = 256'h0000000000000000000000000000000000000000000000000000000000000000;
+parameter INIT_RAM_00 = 256'h0;
+parameter INIT_RAM_01 = 256'h0;
+parameter INIT_RAM_02 = 256'h0;
+parameter INIT_RAM_03 = 256'h0;
+parameter INIT_RAM_04 = 256'h0;
+parameter INIT_RAM_05 = 256'h0;
+parameter INIT_RAM_06 = 256'h0;
+parameter INIT_RAM_07 = 256'h0;
+parameter INIT_RAM_08 = 256'h0;
+parameter INIT_RAM_09 = 256'h0;
+parameter INIT_RAM_0A = 256'h0;
+parameter INIT_RAM_0B = 256'h0;
+parameter INIT_RAM_0C = 256'h0;
+parameter INIT_RAM_0D = 256'h0;
+parameter INIT_RAM_0E = 256'h0;
+parameter INIT_RAM_0F = 256'h0;
+parameter INIT_RAM_10 = 256'h0;
+parameter INIT_RAM_11 = 256'h0;
+parameter INIT_RAM_12 = 256'h0;
+parameter INIT_RAM_13 = 256'h0;
+parameter INIT_RAM_14 = 256'h0;
+parameter INIT_RAM_15 = 256'h0;
+parameter INIT_RAM_16 = 256'h0;
+parameter INIT_RAM_17 = 256'h0;
+parameter INIT_RAM_18 = 256'h0;
+parameter INIT_RAM_19 = 256'h0;
+parameter INIT_RAM_1A = 256'h0;
+parameter INIT_RAM_1B = 256'h0;
+parameter INIT_RAM_1C = 256'h0;
+parameter INIT_RAM_1D = 256'h0;
+parameter INIT_RAM_1E = 256'h0;
+parameter INIT_RAM_1F = 256'h0;
+parameter INIT_RAM_20 = 256'h0;
+parameter INIT_RAM_21 = 256'h0;
+parameter INIT_RAM_22 = 256'h0;
+parameter INIT_RAM_23 = 256'h0;
+parameter INIT_RAM_24 = 256'h0;
+parameter INIT_RAM_25 = 256'h0;
+parameter INIT_RAM_26 = 256'h0;
+parameter INIT_RAM_27 = 256'h0;
+parameter INIT_RAM_28 = 256'h0;
+parameter INIT_RAM_29 = 256'h0;
+parameter INIT_RAM_2A = 256'h0;
+parameter INIT_RAM_2B = 256'h0;
+parameter INIT_RAM_2C = 256'h0;
+parameter INIT_RAM_2D = 256'h0;
+parameter INIT_RAM_2E = 256'h0;
+parameter INIT_RAM_2F = 256'h0;
+parameter INIT_RAM_30 = 256'h0;
+parameter INIT_RAM_31 = 256'h0;
+parameter INIT_RAM_32 = 256'h0;
+parameter INIT_RAM_33 = 256'h0;
+parameter INIT_RAM_34 = 256'h0;
+parameter INIT_RAM_35 = 256'h0;
+parameter INIT_RAM_36 = 256'h0;
+parameter INIT_RAM_37 = 256'h0;
+parameter INIT_RAM_38 = 256'h0;
+parameter INIT_RAM_39 = 256'h0;
+parameter INIT_RAM_3A = 256'h0;
+parameter INIT_RAM_3B = 256'h0;
+parameter INIT_RAM_3C = 256'h0;
+parameter INIT_RAM_3D = 256'h0;
+parameter INIT_RAM_3E = 256'h0;
+parameter INIT_RAM_3F = 256'h0;
 
-input CLKA, CEA, CLKB, CEB;
-input OCE; // clock enable of memory output register
-input RESETA, RESETB; // resets output registers, not memory contents
-input WREA, WREB; // 1'b0: read enabled; 1'b1: write enabled
-input [13:0] ADA, ADB;
+output [31:0] DO;
 input [31:0] DI;
 input [2:0] BLKSEL;
-output [31:0] DO;
+input [13:0] ADA, ADB;
+input WREA, WREB;
+input CLKA, CLKB;
+input CEA, CEB;
+input OCE;
+input RESETA, RESETB;
 
 specify
 	(posedge CLKB => (DO : DI)) = (419, 493);
@@ -820,6 +1226,285 @@ specify
 endspecify
 
 endmodule
+
+(* blackbox *)
+module SDPX9 (DO, DI, BLKSEL, ADA, ADB, WREA, WREB, CLKA, CLKB, CEA, CEB, OCE, RESETA, RESETB);
+
+parameter READ_MODE = 1'b0;
+parameter BIT_WIDTH_0 = 36; // 9, 18, 36
+parameter BIT_WIDTH_1 = 36; // 9, 18, 36
+parameter BLK_SEL = 3'b000;
+parameter RESET_MODE = "SYNC";
+parameter INIT_RAM_00 = 288'h0;
+parameter INIT_RAM_01 = 288'h0;
+parameter INIT_RAM_02 = 288'h0;
+parameter INIT_RAM_03 = 288'h0;
+parameter INIT_RAM_04 = 288'h0;
+parameter INIT_RAM_05 = 288'h0;
+parameter INIT_RAM_06 = 288'h0;
+parameter INIT_RAM_07 = 288'h0;
+parameter INIT_RAM_08 = 288'h0;
+parameter INIT_RAM_09 = 288'h0;
+parameter INIT_RAM_0A = 288'h0;
+parameter INIT_RAM_0B = 288'h0;
+parameter INIT_RAM_0C = 288'h0;
+parameter INIT_RAM_0D = 288'h0;
+parameter INIT_RAM_0E = 288'h0;
+parameter INIT_RAM_0F = 288'h0;
+parameter INIT_RAM_10 = 288'h0;
+parameter INIT_RAM_11 = 288'h0;
+parameter INIT_RAM_12 = 288'h0;
+parameter INIT_RAM_13 = 288'h0;
+parameter INIT_RAM_14 = 288'h0;
+parameter INIT_RAM_15 = 288'h0;
+parameter INIT_RAM_16 = 288'h0;
+parameter INIT_RAM_17 = 288'h0;
+parameter INIT_RAM_18 = 288'h0;
+parameter INIT_RAM_19 = 288'h0;
+parameter INIT_RAM_1A = 288'h0;
+parameter INIT_RAM_1B = 288'h0;
+parameter INIT_RAM_1C = 288'h0;
+parameter INIT_RAM_1D = 288'h0;
+parameter INIT_RAM_1E = 288'h0;
+parameter INIT_RAM_1F = 288'h0;
+parameter INIT_RAM_20 = 288'h0;
+parameter INIT_RAM_21 = 288'h0;
+parameter INIT_RAM_22 = 288'h0;
+parameter INIT_RAM_23 = 288'h0;
+parameter INIT_RAM_24 = 288'h0;
+parameter INIT_RAM_25 = 288'h0;
+parameter INIT_RAM_26 = 288'h0;
+parameter INIT_RAM_27 = 288'h0;
+parameter INIT_RAM_28 = 288'h0;
+parameter INIT_RAM_29 = 288'h0;
+parameter INIT_RAM_2A = 288'h0;
+parameter INIT_RAM_2B = 288'h0;
+parameter INIT_RAM_2C = 288'h0;
+parameter INIT_RAM_2D = 288'h0;
+parameter INIT_RAM_2E = 288'h0;
+parameter INIT_RAM_2F = 288'h0;
+parameter INIT_RAM_30 = 288'h0;
+parameter INIT_RAM_31 = 288'h0;
+parameter INIT_RAM_32 = 288'h0;
+parameter INIT_RAM_33 = 288'h0;
+parameter INIT_RAM_34 = 288'h0;
+parameter INIT_RAM_35 = 288'h0;
+parameter INIT_RAM_36 = 288'h0;
+parameter INIT_RAM_37 = 288'h0;
+parameter INIT_RAM_38 = 288'h0;
+parameter INIT_RAM_39 = 288'h0;
+parameter INIT_RAM_3A = 288'h0;
+parameter INIT_RAM_3B = 288'h0;
+parameter INIT_RAM_3C = 288'h0;
+parameter INIT_RAM_3D = 288'h0;
+parameter INIT_RAM_3E = 288'h0;
+parameter INIT_RAM_3F = 288'h0;
+
+output [35:0] DO;
+input [35:0] DI;
+input [2:0] BLKSEL;
+input [13:0] ADA, ADB;
+input WREA, WREB;
+input CLKA, CLKB;
+input CEA, CEB;
+input OCE;
+input RESETA, RESETB;
+
+specify
+	(posedge CLKB => (DO : DI)) = (419, 493);
+	$setup(RESETA, posedge CLKA, 62);
+	$setup(RESETB, posedge CLKB, 62);
+	$setup(OCE, posedge CLKB, 62);
+	$setup(CEA, posedge CLKA, 62);
+	$setup(CEB, posedge CLKB, 62);
+	$setup(OCE, posedge CLKB, 62);
+	$setup(WREA, posedge CLKA, 62);
+	$setup(WREB, posedge CLKB, 62);
+	$setup(DI, posedge CLKA, 62);
+	$setup(ADA, posedge CLKA, 62);
+	$setup(ADB, posedge CLKB, 62);
+	$setup(BLKSEL, posedge CLKA, 62);
+endspecify
+
+endmodule
+
+
+(* blackbox *)
+module DP (DOA, DOB, DIA, DIB, BLKSEL, ADA, ADB, WREA, WREB, CLKA, CLKB, CEA, CEB, OCEA, OCEB, RESETA, RESETB);
+
+parameter READ_MODE0 = 1'b0;
+parameter READ_MODE1 = 1'b0;
+parameter WRITE_MODE0 = 2'b00;
+parameter WRITE_MODE1 = 2'b00;
+parameter BIT_WIDTH_0 = 16; // 1, 2, 4, 8, 16
+parameter BIT_WIDTH_1 = 16; // 1, 2, 4, 8, 16
+parameter BLK_SEL = 3'b000;
+parameter RESET_MODE = "SYNC";
+parameter INIT_RAM_00 = 256'h0;
+parameter INIT_RAM_01 = 256'h0;
+parameter INIT_RAM_02 = 256'h0;
+parameter INIT_RAM_03 = 256'h0;
+parameter INIT_RAM_04 = 256'h0;
+parameter INIT_RAM_05 = 256'h0;
+parameter INIT_RAM_06 = 256'h0;
+parameter INIT_RAM_07 = 256'h0;
+parameter INIT_RAM_08 = 256'h0;
+parameter INIT_RAM_09 = 256'h0;
+parameter INIT_RAM_0A = 256'h0;
+parameter INIT_RAM_0B = 256'h0;
+parameter INIT_RAM_0C = 256'h0;
+parameter INIT_RAM_0D = 256'h0;
+parameter INIT_RAM_0E = 256'h0;
+parameter INIT_RAM_0F = 256'h0;
+parameter INIT_RAM_10 = 256'h0;
+parameter INIT_RAM_11 = 256'h0;
+parameter INIT_RAM_12 = 256'h0;
+parameter INIT_RAM_13 = 256'h0;
+parameter INIT_RAM_14 = 256'h0;
+parameter INIT_RAM_15 = 256'h0;
+parameter INIT_RAM_16 = 256'h0;
+parameter INIT_RAM_17 = 256'h0;
+parameter INIT_RAM_18 = 256'h0;
+parameter INIT_RAM_19 = 256'h0;
+parameter INIT_RAM_1A = 256'h0;
+parameter INIT_RAM_1B = 256'h0;
+parameter INIT_RAM_1C = 256'h0;
+parameter INIT_RAM_1D = 256'h0;
+parameter INIT_RAM_1E = 256'h0;
+parameter INIT_RAM_1F = 256'h0;
+parameter INIT_RAM_20 = 256'h0;
+parameter INIT_RAM_21 = 256'h0;
+parameter INIT_RAM_22 = 256'h0;
+parameter INIT_RAM_23 = 256'h0;
+parameter INIT_RAM_24 = 256'h0;
+parameter INIT_RAM_25 = 256'h0;
+parameter INIT_RAM_26 = 256'h0;
+parameter INIT_RAM_27 = 256'h0;
+parameter INIT_RAM_28 = 256'h0;
+parameter INIT_RAM_29 = 256'h0;
+parameter INIT_RAM_2A = 256'h0;
+parameter INIT_RAM_2B = 256'h0;
+parameter INIT_RAM_2C = 256'h0;
+parameter INIT_RAM_2D = 256'h0;
+parameter INIT_RAM_2E = 256'h0;
+parameter INIT_RAM_2F = 256'h0;
+parameter INIT_RAM_30 = 256'h0;
+parameter INIT_RAM_31 = 256'h0;
+parameter INIT_RAM_32 = 256'h0;
+parameter INIT_RAM_33 = 256'h0;
+parameter INIT_RAM_34 = 256'h0;
+parameter INIT_RAM_35 = 256'h0;
+parameter INIT_RAM_36 = 256'h0;
+parameter INIT_RAM_37 = 256'h0;
+parameter INIT_RAM_38 = 256'h0;
+parameter INIT_RAM_39 = 256'h0;
+parameter INIT_RAM_3A = 256'h0;
+parameter INIT_RAM_3B = 256'h0;
+parameter INIT_RAM_3C = 256'h0;
+parameter INIT_RAM_3D = 256'h0;
+parameter INIT_RAM_3E = 256'h0;
+parameter INIT_RAM_3F = 256'h0;
+
+output [15:0] DOA, DOB;
+input [15:0] DIA, DIB;
+input [2:0] BLKSEL;
+input [13:0] ADA, ADB;
+input WREA, WREB;
+input CLKA, CLKB;
+input CEA, CEB;
+input OCEA, OCEB;
+input RESETA, RESETB;
+
+endmodule
+
+(* blackbox *)
+module DPX9 (DOA, DOB, DIA, DIB, BLKSEL, ADA, ADB, WREA, WREB, CLKA, CLKB, CEA, CEB, OCEA, OCEB, RESETA, RESETB);
+
+parameter READ_MODE0 = 1'b0;
+parameter READ_MODE1 = 1'b0;
+parameter WRITE_MODE0 = 2'b00;
+parameter WRITE_MODE1 = 2'b00;
+parameter BIT_WIDTH_0 = 18; // 9, 18
+parameter BIT_WIDTH_1 = 18; // 9, 18
+parameter BLK_SEL = 3'b000;
+parameter RESET_MODE = "SYNC";
+parameter INIT_RAM_00 = 288'h0;
+parameter INIT_RAM_01 = 288'h0;
+parameter INIT_RAM_02 = 288'h0;
+parameter INIT_RAM_03 = 288'h0;
+parameter INIT_RAM_04 = 288'h0;
+parameter INIT_RAM_05 = 288'h0;
+parameter INIT_RAM_06 = 288'h0;
+parameter INIT_RAM_07 = 288'h0;
+parameter INIT_RAM_08 = 288'h0;
+parameter INIT_RAM_09 = 288'h0;
+parameter INIT_RAM_0A = 288'h0;
+parameter INIT_RAM_0B = 288'h0;
+parameter INIT_RAM_0C = 288'h0;
+parameter INIT_RAM_0D = 288'h0;
+parameter INIT_RAM_0E = 288'h0;
+parameter INIT_RAM_0F = 288'h0;
+parameter INIT_RAM_10 = 288'h0;
+parameter INIT_RAM_11 = 288'h0;
+parameter INIT_RAM_12 = 288'h0;
+parameter INIT_RAM_13 = 288'h0;
+parameter INIT_RAM_14 = 288'h0;
+parameter INIT_RAM_15 = 288'h0;
+parameter INIT_RAM_16 = 288'h0;
+parameter INIT_RAM_17 = 288'h0;
+parameter INIT_RAM_18 = 288'h0;
+parameter INIT_RAM_19 = 288'h0;
+parameter INIT_RAM_1A = 288'h0;
+parameter INIT_RAM_1B = 288'h0;
+parameter INIT_RAM_1C = 288'h0;
+parameter INIT_RAM_1D = 288'h0;
+parameter INIT_RAM_1E = 288'h0;
+parameter INIT_RAM_1F = 288'h0;
+parameter INIT_RAM_20 = 288'h0;
+parameter INIT_RAM_21 = 288'h0;
+parameter INIT_RAM_22 = 288'h0;
+parameter INIT_RAM_23 = 288'h0;
+parameter INIT_RAM_24 = 288'h0;
+parameter INIT_RAM_25 = 288'h0;
+parameter INIT_RAM_26 = 288'h0;
+parameter INIT_RAM_27 = 288'h0;
+parameter INIT_RAM_28 = 288'h0;
+parameter INIT_RAM_29 = 288'h0;
+parameter INIT_RAM_2A = 288'h0;
+parameter INIT_RAM_2B = 288'h0;
+parameter INIT_RAM_2C = 288'h0;
+parameter INIT_RAM_2D = 288'h0;
+parameter INIT_RAM_2E = 288'h0;
+parameter INIT_RAM_2F = 288'h0;
+parameter INIT_RAM_30 = 288'h0;
+parameter INIT_RAM_31 = 288'h0;
+parameter INIT_RAM_32 = 288'h0;
+parameter INIT_RAM_33 = 288'h0;
+parameter INIT_RAM_34 = 288'h0;
+parameter INIT_RAM_35 = 288'h0;
+parameter INIT_RAM_36 = 288'h0;
+parameter INIT_RAM_37 = 288'h0;
+parameter INIT_RAM_38 = 288'h0;
+parameter INIT_RAM_39 = 288'h0;
+parameter INIT_RAM_3A = 288'h0;
+parameter INIT_RAM_3B = 288'h0;
+parameter INIT_RAM_3C = 288'h0;
+parameter INIT_RAM_3D = 288'h0;
+parameter INIT_RAM_3E = 288'h0;
+parameter INIT_RAM_3F = 288'h0;
+
+output [17:0] DOA, DOB;
+input [17:0] DIA, DIB;
+input [2:0] BLKSEL;
+input [13:0] ADA, ADB;
+input WREA, WREB;
+input CLKA, CLKB;
+input CEA, CEB;
+input OCEA, OCEB;
+input RESETA, RESETB;
+
+endmodule
+
 
 (* blackbox *)
 module rPLL (CLKOUT, CLKOUTP, CLKOUTD, CLKOUTD3, LOCK, CLKIN, CLKFB, FBDSEL, IDSEL, ODSEL, DUTYDA, PSDA, FDLY, RESET, RESET_P);
@@ -865,4 +1550,38 @@ parameter CLKOUTD_SRC =  "CLKOUT";  // CLKOUT, CLKOUTP
 parameter CLKOUTD3_SRC = "CLKOUT";  // CLKOUT, CLKOUTP
 parameter DEVICE = "GW1N-1";        // "GW1N-1", "GW1N-4", "GW1N-9", "GW1NR-4", "GW1NR-9", "GW1N-4B", "GW1NR-4B", "GW1NS-2", "GW1NS-2C", "GW1NZ-1", "GW1NSR-2", "GW1NSR-2C", "GW1N-1S", "GW1NSE-2C", "GW1NRF-4B", "GW1N-9C", "GW1NR-9C", "GW1N-4C", "GW1NR-4C"
 
+endmodule
+
+(* blackbox *)
+module OSC(OSCOUT);
+output OSCOUT;
+
+parameter FREQ_DIV = 100;
+parameter DEVICE = "GW1N-4";
+endmodule
+
+(* blackbox *)
+module OSCZ(OSCOUT, OSCEN);
+input OSCEN;
+
+output OSCOUT;
+
+parameter FREQ_DIV = 100;
+endmodule
+
+(* blackbox *)
+module OSCF(OSCOUT, OSCOUT30M, OSCEN);
+input OSCEN;
+
+output OSCOUT;
+output OSCOUT30M;
+
+parameter FREQ_DIV = 100;
+endmodule
+
+(* blackbox *)
+module OSCH(OSCOUT);
+output OSCOUT;
+
+parameter FREQ_DIV = 96;
 endmodule

@@ -142,6 +142,16 @@ static std::string next_token(bool pass_newline = false)
 				return_char(ch);
 		}
 	}
+	else if (ch == '\\')
+	{
+		while ((ch = next_char()) != 0) {
+			if (ch < 33 || ch > 126) {
+				return_char(ch);
+				break;
+			}
+			token += ch;
+		}
+	}
 	else if (ch == '/')
 	{
 		if ((ch = next_char()) != 0) {
@@ -951,6 +961,11 @@ frontend_verilog_preproc(std::istream                 &f,
 		}
 
 		if (tok == "`resetall") {
+			default_nettype_wire = true;
+			continue;
+		}
+
+		if (tok == "`undefineall" && sv_mode) {
 			defines.clear();
 			global_defines_cache.clear();
 			continue;
