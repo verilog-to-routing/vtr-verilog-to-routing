@@ -2693,6 +2693,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    noc_grp.add_argument<std::string>(args.noc_placement_file_name, "--noc_placement_file_name")
+        .help(
+            "Is the name of the output file that contains the NoC placement information."
+            "The default name for this file would be 'vpr_noc_placement_output.txt'")
+        .default_value("vpr_noc_placement_output.txt")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     return parser;
 }
 
