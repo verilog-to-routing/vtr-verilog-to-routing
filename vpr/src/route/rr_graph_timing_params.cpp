@@ -7,7 +7,7 @@
 
 #include "globals.h"
 #include "rr_graph.h"
-#include "rr_graph_util.h"
+#include "rr_graph_utils.h"
 #include "rr_graph2.h"
 #include "rr_graph_timing_params.h"
 
@@ -42,8 +42,12 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
     maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
-    cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
-    buffer_Cin = (float*)vtr::calloc(maxlen, sizeof(float));
+    cblock_counted = new bool[maxlen];
+    buffer_Cin = new float[maxlen];
+    for (int i = 0; i < maxlen; i++) {
+        cblock_counted[i] = 0;
+        buffer_Cin[i] = 0;
+    }
 
     std::vector<float> rr_node_C(rr_graph.num_nodes(), 0.); //Stores the final C
 
@@ -94,7 +98,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                              * be added now since each edge is actually a driver */
                             rr_node_C[to_node] += Cout;
                         }
-                        isblock = seg_index_of_sblock(inode, to_node);
+                        isblock = seg_index_of_sblock(rr_graph, inode, to_node);
                         buffer_Cin[isblock] = std::max(buffer_Cin[isblock], Cin);
                     }
 
@@ -105,7 +109,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                         /* Implements sharing of the track to connection box buffer.
                          * Such a buffer exists at every segment of the wire at which
                          * at least one logic block input connects. */
-                        icblock = seg_index_of_cblock(from_rr_type, to_node);
+                        icblock = seg_index_of_cblock(rr_graph, from_rr_type, to_node);
                         if (cblock_counted[icblock] == false) {
                             rr_node_C[inode] += C_ipin_cblock;
                             cblock_counted[icblock] = true;
@@ -125,7 +129,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
             /*   for (iedge=0;iedge<device_ctx.rr_nodes[inode].num_edges();iedge++) {
              * to_node = device_ctx.rr_nodes[inode].edges[iedge];
              * if (rr_graph.node_type(RRNodeId(to_node)) == IPIN) {
-             * icblock = seg_index_of_cblock (from_rr_type, to_node);
+             * icblock = seg_index_of_cblock (rr_graph, from_rr_type, to_node);
              * cblock_counted[icblock] = false;
              * }
              * }     */
@@ -172,7 +176,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
      * Current structures only keep switch information from a node to the next node and
      * not the reverse.  Therefore I need to go through all the possible edges to figure
      * out what the Cout's should be */
-    Couts_to_add = (float*)vtr::calloc(rr_graph.num_nodes(), sizeof(float));
+    Couts_to_add = new float[rr_graph.num_nodes()];
+    for (size_t i = 0; i < rr_graph.num_nodes(); i++)
+        Couts_to_add[i] = 0;
     for (const RRNodeId& inode : rr_graph.nodes()) {
         for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); iedge++) {
             switch_index = rr_graph.edge_switch(inode, iedge);
@@ -192,10 +198,10 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
     //Create the final flywieghted t_rr_rc_data
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        mutable_device_ctx.rr_graph_builder.set_node_rc_index(rr_id, NodeRCIndex(find_create_rr_rc_data(rr_graph.node_R(rr_id), rr_node_C[(size_t)rr_id])));
+        mutable_device_ctx.rr_graph_builder.set_node_rc_index(rr_id, NodeRCIndex(find_create_rr_rc_data(rr_graph.node_R(rr_id), rr_node_C[(size_t)rr_id], mutable_device_ctx.rr_rc_data)));
     }
 
-    free(Couts_to_add);
-    free(cblock_counted);
-    free(buffer_Cin);
+    delete[](Couts_to_add);
+    delete[](cblock_counted);
+    delete[](buffer_Cin);
 }

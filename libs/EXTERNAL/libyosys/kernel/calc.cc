@@ -609,5 +609,86 @@ RTLIL::Const RTLIL::const_neg(const RTLIL::Const &arg1, const RTLIL::Const&, boo
 	return RTLIL::const_sub(zero, arg1_ext, true, signed1, result_len);
 }
 
+RTLIL::Const RTLIL::const_mux(const RTLIL::Const &arg1, const RTLIL::Const &arg2, const RTLIL::Const &arg3)
+{
+	log_assert(arg2.size() == arg1.size());
+	if (arg3[0] == State::S0)
+		return arg1;
+	else if (arg3[0] == State::S1)
+		return arg2;
+
+	RTLIL::Const ret = arg1;
+	for (int i = 0; i < ret.size(); i++)
+		if (ret[i] != arg2[i])
+			ret[i] = State::Sx;
+	return ret;
+}
+
+RTLIL::Const RTLIL::const_pmux(const RTLIL::Const &arg1, const RTLIL::Const &arg2, const RTLIL::Const &arg3)
+{
+	if (arg3.is_fully_zero())
+		return arg1;
+
+	if (!arg3.is_onehot())
+		return RTLIL::Const(State::Sx, arg1.size());
+
+	for (int i = 0; i < arg3.size(); i++)
+		if (arg3[i] == State::S1)
+			return RTLIL::Const(std::vector<RTLIL::State>(arg2.bits.begin() + i*arg1.bits.size(), arg2.bits.begin() + (i+1)*arg1.bits.size()));
+
+	log_abort(); // unreachable
+}
+
+RTLIL::Const RTLIL::const_bmux(const RTLIL::Const &arg1, const RTLIL::Const &arg2)
+{
+	std::vector<RTLIL::State> t = arg1.bits;
+
+	for (int i = GetSize(arg2)-1; i >= 0; i--)
+	{
+		RTLIL::State sel = arg2.bits.at(i);
+		std::vector<RTLIL::State> new_t;
+		if (sel == State::S0)
+			new_t = std::vector<RTLIL::State>(t.begin(), t.begin() + GetSize(t)/2);
+		else if (sel == State::S1)
+			new_t = std::vector<RTLIL::State>(t.begin() + GetSize(t)/2, t.end());
+		else
+			for (int j = 0; j < GetSize(t)/2; j++)
+				new_t.push_back(t[j] == t[j + GetSize(t)/2] ? t[j] : RTLIL::Sx);
+		t.swap(new_t);
+	}
+
+	return t;
+}
+
+RTLIL::Const RTLIL::const_demux(const RTLIL::Const &arg1, const RTLIL::Const &arg2)
+{
+	int width = GetSize(arg1);
+	int s_width = GetSize(arg2);
+	std::vector<RTLIL::State> res;
+	for (int i = 0; i < (1 << s_width); i++)
+	{
+		bool ne = false;
+		bool x = false;
+		for (int j = 0; j < s_width; j++) {
+			bool bit = i & 1 << j;
+			if (arg2[j] == (bit ? RTLIL::S0 : RTLIL::S1))
+				ne = true;
+			else if (arg2[j] != RTLIL::S0 && arg2[j] != RTLIL::S1)
+				x = true;
+		}
+		if (ne) {
+			for (int j = 0; j < width; j++)
+				res.push_back(State::S0);
+		} else if (x) {
+			for (int j = 0; j < width; j++)
+				res.push_back(arg1.bits[j] == State::S0 ? State::S0 : State::Sx);
+		} else {
+			for (int j = 0; j < width; j++)
+				res.push_back(arg1.bits[j]);
+		}
+	}
+	return res;
+}
+
 YOSYS_NAMESPACE_END
 

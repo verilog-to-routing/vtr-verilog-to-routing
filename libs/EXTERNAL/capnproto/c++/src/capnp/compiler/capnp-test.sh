@@ -76,8 +76,13 @@ $CAPNP convert binary:json --short $SCHEMA TestAllTypes < $TESTDATA/binary | cmp
 $CAPNP convert json:binary $SCHEMA TestAllTypes < $TESTDATA/pretty.json | cmp $TESTDATA/binary - || fail json to binary
 $CAPNP convert json:binary $SCHEMA TestAllTypes < $TESTDATA/short.json | cmp $TESTDATA/binary - || fail short json to binary
 
-$CAPNP convert json:binary $JSON_SCHEMA TestJsonAnnotations -I"$SRCDIR" < $TESTDATA/annotated.json | cmp $TESTDATA/annotated-json.binary || fail annotated json to binary
-$CAPNP convert binary:json $JSON_SCHEMA TestJsonAnnotations -I"$SRCDIR" < $TESTDATA/annotated-json.binary | cmp $TESTDATA/annotated.json || fail annotated json to binary
+$CAPNP convert json:binary $JSON_SCHEMA TestJsonAnnotations -I"$SRCDIR" < $TESTDATA/annotated.json | cmp $TESTDATA/annotated-json.binary - || fail annotated json to binary
+$CAPNP convert binary:json $JSON_SCHEMA TestJsonAnnotations -I"$SRCDIR" < $TESTDATA/annotated-json.binary | cmp $TESTDATA/annotated.json - || fail annotated binary to json
+
+[ "$(echo '(foo = (text = "abc"))' | $CAPNP convert text:text "$SRCDIR/capnp/test.capnp" BrandedAlias)" = '(foo = (text = "abc"), uv = void)' ]  || fail branded alias
+[ "$(echo '(foo = (text = "abc"))' | $CAPNP convert text:text "$SRCDIR/capnp/test.capnp" BrandedAlias.Inner)" = '(foo = (text = "abc"))' ]  || fail branded alias
+[ "$(echo '(foo = (text = "abc"))' | $CAPNP convert text:text "$SRCDIR/capnp/test.capnp" 'TestGenerics(BoxedText, Text)')" = '(foo = (text = "abc"), uv = void)' ]  || fail branded alias
+[ "$(echo '(baz = (text = "abc"))' | $CAPNP convert text:text "$SRCDIR/capnp/test.capnp" 'TestGenerics(TestAllTypes, List(Int32)).Inner2(BoxedText)')" = '(baz = (text = "abc"))' ]  || fail branded alias
 
 # ========================================================================================
 # DEPRECATED encode/decode
@@ -114,5 +119,8 @@ test_eval 'TestListDefaults.lists.int32ListList[2][0]' 12341234
 
 test "x`$CAPNP eval $SCHEMA -ojson globalPrintableStruct | tr -d '\r'`" = "x{\"someText\": \"foo\"}" || fail eval json "globalPrintableStruct == {someText = \"foo\"}"
 
-$CAPNP compile --src-prefix="$PREFIX" -ofoo $TESTDATA/errors.capnp.nobuild 2>&1 | sed -e "s,^.*errors[.]capnp[.]nobuild:,file:,g" | tr -d '\r' |
-    cmp $TESTDATA/errors.txt - || fail error output
+$CAPNP compile --no-standard-import --src-prefix="$PREFIX" -ofoo $TESTDATA/errors.capnp.nobuild 2>&1 | sed -e "s,^.*errors[.]capnp[.]nobuild:,file:,g" | tr -d '\r' |
+    diff -u $TESTDATA/errors.txt - || fail error output
+
+$CAPNP compile --no-standard-import --src-prefix="$PREFIX" -ofoo $TESTDATA/errors2.capnp.nobuild 2>&1 | sed -e "s,^.*errors2[.]capnp[.]nobuild:,file:,g" | tr -d '\r' |
+    diff -u $TESTDATA/errors2.txt - || fail error2 output

@@ -39,6 +39,8 @@ sudo apt install -y \
   valgrind \
   zip \
   qt5-default \
+  uuid-dev \
+  default-jdk \
   clang-format-7 \
   g++-7 \
   gcc-7 \
@@ -52,8 +54,8 @@ sudo apt install -y \
   gcc-11 \
   clang-6.0 \
   clang-7 \
-  clang-10
-#  libtbb-dev
+  clang-10 \
+  libtbb-dev
 
 pip install -r requirements.txt
 

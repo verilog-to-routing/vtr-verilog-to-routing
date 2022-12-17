@@ -7,8 +7,8 @@ if(ODIN_DEBUG)
     message("*** Compiling with Odin debug flags")
 
     set(ODIN_EXTRA_FLAGS
-        "-g"
-        "-ggdb"
+        "-g3"
+        "-ggdb3"
         "-O0"
         ${ODIN_EXTRA_FLAGS}
     )
@@ -136,6 +136,9 @@ endif()
 if(${ODIN_USE_YOSYS})
     add_definitions("-DODIN_USE_YOSYS=ON")
     add_definitions("-D_YOSYS_")
+    if(${YOSYS_SV_UHDM_PLUGIN})
+        add_definitions("-DYOSYS_SV_UHDM_PLUGIN=ON")
+    endif()
 endif()
 
 add_definitions(-DUSING_BISON -DYYERROR_VERBOSE)

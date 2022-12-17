@@ -1,4 +1,6 @@
 regression_tests/vtr_reg_basic/basic_no_timing
 regression_tests/vtr_reg_basic/basic_timing
 regression_tests/vtr_reg_basic/basic_timing_no_sdc
-regression_tests/vtr_reg_basic/hdl_include
+regression_tests/vtr_reg_basic/hdl_include_odin
+regression_tests/vtr_reg_basic/hdl_include_yosys
+regression_tests/vtr_reg_basic/hdl_include_yosys_odin

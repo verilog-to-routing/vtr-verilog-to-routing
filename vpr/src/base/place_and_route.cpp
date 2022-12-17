@@ -61,7 +61,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   std::vector<t_segment_inf>& segment_inf,
                                   ClbNetPinsMatrix<float>& net_delay,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                  std::shared_ptr<RoutingDelayCalculator> delay_calc) {
+                                  std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                                  bool is_flat) {
     vtr::vector<ClusterNetId, t_trace*> best_routing; /* Saves the best routing found so far. */
     int current, low, high, final;
     bool success, prev_success, prev2_success, Fc_clipped = false;
@@ -176,9 +177,16 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
 
         if (placer_opts.place_freq == PLACE_ALWAYS) {
             placer_opts.place_chan_width = current;
-            try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
-                      arch->Chans, det_routing_arch, segment_inf,
-                      arch->Directs, arch->num_directs);
+            try_place(placer_opts,
+                      annealing_sched,
+                      router_opts,
+                      analysis_opts,
+                      arch->Chans,
+                      det_routing_arch,
+                      segment_inf,
+                      arch->Directs,
+                      arch->num_directs,
+                      false);
         }
         success = try_route(current,
                             router_opts,
@@ -188,8 +196,10 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                             timing_info,
                             delay_calc,
                             arch->Chans,
-                            arch->Directs, arch->num_directs,
-                            (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR);
+                            arch->Directs,
+                            arch->num_directs,
+                            (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
+                            is_flat);
         attempt_count++;
         fflush(stdout);
 
@@ -310,7 +320,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                 placer_opts.place_chan_width = current;
                 try_place(placer_opts, annealing_sched, router_opts, analysis_opts,
                           arch->Chans, det_routing_arch, segment_inf,
-                          arch->Directs, arch->num_directs);
+                          arch->Directs, arch->num_directs,
+                          false);
             }
             success = try_route(current,
                                 router_opts,
@@ -320,7 +331,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                 timing_info,
                                 delay_calc,
                                 arch->Chans, arch->Directs, arch->num_directs,
-                                ScreenUpdatePriority::MINOR);
+                                ScreenUpdatePriority::MINOR,
+                                is_flat);
 
             if (success && Fc_clipped == false) {
                 final = current;
@@ -359,7 +371,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                     segment_inf,
                     router_opts,
                     arch->Directs, arch->num_directs,
-                    &warnings);
+                    &warnings,
+                    is_flat);
 
     init_draw_coords(final);
 
@@ -430,15 +443,15 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist, t_graph_t
     chan_width.x_max = chan_width.y_max = INT_MIN;
     chan_width.x_min = chan_width.y_min = INT_MAX;
     for (size_t i = 0; i < grid.height(); ++i) {
-        chan_width.max = std::max(chan_width.max, chan_width.x_list[i]);
         chan_width.x_max = std::max(chan_width.x_max, chan_width.x_list[i]);
         chan_width.x_min = std::min(chan_width.x_min, chan_width.x_list[i]);
     }
+    chan_width.max = std::max(chan_width.max, chan_width.x_max);
     for (size_t i = 0; i < grid.width(); ++i) {
-        chan_width.max = std::max(chan_width.max, chan_width.y_list[i]);
         chan_width.y_max = std::max(chan_width.y_max, chan_width.y_list[i]);
         chan_width.y_min = std::min(chan_width.y_min, chan_width.y_list[i]);
     }
+    chan_width.max = std::max(chan_width.max, chan_width.y_max);
 
 #ifdef VERBOSE
     VTR_LOG("\n");

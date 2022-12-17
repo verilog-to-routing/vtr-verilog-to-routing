@@ -376,35 +376,54 @@ int run_command(const std::string &command, std::function<void(const std::string
 }
 #endif
 
+std::string get_base_tmpdir()
+{
+	static std::string tmpdir;
+
+	if (!tmpdir.empty()) {
+		return tmpdir;
+	}
+
+#if defined(_WIN32)
+#  ifdef __MINGW32__
+	char longpath[MAX_PATH + 1];
+	char shortpath[MAX_PATH + 1];
+#  else
+	WCHAR longpath[MAX_PATH + 1];
+	TCHAR shortpath[MAX_PATH + 1];
+#  endif
+	if (!GetTempPath(MAX_PATH+1, longpath))
+		log_error("GetTempPath() failed.\n");
+	if (!GetShortPathName(longpath, shortpath, MAX_PATH + 1))
+		log_error("GetShortPathName() failed.\n");
+	for (int i = 0; shortpath[i]; i++)
+		tmpdir += char(shortpath[i]);
+#else
+	char * var = std::getenv("TMPDIR");
+	if (var && strlen(var)!=0) {
+		tmpdir.assign(var);
+		// We return the directory name without the trailing '/'
+		while (!tmpdir.empty() && (tmpdir.back() == '/')) {
+			tmpdir.pop_back();
+		}
+	} else {
+		tmpdir.assign("/tmp");
+	}
+#endif
+	return tmpdir;
+}
+
 std::string make_temp_file(std::string template_str)
 {
-#if defined(__wasm)
 	size_t pos = template_str.rfind("XXXXXX");
 	log_assert(pos != std::string::npos);
+#if defined(__wasm)
 	static size_t index = 0;
 	template_str.replace(pos, 6, stringf("%06zu", index++));
 #elif defined(_WIN32)
-	if (template_str.rfind("/tmp/", 0) == 0) {
-#  ifdef __MINGW32__
-		char longpath[MAX_PATH + 1];
-		char shortpath[MAX_PATH + 1];
-#  else
-		WCHAR longpath[MAX_PATH + 1];
-		TCHAR shortpath[MAX_PATH + 1];
-#  endif
-		if (!GetTempPath(MAX_PATH+1, longpath))
-			log_error("GetTempPath() failed.\n");
-		if (!GetShortPathName(longpath, shortpath, MAX_PATH + 1))
-			log_error("GetShortPathName() failed.\n");
-		std::string path;
-		for (int i = 0; shortpath[i]; i++)
-			path += char(shortpath[i]);
-		template_str = stringf("%s\\%s", path.c_str(), template_str.c_str() + 5);
-	}
-
-	size_t pos = template_str.rfind("XXXXXX");
-	log_assert(pos != std::string::npos);
-
+#ifndef YOSYS_WIN32_UNIX_DIR
+	std::replace(template_str.begin(), template_str.end(), '/', '\\');
+#endif
 	while (1) {
 		for (int i = 0; i < 6; i++) {
 			static std::string y = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -416,9 +435,6 @@ std::string make_temp_file(std::string template_str)
 			break;
 	}
 #else
-	size_t pos = template_str.rfind("XXXXXX");
-	log_assert(pos != std::string::npos);
-
 	int suffixlen = GetSize(template_str) - pos - 6;
 
 	char *p = strdup(template_str.c_str());
@@ -518,11 +534,6 @@ std::string escape_filename_spaces(const std::string& filename)
 	return out;
 }
 
-int GetSize(RTLIL::Wire *wire)
-{
-	return wire->width;
-}
-
 bool already_setup = false;
 
 void yosys_setup()
@@ -616,6 +627,23 @@ RTLIL::IdString new_id(std::string file, int line, std::string func)
 		func = func.substr(pos+1);
 
 	return stringf("$auto$%s:%d:%s$%d", file.c_str(), line, func.c_str(), autoidx++);
+}
+
+RTLIL::IdString new_id_suffix(std::string file, int line, std::string func, std::string suffix)
+{
+#ifdef _WIN32
+	size_t pos = file.find_last_of("/\\");
+#else
+	size_t pos = file.find_last_of('/');
+#endif
+	if (pos != std::string::npos)
+		file = file.substr(pos+1);
+
+	pos = func.find_last_of(':');
+	if (pos != std::string::npos)
+		func = func.substr(pos+1);
+
+	return stringf("$auto$%s:%d:%s$%s$%d", file.c_str(), line, func.c_str(), suffix.c_str(), autoidx++);
 }
 
 RTLIL::Design *yosys_get_design()
@@ -716,6 +744,8 @@ extern Tcl_Interp *yosys_get_tcl_interp()
 {
 	if (yosys_tcl_interp == NULL) {
 		yosys_tcl_interp = Tcl_CreateInterp();
+		if (Tcl_Init(yosys_tcl_interp)!=TCL_OK)
+			log_warning("Tcl_Init() call failed - %s\n",Tcl_ErrnoMsg(Tcl_GetErrno()));
 		Tcl_CreateCommand(yosys_tcl_interp, "yosys", tcl_yosys_cmd, NULL, NULL);
 	}
 	return yosys_tcl_interp;
@@ -738,6 +768,10 @@ struct TclPass : public Pass {
 		log("\n");
 		log("If any arguments are specified, these arguments are provided to the script via\n");
 		log("the standard $argc and $argv variables.\n");
+		log("\n");
+		log("Note, tcl will not recieve the output of any yosys command. If the output\n");
+		log("of the tcl commands are needed, use the yosys command 'tee' to redirect yosys's\n");
+		log("output to a temporary file.\n");
 		log("\n");
 	}
 	void execute(std::vector<std::string> args, RTLIL::Design *) override {
@@ -831,6 +865,35 @@ std::string proc_self_dirname()
 std::string proc_self_dirname()
 {
 	return "/";
+}
+#elif defined(__OpenBSD__)
+char yosys_path[PATH_MAX];
+char *yosys_argv0;
+
+std::string proc_self_dirname(void)
+{
+	char buf[PATH_MAX + 1] = "", *path, *p;
+	// if case argv[0] contains a valid path, return it
+	if (strlen(yosys_path) > 0) {
+		p = strrchr(yosys_path, '/');
+		snprintf(buf, sizeof buf, "%*s/", (int)(yosys_path - p), yosys_path);
+		return buf;
+	}
+	// if argv[0] does not, reconstruct the path out of $PATH
+	path = strdup(getenv("PATH"));
+	if (!path)
+		log_error("getenv(\"PATH\") failed: %s\n",  strerror(errno));
+	for (p = strtok(path, ":"); p; p = strtok(NULL, ":")) {
+		snprintf(buf, sizeof buf, "%s/%s", p, yosys_argv0);
+		if (access(buf, X_OK) == 0) {
+			*(strrchr(buf, '/') + 1) = '\0';
+			free(path);
+			return buf;
+		}
+	}
+	free(path);
+	log_error("Can't determine yosys executable path\n.");
+	return NULL;
 }
 #else
 	#error "Don't know how to determine process executable base path!"
@@ -956,7 +1019,7 @@ static void handle_label(std::string &command, bool &from_to_active, const std::
 	}
 }
 
-void run_frontend(std::string filename, std::string command, std::string *backend_command, std::string *from_to_label, RTLIL::Design *design)
+bool run_frontend(std::string filename, std::string command, RTLIL::Design *design, std::string *from_to_label)
 {
 	if (design == nullptr)
 		design = yosys_design;
@@ -966,11 +1029,11 @@ void run_frontend(std::string filename, std::string command, std::string *backen
 		if (filename_trim.size() > 3 && filename_trim.compare(filename_trim.size()-3, std::string::npos, ".gz") == 0)
 			filename_trim.erase(filename_trim.size()-3);
 		if (filename_trim.size() > 2 && filename_trim.compare(filename_trim.size()-2, std::string::npos, ".v") == 0)
-			command = "verilog";
+			command = " -vlog2k";
 		else if (filename_trim.size() > 2 && filename_trim.compare(filename_trim.size()-3, std::string::npos, ".sv") == 0)
-			command = "verilog -sv";
+			command = " -sv";
 		else if (filename_trim.size() > 3 && filename_trim.compare(filename_trim.size()-4, std::string::npos, ".vhd") == 0)
-			command = "vhdl";
+			command = " -vhdl";
 		else if (filename_trim.size() > 4 && filename_trim.compare(filename_trim.size()-5, std::string::npos, ".blif") == 0)
 			command = "blif";
 		else if (filename_trim.size() > 5 && filename_trim.compare(filename_trim.size()-6, std::string::npos, ".eblif") == 0)
@@ -1056,10 +1119,12 @@ void run_frontend(std::string filename, std::string command, std::string *backen
 		if (filename != "-")
 			fclose(f);
 
-		if (backend_command != NULL && *backend_command == "auto")
-			*backend_command = "";
+		return true;
+	}
 
-		return;
+	if (command == "tcl") {
+		Pass::call(design, vector<string>({command, filename}));
+		return true;
 	}
 
 	if (filename == "-") {
@@ -1068,16 +1133,15 @@ void run_frontend(std::string filename, std::string command, std::string *backen
 		log("\n-- Parsing `%s' using frontend `%s' --\n", filename.c_str(), command.c_str());
 	}
 
-	if (command == "tcl")
-		Pass::call(design, vector<string>({command, filename}));
-	else
+	if (command[0] == ' ') {
+		auto argv = split_tokens("read" + command);
+		argv.push_back(filename);
+		Pass::call(design, argv);
+	} else
 		Frontend::frontend_call(design, NULL, filename, command);
-	design->check();
-}
 
-void run_frontend(std::string filename, std::string command, RTLIL::Design *design)
-{
-	run_frontend(filename, command, nullptr, nullptr, design);
+	design->check();
+	return false;
 }
 
 void run_pass(std::string command, RTLIL::Design *design)
@@ -1391,7 +1455,7 @@ struct ScriptCmdPass : public Pass {
 		else if (args.size() == 2)
 			run_frontend(args[1], "script", design);
 		else if (args.size() == 3)
-			run_frontend(args[1], "script", NULL, &args[2], design);
+			run_frontend(args[1], "script", design, &args[2]);
 		else
 			extra_args(args, 2, design, false);
 	}

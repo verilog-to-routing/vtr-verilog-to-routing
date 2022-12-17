@@ -33,8 +33,8 @@ struct DffunmapPass : public Pass {
 		log("    dffunmap [options] [selection]\n");
 		log("\n");
 		log("This pass transforms FF types with clock enable and/or synchronous reset into\n");
-		log("their base type (with neither clock enable nor sync reset) by emulating the clock\n");
-		log("enable and synchronous reset with multiplexers on the cell input.\n");
+		log("their base type (with neither clock enable nor sync reset) by emulating the\n");
+		log("clock enable and synchronous reset with multiplexers on the cell input.\n");
 		log("\n");
 		log("    -ce-only\n");
 		log("        unmap only clock enables, leave synchronous resets alone.\n");
@@ -84,21 +84,20 @@ struct DffunmapPass : public Pass {
 					continue;
 
 				if (ce_only) {
-					if (!ff.has_en)
+					if (!ff.has_ce)
 						continue;
-					ff.unmap_ce(mod);
+					ff.unmap_ce();
 				} else if (srst_only) {
 					if (!ff.has_srst)
 						continue;
-					ff.unmap_srst(mod);
+					ff.unmap_srst();
 				} else {
-					if (!ff.has_en && !ff.has_srst)
+					if (!ff.has_ce && !ff.has_srst)
 						continue;
-					ff.unmap_ce_srst(mod);
+					ff.unmap_ce_srst();
 				}
 
-				mod->remove(cell);
-				ff.emit(mod, name);
+				ff.emit();
 			}
 		}
 	}

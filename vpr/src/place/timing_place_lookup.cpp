@@ -89,7 +89,8 @@ typedef std::function<void(
     int,
     const t_router_opts&,
     bool,
-    const std::set<std::string>&)>
+    const std::set<std::string>&,
+    bool)>
     t_compute_delta_delay_matrix;
 
 static void generic_compute_matrix_iterative_astar(
@@ -103,7 +104,8 @@ static void generic_compute_matrix_iterative_astar(
     int end_y,
     const t_router_opts& router_opts,
     bool measure_directconnect,
-    const std::set<std::string>& allowed_types);
+    const std::set<std::string>& allowed_types,
+    bool /***/);
 
 static void generic_compute_matrix_dijkstra_expansion(
     RouterDelayProfiler& route_profiler,
@@ -116,14 +118,16 @@ static void generic_compute_matrix_dijkstra_expansion(
     int end_y,
     const t_router_opts& router_opts,
     bool measure_directconnect,
-    const std::set<std::string>& allowed_types);
+    const std::set<std::string>& allowed_types,
+    bool is_flat);
 
 static vtr::Matrix<float> compute_delta_delays(
     RouterDelayProfiler& route_profiler,
     const t_placer_opts& palcer_opts,
     const t_router_opts& router_opts,
     bool measure_directconnect,
-    size_t longest_length);
+    size_t longest_length,
+    bool is_flat);
 
 float delay_reduce(std::vector<float>& delays, e_reducer reducer);
 
@@ -132,7 +136,8 @@ static vtr::Matrix<float> compute_delta_delay_model(
     const t_placer_opts& placer_opts,
     const t_router_opts& router_opts,
     bool measure_directconnect,
-    int longest_length);
+    int longest_length,
+    bool is_flat);
 
 static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  t_physical_tile_type_ptr from_type,
@@ -161,7 +166,8 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
                                                            std::vector<t_segment_inf>& segment_inf,
                                                            t_chan_width_dist chan_width_dist,
                                                            const t_direct_inf* directs,
-                                                           const int num_directs) {
+                                                           const int num_directs,
+                                                           bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing placement delta delay look-up");
 
     init_placement_context();
@@ -175,17 +181,18 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
         router_opts.lookahead_type,
         router_opts.write_router_lookahead,
         router_opts.read_router_lookahead,
-        segment_inf);
-    RouterDelayProfiler route_profiler(router_lookahead);
+        segment_inf,
+        is_flat);
+    RouterDelayProfiler route_profiler(router_lookahead, is_flat);
 
     int longest_length = get_longest_segment_length(segment_inf);
 
     /*now setup and compute the actual arrays */
     std::unique_ptr<PlaceDelayModel> place_delay_model;
     if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
-        place_delay_model = std::make_unique<DeltaDelayModel>();
+        place_delay_model = std::make_unique<DeltaDelayModel>(false);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
-        place_delay_model = std::make_unique<OverrideDelayModel>();
+        place_delay_model = std::make_unique<OverrideDelayModel>(false);
     } else {
         VTR_ASSERT_MSG(false, "Invalid placer delay model");
     }
@@ -214,7 +221,8 @@ void DeltaDelayModel::compute(
     delays_ = compute_delta_delay_model(
         route_profiler,
         placer_opts, router_opts, /*measure_directconnect=*/true,
-        longest_length);
+        longest_length,
+        is_flat_);
 }
 
 void OverrideDelayModel::compute(
@@ -225,9 +233,10 @@ void OverrideDelayModel::compute(
     auto delays = compute_delta_delay_model(
         route_profiler,
         placer_opts, router_opts, /*measure_directconnect=*/false,
-        longest_length);
+        longest_length,
+        is_flat_);
 
-    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays);
+    base_delay_model_ = std::make_unique<DeltaDelayModel>(delays, false);
 
     compute_override_delay_model(route_profiler, router_opts);
 }
@@ -417,7 +426,8 @@ static void generic_compute_matrix_dijkstra_expansion(
     int end_y,
     const t_router_opts& router_opts,
     bool measure_directconnect,
-    const std::set<std::string>& allowed_types) {
+    const std::set<std::string>& allowed_types,
+    bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
 
     t_physical_tile_type_ptr src_type = device_ctx.grid[source_x][source_y].type;
@@ -453,7 +463,9 @@ static void generic_compute_matrix_dijkstra_expansion(
         RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
-        auto delays = calculate_all_path_delays_from_rr_node(size_t(source_rr_node), router_opts);
+        auto delays = calculate_all_path_delays_from_rr_node(size_t(source_rr_node),
+                                                             router_opts,
+                                                             is_flat);
 
         bool path_to_all_sinks = true;
         for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
@@ -501,7 +513,7 @@ static void generic_compute_matrix_dijkstra_expansion(
 
 #ifdef VERBOSE
                         VTR_LOG("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
-                                delay,
+                                delays[size_t(sink_rr_node)],
                                 delta_x, delta_y,
                                 source_x, source_y,
                                 sink_x, sink_y);
@@ -550,7 +562,8 @@ static void generic_compute_matrix_iterative_astar(
     int end_y,
     const t_router_opts& router_opts,
     bool measure_directconnect,
-    const std::set<std::string>& allowed_types) {
+    const std::set<std::string>& allowed_types,
+    bool /***/) {
     //vtr::ScopedStartFinishTimer t(vtr::string_fmt("Profiling from (%d,%d)", source_x, source_y));
 
     int delta_x, delta_y;
@@ -612,7 +625,8 @@ static vtr::Matrix<float> compute_delta_delays(
     const t_placer_opts& placer_opts,
     const t_router_opts& router_opts,
     bool measure_directconnect,
-    size_t longest_length) {
+    size_t longest_length,
+    bool is_flat) {
     //To avoid edge effects we place the source at least 'longest_length' away
     //from the device edge
     //and route from there for all possible delta values < dimension
@@ -712,7 +726,8 @@ static vtr::Matrix<float> compute_delta_delays(
                            x, y,
                            grid.width() - 1, grid.height() - 1,
                            router_opts,
-                           measure_directconnect, allowed_types);
+                           measure_directconnect, allowed_types,
+                           is_flat);
 
     //Find the lowest x location on the bottom edge with a non-empty block
     src_type = nullptr;
@@ -741,7 +756,8 @@ static vtr::Matrix<float> compute_delta_delays(
                            x, y,
                            grid.width() - 1, grid.height() - 1,
                            router_opts,
-                           measure_directconnect, allowed_types);
+                           measure_directconnect, allowed_types,
+                           is_flat);
 
     //Since the other delta delay values may have suffered from edge effects,
     //we recalculate deltas within regions B, C, E, F
@@ -753,7 +769,8 @@ static vtr::Matrix<float> compute_delta_delays(
                            low_x, low_y,
                            grid.width() - 1, grid.height() - 1,
                            router_opts,
-                           measure_directconnect, allowed_types);
+                           measure_directconnect, allowed_types,
+                           is_flat);
 
     //Since the other delta delay values may have suffered from edge effects,
     //we recalculate deltas within regions D, E, G, H
@@ -765,7 +782,8 @@ static vtr::Matrix<float> compute_delta_delays(
                            0, 0,
                            high_x, high_y,
                            router_opts,
-                           measure_directconnect, allowed_types);
+                           measure_directconnect, allowed_types,
+                           is_flat);
 
     //Since the other delta delay values may have suffered from edge effects,
     //we recalculate deltas within regions A, B, D, E
@@ -777,7 +795,8 @@ static vtr::Matrix<float> compute_delta_delays(
                            0, low_y,
                            high_x, grid.height() - 1,
                            router_opts,
-                           measure_directconnect, allowed_types);
+                           measure_directconnect, allowed_types,
+                           is_flat);
 
     //Since the other delta delay values may have suffered from edge effects,
     //we recalculate deltas within regions E, F, H, I
@@ -789,7 +808,8 @@ static vtr::Matrix<float> compute_delta_delays(
                            low_x, 0,
                            grid.width() - 1, high_y,
                            router_opts,
-                           measure_directconnect, allowed_types);
+                           measure_directconnect, allowed_types,
+                           is_flat);
 
     vtr::Matrix<float> delta_delays({grid.width(), grid.height()});
     for (size_t dx = 0; dx < sampled_delta_delays.dim_size(0); ++dx) {
@@ -936,10 +956,15 @@ static vtr::Matrix<float> compute_delta_delay_model(
     const t_placer_opts& placer_opts,
     const t_router_opts& router_opts,
     bool measure_directconnect,
-    int longest_length) {
+    int longest_length,
+    bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing delta delays");
     vtr::Matrix<float> delta_delays = compute_delta_delays(route_profiler,
-                                                           placer_opts, router_opts, measure_directconnect, longest_length);
+                                                           placer_opts,
+                                                           router_opts,
+                                                           measure_directconnect,
+                                                           longest_length,
+                                                           is_flat);
 
     fix_uninitialized_coordinates(delta_delays);
 

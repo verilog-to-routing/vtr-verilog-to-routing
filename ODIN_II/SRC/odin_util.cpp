@@ -91,24 +91,75 @@ void create_directory(std::string path) {
     }
 }
 
-void assert_supported_file_extension(std::string input_file, loc_t loc) {
-    bool supported = false;
-    std::string extension = get_file_extension(input_file);
-    for (int i = 0; i < file_type_e::file_type_e_END && !supported; i++) {
-        supported = (file_type_strmap[extension] != file_type_e::file_type_e_END);
+/**
+ * @brief report the frontend elaborator and its parser
+ */
+void report_frontend_elaborator() {
+    // Check if the file_name extension matches with type
+    switch (configuration.input_file_type) {
+        case (file_type_e::_VERILOG): // fallthrough
+        case (file_type_e::_VERILOG_HEADER): {
+            if (configuration.elaborator_type == elaborator_e::_ODIN) {
+                printf("Using the ODIN_II parser for elaboration\n");
+            } else if (configuration.elaborator_type == elaborator_e::_YOSYS) {
+                printf("Using the Yosys elaborator with it's conventional Verilog/SystemVerilog parser\n");
+            }
+            break;
+        }
+        case (file_type_e::_SYSTEM_VERILOG): {
+            if (configuration.elaborator_type != elaborator_e::_YOSYS) {
+                error_message(PARSE_ARGS, unknown_location, "%s", SYSTEMVERILOG_PARSER_ERROR);
+            }
+#ifndef YOSYS_SV_UHDM_PLUGIN
+            printf("Using the Yosys elaborator with it's conventional Verilog/SystemVerilog parser\n");
+#else
+            printf("Using the Yosys elaborator with the Yosys-F4PGA-Plugin parser for SystemVerilog\n");
+#endif
+            break;
+        }
+        case (file_type_e::_UHDM): {
+            if (configuration.elaborator_type != elaborator_e::_YOSYS) {
+                error_message(PARSE_ARGS, unknown_location, "%s", UHDM_PARSER_ERROR);
+
+            } else if (configuration.elaborator_type == elaborator_e::_YOSYS) {
+#ifndef ODIN_USE_YOSYS
+                error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_INSTALLATION_ERROR);
+#else
+#    ifndef YOSYS_SV_UHDM_PLUGIN
+                error_message(PARSE_ARGS, unknown_location, "%s", YOSYS_PLUGINS_NOT_COMPILED);
+#    endif
+#endif
+            }
+            printf("Using the Yosys elaborator with the Surelog parser for UHDM\n");
+            break;
+        }
+        case (file_type_e::_BLIF): {
+            printf("Using the ODIN_II BLIF parser\n");
+            break;
+        }
+        case (file_type_e::_EBLIF): //fallthrough
+        case (file_type_e::_ILANG): //fallthrough
+        default: {
+            error_message(UTIL, unknown_location, "%s", "Invalid file type");
+            break;
+        }
     }
+}
+
+void assert_supported_file_extension(std::string input_file, loc_t loc) {
+    bool supported = (file_extension_strmap.find(string_to_lower(get_file_extension(input_file))) != file_extension_strmap.end());
 
     if (!supported) {
         std::string supported_extension_list = "";
-        for (auto iter : file_type_strmap) {
+        for (auto iter : file_extension_strmap) {
             supported_extension_list += " ";
-            supported_extension_list += iter.second;
+            supported_extension_list += iter.first;
         }
 
         possible_error_message(UTIL, loc,
                                "File (%s) has an unsupported extension (%s), Odin only supports { %s }",
                                input_file.c_str(),
-                               extension.c_str(),
+                               get_file_extension(input_file).c_str(),
                                supported_extension_list.c_str());
     }
 }
@@ -804,25 +855,53 @@ long int pow2(int to_the_power) {
 /*
  * Changes the given string to upper case.
  */
-void string_to_upper(char* string) {
+char* string_to_upper(char* string) {
     if (string) {
         unsigned int i;
         for (i = 0; i < strlen(string); i++) {
             string[i] = toupper(string[i]);
         }
     }
+    return (string);
 }
 
 /*
  * Changes the given string to lower case.
  */
-void string_to_lower(char* string) {
+char* string_to_lower(char* string) {
     if (string) {
         unsigned int i;
         for (i = 0; i < strlen(string); i++) {
             string[i] = tolower(string[i]);
         }
     }
+    return (string);
+}
+
+/**
+ * @brief create a new string by transforming the given string to upper case
+ * 
+ * @param string to be transformed string
+ * 
+ * @return the transformed string in a new container
+ */
+std::string string_to_upper(std::string string) {
+    if (!string.empty())
+        std::transform(string.begin(), string.end(), string.begin(), ::toupper);
+    return (string);
+}
+
+/**
+ * @brief create a new string by transforming the given string to lower case
+ * 
+ * @param string to be transformed string
+ * 
+ * @return the transformed string in a new container
+ */
+std::string string_to_lower(std::string string) {
+    if (!string.empty())
+        std::transform(string.begin(), string.end(), string.begin(), ::tolower);
+    return (string);
 }
 
 /*
@@ -1159,15 +1238,37 @@ char* str_collate(char* str1, char* str2) {
 /**
  * (function: print_input_files_info)
  * 
- * @brief This shows the name of input file, whether Verilog or BLIF
+ * @brief This shows the name of input files
  */
 void print_input_files_info() {
-    if (configuration.input_file_type == file_type_e::_VERILOG) {
-        for (std::string v_file : global_args.verilog_files.value())
-            printf("Verilog: %s\n", vtr::basename(v_file).c_str());
+    switch (configuration.input_file_type) {
+        case (file_type_e::_ILANG):          // fallthrough
+        case (file_type_e::_VERILOG):        // fallthrough
+        case (file_type_e::_VERILOG_HEADER): //fallthrough
+        case (file_type_e::_SYSTEM_VERILOG): //fallthorugh
+        case (file_type_e::_UHDM): {
+            for (std::string v_file : global_args.input_files.value())
+                printf("Input %s file: %s\n", file_type_strmap[configuration.input_file_type].c_str(), vtr::basename(v_file).c_str());
+            break;
+        }
+        case (file_type_e::_EBLIF): //fallthrough
+        case (file_type_e::_BLIF): {
+            printf("Input BLIF file: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
+            break;
+        }
+        default: {
+            // Invalid file type, should have been already checked in the beginning of Odin-II
+            std::string supported_extension_list = "";
+            for (auto iter : file_extension_strmap) {
+                supported_extension_list += " ";
+                supported_extension_list += iter.first;
+            }
 
-    } else if (configuration.input_file_type == file_type_e::_BLIF) {
-        printf("Input BLIF file: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
+            possible_error_message(UTIL, unknown_location,
+                                   "Invalid input file extension, Odin only supports { %s }",
+                                   supported_extension_list.c_str());
+            break;
+        }
     }
 
     fflush(stdout);

@@ -18,7 +18,9 @@
 #include "route_tree_timing.h"
 
 /******************** Subroutines local to this module **********************/
-static void check_node_and_range(int inode, enum e_route_type route_type);
+static void check_node_and_range(int inode,
+                                 enum e_route_type route_type,
+                                 bool is_flat);
 static void check_source(RRNodeId inode, ClusterNetId net_id);
 static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* pin_done);
 static void check_switch(t_trace* tptr, int num_switch);
@@ -26,15 +28,18 @@ static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(ClusterNetId inet, bool* connected_to_route);
 static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
-                                         enum e_route_type route_type);
+                                         enum e_route_type route_type,
+                                         bool is_flat);
 
-static void check_all_non_configurable_edges();
-static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets);
-static void check_net_for_stubs(ClusterNetId net);
+static void check_all_non_configurable_edges(bool is_flat);
+static bool check_non_configurable_edges(ClusterNetId net,
+                                         const t_non_configurable_rr_sets& non_configurable_rr_sets,
+                                         bool is_flat);
+static void check_net_for_stubs(ClusterNetId net, bool is_flat);
 
 /************************ Subroutine definitions ****************************/
 
-void check_route(enum e_route_type route_type, e_check_route_option check_route_option) {
+void check_route(enum e_route_type route_type, e_check_route_option check_route_option, bool is_flat) {
     /* This routine checks that a routing:  (1) Describes a properly         *
      * connected path for each net, (2) this path connects all the           *
      * pins spanned by that net, and (3) that no routing resources are       *
@@ -72,7 +77,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
                   "Error in check_route -- routing resources are overused.\n");
     }
 
-    check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type);
+    check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type, is_flat);
 
     auto connected_to_route = std::make_unique<bool[]>(rr_graph.num_nodes());
     std::fill_n(connected_to_route.get(), rr_graph.num_nodes(), false);
@@ -98,7 +103,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
         }
 
         inode = tptr->index;
-        check_node_and_range(inode, route_type);
+        check_node_and_range(inode, route_type, is_flat);
         check_switch(tptr, num_switches);
         connected_to_route[inode] = true; /* Mark as in path. */
 
@@ -114,7 +119,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
         while (tptr != nullptr) {
             inode = tptr->index;
             net_pin_index = tptr->net_pin_index;
-            check_node_and_range(inode, route_type);
+            check_node_and_range(inode, route_type, is_flat);
             check_switch(tptr, num_switches);
 
             if (prev_switch == OPEN) { //Start of a new branch
@@ -130,8 +135,8 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
                               "  %s\n"
                               "  %s\n",
                               size_t(net_id),
-                              describe_rr_node(prev_node).c_str(),
-                              describe_rr_node(inode).c_str());
+                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, prev_node, is_flat).c_str(),
+                              describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str());
                 }
 
                 connected_to_route[inode] = true; /* Mark as in path. */
@@ -161,14 +166,14 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
             }
         }
 
-        check_net_for_stubs(net_id);
+        check_net_for_stubs(net_id, is_flat);
 
         reset_flags(net_id, connected_to_route.get());
 
     } /* End for each net */
 
     if (check_route_option == e_check_route_option::FULL) {
-        check_all_non_configurable_edges();
+        check_all_non_configurable_edges(is_flat);
     } else {
         VTR_ASSERT(check_route_option == e_check_route_option::QUICK);
     }
@@ -544,7 +549,8 @@ void recompute_occupancy_from_scratch() {
 }
 
 static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
-                                         enum e_route_type route_type) {
+                                         enum e_route_type route_type,
+                                         bool is_flat) {
     /* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
      * legal routing if subblocks connect to OPINs directly.                    */
 
@@ -562,7 +568,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 
             for (ipin = 0; ipin < num_local_opins; ipin++) {
                 inode = clb_opins_used_locally[blk_id][iclass][ipin];
-                check_node_and_range(inode, route_type); /* Node makes sense? */
+                check_node_and_range(inode, route_type, is_flat); /* Node makes sense? */
 
                 /* Now check that node is an OPIN of the right type. */
 
@@ -586,7 +592,9 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
     }
 }
 
-static void check_node_and_range(int inode, enum e_route_type route_type) {
+static void check_node_and_range(int inode,
+                                 enum e_route_type route_type,
+                                 bool is_flat) {
     /* Checks that inode is within the legal range, then calls check_node to    *
      * check that everything else about the node is OK.                         */
 
@@ -596,18 +604,26 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_graph.num_nodes() - 1);
     }
-    check_rr_node(inode, route_type, device_ctx);
+    check_rr_node(device_ctx.rr_graph,
+                  device_ctx.rr_indexed_data,
+                  device_ctx.grid,
+                  device_ctx.chan_width,
+                  route_type,
+                  inode,
+                  is_flat);
 }
 
 //Checks that all non-configurable edges are in a legal configuration
 //This check is slow, so it has been moved out of check_route()
-static void check_all_non_configurable_edges() {
+static void check_all_non_configurable_edges(bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Checking to ensure non-configurable edges are legal");
     auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        check_non_configurable_edges(net_id, non_configurable_rr_sets);
+        check_non_configurable_edges(net_id,
+                                     non_configurable_rr_sets,
+                                     is_flat);
     }
 }
 
@@ -615,7 +631,10 @@ static void check_all_non_configurable_edges() {
 //
 //For routing to be legal if *any* non-configurable edge is used, so must *all*
 //other non-configurable edges in the same set
-static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets) {
+static bool check_non_configurable_edges(ClusterNetId net,
+                                         const t_non_configurable_rr_sets& non_configurable_rr_sets,
+                                         bool is_flat) {
+    const auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -681,7 +700,7 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                     cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
 
                 for (auto inode : difference) {
-                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(inode).c_str());
+                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str());
                 }
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
@@ -749,8 +768,8 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                 for (t_node_edge missing_edge : dedupped_difference) {
                     msg += vtr::string_fmt("  Expected RR Node: %d and RR Node: %d to be non-configurably connected, but edge missing from routing:\n",
                                            missing_edge.from_node, missing_edge.to_node);
-                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.from_node).c_str());
-                    msg += vtr::string_fmt("    %s\n", describe_rr_node(missing_edge.to_node).c_str());
+                    msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, missing_edge.from_node, is_flat).c_str());
+                    msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, missing_edge.to_node, is_flat).c_str());
                 }
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
@@ -791,16 +810,17 @@ class StubFinder {
 //The only exception are stubs required by non-configurable switches (e.g. shorts).
 //
 //We treat any configurable stubs as an error.
-void check_net_for_stubs(ClusterNetId net) {
+void check_net_for_stubs(ClusterNetId net, bool is_flat) {
     StubFinder stub_finder;
 
     bool any_stubs = stub_finder.CheckNet(net);
     if (any_stubs) {
+        const auto& device_ctx = g_vpr_ctx.device();
         auto& cluster_ctx = g_vpr_ctx.clustering();
         std::string msg = vtr::string_fmt("Route tree for net '%s' (#%zu) contains stub branches rooted at:\n",
                                           cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
         for (int inode : stub_finder.stub_nodes()) {
-            msg += vtr::string_fmt("    %s\n", describe_rr_node(inode).c_str());
+            msg += vtr::string_fmt("    %s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat).c_str());
         }
 
         VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());

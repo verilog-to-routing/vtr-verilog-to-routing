@@ -140,7 +140,7 @@ static double power_count_transistors_mux(t_mux_arch* mux_arch) {
     float* max_inputs;
 
     /* SRAM bits */
-    max_inputs = (float*)vtr::calloc(mux_arch->levels, sizeof(float));
+    max_inputs = new float[mux_arch->levels];
     for (lvl_idx = 0; lvl_idx < mux_arch->levels; lvl_idx++) {
         max_inputs[lvl_idx] = 0.;
     }
@@ -167,7 +167,7 @@ static double power_count_transistors_mux(t_mux_arch* mux_arch) {
 
     transistor_cnt += power_count_transistors_mux_node(mux_arch->mux_graph_head,
                                                        mux_arch->transistor_size);
-    free(max_inputs);
+    delete[](max_inputs);
     return transistor_cnt;
 }
 
@@ -659,7 +659,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
                                              bool pin_is_an_input) {
     int edge_idx;
     int list_cnt;
-    t_interconnect** list;
+    std::vector<t_interconnect*> list;
     bool found;
     int i;
 
@@ -714,7 +714,6 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
      * be higher)*/
 
     /* Loop through all edges, building a list of interconnect that this pin drives */
-    list = nullptr;
     list_cnt = 0;
     for (edge_idx = 0; edge_idx < pin->num_output_edges; edge_idx++) {
         /* Check if its already in the list */
@@ -728,8 +727,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
 
         if (!found) {
             list_cnt++;
-            list = (t_interconnect**)vtr::realloc(list,
-                                                  list_cnt * sizeof(t_interconnect*));
+            list.resize(list_cnt);
             list[list_cnt - 1] = pin->output_edges[edge_idx]->interconnect;
         }
     }
@@ -745,10 +743,12 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
         int* fanout_per_mode;
         float* wirelength_out_per_mode;
 
-        fanout_per_mode = (int*)vtr::calloc(this_pb_type->num_modes,
-                                            sizeof(int));
-        wirelength_out_per_mode = (float*)vtr::calloc(this_pb_type->num_modes,
-                                                      sizeof(float));
+        fanout_per_mode = new int[this_pb_type->num_modes];
+        wirelength_out_per_mode = new float[this_pb_type->num_modes];
+        for (auto j = 0; j < this_pb_type->num_modes; j++) {
+            fanout_per_mode[j] = 0;
+            wirelength_out_per_mode[j] = 0;
+        }
 
         for (i = 0; i < list_cnt; i++) {
             int mode_idx = list[i]->parent_mode_index;
@@ -773,8 +773,8 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
                               * this_pb_interc_sidelength;
         }
 
-        free(fanout_per_mode);
-        free(wirelength_out_per_mode);
+        delete[](fanout_per_mode);
+        delete[](wirelength_out_per_mode);
 
         /* Input wirelength - from parent PB */
         if (!top_level_pb) {
@@ -811,7 +811,6 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
         wirelength_in = power_ctx.arch->local_interc_factor
                         * this_pb_interc_sidelength;
     }
-    free(list);
 
     /* Wirelength */
     switch (pin->port->port_power->wire_type) {

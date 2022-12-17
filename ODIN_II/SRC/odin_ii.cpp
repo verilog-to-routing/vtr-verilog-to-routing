@@ -36,6 +36,7 @@
 
 #include "odin_globals.h"
 #include "odin_types.h"
+#include "odin_util.h"
 #include "netlist_utils.h"
 #include "arch_types.h"
 #include "parse_making_ast.h"
@@ -147,7 +148,7 @@ static void optimization() {
         }
 
         if (block_memories_info.read_only_memory_list || block_memories_info.block_memory_list) {
-            /* Perform a hard block registration and splitting in width */
+            /* Perform a hard block registration and splitting in width for Yosys generated memory blocks */
             iterate_block_memories(syn_netlist);
             free_block_memories();
         }
@@ -348,8 +349,9 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         ODIN_ERROR_CODE error_code;
 
         print_input_files_info();
+        report_frontend_elaborator();
 
-        if (configuration.input_file_type == file_type_e::_VERILOG || configuration.coarsen) {
+        if (configuration.input_file_type != file_type_e::_BLIF || configuration.coarsen) {
             try {
                 error_code = synthesize();
                 printf("Odin_II synthesis has finished with code: %d\n", error_code);
@@ -490,14 +492,29 @@ void get_options(int argc, char** argv) {
         .help("Configuration file")
         .metavar("XML_CONFIGURATION_FILE");
 
-    input_grp.add_argument(global_args.verilog_files, "-V")
-        .help("list of Verilog HDL file")
+    input_grp.add_argument(global_args.input_files, "-v")
+        .help("List of Verilog HDL file")
         .nargs('+')
         .metavar("VERILOG_FILE");
+
+    input_grp.add_argument(global_args.input_files, "-s")
+        .help("List of SystemVerilog HDL file")
+        .nargs('+')
+        .metavar("SYSTEMVERILOG_FILE");
+
+    input_grp.add_argument(global_args.input_files, "-u")
+        .help("List of UHDM HDL file")
+        .nargs('+')
+        .metavar("UHDM_FILE");
 
     input_grp.add_argument(global_args.blif_file, "-b")
         .help("BLIF file")
         .metavar("BLIF_FILE");
+
+    input_grp.add_argument(global_args.input_files, "-V")
+        .help("DEPRECATED")
+        .nargs('+')
+        .metavar("N/A");
 
     auto& output_grp = parser.add_argument_group("output files");
 
@@ -510,7 +527,7 @@ void get_options(int argc, char** argv) {
 
     ext_elaborator_group.add_argument(global_args.elaborator, "--elaborator")
         .help("Specify an external elaborator")
-        .default_value("Odin")
+        .default_value("odin")
         .metavar("ELABORATTOR");
 
     ext_elaborator_group.add_argument(global_args.show_yosys_log, "--show_yosys_log")
@@ -532,6 +549,12 @@ void get_options(int argc, char** argv) {
     ext_elaborator_group.add_argument(global_args.tcl_file, "--tcl")
         .help("TCL file")
         .metavar("TCL_FILE");
+
+    ext_elaborator_group.add_argument(global_args.decode_names, "--decode_names")
+        .help("Enable extracting hierarchical information from Yosys coarse-grained BLIF file for signal naming")
+        .default_value("false")
+        .action(argparse::Action::STORE_TRUE)
+        .metavar("DECODE_NAMES");
 
     auto& other_grp = parser.add_argument_group("other options");
 
@@ -641,7 +664,7 @@ void get_options(int argc, char** argv) {
         .action(argparse::Action::STORE_TRUE)
         .metavar("BATCH FLAG");
 
-    other_sim_grp.add_argument(global_args.sim_directory, "-sim_dir")
+    other_sim_grp.add_argument(global_args.sim_directory, "--sim_dir")
         .help("Directory output for simulation")
         .default_value(DEFAULT_OUTPUT)
         .metavar("SIMULATION_DIRECTORY");
@@ -708,10 +731,18 @@ void get_options(int argc, char** argv) {
             global_args.config_file.provenance() == argparse::Provenance::SPECIFIED, //have a config file
             global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED,   //have a BLIF file
             global_args.tcl_file.provenance() == argparse::Provenance::SPECIFIED,    //have a TCL file that includes HDL designs
-            global_args.verilog_files.value().size() > 0                             //have a Verilog input list
+            global_args.input_files.value().size() > 0                               //have a Verilog input list
         })) {
         parser.print_usage();
-        warning_message(PARSE_ARGS, unknown_location, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta BLIF file(-b)\n\ta Verilog file(-V)\n\ta TCL file including HDL designs(-S)\nUnless is used for infrastructure directly\n");
+        warning_message(PARSE_ARGS, unknown_location, "%s",
+                        "Must include only one of either:\n\t\
+                            a config file(-c)\n\t\
+                            a BLIF file(-b)\n\t\
+                            a Verilog file(-v)\n\t\
+                            a SystemVerilog file(-s)\n\t\
+                            an UHDM file(-u)\n\t\
+                            a TCL file including HDL designs(-S)\n\
+                        Unless is used for infrastructure directly\n");
     }
 
     //adjust thread count
@@ -722,10 +753,22 @@ void get_options(int argc, char** argv) {
         std::max(1, std::min(thread_requested, std::min((CONCURENCY_LIMIT - 1), max_thread))), argparse::Provenance::SPECIFIED);
 
     //Allow some config values to be overriden from command line
-    if (!global_args.verilog_files.value().empty()) {
+    if (!global_args.input_files.value().empty()) {
         //parse comma separated list of verilog files
-        configuration.list_of_file_names = global_args.verilog_files.value();
-        configuration.input_file_type = file_type_e::_VERILOG;
+        configuration.list_of_file_names = global_args.input_files.value();
+        std::string arg_name = string_to_lower(global_args.input_files.argument_name());
+        if (arg_name == "-v")
+            configuration.input_file_type = file_type_e::_VERILOG;
+        else if (arg_name == "-s")
+            configuration.input_file_type = file_type_e::_SYSTEM_VERILOG;
+        else if (arg_name == "-u")
+            configuration.input_file_type = file_type_e::_UHDM;
+        else {
+            // Unknown argument name, should have been already checked in the argparse library
+            error_message(PARSE_ARGS, unknown_location,
+                          "Invalid argument (%s) is passed to Odin-II, for correct usage please see ./odin --help",
+                          arg_name.c_str());
+        }
 
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
@@ -737,7 +780,7 @@ void get_options(int argc, char** argv) {
     }
 
     if (global_args.elaborator.provenance() == argparse::Provenance::SPECIFIED) {
-        configuration.elaborator_type = elaborator_strmap[global_args.elaborator];
+        configuration.elaborator_type = elaborator_strmap.at(string_to_lower(global_args.elaborator.value()));
     }
 
     if (global_args.show_yosys_log.provenance() == argparse::Provenance::SPECIFIED) {
@@ -750,6 +793,10 @@ void get_options(int argc, char** argv) {
         coarsen_cleanup = true;
         configuration.coarsen = true;
         configuration.elaborator_type = elaborator_e::_YOSYS;
+    }
+
+    if (global_args.decode_names.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.decode_names = global_args.decode_names;
     }
 
     if (global_args.write_netlist_as_dot.provenance() == argparse::Provenance::SPECIFIED) {
@@ -809,6 +856,7 @@ void set_default_config() {
     configuration.coarsen = false;
     configuration.fflegalize = false;
     configuration.show_yosys_log = false;
+    configuration.decode_names = false;
     configuration.tcl_file = "";
     configuration.output_file_type = file_type_e::_BLIF;
     configuration.elaborator_type = elaborator_e::_ODIN;

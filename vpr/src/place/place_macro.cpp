@@ -389,6 +389,13 @@ void get_imacro_from_iblk(int* imacro, ClusterBlockId iblk, const std::vector<t_
     }
 }
 
+void set_imacro_for_iblk(int* imacro, ClusterBlockId blk_id) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    f_imacro_from_iblk.resize(cluster_ctx.clb_nlist.blocks().size());
+    f_imacro_from_iblk.insert(blk_id, *imacro);
+}
+
 /* Allocates and loads imacro_from_iblk array. */
 static void alloc_and_load_imacro_from_iblk(const std::vector<t_pl_macro>& macros) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -417,17 +424,17 @@ void free_placement_macros_structs() {
     unsigned int itype;
     if (f_idirect_from_blk_pin != nullptr) {
         for (itype = 1; itype < device_ctx.physical_tile_types.size(); itype++) {
-            free(f_idirect_from_blk_pin[itype]);
+            delete[](f_idirect_from_blk_pin[itype]);
         }
-        free(f_idirect_from_blk_pin);
+        delete[](f_idirect_from_blk_pin);
         f_idirect_from_blk_pin = nullptr;
     }
 
     if (f_direct_type_from_blk_pin != nullptr) {
         for (itype = 1; itype < device_ctx.physical_tile_types.size(); itype++) {
-            free(f_direct_type_from_blk_pin[itype]);
+            delete[](f_direct_type_from_blk_pin[itype]);
         }
-        free(f_direct_type_from_blk_pin);
+        delete[](f_direct_type_from_blk_pin);
         f_direct_type_from_blk_pin = nullptr;
     }
 }

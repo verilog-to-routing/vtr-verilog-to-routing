@@ -69,6 +69,7 @@ struct t_options {
     argparse::ArgValue<std::string> disable_errors;
     argparse::ArgValue<std::string> suppress_warnings;
     argparse::ArgValue<bool> allow_dangling_combinational_nodes;
+    argparse::ArgValue<bool> terminate_if_timing_fails;
 
     /* Atom netlist options */
     argparse::ArgValue<bool> absorb_buffer_luts;
@@ -138,6 +139,11 @@ struct t_options {
     argparse::ArgValue<int> floorplan_num_horizontal_partitions;
     argparse::ArgValue<int> floorplan_num_vertical_partitions;
 
+    /*NoC Options*/
+    argparse::ArgValue<bool> noc;
+    argparse::ArgValue<std::string> noc_flows_file;
+    argparse::ArgValue<std::string> noc_routing_algorithm;
+
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
     argparse::ArgValue<int> RecomputeCritIter;
@@ -179,6 +185,7 @@ struct t_options {
     argparse::ArgValue<e_rr_node_reorder_algorithm> reorder_rr_graph_nodes_algorithm;
     argparse::ArgValue<int> reorder_rr_graph_nodes_threshold;
     argparse::ArgValue<int> reorder_rr_graph_nodes_seed;
+    argparse::ArgValue<bool> flat_routing;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;
@@ -208,6 +215,7 @@ struct t_options {
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;
     argparse::ArgValue<bool> Generate_Post_Synthesis_Netlist;
+    argparse::ArgValue<bool> Generate_Post_Implementation_Merged_Netlist;
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;

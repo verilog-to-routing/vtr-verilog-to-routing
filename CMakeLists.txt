@@ -31,6 +31,7 @@ option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
 option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
+option(VTR_ENABLE_VERBOSE "Enable increased debug verbosity" OFF)
 
 #Allow the user to decide whether to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
@@ -55,6 +56,8 @@ option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 # Allow the user to enable building Yosys
 option(WITH_YOSYS "Enable building Yosys" OFF)
 option(ODIN_USE_YOSYS "Enable building Yosys" OFF)
+option(YOSYS_SV_UHDM_PLUGIN "Enable building and installing Yosys SystemVerilog and UHDM plugins" OFF)
+option(YOSYS_PARMYS_PLUGIN "Enable building and installing Parmys (Partial Mapper for Yosys) plugin" OFF)
 
 set(VTR_VERSION_MAJOR 8)
 set(VTR_VERSION_MINOR 1)
@@ -284,6 +287,14 @@ if(VTR_ENABLE_DEBUG_LOGGING)
     message(STATUS "Logging Flags: ${LOGGING_FLAGS}")
 endif()
 
+#
+# Increased debugging vebosity
+#
+if(VTR_ENABLE_VERBOSE)
+    set(EXTRA_FLAGS "${EXTRA_FLAGS} -DVTR_ENABLE_DEBUG_LOGGING")
+    message(STATUS "Enabling increased debugging verbosity")
+endif()
+
 if (CMAKE_MAKE_PROGRAM EQUAL "ninja" )
     #Only for coloured output for ninja, it may be desired
     #to not force colours with other make programs (e.g. if
@@ -395,6 +406,21 @@ elseif(${WITH_ODIN})
     # blifexplorer depends on odin
     if(${WITH_BLIFEXPLORER})
         add_subdirectory(blifexplorer)
+    endif()
+endif()
+
+# handle cmake params to compile Yosys SystemVerilog/UHDM plugins
+if(${YOSYS_SV_UHDM_PLUGIN})
+    # avoid compiling plugins in case the Yosys frontend is not active
+    if(NOT ${WITH_YOSYS} AND NOT ${ODIN_USE_YOSYS})
+        message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Yosys frontend. Please set either WITH_YOSYS or ODIN_USE_YOSYS on.")
+    endif()
+endif()
+
+# check YOSYS_PARMYS_PLUGIN flag
+if(${YOSYS_PARMYS_PLUGIN})
+    if(NOT ${WITH_YOSYS})
+        message(SEND_ERROR "Using YOSYS_PARMYS_PLUGIN requires activating Yosys frontend. Please set WITH_YOSYS.")
     endif()
 endif()
 

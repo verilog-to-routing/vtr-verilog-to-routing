@@ -9,6 +9,7 @@
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
+#include <string>
 
 using argparse::ConvertedValue;
 using argparse::Provenance;
@@ -1277,7 +1278,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
-            "A set of semi-colon seperated graphics commands.\n"
+            "A set of semi-colon seperated graphics commands. \n"
+            "Commands must be surrounded by quotation marks (e.g. --graphics_commands \"save_graphics place.png\")\n"
             "   Commands:\n"
             "      * save_graphics <file>\n"
             "           Saves graphics to the specified file (.png/.pdf/\n"
@@ -1473,6 +1475,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "In general this is a dev-only option and should not be turned on by the end-user.")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
+
+    gen_grp.add_argument<bool, ParseOnOff>(args.terminate_if_timing_fails, "--terminate_if_timing_fails")
+        .help(
+            "During final timing analysis after routing, if a negative slack anywhere is returned and this option is set, \n"
+            "VPR_FATAL_ERROR is called and processing ends.")
+        .default_value("off");
 
     auto& file_grp = parser.add_argument_group("file options");
 
@@ -1993,7 +2001,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument(args.place_reward_fun, "--place_reward_fun")
         .help(
             "The reward function used by placement RL agent."
-            "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware")
+            "The available values are: basic, nonPenalizing_basic, runtime_aware, WLbiased_runtime_aware"
+            "The latter two are only available for timing-driven placement.")
         .default_value("WLbiased_runtime_aware")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2295,6 +2304,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument(args.flat_routing, "--flat_routing")
+        .help("Enable VPR's flat routing (routing the nets from the source primitive to the destination primitive)")
+        .default_value("false")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
@@ -2532,6 +2546,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument<bool, ParseOnOff>(args.Generate_Post_Implementation_Merged_Netlist, "--gen_post_implementation_merged_netlist")
+        .help(
+            "Generates the post-implementation netlist with merged top module ports"
+            " Used for post-implementation simulation and verification")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     analysis_grp.add_argument(args.timing_report_npaths, "--timing_report_npaths")
         .help("Controls how many timing paths are reported.")
         .default_value("100")
@@ -2602,6 +2623,32 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     power_grp.add_argument(args.ActFile, "--activity_file")
         .help("Signal activities file for all nets (see documentation).")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    auto& noc_grp = parser.add_argument_group("noc options");
+
+    noc_grp.add_argument<bool, ParseOnOff>(args.noc, "--noc")
+        .help(
+            "Enables a NoC-driven placer that optimizes the placement of routers on the NoC."
+            "Also enables an option in the graphical display that can be used to display the NoC on the FPGA."
+            "This should be on only when the FPGA device contains a NoC and the provided netlist connects to the NoC.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<std::string>(args.noc_flows_file, "--noc_flows_file")
+        .help(
+            "XML file containing the list of traffic flows within the NoC (communication between routers)."
+            "This is required if the --noc option is turned on.")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    noc_grp.add_argument<std::string>(args.noc_routing_algorithm, "--noc_routing_algorithm")
+        .help(
+            "Controls the algorithm used by the NoC to route packets.\n"
+            "* xy_routing: Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.\n"
+            "* bfs_routing: Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links.\n"
+            "This can be used with any NoC topology\n")
+        .default_value("bfs_routing")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     return parser;
@@ -2704,6 +2751,19 @@ void set_conditional_defaults(t_options& args) {
         }
     }
 
+    // Check for correct options combinations
+    // If you are running WLdriven placement, the RL reward function should be
+    // either basic or nonPenalizing basic
+    if (args.RL_agent_placement && (args.PlaceAlgorithm == BOUNDING_BOX_PLACE || !args.timing_analysis)) {
+        if (args.place_reward_fun.value() != "basic" && args.place_reward_fun.value() != "nonPenalizing_basic") {
+            VTR_LOG_WARN(
+                "To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n"
+                "you can specify the reward function using --place_reward_fun.\n"
+                "Setting the placement reward function to \"basic\"\n");
+            args.place_reward_fun.set("basic", Provenance::INFERRED);
+        }
+    }
+
     //Which placement algorithm to use during placement quench?
     if (args.PlaceQuenchAlgorithm.provenance() != Provenance::SPECIFIED) {
         args.PlaceQuenchAlgorithm.set(args.PlaceAlgorithm, Provenance::INFERRED);
@@ -2785,7 +2845,7 @@ void set_conditional_defaults(t_options& args) {
 
 bool verify_args(const t_options& args) {
     /*
-     * Check for conflicting paramaters
+     * Check for conflicting paramaters or dependencies where one parameter set requires another parameter to be included
      */
     if (args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
         && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
@@ -2806,6 +2866,20 @@ bool verify_args(const t_options& args) {
                         "%s option value 'lookahead' is not compatible with %s 'classic'\n",
                         args.router_initial_timing.argument_name().c_str(),
                         args.router_lookahead_type.argument_name().c_str());
+    }
+
+    /**
+     * @brief If the user provided the "--noc" command line option, then there
+     * must be a NoC in the FPGA and the netlist must include NoC routers.
+     * Therefore, the user must also provide a noc traffic flows file to
+     * describe the communication within the NoC. We ensure that a noc traffic
+     * flows file is provided when the "--noc" option is used. If it is not
+     * provided, we throw an error.
+     * 
+     */
+    if (args.noc.provenance() == Provenance::SPECIFIED && args.noc_flows_file.provenance() != Provenance::SPECIFIED) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "--noc_flows_file option must be specified if --noc is turned on.\n");
     }
 
     return true;

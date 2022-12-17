@@ -7,11 +7,6 @@ const char* ieee_std_STR[] = {
     "1364-2005",
 };
 
-const char* file_extension_supported_STR[] = {
-    ".v",
-    ".vh",
-};
-
 const char* edge_type_e_STR[] = {
     "UNDEFINED_SENSITIVITY",
     "FALLING_EDGE_SENSITIVITY",
@@ -42,14 +37,14 @@ const char* LUTRAM_string = "lutram_ram";
 
 const char* operation_list_STR[][2] = {
     {"NO_OP", "nOP"},
+    {"CLOCK_NODE", "CLK"},
+    {"INPUT_NODE", "IN"},
+    {"OUTPUT_NODE", "OUT"},
     {"MULTI_PORT_MUX", "nMUX"}, // port 1 = control, port 2+ = mux options
     {"FF_NODE", "FF"},
     {"BUF_NODE", "BUF"},
-    {"INPUT_NODE", "IN"},
-    {"OUTPUT_NODE", "OUT"},
     {"GND_NODE", "GND"},
     {"VCC_NODE", "VCC"},
-    {"CLOCK_NODE", "CLK"},
     {"ADD", "ADD"},             // +
     {"MINUS", "MIN"},           // -
     {"BITWISE_NOT", "bNOT"},    // ~
@@ -111,6 +106,7 @@ const char* operation_list_STR[][2] = {
     {"SPRAM", "spRAM"},                // representing primitive single port ram
     {"DPRAM", "dpRAM"},                // representing primitive dual port ram
     {"YMEM", "yRAM"},                  // representing primitive dual port ram
+    {"YMEM2", "yRAM"},                 // representing primitive dual port ram
     {"BRAM", "bRAM"},                  // block of memry generated in yosys subcircuit formet blif file
     {"ROM", "ROM"},
     // [END] operations to cover yosys subckt
@@ -213,16 +209,27 @@ const char* ids_STR[] = {
     "ids_END"};
 
 /* supported input/output file extensions */
-strmap<file_type_e> file_type_strmap({{"ilang", file_type_e::_ILANG},
-                                      {"verilog", file_type_e::_VERILOG},
-                                      {"verilog_header", file_type_e::_VERILOG_HEADER},
-                                      {"blif", file_type_e::_BLIF},
-                                      {"eblif", file_type_e::_EBLIF},
-                                      {"undef", file_type_e::_UNDEFINED}});
+extern const strbimap<file_type_e> file_extension_strmap({{".ilang", file_type_e::_ILANG},
+                                                          {".v", file_type_e::_VERILOG},
+                                                          {".vh", file_type_e::_VERILOG_HEADER},
+                                                          {".sv", file_type_e::_SYSTEM_VERILOG},
+                                                          {".svh", file_type_e::_SYSTEM_VERILOG_HEADER},
+                                                          {".blif", file_type_e::_BLIF},
+                                                          {".eblif", file_type_e::_EBLIF}});
+
+/* supported input/output file types */
+extern const strbimap<file_type_e> file_type_strmap({{"ilang", file_type_e::_ILANG},
+                                                     {"verilog", file_type_e::_VERILOG},
+                                                     {"verilog_header", file_type_e::_VERILOG_HEADER},
+                                                     {"systemverilog", file_type_e::_SYSTEM_VERILOG},
+                                                     {"systemverilog_header", file_type_e::_SYSTEM_VERILOG_HEADER},
+                                                     {"uhdm", file_type_e::_UHDM},
+                                                     {"blif", file_type_e::_BLIF},
+                                                     {"eblif", file_type_e::_EBLIF}});
 
 /* available elaborators for Odin-II techmap */
-strmap<elaborator_e> elaborator_strmap({{"odin", elaborator_e::_ODIN},
-                                        {"yosys", elaborator_e::_YOSYS}});
+extern const strmap<elaborator_e> elaborator_strmap({{"odin", elaborator_e::_ODIN},
+                                                     {"yosys", elaborator_e::_YOSYS}});
 
 /**
  * global hashmap of odin subckt types
@@ -232,10 +239,10 @@ strmap<elaborator_e> elaborator_strmap({{"odin", elaborator_e::_ODIN},
  *  FIRST_ELEMENT: model name showing in a blif file
  *  SECOND_ELEMENT: corresponding Odin-II cell type
  */
-strmap<operation_list> odin_subckt_strmap({{"multiply", MULTIPLY},
-                                           {"mult_", MULTIPLY},
-                                           {"adder", ADD},
-                                           {"sub", MINUS}});
+extern const strmap<operation_list> odin_subckt_strmap({{"multiply", MULTIPLY},
+                                                        {"mult_", MULTIPLY},
+                                                        {"adder", ADD},
+                                                        {"sub", MINUS}});
 
 /**
  * global hashmap of yosys subckt types
@@ -254,7 +261,7 @@ strmap<operation_list> odin_subckt_strmap({{"multiply", MULTIPLY},
  * in the BLIF Elaboration phase to make the new node compatible
  * with the Odin-II partial mapper.
  */
-strmap<operation_list> yosys_subckt_strmap({
+extern const strmap<operation_list> yosys_subckt_strmap({
     {"$_ANDNOT_", operation_list_END},
     {"$_AND_", operation_list_END},          // (A, B, Y)
     {"$_AOI3_", operation_list_END},         // (A, B, C, Y)
@@ -434,45 +441,46 @@ strmap<operation_list> yosys_subckt_strmap({
     {"$lut", operation_list_END},            // (A, Y)
     {"$macc", operation_list_END},           // (A, B, Y)
     {"$mem", YMEM},                          // (RD_CLK, RD_EN, RD_ADDR, RD_DATA, WR_CLK, WR_EN, WR_ADDR, WR_DATA)
-    {"$meminit", operation_list_END},        // (ADDR, DATA)
-    {"$memrd", ROM},                         // (CLK, EN, ADDR, DATA)
-    {"$memwr", operation_list_END},          // (CLK, EN, ADDR, DATA)
-    {"$mod", MODULO},                        // (A, B, Y)
-    {"$modfloor", operation_list_END},       // (A, B, Y)
-    {"$mul", MULTIPLY},                      // (A, B, Y)
-    {"$mux", MULTIPORT_nBIT_SMUX},           // (A, B, S, Y)
-    {"$ne", NOT_EQUAL},                      // (A, B, Y)
-    {"$neg", MINUS},                         // (A, Y)
-    {"$nex", CASE_NOT_EQUAL},                // (A, B, Y)
-    {"$not", BITWISE_NOT},                   // (A, Y)
-    {"$or", BITWISE_OR},                     // (A, B, Y)
-    {"$pmux", PMUX},                         // (A, B, S, Y)
-    {"$pos", operation_list_END},            // (A, Y)
-    {"$pow", POWER},                         // (A, B, Y)
-    {"$reduce_and", BITWISE_AND},            // (A, Y)
-    {"$reduce_bool", BITWISE_OR},            // (A, Y)
-    {"$reduce_or", BITWISE_OR},              // (A, Y)
-    {"$reduce_xnor", BITWISE_XNOR},          // (A, Y)
-    {"$reduce_xor", BITWISE_XOR},            // (A, Y)
-    {"$sdff", SDFF},                         // (CLK, SRST, D, Q)
-    {"$sdffce", SDFFCE},                     // (CLK, SRST, EN, D, Q)
-    {"$sdffe", SDFFE},                       // (CLK, SRST, EN, D, Q)
-    {"$shift", operation_list_END},          // (A, B, Y)
-    {"$shiftx", operation_list_END},         // (A, B, Y)
-    {"$shl", SL},                            // (A, B, Y)
-    {"$shr", SR},                            // (A, B, Y)
-    {"$slice", operation_list_END},          // (A, Y)
-    {"$sop", operation_list_END},            // (A, Y)
-    {"$specify2", operation_list_END},       // (EN, SRC, DST)
-    {"$specify3", operation_list_END},       // (EN, SRC, DST, DAT)
-    {"$specrule", operation_list_END},       // (EN_SRC, EN_DST, SRC, DST)
-    {"$sr", SETCLR},                         // (SET, CLR, Q)
-    {"$sshl", ASL},                          // (A, B, Y)
-    {"$sshr", ASR},                          // (A, B, Y)
-    {"$sub", MINUS},                         // (A, B, Y)
-    {"$tribuf", operation_list_END},         // (A, EN, Y)
-    {"$xnor", LOGICAL_XNOR},                 // (A, B, Y)
-    {"$xor", LOGICAL_XOR},                   // (A, B, Y)
+    {"$mem_v2", YMEM2},
+    {"$meminit", operation_list_END},  // (ADDR, DATA)
+    {"$memrd", ROM},                   // (CLK, EN, ADDR, DATA)
+    {"$memwr", operation_list_END},    // (CLK, EN, ADDR, DATA)
+    {"$mod", MODULO},                  // (A, B, Y)
+    {"$modfloor", operation_list_END}, // (A, B, Y)
+    {"$mul", MULTIPLY},                // (A, B, Y)
+    {"$mux", MULTIPORT_nBIT_SMUX},     // (A, B, S, Y)
+    {"$ne", NOT_EQUAL},                // (A, B, Y)
+    {"$neg", MINUS},                   // (A, Y)
+    {"$nex", CASE_NOT_EQUAL},          // (A, B, Y)
+    {"$not", BITWISE_NOT},             // (A, Y)
+    {"$or", BITWISE_OR},               // (A, B, Y)
+    {"$pmux", PMUX},                   // (A, B, S, Y)
+    {"$pos", operation_list_END},      // (A, Y)
+    {"$pow", POWER},                   // (A, B, Y)
+    {"$reduce_and", BITWISE_AND},      // (A, Y)
+    {"$reduce_bool", BITWISE_OR},      // (A, Y)
+    {"$reduce_or", BITWISE_OR},        // (A, Y)
+    {"$reduce_xnor", BITWISE_XNOR},    // (A, Y)
+    {"$reduce_xor", BITWISE_XOR},      // (A, Y)
+    {"$sdff", SDFF},                   // (CLK, SRST, D, Q)
+    {"$sdffce", SDFFCE},               // (CLK, SRST, EN, D, Q)
+    {"$sdffe", SDFFE},                 // (CLK, SRST, EN, D, Q)
+    {"$shift", operation_list_END},    // (A, B, Y)
+    {"$shiftx", operation_list_END},   // (A, B, Y)
+    {"$shl", SL},                      // (A, B, Y)
+    {"$shr", SR},                      // (A, B, Y)
+    {"$slice", operation_list_END},    // (A, Y)
+    {"$sop", operation_list_END},      // (A, Y)
+    {"$specify2", operation_list_END}, // (EN, SRC, DST)
+    {"$specify3", operation_list_END}, // (EN, SRC, DST, DAT)
+    {"$specrule", operation_list_END}, // (EN_SRC, EN_DST, SRC, DST)
+    {"$sr", SETCLR},                   // (SET, CLR, Q)
+    {"$sshl", ASL},                    // (A, B, Y)
+    {"$sshr", ASR},                    // (A, B, Y)
+    {"$sub", MINUS},                   // (A, B, Y)
+    {"$tribuf", operation_list_END},   // (A, EN, Y)
+    {"$xnor", LOGICAL_XNOR},           // (A, B, Y)
+    {"$xor", LOGICAL_XOR},             // (A, B, Y)
     /***************** Odin techlib START **************/
     {"_$ROM", ROM},   // (in, out)
     {"_$BRAM", BRAM}, // (in, out)

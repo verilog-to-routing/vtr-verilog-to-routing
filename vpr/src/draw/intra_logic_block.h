@@ -1,3 +1,13 @@
+/**
+ * @file intra_logic_block.h
+ * 
+ * This file manages the interactions between logic blocks, cluster blocks, and their sub blocks
+ * Contains declaration of selected_Sub_block_info struct, which holds the information on
+ * the currently selected/highlighted block
+ * 
+ * Authors: Long Yu Wang, Matthew J.P. Walker, Sebastian Lievano
+ */
+
 /* Author: Long Yu Wang
  * Date: August 2013
  *
@@ -90,16 +100,6 @@ struct t_selected_sub_block_info {
     bool is_in_selected_subtree(const t_pb_graph_node* test, const ClusterBlockId clb_index) const;
 };
 
-/* Enable/disable clb internals drawing. Internals drawing is enabled with a click of the
- * "Blk Internal" button. With each consecutive click of the button, a lower level in the
- * pb_graph will be shown for every clb. When the number of clicks on the button exceeds
- * the maximum level of sub-blocks that exists in the pb_graph, internals drawing
- * will be disabled.
- */
-#    ifndef NO_GRAPHICS
-void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
-
-#    endif /* NO_GRAPHICS */
 /* This function pre-allocates space to store bounding boxes for all sub-blocks. Each
  * sub-block is identified by its descriptor_type and a unique pin ID in the type.
  */
@@ -137,6 +137,9 @@ t_selected_sub_block_info& get_selected_sub_block_info();
 void draw_logical_connections(ezgl::renderer* g);
 
 void find_pin_index_at_model_scope(const AtomPinId the_pin, const AtomBlockId lblk, int* pin_index, int* total_pins);
+
+//Returns pb ptr of given atom block name, given the pb of its containing block. Returns null if nothing found
+t_pb* find_atom_block_in_pb(std::string name, t_pb* pb);
 
 #endif /* NO_GRAPHICS */
 

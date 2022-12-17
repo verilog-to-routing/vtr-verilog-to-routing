@@ -29,6 +29,19 @@
         "Estimated LUTs": 1,
         "Total Node": 1
     },
+    "reg/reg_failure/no_arch": {
+        "test_name": "reg/reg_failure/no_arch",
+        "generated_blif": "reg_failure_generated.blif",
+        "max_rss(MiB)": 9.5,
+        "exec_time(ms)": 0.8,
+        "Pi": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

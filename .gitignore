@@ -12,6 +12,7 @@ bin/
 CMakeCache.txt
 CMakeFiles
 build
+Yosys
 
 #
 #VTR Flow/Tasks
@@ -101,6 +102,16 @@ ODIN_II/usefull_tools/**/track_completed
 *.a
 
 #
+#Yosys exec dir
+#
+Yosys
+
+#
+#ArchFPGA exec dir
+#
+ArchFPGA
+
+#
 #Python
 #
 *.pyc
@@ -134,3 +145,10 @@ tags
 .history
 #eclipse project
 .project
+
+#
+# CLION
+#
+.idea
+cmake-build-debug
+/.metadata/

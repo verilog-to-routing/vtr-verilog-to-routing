@@ -225,7 +225,7 @@ For example, in the following:
     .model top
     .inputs a b x y z clk
     .outputs c c_reg cout[0] sum[0]
-    
+
     .names a b c
     11 1
 
@@ -391,16 +391,35 @@ The ``.param`` statement allows parameters (e.g. primitive modes) to be tagged o
 
 .. note:: ``.param`` statements apply to the previous primitive instantiation.
 
+Parameters can have one of the three available types. Type is inferred from the format in which a parameter is provided.
+
+ * **string**
+    Whenever a parameter value is quoted it is considered to be a string. BLIF parser does not allow escaped characters hence those are illegal and will cause syntax errors.
+
+ * **binary word**
+    Binary words are specified using strings of characters ``0`` and ``1``. No other characters are allowed. Number of characters denotes the word length.
+
+ * **real number**
+    Real numbers are stored as decimals where the dot ``.`` character separates the integer and fractional part. Presence of the dot character implies that the value is to be treated as a real number.
+
 For example:
 
 .. code-block:: none
 
-    .subckt dsp a=a_in b=b_in cin=c_in cout=c_out s=sum_out
-    .param mode adder
+    .subckt pll clk_in=gclk clk_out=pclk
+    .param feedback "internal"
+    .param multiplier 0.50
+    .param power 001101
 
-Would set the parameter ``mode`` of the above ``dsp`` ``.subckt`` to ``adder``.
+Would set the parameters ``feedback``, ``multiplier`` and ``power``  of the above ``pll`` ``.subckt`` to ``"internal"``, ``0.50`` and ``001101`` respectively.
+
+.. warning:: Integers in notation other than binary (e.g. decimal, hexadecimal) are not supported. Occurrence of params with digits other than 1 and 0 for binary words, not quoted (strings) or not separated with dot ``.`` (real numbers) are considered to be illegal.
+
+Interpretation of parameter values is out of scope of the BLIF format extension.
 
 ``.param`` statements propagate to ``<parameter>`` elements in the packed netlist.
+
+Paramerer values propagate also to the post-route Verilog netlist, if it is generated. Strings and real numbers are passed directly while binary words are prepended with the ``<N>'b`` prefix where ``N`` denotes a binary word length.
 
 .attr
 ~~~~~
@@ -589,9 +608,9 @@ The io pad is set to inpad mode and is driven by the inpad:
           - After packing is completed, the packing results will be outputted. The ``.net`` file can be loaded as an input for placer, router and analyzer. Note that the file may **not** represent the final packing results as the analyzer will apply synchronization between packing and routing results.
           - After analysis is completed, updated packing results will be outputted. This is due to that VPR router may swap pin mapping in packing results for optimizations. In such cases, packing results are synchronized with routing results. The outputted ``.net`` file will have a postfix of ``.post_routing`` as compared to the original packing results. It could happen that VPR router does not apply any pin swapping and the two ``.net`` files are the same. In both cases, the post-analysis ``.net`` file should be considered to be **the final packing results** for downstream tools, e.g., bitstream generator. Users may load the post-routing ``.net`` file in VPR's analysis flow to sign-off the final results.
 
-.. warning:: Currently, the packing result synchronization is only applicable to input pins which may be remapped to different nets during routing optimization. If your architecture defines `link_instance_pin_xml_syntax_` equivalence for output pins, the packing results still mismatch the routing results! 
+.. warning:: Currently, the packing result synchronization is only applicable to input pins which may be remapped to different nets during routing optimization. If your architecture defines `link_instance_pin_xml_syntax_` equivalence for output pins, the packing results still mismatch the routing results!
 
-.. _link_instance_pin_xml_syntax: https://docs.verilogtorouting.org/en/latest/arch/reference/#tag-%3Coutputname= 
+.. _link_instance_pin_xml_syntax: https://docs.verilogtorouting.org/en/latest/arch/reference/#tag-%3Coutputname=
 
 .. _vpr_place_file:
 
@@ -724,14 +743,16 @@ An example listing for a global net is given below.
 Routing Resource Graph File Format (.xml)
 -----------------------------------------
 The routing resource graph (rr graph) file is an XML file that describes the routing resources within the FPGA.
-This file is generated through the last stage of the rr graph generation during routing with the final channel width.
-When reading in rr graph from an external file, the rr graph is used during the placement and routing section of VPR.
+VPR can generate a rr graph that matches your architecture specifications (from the architecture xml file), or it can read in an externally generated rr graph.
+When this file is written by VPR, the rr graph written out is the rr graph generated before routing with a final channel width 
+(even if multiple routings at different channel widths are performed during a binary search for the minimum channel width). 
+When reading in rr graph from an external file, the rr graph is used during both the placement and routing phases of VPR.
 The file is constructed using tags. The top level is the ``rr_graph`` tag.
 This tag contains all the channel, switches, segments, block, grid, node, and edge information of the FPGA.
 It is important to keep all the values as high precision as possible. Sensitive values include capacitance and Tdel. As default, these values are printed out with a precision of 30 digits.
 Each of these sections are separated into separate tags as described below.
 
-.. note:: Use :option:`vpr --read_rr_graph` to specify an RR graph file to be load.
+.. note:: Use :option:`vpr --read_rr_graph` to specify an RR graph file to be loaded.
 .. note:: Use :option:`vpr --write_rr_graph` to specify where the RR graph should be written.
 
 Top Level Tags
@@ -1045,6 +1066,12 @@ An example of what a generated routing resource graph file would look like is sh
             <edge src_node="1" sink_node="2" switch_id="0"/>
         </rr_edges>
     </rr_graph>
+
+Binary Format (Cap'n Proto)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To aid in handling large graphs, rr_graph files can also be :ref:`saved in <filename_options>` a binary (Cap'n Proto) format. This will result in a smaller file and faster read/write times.
+
 .. _end:
 
 Block types usage summary (.txt .xml or .json)

@@ -306,3 +306,17 @@ bool ClusteredNetlist::validate_net_sizes_impl(size_t num_nets) const {
     }
     return true;
 }
+
+ClusterBlockId ClusteredNetlist::find_block_by_name_fragment(const std::string& name_pattern, const std::vector<ClusterBlockId>& cluster_block_candidates) const {
+    ClusterBlockId blk_id = ClusterBlockId::INVALID();
+    std::regex name_to_match(name_pattern);
+
+    for (auto compatible_block_id = cluster_block_candidates.begin(); compatible_block_id != cluster_block_candidates.end(); compatible_block_id++) {
+        if (std::regex_match(Netlist::block_name(*compatible_block_id), name_to_match)) {
+            blk_id = *compatible_block_id;
+            break;
+        }
+    }
+
+    return blk_id;
+}

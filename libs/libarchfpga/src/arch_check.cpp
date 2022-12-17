@@ -1,4 +1,5 @@
 #include <set>
+#include <sstream>
 
 #include "vtr_log.h"
 #include "arch_error.h"

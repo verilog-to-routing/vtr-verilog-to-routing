@@ -2,10 +2,10 @@
     "reg/reg_failure/no_arch": {
         "test_name": "reg/reg_failure/no_arch",
         "verilog": "reg_failure.v",
-        "exit": 134,
-        "errors": [
-            "Yosys failed to perform elaboration, Please look at the log file for the failure cause or pass '--show_yosys_log' to Odin-II to see the logs."
-        ]
+        "Pi": 1,
+        "Po": 1,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "reg/reg/no_arch": {
         "test_name": "reg/reg/no_arch",

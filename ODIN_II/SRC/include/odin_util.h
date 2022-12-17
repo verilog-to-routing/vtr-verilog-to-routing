@@ -12,6 +12,7 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t
 std::string get_file_extension(std::string input_file);
 std::string get_directory(std::string input_file);
 void create_directory(std::string path);
+void report_frontend_elaborator();
 void assert_supported_file_extension(std::string input_file, loc_t loc);
 FILE* open_file(const char* file_name, const char* open_type);
 void get_current_path();
@@ -46,8 +47,10 @@ void* my_malloc_struct(long bytes_to_alloc);
 
 void reverse_string(char* token, int length);
 char* append_string(const char* string, const char* appendage, ...);
-void string_to_upper(char* string);
-void string_to_lower(char* string);
+char* string_to_upper(char* string);
+char* string_to_lower(char* string);
+std::string string_to_upper(std::string string);
+std::string string_to_lower(std::string string);
 
 int is_binary_string(char* string);
 int is_octal_string(char* string);

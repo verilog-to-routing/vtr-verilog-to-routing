@@ -33,6 +33,7 @@
 #    include "vpr_utils.h"
 #    include "draw_global.h"
 #    include "draw.h"
+#    include "draw_triangle.h"
 #    include "draw_color.h"
 
 /************************* Subroutines local to this file. *******************************/
@@ -377,22 +378,19 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             // If this pb is at the lowest displayed level, or has no more children, then
             // label it in the center with its type and name
 
-            int type_len = strlen(pb_type->name);
-            int name_len = strlen(pb->name);
-            int tot_len = type_len + name_len;
-            char* blk_tag = (char*)vtr::malloc((tot_len + 8) * sizeof(char));
+            std::string pb_type_name(pb_type->name);
+            std::string pb_name(pb->name);
 
-            sprintf(blk_tag, "%s (%s)", pb_type->name, pb->name);
+            std::string blk_tag = pb_type_name + pb_name;
 
             if (draw_state->draw_block_text) {
                 g->draw_text(
                     abs_bbox.center(),
-                    blk_tag,
+                    blk_tag.c_str(),
                     abs_bbox.width(),
                     abs_bbox.height());
             }
 
-            free(blk_tag);
         } else {
             // else (ie. has chilren, and isn't at the lowest displayed level)
             // just label its type, and put it up at the top so we can see it
@@ -874,6 +872,42 @@ t_selected_sub_block_info::gnode_clb_pair::gnode_clb_pair(const t_pb_graph_node*
 bool t_selected_sub_block_info::gnode_clb_pair::operator==(const gnode_clb_pair& rhs) const {
     return clb_index == rhs.clb_index
            && pb_gnode == rhs.pb_gnode;
+}
+
+/**
+ * @brief Recursively looks through pb graph to find block w. given name
+ * 
+ * @param name name of block being searched for
+ * @param pb current node to be examined
+ * @return t_pb* t_pb ptr of block w. name "name". Returns nullptr if nothing found
+ */
+t_pb* find_atom_block_in_pb(std::string name, t_pb* pb) {
+    //Checking if block is one being searched for
+    std::string pbName(pb->name);
+    if (pbName == name)
+        return pb;
+    //If block has no children, returning
+    if (pb->child_pbs == nullptr)
+        return nullptr;
+    int num_child_types = pb->get_num_child_types();
+    //Iterating through all child types
+    for (int i = 0; i < num_child_types; ++i) {
+        if (pb->child_pbs[i] == nullptr) continue;
+        int num_children_of_type = pb->get_num_children_of_type(i);
+        //Iterating through all of pb's children of given type
+        for (int j = 0; j < num_children_of_type; ++j) {
+            t_pb* child_pb = &pb->child_pbs[i][j];
+            //If child exists, recursively calling function on it
+            if (child_pb->name != nullptr) {
+                t_pb* subtree_result = find_atom_block_in_pb(name, child_pb);
+                //If a result is found, returning it to top of recursive calls
+                if (subtree_result != nullptr) {
+                    return subtree_result;
+                }
+            }
+        }
+    }
+    return nullptr;
 }
 
 #endif // NO_GRAPHICS

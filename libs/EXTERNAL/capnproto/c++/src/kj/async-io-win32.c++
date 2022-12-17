@@ -23,8 +23,7 @@
 // For Unix implementation, see async-io-unix.c++.
 
 // Request Vista-level APIs.
-#define WINVER 0x0600
-#define _WIN32_WINNT 0x0600
+#include "win32-api-version.h"
 
 #include "async-io.h"
 #include "async-io-internal.h"
@@ -189,17 +188,6 @@ int win32Socketpair(SOCKET socks[2]) {
 
 namespace {
 
-bool detectWine() {
-  HMODULE hntdll = GetModuleHandle("ntdll.dll");
-  if(hntdll == NULL) return false;
-  return GetProcAddress(hntdll, "wine_get_version") != nullptr;
-}
-
-bool isWine() {
-  static bool result = detectWine();
-  return result;
-}
-
 // =======================================================================================
 
 static constexpr uint NEW_FD_FLAGS = LowLevelAsyncIoProvider::TAKE_OWNERSHIP;
@@ -309,6 +297,23 @@ public:
       // Enable shutdown() to work.
       setsockopt(SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0);
     });
+  }
+
+  Promise<void> whenWriteDisconnected() override {
+    // Windows IOCP does not provide a direct, documented way to detect when the socket disconnects
+    // without actually doing a read or write. However, there is an undocoumented-but-stable
+    // ioctl called IOCTL_AFD_POLL which can be used for this purpose. In fact, select() is
+    // implemented in terms of this ioctl -- performed synchronously -- but it's entirely possible
+    // to put only one socket into the list and perform the ioctl asynchronously. Here's the
+    // source code for select() in Windows 2000 (not sure how this became public...):
+    //
+    //     https://github.com/pustladi/Windows-2000/blob/661d000d50637ed6fab2329d30e31775046588a9/private/net/sockets/winsock2/wsp/msafd/select.c#L59-L655
+    //
+    // And here's an interesting discussion: https://github.com/python-trio/trio/issues/52
+    //
+    // TODO(someday): Implement this with IOCTL_AFD_POLL. For now I'm leaving it unimplemented
+    //   because I added this method for a Linux-only use case.
+    return NEVER_DONE;
   }
 
   void shutdownWrite() override {
@@ -786,7 +791,7 @@ Promise<Array<SocketAddress>> SocketAddress::lookupHost(
   // - Not implemented in Wine.
   // - Doesn't seem compatible with I/O completion ports, in particular because it's not associated
   //   with a handle. Could signal completion as an APC instead, but that requires the IOCP code
-  //   to use GetQueuedCompletionStatusEx() which it doesn't right now becaues it's not available
+  //   to use GetQueuedCompletionStatusEx() which it doesn't right now because it's not available
   //   in Wine.
   // - Requires Unicode, for some reason. Only GetAddrInfoExW() supports async, according to the
   //   docs. Never mind that DNS itself is ASCII...
@@ -948,6 +953,11 @@ public:
   void setsockopt(int level, int option, const void* value, uint length) override {
     KJ_WINSOCK(::setsockopt(fd, level, option,
                             reinterpret_cast<const char*>(value), length));
+  }
+  void getsockname(struct sockaddr* addr, uint* length) override {
+    socklen_t socklen = *length;
+    KJ_WINSOCK(::getsockname(fd, addr, &socklen));
+    *length = socklen;
   }
 
 public:

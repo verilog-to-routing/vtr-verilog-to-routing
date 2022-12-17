@@ -30,7 +30,6 @@ apt install -y \
   build-essential \
   capnproto \
   clang \
-  cmake \
   ctags \
   curl \
   doxygen \
@@ -65,17 +64,28 @@ apt install -y \
   valgrind \
   zip \
   qt5-default \
+  uuid-dev \
+  default-jdk \
   g++-9 \
   gcc-9 \
-  wget
-  # Don't include libtbb-dev since it may increase memory usage
-  #libtbb-dev \
+  wget \
+  libtbb-dev
+
+# installing the latest version of cmake
+apt install -y apt-transport-https ca-certificates gnupg
+wget -qO - https://apt.kitware.com/keys/kitware-archive-latest.asc |apt-key add -
+
+apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+apt update
+apt install -y cmake
+
 
 export PATH="$PATH:/home/kbuilder/.local/bin"
 
 export CC=gcc-9
 export CXX=g++-9
 
+python3 -m pip install -U pip
 python3 -m pip install -r requirements.txt
 
 echo "----------------------------------------"

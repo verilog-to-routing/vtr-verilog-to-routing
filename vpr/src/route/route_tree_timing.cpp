@@ -45,7 +45,7 @@ static t_linked_rt_edge* rt_edge_free_list = nullptr;
 
 static t_rt_node* alloc_rt_node();
 
-static void free_rt_node(t_rt_node* rt_node);
+static void free_rt_node(t_rt_node** rt_node);
 
 static t_linked_rt_edge* alloc_linked_rt_edge();
 
@@ -144,11 +144,15 @@ alloc_rt_node() {
     return (rt_node);
 }
 
-static void free_rt_node(t_rt_node* rt_node) {
+/* After putting the rt_node to the free list, rt_node pointer would be set to
+ * nullptr to make sure that it does not get double frees if a caller tries to
+ * free the routing tree twice */
+static void free_rt_node(t_rt_node** rt_node) {
     /* Adds rt_node to the proper free list.          */
 
-    rt_node->u.next = rt_node_free_list;
-    rt_node_free_list = rt_node;
+    (*rt_node)->u.next = rt_node_free_list;
+    rt_node_free_list = (*rt_node);
+    (*rt_node) = nullptr;
 }
 
 static t_linked_rt_edge*
@@ -658,9 +662,9 @@ bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes) {
 }
 
 void free_route_tree(t_rt_node* rt_node) {
-    /* Puts the rt_nodes and edges in the tree rooted at rt_node back on the
-     * free lists.  Recursive, depth-first post-order traversal.                */
-
+    if (rt_node == nullptr) {
+        return;
+    }
     t_linked_rt_edge *rt_edge, *next_edge;
 
     rt_edge = rt_node->u.child_list;
@@ -677,7 +681,7 @@ void free_route_tree(t_rt_node* rt_node) {
         rr_node_to_rt_node.at(rt_node->inode) = nullptr;
     }
 
-    free_rt_node(rt_node);
+    free_rt_node(&rt_node);
 }
 
 void print_route_tree(const t_rt_node* rt_node) {
@@ -1056,7 +1060,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
             //Record as not reached
             connections_inf.toreach_rr_sink(node->net_pin_index);
 
-            free_rt_node(node);
+            free_rt_node(&node);
             return nullptr; //Pruned
         }
     } else if (all_children_pruned) {
@@ -1102,7 +1106,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
         if (reached_non_configurably && !force_prune) {
             return node; //Not pruned
         } else {
-            free_rt_node(node);
+            free_rt_node(&node);
             return nullptr; //Pruned
         }
 

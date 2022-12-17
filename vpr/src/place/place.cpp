@@ -5,6 +5,7 @@
 #include <iostream>
 #include <numeric>
 #include <chrono>
+#include <vtr_ndmatrix.h>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -57,6 +58,12 @@
 #include "placer_breakpoint.h"
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
+
+#include "clustered_netlist_utils.h"
+
+#include "re_cluster.h"
+#include "re_cluster_util.h"
+#include "cluster_placement.h"
 
 /*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
  *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
@@ -132,8 +139,8 @@ static vtr::vector<ClusterNetId, char> bb_updated_before;
  * number of tracks in that direction; for other cost functions they    *
  * will never be used.                                                  *
  */
-static float** chanx_place_cost_fac; //[0...device_ctx.grid.width()-2]
-static float** chany_place_cost_fac; //[0...device_ctx.grid.height()-2]
+static vtr::NdMatrix<float, 2> chanx_place_cost_fac({0, 0}); //[0...device_ctx.grid.width()-2]
+static vtr::NdMatrix<float, 2> chany_place_cost_fac({0, 0}); //[0...device_ctx.grid.height()-2]
 
 /* The following arrays are used by the try_swap function for speed.   */
 /* [0...cluster_ctx.clb_nlist.nets().size()-1] */
@@ -238,7 +245,7 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr,
 
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
-static void print_clb_placement(const char* fname);
+void print_clb_placement(const char* fname);
 #endif
 
 static void alloc_and_load_placement_structs(float place_cost_exp,
@@ -419,7 +426,8 @@ void try_place(const t_placer_opts& placer_opts,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_direct_inf* directs,
-               int num_directs) {
+               int num_directs,
+               bool is_flat) {
     /* Does almost all the work of placing a circuit.  Width_fac gives the   *
      * width of the widest channel.  Place_cost_exp says what exponent the   *
      * width should be taken to when calculating costs.  This allows a       *
@@ -467,9 +475,6 @@ void try_place(const t_placer_opts& placer_opts,
     t_pl_blocks_to_be_moved blocks_affected(
         cluster_ctx.clb_nlist.blocks().size());
 
-    /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
-    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
-
     /* init file scope variables */
     num_swap_rejected = 0;
     num_swap_accepted = 0;
@@ -480,7 +485,7 @@ void try_place(const t_placer_opts& placer_opts,
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_delay_model(chan_width_dist,
                                                           placer_opts, router_opts, det_routing_arch, segment_inf,
-                                                          directs, num_directs);
+                                                          directs, num_directs, is_flat);
 
         if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
             place_delay_model->dump_echo(
@@ -522,6 +527,7 @@ void try_place(const t_placer_opts& placer_opts,
     if (placer_opts.enable_analytic_placer) {
         AnalyticPlacer{}.ap_place();
     }
+
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     // Update physical pin values
@@ -530,6 +536,9 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     init_draw_coords((float)width_fac);
+
+    /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
+    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
     //Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist,
                                                   atom_ctx.nlist, pb_gpin_lookup);
@@ -711,9 +720,8 @@ void try_place(const t_placer_opts& placer_opts,
                             device_ctx.grid.height() - 1);
     place_move_ctx.first_rlim = first_rlim;
 
-    /* Set the temperature high so essentially all swaps will be accepted   */
-    /* when trying to determine the starting temp for placement inner loop. */
-    first_t = HUGE_POSITIVE_FLOAT;
+    /* Set the temperature low to ensure that initial placement quality will be preserved */
+    first_t = EPSILON;
 
     t_annealing_state state(annealing_sched, first_t, first_rlim,
                             first_move_lim, first_crit_exponent);
@@ -1244,9 +1252,13 @@ static float starting_t(const t_annealing_state* state, t_placer_costs* costs, t
     VTR_LOG("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
 #endif
 
-    /* Set the initial temperature to 20 times the standard of deviation */
+    /* Set the initial temperature to the standard of deviation divided by 64 */
     /* so that the initial temperature adjusts according to the circuit */
-    return (20. * std_dev);
+    /* and also keep the initial placement qaulity (not destroying it completely) */
+    /* and fine-tune the initial placement with the anneal*/
+    float init_temp = (std_dev / 64);
+
+    return init_temp;
 }
 
 static void update_move_nets(int num_nets_affected) {
@@ -2011,9 +2023,8 @@ static double comp_bb_cost(e_cost_methods method) {
     }
 
     if (method == CHECK) {
-        /*VTR_LOG("\n");
-         * VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
-         * expected_wirelength);*/
+        VTR_LOG("\n");
+        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
     }
     return cost;
 }
@@ -2556,19 +2567,8 @@ static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new
 }
 
 static void free_fast_cost_update() {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    for (size_t i = 0; i < device_ctx.grid.height(); i++) {
-        free(chanx_place_cost_fac[i]);
-    }
-    free(chanx_place_cost_fac);
-    chanx_place_cost_fac = nullptr;
-
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        free(chany_place_cost_fac[i]);
-    }
-    free(chany_place_cost_fac);
-    chany_place_cost_fac = nullptr;
+    chanx_place_cost_fac.clear();
+    chany_place_cost_fac.clear();
 }
 
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
@@ -2590,15 +2590,16 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
      * subhigh must be greater than or equal to sublow, we only need to       *
      * allocate storage for the lower half of a matrix.                       */
 
-    chanx_place_cost_fac = (float**)vtr::malloc(
-        (device_ctx.grid.height()) * sizeof(float*));
-    for (size_t i = 0; i < device_ctx.grid.height(); i++)
-        chanx_place_cost_fac[i] = (float*)vtr::malloc((i + 1) * sizeof(float));
+    //chanx_place_cost_fac = new float*[(device_ctx.grid.height())];
+    //for (size_t i = 0; i < device_ctx.grid.height(); i++)
+    //    chanx_place_cost_fac[i] = new float[(i + 1)];
 
-    chany_place_cost_fac = (float**)vtr::malloc(
-        (device_ctx.grid.width() + 1) * sizeof(float*));
-    for (size_t i = 0; i < device_ctx.grid.width(); i++)
-        chany_place_cost_fac[i] = (float*)vtr::malloc((i + 1) * sizeof(float));
+    //chany_place_cost_fac = new float*[(device_ctx.grid.width() + 1)];
+    //for (size_t i = 0; i < device_ctx.grid.width(); i++)
+    //    chany_place_cost_fac[i] = new float[(i + 1)];
+
+    chanx_place_cost_fac.resize({device_ctx.grid.height(), device_ctx.grid.height() + 1});
+    chany_place_cost_fac.resize({device_ctx.grid.width(), device_ctx.grid.width() + 1});
 
     /* First compute the number of tracks between channel high and channel *
      * low, inclusive, in an efficient manner.                             */
@@ -2851,7 +2852,7 @@ int check_macro_placement_consistency() {
 }
 
 #ifdef VERBOSE
-static void print_clb_placement(const char* fname) {
+void print_clb_placement(const char* fname) {
     /* Prints out the clb placements to a file.  */
     FILE* fp;
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2862,7 +2863,7 @@ static void print_clb_placement(const char* fname) {
 
     fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
     for (auto i : cluster_ctx.clb_nlist.blocks()) {
-        fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i), place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].sub_tile);
+        fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i).c_str(), place_ctx.block_locs[i].loc.x, place_ctx.block_locs[i].loc.y, place_ctx.block_locs[i].loc.sub_tile);
     }
 
     fclose(fp);

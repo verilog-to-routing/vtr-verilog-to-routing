@@ -45,6 +45,8 @@
 #include "vtr_dynamic_bitset.h"
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
+#include "rr_graph_cost.h"
+#include "rr_graph_type.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -1114,25 +1116,12 @@ struct t_placer_opts {
  * and abort routings deemed unroutable                                     *
  * write_rr_graph_name: stores the file name of the output rr graph         *
  * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
-enum e_route_type {
-    GLOBAL,
-    DETAILED
-};
 
 enum e_router_algorithm {
     BREADTH_FIRST,
     TIMING_DRIVEN,
 };
 
-enum e_base_cost_type {
-    DELAY_NORMALIZED,
-    DELAY_NORMALIZED_LENGTH,
-    DELAY_NORMALIZED_FREQUENCY,
-    DELAY_NORMALIZED_LENGTH_FREQUENCY,
-    DELAY_NORMALIZED_LENGTH_BOUNDED,
-    DEMAND_ONLY,
-    DEMAND_ONLY_NORMALIZED_LENGTH
-};
 enum e_routing_failure_predictor {
     OFF,
     SAFE,
@@ -1246,6 +1235,8 @@ struct t_router_opts {
     size_t max_logged_overused_rr_nodes;
     bool generate_rr_node_overuse_report;
 
+    bool flat_routing;
+
     // Options related to rr_node reordering, for testing and possible cache optimization
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
@@ -1256,6 +1247,7 @@ struct t_analysis_opts {
     e_stage_action doAnalysis;
 
     bool gen_post_synthesis_netlist;
+    bool gen_post_implementation_merged_netlist;
     e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_input_handling;
     e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_output_handling;
 
@@ -1266,6 +1258,13 @@ struct t_analysis_opts {
     std::string write_timing_summary;
 
     e_timing_update_type timing_update_type;
+};
+
+// used to store NoC specific options, when supplied as an input by the user
+struct t_noc_opts {
+    bool noc;                          ///<options to turn on hard NoC modeling & optimization
+    std::string noc_flows_file;        ///<name of the file that contains all the traffic flow information in the NoC
+    std::string noc_routing_algorithm; ///<controls the routing algorithm used to route packets within the NoC
 };
 
 /**
@@ -1343,6 +1342,20 @@ struct t_det_routing_arch {
  *   @param Rmetal     Resistance of a routing track, per unit logic block length.
  *   @param direction  The direction of a routing track.
  *   @param index      index of the segment type used for this track.
+ *                     Note that this index will store the index of the segment
+ *                     relative to its **parallel** segment types, not all segments
+ *                     as stored in device_ctx. Look in rr_graph.cpp: build_rr_graph
+ *                     for details but here is an example: say our segment_inf_vec in 
+ *                     device_ctx is as follows: [seg_a_x, seg_b_x, seg_a_y, seg_b_y]
+ *                     when building the rr_graph, static segment_inf_vectors will be 
+ *                     created for each direction, thus you will have the following 
+ *                     2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y]. 
+ *                     As a result, e.g. seg_b_y::index == 1 (index in Y_vec) 
+ *                     and != 3 (index in device_ctx segment_inf_vec).
+ *   @param abs_index  index is relative to the segment_inf vec as stored in device_ctx. 
+ *                     Note that the above vector is **unifies** both x-parallel and 
+ *                     y-parallel segments and is loaded up originally in read_xml_arch_file.cpp 
+ * 
  *   @param type_name_ptr  pointer to name of the segment type this track belongs
  *                     to. points to the appropriate name in s_segment_inf
  */
@@ -1363,6 +1376,7 @@ struct t_seg_details {
     int seg_start = 0;
     int seg_end = 0;
     int index = 0;
+    int abs_index = 0;
     float Cmetal_per_m = 0; ///<Used for power
     std::string type_name;
 };
@@ -1398,6 +1412,7 @@ class t_chan_seg_details {
     Direction direction() const { return seg_detail_->direction; }
 
     int index() const { return seg_detail_->index; }
+    int abs_index() const { return seg_detail_->abs_index; }
 
     const vtr::string_view type_name() const {
         return vtr::string_view(
@@ -1424,7 +1439,9 @@ class t_chan_seg_details {
     const t_seg_details* seg_detail_ = nullptr;
 };
 
-/* Defines a 2-D array of t_seg_details data structures (one per channel)   */
+/* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and vertical channel)   
+ * once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_tracks-1]
+ */
 typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
 
 /**
@@ -1570,30 +1587,22 @@ struct t_non_configurable_rr_sets {
 
 #define NO_PREVIOUS -1
 
-///@brief Index of the SOURCE, SINK, OPIN, IPIN, etc. member of device_ctx.rr_indexed_data.
-enum e_cost_indices {
-    SOURCE_COST_INDEX = 0,
-    SINK_COST_INDEX,
-    OPIN_COST_INDEX,
-    IPIN_COST_INDEX,
-    CHANX_COST_INDEX_START
-};
-
 ///@brief Power estimation options
 struct t_power_opts {
     bool do_power; ///<Perform power estimation?
 };
 
-///@brief Channel width data
-struct t_chan_width {
-    int max = 0;
-    int x_max = 0;
-    int y_max = 0;
-    int x_min = 0;
-    int y_min = 0;
-    std::vector<int> x_list;
-    std::vector<int> y_list;
-};
+/** @brief Channel width data
+ * @param max= Maximum channel width between x_max and y_max. 
+ * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
+ * @param y_min= Same as above but for vertical channels. 
+ * @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp 
+ * @param y_max= Same as above but for vertical channels. 
+ * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()] 
+ * (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
+ * @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
+ * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
+ */
 
 ///@brief Type to store our list of token to enum pairings
 struct t_TokenPair {
@@ -1615,6 +1624,7 @@ struct t_vpr_setup {
     t_annealing_sched AnnealSched;  ///<Placement option annealing schedule
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
+    t_noc_opts NocOpts;             ///<Options for the NoC
     t_det_routing_arch RoutingArch; ///<routing architecture
     std::vector<t_lb_type_rr_node>* PackerRRGraph;
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture
@@ -1652,5 +1662,17 @@ class RouteStatus {
 };
 
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
+
+typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
+
+/**
+ * @brief Free the linked list that saves all the packing molecules.
+ */
+void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
+
+/**
+ * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.
+ */
+void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
 
 #endif

@@ -5,7 +5,7 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-  - cron: '0 0 * * 0' # weekly
+  - cron: '0 0 * * *' # daily
 
 env:
   # default compiler for all non-compatibility tests
@@ -14,9 +14,73 @@ env:
 jobs:
 
 
+  Run-tests:
+    # Prevents from running on forks where no custom runners are available
+    if: ${{ github.repository_owner == 'verilog-to-routing' }}
+
+    container: ubuntu:bionic
+
+    runs-on: [self-hosted, Linux, X64]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {test: "vtr_reg_nightly_test1", cores: "8",  options: "",          cmake: "",                                              extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test2", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test3", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test4", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test5", cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
+          - {test: "vtr_reg_nightly_test6", cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON",                           extra_pkgs: ""}
+          - {test: "vtr_reg_strong",        cores: "16", options: "",          cmake: "-DVTR_ASSERT_LEVEL=3",                          extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_strong",        cores: "16", options: "-skip_qor", cmake: "-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=ON", extra_pkgs: "libeigen3-dev"}
+          - {test: "vtr_reg_yosys",         cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON -DYOSYS_SV_UHDM_PLUGIN=ON",     extra_pkgs: ""}
+          - {test: "vtr_reg_yosys_parmys",  cores: "16", options: "",          cmake: "-DWITH_YOSYS=ON -DYOSYS_PARMYS_PLUGIN=ON",      extra_pkgs: ""}
+          - {test: "vtr_reg_yosys_odin",    cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON -DYOSYS_SV_UHDM_PLUGIN=ON", extra_pkgs: ""}
+          - {test: "odin_tech_strong",      cores: "16", options: "",          cmake: "-DODIN_USE_YOSYS=ON",                           extra_pkgs: ""}
+          - {test: "odin_reg_strong",       cores: "16", options: "",          cmake: "",                                              extra_pkgs: ""}
+
+    env:
+      DEBIAN_FRONTEND: "noninteractive"
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Setup
+      run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh
+
+    - name: Install external libraries
+      run: apt install -y ${{ matrix.extra_pkgs }}
+      if: ${{ matrix.extra_pkgs }}
+
+    - name: Execute test script
+      run: stdbuf -i0 -o0 -e0 ./.github/scripts/run-vtr.sh
+      env:
+        VTR_TEST: ${{ matrix.test }}
+        VTR_TEST_OPTIONS: ${{ matrix.options }}
+        VTR_CMAKE_PARAMS: ${{ matrix.cmake }}
+        NUM_CORES: ${{ matrix.cores }}
+
+    - uses: actions/upload-artifact@v2
+      if: ${{ always() }}
+      with:
+        path: |
+          **/results*.gz
+          **/plot_*.svg
+          **/qor_results*.tar.gz
+
+
   Build:
     name: 'B: Building VtR'
     runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - { build_type: 'release', verbose: '0' }
+        - { build_type: 'debug',   verbose: '0' }
+        - { build_type: 'debug',   verbose: '1' }
     steps:
 
     - uses: actions/setup-python@v2
@@ -29,10 +93,10 @@ jobs:
 
     - name: Test
       env:
-        BUILD_TYPE: release
+        BUILD_TYPE: ${{ matrix.build_type }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
+        ./.github/scripts/build.sh VERBOSE=${{ matrix.verbose }}
 
 
   Format:
@@ -105,17 +169,17 @@ jobs:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DODIN_USE_YOSYS=ON',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic with NO_GRAPHICS',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off -DODIN_USE_YOSYS=ON',
             suite: 'vtr_reg_basic'
           },
           {
             name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
+            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DODIN_USE_YOSYS=ON',
             suite: 'vtr_reg_basic'
           },
           {
@@ -188,7 +252,7 @@ jobs:
 
     - name: Test
       env:
-        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on'
+        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DODIN_USE_YOSYS=ON'
         BUILD_TYPE: debug
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
       run: |
@@ -281,14 +345,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - { name: 'GCC 7 (Ubuntu Bionic - 18.04)',    eval: 'CC=gcc-7 && CXX=g++-7',           build: ''               }
-        - { name: 'GCC 8 (Debian Buster)',            eval: 'CC=gcc-8 && CXX=g++-8',           build: ''               }
-        - { name: 'GCC 9 (Ubuntu Focal - 20.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           build: ''               }
-        - { name: 'GCC 10 (Ubuntu Hirsute - 21.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         build: ''               }
-        - { name: 'GCC 11 (Latest)',                  eval: 'CC=gcc-11 && CXX=g++-11',         build: ''               }
-        - { name: 'Clang 6 (Ubuntu Bionic - 18.04)',  eval: 'CC=clang-6.0 && CXX=clang++-6.0', build: ''               }
-        - { name: 'Clang 7 (Debian Buster)',          eval: 'CC=clang-7 && CXX=clang++-7',     build: ''               }
-        - { name: 'Clang 10 (Ubuntu Focal - 20.04)',  eval: 'CC=clang-10 && CXX=clang++-10',   build: ''               }
+        - { name: 'GCC 7 (Ubuntu Bionic - 18.04)',    eval: 'CC=gcc-7 && CXX=g++-7',           }
+        - { name: 'GCC 8 (Debian Buster)',            eval: 'CC=gcc-8 && CXX=g++-8',           }
+        - { name: 'GCC 9 (Ubuntu Focal - 20.04)',     eval: 'CC=gcc-9 && CXX=g++-9',           }
+        - { name: 'GCC 10 (Ubuntu Hirsute - 21.04)',  eval: 'CC=gcc-10 && CXX=g++-10',         }
+        - { name: 'GCC 11 (Latest)',                  eval: 'CC=gcc-11 && CXX=g++-11',         }
+        - { name: 'Clang 6 (Ubuntu Bionic - 18.04)',  eval: 'CC=clang-6.0 && CXX=clang++-6.0', }
+        - { name: 'Clang 7 (Debian Buster)',          eval: 'CC=clang-7 && CXX=clang++-7',     }
+        - { name: 'Clang 10 (Ubuntu Focal - 20.04)',  eval: 'CC=clang-10 && CXX=clang++-10',   }
     name: 'B: ${{ matrix.name }}'
     steps:
 
@@ -304,7 +368,7 @@ jobs:
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
         MATRIX_EVAL: ${{ matrix.eval }}
-        BUILD_TYPE: ${{ matrix.build }}
+        BUILD_TYPE: release
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh

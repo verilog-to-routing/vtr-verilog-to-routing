@@ -137,7 +137,7 @@ reg reset_reduction_unit;
           end
 			    else begin
             //Increment BRAM addr, so we can fetch the next data in the next cycle
-            bram_in_addr <= bram_in_addr + 1;
+            bram_in_addr <= bram_in_addr + 1'b1;
           end
         end
 
@@ -153,7 +153,7 @@ reg reset_reduction_unit;
             reset_reduction_unit <= 1;
           end 
           else begin
-            count <= count + 1;
+            count <= count + 1'b1;
           end
         end
       endcase  
@@ -327,7 +327,7 @@ input we;
 output reg [`NUM_INPUTS*`DWIDTH-1:0] q;
 input clk;
 
-`ifdef VCS
+`ifndef hard_mem
 
 reg [`NUM_INPUTS*`DWIDTH-1:0] ram[((1<<`AWIDTH)-1):0];
 
@@ -340,6 +340,9 @@ begin
 end
 
 `else
+
+defparam u_single_port_ram.ADDR_WIDTH = `AWIDTH;
+defparam u_single_port_ram.DATA_WIDTH = `NUM_INPUTS*`DWIDTH;
 
 single_port_ram u_single_port_ram(
 .addr(addr),
@@ -1362,5 +1365,4 @@ assign	w_convergent = i_data[(IWID-1):0]
 assign o_data = w_convergent[(IWID-1):(IWID-OWID)];
 
 endmodule
-
 

@@ -146,6 +146,14 @@ def vtr_command_argparser(prog=None):
         dest="verbose",
         help="Verbosity of the script.",
     )
+    parser.add_argument(
+        "-include",
+        nargs="*",
+        default=None,
+        dest="include_list_file",
+        help="List of include files to a benchmark circuit (pass to VTR"
+        + " frontends as a benchmark design set)",
+    )
 
     #
     # Power arguments
@@ -332,11 +340,10 @@ def vtr_command_argparser(prog=None):
         help="Specify the elaborator of the synthesis flow for Odin-II",
     )
     odin.add_argument(
-        "-include",
-        nargs="*",
+        "-top_module",
         default=None,
-        dest="include_list_file",
-        help="List of include files to a benchmark circuit(pass to Odin as a benchmark design set)",
+        dest="top_module",
+        help="Specify the name of the module in the design that should be considered as top",
     )
     odin.add_argument(
         "-coarsen",
@@ -353,6 +360,14 @@ def vtr_command_argparser(prog=None):
         help="Make flip-flops rising edge for coarse-grain input BLIFs in the techmap"
         + "(Odin-II synthesis flow generates rising edge FFs by default)",
     )
+    odin.add_argument(
+        "-encode_names",
+        default=False,
+        action="store_true",
+        dest="encode_names",
+        help="Enable Odin-II utilization of operation-type-encoded naming style for Yosys"
+        + " coarse-grained RTLIL nodes",
+    )
     #
     # YOSYS arguments
     #
@@ -363,6 +378,20 @@ def vtr_command_argparser(prog=None):
         dest="yosys_script",
         help="Supplies Yosys with a .ys script file (similar to Tcl script)"
         + ", including synthesis steps.",
+    )
+    yosys.add_argument(
+        "-parser",
+        default="yosys",
+        dest="parser",
+        help="Specify a parser for the Yosys synthesizer [yosys (Verilog-2005), surelog (UHDM), "
+        + "yosys-plugin (SystemVerilog)]. The script used the Yosys conventional Verilog"
+        + " parser if this argument is not specified.",
+    )
+    yosys.add_argument(
+        "-mapper",
+        default="yosys",
+        dest="mapper",
+        help="Choose the partial mapper fot VTR flow with Yosys frontend between [parmys, yosys].",
     )
     #
     # VPR arguments
@@ -413,6 +442,9 @@ def vtr_command_argparser(prog=None):
     )
     vpr.add_argument(
         "-sdc_file", default=None, type=str, help="Path to SDC timing constraints file."
+    )
+    vpr.add_argument(
+        "-read_vpr_constraints", default=None, type=str, help="Path to vpr constraints file."
     )
     vpr.add_argument(
         "-check_incremental_sta_consistency",
@@ -511,7 +543,13 @@ def vtr_command_main(arg_list, prog=None):
         vpr_args = process_unknown_args(unknown_args)
         vpr_args = process_vpr_args(args, prog, temp_dir, vpr_args)
         if args.sdc_file:
-            vpr_args["sdc_file"] = get_sdc_file(args.sdc_file, prog)
+            sdc_file_copy = get_sdc_file(args.sdc_file, prog, temp_dir)
+            vpr_args["sdc_file"] = Path(sdc_file_copy).name
+        if args.read_vpr_constraints:
+            vpr_constraint_file_copy = get_read_vpr_constraints(
+                args.read_vpr_constraints, prog, temp_dir
+            )
+            vpr_args["read_vpr_constraints"] = Path(vpr_constraint_file_copy).name
 
         print(
             args.name
@@ -532,7 +570,7 @@ def vtr_command_main(arg_list, prog=None):
             vpr_args=vpr_args,
             abc_args=process_abc_args(args),
             odin_args=process_odin_args(args),
-            yosys_args=process_yosys_args(),
+            yosys_args=process_yosys_args(args),
             keep_intermediate_files=args.keep_intermediate_files,
             keep_result_files=args.keep_result_files,
             min_hard_mult_size=args.min_hard_mult_size,
@@ -558,33 +596,41 @@ def vtr_command_main(arg_list, prog=None):
         return_status = exit_status
 
     finally:
-        seconds = datetime.now() - start
+        write_vtr_summary(start, error_status, exit_status, temp_dir)
 
-        print(
-            "{status} (took {time}, "
-            "overall memory peak {stage[0]} consumed by {stage[1]} run)".format(
-                status=error_status,
-                time=vtr.format_elapsed_time(seconds),
-                stage=get_max_memory_usage(temp_dir),
-            )
-        )
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        out = temp_dir / "output.txt"
-        out.touch()
-        with out.open("w") as file:
-            file.write("vpr_status=")
-            if exit_status == 0:
-                file.write("success\n")
-            else:
-                file.write("exited with return code {}\n".format(exit_status))
-            file.write(
-                "vpr_seconds=%d\nrundir=%s\nhostname=%s\nerror="
-                % (seconds.total_seconds(), str(Path.cwd()), socket.gethostname())
-            )
-            file.write("\n")
     if __name__ == "__main__":
         sys.exit(return_status)
     return return_status
+
+
+def write_vtr_summary(start, error_status, exit_status, temp_dir):
+    """
+    Write the summary of the results in vtr flow.
+    Keep 15 variable limits of pylint in function vtr_command_main.
+    """
+    seconds = datetime.now() - start
+    print(
+        "{status} (took {time}, "
+        "overall memory peak {stage[0]} consumed by {stage[1]} run)".format(
+            status=error_status,
+            time=vtr.format_elapsed_time(seconds),
+            stage=get_max_memory_usage(temp_dir),
+        )
+    )
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    out = temp_dir / "output.txt"
+    out.touch()
+    with out.open("w") as file:
+        file.write("vpr_status=")
+        if exit_status == 0:
+            file.write("success\n")
+        else:
+            file.write("exited with return code {}\n".format(exit_status))
+        file.write(
+            "vpr_seconds=%d\nrundir=%s\nhostname=%s\nerror="
+            % (seconds.total_seconds(), str(Path.cwd()), socket.gethostname())
+        )
+        file.write("\n")
 
 
 def process_unknown_args(unknown_args):
@@ -663,8 +709,11 @@ def process_odin_args(args):
     Finds arguments needed in the ODIN stage of the flow
     """
     odin_args = OrderedDict()
+    odin_args["parser"] = args.parser
     odin_args["adder_type"] = args.adder_type
+    odin_args["top_module"] = args.top_module
     odin_args["elaborator"] = args.elaborator
+    odin_args["encode_names"] = args.encode_names
 
     if args.adder_cin_global:
         odin_args["adder_cin_global"] = True
@@ -684,11 +733,13 @@ def process_odin_args(args):
     return odin_args
 
 
-def process_yosys_args():
+def process_yosys_args(args):
     """
     Finds arguments needed in the YOSYS stage of the flow
     """
     yosys_args = OrderedDict()
+    yosys_args["parser"] = args.parser
+    yosys_args["mapper"] = args.mapper
 
     return yosys_args
 
@@ -711,17 +762,30 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
     return vpr_args
 
 
-def get_sdc_file(sdc_file, prog):
+def get_sdc_file(sdc_file, prog, temp_dir):
     """
     takes in the sdc_file and returns a path to that file if it exists.
     """
-    if not Path(sdc_file).exists():
-        if sdc_file.startswith("/"):
-            sdc_file = Path(str(Path(prog).parent.parent) + sdc_file)
-        else:
-            sdc_file = Path(prog).parent.parent / sdc_file
+    if not sdc_file.startswith("/"):
+        sdc_file = Path(prog).parent.parent / sdc_file
+    sdc_file_name = Path(sdc_file).name
+    sdc_file_copy = Path(temp_dir) / Path(sdc_file_name)
+    shutil.copy(str(sdc_file), str(sdc_file_copy))
 
-    return str(vtr.verify_file(sdc_file, "sdc file"))
+    return str(vtr.verify_file(sdc_file_copy, "sdc file"))
+
+
+def get_read_vpr_constraints(read_vpr_constraints, prog, temp_dir):
+    """
+    takes in the read_vpr_constraints and returns a path to that file if it exists.
+    """
+    if not read_vpr_constraints.startswith("/"):
+        read_vpr_constraints = Path(prog).parent.parent / read_vpr_constraints
+    vpr_constraint_file_name = Path(read_vpr_constraints).name
+    vpr_constraint_file_copy = Path(temp_dir) / Path(vpr_constraint_file_name)
+    shutil.copy(str(read_vpr_constraints), str(vpr_constraint_file_copy))
+
+    return str(vtr.verify_file(vpr_constraint_file_copy, "vpr constraint file"))
 
 
 def except_vtr_error(error, expect_fail, verbose):
