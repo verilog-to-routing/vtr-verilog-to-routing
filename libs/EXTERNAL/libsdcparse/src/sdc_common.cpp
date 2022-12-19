@@ -104,6 +104,7 @@ void add_sdc_create_clock(Callback& callback, const Lexer& lexer, CreateClock& s
     sdc_create_clock.rise_edge = sdc_create_clock.fall_edge;
     sdc_create_clock.fall_edge = sdc_create_clock.fall_edge * 2;
     sdc_create_clock.is_virtual = true;
+    sdc_create_clock.inverted = true;
     for (auto &str : targets) {
 	//Create new phase-shifted virtual clock per each target
         sdc_create_clock.name = str + "_negedge";
