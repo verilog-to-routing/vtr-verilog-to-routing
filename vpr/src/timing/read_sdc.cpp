@@ -81,7 +81,7 @@ class SdcParseCallback : public sdcparse::Callback {
 
         if (cmd.is_virtual) {
             //Create a virtual clock
-            tatum::DomainId virtual_clk = tc_.create_clock_domain(cmd.name);
+            tatum::DomainId virtual_clk = tc_.create_clock_domain(cmd.name, cmd.inverted);
 
             if (sdc_clocks_.count(virtual_clk)) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
