@@ -20,6 +20,10 @@ std::string TimingConstraints::clock_domain_name(const DomainId id) const {
     return domain_names_[id];
 }
 
+bool TimingConstraints::clock_domain_inverted(const DomainId id) const {
+    return domain_inverted_[id];
+}
+
 NodeId TimingConstraints::clock_domain_source_node(const DomainId id) const {
     return domain_sources_[id];
 }
@@ -292,7 +296,8 @@ DomainId TimingConstraints::create_clock_domain(const std::string name) {
         //Create it
         id = DomainId(domain_ids_.size()); 
         domain_ids_.push_back(id); 
-        
+
+        domain_inverted_.push_back(false);
         domain_names_.push_back(name);
         domain_sources_.emplace_back(NodeId::INVALID());
 
@@ -301,6 +306,24 @@ DomainId TimingConstraints::create_clock_domain(const std::string name) {
     }
 
     return id; 
+}
+
+DomainId TimingConstraints::create_clock_domain(const std::string name, bool inverted) {
+    DomainId id = find_clock_domain(name);
+    if(!id) {
+        //Create it
+        id = DomainId(domain_ids_.size());
+        domain_ids_.push_back(id);
+
+	domain_inverted_.push_back(inverted);
+        domain_names_.push_back(name);
+        domain_sources_.emplace_back(NodeId::INVALID());
+
+        TATUM_ASSERT(clock_domain_name(id) == name);
+        TATUM_ASSERT(find_clock_domain(name) == id);
+    }
+
+    return id;
 }
 
 void TimingConstraints::set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint) {

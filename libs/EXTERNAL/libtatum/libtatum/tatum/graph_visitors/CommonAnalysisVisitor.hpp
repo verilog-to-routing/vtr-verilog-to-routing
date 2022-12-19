@@ -294,6 +294,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
     //Pulling values from upstream source node
     NodeId src_node_id = tg.edge_src_node(edge_id);
+    NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
     if(should_propagate_clocks(tg, tc, edge_id)) {
         /*
@@ -311,7 +312,6 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
                 for(const TimingTag& src_launch_clk_tag : src_launch_clk_tags) {
                     //Standard propagation through the clock network
-
                     Time new_arr = src_launch_clk_tag.time() + clk_launch_edge_delay;
                     timing_modified |= ops_.merge_arr_tags(node_id, new_arr, src_node_id, src_launch_clk_tag);
 
@@ -328,6 +328,15 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
                 for(const TimingTag& src_capture_clk_tag : src_capture_clk_tags) {
                     //Standard propagation through the clock network
+
+                    //Skip propagation of timings derived from incompatible constraints
+                    if ( tg.node_type(sink_node_id) == NodeType::CPIN ) {
+                        if ((tg.trigg_edge(sink_node_id) == 1 && !tc.clock_domain_inverted(src_capture_clk_tag.launch_clock_domain())) ||
+                            (tg.trigg_edge(sink_node_id) == 0 &&  tc.clock_domain_inverted(src_capture_clk_tag.launch_clock_domain()))) {
+                            continue;
+                        }
+                    }
+
                     timing_modified |= ops_.merge_arr_tags(node_id, src_capture_clk_tag.time() + clk_capture_edge_delay, src_node_id, src_capture_clk_tag);
                 }
             }

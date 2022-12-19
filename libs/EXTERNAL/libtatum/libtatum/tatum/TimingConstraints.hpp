@@ -42,6 +42,8 @@ class TimingConstraints {
         ///\returns The name of a clock domain
         std::string clock_domain_name(const DomainId id) const;
 
+        bool clock_domain_inverted(const DomainId id) const;
+
         ///\returns The source NodeId of the specified domain
         NodeId clock_domain_source_node(const DomainId id) const;
 
@@ -123,6 +125,7 @@ class TimingConstraints {
     public: //Mutators
         ///\returns The DomainId of the clock with the specified name (will be created if it doesn not exist)
         DomainId create_clock_domain(const std::string name);
+        DomainId create_clock_domain(const std::string name, bool inverted);
 
         ///Sets the setup constraint between src_domain and sink_domain with value constraint
         void set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint);
@@ -170,6 +173,7 @@ class TimingConstraints {
     private: //Data
         tatum::util::linear_map<DomainId,DomainId> domain_ids_;
         tatum::util::linear_map<DomainId,std::string> domain_names_;
+        tatum::util::linear_map<DomainId, bool> domain_inverted_;
         tatum::util::linear_map<DomainId,NodeId> domain_sources_;
 
         std::unordered_set<NodeId> constant_generators_;
