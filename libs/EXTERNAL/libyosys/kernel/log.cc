@@ -71,8 +71,6 @@ int string_buf_index = -1;
 static struct timeval initial_tv = { 0, 0 };
 static bool next_print_log = false;
 static int log_newline_count = 0;
-static bool check_expected_logs = true;
-static bool display_error_log_msg = true;
 
 static void log_id_cache_clear()
 {
@@ -339,8 +337,7 @@ static void logv_error_with_prefix(const char *prefix,
 				f = stderr;
 
 	log_last_error = vstringf(format, ap);
-	if (display_error_log_msg)
-		log("%s%s", prefix, log_last_error.c_str());
+	log("%s%s", prefix, log_last_error.c_str());
 	log_flush();
 
 	log_make_debug = bak_log_make_debug;
@@ -349,13 +346,15 @@ static void logv_error_with_prefix(const char *prefix,
 		if (YS_REGEX_NS::regex_search(log_last_error, item.second.pattern))
 			item.second.current_count++;
 
-	if (check_expected_logs)
-		log_check_expected();
+	log_check_expected();
 
 	if (log_error_atexit)
 		log_error_atexit();
 
 	YS_DEBUGTRAP_IF_DEBUGGING;
+	const char *e = getenv("YOSYS_ABORT_ON_LOG_ERROR");
+	if (e && atoi(e))
+		abort();
 
 #ifdef EMSCRIPTEN
 	log_files = backup_log_files;
@@ -631,7 +630,7 @@ const char *log_const(const RTLIL::Const &value, bool autoint)
 	}
 }
 
-const char *log_id(RTLIL::IdString str)
+const char *log_id(const RTLIL::IdString &str)
 {
 	log_id_cache.push_back(strdup(str.c_str()));
 	const char *p = log_id_cache.back();
@@ -667,9 +666,14 @@ void log_wire(RTLIL::Wire *wire, std::string indent)
 
 void log_check_expected()
 {
-	check_expected_logs = false;
+	// copy out all of the expected logs so that they cannot be re-checked
+	// or match against themselves
+	dict<std::string, LogExpectedItem> expect_log, expect_warning, expect_error;
+	std::swap(expect_warning, log_expect_warning);
+	std::swap(expect_log, log_expect_log);
+	std::swap(expect_error, log_expect_error);
 
-	for (auto &item : log_expect_warning) {
+	for (auto &item : expect_warning) {
 		if (item.second.current_count == 0) {
 			log_warn_regexes.clear();
 			log_error("Expected warning pattern '%s' not found !\n", item.first.c_str());
@@ -681,7 +685,7 @@ void log_check_expected()
 		}
 	}
 
-	for (auto &item : log_expect_log) {
+	for (auto &item : expect_log) {
 		if (item.second.current_count == 0) {
 			log_warn_regexes.clear();
 			log_error("Expected log pattern '%s' not found !\n", item.first.c_str());
@@ -693,7 +697,7 @@ void log_check_expected()
 		}
 	}
 
-	for (auto &item : log_expect_error)
+	for (auto &item : expect_error)
 		if (item.second.current_count == item.second.expected_count) {
 			log_warn_regexes.clear();
 			log("Expected error pattern '%s' found !!!\n", item.first.c_str());
@@ -705,7 +709,6 @@ void log_check_expected()
 				_Exit(0);
 			#endif
 		} else {
-			display_error_log_msg = false;
 			log_warn_regexes.clear();
 			log_error("Expected error pattern '%s' not found !\n", item.first.c_str());
 		}

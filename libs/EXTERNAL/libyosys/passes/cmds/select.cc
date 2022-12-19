@@ -944,12 +944,14 @@ static void select_stmt(RTLIL::Design *design, std::string arg, bool disable_emp
 	}
 }
 
-static std::string describe_selection_for_assert(RTLIL::Design *design, RTLIL::Selection *sel)
+static std::string describe_selection_for_assert(RTLIL::Design *design, RTLIL::Selection *sel, bool whole_modules = false)
 {
 	std::string desc = "Selection contains:\n";
 	for (auto mod : design->modules())
 	{
 		if (sel->selected_module(mod->name)) {
+			if (whole_modules && sel->selected_whole_module(mod->name))
+					desc += stringf("%s\n", id2cstr(mod->name));
 			for (auto wire : mod->wires())
 				if (sel->selected_member(mod->name, wire->name))
 					desc += stringf("%s/%s\n", id2cstr(mod->name), id2cstr(wire->name));
@@ -1051,17 +1053,17 @@ struct SelectPass : public Pass {
 		log("\n");
 		log("    -unset <name>\n");
 		log("        do not modify the current selection. instead remove a previously saved\n");
-		log("        selection under the given name (see @<name> below).");
+		log("        selection under the given name (see @<name> below).\n");
 		log("\n");
 		log("    -assert-none\n");
 		log("        do not modify the current selection. instead assert that the given\n");
-		log("        selection is empty. i.e. produce an error if any object matching the\n");
-		log("        selection is found.\n");
+		log("        selection is empty. i.e. produce an error if any object or module\n");
+		log("        matching the selection is found.\n");
 		log("\n");
 		log("    -assert-any\n");
 		log("        do not modify the current selection. instead assert that the given\n");
-		log("        selection is non-empty. i.e. produce an error if no object matching\n");
-		log("        the selection is found.\n");
+		log("        selection is non-empty. i.e. produce an error if no object or module\n");
+		log("        matching the selection is found.\n");
 		log("\n");
 		log("    -assert-count N\n");
 		log("        do not modify the current selection. instead assert that the given\n");
@@ -1123,7 +1125,7 @@ struct SelectPass : public Pass {
 		log("    <obj_pattern>\n");
 		log("        select the specified object(s) from the current module\n");
 		log("\n");
-		log("By default, patterns will not match black/white-box modules or their");
+		log("By default, patterns will not match black/white-box modules or their\n");
 		log("contents. To include such objects, prefix the pattern with '='.\n");
 		log("\n");
 		log("A <mod_pattern> can be a module name, wildcard expression (*, ?, [..])\n");
@@ -1454,7 +1456,10 @@ struct SelectPass : public Pass {
 				}
 			}
 			if (count_mode)
+			{
+				design->scratchpad_set_int("select.count", total_count);
 				log("%d objects.\n", total_count);
+			}
 			if (f != nullptr)
 				fclose(f);
 		#undef LOG_OBJECT
@@ -1488,7 +1493,7 @@ struct SelectPass : public Pass {
 			{
 				RTLIL::Selection *sel = &work_stack.back();
 				sel->optimize(design);
-				std::string desc = describe_selection_for_assert(design, sel);
+				std::string desc = describe_selection_for_assert(design, sel, true);
 				log_error("Assertion failed: selection is not empty:%s\n%s", sel_str.c_str(), desc.c_str());
 			}
 			return;
@@ -1503,7 +1508,7 @@ struct SelectPass : public Pass {
 			{
 				RTLIL::Selection *sel = &work_stack.back();
 				sel->optimize(design);
-				std::string desc = describe_selection_for_assert(design, sel);
+				std::string desc = describe_selection_for_assert(design, sel, true);
 				log_error("Assertion failed: selection is empty:%s\n%s", sel_str.c_str(), desc.c_str());
 			}
 			return;
@@ -1602,11 +1607,13 @@ struct CdPass : public Pass {
 		log("with the specified name in the current module, then this is equivalent\n");
 		log("to 'cd <celltype>'.\n");
 		log("\n");
+		log("\n");
 		log("    cd ..\n");
 		log("\n");
 		log("Remove trailing substrings that start with '.' in current module name until\n");
 		log("the name of a module in the current design is generated, then switch to that\n");
 		log("module. Otherwise clear the current selection.\n");
+		log("\n");
 		log("\n");
 		log("    cd\n");
 		log("\n");

@@ -5,6 +5,7 @@ import os
 import shutil
 from collections import OrderedDict
 from pathlib import Path
+import xml.etree.ElementTree as ET
 import vtr
 
 # supported input file type by Yosys
@@ -30,6 +31,8 @@ YOSYS_LIB_FILES = {
 }
 
 YOSYS_PARSERS = ["yosys", "surelog", "yosys-plugin"]
+
+YOSYS_MAPPERS = ["parmys", "yosys"]
 
 
 def create_circuits_list(main_circuit, include_files):
@@ -68,6 +71,7 @@ def init_script_file(
     memory_addr_width,
     min_hard_mult_size,
     min_hard_adder_size,
+    architecture_file_path,
 ):
     """initializing the raw yosys script file"""
     # specify the input files type
@@ -89,6 +93,7 @@ def init_script_file(
             "CCC": architecture_dsp_full_path,
             "TTT": str(vtr.paths.yosys_lib_path),
             "ZZZ": output_netlist,
+            "QQQ": architecture_file_path,
         },
     )
 
@@ -103,6 +108,58 @@ def init_script_file(
     vtr.file_replace(yosys_dpram_full_path, {"PPP": memory_addr_width})
     vtr.file_replace(yosys_spram_rename_full_path, {"PPP": memory_addr_width})
     vtr.file_replace(yosys_dpram_rename_full_path, {"PPP": memory_addr_width})
+
+
+# pylint: disable=too-many-arguments, too-many-locals
+def init_config_file(
+    odin_config_full_path,
+    circuit_list,
+    architecture_file,
+    output_netlist,
+    odin_parser_arg,
+    memory_addr_width,
+    min_hard_mult_size,
+    min_hard_adder_size,
+):
+    """initializing the raw odin config file"""
+    # specify the input files type
+    file_extension = os.path.splitext(circuit_list[0])[-1]
+    if file_extension not in FILE_TYPES:
+        raise vtr.VtrError("Inavlid input file type '{}'".format(file_extension))
+    input_file_type = FILE_TYPES[file_extension]
+
+    # Check if the user specifically requested for the UHDM parser
+    if odin_parser_arg == "-u":
+        input_file_type = "uhdm"
+
+    # Update the config file
+    vtr.file_replace(
+        odin_config_full_path,
+        {
+            "YYY": architecture_file,
+            "TTT": input_file_type,
+            "ZZZ": output_netlist,
+            "PPP": memory_addr_width,
+            "MMM": min_hard_mult_size,
+            "AAA": min_hard_adder_size,
+        },
+    )
+
+    # loading the given config file
+    config_file = ET.parse(odin_config_full_path)
+    root = config_file.getroot()
+
+    # based on the base config file
+    verilog_files_tag = root.find("inputs")
+    # remove the template line XXX, verilog_files_tag [1] is a comment
+    verilog_files_tag.remove(verilog_files_tag[1])
+    for circuit in circuit_list:
+        verilog_file = ET.SubElement(verilog_files_tag, "input_path_and_name")
+        verilog_file.tail = "\n\n\t" if (circuit == circuit_list[-1]) else "\n\n\t\t"
+        verilog_file.text = circuit
+
+    # update the config file with new values
+    config_file.write(odin_config_full_path)
 
 
 # pylint: disable=too-many-arguments, too-many-locals, too-many-statements, too-many-branches
@@ -175,7 +232,10 @@ def run(
         yosys_exec = str(vtr.paths.yosys_exe_path)
 
     if yosys_script is None:
-        yosys_base_script = str(vtr.paths.yosys_script_path)
+        if yosys_args["mapper"] == "parmys":
+            yosys_base_script = str(vtr.paths.yosys_parmys_script_path)
+        else:
+            yosys_base_script = str(vtr.paths.yosys_script_path)
     else:
         yosys_base_script = str(Path(yosys_script).resolve())
 
@@ -210,6 +270,7 @@ def run(
 
     write_arch_bb_exec = str(vtr.paths.write_arch_bb_exe_path)
     architecture_dsp_full_path = str(vtr.paths.scripts_path / temp_dir / YOSYS_LIB_FILES["DSPBB"])
+    architecture_file_path = str(vtr.paths.scripts_path / architecture_file)
 
     # executing write_arch_bb to extract the black box definitions of the given arch file
     command_runner.run_system_command(
@@ -239,6 +300,25 @@ def run(
         vtr.determine_memory_addr_width(str(architecture_file)),
         min_hard_mult_size,
         min_hard_adder_size,
+        architecture_file_path,
+    )
+
+    odin_base_config = str(vtr.paths.odin_cfg_path)
+
+    # Copy the config file
+    odin_config = "odin_config.xml"
+    odin_config_full_path = str(temp_dir / odin_config)
+    shutil.copyfile(odin_base_config, odin_config_full_path)
+
+    init_config_file(
+        odin_config_full_path,
+        circuit_list,
+        architecture_file.name,
+        output_netlist.name,
+        None,
+        vtr.determine_memory_addr_width(str(architecture_file)),
+        min_hard_mult_size,
+        min_hard_adder_size,
     )
 
     # set the parser
@@ -249,6 +329,17 @@ def run(
         raise vtr.VtrError(
             "Invalid parser is specified for Yosys, available parsers are [{}]".format(
                 " ".join(str(x) for x in YOSYS_PARSERS)
+            )
+        )
+
+    # set the partial mapper
+    if yosys_args["mapper"] in YOSYS_MAPPERS:
+        os.environ["MAPPER"] = yosys_args["mapper"]
+        del yosys_args["mapper"]
+    else:
+        raise vtr.VtrError(
+            "Invalid partial mapper is specified for Yosys, available parsers are [{}]".format(
+                " ".join(str(x) for x in YOSYS_MAPPERS)
             )
         )
 

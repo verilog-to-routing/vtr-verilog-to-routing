@@ -52,7 +52,7 @@ struct ShowWorker
 	std::map<RTLIL::IdString, int> autonames;
 	int single_idx_count;
 
-	struct net_conn { std::set<std::string> in, out; int bits; std::string color; };
+	struct net_conn { std::set<std::pair<std::string, int>> in, out; std::string color; };
 	std::map<std::string, net_conn> net_conn_map;
 
 	FILE *f;
@@ -191,7 +191,12 @@ struct ShowWorker
 
 		std::string str;
 		for (char ch : id) {
-			if (ch == '\\' || ch == '"')
+			if (ch == '\\') {
+				 // new graphviz have bug with escaping '\'
+				str += "&#9586;";
+				continue;
+			}
+			if (ch == '"')
 				str += "\\";
 			str += ch;
 		}
@@ -239,6 +244,19 @@ struct ShowWorker
 			int idx = single_idx_count++;
 			for (int rep, i = int(sig.chunks().size())-1; i >= 0; i -= rep) {
 				const RTLIL::SigChunk &c = sig.chunks().at(i);
+				int cl, cr;
+				if (c.wire) {
+					if (c.wire->upto) {
+						cr = c.wire->start_offset + (c.wire->width - c.offset - 1);
+						cl = cr - (c.width - 1);
+					} else {
+						cr = c.wire->start_offset + c.offset;
+						cl = cr + c.width - 1;
+					}
+				} else {
+					cl = c.offset + c.width - 1;
+					cr = c.offset;
+				}
 				if (!driver && c.wire == nullptr) {
 					RTLIL::State s1 = c.data.front();
 					for (auto s2 : c.data)
@@ -254,9 +272,8 @@ struct ShowWorker
 				std::string repinfo = rep > 1 ? stringf("%dx ", rep) : "";
 				if (driver) {
 					log_assert(!net.empty());
-					label_string += stringf("<s%d> %d:%d - %s%d:%d |", i, pos, pos-c.width+1, repinfo.c_str(), c.offset+c.width-1, c.offset);
-					net_conn_map[net].in.insert(stringf("x%d:s%d", idx, i));
-					net_conn_map[net].bits = rep*c.width;
+					label_string += stringf("<s%d> %d:%d - %s%d:%d |", i, pos, pos-c.width+1, repinfo.c_str(), cl, cr);
+					net_conn_map[net].in.insert({stringf("x%d:s%d", idx, i), rep*c.width});
 					net_conn_map[net].color = nextColor(c, net_conn_map[net].color);
 				} else
 				if (net.empty()) {
@@ -268,9 +285,8 @@ struct ShowWorker
 							c.data.front() == State::Sz ? 'Z' : '?',
 							pos, pos-rep*c.width+1);
 				} else {
-					label_string += stringf("<s%d> %s%d:%d - %d:%d |", i, repinfo.c_str(), c.offset+c.width-1, c.offset, pos, pos-rep*c.width+1);
-					net_conn_map[net].out.insert(stringf("x%d:s%d", idx, i));
-					net_conn_map[net].bits = rep*c.width;
+					label_string += stringf("<s%d> %s%d:%d - %d:%d |", i, repinfo.c_str(), cl, cr, pos, pos-rep*c.width+1);
+					net_conn_map[net].out.insert({stringf("x%d:s%d", idx, i), rep*c.width});
 					net_conn_map[net].color = nextColor(c, net_conn_map[net].color);
 				}
 				pos -= rep * c.width;
@@ -280,6 +296,7 @@ struct ShowWorker
 			code += stringf("x%d [ shape=record, style=rounded, label=\"%s\" ];\n", idx, label_string.c_str());
 			if (!port.empty()) {
 				currentColor = xorshift32(currentColor);
+				log_warning("WIDTHLABEL %s %d\n", log_signal(sig), GetSize(sig));
 				if (driver)
 					code += stringf("%s:e -> x%d:w [arrowhead=odiamond, arrowtail=odiamond, dir=both, %s, %s];\n", port.c_str(), idx, nextColor(sig).c_str(), widthLabel(sig.size()).c_str());
 				else
@@ -292,10 +309,9 @@ struct ShowWorker
 		{
 			if (!port.empty()) {
 				if (driver)
-					net_conn_map[net].in.insert(port);
+					net_conn_map[net].in.insert({port, GetSize(sig)});
 				else
-					net_conn_map[net].out.insert(port);
-				net_conn_map[net].bits = sig.size();
+					net_conn_map[net].out.insert({port, GetSize(sig)});
 				net_conn_map[net].color = nextColor(sig, net_conn_map[net].color);
 			}
 			if (node != nullptr)
@@ -465,8 +481,7 @@ struct ShowWorker
 				std::string code, node;
 				code += gen_portbox("", sig, false, &node);
 				fprintf(f, "%s", code.c_str());
-				net_conn_map[node].out.insert(stringf("p%d", pidx));
-				net_conn_map[node].bits = sig.size();
+				net_conn_map[node].out.insert({stringf("p%d", pidx), GetSize(sig)});
 				net_conn_map[node].color = nextColor(sig, net_conn_map[node].color);
 			}
 
@@ -474,8 +489,7 @@ struct ShowWorker
 				std::string code, node;
 				code += gen_portbox("", sig, true, &node);
 				fprintf(f, "%s", code.c_str());
-				net_conn_map[node].in.insert(stringf("p%d", pidx));
-				net_conn_map[node].bits = sig.size();
+				net_conn_map[node].in.insert({stringf("p%d", pidx), GetSize(sig)});
 				net_conn_map[node].color = nextColor(sig, net_conn_map[node].color);
 			}
 
@@ -509,17 +523,15 @@ struct ShowWorker
 				currentColor = xorshift32(currentColor);
 				fprintf(f, "%s:e -> %s:w [arrowhead=odiamond, arrowtail=odiamond, dir=both, %s, %s];\n", left_node.c_str(), right_node.c_str(), nextColor(conn).c_str(), widthLabel(conn.first.size()).c_str());
 			} else {
-				net_conn_map[right_node].bits = conn.first.size();
 				net_conn_map[right_node].color = nextColor(conn, net_conn_map[right_node].color);
-				net_conn_map[left_node].bits = conn.first.size();
 				net_conn_map[left_node].color = nextColor(conn, net_conn_map[left_node].color);
 				if (left_node[0] == 'x') {
-					net_conn_map[right_node].in.insert(left_node);
+					net_conn_map[right_node].in.insert({left_node, GetSize(conn.first)});
 				} else if (right_node[0] == 'x') {
-					net_conn_map[left_node].out.insert(right_node);
+					net_conn_map[left_node].out.insert({right_node, GetSize(conn.first)});
 				} else {
-					net_conn_map[right_node].in.insert(stringf("x%d:e", single_idx_count));
-					net_conn_map[left_node].out.insert(stringf("x%d:w", single_idx_count));
+					net_conn_map[right_node].in.insert({stringf("x%d:e", single_idx_count), GetSize(conn.first)});
+					net_conn_map[left_node].out.insert({stringf("x%d:w", single_idx_count), GetSize(conn.first)});
 					fprintf(f, "x%d [shape=box, style=rounded, label=\"BUF\"];\n", single_idx_count++);
 				}
 			}
@@ -529,12 +541,13 @@ struct ShowWorker
 		{
 			currentColor = xorshift32(currentColor);
 			if (wires_on_demand.count(it.first) > 0) {
-				if (it.second.in.size() == 1 && it.second.out.size() > 1 && it.second.in.begin()->compare(0, 1, "p") == 0)
+				if (it.second.in.size() == 1 && it.second.out.size() > 1 && it.second.in.begin()->first.compare(0, 1, "p") == 0)
 					it.second.out.erase(*it.second.in.begin());
 				if (it.second.in.size() == 1 && it.second.out.size() == 1) {
-					std::string from = *it.second.in.begin(), to = *it.second.out.begin();
+					std::string from = it.second.in.begin()->first, to = it.second.out.begin()->first;
+					int bits = it.second.in.begin()->second;
 					if (from != to || from.compare(0, 1, "p") != 0)
-						fprintf(f, "%s:e -> %s:w [%s, %s];\n", from.c_str(), to.c_str(), nextColor(it.second.color).c_str(), widthLabel(it.second.bits).c_str());
+						fprintf(f, "%s:e -> %s:w [%s, %s];\n", from.c_str(), to.c_str(), nextColor(it.second.color).c_str(), widthLabel(bits).c_str());
 					continue;
 				}
 				if (it.second.in.size() == 0 || it.second.out.size() == 0)
@@ -543,9 +556,9 @@ struct ShowWorker
 					fprintf(f, "%s [ shape=point ];\n", it.first.c_str());
 			}
 			for (auto &it2 : it.second.in)
-				fprintf(f, "%s:e -> %s:w [%s, %s];\n", it2.c_str(), it.first.c_str(), nextColor(it.second.color).c_str(), widthLabel(it.second.bits).c_str());
+				fprintf(f, "%s:e -> %s:w [%s, %s];\n", it2.first.c_str(), it.first.c_str(), nextColor(it.second.color).c_str(), widthLabel(it2.second).c_str());
 			for (auto &it2 : it.second.out)
-				fprintf(f, "%s:e -> %s:w [%s, %s];\n", it.first.c_str(), it2.c_str(), nextColor(it.second.color).c_str(), widthLabel(it.second.bits).c_str());
+				fprintf(f, "%s:e -> %s:w [%s, %s];\n", it.first.c_str(), it2.first.c_str(), nextColor(it.second.color).c_str(), widthLabel(it2.second).c_str());
 		}
 
 		fprintf(f, "}\n");
@@ -561,6 +574,7 @@ struct ShowWorker
 	{
 		ct.setup_internals();
 		ct.setup_internals_mem();
+		ct.setup_internals_anyinit();
 		ct.setup_stdcells();
 		ct.setup_stdcells_mem();
 		ct.setup_design(design);
@@ -653,7 +667,7 @@ struct ShowPass : public Pass {
 		log("        (including inout ports) are on the right side.\n");
 		log("\n");
 		log("    -pause\n");
-		log("        wait for the use to press enter to before returning\n");
+		log("        wait for the user to press enter to before returning\n");
 		log("\n");
 		log("    -enum\n");
 		log("        enumerate objects with internal ($-prefixed) names\n");
@@ -811,6 +825,7 @@ struct ShowPass : public Pass {
 
 		for (auto filename : libfiles) {
 			std::ifstream f;
+			rewrite_filename(filename);
 			f.open(filename.c_str());
 			yosys_input_files.insert(filename);
 			if (f.fail())

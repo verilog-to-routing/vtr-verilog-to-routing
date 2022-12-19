@@ -387,6 +387,12 @@ def vtr_command_argparser(prog=None):
         + "yosys-plugin (SystemVerilog)]. The script used the Yosys conventional Verilog"
         + " parser if this argument is not specified.",
     )
+    yosys.add_argument(
+        "-mapper",
+        default="yosys",
+        dest="mapper",
+        help="Choose the partial mapper fot VTR flow with Yosys frontend between [parmys, yosys].",
+    )
     #
     # VPR arguments
     #
@@ -733,6 +739,7 @@ def process_yosys_args(args):
     """
     yosys_args = OrderedDict()
     yosys_args["parser"] = args.parser
+    yosys_args["mapper"] = args.mapper
 
     return yosys_args
 

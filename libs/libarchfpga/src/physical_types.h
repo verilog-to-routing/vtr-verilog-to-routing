@@ -697,7 +697,7 @@ struct t_physical_tile_type {
  *          - SUB_TILE_B: capacity_range --> 5 to 11
  *          - SUB_TILE_C: capacity_range --> 12 to 16
  *
- * Totale TILE_X capacity is 17
+ * Total TILE_X capacity is 17
  */
 struct t_capacity_range {
     int low = 0;
