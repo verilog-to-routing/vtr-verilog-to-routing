@@ -315,7 +315,7 @@ DomainId TimingConstraints::create_clock_domain(const std::string name, bool inv
         id = DomainId(domain_ids_.size());
         domain_ids_.push_back(id);
 
-	domain_inverted_.push_back(inverted);
+        domain_inverted_.push_back(inverted);
         domain_names_.push_back(name);
         domain_sources_.emplace_back(NodeId::INVALID());
 
