@@ -96,18 +96,28 @@ void add_sdc_create_clock(Callback& callback, const Lexer& lexer, CreateClock& s
      */
     callback.create_clock(sdc_create_clock);
 
-    //Save clock targets
+    //Prepare and create inverted version of the netlist clock.
+    //Use netlist clock from parsed SDC file (create_clock command)
+    //as a base for the inverted clock. It is created as virtual
+    //so that it won't interfere with existing netlist clock.
+    sdc_create_clock.is_virtual = true;
+    //Mark clock as inverted
+    sdc_create_clock.inverted = true;
+
+    //Virtual clocks must have empty targets, overwrite those
+    //but first save the names of the targets
     auto targets = sdc_create_clock.targets.strings;
-    //Clean targets
     sdc_create_clock.targets = StringGroup();
-    //Set 180 degrees phase shift and configure those clocks as virtual
+
+    //180 degrees phase shift is done with inverting
+    //the rise- and fall-edge times of the original netlist clock
     double rise_edge = sdc_create_clock.rise_edge;
     sdc_create_clock.rise_edge = sdc_create_clock.fall_edge;
     sdc_create_clock.fall_edge = rise_edge;
-    sdc_create_clock.is_virtual = true;
-    sdc_create_clock.inverted = true;
+
+    //Create new inverted virtual clock for each target from original netlist clock.
     for (auto &str : targets) {
-	//Create new phase-shifted virtual clock per each target
+        //Use saved names of the original netlist clock targets as inverted clock names
         sdc_create_clock.name = str + "_negedge";
         callback.create_clock(sdc_create_clock);
     }
