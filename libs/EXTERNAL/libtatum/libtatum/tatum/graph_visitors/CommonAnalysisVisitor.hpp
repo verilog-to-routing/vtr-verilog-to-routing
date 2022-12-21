@@ -331,8 +331,8 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
                     //Skip propagation of timings derived from incompatible constraints
                     if ( tg.node_type(sink_node_id) == NodeType::CPIN ) {
-                        if ((tg.trigg_edge(sink_node_id) == 1 && !tc.clock_domain_inverted(src_capture_clk_tag.launch_clock_domain())) ||
-                            (tg.trigg_edge(sink_node_id) == 0 &&  tc.clock_domain_inverted(src_capture_clk_tag.launch_clock_domain()))) {
+                        if ((tg.trigg_edge(sink_node_id) == TriggeringEdge::FALLING_EDGE && !tc.clock_domain_inverted(src_capture_clk_tag.launch_clock_domain())) ||
+                            (tg.trigg_edge(sink_node_id) == TriggeringEdge::RISING_EDGE &&  tc.clock_domain_inverted(src_capture_clk_tag.launch_clock_domain()))) {
                             continue;
                         }
                     }

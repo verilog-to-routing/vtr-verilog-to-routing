@@ -198,7 +198,7 @@ NodeId TimingGraph::add_node(const NodeType type) {
     return node_id;
 }
 
-NodeId TimingGraph::add_node(const NodeType type, int trigg_edge) {
+NodeId TimingGraph::add_node(const NodeType type, TriggeringEdge trigg_edge) {
     //Invalidate the levelization
     is_levelized_ = false;
 
