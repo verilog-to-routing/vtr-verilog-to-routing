@@ -1297,9 +1297,9 @@ int get_edge_sw_arch_idx(t_physical_tile_type_ptr physical_tile,
     }
 
     int edge_idx = from_pb_pin->sink_pin_edge_idx_map.at(to_pb_pin);
-    int new_sw_idx = from_pb_pin->output_edges[edge_idx]->switch_type_idx;
+    int sw_idx = from_pb_pin->output_edges[edge_idx]->switch_type_idx;
 
-    return new_sw_idx;
+    return sw_idx;
 }
 
 const t_pb_graph_node* get_pb_graph_node_from_pin_physical_num(t_physical_tile_type_ptr physical_type,
