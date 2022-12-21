@@ -42,6 +42,9 @@ class TimingConstraints {
         ///\returns The name of a clock domain
         std::string clock_domain_name(const DomainId id) const;
 
+        ///Checks whether the clock domain was marked as inverted. Inverted clocks are virtual clocks created from netlist clocks with 180 degree phase shift applied
+        ///\param id The ID of the clock domain
+        ///\returns whether the clock domain with specified domain id was marked as inverted
         bool clock_domain_inverted(const DomainId id) const;
 
         ///\returns The source NodeId of the specified domain
