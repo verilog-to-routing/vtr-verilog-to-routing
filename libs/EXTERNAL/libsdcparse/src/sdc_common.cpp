@@ -101,8 +101,9 @@ void add_sdc_create_clock(Callback& callback, const Lexer& lexer, CreateClock& s
     //Clean targets
     sdc_create_clock.targets = StringGroup();
     //Set 180 degrees phase shift and configure those clocks as virtual
+    double rise_edge = sdc_create_clock.rise_edge;
     sdc_create_clock.rise_edge = sdc_create_clock.fall_edge;
-    sdc_create_clock.fall_edge = sdc_create_clock.fall_edge * 2;
+    sdc_create_clock.fall_edge = rise_edge;
     sdc_create_clock.is_virtual = true;
     sdc_create_clock.inverted = true;
     for (auto &str : targets) {
