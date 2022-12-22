@@ -171,6 +171,7 @@ void free_arch(t_arch* arch) {
 
     delete arch->architecture_id;
 
+	//Free internal model library
     if (arch->model_library) {
         for (int i = 0; i < num_models_lib; ++i) {
             vtr::t_linked_vptr* vptr = arch->model_library[i].pb_types;
@@ -181,29 +182,41 @@ void free_arch(t_arch* arch) {
             }
         }
 
+        //Each model has different number of inputs/outputs - delete each model separately
+		//Free INPAD
         delete arch->model_library[0].name;
         delete arch->model_library[0].outputs->name;
         delete[] arch->model_library[0].outputs;
+
+        //Free OUTPAD
+        delete arch->model_library[1].name;
         delete arch->model_library[1].inputs->name;
         delete[] arch->model_library[1].inputs;
-        delete arch->model_library[1].name;
+
+        //Free LATCH triggered at RISING EDGE
         delete arch->model_library[2].name;
         delete arch->model_library[2].inputs[0].name;
         delete arch->model_library[2].inputs[1].name;
         delete[] arch->model_library[2].inputs;
         delete arch->model_library[2].outputs->name;
         delete[] arch->model_library[2].outputs;
+
+        //Free LATCH triggered at FALLING EDGE
         delete arch->model_library[3].name;
         delete arch->model_library[3].inputs[0].name;
         delete arch->model_library[3].inputs[1].name;
         delete[] arch->model_library[3].inputs;
         delete arch->model_library[3].outputs->name;
         delete[] arch->model_library[3].outputs;
+
+        //Free NAMES
         delete arch->model_library[4].name;
         delete arch->model_library[4].inputs->name;
         delete[] arch->model_library[4].inputs;
         delete arch->model_library[4].outputs->name;
         delete[] arch->model_library[4].outputs;
+
+		//Free the library array
         delete[] arch->model_library;
     }
 
@@ -1031,6 +1044,10 @@ void CreateModelLibrary(t_arch* arch) {
     model_library = new t_model[num_models_lib];
 
     //INPAD
+    //OUTPAD
+    //LATCH triggered at RISING EDGE
+    //LATCH triggered at FALLING EDGE
+    //NAMES
     model_library[0].name = vtr::strdup(MODEL_INPUT);
     model_library[0].index = 0;
     model_library[0].inputs = nullptr;
