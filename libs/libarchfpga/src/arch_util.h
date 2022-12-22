@@ -16,6 +16,7 @@ void set_arch_file_name(const char* arch);
 const char* get_arch_file_name();
 
 constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
+constexpr const int num_models_lib = 5;
 
 class InstPort {
   public:

@@ -172,7 +172,7 @@ void free_arch(t_arch* arch) {
     vtr::free(arch->architecture_id);
 
     if (arch->model_library) {
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < num_models_lib; ++i) {
             vtr::t_linked_vptr* vptr = arch->model_library[i].pb_types;
             while (vptr) {
                 vtr::t_linked_vptr* vptr_prev = vptr;
@@ -1057,7 +1057,7 @@ e_power_estimation_method power_method_inherited(e_power_estimation_method paren
 void CreateModelLibrary(t_arch* arch) {
     t_model* model_library;
 
-    model_library = new t_model[5];
+    model_library = new t_model[num_models_lib];
 
     //INPAD
     model_library[0].name = vtr::strdup(MODEL_INPUT);
