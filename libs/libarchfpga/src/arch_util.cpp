@@ -1111,6 +1111,25 @@ void CreateModelLibrary(t_arch* arch) {
     model_library[LIB_LATCH_RE].outputs[0].clock = "clk";
     model_library[LIB_LATCH_RE].outputs[0].trigg_edge = TriggeringEdge::RISING_EDGE;
 
+	/*
+	 * Duplicate LATCH model.
+	 * Second separate model is required for falling edge support.
+	 * It is a copy of LIB_LATCH_RE but with different trigg_edge configuration
+	 * for inputs/outputs t_model_ports. It is used to represent FFs triggered at
+	 * the falling edge of the clock, while LIB_LATCH_RE represents FFs triggered
+	 * at the rising edge.
+	 *
+	 * VPR uses single model of each blif primitive type (e.g. '.latch', '.names') parsed from input blif file.
+	 * That means models are used as configuration reference for parsed blif primitives when
+	 * Latch instances are created in circuit evaluation, meaning:
+	 *   1 unique blif primitive configuration (parsed from blif file) maps to
+	 *   1 unique model (defined here, in VPR internal library) which represents configuration of
+	 *   multiple primitive instances (of given type and configuration) used in the circuit
+	 *
+	 * Models have to be duplicated because otherwise VPR will use the configuration
+	 * of the last parsed '.latch' for each FF in the design
+	 *
+	 */
     //LATCH triggered at FALLING EDGE
     model_library[LIB_LATCH_FE].name = vtr::strdup(MODEL_LATCH);
     model_library[LIB_LATCH_FE].index = LIB_LATCH_FE;
