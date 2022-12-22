@@ -184,37 +184,37 @@ void free_arch(t_arch* arch) {
 
         //Each model has different number of inputs/outputs - delete each model separately
 		//Free INPAD
-        delete arch->model_library[0].name;
-        delete arch->model_library[0].outputs->name;
-        delete[] arch->model_library[0].outputs;
+        delete arch->model_library[LIB_INPUT].name;
+        delete arch->model_library[LIB_INPUT].outputs->name;
+        delete[] arch->model_library[LIB_INPUT].outputs;
 
         //Free OUTPAD
-        delete arch->model_library[1].name;
-        delete arch->model_library[1].inputs->name;
-        delete[] arch->model_library[1].inputs;
+        delete arch->model_library[LIB_OUTPUT].name;
+        delete arch->model_library[LIB_OUTPUT].inputs->name;
+        delete[] arch->model_library[LIB_OUTPUT].inputs;
 
         //Free LATCH triggered at RISING EDGE
-        delete arch->model_library[2].name;
-        delete arch->model_library[2].inputs[0].name;
-        delete arch->model_library[2].inputs[1].name;
-        delete[] arch->model_library[2].inputs;
-        delete arch->model_library[2].outputs->name;
-        delete[] arch->model_library[2].outputs;
+        delete arch->model_library[LIB_LATCH_RE].name;
+        delete arch->model_library[LIB_LATCH_RE].inputs[0].name;
+        delete arch->model_library[LIB_LATCH_RE].inputs[1].name;
+        delete[] arch->model_library[LIB_LATCH_RE].inputs;
+        delete arch->model_library[LIB_LATCH_RE].outputs->name;
+        delete[] arch->model_library[LIB_LATCH_RE].outputs;
 
         //Free LATCH triggered at FALLING EDGE
-        delete arch->model_library[3].name;
-        delete arch->model_library[3].inputs[0].name;
-        delete arch->model_library[3].inputs[1].name;
-        delete[] arch->model_library[3].inputs;
-        delete arch->model_library[3].outputs->name;
-        delete[] arch->model_library[3].outputs;
+        delete arch->model_library[LIB_LATCH_FE].name;
+        delete arch->model_library[LIB_LATCH_FE].inputs[0].name;
+        delete arch->model_library[LIB_LATCH_FE].inputs[1].name;
+        delete[] arch->model_library[LIB_LATCH_FE].inputs;
+        delete arch->model_library[LIB_LATCH_FE].outputs->name;
+        delete[] arch->model_library[LIB_LATCH_FE].outputs;
 
         //Free NAMES
-        delete arch->model_library[4].name;
-        delete arch->model_library[4].inputs->name;
-        delete[] arch->model_library[4].inputs;
-        delete arch->model_library[4].outputs->name;
-        delete[] arch->model_library[4].outputs;
+        delete arch->model_library[LIB_NAMES].name;
+        delete arch->model_library[LIB_NAMES].inputs->name;
+        delete[] arch->model_library[LIB_NAMES].inputs;
+        delete arch->model_library[LIB_NAMES].outputs->name;
+        delete[] arch->model_library[LIB_NAMES].outputs;
 
 		//Free the library array
         delete[] arch->model_library;
@@ -1044,136 +1044,136 @@ void CreateModelLibrary(t_arch* arch) {
     model_library = new t_model[num_models_lib];
 
     //INPAD
-    model_library[0].name = vtr::strdup(MODEL_INPUT);
-    model_library[0].index = 0;
-    model_library[0].inputs = nullptr;
-    model_library[0].instances = nullptr;
-    model_library[0].next = &model_library[1];
-    model_library[0].outputs = new t_model_ports[1];
-    model_library[0].outputs->dir = OUT_PORT;
-    model_library[0].outputs->name = vtr::strdup("inpad");
-    model_library[0].outputs->next = nullptr;
-    model_library[0].outputs->size = 1;
-    model_library[0].outputs->min_size = 1;
-    model_library[0].outputs->index = 0;
-    model_library[0].outputs->is_clock = false;
+    model_library[LIB_INPUT].name = vtr::strdup(MODEL_INPUT);
+    model_library[LIB_INPUT].index = LIB_INPUT;
+    model_library[LIB_INPUT].inputs = nullptr;
+    model_library[LIB_INPUT].instances = nullptr;
+    model_library[LIB_INPUT].next = &model_library[LIB_OUTPUT];
+    model_library[LIB_INPUT].outputs = new t_model_ports[1];
+    model_library[LIB_INPUT].outputs->dir = OUT_PORT;
+    model_library[LIB_INPUT].outputs->name = vtr::strdup("inpad");
+    model_library[LIB_INPUT].outputs->next = nullptr;
+    model_library[LIB_INPUT].outputs->size = 1;
+    model_library[LIB_INPUT].outputs->min_size = 1;
+    model_library[LIB_INPUT].outputs->index = 0;
+    model_library[LIB_INPUT].outputs->is_clock = false;
 
     //OUTPAD
-    model_library[1].name = vtr::strdup(MODEL_OUTPUT);
-    model_library[1].index = 1;
-    model_library[1].inputs = new t_model_ports[1];
-    model_library[1].inputs->dir = IN_PORT;
-    model_library[1].inputs->name = vtr::strdup("outpad");
-    model_library[1].inputs->next = nullptr;
-    model_library[1].inputs->size = 1;
-    model_library[1].inputs->min_size = 1;
-    model_library[1].inputs->index = 0;
-    model_library[1].inputs->is_clock = false;
-    model_library[1].instances = nullptr;
-    model_library[1].next = &model_library[2];
-    model_library[1].outputs = nullptr;
+    model_library[LIB_OUTPUT].name = vtr::strdup(MODEL_OUTPUT);
+    model_library[LIB_OUTPUT].index = LIB_OUTPUT;
+    model_library[LIB_OUTPUT].inputs = new t_model_ports[1];
+    model_library[LIB_OUTPUT].inputs->dir = IN_PORT;
+    model_library[LIB_OUTPUT].inputs->name = vtr::strdup("outpad");
+    model_library[LIB_OUTPUT].inputs->next = nullptr;
+    model_library[LIB_OUTPUT].inputs->size = 1;
+    model_library[LIB_OUTPUT].inputs->min_size = 1;
+    model_library[LIB_OUTPUT].inputs->index = 0;
+    model_library[LIB_OUTPUT].inputs->is_clock = false;
+    model_library[LIB_OUTPUT].instances = nullptr;
+    model_library[LIB_OUTPUT].next = &model_library[LIB_LATCH_RE];
+    model_library[LIB_OUTPUT].outputs = nullptr;
 
     //LATCH triggered at RISING EDGE
-    model_library[2].name = vtr::strdup(MODEL_LATCH);
-    model_library[2].index = 2;
-    model_library[2].inputs = new t_model_ports[2];
+    model_library[LIB_LATCH_RE].name = vtr::strdup(MODEL_LATCH);
+    model_library[LIB_LATCH_RE].index = LIB_LATCH_RE;
+    model_library[LIB_LATCH_RE].inputs = new t_model_ports[2];
 
-    model_library[2].inputs[0].dir = IN_PORT;
-    model_library[2].inputs[0].name = vtr::strdup("D");
-    model_library[2].inputs[0].next = &model_library[2].inputs[1];
-    model_library[2].inputs[0].size = 1;
-    model_library[2].inputs[0].min_size = 1;
-    model_library[2].inputs[0].index = 0;
-    model_library[2].inputs[0].is_clock = false;
-    model_library[2].inputs[0].clock = "clk";
-    model_library[2].inputs[0].trigg_edge = TriggeringEdge::RISING_EDGE;
+    model_library[LIB_LATCH_RE].inputs[0].dir = IN_PORT;
+    model_library[LIB_LATCH_RE].inputs[0].name = vtr::strdup("D");
+    model_library[LIB_LATCH_RE].inputs[0].next = &model_library[LIB_LATCH_RE].inputs[1];
+    model_library[LIB_LATCH_RE].inputs[0].size = 1;
+    model_library[LIB_LATCH_RE].inputs[0].min_size = 1;
+    model_library[LIB_LATCH_RE].inputs[0].index = 0;
+    model_library[LIB_LATCH_RE].inputs[0].is_clock = false;
+    model_library[LIB_LATCH_RE].inputs[0].clock = "clk";
+    model_library[LIB_LATCH_RE].inputs[0].trigg_edge = TriggeringEdge::RISING_EDGE;
 
-    model_library[2].inputs[1].dir = IN_PORT;
-    model_library[2].inputs[1].name = vtr::strdup("clk");
-    model_library[2].inputs[1].next = nullptr;
-    model_library[2].inputs[1].size = 1;
-    model_library[2].inputs[1].min_size = 1;
-    model_library[2].inputs[1].index = 0;
-    model_library[2].inputs[1].is_clock = true;
-    model_library[2].inputs[1].trigg_edge = TriggeringEdge::RISING_EDGE;
+    model_library[LIB_LATCH_RE].inputs[1].dir = IN_PORT;
+    model_library[LIB_LATCH_RE].inputs[1].name = vtr::strdup("clk");
+    model_library[LIB_LATCH_RE].inputs[1].next = nullptr;
+    model_library[LIB_LATCH_RE].inputs[1].size = 1;
+    model_library[LIB_LATCH_RE].inputs[1].min_size = 1;
+    model_library[LIB_LATCH_RE].inputs[1].index = 0;
+    model_library[LIB_LATCH_RE].inputs[1].is_clock = true;
+    model_library[LIB_LATCH_RE].inputs[1].trigg_edge = TriggeringEdge::RISING_EDGE;
 
-    model_library[2].instances = nullptr;
-    model_library[2].next = &model_library[3];
+    model_library[LIB_LATCH_RE].instances = nullptr;
+    model_library[LIB_LATCH_RE].next = &model_library[LIB_LATCH_FE];
 
-    model_library[2].outputs = new t_model_ports[1];
-    model_library[2].outputs[0].dir = OUT_PORT;
-    model_library[2].outputs[0].name = vtr::strdup("Q");
-    model_library[2].outputs[0].next = nullptr;
-    model_library[2].outputs[0].size = 1;
-    model_library[2].outputs[0].min_size = 1;
-    model_library[2].outputs[0].index = 0;
-    model_library[2].outputs[0].is_clock = false;
-    model_library[2].outputs[0].clock = "clk";
-    model_library[2].outputs[0].trigg_edge = TriggeringEdge::RISING_EDGE;
+    model_library[LIB_LATCH_RE].outputs = new t_model_ports[1];
+    model_library[LIB_LATCH_RE].outputs[0].dir = OUT_PORT;
+    model_library[LIB_LATCH_RE].outputs[0].name = vtr::strdup("Q");
+    model_library[LIB_LATCH_RE].outputs[0].next = nullptr;
+    model_library[LIB_LATCH_RE].outputs[0].size = 1;
+    model_library[LIB_LATCH_RE].outputs[0].min_size = 1;
+    model_library[LIB_LATCH_RE].outputs[0].index = 0;
+    model_library[LIB_LATCH_RE].outputs[0].is_clock = false;
+    model_library[LIB_LATCH_RE].outputs[0].clock = "clk";
+    model_library[LIB_LATCH_RE].outputs[0].trigg_edge = TriggeringEdge::RISING_EDGE;
 
     //LATCH triggered at FALLING EDGE
-    model_library[3].name = vtr::strdup(MODEL_LATCH);
-    model_library[3].index = 3;
-    model_library[3].inputs = new t_model_ports[2];
+    model_library[LIB_LATCH_FE].name = vtr::strdup(MODEL_LATCH);
+    model_library[LIB_LATCH_FE].index = LIB_LATCH_FE;
+    model_library[LIB_LATCH_FE].inputs = new t_model_ports[2];
 
-    model_library[3].inputs[0].dir = IN_PORT;
-    model_library[3].inputs[0].name = vtr::strdup("D");
-    model_library[3].inputs[0].next = &model_library[3].inputs[1];
-    model_library[3].inputs[0].size = 1;
-    model_library[3].inputs[0].min_size = 1;
-    model_library[3].inputs[0].index = 0;
-    model_library[3].inputs[0].is_clock = false;
-    model_library[3].inputs[0].clock = "clk";
-    model_library[3].inputs[0].trigg_edge = TriggeringEdge::FALLING_EDGE;
+    model_library[LIB_LATCH_FE].inputs[0].dir = IN_PORT;
+    model_library[LIB_LATCH_FE].inputs[0].name = vtr::strdup("D");
+    model_library[LIB_LATCH_FE].inputs[0].next = &model_library[LIB_LATCH_FE].inputs[1];
+    model_library[LIB_LATCH_FE].inputs[0].size = 1;
+    model_library[LIB_LATCH_FE].inputs[0].min_size = 1;
+    model_library[LIB_LATCH_FE].inputs[0].index = 0;
+    model_library[LIB_LATCH_FE].inputs[0].is_clock = false;
+    model_library[LIB_LATCH_FE].inputs[0].clock = "clk";
+    model_library[LIB_LATCH_FE].inputs[0].trigg_edge = TriggeringEdge::FALLING_EDGE;
 
-    model_library[3].inputs[1].dir = IN_PORT;
-    model_library[3].inputs[1].name = vtr::strdup("clk");
-    model_library[3].inputs[1].next = nullptr;
-    model_library[3].inputs[1].size = 1;
-    model_library[3].inputs[1].min_size = 1;
-    model_library[3].inputs[1].index = 0;
-    model_library[3].inputs[1].is_clock = true;
-    model_library[3].inputs[1].trigg_edge = TriggeringEdge::FALLING_EDGE;
+    model_library[LIB_LATCH_FE].inputs[1].dir = IN_PORT;
+    model_library[LIB_LATCH_FE].inputs[1].name = vtr::strdup("clk");
+    model_library[LIB_LATCH_FE].inputs[1].next = nullptr;
+    model_library[LIB_LATCH_FE].inputs[1].size = 1;
+    model_library[LIB_LATCH_FE].inputs[1].min_size = 1;
+    model_library[LIB_LATCH_FE].inputs[1].index = 0;
+    model_library[LIB_LATCH_FE].inputs[1].is_clock = true;
+    model_library[LIB_LATCH_FE].inputs[1].trigg_edge = TriggeringEdge::FALLING_EDGE;
 
-    model_library[3].instances = nullptr;
-    model_library[3].next = &model_library[4];
+    model_library[LIB_LATCH_FE].instances = nullptr;
+    model_library[LIB_LATCH_FE].next = &model_library[LIB_NAMES];
 
-    model_library[3].outputs = new t_model_ports[1];
-    model_library[3].outputs[0].dir = OUT_PORT;
-    model_library[3].outputs[0].name = vtr::strdup("Q");
-    model_library[3].outputs[0].next = nullptr;
-    model_library[3].outputs[0].size = 1;
-    model_library[3].outputs[0].min_size = 1;
-    model_library[3].outputs[0].index = 0;
-    model_library[3].outputs[0].is_clock = false;
-    model_library[3].outputs[0].clock = "clk";
-    model_library[3].outputs[0].trigg_edge = TriggeringEdge::FALLING_EDGE;
+    model_library[LIB_LATCH_FE].outputs = new t_model_ports[1];
+    model_library[LIB_LATCH_FE].outputs[0].dir = OUT_PORT;
+    model_library[LIB_LATCH_FE].outputs[0].name = vtr::strdup("Q");
+    model_library[LIB_LATCH_FE].outputs[0].next = nullptr;
+    model_library[LIB_LATCH_FE].outputs[0].size = 1;
+    model_library[LIB_LATCH_FE].outputs[0].min_size = 1;
+    model_library[LIB_LATCH_FE].outputs[0].index = 0;
+    model_library[LIB_LATCH_FE].outputs[0].is_clock = false;
+    model_library[LIB_LATCH_FE].outputs[0].clock = "clk";
+    model_library[LIB_LATCH_FE].outputs[0].trigg_edge = TriggeringEdge::FALLING_EDGE;
 
     //NAMES
-    model_library[4].name = vtr::strdup(MODEL_NAMES);
-    model_library[4].index = 4;
+    model_library[LIB_NAMES].name = vtr::strdup(MODEL_NAMES);
+    model_library[LIB_NAMES].index = LIB_NAMES;
 
-    model_library[4].inputs = new t_model_ports[1];
-    model_library[4].inputs[0].dir = IN_PORT;
-    model_library[4].inputs[0].name = vtr::strdup("in");
-    model_library[4].inputs[0].next = nullptr;
-    model_library[4].inputs[0].size = 1;
-    model_library[4].inputs[0].min_size = 1;
-    model_library[4].inputs[0].index = 0;
-    model_library[4].inputs[0].is_clock = false;
-    model_library[4].inputs[0].combinational_sink_ports = {"out"};
+    model_library[LIB_NAMES].inputs = new t_model_ports[1];
+    model_library[LIB_NAMES].inputs[0].dir = IN_PORT;
+    model_library[LIB_NAMES].inputs[0].name = vtr::strdup("in");
+    model_library[LIB_NAMES].inputs[0].next = nullptr;
+    model_library[LIB_NAMES].inputs[0].size = 1;
+    model_library[LIB_NAMES].inputs[0].min_size = 1;
+    model_library[LIB_NAMES].inputs[0].index = 0;
+    model_library[LIB_NAMES].inputs[0].is_clock = false;
+    model_library[LIB_NAMES].inputs[0].combinational_sink_ports = {"out"};
 
-    model_library[4].instances = nullptr;
-    model_library[4].next = nullptr;
+    model_library[LIB_NAMES].instances = nullptr;
+    model_library[LIB_NAMES].next = nullptr;
 
-    model_library[4].outputs = new t_model_ports[1];
-    model_library[4].outputs[0].dir = OUT_PORT;
-    model_library[4].outputs[0].name = vtr::strdup("out");
-    model_library[4].outputs[0].next = nullptr;
-    model_library[4].outputs[0].size = 1;
-    model_library[4].outputs[0].min_size = 1;
-    model_library[4].outputs[0].index = 0;
-    model_library[4].outputs[0].is_clock = false;
+    model_library[LIB_NAMES].outputs = new t_model_ports[1];
+    model_library[LIB_NAMES].outputs[0].dir = OUT_PORT;
+    model_library[LIB_NAMES].outputs[0].name = vtr::strdup("out");
+    model_library[LIB_NAMES].outputs[0].next = nullptr;
+    model_library[LIB_NAMES].outputs[0].size = 1;
+    model_library[LIB_NAMES].outputs[0].min_size = 1;
+    model_library[LIB_NAMES].outputs[0].index = 0;
+    model_library[LIB_NAMES].outputs[0].is_clock = false;
 
     arch->model_library = model_library;
 }

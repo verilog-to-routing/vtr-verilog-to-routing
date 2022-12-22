@@ -18,6 +18,14 @@ const char* get_arch_file_name();
 constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 constexpr const int num_models_lib = 5;
 
+enum InternalModel {
+	LIB_INPUT,
+	LIB_OUTPUT,
+	LIB_LATCH_RE,
+	LIB_LATCH_FE,
+	LIB_NAMES
+};
+
 class InstPort {
   public:
     static constexpr int UNSPECIFIED = -1;
