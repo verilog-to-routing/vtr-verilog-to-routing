@@ -1044,10 +1044,6 @@ void CreateModelLibrary(t_arch* arch) {
     model_library = new t_model[num_models_lib];
 
     //INPAD
-    //OUTPAD
-    //LATCH triggered at RISING EDGE
-    //LATCH triggered at FALLING EDGE
-    //NAMES
     model_library[0].name = vtr::strdup(MODEL_INPUT);
     model_library[0].index = 0;
     model_library[0].inputs = nullptr;
