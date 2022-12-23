@@ -908,10 +908,15 @@ class SdcParseCallback : public sdcparse::Callback {
                       "Expected clock names or collection via get_clocks");
         }
 
-        for (int i = 0; i < 2; i++) {
+        //There are 2 clock variants:
+        // * regular - derived from netlist clocks specified in SDC file
+        // * inverted - copy of regular clock, created as virtual clock
+        //              with 180 degree phase shift and name suffixed with '_negedge'
+        // Look for both variants
+        for (int clk_variant = 0; clk_variant < 2; clk_variant++) {
             for (const auto& clock_glob_pattern : clock_group.strings) {
                 std::string clk_gpattern;
-                switch (i) {
+                switch (clk_variant) {
                     case 0:
                         clk_gpattern = clock_glob_pattern;
                         break;
