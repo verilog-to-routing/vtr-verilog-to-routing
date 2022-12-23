@@ -655,7 +655,6 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
     }
     // Special case for latch - fill secondary data fields
     if (pb_type->class_type == LATCH_CLASS) {
-        copy->num_ports_sec = pb_type->num_ports;
         copy->ports_sec = new t_port[pb_type->num_ports]();
         for (i = 0; i < pb_type->num_ports; i++) {
             copy->ports_sec[i].is_clock = pb_type->ports[i].is_clock;

@@ -945,7 +945,6 @@ struct t_pb_type {
     t_port* ports = nullptr; /* [0..num_ports] */
     int num_ports = 0;
     t_port* ports_sec = nullptr; /* [0..num_ports] */
-    int num_ports_sec = 0;
 
     int num_clock_pins = 0;
     int num_input_pins = 0; /* inputs not including clock pins */
