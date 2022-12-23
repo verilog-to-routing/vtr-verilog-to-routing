@@ -741,9 +741,7 @@ class SdcParseCallback : public sdcparse::Callback {
 
             constraint = launch_clock.period;
 
-        } else if ((std::fabs(launch_clock.period - capture_clock.period) < EPSILON) &&
-				   (std::fabs((launch_clock.period / 2) - std::fabs(launch_clock.rise_edge - capture_clock.rise_edge)) < EPSILON) &&
-				   (std::fabs((launch_clock.period / 2) - std::fabs(launch_clock.fall_edge - capture_clock.fall_edge)) < EPSILON)) {
+        } else if ((std::fabs(launch_clock.period - capture_clock.period) < EPSILON) && (std::fabs((launch_clock.period / 2) - std::fabs(launch_clock.rise_edge - capture_clock.rise_edge)) < EPSILON) && (std::fabs((launch_clock.period / 2) - std::fabs(launch_clock.fall_edge - capture_clock.fall_edge)) < EPSILON)) {
             //The source and sink domains have the same period but are inverted, the constraint is half of the common clock period.
 
             constraint = (launch_clock.period / 2);

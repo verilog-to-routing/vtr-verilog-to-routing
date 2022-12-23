@@ -171,7 +171,7 @@ void free_arch(t_arch* arch) {
 
     delete arch->architecture_id;
 
-	//Free internal model library
+    //Free internal model library
     if (arch->model_library) {
         for (int i = 0; i < num_models_lib; ++i) {
             vtr::t_linked_vptr* vptr = arch->model_library[i].pb_types;
@@ -183,7 +183,7 @@ void free_arch(t_arch* arch) {
         }
 
         //Each model has different number of inputs/outputs - delete each model separately
-		//Free INPAD
+        //Free INPAD
         delete arch->model_library[LIB_INPUT].name;
         delete arch->model_library[LIB_INPUT].outputs->name;
         delete[] arch->model_library[LIB_INPUT].outputs;
@@ -216,7 +216,7 @@ void free_arch(t_arch* arch) {
         delete arch->model_library[LIB_NAMES].outputs->name;
         delete[] arch->model_library[LIB_NAMES].outputs;
 
-		//Free the library array
+        //Free the library array
         delete[] arch->model_library;
     }
 
@@ -687,7 +687,7 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
     for (i = 0; i < copy->num_annotations; i++) {
         copy->annotations[i].clock = vtr::strdup(pb_type->annotations[i].clock);
         dot = strstr(pb_type->annotations[i].input_pins, ".");
-        copy->annotations[i].input_pins =  new char[strlen(new_name) + strlen(dot) + 1];
+        copy->annotations[i].input_pins = new char[strlen(new_name) + strlen(dot) + 1];
         copy->annotations[i].input_pins[0] = '\0';
         strcat(copy->annotations[i].input_pins, new_name);
         strcat(copy->annotations[i].input_pins, dot);
@@ -852,7 +852,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     sprintf(lut_pb_type->modes[1].interconnect[1].input_string, "%s.%s",
             default_name, out_port->name);
     lut_pb_type->modes[1].interconnect[1].output_string = new char[strlen(lut_pb_type->name) + strlen(out_port->name)
-                                                                                 + strlen(in_port->name) + 2];
+                                                                   + strlen(in_port->name) + 2];
     sprintf(lut_pb_type->modes[1].interconnect[1].output_string, "%s.%s",
             lut_pb_type->name, out_port->name);
     lut_pb_type->modes[1].interconnect[1].infer_annotations = true;
@@ -955,7 +955,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
                 sprintf(mem_pb_type->modes[0].interconnect[i_inter].input_string,
                         "%s.%s", input_name, input_port_name);
                 mem_pb_type->modes[0].interconnect[i_inter].output_string = new char[strlen(output_name) + strlen(output_port_name)
-                                                                                                   + 2 * (6 + num_pb / 10)];
+                                                                                     + 2 * (6 + num_pb / 10)];
                 sprintf(mem_pb_type->modes[0].interconnect[i_inter].output_string,
                         "%s[%d:0].%s", output_name, num_pb - 1,
                         output_port_name);
@@ -965,11 +965,11 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
                 mem_pb_type->modes[0].pb_type_children[0].num_output_pins -= (mem_pb_type->ports[i].num_pins - 1);
 
                 mem_pb_type->modes[0].interconnect[i_inter].input_string = new char[strlen(input_name) + strlen(input_port_name)
-                                                                                                  + 2 * (6 + num_pb / 10)];
+                                                                                    + 2 * (6 + num_pb / 10)];
                 sprintf(mem_pb_type->modes[0].interconnect[i_inter].input_string,
                         "%s[%d:0].%s", input_name, num_pb - 1, input_port_name);
                 mem_pb_type->modes[0].interconnect[i_inter].output_string = new char[strlen(output_name) + strlen(output_port_name)
-                                                                                                   + 2];
+                                                                                     + 2];
                 sprintf(mem_pb_type->modes[0].interconnect[i_inter].output_string,
                         "%s.%s", output_name, output_port_name);
             }
@@ -997,7 +997,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
                 } else {
                     mem_pb_type->modes[0].interconnect[i_inter].type = DIRECT_INTERC;
                     mem_pb_type->modes[0].interconnect[i_inter].input_string = new char[strlen(input_name) + strlen(input_port_name)
-                                                                                                           + 2 * (6 + num_pb / 10)];
+                                                                                        + 2 * (6 + num_pb / 10)];
                     sprintf(mem_pb_type->modes[0].interconnect[i_inter].input_string,
                             "%s[%d:%d].%s", input_name, j, j, input_port_name);
                     mem_pb_type->modes[0].interconnect[i_inter].output_string = new char[strlen(output_name) + strlen(output_port_name) + 2];
@@ -1111,25 +1111,25 @@ void CreateModelLibrary(t_arch* arch) {
     model_library[LIB_LATCH_RE].outputs[0].clock = "clk";
     model_library[LIB_LATCH_RE].outputs[0].trigg_edge = TriggeringEdge::RISING_EDGE;
 
-	/*
-	 * Duplicate LATCH model.
-	 * Second separate model is required for falling edge support.
-	 * It is a copy of LIB_LATCH_RE but with different trigg_edge configuration
-	 * for inputs/outputs t_model_ports. It is used to represent FFs triggered at
-	 * the falling edge of the clock, while LIB_LATCH_RE represents FFs triggered
-	 * at the rising edge.
-	 *
-	 * VPR uses single model of each blif primitive type (e.g. '.latch', '.names') parsed from input blif file.
-	 * That means models are used as configuration reference for parsed blif primitives when
-	 * Latch instances are created in circuit evaluation, meaning:
-	 *   1 unique blif primitive configuration (parsed from blif file) maps to
-	 *   1 unique model (defined here, in VPR internal library) which represents configuration of
-	 *   multiple primitive instances (of given type and configuration) used in the circuit
-	 *
-	 * Models have to be duplicated because otherwise VPR will use the configuration
-	 * of the last parsed '.latch' for each FF in the design
-	 *
-	 */
+    /*
+     * Duplicate LATCH model.
+     * Second separate model is required for falling edge support.
+     * It is a copy of LIB_LATCH_RE but with different trigg_edge configuration
+     * for inputs/outputs t_model_ports. It is used to represent FFs triggered at
+     * the falling edge of the clock, while LIB_LATCH_RE represents FFs triggered
+     * at the rising edge.
+     *
+     * VPR uses single model of each blif primitive type (e.g. '.latch', '.names') parsed from input blif file.
+     * That means models are used as configuration reference for parsed blif primitives when
+     * Latch instances are created in circuit evaluation, meaning:
+     *   1 unique blif primitive configuration (parsed from blif file) maps to
+     *   1 unique model (defined here, in VPR internal library) which represents configuration of
+     *   multiple primitive instances (of given type and configuration) used in the circuit
+     *
+     * Models have to be duplicated because otherwise VPR will use the configuration
+     * of the last parsed '.latch' for each FF in the design
+     *
+     */
     //LATCH triggered at FALLING EDGE
     model_library[LIB_LATCH_FE].name = vtr::strdup(MODEL_LATCH);
     model_library[LIB_LATCH_FE].index = LIB_LATCH_FE;

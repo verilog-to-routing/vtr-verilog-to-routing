@@ -918,8 +918,8 @@ bool primitive_type_feasible(const AtomBlockId blk_id, t_pb_graph_node* curr_pb_
     if (cur_pb_type->model != atom_ctx.nlist.block_model(blk_id)) {
         //Check if the AtomBlock is related to FF (LATCH model)
         if ((strcmp(atom_ctx.nlist.block_model(blk_id)->name, MODEL_LATCH) == 0) && (strcmp(atom_ctx.nlist.block_model(blk_id)->name, cur_pb_type->model->name) == 0)) {
-             //Special case for .latch: this model exists in 2 variations which are
-             //defined one after another in linked list, check if the second variant match
+            //Special case for .latch: this model exists in 2 variations which are
+            //defined one after another in linked list, check if the second variant match
             if (cur_pb_type->model->next == atom_ctx.nlist.block_model(blk_id) && atom_ctx.nlist.block_model(blk_id)->inputs[LATCH_CLOCK_INPUT_ID].trigg_edge == TriggeringEdge::FALLING_EDGE) {
                 // Next primitive matched AtomBlock
                 // VPR will need data in secondary pin structs in curr_pb_graph_node

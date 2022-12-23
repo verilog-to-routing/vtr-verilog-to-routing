@@ -196,7 +196,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
                     type = "fe";
                 } else {
                     //Otherwise always assume rising edge (.latch could be also configured as:
-					//'active high', 'active low', 'asynchronous')
+                    //'active high', 'active low', 'asynchronous')
                     type = "re";
                 }
             }
