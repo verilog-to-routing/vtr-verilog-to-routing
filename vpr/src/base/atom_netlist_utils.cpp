@@ -191,8 +191,8 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
 
             //Latch type
             auto type = "invalid";
-            if ((blk_model->name == std::string(MODEL_LATCH)) && (blk_model->inputs[1].is_clock)) {
-                if (blk_model->inputs[1].trigg_edge == TriggeringEdge::FALLING_EDGE) {
+            if ((blk_model->name == std::string(MODEL_LATCH)) && (blk_model->inputs[LATCH_CLOCK_INPUT_ID].is_clock)) {
+                if (blk_model->inputs[LATCH_CLOCK_INPUT_ID].trigg_edge == TriggeringEdge::FALLING_EDGE) {
                     type = "fe";
                 } else {
                     //Otherwise always assume rising edge (.latch could be also configured as:

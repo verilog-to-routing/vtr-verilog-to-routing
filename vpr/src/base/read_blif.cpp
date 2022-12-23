@@ -477,7 +477,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             arch_model = arch_models;
             while (arch_model) {
                 if (strcmp(MODEL_LATCH, arch_model->name) == 0) {
-                    if (t_edge == arch_model->inputs[1].trigg_edge) {
+                    if (t_edge == arch_model->inputs[LATCH_CLOCK_INPUT_ID].trigg_edge) {
                         //Found it
                         break;
                     }

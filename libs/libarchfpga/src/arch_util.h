@@ -17,6 +17,7 @@ const char* get_arch_file_name();
 
 constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 constexpr const int num_models_lib = 5;
+constexpr const int LATCH_CLOCK_INPUT_ID = 1;
 
 enum InternalModel {
 	LIB_INPUT,
