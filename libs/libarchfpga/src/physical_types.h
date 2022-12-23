@@ -922,7 +922,7 @@ struct t_logical_block_type {
  *             including those matched to FFs triggered at the rising edge of the clock
  *      ports_sec: secondary I/O and clock ports - used for pb_types matched to .latch models
  *                 representing FFs triggered at the falling edge of the clock.
- *                 Required mainly for feasibility checks in clustering step
+ *                 Required for feasibility checks in clustering step.
  *      num_clock_pins: A count of the total number of clock pins
  *      num_input_pins: A count of the total number of input pins
  *      num_output_pins: A count of the total number of output pins
@@ -1249,6 +1249,14 @@ class t_pb_graph_node {
     // Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
     std::string hierarchical_type_name() const;
 
+    /** Fill secondary pin structs with data
+     *
+     * When pb_graph_node for falling edge clocked FF is processed,
+     * secondary structures for input, output and clock pins have to be
+     * filled with data.
+     * Do that by copying data from primary pin structures and replacing
+     * references to primary t_ports with references to secondary t_ports.
+     */
     void update_pins();
 };
 
