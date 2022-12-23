@@ -1047,7 +1047,6 @@ struct t_interconnect {
  *      name: name of the port
  *      model_port: associated model port
  *      is_clock: whether or not this port is a clock
- *      trigg_edge: triggering edge of the clock port
  *      is_non_clock_global: Applies to top level pb_type, this pin is not a clock but
  *                           is a global signal (useful for stuff like global reset signals,
  *                           perhaps useful for VCC and GND)
@@ -1063,7 +1062,6 @@ struct t_port {
     t_model_ports* model_port;
     enum PORTS type;
     bool is_clock;
-    enum TriggeringEdge trigg_edge;
     bool is_non_clock_global;
     int num_pins;
     PortEquivalence equivalent;
