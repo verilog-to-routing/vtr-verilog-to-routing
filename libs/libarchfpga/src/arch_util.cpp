@@ -154,7 +154,7 @@ void free_arch(t_arch* arch) {
 
     for (int i = 0; i < arch->num_switches; ++i) {
         if (arch->Switches->name != nullptr) {
-            delete arch->Switches[i].name;
+            vtr::free(arch->Switches[i].name);
         }
     }
     delete[] arch->Switches;
@@ -163,13 +163,13 @@ void free_arch(t_arch* arch) {
     free_arch_models(arch->models);
 
     for (int i = 0; i < arch->num_directs; ++i) {
-        delete arch->Directs[i].name;
-        delete arch->Directs[i].from_pin;
-        delete arch->Directs[i].to_pin;
+        vtr::free(arch->Directs[i].name);
+        vtr::free(arch->Directs[i].from_pin);
+        vtr::free(arch->Directs[i].to_pin);
     }
-    delete arch->Directs;
+    vtr::free(arch->Directs);
 
-    delete arch->architecture_id;
+    vtr::free(arch->architecture_id);
 
     //Free internal model library
     if (arch->model_library) {
@@ -178,42 +178,42 @@ void free_arch(t_arch* arch) {
             while (vptr) {
                 vtr::t_linked_vptr* vptr_prev = vptr;
                 vptr = vptr->next;
-                delete vptr_prev;
+                vtr::free(vptr_prev);
             }
         }
 
         //Each model has different number of inputs/outputs - delete each model separately
         //Free INPAD
-        delete arch->model_library[LIB_INPUT].name;
-        delete arch->model_library[LIB_INPUT].outputs->name;
+        vtr::free(arch->model_library[LIB_INPUT].name);
+        vtr::free(arch->model_library[LIB_INPUT].outputs->name);
         delete[] arch->model_library[LIB_INPUT].outputs;
 
         //Free OUTPAD
-        delete arch->model_library[LIB_OUTPUT].name;
-        delete arch->model_library[LIB_OUTPUT].inputs->name;
+        vtr::free(arch->model_library[LIB_OUTPUT].name);
+        vtr::free(arch->model_library[LIB_OUTPUT].inputs->name);
         delete[] arch->model_library[LIB_OUTPUT].inputs;
 
         //Free LATCH triggered at RISING EDGE
-        delete arch->model_library[LIB_LATCH_RE].name;
-        delete arch->model_library[LIB_LATCH_RE].inputs[0].name;
-        delete arch->model_library[LIB_LATCH_RE].inputs[1].name;
+        vtr::free(arch->model_library[LIB_LATCH_RE].name);
+        vtr::free(arch->model_library[LIB_LATCH_RE].inputs[0].name);
+        vtr::free(arch->model_library[LIB_LATCH_RE].inputs[1].name);
         delete[] arch->model_library[LIB_LATCH_RE].inputs;
-        delete arch->model_library[LIB_LATCH_RE].outputs->name;
+        vtr::free(arch->model_library[LIB_LATCH_RE].outputs->name);
         delete[] arch->model_library[LIB_LATCH_RE].outputs;
 
         //Free LATCH triggered at FALLING EDGE
-        delete arch->model_library[LIB_LATCH_FE].name;
-        delete arch->model_library[LIB_LATCH_FE].inputs[0].name;
-        delete arch->model_library[LIB_LATCH_FE].inputs[1].name;
+        vtr::free(arch->model_library[LIB_LATCH_FE].name);
+        vtr::free(arch->model_library[LIB_LATCH_FE].inputs[0].name);
+        vtr::free(arch->model_library[LIB_LATCH_FE].inputs[1].name);
         delete[] arch->model_library[LIB_LATCH_FE].inputs;
-        delete arch->model_library[LIB_LATCH_FE].outputs->name;
+        vtr::free(arch->model_library[LIB_LATCH_FE].outputs->name);
         delete[] arch->model_library[LIB_LATCH_FE].outputs;
 
         //Free NAMES
-        delete arch->model_library[LIB_NAMES].name;
-        delete arch->model_library[LIB_NAMES].inputs->name;
+        vtr::free(arch->model_library[LIB_NAMES].name);
+        vtr::free(arch->model_library[LIB_NAMES].inputs->name);
         delete[] arch->model_library[LIB_NAMES].inputs;
-        delete arch->model_library[LIB_NAMES].outputs->name;
+        vtr::free(arch->model_library[LIB_NAMES].outputs->name);
         delete[] arch->model_library[LIB_NAMES].outputs;
 
         //Free the library array
@@ -221,7 +221,7 @@ void free_arch(t_arch* arch) {
     }
 
     if (arch->clocks) {
-        delete arch->clocks->clock_inf;
+        vtr::free(arch->clocks->clock_inf);
     }
 
     delete (arch->noc);
@@ -248,12 +248,12 @@ t_model* free_arch_model(t_model* model) {
     while (vptr) {
         vtr::t_linked_vptr* vptr_prev = vptr;
         vptr = vptr->next;
-        delete vptr_prev;
+        vtr::free(vptr_prev);
     }
 
     if (model->instances)
         vtr::free(model->instances);
-    delete model->name;
+    vtr::free(model->name);
     delete model;
 
     return next_model;
@@ -273,7 +273,7 @@ t_model_ports* free_arch_model_port(t_model_ports* model_port) {
 
     t_model_ports* next_port = model_port->next;
 
-    delete model_port->name;
+    vtr::free(model_port->name);
     delete model_port;
 
     return next_port;
@@ -281,16 +281,16 @@ t_model_ports* free_arch_model_port(t_model_ports* model_port) {
 
 void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors) {
     for (auto& type : type_descriptors) {
-        delete type.name;
+        vtr::free(type.name);
         if (type.index == EMPTY_TYPE_INDEX) {
             continue;
         }
 
         for (auto& sub_tile : type.sub_tiles) {
-            delete sub_tile.name;
+            vtr::free(sub_tile.name);
 
             for (auto port : sub_tile.ports) {
-                delete port.name;
+                vtr::free(port.name);
             }
         }
     }
@@ -301,7 +301,7 @@ void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors) 
     free_all_pb_graph_nodes(type_descriptors);
 
     for (auto& type : type_descriptors) {
-        delete type.name;
+        vtr::free(type.name);
         if (type.index == EMPTY_TYPE_INDEX) {
             continue;
         }
@@ -421,98 +421,98 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
             for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
                 free_pb_graph(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
             }
-            delete pb_graph_node->child_pb_graph_nodes[i][j];
+            vtr::free(pb_graph_node->child_pb_graph_nodes[i][j]);
         }
-        delete pb_graph_node->child_pb_graph_nodes[i];
+        vtr::free(pb_graph_node->child_pb_graph_nodes[i]);
     }
-    delete pb_graph_node->child_pb_graph_nodes;
+    vtr::free(pb_graph_node->child_pb_graph_nodes);
 }
 
 static void free_pb_type(t_pb_type* pb_type) {
-    delete pb_type->name;
+    vtr::free(pb_type->name);
     if (pb_type->blif_model)
-        delete pb_type->blif_model;
+        vtr::free(pb_type->blif_model);
 
     for (int i = 0; i < pb_type->num_modes; ++i) {
         for (int j = 0; j < pb_type->modes[i].num_pb_type_children; ++j) {
             free_pb_type(&pb_type->modes[i].pb_type_children[j]);
         }
         delete[] pb_type->modes[i].pb_type_children;
-        delete pb_type->modes[i].name;
+        vtr::free(pb_type->modes[i].name);
         for (int j = 0; j < pb_type->modes[i].num_interconnect; ++j) {
-            delete pb_type->modes[i].interconnect[j].input_string;
-            delete pb_type->modes[i].interconnect[j].output_string;
-            delete pb_type->modes[i].interconnect[j].name;
+            vtr::free(pb_type->modes[i].interconnect[j].input_string);
+            vtr::free(pb_type->modes[i].interconnect[j].output_string);
+            vtr::free(pb_type->modes[i].interconnect[j].name);
 
             for (int k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; ++k) {
                 if (pb_type->modes[i].interconnect[j].annotations[k].clock)
-                    delete pb_type->modes[i].interconnect[j].annotations[k].clock;
+                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].clock);
                 if (pb_type->modes[i].interconnect[j].annotations[k].input_pins) {
-                    delete pb_type->modes[i].interconnect[j].annotations[k].input_pins;
+                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].input_pins);
                 }
                 if (pb_type->modes[i].interconnect[j].annotations[k].output_pins) {
-                    delete pb_type->modes[i].interconnect[j].annotations[k].output_pins;
+                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].output_pins);
                 }
                 for (int m = 0; m < pb_type->modes[i].interconnect[j].annotations[k].num_value_prop_pairs; ++m) {
-                    delete pb_type->modes[i].interconnect[j].annotations[k].value[m];
+                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].value[m]);
                 }
-                delete pb_type->modes[i].interconnect[j].annotations[k].prop;
-                delete pb_type->modes[i].interconnect[j].annotations[k].value;
+                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].prop);
+                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].value);
             }
-            delete pb_type->modes[i].interconnect[j].annotations;
+            vtr::free(pb_type->modes[i].interconnect[j].annotations);
             if (pb_type->modes[i].interconnect[j].interconnect_power)
-                delete pb_type->modes[i].interconnect[j].interconnect_power;
+                vtr::free(pb_type->modes[i].interconnect[j].interconnect_power);
         }
         if (pb_type->modes[i].interconnect)
             delete[] pb_type->modes[i].interconnect;
         if (pb_type->modes[i].mode_power)
-            delete pb_type->modes[i].mode_power;
+            vtr::free(pb_type->modes[i].mode_power);
     }
     if (pb_type->modes)
         delete[] pb_type->modes;
 
     for (int i = 0; i < pb_type->num_annotations; ++i) {
         for (int j = 0; j < pb_type->annotations[i].num_value_prop_pairs; ++j) {
-            delete pb_type->annotations[i].value[j];
+            vtr::free(pb_type->annotations[i].value[j]);
         }
-        delete pb_type->annotations[i].value;
-        delete pb_type->annotations[i].prop;
+        vtr::free(pb_type->annotations[i].value);
+        vtr::free(pb_type->annotations[i].prop);
         if (pb_type->annotations[i].input_pins) {
-            delete pb_type->annotations[i].input_pins;
+            vtr::free(pb_type->annotations[i].input_pins);
         }
         if (pb_type->annotations[i].output_pins) {
-            delete pb_type->annotations[i].output_pins;
+            vtr::free(pb_type->annotations[i].output_pins);
         }
         if (pb_type->annotations[i].clock) {
-            delete pb_type->annotations[i].clock;
+            vtr::free(pb_type->annotations[i].clock);
         }
     }
     if (pb_type->num_annotations > 0) {
-        delete pb_type->annotations;
+        vtr::free(pb_type->annotations);
     }
 
     if (pb_type->pb_type_power) {
-        delete pb_type->pb_type_power;
+        vtr::free(pb_type->pb_type_power);
     }
 
     for (int i = 0; i < pb_type->num_ports; ++i) {
-        delete pb_type->ports[i].name;
+        vtr::free(pb_type->ports[i].name);
         if (pb_type->class_type == LATCH_CLASS)
-            delete pb_type->ports_sec[i].name;
+            vtr::free(pb_type->ports_sec[i].name);
         if (pb_type->ports[i].port_class) {
-            delete pb_type->ports[i].port_class;
+            vtr::free(pb_type->ports[i].port_class);
             if (pb_type->class_type == LATCH_CLASS)
-                delete pb_type->ports_sec[i].port_class;
+                vtr::free(pb_type->ports_sec[i].port_class);
         }
         if (pb_type->ports[i].port_power) {
-            delete pb_type->ports[i].port_power;
+            vtr::free(pb_type->ports[i].port_power);
             if (pb_type->class_type == LATCH_CLASS)
-                delete pb_type->ports_sec[i].port_power;
+                vtr::free(pb_type->ports_sec[i].port_power);
         }
     }
-    delete pb_type->ports;
+    vtr::free(pb_type->ports);
     if (pb_type->class_type == LATCH_CLASS)
-        delete pb_type->ports_sec;
+        vtr::free(pb_type->ports_sec);
 }
 
 t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, int* low_index) {
@@ -809,22 +809,22 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     /* moved annotations to child so delete old annotations */
     for (i = 0; i < lut_pb_type->num_annotations; i++) {
         for (j = 0; j < lut_pb_type->annotations[i].num_value_prop_pairs; j++) {
-            delete lut_pb_type->annotations[i].value[j];
+            free(lut_pb_type->annotations[i].value[j]);
         }
-        delete lut_pb_type->annotations[i].value;
-        delete lut_pb_type->annotations[i].prop;
+        free(lut_pb_type->annotations[i].value);
+        free(lut_pb_type->annotations[i].prop);
         if (lut_pb_type->annotations[i].input_pins) {
-            delete lut_pb_type->annotations[i].input_pins;
+            free(lut_pb_type->annotations[i].input_pins);
         }
         if (lut_pb_type->annotations[i].output_pins) {
-            delete lut_pb_type->annotations[i].output_pins;
+            free(lut_pb_type->annotations[i].output_pins);
         }
         if (lut_pb_type->annotations[i].clock) {
-            delete lut_pb_type->annotations[i].clock;
+            free(lut_pb_type->annotations[i].clock);
         }
     }
     lut_pb_type->num_annotations = 0;
-    delete lut_pb_type->annotations;
+    free(lut_pb_type->annotations);
     lut_pb_type->annotations = nullptr;
     lut_pb_type->modes[1].pb_type_children[0].depth = lut_pb_type->depth + 1;
     lut_pb_type->modes[1].pb_type_children[0].parent_mode = &lut_pb_type->modes[1];
@@ -873,9 +873,9 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     lut_pb_type->modes[1].interconnect[1].parent_mode = &lut_pb_type->modes[1];
     lut_pb_type->modes[1].interconnect[1].interconnect_power = (t_interconnect_power*)vtr::calloc(1, sizeof(t_interconnect_power));
 
-    delete default_name;
+    free(default_name);
 
-    delete lut_pb_type->blif_model;
+    free(lut_pb_type->blif_model);
     lut_pb_type->blif_model = nullptr;
     lut_pb_type->model = nullptr;
 }
@@ -924,7 +924,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
 
     mem_pb_type->num_modes = 1;
 
-    delete mem_pb_type->blif_model;
+    free(mem_pb_type->blif_model);
     mem_pb_type->blif_model = nullptr;
     mem_pb_type->model = nullptr;
 
@@ -1043,7 +1043,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
 
     mem_pb_type->modes[0].num_interconnect = i_inter;
 
-    delete default_name;
+    free(default_name);
 }
 
 e_power_estimation_method power_method_inherited(e_power_estimation_method parent_power_method) {
