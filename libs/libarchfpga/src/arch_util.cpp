@@ -654,6 +654,7 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
         }
     }
     // Special case for latch - fill secondary data fields
+    // For more information on secondary fields please refer to t_pb_type definition in physical_types.h
     if (pb_type->class_type == LATCH_CLASS) {
         copy->ports_sec = new t_port[pb_type->num_ports]();
         for (i = 0; i < pb_type->num_ports; i++) {
