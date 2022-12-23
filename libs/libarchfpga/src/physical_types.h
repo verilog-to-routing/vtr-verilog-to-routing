@@ -918,8 +918,11 @@ struct t_logical_block_type {
  *                 and netlist block in read_netlist.cpp and vpr_utils.cpp
  *      class_type: Special library name
  *      modes: Different modes accepted
- *      ports: I/O and clock ports
- *      ports_sec: secondary I/O and clock ports - used for pb_types matched to 2 available .latch models
+ *      ports: primary I/O and clock ports - used for processing the majority of pb_types,
+ *             including those matched to FFs triggered at the rising edge of the clock
+ *      ports_sec: secondary I/O and clock ports - used for pb_types matched to .latch models
+ *                 representing FFs triggered at the falling edge of the clock.
+ *                 Required mainly for feasibility checks in clustering step
  *      num_clock_pins: A count of the total number of clock pins
  *      num_input_pins: A count of the total number of input pins
  *      num_output_pins: A count of the total number of output pins
