@@ -259,6 +259,9 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     i_input = i_output = i_clockport = 0;
     t_port* pb_type_ports;
     for (i = 0; i < pb_type->num_ports; i++) {
+        //Decide which ports should be referenced in pins of pb_graph_nodes
+        //If this pb_graph_node was marked with has_secondary, it means that
+        //it references FF clocked at falling edge so the secondary ports should be used.
         if (pb_graph_node->has_secondary) {
             pb_type_ports = pb_type->ports_sec;
         } else {
