@@ -81,7 +81,7 @@ class SdcParseCallback : public sdcparse::Callback {
 
         if (cmd.is_virtual) {
             //Create a virtual clock
-            tatum::DomainId virtual_clk = tc_.create_clock_domain(cmd.name);
+            tatum::DomainId virtual_clk = tc_.create_clock_domain(cmd.name, cmd.inverted);
 
             if (sdc_clocks_.count(virtual_clk)) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
@@ -118,12 +118,6 @@ class SdcParseCallback : public sdcparse::Callback {
                             found = true;
                             //Create netlist clock
                             tatum::DomainId netlist_clk = tc_.create_clock_domain(clock_name);
-
-                            if (sdc_clocks_.count(netlist_clk)) {
-                                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                                          "Found duplicate netlist clock definition for clock '%s' matching target pattern '%s'",
-                                          clock_name.c_str(), clock_name_glob_pattern.c_str());
-                            }
 
                             //Set the clock source
                             AtomPinId clock_driver = netlist_.net_driver(clock_net);
@@ -747,6 +741,11 @@ class SdcParseCallback : public sdcparse::Callback {
 
             constraint = launch_clock.period;
 
+        } else if ((std::fabs(launch_clock.period - capture_clock.period) < EPSILON) && (std::fabs((launch_clock.period / 2) - std::fabs(launch_clock.rise_edge - capture_clock.rise_edge)) < EPSILON) && (std::fabs((launch_clock.period / 2) - std::fabs(launch_clock.fall_edge - capture_clock.fall_edge)) < EPSILON)) {
+            //The source and sink domains have the same period but are inverted, the constraint is half of the common clock period.
+
+            constraint = (launch_clock.period / 2);
+
         } else if (launch_clock.period < EPSILON || capture_clock.period < EPSILON) {
             //If either period is 0, the constraint is 0
             constraint = 0.;
@@ -907,48 +906,67 @@ class SdcParseCallback : public sdcparse::Callback {
                       "Expected clock names or collection via get_clocks");
         }
 
-        for (const auto& clock_glob_pattern : clock_group.strings) {
-            std::regex clock_regex = glob_pattern_to_regex(clock_glob_pattern);
+        //There are 2 clock variants:
+        // * regular - derived from netlist clocks specified in SDC file
+        // * inverted - copy of regular clock, created as virtual clock
+        //              with 180 degree phase shift and name suffixed with '_negedge'
+        // Look for both variants
+        for (int clk_variant = 0; clk_variant < 2; clk_variant++) {
+            for (const auto& clock_glob_pattern : clock_group.strings) {
+                std::string clk_gpattern;
+                switch (clk_variant) {
+                    case 0:
+                        clk_gpattern = clock_glob_pattern;
+                        break;
+                    case 1:
+                        clk_gpattern = clock_glob_pattern + "_negedge";
+                        break;
+                    default:
+                        clk_gpattern = clock_glob_pattern;
+                        break;
+                }
+                std::regex clock_regex = glob_pattern_to_regex(clk_gpattern);
 
-            bool found = false;
-            for (tatum::DomainId domain : tc_.clock_domains()) {
-                const auto& clock_name = tc_.clock_domain_name(domain);
+                bool found = false;
+                for (tatum::DomainId domain : tc_.clock_domains()) {
+                    const auto& clock_name = tc_.clock_domain_name(domain);
 
-                // Clock net aliases are built  when reading the input circuit file.
-                // These aliases represent only real clock net names.
-                //
-                // If the SDC contains virtual clocks, the name of these does not
-                // appear in the net aliases data structure, therefore there is no
-                // need to iterate through the vector and a direct regex match can
-                // be applied.
-                //
-                // Furthermore, a virtual clock name would cause an error as there
-                // is no net associated with that when getting the net aliases from
-                // the netlist.
-                if (tc_.is_virtual_clock(domain)) {
-                    if (std::regex_match(clock_name, clock_regex)) {
-                        found = true;
-
-                        domains.insert(domain);
-                    }
-                } else {
-                    auto net_aliases = netlist_.net_aliases(clock_name);
-
-                    for (const auto& alias : net_aliases) {
-                        if (std::regex_match(alias, clock_regex)) {
+                    // Clock net aliases are built  when reading the input circuit file.
+                    // These aliases represent only real clock net names.
+                    //
+                    // If the SDC contains virtual clocks, the name of these does not
+                    // appear in the net aliases data structure, therefore there is no
+                    // need to iterate through the vector and a direct regex match can
+                    // be applied.
+                    //
+                    // Furthermore, a virtual clock name would cause an error as there
+                    // is no net associated with that when getting the net aliases from
+                    // the netlist.
+                    if (tc_.is_virtual_clock(domain)) {
+                        if (std::regex_match(clock_name, clock_regex)) {
                             found = true;
 
                             domains.insert(domain);
-                            // Exit the inner loop as the net is already being constrained
-                            break;
+                        }
+                    } else {
+                        auto net_aliases = netlist_.net_aliases(clock_name);
+
+                        for (const auto& alias : net_aliases) {
+                            if (std::regex_match(alias, clock_regex)) {
+                                found = true;
+
+                                domains.insert(domain);
+                                // Exit the inner loop as the net is already being constrained
+                                break;
+                            }
                         }
                     }
-                }
 
-                if (!found) {
-                    VTR_LOGF_WARN(fname_.c_str(), lineno_,
-                                  "get_clocks target name or pattern '%s' matched no clocks\n",
-                                  clock_glob_pattern.c_str());
+                    if (!found) {
+                        VTR_LOGF_WARN(fname_.c_str(), lineno_,
+                                      "get_clocks target name or pattern '%s' matched no clocks\n",
+                                      clk_gpattern.c_str());
+                    }
                 }
             }
         }

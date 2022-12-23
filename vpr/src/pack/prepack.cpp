@@ -1237,7 +1237,7 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
     }
 
     if (curr_pb_graph_node->pb_type->blif_model != nullptr) {
-        if (primitive_type_feasible(blk_id, curr_pb_graph_node->pb_type)) {
+        if (primitive_type_feasible(blk_id, curr_pb_graph_node)) {
             cur_cost = compute_primitive_base_cost(curr_pb_graph_node);
             if (best_cost == UNDEFINED || best_cost > cur_cost) {
                 best_cost = cur_cost;

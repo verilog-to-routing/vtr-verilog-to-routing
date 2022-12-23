@@ -189,8 +189,17 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
                 clk_net = make_unconn(unconn_count, PinType::SINK);
             }
 
-            //Latch type: VPR always assumes rising edge
-            auto type = "re";
+            //Latch type
+            auto type = "invalid";
+            if ((blk_model->name == std::string(MODEL_LATCH)) && (blk_model->inputs[LATCH_CLOCK_INPUT_ID].is_clock)) {
+                if (blk_model->inputs[LATCH_CLOCK_INPUT_ID].trigg_edge == TriggeringEdge::FALLING_EDGE) {
+                    type = "fe";
+                } else {
+                    //Otherwise always assume rising edge (.latch could be also configured as:
+                    //'active high', 'active low', 'asynchronous')
+                    type = "re";
+                }
+            }
 
             //Latch initial value
             int init_val = 3; //Unkown or unspecified

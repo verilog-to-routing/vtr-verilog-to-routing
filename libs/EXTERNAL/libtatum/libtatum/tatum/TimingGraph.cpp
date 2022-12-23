@@ -198,6 +198,32 @@ NodeId TimingGraph::add_node(const NodeType type) {
     return node_id;
 }
 
+NodeId TimingGraph::add_node(const NodeType type, TriggeringEdge trigg_edge) {
+    //Invalidate the levelization
+    is_levelized_ = false;
+
+    //Reserve an ID
+    NodeId node_id = NodeId(node_ids_.size());
+    node_ids_.push_back(node_id);
+
+    //Type
+    node_types_.push_back(type);
+
+    //Triggering Edge
+    trigg_edges_.push_back(trigg_edge);
+
+    //Edges
+    node_out_edges_.push_back(std::vector<EdgeId>());
+    node_in_edges_.push_back(std::vector<EdgeId>());
+
+    //Verify sizes
+    TATUM_ASSERT(node_types_.size() == node_out_edges_.size());
+    TATUM_ASSERT(node_types_.size() == node_in_edges_.size());
+
+    //Return the ID of the added node
+    return node_id;
+}
+
 EdgeId TimingGraph::add_edge(const EdgeType type, const NodeId src_node, const NodeId sink_node) {
     //We require that the source/sink node must already be in the graph,
     //  so we can update them with thier edge references
@@ -556,6 +582,7 @@ void TimingGraph::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node
     node_types_ = clean_and_reorder_values(node_types_, node_id_map);
     node_in_edges_ = clean_and_reorder_values(node_in_edges_, node_id_map);
     node_out_edges_ = clean_and_reorder_values(node_out_edges_, node_id_map);
+    trigg_edges_ = clean_and_reorder_values(trigg_edges_, node_id_map);
 
     //Update references
     edge_src_nodes_ = update_all_refs(edge_src_nodes_, node_id_map);
@@ -597,7 +624,8 @@ bool TimingGraph::validate_sizes() const {
     if (   node_ids_.size() != node_types_.size()
         || node_ids_.size() != node_in_edges_.size()
         || node_ids_.size() != node_out_edges_.size()
-        || node_ids_.size() != node_levels_.size()) {
+        || node_ids_.size() != node_levels_.size()
+        || node_ids_.size() != trigg_edges_.size()) {
         throw tatum::Error("Inconsistent node attribute sizes");
     }
 

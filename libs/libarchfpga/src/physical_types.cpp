@@ -4,6 +4,7 @@
 #include "vtr_log.h"
 
 #include "arch_util.h"
+#include "arch_types.h"
 
 static bool switch_type_is_buffered(SwitchType type);
 static bool switch_type_is_configurable(SwitchType type);
@@ -194,6 +195,131 @@ std::string t_pb_graph_node::hierarchical_type_name() const {
     return vtr::join(names.rbegin(), names.rend(), "/");
 }
 
+void t_pb_graph_node::update_pins() {
+    int i, j, i_input = 0, i_output = 0, i_clockport = 0;
+    t_port* pb_type_ports = pb_type->ports_sec;
+
+    VTR_ASSERT(this->has_secondary == false);
+    this->has_secondary = true;
+
+    int pin_count_in_cluster;
+    for (i = 0; i < this->pb_type->num_ports; i++) {
+        if (pb_type_ports[i].model_port) {
+            VTR_ASSERT(this->pb_type->num_modes == 0);
+        } else {
+            VTR_ASSERT(this->pb_type->num_modes != 0 || pb_type_ports[i].is_clock);
+        }
+        if (pb_type_ports[i].type == IN_PORT && !pb_type_ports[i].is_clock) {
+            this->input_pins_sec = new t_pb_graph_pin* [this->num_input_ports] { nullptr };
+            this->input_pins_sec[i_input] = new t_pb_graph_pin[pb_type_ports[i].num_pins];
+            for (j = 0; j < pb_type_ports[i].num_pins; j++) {
+                this->input_pins_sec[i_input][j].pin_number = j;
+                this->input_pins_sec[i_input][j].port = &pb_type_ports[i];
+                this->input_pins_sec[i_input][j].parent_node = this;
+                this->input_pins_sec[i_input][j].pin_count_in_cluster = this->input_pins[i_input][j].pin_count_in_cluster;
+                this->input_pins_sec[i_input][j].parent_pin_class = this->input_pins[i_input][j].parent_pin_class;
+                if (this->pb_type->blif_model != nullptr) {
+                    if (strcmp(this->pb_type->blif_model, MODEL_OUTPUT) == 0) {
+                        this->input_pins_sec[i_input][j].type = PB_PIN_OUTPAD;
+                    } else if (this->num_clock_ports != 0) {
+                        this->input_pins_sec[i_input][j].type = PB_PIN_SEQUENTIAL;
+                    } else {
+                        this->input_pins_sec[i_input][j].type = PB_PIN_TERMINAL;
+                    }
+                }
+                pin_count_in_cluster++;
+
+                //Copy timings from primary pins
+                // sequential timing information
+                this->input_pins_sec[i_input][j].tsu = this->input_pins[i_input][j].tsu;
+                this->input_pins_sec[i_input][j].thld = this->input_pins[i_input][j].thld;
+                this->input_pins_sec[i_input][j].tco_min = this->input_pins[i_input][j].tco_min;
+                this->input_pins_sec[i_input][j].tco_max = this->input_pins[i_input][j].tco_max;
+                //this->input_pins_sec[i_input][j].t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
+
+                // combinational timing information
+                this->input_pins_sec[i_input][j].num_pin_timing = this->input_pins[i_input][j].num_pin_timing;
+                this->input_pins_sec[i_input][j].pin_timing_del_max = this->input_pins[i_input][j].pin_timing_del_max;
+                this->input_pins_sec[i_input][j].pin_timing_del_min = this->input_pins[i_input][j].pin_timing_del_min;
+                this->input_pins_sec[i_input][j].num_pin_timing_del_max_annotated = this->input_pins[i_input][j].num_pin_timing_del_max_annotated;
+                this->input_pins_sec[i_input][j].num_pin_timing_del_min_annotated = this->input_pins[i_input][j].num_pin_timing_del_min_annotated;
+                //this->input_pins_sec[i_input][j].std::vector<t_pb_graph_pin*> pin_timing;  /* timing edge sink pins  [0..num_pin_timing-1]*/
+            }
+            i_input++;
+        } else if (pb_type_ports[i].type == OUT_PORT) {
+            this->output_pins_sec = new t_pb_graph_pin* [this->num_input_ports] { nullptr };
+            this->output_pins_sec[i_output] = new t_pb_graph_pin[pb_type_ports[i].num_pins];
+            for (j = 0; j < pb_type_ports[i].num_pins; j++) {
+                this->output_pins_sec[i_output][j].pin_number = j;
+                this->output_pins_sec[i_output][j].port = &pb_type_ports[i];
+                this->output_pins_sec[i_output][j].parent_node = this;
+                this->output_pins_sec[i_output][j].pin_count_in_cluster = this->output_pins[i_output][j].pin_count_in_cluster;
+                this->output_pins_sec[i_output][j].parent_pin_class = this->output_pins[i_output][j].parent_pin_class;
+                this->output_pins_sec[i_output][j].list_of_connectable_input_pin_ptrs = this->output_pins[i_output][j].list_of_connectable_input_pin_ptrs;
+                this->output_pins_sec[i_output][j].num_connectable_primitive_input_pins = this->output_pins[i_output][j].num_connectable_primitive_input_pins;
+                if (this->pb_type->blif_model != nullptr) {
+                    if (strcmp(this->pb_type->blif_model, MODEL_INPUT) == 0) {
+                        this->output_pins_sec[i_output][j].type = PB_PIN_INPAD;
+                    } else if (this->num_clock_ports != 0) {
+                        this->output_pins_sec[i_output][j].type = PB_PIN_SEQUENTIAL;
+                    } else {
+                        this->output_pins_sec[i_output][j].type = PB_PIN_TERMINAL;
+                    }
+                }
+                pin_count_in_cluster++;
+
+                //Copy timings from primary pins
+                // sequential timing information
+                this->output_pins_sec[i_output][j].tsu = this->output_pins[i_output][j].tsu;
+                this->output_pins_sec[i_output][j].thld = this->output_pins[i_output][j].thld;
+                this->output_pins_sec[i_output][j].tco_min = this->output_pins[i_output][j].tco_min;
+                this->output_pins_sec[i_output][j].tco_max = this->output_pins[i_output][j].tco_max;
+                //this->output_pins_sec[i_input][j].t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
+
+                // combinational timing information
+                this->output_pins_sec[i_output][j].num_pin_timing = this->output_pins[i_output][j].num_pin_timing;
+                this->output_pins_sec[i_output][j].pin_timing_del_max = this->output_pins[i_output][j].pin_timing_del_max;
+                this->output_pins_sec[i_output][j].pin_timing_del_min = this->output_pins[i_output][j].pin_timing_del_min;
+                this->output_pins_sec[i_output][j].num_pin_timing_del_max_annotated = this->output_pins[i_output][j].num_pin_timing_del_max_annotated;
+                this->output_pins_sec[i_output][j].num_pin_timing_del_min_annotated = this->output_pins[i_output][j].num_pin_timing_del_min_annotated;
+                //this->output_pins_sec[i_input][j].std::vector<t_pb_graph_pin*> pin_timing;  /* timing edge sink pins  [0..num_pin_timing-1]*/
+            }
+            i_output++;
+        } else {
+            VTR_ASSERT(pb_type_ports[i].is_clock && pb_type_ports[i].type == IN_PORT);
+            this->clock_pins_sec = new t_pb_graph_pin* [this->num_input_ports] { nullptr };
+            this->clock_pins_sec[i_clockport] = new t_pb_graph_pin[pb_type_ports[i].num_pins];
+            for (j = 0; j < pb_type_ports[i].num_pins; j++) {
+                this->clock_pins_sec[i_clockport][j].pin_number = j;
+                this->clock_pins_sec[i_clockport][j].port = &pb_type_ports[i];
+                this->clock_pins_sec[i_clockport][j].parent_node = this;
+                this->clock_pins_sec[i_clockport][j].pin_count_in_cluster = this->clock_pins[i_clockport][j].pin_count_in_cluster;
+                this->clock_pins_sec[i_clockport][j].parent_pin_class = this->clock_pins[i_clockport][j].parent_pin_class;
+                if (this->pb_type->blif_model != nullptr) {
+                    this->clock_pins_sec[i_clockport][j].type = PB_PIN_CLOCK;
+                }
+                pin_count_in_cluster++;
+
+                //Copy timings from primary pins
+                // sequential timing information
+                this->clock_pins_sec[i_clockport][j].tsu = this->clock_pins[i_clockport][j].tsu;
+                this->clock_pins_sec[i_clockport][j].thld = this->clock_pins[i_clockport][j].thld;
+                this->clock_pins_sec[i_clockport][j].tco_min = this->clock_pins[i_clockport][j].tco_min;
+                this->clock_pins_sec[i_clockport][j].tco_max = this->clock_pins[i_clockport][j].tco_max;
+                //this->clock_pins_sec[i_clockport][j].t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
+
+                // combinational timing information
+                this->clock_pins_sec[i_clockport][j].num_pin_timing = this->clock_pins[i_clockport][j].num_pin_timing;
+                this->clock_pins_sec[i_clockport][j].pin_timing_del_max = this->clock_pins[i_clockport][j].pin_timing_del_max;
+                this->clock_pins_sec[i_clockport][j].pin_timing_del_min = this->clock_pins[i_clockport][j].pin_timing_del_min;
+                this->clock_pins_sec[i_clockport][j].num_pin_timing_del_max_annotated = this->clock_pins[i_clockport][j].num_pin_timing_del_max_annotated;
+                this->clock_pins_sec[i_clockport][j].num_pin_timing_del_min_annotated = this->clock_pins[i_clockport][j].num_pin_timing_del_min_annotated;
+                //this->clock_pins_sec[i_clockport][j].std::vector<t_pb_graph_pin*> pin_timing;  /* timing edge sink pins  [0..num_pin_timing-1]*/
+            }
+            i_clockport++;
+        }
+    }
+}
 /**
  * t_pb_graph_pin
  */

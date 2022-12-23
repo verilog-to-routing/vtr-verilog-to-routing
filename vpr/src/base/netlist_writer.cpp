@@ -431,6 +431,16 @@ class LatchInst : public Instance {
         return is;
     }
 
+  private:
+    std::string type_to_sdf_edge() {
+        if (type_ == Type::RISING_EDGE)
+            return "posedge";
+        else if (type_ == Type::FALLING_EDGE)
+            return "negedge";
+        else
+            VTR_ASSERT(false);
+    }
+
   public:
     LatchInst(std::string inst_name,                                  ///<Name of this instance
               std::map<std::string, std::string> port_conns,          ///<Instance's port-to-net connections
@@ -474,7 +484,7 @@ class LatchInst : public Instance {
 
     void print_verilog(std::ostream& os, size_t& /*unconn_count*/, int depth = 0) override {
         //Currently assume a standard DFF
-        VTR_ASSERT(type_ == Type::RISING_EDGE);
+        VTR_ASSERT(type_ == Type::RISING_EDGE || type_ == Type::FALLING_EDGE);
 
         os << indent(depth) << "DFF"
            << " #(\n";
@@ -505,7 +515,7 @@ class LatchInst : public Instance {
     }
 
     void print_sdf(std::ostream& os, int depth = 0) override {
-        VTR_ASSERT(type_ == Type::RISING_EDGE);
+        VTR_ASSERT(type_ == Type::RISING_EDGE || type_ == Type::FALLING_EDGE);
 
         os << indent(depth) << "(CELL\n";
         os << indent(depth + 1) << "(CELLTYPE \""
@@ -523,7 +533,7 @@ class LatchInst : public Instance {
             delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
 
             os << indent(depth + 3) << "(IOPATH "
-               << "(posedge clock) Q " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+               << "(" << type_to_sdf_edge() << " clock) Q " << delay_triple.str() << " " << delay_triple.str() << ")\n";
             os << indent(depth + 2) << ")\n";
             os << indent(depth + 1) << ")\n";
         }
@@ -535,13 +545,13 @@ class LatchInst : public Instance {
                 std::stringstream setup_triple;
                 double setup_ps = get_delay_ps(tsu_);
                 setup_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
-                os << indent(depth + 2) << "(SETUP D (posedge clock) " << setup_triple.str() << ")\n";
+                os << indent(depth + 2) << "(SETUP D (" << type_to_sdf_edge() << " clock) " << setup_triple.str() << ")\n";
             }
             if (!std::isnan(thld_)) {
                 std::stringstream hold_triple;
                 double hold_ps = get_delay_ps(thld_);
                 hold_triple << "(" << hold_ps << ":" << hold_ps << ":" << hold_ps << ")";
-                os << indent(depth + 2) << "(HOLD D (posedge clock) " << hold_triple.str() << ")\n";
+                os << indent(depth + 2) << "(HOLD D (" << type_to_sdf_edge() << " clock) " << hold_triple.str() << ")\n";
             }
         }
         os << indent(depth + 1) << ")\n";
@@ -1310,9 +1320,20 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::string control_net = make_inst_wire(control_atom_net_id, find_tnode(atom, control_cluster_pin_idx), inst_name, PortType::CLOCK, 0, 0);
         port_conns["clock"] = control_net;
 
-        //VPR currently doesn't store enough information to determine these attributes,
-        //for now assume reasonable defaults.
-        LatchInst::Type type = LatchInst::Type::RISING_EDGE;
+        LatchInst::Type type;
+
+        auto atom_pb = g_vpr_ctx.atom().lookup.pb_atom(atom);
+        VTR_ASSERT(atom_pb != AtomBlockId::INVALID());
+
+        const t_model* model = g_vpr_ctx.atom().nlist.block_model(atom_pb);
+
+        if (model->inputs->next->trigg_edge == TriggeringEdge::FALLING_EDGE) {
+            type = LatchInst::Type::FALLING_EDGE;
+        } else {
+            type = LatchInst::Type::RISING_EDGE;
+        }
+
+        //VPR currently doesn't store enough information to determine this attribute
         vtr::LogicValue init_value = vtr::LogicValue::FALSE;
 
         return std::make_shared<LatchInst>(inst_name, port_conns, type, init_value, tcq, tsu);

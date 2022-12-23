@@ -42,10 +42,15 @@ class TimingConstraints {
         ///\returns The name of a clock domain
         std::string clock_domain_name(const DomainId id) const;
 
+        ///Checks whether the clock domain was marked as inverted. Inverted clocks are virtual clocks created from netlist clocks with 180 degree phase shift applied
+        ///\param id The ID of the clock domain
+        ///\returns whether the clock domain with specified domain id was marked as inverted
+        bool clock_domain_inverted(const DomainId id) const;
+
         ///\returns The source NodeId of the specified domain
         NodeId clock_domain_source_node(const DomainId id) const;
 
-        //\returns whether the specified domain id corresponds to a virtual lcock
+        //\returns whether the specified domain id corresponds to a virtual clock
         bool is_virtual_clock(const DomainId id) const;
 
         ///\returns The domain of the specified node id if it is a clock source
@@ -123,6 +128,7 @@ class TimingConstraints {
     public: //Mutators
         ///\returns The DomainId of the clock with the specified name (will be created if it doesn not exist)
         DomainId create_clock_domain(const std::string name);
+        DomainId create_clock_domain(const std::string name, bool inverted);
 
         ///Sets the setup constraint between src_domain and sink_domain with value constraint
         void set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint);
@@ -170,6 +176,7 @@ class TimingConstraints {
     private: //Data
         tatum::util::linear_map<DomainId,DomainId> domain_ids_;
         tatum::util::linear_map<DomainId,std::string> domain_names_;
+        tatum::util::linear_map<DomainId, bool> domain_inverted_;
         tatum::util::linear_map<DomainId,NodeId> domain_sources_;
 
         std::unordered_set<NodeId> constant_generators_;

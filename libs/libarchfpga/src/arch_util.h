@@ -16,6 +16,16 @@ void set_arch_file_name(const char* arch);
 const char* get_arch_file_name();
 
 constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
+constexpr const int num_models_lib = 5;
+constexpr const int LATCH_CLOCK_INPUT_ID = 1;
+
+enum InternalModel {
+    LIB_INPUT,
+    LIB_OUTPUT,
+    LIB_LATCH_RE,
+    LIB_LATCH_FE,
+    LIB_NAMES
+};
 
 class InstPort {
   public:
@@ -85,6 +95,10 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type);
 e_power_estimation_method power_method_inherited(e_power_estimation_method parent_power_method);
 
 void CreateModelLibrary(t_arch* arch);
+
+void SyncModel(t_pb_type* pb_type,
+               t_model* model_match_prim,
+               bool is_secondary_model);
 
 void SyncModelsPbTypes(t_arch* arch,
                        const std::vector<t_logical_block_type>& Types);

@@ -120,7 +120,7 @@ void GraphvizDotWriter::write_dot_node(std::ostream& os,
     os << "\t";
     os << node_name(node);
     os << "[label=\"";
-    os << "{" << node << " (" << tg_.node_type(node) << ")";
+    os << "{" << node << " (" << tg_.node_type(node) << ") TEdge(" << tg_.trigg_edge_str(node) << ")";
 
     for(const auto& tag_set : {tags, slacks}) {
         for(const auto& tag : tag_set) {

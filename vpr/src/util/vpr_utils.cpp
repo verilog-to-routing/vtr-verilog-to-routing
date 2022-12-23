@@ -906,6 +906,93 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_t
     return true;
 }
 
+bool primitive_type_feasible(const AtomBlockId blk_id, t_pb_graph_node* curr_pb_graph_node) {
+    t_pb_type* cur_pb_type = curr_pb_graph_node->pb_type;
+
+    if (cur_pb_type == nullptr) {
+        return false;
+    }
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    //Model does not match
+    if (cur_pb_type->model != atom_ctx.nlist.block_model(blk_id)) {
+        //Check if the AtomBlock is related to FF (LATCH model)
+        if ((strcmp(atom_ctx.nlist.block_model(blk_id)->name, MODEL_LATCH) == 0) && (strcmp(atom_ctx.nlist.block_model(blk_id)->name, cur_pb_type->model->name) == 0)) {
+            //Special case for .latch: this model exists in 2 variations which are
+            //defined one after another in linked list, check if the second variant match
+            if (cur_pb_type->model->next == atom_ctx.nlist.block_model(blk_id) && atom_ctx.nlist.block_model(blk_id)->inputs[LATCH_CLOCK_INPUT_ID].trigg_edge == TriggeringEdge::FALLING_EDGE) {
+                // Next primitive matched AtomBlock
+                // VPR will need data in secondary pin structs in curr_pb_graph_node
+                // Fill those if they are empty
+                if (!curr_pb_graph_node->has_secondary)
+                    curr_pb_graph_node->update_pins();
+            } else {
+                //Next primitive and atom do not match
+                return false;
+            }
+        } else {
+            //Primitive and atom do not match
+            return false;
+        }
+    }
+
+    VTR_ASSERT_MSG(atom_ctx.nlist.is_compressed(), "This function assumes a compressed/non-dirty netlist");
+
+    //Keep track of how many atom ports were checked.
+    //
+    //We need to do this since we iterate over the pb's ports and
+    //may miss some atom ports if there is a mismatch
+    size_t checked_ports = 0;
+
+    //Look at each port on the pb and find the associated port on the
+    //atom. To be feasible the pb must have as many pins on each port
+    //as the atom requires
+    for (int iport = 0; iport < cur_pb_type->num_ports; ++iport) {
+        t_port* pb_port;
+        if (curr_pb_graph_node->has_secondary)
+            pb_port = &cur_pb_type->ports_sec[iport];
+        else
+            pb_port = &cur_pb_type->ports[iport];
+
+        const t_model_ports* pb_model_port = pb_port->model_port;
+
+        //Find the matching port on the atom
+        auto port_id = atom_ctx.nlist.find_atom_port(blk_id, pb_model_port);
+
+        if (port_id) { //Port is used by the atom
+
+            //In compressed form the atom netlist stores only in-use pins,
+            //so we can query the number of required pins directly
+            int required_atom_pins = atom_ctx.nlist.port_pins(port_id).size();
+
+            int available_pb_pins = pb_port->num_pins;
+
+            if (available_pb_pins < required_atom_pins) {
+                //Too many pins required
+                return false;
+            }
+
+            //Note that this port was checked
+            ++checked_ports;
+        }
+    }
+
+    //Similarly to pins, only in-use ports are stored in the compressed
+    //atom netlist, so we can figure out how many ports should have been
+    //checked directly
+    size_t atom_ports = atom_ctx.nlist.block_ports(blk_id).size();
+
+    //See if all the atom ports were checked
+    if (checked_ports != atom_ports) {
+        VTR_ASSERT(checked_ports < atom_ports);
+        //Required atom port was missing from physical primitive
+        return false;
+    }
+
+    //Feasible
+    return true;
+}
+
 //Returns the sibling atom of a memory slice pb
 //  Note that the pb must be part of a MEMORY_CLASS
 AtomBlockId find_memory_sibling(const t_pb* pb) {
@@ -929,6 +1016,8 @@ AtomBlockId find_memory_sibling(const t_pb* pb) {
 
 /**
  * Return pb_graph_node pin from model port and pin
+ * Decide pins of which set (primary or secondary) should be used
+ * based on triggering edge of t_model_ports (defaults to primary pins)
  *  NULL if not found
  */
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node) {
@@ -936,20 +1025,32 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
 
     if (model_port->dir == IN_PORT) {
         if (model_port->is_clock == false) {
+            t_pb_graph_pin** input_pins;
+            if (model_port->trigg_edge == TriggeringEdge::FALLING_EDGE)
+                input_pins = pb_graph_node->input_pins_sec;
+            else
+                input_pins = pb_graph_node->input_pins;
+
             for (i = 0; i < pb_graph_node->num_input_ports; i++) {
-                if (pb_graph_node->input_pins[i][0].port->model_port == model_port) {
+                if (input_pins[i][0].port->model_port == model_port) {
                     if (pb_graph_node->num_input_pins[i] > model_pin) {
-                        return &pb_graph_node->input_pins[i][model_pin];
+                        return &input_pins[i][model_pin];
                     } else {
                         return nullptr;
                     }
                 }
             }
         } else {
+            t_pb_graph_pin** clock_pins;
+            if (model_port->trigg_edge == TriggeringEdge::FALLING_EDGE)
+                clock_pins = pb_graph_node->clock_pins_sec;
+            else
+                clock_pins = pb_graph_node->clock_pins;
+
             for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
-                if (pb_graph_node->clock_pins[i][0].port->model_port == model_port) {
+                if (clock_pins[i][0].port->model_port == model_port) {
                     if (pb_graph_node->num_clock_pins[i] > model_pin) {
-                        return &pb_graph_node->clock_pins[i][model_pin];
+                        return &clock_pins[i][model_pin];
                     } else {
                         return nullptr;
                     }
@@ -958,10 +1059,16 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
         }
     } else {
         VTR_ASSERT(model_port->dir == OUT_PORT);
+        t_pb_graph_pin** output_pins;
+        if (model_port->trigg_edge == TriggeringEdge::FALLING_EDGE)
+            output_pins = pb_graph_node->output_pins_sec;
+        else
+            output_pins = pb_graph_node->output_pins;
+
         for (i = 0; i < pb_graph_node->num_output_ports; i++) {
-            if (pb_graph_node->output_pins[i][0].port->model_port == model_port) {
+            if (output_pins[i][0].port->model_port == model_port) {
                 if (pb_graph_node->num_output_pins[i] > model_pin) {
-                    return &pb_graph_node->output_pins[i][model_pin];
+                    return &output_pins[i][model_pin];
                 } else {
                     return nullptr;
                 }
@@ -1011,7 +1118,14 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLo
     VTR_ASSERT(pb_gnode);
 
     //The graph node and pin/block should agree on the model they represent
-    VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model);
+    if (strcmp(netlist.block_model(blk_id)->name, MODEL_LATCH) == 0) {
+        if (netlist.block_model(blk_id)->inputs->trigg_edge == TriggeringEdge::FALLING_EDGE)
+            VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model_sec);
+        else
+            VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model);
+    } else {
+        VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model);
+    }
 
     //Get the pin index
     AtomPortId port_id = netlist.pin_port(pin_id);

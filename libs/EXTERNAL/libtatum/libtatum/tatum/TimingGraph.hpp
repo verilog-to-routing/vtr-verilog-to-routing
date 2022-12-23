@@ -63,6 +63,13 @@
 
 namespace tatum {
 
+enum TriggeringEdge {
+    RISING_EDGE,
+    FALLING_EDGE,
+    DONT_CARE,
+    ERROR_EDGE
+};
+
 class TimingGraph {
     public: //Public types
         //Iterators
@@ -83,6 +90,29 @@ class TimingGraph {
         ///\param id The id of a node
         ///\returns The type of the node
         NodeType node_type(const NodeId id) const { return node_types_[id]; }
+
+        ///\param id The TimingGraph node ID
+        ///\returns TriggeringEdge enum describing the triggering edge of the TimingGraph node
+        TriggeringEdge trigg_edge(const NodeId id) const { return trigg_edges_[id]; }
+
+        ///\param id The TimingGraph node ID
+        ///\returns String describing the triggering edge of the TimingGraph node
+        std::string trigg_edge_str(const NodeId id) const {
+            switch(trigg_edges_[id]) {
+                      case TriggeringEdge::RISING_EDGE:
+                      return "RISING";
+                      break;
+                case TriggeringEdge::FALLING_EDGE:
+                      return "FALLING";
+                      break;
+                case TriggeringEdge::DONT_CARE:
+                      return "DONT_CARE";
+                      break;
+                default:
+                      return "ERROR";
+                      break;
+            }
+        }
 
         ///\param id The node id
         ///\returns A range of all out-going edges the node drives
@@ -198,6 +228,7 @@ class TimingGraph {
         ///\param type The type of the node to be added
         ///\warning Graph will likely need to be re-levelized after modification
         NodeId add_node(const NodeType type);
+        NodeId add_node(const NodeType type, TriggeringEdge trigg_edge);
 
         ///Adds an edge to the timing graph
         ///\param type The edge's type
@@ -282,6 +313,7 @@ class TimingGraph {
         //Node data
         tatum::util::linear_map<NodeId,NodeId> node_ids_; //The node IDs in the graph
         tatum::util::linear_map<NodeId,NodeType> node_types_; //Type of node
+        tatum::util::linear_map<NodeId,TriggeringEdge> trigg_edges_; //Triggering edge of the clock
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node
         tatum::util::linear_map<NodeId,LevelId> node_levels_; //Out going edge IDs for node
@@ -333,8 +365,6 @@ struct GraphIdMaps {
     tatum::util::linear_map<NodeId,NodeId> node_id_map;
     tatum::util::linear_map<EdgeId,EdgeId> edge_id_map;
 };
-
-
 
 } //namepsace
 

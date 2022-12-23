@@ -294,6 +294,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
     //Pulling values from upstream source node
     NodeId src_node_id = tg.edge_src_node(edge_id);
+    NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
     if(should_propagate_clocks(tg, tc, edge_id)) {
         /*
@@ -311,7 +312,6 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
                 for(const TimingTag& src_launch_clk_tag : src_launch_clk_tags) {
                     //Standard propagation through the clock network
-
                     Time new_arr = src_launch_clk_tag.time() + clk_launch_edge_delay;
                     timing_modified |= ops_.merge_arr_tags(node_id, new_arr, src_node_id, src_launch_clk_tag);
 
@@ -328,6 +328,28 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
                 for(const TimingTag& src_capture_clk_tag : src_capture_clk_tags) {
                     //Standard propagation through the clock network
+
+                   /*
+                    * Each source capture tag may be related to clock domain of one of the two types:
+                    * 1. clock domain created for netlist clock, meant to be used with cells clocked at the rising edge
+                    * 2. inverted virtual clock domain based on existing netlist clock.
+                    *    It is 180 degree phase shifted in relation to netlist clock
+                    *    and it is used in timing analysis for cells clocked at falling edge.
+                    *
+                    * The triggering edges of FFs should be taken into account when propagating tags
+                    * to CPIN nodes. Tags of types which are incompatible with triggering edges
+                    * of the FF clock inputs shouldn't be propagated because having those wouldn't allow
+                    * timing analysis to calculate correct timings for transfers between cells
+                    * clocked rising and falling edges of the same clock.
+                    */
+                    if ( tg.node_type(sink_node_id) == NodeType::CPIN ) {
+                        if ((tg.trigg_edge(sink_node_id) == TriggeringEdge::FALLING_EDGE && !tc.clock_domain_inverted(src_capture_clk_tag.launch_clock_domain())) ||
+                            (tg.trigg_edge(sink_node_id) == TriggeringEdge::RISING_EDGE &&  tc.clock_domain_inverted(src_capture_clk_tag.launch_clock_domain()))) {
+                            //Skip propagation of timings derived from incompatible constraints
+                            continue;
+                        }
+                    }
+
                     timing_modified |= ops_.merge_arr_tags(node_id, src_capture_clk_tag.time() + clk_capture_edge_delay, src_node_id, src_capture_clk_tag);
                 }
             }

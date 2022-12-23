@@ -194,15 +194,20 @@ struct BlifAllocCallback : public blifparse::Callback {
     void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
         if (type == blifparse::LatchType::UNSPECIFIED) {
             VTR_LOGF_WARN(filename_.c_str(), lineno_, "Treating latch '%s' of unspecified type as rising edge triggered\n", output.c_str());
-        } else if (type != blifparse::LatchType::RISING_EDGE) {
-            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Only rising edge latches supported\n");
+        } else if (type != blifparse::LatchType::RISING_EDGE && type != blifparse::LatchType::FALLING_EDGE) {
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Only rising and falling edge latches supported\n");
         }
 
         if (control.empty()) {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Latch must have a clock\n");
         }
 
-        const t_model* blk_model = find_model(MODEL_LATCH);
+        TriggeringEdge t_edge;
+        if (type == blifparse::LatchType::FALLING_EDGE)
+            t_edge = TriggeringEdge::FALLING_EDGE;
+        else
+            t_edge = TriggeringEdge::RISING_EDGE;
+        const t_model* blk_model = find_latch_model(t_edge);
 
         VTR_ASSERT_MSG(blk_model->inputs, "Has one input port");
         VTR_ASSERT_MSG(blk_model->inputs->next, "Has two input port");
@@ -211,7 +216,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         VTR_ASSERT_MSG(!blk_model->outputs->next, "Has no more than one input port");
 
         const t_model_ports* d_model_port = blk_model->inputs;
-        const t_model_ports* clk_model_port = blk_model->inputs->next;
+        t_model_ports* clk_model_port = blk_model->inputs->next;
         const t_model_ports* q_model_port = blk_model->outputs;
 
         VTR_ASSERT(d_model_port->name == std::string("D"));
@@ -462,6 +467,31 @@ struct BlifAllocCallback : public blifparse::Callback {
         if (!arch_model) {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Failed to find matching architecture model for '%s'\n",
                       name.c_str());
+        }
+        return arch_model;
+    }
+
+    const t_model* find_latch_model(TriggeringEdge t_edge) {
+        const t_model* arch_model = nullptr;
+        for (const t_model* arch_models : {user_arch_models_, library_arch_models_}) {
+            arch_model = arch_models;
+            while (arch_model) {
+                if (strcmp(MODEL_LATCH, arch_model->name) == 0) {
+                    if (t_edge == arch_model->inputs[LATCH_CLOCK_INPUT_ID].trigg_edge) {
+                        //Found it
+                        break;
+                    }
+                }
+                arch_model = arch_model->next;
+            }
+            if (arch_model) {
+                //Found it
+                break;
+            }
+        }
+        if (!arch_model) {
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Failed to find matching architecture model for '%s' with edge: %d\n",
+                      MODEL_LATCH, t_edge);
         }
         return arch_model;
     }

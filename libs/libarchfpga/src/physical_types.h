@@ -787,6 +787,7 @@ struct t_physical_pin {
  *  Data members:
  *      name: name of the port
  *      is_clock: whether or not this port is a clock
+ *      trigg_edge: triggering edge of the clock port
  *      is_non_clock_global: Applies to top level pb_type, this pin is not a clock but
  *                           is a global signal (useful for stuff like global reset signals,
  *                           perhaps useful for VCC and GND)
@@ -803,6 +804,7 @@ struct t_physical_tile_port {
     char* name;
     enum PORTS type;
     bool is_clock;
+    enum TriggeringEdge trigg_edge;
     bool is_non_clock_global;
     int num_pins;
     PortEquivalence equivalent;
@@ -908,9 +910,19 @@ struct t_logical_block_type {
  *      name: name of the physical block type
  *      num_pb: maximum number of instances of this physical block type sharing one parent
  *      blif_model: the string in the blif circuit that corresponds with this pb type
+ *      model: primary logical model - used for processing the majority of pb_types,
+ *             including those matched to FFs triggered at the rising edge of the clock
+ *      model_sec: secondary logical model - used for pb_types matched to .latch models
+ *                 representing FFs triggered at the falling edge of the clock.
+ *                 Required for asserting correct match between pb_type from pb_graph_node
+ *                 and netlist block in read_netlist.cpp and vpr_utils.cpp
  *      class_type: Special library name
  *      modes: Different modes accepted
- *      ports: I/O and clock ports
+ *      ports: primary I/O and clock ports - used for processing the majority of pb_types,
+ *             including those matched to FFs triggered at the rising edge of the clock
+ *      ports_sec: secondary I/O and clock ports - used for pb_types matched to .latch models
+ *                 representing FFs triggered at the falling edge of the clock.
+ *                 Required for feasibility checks in clustering step.
  *      num_clock_pins: A count of the total number of clock pins
  *      num_input_pins: A count of the total number of input pins
  *      num_output_pins: A count of the total number of output pins
@@ -925,12 +937,14 @@ struct t_pb_type {
     int num_pb = 0;
     char* blif_model = nullptr;
     t_model* model = nullptr;
+    t_model* model_sec = nullptr;
     enum e_pb_type_class class_type = UNKNOWN_CLASS;
 
     t_mode* modes = nullptr; /* [0..num_modes-1] */
     int num_modes = 0;
     t_port* ports = nullptr; /* [0..num_ports] */
     int num_ports = 0;
+    t_port* ports_sec = nullptr; /* [0..num_ports] */
 
     int num_clock_pins = 0;
     int num_input_pins = 0; /* inputs not including clock pins */
@@ -1162,6 +1176,7 @@ struct t_pin_to_pin_annotation {
 class t_pb_graph_node {
   public:
     t_pb_type* pb_type;
+    bool has_secondary;
 
     int placement_index;
 
@@ -1185,9 +1200,12 @@ class t_pb_graph_node {
      * */
     std::vector<int> illegal_modes;
 
-    t_pb_graph_pin** input_pins;  /* [0..num_input_ports-1] [0..num_port_pins-1]*/
-    t_pb_graph_pin** output_pins; /* [0..num_output_ports-1] [0..num_port_pins-1]*/
-    t_pb_graph_pin** clock_pins;  /* [0..num_clock_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** input_pins;      /* [0..num_input_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** output_pins;     /* [0..num_output_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** clock_pins;      /* [0..num_clock_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** input_pins_sec;  /* [0..num_input_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** output_pins_sec; /* [0..num_output_ports-1] [0..num_port_pins-1]*/
+    t_pb_graph_pin** clock_pins_sec;  /* [0..num_clock_ports-1] [0..num_port_pins-1]*/
 
     int num_input_ports;
     int num_output_ports;
@@ -1230,6 +1248,16 @@ class t_pb_graph_node {
     // Returns a string containing the hierarchical type name of the pb_graph_node
     // Ex: clb[0][default]/lab[0][default]/fle[3][n1_lut6]/ble6[0][default]/lut6[0]
     std::string hierarchical_type_name() const;
+
+    /** Fill secondary pin structs with data
+     *
+     * When pb_graph_node for falling edge clocked FF is processed,
+     * secondary structures for input, output and clock pins have to be
+     * filled with data.
+     * Do that by copying data from primary pin structures and replacing
+     * references to primary t_ports with references to secondary t_ports.
+     */
+    void update_pins();
 };
 
 /* Identify pb pin type for timing purposes */
