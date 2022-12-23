@@ -1016,6 +1016,8 @@ AtomBlockId find_memory_sibling(const t_pb* pb) {
 
 /**
  * Return pb_graph_node pin from model port and pin
+ * Decide pins of which set (primary or secondary) should be used
+ * based on triggering edge of t_model_ports (defaults to primary pins)
  *  NULL if not found
  */
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node) {
