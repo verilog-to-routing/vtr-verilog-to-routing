@@ -910,8 +910,12 @@ struct t_logical_block_type {
  *      name: name of the physical block type
  *      num_pb: maximum number of instances of this physical block type sharing one parent
  *      blif_model: the string in the blif circuit that corresponds with this pb type
- *      model: logical model
- *      model_sec: secondary logical model - used for pb_types matched to 2 available .latch models
+ *      model: primary logical model - used for processing the majority of pb_types,
+ *             including those matched to FFs triggered at the rising edge of the clock
+ *      model_sec: secondary logical model - used for pb_types matched to .latch models
+ *                 representing FFs triggered at the falling edge of the clock.
+ *                 Required for asserting correct match between pb_type from pb_graph_node
+ *                 and netlist block in read_netlist.cpp and vpr_utils.cpp
  *      class_type: Special library name
  *      modes: Different modes accepted
  *      ports: I/O and clock ports
