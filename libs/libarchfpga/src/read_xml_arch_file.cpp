@@ -1240,6 +1240,10 @@ static void ProcessPb_Type(vtr::string_internment* strings, pugi::xml_node Paren
                 pb_type_ports[j].absolute_first_pin_index = absolute_port_first_pin_index;
                 absolute_port_first_pin_index += pb_type_ports[j].num_pins;
 
+                //If the processed pb_type is of LATCH class,
+                //then process additional secondary set of pb_type_ports
+                //which is required for falling edge support in FFs due to
+                //2 possible internal models (t_model) for latches and their ports
                 pb_type_ports = pb_type->ports_sec;
                 l++;
             } while ((pb_type->class_type == LATCH_CLASS) && (l <= 1));
@@ -1278,6 +1282,9 @@ static void ProcessPb_Type(vtr::string_internment* strings, pugi::xml_node Paren
                 pb_type->num_clock_pins += pb_type_ports[i].num_pins;
             }
         }
+        //If the processed pb_type is of LATCH class, then also count
+        //the numbers of secondary pin sets because of 2 possible
+        //internal models (t_model) for latches and their ports
         pb_type_ports = pb_type->ports_sec;
         l++;
     } while ((pb_type->class_type == LATCH_CLASS) && (l <= 1));
