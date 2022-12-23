@@ -108,7 +108,11 @@ t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 int get_max_primitives_in_pb_type(t_pb_type* pb_type);
 int get_max_depth_of_pb_type(t_pb_type* pb_type);
 int get_max_nets_in_pb_type(const t_pb_type* pb_type);
+
+//Check whether given pb_type is feasible for use with given atom block
 bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
+//Perform the same check whether given pb_type is feasible for use with given atom block
+//but also take into account the special case for atom blocks related to FFs clocked at falling edge
 bool primitive_type_feasible(AtomBlockId blk_id, t_pb_graph_node* curr_pb_graph_node);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
