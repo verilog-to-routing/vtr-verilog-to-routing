@@ -1204,7 +1204,7 @@ static void create_2rw_multiplexed_dual_port_ram(block_memory_t* bram, netlist_t
     for (i = 0; i < bram->write_addr->count; ++i) {
         add_pin_to_signal_list(signals->addr2, bram->write_addr->pins[i]);
     }
-    
+
     /* handling clock signals */
     signals->clk = bram->clk->pins[0];
 
@@ -1221,9 +1221,6 @@ static void create_2rw_multiplexed_dual_port_ram(block_memory_t* bram, netlist_t
 
     /* first port does not have data, so the enable is GND */
     signals->we1 = get_zero_pin(netlist);
-
-    signal_list_t* we2_signal;
-    signal_list_t* vcc_signals;
 
     signals->we2 = bram->write_en->pins[0];
 
