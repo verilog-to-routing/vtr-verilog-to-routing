@@ -10,8 +10,9 @@ circuits_dir=benchmarks/ultraembedded
 archs_dir=arch/timing
 
 # Add circuits to list to sweep
-circuit_list_add=mmc_core.v
-circuit_list_add=jpeg_core.v
+#circuit_list_add=mmc_core.v
+#circuit_list_add=jpeg_core.v
+circuit_list_add=enet_core.v
 
 # Add architectures to list to sweep
 arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
