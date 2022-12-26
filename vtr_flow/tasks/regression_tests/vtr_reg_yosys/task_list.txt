@@ -6,3 +6,4 @@ regression_tests/vtr_reg_yosys/f4pga_timer/
 regression_tests/vtr_reg_yosys/vtr_benchmarks/
 #regression_tests/vtr_reg_yosys/vexriscv/
 regression_tests/vtr_reg_yosys/ultraembedded/
+regression_tests/vtr_reg_yosys/freecores/
