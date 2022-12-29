@@ -494,7 +494,7 @@
         <port name="dfxmisrena" clock="output_clk"/>
       </input_ports>
       <output_ports>
-        <port name="chainout" clock="chainout_clk"/>
+        <port name="chainout" clock="output_clk"/>
         <port name="resulta" clock="output_clk"/>
         <port name="scanout"/>
         <port name="dftout" clock="output_clk"/>
@@ -580,7 +580,7 @@
         <port name="dfxmisrena" clock="by_clk"/>
       </input_ports>
       <output_ports>
-        <port name="chainout" clock="chainout_clk"/>
+        <port name="chainout" clock="output_clk"/>
         <port name="resulta" clock="output_clk"/>
         <port name="scanout" clock="by_clk"/>
         <port name="dftout" clock="output_clk"/>
@@ -649,7 +649,7 @@
         <port name="dfxmisrena" clock="output_clk"/>
       </input_ports> 
       <output_ports> 
-        <port name="chainout" clock="chainout_clk"/>
+        <port name="chainout" clock="output_clk"/>
         <port name="resulta" clock="output_clk"/>
         <port name="dftout" clock="output_clk"/>
       </output_ports> 
@@ -715,7 +715,7 @@
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports> 
       <output_ports> 
-        <port name="chainout" clock="chainout_clk"/>
+        <port name="chainout" clock="output_clk"/>
         <port name="resulta" clock="output_clk"/>
         <port name="dftout" clock="output_clk"/>
       </output_ports> 
@@ -758,7 +758,7 @@
         <port name="dfxmisrena" clock="output_clk"/>
       </input_ports> 
       <output_ports> 
-        <port name="chainout" clock="chainout_clk"/>
+        <port name="chainout" clock="output_clk"/>
         <port name="resulta" clock="output_clk"/>
         <port name="scanout" />
         <port name="dftout" clock="output_clk"/>
@@ -801,7 +801,7 @@
         <port name="dfxmisrena" clock="by_clk"/>
       </input_ports> 
       <output_ports> 
-        <port name="chainout" clock="chainout_clk"/>
+        <port name="chainout" clock="output_clk"/>
         <port name="resulta" clock="output_clk"/>
         <port name="scanout" clock="by_clk"/>
         <port name="dftout" clock="output_clk"/>
@@ -871,7 +871,7 @@
         <port name="dfxmisrena" clock="output_clk"/>
       </input_ports> 
       <output_ports> 
-        <port name="chainout" clock="chainout_clk"/>
+        <port name="chainout" clock="output_clk"/>
         <port name="resulta" clock="output_clk"/>
         <port name="scanout" />
         <port name="dftout" clock="output_clk"/>
@@ -939,7 +939,7 @@
         <port name="dfxmisrena" clock="ax_clk"/>
       </input_ports> 
       <output_ports> 
-        <port name="chainout" clock="chainout_clk"/>
+        <port name="chainout" clock="output_clk"/>
         <port name="resulta" clock="output_clk"/>
         <port name="scanout" clock="ay_scan_in_clk"/>
         <port name="dftout" clock="output_clk"/>
@@ -2347,51 +2347,670 @@
       <col type="M20K" startx="5" starty="2" repeatx="10" priority="50"/>
 
     </auto_layout>
-    <fixed_layout height="434" name="1SG250HH1F55E1VG" width="284">
+    <fixed_layout height="146" name="1SX040HH1F35E1VG" width="148">
       <perimeter type="EMPTY" priority="5000"/>
 
-      <!-- In Stratix 10 devices, IO pins are located in two columns each with a 20% margin from the side borders -->
-
+      <!-- In this device, IO pins are located in two columns, one in the middle of the device and the second one at the right end -->
       <!--Column of 'IO' declared with 'EMPTY' blocks of length 1 wherever an IO block of length 4 does not fit. Vertical offset by 1 for perimeter.-->
-      <col type="EMPTY" startx="W/5" priority="1000"/>
-      <col type="iolane" startx="W/5" priority="1001"/>
-      <!-- Left column -->
-      <col type="EMPTY" startx="4*W/5" priority="1000"/>
-      <col type="iolane" startx="4*W/5" priority="1001"/>
-      <!-- Right column -->
-
-      <!-- Stratix 10 devices support up to 24 PLLs and OCTs located 
+      <col type="EMPTY" startx="62" priority="1000"/>
+      <col type="iolane" startx="62" starty="1" priority="1001"/>
+   
+      <col type="EMPTY" startx="145" priority="1000"/>
+      <col type="iolane" startx="146" starty="1" priority="1001"/>
+      <!-- lower part of the first iolane column is empty -->
+      <region type="EMPTY" priority="1002" startx="61" endx="61" starty="1" endy="56"/>
+      
+      <!-- This device support 84 PLLs and OCTs located 
             in the same columns as IOs occuring after every 6 consecutive IO blocks-->
-      <col type="PLL_OCT_CLK_CTRL" startx="W/5" starty="13" incry="36" priority="1997"/>
-      <col type="PLL_OCT_CLK_CTRL" startx="4*W/5" starty="13" incry="36" priority="1997"/>
+      <col type="PLL_OCT_CLK_CTRL" startx="62" starty="13" incry="36" priority="1997"/>
+      <col type="PLL_OCT_CLK_CTRL" startx="146" starty="13" incry="36" priority="1997"/>
 
       <!--Fill with 'LAB'-->
       <fill type="LAB" priority="10"/>
       <!--One quarter of the LAB blocks can also be used as MLABs-->
       <!--One out of every for logic columns is of the type LABMLAB-->
-      <col type="LABMLAB" startx="0" starty="0" repeatx="4" priority="11"/>
+      <col type="LABMLAB" startx="0" starty="0" repeatx="5" priority="11"/>
 
       <!--Column of 'DSP'-->
-      <col type="DSP" startx="38" starty="0" repeatx="18" priority="150"/>
-      <!--Column of 'M20K'-->
-      <col type="M20K" startx="14" starty="0" repeatx="9" priority="50"/>
-      <!--One out of every three M20K columns have 12 mini columns of 7 empty tiles spaced out evenly across the whole column-->
-      <col type="EMPTY" startx="14" starty="30" repeatx="27" incry="36" priority="5001"/>
-      <col type="EMPTY" startx="14" starty="31" repeatx="27" incry="36" priority="5002"/>
-      <col type="EMPTY" startx="14" starty="32" repeatx="27" incry="36" priority="5003"/>
-      <col type="EMPTY" startx="14" starty="33" repeatx="27" incry="36" priority="5004"/>
-      <col type="EMPTY" startx="14" starty="34" repeatx="27" incry="36" priority="5005"/>
-      <col type="EMPTY" startx="14" starty="35" repeatx="27" incry="36" priority="5006"/>
-      <col type="EMPTY" startx="14" starty="36" repeatx="27" incry="36" priority="5007"/>
+      <col type="DSP" startx="35" priority="150"/>
+      <col type="DSP" startx="51" priority="150"/>
+      <col type="DSP" startx="87" priority="150"/>
+      <col type="DSP" startx="106" priority="150"/>
+      <col type="DSP" startx="121" priority="150"/>
+      <region type="DSP" priority="150" startx="135" endx="135" starty="1" endy="108"/>
+
+      <!--Columns of 'M20K'-->
+      <col type="M20K" startx="25" priority="50"/>
+      <col type="M20K" startx="30" priority="50"/>
+      <col type="M20K" startx="40" priority="50"/>
+      <col type="M20K" startx="56" priority="50"/>
+      <col type="M20K" startx="61" priority="50"/>
+      <region type="M20K" priority="50" startx="67" endx="67" starty="1" endy="36"/>
+      <col type="M20K" startx="77" priority="50"/>
+      <col type="M20K" startx="82" priority="50"/>
+      <col type="M20K" startx="92" priority="50"/>
+      <col type="M20K" startx="101" priority="50"/>
+      <col type="M20K" startx="111" priority="50"/>
+      <col type="M20K" startx="116" priority="50"/>
+      <col type="M20K" startx="126" priority="50"/>
+      <col type="M20K" startx="140" priority="50"/>
+      <col type="M20K" startx="145" priority="50"/>
+      <!--Five of the M20K columns have 12 mini columns of 7 empty tiles spaced out evenly across the whole column-->
+      <col type="EMPTY" startx="30" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="30" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="30" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="30" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="30" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="30" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="30" starty="36" incry="36" priority="5007"/>
       
+      <col type="EMPTY" startx="61" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="61" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="61" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="61" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="61" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="61" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="61" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="82" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="82" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="82" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="82" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="82" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="82" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="82" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="116" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="116" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="116" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="116" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="116" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="116" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="116" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="145" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="145" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="145" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="145" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="145" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="145" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="145" starty="36" incry="36" priority="5007"/>
+
+     <!-- Tranceivers are not modelled so we replace them with an empty region -->
+      <region type="EMPTY" priority="5011" startx="1" endx="12" starty="1" endy="144"/>
+
+      <!-- SDM is not modelled so we replace it with an empty region -->
+      <region type="EMPTY" priority="5012" startx="97" endx="130" starty="1" endy="36"/>
+
+     <!-- HPS is not modelled so we replace it with an empty region -->
+      <region type="EMPTY" priority="5009" startx="63" endx="130" starty="109" endy="144"/>
+      <region type="EMPTY" priority="5010" startx="63" endx="66" starty="37" endy="108"/>
+
+    </fixed_layout>  
+    <fixed_layout height="146" name="1SX065HH1F35E1VG" width="214">
+      <perimeter type="EMPTY" priority="5000"/>
+
+      <!-- In this device, IO pins are located in two columns, one in the middle of the device and the second one at the right end -->
+      <!--Column of 'IO' declared with 'EMPTY' blocks of length 1 wherever an IO block of length 4 does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="EMPTY" startx="61" priority="1000"/>
+      <col type="iolane" startx="61" starty="1" priority="1001"/>
+   
+      <col type="EMPTY" startx="165" priority="1000"/>
+      <col type="iolane" startx="165" starty="1" priority="1001"/>
+
+      <!-- This device support 84 PLLs and OCTs located 
+            in the same columns as IOs occuring after every 6 consecutive IO blocks-->
+      <col type="PLL_OCT_CLK_CTRL" startx="61" starty="13" incry="36" priority="1997"/>
+      <col type="PLL_OCT_CLK_CTRL" startx="165" starty="13" incry="36" priority="1997"/>
+
+      <!--Fill with 'LAB'-->
+      <fill type="LAB" priority="10"/>
+      <!--One quarter of the LAB blocks can also be used as MLABs-->
+      <!--One out of every for logic columns is of the type LABMLAB-->
+      <col type="LABMLAB" startx="0" starty="0" repeatx="5" priority="11"/>
+
+      <!--Column of 'DSP'-->
+      <col type="DSP" startx="34" priority="150"/>
+      <col type="DSP" startx="50" priority="150"/>
+      <col type="DSP" startx="86" priority="150"/>
+      <col type="DSP" startx="105" priority="150"/>
+      <col type="DSP" startx="120" priority="150"/>
+      <col type="DSP" startx="140" priority="150"/>
+      <col type="DSP" startx="155" priority="150"/>
+      <col type="DSP" startx="176" priority="150"/>
+      <col type="DSP" startx="192" priority="150"/>
+      <!--Columns of 'M20K'-->
+      <col type="M20K" startx="24" priority="50"/>
+      <col type="M20K" startx="29" priority="50"/>
+      <col type="M20K" startx="39" priority="50"/>
+      <col type="M20K" startx="55" priority="50"/>
+      <col type="M20K" startx="60" priority="50"/>
+      <col type="M20K" startx="66" priority="50"/>
+      <col type="M20K" startx="76" priority="50"/>
+      <col type="M20K" startx="81" priority="50"/>
+      <col type="M20K" startx="91" priority="50"/>
+      <col type="M20K" startx="100" priority="50"/>
+      <col type="M20K" startx="110" priority="50"/>
+      <col type="M20K" startx="115" priority="50"/>
+      <col type="M20K" startx="125" priority="50"/>
+      <col type="M20K" startx="135" priority="50"/>
+      <col type="M20K" startx="145" priority="50"/>
+      <col type="M20K" startx="150" priority="50"/>
+      <col type="M20K" startx="160" priority="50"/>
+      <col type="M20K" startx="166" priority="50"/>
+      <col type="M20K" startx="171" priority="50"/>
+      <col type="M20K" startx="187" priority="50"/>
+      <col type="M20K" startx="197" priority="50"/>
+      <col type="M20K" startx="202" priority="50"/>
+      <!--Seven of the M20K columns have 12 mini columns of 7 empty tiles spaced out evenly across the whole column-->
+      <col type="EMPTY" startx="29" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="29" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="29" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="29" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="29" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="29" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="29" starty="36" incry="36" priority="5007"/>
+      
+      <col type="EMPTY" startx="60" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="60" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="60" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="60" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="60" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="60" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="60" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="81" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="81" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="81" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="81" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="81" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="81" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="81" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="115" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="115" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="115" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="115" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="115" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="115" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="115" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="145" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="145" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="145" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="145" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="145" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="145" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="145" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="166" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="166" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="166" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="166" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="166" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="166" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="166" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="197" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="197" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="197" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="197" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="197" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="197" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="197" starty="36" incry="36" priority="5007"/>
+
+     <!-- Tranceivers are not modelled so we replace them with an empty region -->
+      <region type="EMPTY" priority="5011" startx="1" endx="10" starty="1" endy="144"/>
+
+      <!-- SDM is not modelled so we replace it with an empty region -->
+      <region type="EMPTY" priority="5012" startx="126" endx="164" starty="1" endy="36"/>
+
+     <!-- HPS is not modelled so we replace it with an empty region -->
+      <region type="EMPTY" priority="5009" startx="62" endx="130" starty="109" endy="144"/>
+      <region type="EMPTY" priority="5010" startx="62" endx="65" starty="37" endy="108"/>
+
       <!-- There is one column of empty tiles in the middle of the device -->
-      <col type="EMPTY" startx="164" priority="5008"/>
-      <!-- There are two empty rectangles near the top left corner of the device -->
-      <region type="EMPTY" priority="5009" startx="62" endx="133" starty="397" endy="433"/>
-      <region type="EMPTY" priority="5010" startx="62" endx="65" starty="325" endy="433"/>
-    </fixed_layout>
+      <col type="EMPTY" startx="130" priority="5013"/>
+
+    </fixed_layout>    
+    <fixed_layout height="289" name="1SX110HN1F43E1VG" width="215">
+      <perimeter type="EMPTY" priority="5000"/>
+
+      <!-- In this device, IO pins are located in two columns, near the middle of the device -->
+      <!--Column of 'IO' declared with 'EMPTY' blocks of length 1 wherever an IO block of length 4 does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="EMPTY" startx="61"  starty="1" priority="1000"/>
+      <col type="iolane" startx="61"  starty="1" priority="1001"/>
+      <!-- lower part of the first iolane column is empty -->
+      <region type="EMPTY" priority="1002" startx="61" endx="61" starty="1" endy="56"/>
+   
+      <col type="EMPTY" startx="165"  starty="1" priority="1000"/>
+      <col type="iolane" startx="165"  starty="1" priority="1001"/>
+
+
+      <!-- This device support 16 PLLs and OCTs located 
+            in the same columns as IOs occuring after every 6 consecutive IO blocks-->
+      <col type="PLL_OCT_CLK_CTRL" startx="61" starty="13" incry="36" priority="1997"/>
+      <col type="PLL_OCT_CLK_CTRL" startx="165" starty="13" incry="36" priority="1997"/>
+
+      <!--Fill with 'LAB'-->
+      <fill type="LAB" priority="10"/>
+      <!--One quarter of the LAB blocks can also be used as MLABs-->
+      <!--One out of every for logic columns is of the type LABMLAB-->
+      <col type="LABMLAB" startx="0" starty="0" repeatx="5" priority="11"/>
+
+      <!--Column of 'DSP'-->
+      <col type="DSP" startx="34" priority="150"/>
+      <col type="DSP" startx="50" priority="150"/>
+      <col type="DSP" startx="71" priority="150"/>
+      <col type="DSP" startx="86" priority="150"/>
+      <col type="DSP" startx="105" priority="150"/>
+      <col type="DSP" startx="120" priority="150"/>
+      <col type="DSP" startx="140" priority="150"/>
+      <col type="DSP" startx="155" priority="150"/>
+      <col type="DSP" startx="176" priority="150"/>
+      <col type="DSP" startx="192" priority="150"/>
+      <!--Columns of 'M20K'-->
+      <col type="M20K" startx="24" priority="50"/>
+      <col type="M20K" startx="29" priority="50"/>
+      <col type="M20K" startx="39" priority="50"/>
+      <col type="M20K" startx="55" priority="50"/>
+      <col type="M20K" startx="60" priority="50"/>
+      <col type="M20K" startx="66" priority="50"/>
+      <col type="M20K" startx="76" priority="50"/>
+      <col type="M20K" startx="81" priority="50"/>
+      <col type="M20K" startx="91" priority="50"/>
+      <col type="M20K" startx="100" priority="50"/>
+      <col type="M20K" startx="110" priority="50"/>
+      <col type="M20K" startx="115" priority="50"/>
+      <col type="M20K" startx="125" priority="50"/>
+      <col type="M20K" startx="135" priority="50"/>
+      <col type="M20K" startx="145" priority="50"/>
+      <col type="M20K" startx="150" priority="50"/>
+      <col type="M20K" startx="160" priority="50"/>
+      <col type="M20K" startx="166" priority="50"/>
+      <col type="M20K" startx="171" priority="50"/>
+      <col type="M20K" startx="187" priority="50"/>
+      <col type="M20K" startx="197" priority="50"/>
+      <col type="M20K" startx="202" priority="50"/>
+      <!--Seven of the M20K columns have 12 mini columns of 7 empty tiles spaced out evenly across the whole column-->
+
+      <col type="EMPTY" startx="29" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="29" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="29" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="29" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="29" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="29" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="29" starty="36" incry="36" priority="5007"/>
+      
+      <col type="EMPTY" startx="60" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="60" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="60" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="60" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="60" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="60" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="60" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="81" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="81" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="81" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="81" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="81" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="81" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="81" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="115" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="115" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="115" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="115" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="115" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="115" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="115" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="145" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="145" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="145" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="145" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="145" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="145" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="145" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="166" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="166" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="166" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="166" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="166" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="166" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="166" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="197" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="197" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="197" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="197" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="197" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="197" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="197" starty="36" incry="36" priority="5007"/>
+
+     <!-- Tranceivers are not modelled so we replace them with an empty region -->
+      <region type="EMPTY" priority="5011" startx="1" endx="11" starty="1" endy="288"/>
+
+      <!-- SDM is not modelled so we replace it with an empty region -->
+      <region type="EMPTY" priority="5012" startx="126" endx="164" starty="1" endy="36"/>
+
+     <!-- HPS is not modelled so we replace it with an empty region -->
+      <region type="EMPTY" priority="5009" startx="62" endx="134" starty="253" endy="288"/>
+      <region type="EMPTY" priority="5010" startx="62" endx="65" starty="181" endy="252"/>
+
+    </fixed_layout> 
+    <fixed_layout height="289" name="1SG211HN1F43E1VG" width="303">
+      <perimeter type="EMPTY" priority="5000"/>
+
+      <!-- In this device, IO pins are located in two columns, near the middle of the device -->
+      <!--Column of 'IO' declared with 'EMPTY' blocks of length 1 wherever an IO block of length 4 does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="EMPTY" startx="61" starty="1" priority="1000"/>
+      <col type="iolane" startx="61" starty="1" priority="1001"/>
+      <!-- lower part of the first iolane column is empty -->
+      <region type="EMPTY" priority="1002" startx="61" endx="61" starty="1" endy="56"/>
+   
+      <col type="EMPTY" startx="189" starty="1" priority="1000"/>
+      <col type="iolane" startx="189" starty="1" priority="1001"/>
+
+
+      <!-- This device support 16 PLLs and OCTs located 
+            in the same columns as IOs occuring after every 6 consecutive IO blocks-->
+      <col type="PLL_OCT_CLK_CTRL" startx="61" starty="13" incry="36" priority="1997"/>
+      <col type="PLL_OCT_CLK_CTRL" startx="189" starty="13" incry="36" priority="1997"/>
+
+      <!--Fill with 'LAB'-->
+      <fill type="LAB" priority="10"/>
+      <!--One quarter of the LAB blocks can also be used as MLABs-->
+      <!--One out of every for logic columns is of the type LABMLAB-->
+      <col type="LABMLAB" startx="0" starty="0" repeatx="5" priority="11"/>
+
+      <!--Column of 'DSP'-->
+      <col type="DSP" startx="34" priority="150"/>
+      <col type="DSP" startx="50" priority="150"/>
+      <col type="DSP" startx="71" priority="150"/>
+      <col type="DSP" startx="86" priority="150"/>
+      <col type="DSP" startx="105" priority="150"/>
+      <col type="DSP" startx="120" priority="150"/>
+      <col type="DSP" startx="145" priority="150"/>
+      <col type="DSP" startx="163" priority="150"/>
+      <col type="DSP" startx="178" priority="150"/>
+      <col type="DSP" startx="199" priority="150"/>
+      <col type="DSP" startx="214" priority="150"/>
+      <col type="DSP" startx="235" priority="150"/>
+      <col type="DSP" startx="253" priority="150"/>
+      <col type="DSP" startx="280" priority="150"/>
+      <!--Columns of 'M20K'-->
+      <col type="M20K" startx="24" priority="50"/>
+      <col type="M20K" startx="29" priority="50"/>
+      <col type="M20K" startx="39" priority="50"/>
+      <col type="M20K" startx="55" priority="50"/>
+      <col type="M20K" startx="60" priority="50"/>
+      <col type="M20K" startx="66" priority="50"/>
+      <col type="M20K" startx="76" priority="50"/>
+      <col type="M20K" startx="81" priority="50"/>
+      <col type="M20K" startx="91" priority="50"/>
+      <col type="M20K" startx="100" priority="50"/>
+      <col type="M20K" startx="110" priority="50"/>
+      <col type="M20K" startx="115" priority="50"/>
+      <col type="M20K" startx="125" priority="50"/>
+      <col type="M20K" startx="136" priority="50"/>
+      <col type="M20K" startx="152" priority="50"/>
+      <col type="M20K" startx="183" priority="50"/>
+      <col type="M20K" startx="188" priority="50"/>
+      <col type="M20K" startx="194" priority="50"/>
+      <col type="M20K" startx="204" priority="50"/>
+      <col type="M20K" startx="209" priority="50"/>
+      <col type="M20K" startx="219" priority="50"/>
+      <col type="M20K" startx="246" priority="50"/>
+      <col type="M20K" startx="262" priority="50"/>
+      <col type="M20K" startx="275" priority="50"/>
+      <col type="M20K" startx="285" priority="50"/>
+      <col type="M20K" startx="290" priority="50"/>
+      <!--Nine of the M20K columns have 12 mini columns of 7 empty tiles spaced out evenly across the whole column-->
+
+      <col type="EMPTY" startx="29" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="29" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="29" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="29" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="29" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="29" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="29" starty="36" incry="36" priority="5007"/>
+      
+      <col type="EMPTY" startx="60" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="60" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="60" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="60" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="60" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="60" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="60" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="81" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="81" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="81" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="81" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="81" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="81" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="81" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="115" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="115" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="115" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="115" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="115" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="115" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="115" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="152" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="152" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="152" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="152" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="152" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="152" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="152" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="188" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="188" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="188" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="188" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="188" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="188" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="188" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="209" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="209" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="209" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="209" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="209" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="209" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="209" starty="36" incry="36" priority="5007"/>
+            
+      <col type="EMPTY" startx="246" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="246" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="246" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="246" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="246" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="246" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="246" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="285" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="285" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="285" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="285" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="285" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="285" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="285" starty="36" incry="36" priority="5007"/>
+
+     <!-- Tranceivers are not modelled so we replace them with an empty region -->
+      <region type="EMPTY" priority="5011" startx="1" endx="11" starty="1" endy="288"/>
+
+      <!-- SDM is not modelled so we replace it with an empty region -->
+      <region type="EMPTY" priority="5012" startx="62" endx="99" starty="1" endy="36"/>
+
+      <!-- There is one column of empty tiles near the end of the device -->
+      <col type="EMPTY" startx="223" priority="5013"/>
+
+    </fixed_layout> 
+    <fixed_layout height="434" name="1SG280HH1F55E1VG" width="284">
+      <perimeter type="EMPTY" priority="5000"/>
+
+      <!-- In this device, IO pins are located in two columns, near the middle of the device -->
+      <!--Column of 'IO' declared with 'EMPTY' blocks of length 1 wherever an IO block of length 4 does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="EMPTY" startx="61" starty="1" priority="1000"/>
+      <col type="iolane" startx="61" starty="1" priority="1001"/>
+
+      <col type="EMPTY" startx="233" starty="1" priority="1000"/>
+      <col type="iolane" startx="233" starty="1" priority="1001"/>
+
+
+      <!-- This device support 24 PLLs and OCTs located in the same columns as IOs occuring after every 6 consecutive IO blocks-->
+      <col type="PLL_OCT_CLK_CTRL" startx="61" starty="13" incry="36" priority="1997"/>
+      <col type="PLL_OCT_CLK_CTRL" startx="233" starty="13" incry="36" priority="1997"/>
+
+      <!--Fill with 'LAB'-->
+      <fill type="LAB" priority="10"/>
+      <!--One quarter of the LAB blocks can also be used as MLABs-->
+      <!--One out of every for logic columns is of the type LABMLAB-->
+      <col type="LABMLAB" startx="0" starty="0" repeatx="5" priority="11"/>
+
+      <!--Column of 'DSP'-->
+      <col type="DSP" startx="34" priority="150"/>
+      <col type="DSP" startx="50" priority="150"/>
+      <region type="DSP" priority="150" startx="71" endx="71" starty="1" endy="324"/>
+      <col type="DSP" startx="86" priority="150"/>
+      <col type="DSP" startx="105" priority="150"/>
+      <col type="DSP" startx="120" priority="150"/>
+      <col type="DSP" startx="139" priority="150"/>
+      <col type="DSP" startx="154" priority="150"/>
+      <col type="DSP" startx="174" priority="150"/>
+      <col type="DSP" startx="189" priority="150"/>
+      <col type="DSP" startx="208" priority="150"/>
+      <col type="DSP" startx="223" priority="150"/>
+      <col type="DSP" startx="244" priority="150"/>
+      <col type="DSP" startx="260" priority="150"/>
+      <!--Columns of 'M20K'-->
+      <col type="M20K" startx="24" priority="50"/>
+      <col type="M20K" startx="29" priority="50"/>
+      <col type="M20K" startx="39" priority="50"/>
+      <col type="M20K" startx="55" priority="50"/>
+      <col type="M20K" startx="60" priority="50"/>
+      <col type="M20K" startx="66" priority="50"/>
+      <col type="M20K" startx="76" priority="50"/>
+      <col type="M20K" startx="81" priority="50"/>
+      <col type="M20K" startx="91" priority="50"/>
+      <col type="M20K" startx="100" priority="50"/>
+      <col type="M20K" startx="110" priority="50"/>
+      <col type="M20K" startx="115" priority="50"/>
+      <col type="M20K" startx="125" priority="50"/>
+      <col type="M20K" startx="134" priority="50"/>
+      <col type="M20K" startx="144" priority="50"/>
+      <col type="M20K" startx="149" priority="50"/>
+      <col type="M20K" startx="159" priority="50"/>
+      <col type="M20K" startx="169" priority="50"/>
+      <col type="M20K" startx="179" priority="50"/>
+      <col type="M20K" startx="184" priority="50"/>
+      <col type="M20K" startx="194" priority="50"/>
+      <col type="M20K" startx="203" priority="50"/>
+      <col type="M20K" startx="213" priority="50"/>
+      <col type="M20K" startx="218" priority="50"/>
+      <col type="M20K" startx="228" priority="50"/>
+      <col type="M20K" startx="234" priority="50"/>
+      <col type="M20K" startx="239" priority="50"/>
+      <col type="M20K" startx="255" priority="50"/>
+      <col type="M20K" startx="265" priority="50"/>
+      <col type="M20K" startx="270" priority="50"/>
+      <!--Nine of the M20K columns have 12 mini columns of 7 empty tiles spaced out evenly across the whole column-->
+
+      <col type="EMPTY" startx="29" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="29" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="29" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="29" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="29" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="29" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="29" starty="36" incry="36" priority="5007"/>
+      
+      <col type="EMPTY" startx="60" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="60" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="60" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="60" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="60" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="60" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="60" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="81" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="81" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="81" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="81" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="81" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="81" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="81" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="115" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="115" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="115" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="115" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="115" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="115" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="115" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="149" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="149" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="149" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="149" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="149" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="149" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="149" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="179" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="179" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="179" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="179" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="179" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="179" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="179" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="213" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="213" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="213" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="213" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="213" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="213" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="213" starty="36" incry="36" priority="5007"/>
+            
+      <col type="EMPTY" startx="234" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="234" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="234" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="234" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="234" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="234" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="234" starty="36" incry="36" priority="5007"/>
+
+      <col type="EMPTY" startx="265" starty="30" incry="36" priority="5001"/>
+      <col type="EMPTY" startx="265" starty="31" incry="36" priority="5002"/>
+      <col type="EMPTY" startx="265" starty="32" incry="36" priority="5003"/>
+      <col type="EMPTY" startx="265" starty="33" incry="36" priority="5004"/>
+      <col type="EMPTY" startx="265" starty="34" incry="36" priority="5005"/>
+      <col type="EMPTY" startx="265" starty="35" incry="36" priority="5006"/>
+      <col type="EMPTY" startx="265" starty="36" incry="36" priority="5007"/>
+
+     <!-- Tranceivers are not modelled so we replace them with an empty region -->
+      <region type="EMPTY" priority="5011" startx="1" endx="11" starty="1" endy="432"/>
+
+      <!-- SDM is not modelled so we replace it with an empty region -->
+      <region type="EMPTY" priority="5012" startx="160" endx="198" starty="1" endy="36"/>
+
+     <!-- HPS is not modelled so we replace it with an empty region -->
+      <region type="EMPTY" priority="5009" startx="62" endx="133" starty="397" endy="432"/>
+      <region type="EMPTY" priority="5010" startx="62" endx="65" starty="325" endy="396"/>
+
+      <!-- There is one column of empty tiles near the end of the device -->
+      <col type="EMPTY" startx="164" priority="5013"/>
+
+    </fixed_layout> 
   </layout>
   <device>
+  <!-- 1sx250lh3f55i3vg -->
     <sizing R_minW_nmos="8926" R_minW_pmos="16067"/>
     <!-- KEM: Oct 15, 2013
           Place no timing delay on the input pin of complex blocks.
@@ -3637,7 +4256,6 @@
                 <!-- <pack_pattern name="LUT_FF" in_port="comb_block.combout[0]" out_port="dff[0].d"/> -->
               </direct>
               <mux input=" comb_block.combout[0] comb_block.sumout[1]" name="in_dff_2" output="dff[1].d">
-                
                 <!-- <pack_pattern name="LUT_FF" in_port="comb_block.sumout[1]" out_port="dff[1].d"/> -->
               </mux>
               <direct input="comb_block.combout[1]" name="in_dff_3" output="dff[1].d">
@@ -3672,6 +4290,7 @@
           </mode>
         </pb_type>
         <interconnect>
+          <complete input="alm[9:0].data_out" name="LAB_feedback" output="alm[9:0].data_in"/>
           <!--LAB-ALM Interconnect-->
           <!-- LAB Input: Global Routing to ALM inputs -->
           <complete input="LAB.data_in" name="LAB_datain" output="alm[9:0].data_in">
@@ -3989,6 +4608,7 @@
           </mode>
         </pb_type>
         <interconnect>
+          <complete input="alm[9:0].data_out" name="LAB_feedback" output="alm[9:0].data_in"/>
           <!--LAB-ALM Interconnect-->
           <!-- LAB Input: Global Routing to ALM inputs -->
           <complete input="LABMLAB.data_in" name="LAB_datain" output="alm[9:0].data_in">
@@ -7470,10 +8090,10 @@
     <switchblock name="wilton_turn_clockwise_h2v_core" type="unidir">
       <switchblock_location type="EVERYWHERE"/>
       <switchfuncs>
-        <func type="rt" formula="t+1"/>
-        <!-- right to top -->
-        <func type="lb" formula="t+1"/>
-        <!-- left to bottom -->
+        <func type="lt" formula="t+1"/>
+        <!-- left to top -->
+        <func type="rb" formula="t+1"/>
+        <!-- right to bottom -->
       </switchfuncs>
       
       <!--  V2 drivers -->
