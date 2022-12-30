@@ -941,7 +941,6 @@ enum e_block_pack_status try_pack_molecule(t_cluster_placement_stats* cluster_pl
 
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-
     parent = nullptr;
 
     block_pack_status = BLK_STATUS_UNDEFINED;
@@ -1675,7 +1674,6 @@ void store_cluster_info_and_free(const t_packer_opts& packer_opts,
 
     //print clustering progress incrementally
     //print_pack_status(num_clb, num_molecules, num_molecules_processed, mols_since_last_print, device_ctx.grid.width(), device_ctx.grid.height());
-
     free_pb_stats_recursive(cur_pb);
 }
 
@@ -1873,7 +1871,7 @@ void update_total_gain(float alpha, float beta, bool timing_driven, bool connect
         }
 
         /* Todo: This was used to explore different normalization options, can
-         * be made more efficient once we decide on which one to use*/
+         * be made more efficient once we decide on which one to use */
         int num_used_input_pins = atom_ctx.nlist.block_input_pins(blk_id).size();
         int num_used_output_pins = atom_ctx.nlist.block_output_pins(blk_id).size();
         /* end todo */

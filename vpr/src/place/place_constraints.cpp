@@ -239,8 +239,8 @@ void load_cluster_constraints() {
 
         //if there are any constrainted atoms in the cluster,
         //we update the cluster's PartitionRegion
-        for (unsigned int i = 0; i < atoms.size(); i++) {
-            PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atoms[i]);
+        for (auto atom : atoms) {
+            PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atom);
 
             if (partid != PartitionId::INVALID()) {
                 PartitionRegion pr = floorplanning_ctx.constraints.get_partition_pr(partid);
