@@ -229,7 +229,6 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     if (cheapest == nullptr) {
         VTR_LOG("%s\n", describe_unrouteable_connection(source_node, sink_node, is_flat_).c_str());
 
-        free_route_tree(rt_root);
         heap_.empty_heap();
         rcv_path_manager.empty_heap();
         return std::make_pair(false, t_heap());

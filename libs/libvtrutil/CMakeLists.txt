@@ -105,6 +105,7 @@ target_link_libraries(libvtrutil
                         liblog)
 
 install(TARGETS libvtrutil DESTINATION bin)
+install(FILES ${LIB_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libvtrutil)
 
 #
 # Unit Tests
