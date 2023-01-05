@@ -104,7 +104,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
         set(YOSYS_DATDIR ${libyosys_BINARY_DIR}/share/yosys) 
         set(PARMYS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/parmys-plugin) 
         ExternalProject_Add(parmys-plugin 
-            PREFIX "" 
+            PREFIX "parmys-plugin" 
 
             GIT_REPOSITORY    https://github.com/CAS-Atlantic/parmys-plugin.git
             GIT_TAG           v2.0
@@ -112,7 +112,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             
             # setting source, build and install directories 
             SOURCE_DIR "${PARMYS_SOURCE_DIR}" 
-            BUILD_IN_SOURCE TRUE 
+            BUILD_IN_SOURCE FALSE 
             INSTALL_DIR "" 
 
             INSTALL_COMMAND "" 
@@ -120,6 +120,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             BUILD_COMMAND ${MAKE_PROGRAM} -C ${PARMYS_SOURCE_DIR} 
                                         PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH} 
                                         VTR_INSTALL_DIR=${CMAKE_BINARY_DIR} 
+                                        BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/parmys-plugin
                                         install -j${CMAKE_BUILD_PARALLEL_LEVEL} 
             
             # redirect logs to a logfile
@@ -153,11 +154,12 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
     if(${YOSYS_PARMYS_PLUGIN})
         # parmys-plugin requires the binaries and headers of the vtr libraries to be installed
         add_custom_target(vtr-libs ALL 
-                        DEPENDS libarchfpga libvtrutil liblog libpugixml libpugiutil librtlnumber
+                        DEPENDS libarchfpga libvtrutil liblog libpugixml libpugiutil librtlnumber libyosys
                             COMMAND ${CMAKE_COMMAND}
                                                     --install ${CMAKE_BINARY_DIR}/libs                    
                             WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
         add_dependencies(parmys-plugin vtr-libs)
+        add_dependencies(vtr-yosys parmys-plugin)
     endif()
 
 endif()
