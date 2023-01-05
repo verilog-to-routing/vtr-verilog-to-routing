@@ -142,7 +142,7 @@ LDLIBS += -lrt
 endif
 endif
 
-YOSYS_VER := 0.23+8
+YOSYS_VER := 0.25
 
 # Note: We arrange for .gitcommit to contain the (short) commit hash in
 # tarballs generated with git-archive(1) using .gitattributes. The git repo
@@ -158,7 +158,7 @@ endif
 OBJS = kernel/version_$(GIT_REV).o
 
 bumpversion:
-	sed -i "/^YOSYS_VER := / s/+[0-9][0-9]*$$/+`git log --oneline 7ce5011.. | wc -l`/;" Makefile
+#	sed -i "/^YOSYS_VER := / s/+[0-9][0-9]*$$/+`git log --oneline 313b799.. | wc -l`/;" Makefile
 
 # set 'ABCREV = default' to use abc/ as it is
 #
@@ -963,26 +963,22 @@ docs/source/cmd/abc.rst: $(TARGETS) $(EXTRA_TARGETS)
 	mkdir -p docs/source/cmd
 	./$(PROGRAM_PREFIX)yosys -p 'help -write-rst-command-reference-manual'
 
-PHONY: docs/gen_images
+PHONY: docs/gen_images docs/guidelines
 docs/gen_images:
 	$(Q) $(MAKE) -C docs/images all
 
+DOCS_GUIDELINE_FILES := GettingStarted CodingStyle
+docs/guidelines:
+	$(Q) mkdir -p docs/source/temp
+	$(Q) cp -f $(addprefix guidelines/,$(DOCS_GUIDELINE_FILES)) docs/source/temp
+
 DOC_TARGET ?= html
-docs: docs/source/cmd/abc.rst docs/gen_images
+docs: docs/source/cmd/abc.rst docs/gen_images docs/guidelines
 	$(Q) $(MAKE) -C docs $(DOC_TARGET)
-
-update-manual: $(TARGETS) $(EXTRA_TARGETS)
-	cd manual && ../$(PROGRAM_PREFIX)yosys -p 'help -write-tex-command-reference-manual'
-
-manual: $(TARGETS) $(EXTRA_TARGETS)
-	cd manual && bash appnotes.sh
-	cd manual && bash presentation.sh
-	cd manual && bash manual.sh
 
 clean:
 	rm -rf share
 	rm -rf kernel/*.pyh
-	if test -d manual; then cd manual && sh clean.sh; fi
 	rm -f $(OBJS) $(GENFILES) $(TARGETS) $(EXTRA_TARGETS) $(EXTRA_OBJS) $(PY_WRAP_INCLUDES) $(PY_WRAPPER_FILE).cc
 	rm -f kernel/version_*.o kernel/version_*.cc
 	rm -f libs/*/*.d frontends/*/*.d passes/*/*.d backends/*/*.d kernel/*.d techlibs/*/*.d
@@ -1122,5 +1118,5 @@ echo-abc-rev:
 -include kernel/*.d
 -include techlibs/*/*.d
 
-.PHONY: all top-all abc test install install-abc docs manual clean mrproper qtcreator coverage vcxsrc mxebin
+.PHONY: all top-all abc test install install-abc docs clean mrproper qtcreator coverage vcxsrc mxebin
 .PHONY: config-clean config-clang config-gcc config-gcc-static config-gcc-4.8 config-afl-gcc config-gprof config-sudo
