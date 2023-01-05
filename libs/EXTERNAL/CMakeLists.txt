@@ -146,18 +146,17 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
                             COMMAND ${CMAKE_COMMAND} -E 
                                                     copy_directory ${CMAKE_CURRENT_BINARY_DIR}/libyosys ${VTR_SOURCE_DIR}/Yosys/                     
                             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    
-    # parmys-plugin requires the binaries and headers of the vtr libraries to be installed
-    add_custom_target(vtr-libs ALL 
-                      DEPENDS libarchfpga libvtrutil liblog libpugixml libpugiutil librtlnumber
-                            COMMAND ${CMAKE_COMMAND}
-                                                    --install ${CMAKE_BINARY_DIR}/libs                    
-                            WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
     if(${YOSYS_SV_UHDM_PLUGIN})
         add_dependencies(vtr-yosys yosys-plugins)
     endif()
     if(${YOSYS_PARMYS_PLUGIN})
+        # parmys-plugin requires the binaries and headers of the vtr libraries to be installed
+        add_custom_target(vtr-libs ALL 
+                        DEPENDS libarchfpga libvtrutil liblog libpugixml libpugiutil librtlnumber
+                            COMMAND ${CMAKE_COMMAND}
+                                                    --install ${CMAKE_BINARY_DIR}/libs                    
+                            WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
         add_dependencies(parmys-plugin vtr-libs)
     endif()
 
