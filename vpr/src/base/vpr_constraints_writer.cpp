@@ -18,7 +18,6 @@
 #include <fstream>
 #include "vpr_constraints_writer.h"
 #include "region.h"
-#include "re_cluster_util.h"
 
 void write_vpr_floorplan_constraints(const char* file_name, int expand, bool subtile, int horizontal_partitions, int vertical_partitions) {
     VprConstraints constraints;
@@ -47,6 +46,7 @@ void write_vpr_floorplan_constraints(const char* file_name, int expand, bool sub
 void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int expand, bool subtile) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
+    ClusterAtomsLookup atoms_lookup;
 
     int part_id = 0;
     /*
@@ -77,9 +77,9 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
         part.set_part_region(pr);
         constraints.add_partition(part);
 
-        std::unordered_set<AtomBlockId>* atoms = cluster_to_atoms(blk_id);
+        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(blk_id);
 
-        for (auto atom_id : *atoms) {
+        for (auto atom_id : atoms) {
             constraints.add_constrained_atom(atom_id, partid);
         }
         part_id++;
@@ -90,6 +90,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
+    ClusterAtomsLookup atoms_lookup;
 
     //calculate the cutpoint values according to the grid size
     //load two arrays - one for horizontal cutpoints and one for vertical
@@ -150,7 +151,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
      * appropriate region accordingly
      */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        std::unordered_set<AtomBlockId>* atoms = cluster_to_atoms(blk_id);
+        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(blk_id);
         int x = place_ctx.block_locs[blk_id].loc.x;
         int y = place_ctx.block_locs[blk_id].loc.y;
         int width = device_ctx.grid.width();
@@ -182,7 +183,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints, int 
 
         VTR_ASSERT(got != region_atoms.end());
 
-        for (auto atom_id : *atoms) {
+        for (auto atom_id : atoms) {
             got->second.push_back(atom_id);
         }
     }
