@@ -103,12 +103,11 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
     if(${YOSYS_PARMYS_PLUGIN}) 
         set(YOSYS_DATDIR ${libyosys_BINARY_DIR}/share/yosys) 
         set(PARMYS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/parmys-plugin) 
-
         ExternalProject_Add(parmys-plugin 
             PREFIX "" 
 
             GIT_REPOSITORY    https://github.com/CAS-Atlantic/parmys-plugin.git
-            GIT_TAG           v1.0
+            GIT_TAG           v2.0
             GIT_PROGRESS      TRUE 
             
             # setting source, build and install directories 
@@ -120,6 +119,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             CONFIGURE_COMMAND "" 
             BUILD_COMMAND ${MAKE_PROGRAM} -C ${PARMYS_SOURCE_DIR} 
                                         PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH} 
+                                        VTR_INSTALL_DIR=${CMAKE_BINARY_DIR} 
                                         install -j${CMAKE_BUILD_PARALLEL_LEVEL} 
             
             # redirect logs to a logfile
@@ -130,7 +130,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             LOG_OUTPUT_ON_FAILURE ON
             
             # dependency
-            DEPENDS yosys 
+            DEPENDS yosys
         ) 
     endif()
 
@@ -146,11 +146,19 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
                             COMMAND ${CMAKE_COMMAND} -E 
                                                     copy_directory ${CMAKE_CURRENT_BINARY_DIR}/libyosys ${VTR_SOURCE_DIR}/Yosys/                     
                             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    
+    # parmys-plugin requires the binaries and headers of the vtr libraries to be installed
+    add_custom_target(vtr-libs ALL 
+                      DEPENDS libarchfpga libvtrutil liblog libpugixml libpugiutil librtlnumber
+                            COMMAND ${CMAKE_COMMAND}
+                                                    --install ${CMAKE_BINARY_DIR}/libs                    
+                            WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
     if(${YOSYS_SV_UHDM_PLUGIN})
         add_dependencies(vtr-yosys yosys-plugins)
     endif()
     if(${YOSYS_PARMYS_PLUGIN})
-        add_dependencies(vtr-yosys parmys-plugin)
+        add_dependencies(parmys-plugin vtr-libs)
     endif()
 
 endif()

@@ -47,7 +47,7 @@ if (WRITE_ARCH_BB_USES_IPO)
     set_property(TARGET write_arch_bb APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
-install(TARGETS libarchfpga read_arch write_arch_bb DESTINATION bin)
+install(TARGETS libarchfpga DESTINATION bin)
 install(FILES ${LIB_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libarchfpga)
 
 #
