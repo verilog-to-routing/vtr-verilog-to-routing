@@ -3676,3 +3676,17 @@ t_pb* get_top_level_pb(t_pb* pb) {
 
     return top_level_pb;
 }
+
+
+void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    atoms_lookup.resize(cluster_ctx.clb_nlist.blocks().size());
+
+    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
+        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
+
+        atoms_lookup[clb_index].insert(atom_blk_id);
+    }
+}
