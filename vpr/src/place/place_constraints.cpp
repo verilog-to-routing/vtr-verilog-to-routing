@@ -11,6 +11,7 @@
 #include "globals.h"
 #include "place_constraints.h"
 #include "place_util.h"
+#include "re_cluster_util.h"
 
 /*checks that each block's location is compatible with its floorplanning constraints if it has any*/
 int check_placement_floorplanning() {
@@ -228,18 +229,17 @@ bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc) {
 void load_cluster_constraints() {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    ClusterAtomsLookup atoms_lookup;
 
     floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
-        std::vector<AtomBlockId> atoms = atoms_lookup.atoms_in_cluster(cluster_id);
+        std::unordered_set<AtomBlockId>* atoms = cluster_to_atoms(cluster_id);
         PartitionRegion empty_pr;
         floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
 
         //if there are any constrainted atoms in the cluster,
         //we update the cluster's PartitionRegion
-        for (auto atom : atoms) {
+        for (auto atom : *atoms) {
             PartitionId partid = floorplanning_ctx.constraints.get_atom_partition(atom);
 
             if (partid != PartitionId::INVALID()) {
