@@ -3677,7 +3677,6 @@ t_pb* get_top_level_pb(t_pb* pb) {
     return top_level_pb;
 }
 
-
 void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
