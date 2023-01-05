@@ -10,12 +10,12 @@ circuits_dir=benchmarks/ultraembedded
 archs_dir=arch/timing
 
 # Add circuits to list to sweep
-circuit_list_add=audio_core.v
+#circuit_list_add=audio_core.v
 circuit_list_add=enet_core.v
-circuit_list_add=ft60x_axi_core.v
-circuit_list_add=jpeg_core.v
+#circuit_list_add=ft60x_axi_core.v
+#circuit_list_add=jpeg_core.v
 circuit_list_add=mmc_core.v
-circuit_list_add=mpx_core.v
+#circuit_list_add=mpx_core.v
 circuit_list_add=soc_core.v
 circuit_list_add=uriscv_core.v
 circuit_list_add=usb_uart_core.v
