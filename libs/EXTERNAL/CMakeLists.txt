@@ -37,18 +37,19 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libyosys" 
     BUILD_IN_SOURCE FALSE 
     INSTALL_DIR "" 
-    BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libyosys"
+    # BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libyosys"
  
     CONFIGURE_COMMAND "" 
     BUILD_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
         -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
         -k "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
+        PREFIX=${VTR_SOURCE_DIR}/Yosys
         -j${CMAKE_BUILD_PARALLEL_LEVEL}
 
     INSTALL_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
         -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
         install
-        PREFIX=${VTR_SOURCE_DIR}/Yosys/
+        PREFIX=${VTR_SOURCE_DIR}/Yosys
         -j${CMAKE_BUILD_PARALLEL_LEVEL}
     
     # redirect logs to a logfile
@@ -158,6 +159,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
                                         PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH} 
                                         VTR_INSTALL_DIR=${CMAKE_BINARY_DIR} 
                                         BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/parmys-plugin
+                                        YOSYS_PATH=${VTR_SOURCE_DIR}/Yosys
                                         install -j${CMAKE_BUILD_PARALLEL_LEVEL} 
             
             # redirect logs to a logfile
