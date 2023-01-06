@@ -39,7 +39,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
         # Surelog 
         ExternalProject_Add(surelog 
             # root directory for Surelog project 
-            PREFIX "" 
+            PREFIX "surelog" 
 
             GIT_REPOSITORY    https://github.com/chipsalliance/Surelog.git 
             GIT_TAG           8da6fcba650826219ead335a3382c52f1c1d5690 # yosys-systemverilog release c7f1ded-2022-08-10 
@@ -47,7 +47,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             
             # setting source, build and install directories 
             SOURCE_DIR "${SURELOG_SOURCE_DIR}" 
-            BUILD_IN_SOURCE TRUE 
+            BUILD_IN_SOURCE FALSE 
             INSTALL_DIR "${SURELOG_BINARY_DIR}" 
 
             # define Surelog cache values 
@@ -68,25 +68,26 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             DEPENDS yosys 
         ) 
 
-        ExternalProject_Add(yosys-plugins 
+        ExternalProject_Add(f4pga-plugins 
             # root directory for the Yosys-F4PGA-Plugins project 
-            PREFIX "" 
+            PREFIX "f4pga-plugins " 
 
             GIT_REPOSITORY    https://github.com/chipsalliance/yosys-f4pga-plugins.git 
-            GIT_TAG           3b3dcc5cc216f7a39d26a6d894c53b8aa3e10d71 # yosys-systemverilog release c7f1ded-2022-08-10 
+            GIT_TAG           ca5bb9a2bab9e264d70eab71b1067ad27713afb2 # yosys-systemverilog release c7f1ded-2022-08-10 
             GIT_PROGRESS      TRUE 
             
             # setting source, build and install directories 
             SOURCE_DIR "${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}" 
-            BUILD_IN_SOURCE TRUE 
+            BUILD_IN_SOURCE FALSE 
             INSTALL_DIR "" 
 
             INSTALL_COMMAND "" 
             CONFIGURE_COMMAND "" 
-            BUILD_COMMAND ${MAKE_PROGRAM} -C ${YOSYS_F4PGA_PLUGINS_SOURCE_DIR} 
-                                        PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH} 
-                                        UHDM_INSTALL_DIR=${libyosys_BINARY_DIR} 
-                                        install -j${CMAKE_BUILD_PARALLEL_LEVEL} 
+            BUILD_COMMAND ${MAKE_PROGRAM} -C ${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}
+                                        PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
+                                        UHDM_INSTALL_DIR=${libyosys_BINARY_DIR}
+                                        BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/f4pga-plugins
+                                        install -j${CMAKE_BUILD_PARALLEL_LEVEL}
             
             # redirect logs to a logfile
             LOG_BUILD ON
@@ -149,7 +150,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
                             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
     if(${YOSYS_SV_UHDM_PLUGIN})
-        add_dependencies(vtr-yosys yosys-plugins)
+        add_dependencies(vtr-yosys f4pga-plugins)
     endif()
     if(${YOSYS_PARMYS_PLUGIN})
         # parmys-plugin requires the binaries and headers of the vtr libraries to be installed
