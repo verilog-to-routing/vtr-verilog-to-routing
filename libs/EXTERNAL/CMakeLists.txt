@@ -25,6 +25,41 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
         set(MAKE_PROGRAM "make")
     endif()
 
+    ExternalProject_Add(myosys
+    # root directory for the Yosys-F4PGA-Plugins project 
+    PREFIX "myosys" 
+
+    GIT_REPOSITORY    https://github.com/YosysHQ/yosys.git
+    GIT_TAG           yosys-0.25 # yosys-systemverilog release 3c3aaf2-2022-12-30
+    GIT_PROGRESS      TRUE 
+    
+    # setting source, build and install directories 
+    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/myosys" 
+    BUILD_IN_SOURCE FALSE 
+    INSTALL_DIR "" 
+    BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/myosys"
+ 
+    CONFIGURE_COMMAND "" 
+    BUILD_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/myosys
+        -f ${CMAKE_CURRENT_SOURCE_DIR}/myosys/Makefile #(out-of-tree) build directory
+        -k "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
+        -j${CMAKE_BUILD_PARALLEL_LEVEL}
+
+    INSTALL_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/myosys
+        -f ${CMAKE_CURRENT_SOURCE_DIR}/myosys/Makefile #(out-of-tree) build directory
+        install
+        PREFIX=${VTR_SOURCE_DIR}/Mosys/
+        -j${CMAKE_BUILD_PARALLEL_LEVEL}
+    
+    # redirect logs to a logfile
+    LOG_BUILD ON
+    LOG_UPDATE ON
+    LOG_INSTALL ON
+    LOG_CONFIGURE ON
+    LOG_OUTPUT_ON_FAILURE ON
+    
+) 
+
     add_subdirectory(libyosys)
 
     # building Surelog and UHDM in a custom target to avoid any target conflict with VTR targets 
