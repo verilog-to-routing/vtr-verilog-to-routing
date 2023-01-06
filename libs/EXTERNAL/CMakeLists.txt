@@ -42,7 +42,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             PREFIX "surelog" 
 
             GIT_REPOSITORY    https://github.com/chipsalliance/Surelog.git 
-            GIT_TAG           8da6fcba650826219ead335a3382c52f1c1d5690 # yosys-systemverilog release c7f1ded-2022-08-10 
+            GIT_TAG           900fb2499c7d3f793409999eabee63db513814b4 # yosys-systemverilog release 3c3aaf2-2022-12-30
             GIT_PROGRESS      TRUE 
             
             # setting source, build and install directories 
@@ -73,7 +73,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             PREFIX "f4pga-plugins" 
 
             GIT_REPOSITORY    https://github.com/chipsalliance/yosys-f4pga-plugins.git 
-            GIT_TAG           ca5bb9a2bab9e264d70eab71b1067ad27713afb2 # yosys-systemverilog release c7f1ded-2022-08-10 
+            GIT_TAG           ef5f5a2efe77e9bd1d72dbaa28ede168cf1a7465 # yosys-systemverilog release 3c3aaf2-2022-12-30
             GIT_PROGRESS      TRUE 
             
             # setting source, build and install directories 
