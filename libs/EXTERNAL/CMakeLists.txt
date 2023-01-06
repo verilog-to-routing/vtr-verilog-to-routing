@@ -70,7 +70,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
 
         ExternalProject_Add(f4pga-plugins 
             # root directory for the Yosys-F4PGA-Plugins project 
-            PREFIX "f4pga-plugins " 
+            PREFIX "f4pga-plugins" 
 
             GIT_REPOSITORY    https://github.com/chipsalliance/yosys-f4pga-plugins.git 
             GIT_TAG           ca5bb9a2bab9e264d70eab71b1067ad27713afb2 # yosys-systemverilog release c7f1ded-2022-08-10 
@@ -86,7 +86,8 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             BUILD_COMMAND ${MAKE_PROGRAM} -C ${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}
                                         PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
                                         UHDM_INSTALL_DIR=${libyosys_BINARY_DIR}
-                                        BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/f4pga-plugins
+                                        BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/f4pga-plugins/$(NAME) # NAME will be resolved by yosys-f4pga-plugins Make
+                                        PLUGIN_LIST=systemverilog #fasm xdc params sdc ql-iob design_introspection integrateinv ql-qlf systemverilog uhdm dsp-ff
                                         install -j${CMAKE_BUILD_PARALLEL_LEVEL}
             
             # redirect logs to a logfile
