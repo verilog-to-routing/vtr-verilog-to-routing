@@ -47,6 +47,7 @@ USING_YOSYS_NAMESPACE
 #include "VeriModule.h"
 #include "VeriWrite.h"
 #include "VeriLibrary.h"
+#include "VeriExpression.h"
 
 #ifdef VERIFIC_VHDL_SUPPORT
 #include "vhdl_file.h"
@@ -1124,6 +1125,12 @@ void VerificImporter::import_netlist(RTLIL::Design *design, Netlist *nl, std::ma
 	NetBus *netbus;
 	Instance *inst;
 	PortRef *pr;
+	Att *attr;
+
+	FOREACH_ATTRIBUTE(nl, mi, attr) {
+		if (!strcmp(attr->Key(), "noblackbox"))
+			module->set_bool_attribute(ID::blackbox, false);
+	}
 
 	FOREACH_PORT_OF_NETLIST(nl, mi, port)
 	{
@@ -2267,7 +2274,7 @@ struct VerificExtNets
 	}
 };
 
-void verific_import(Design *design, const std::map<std::string,std::string> &parameters, std::string top)
+std::string verific_import(Design *design, const std::map<std::string,std::string> &parameters, std::string top)
 {
 	verific_sva_fsm_limit = 16;
 
@@ -2288,6 +2295,7 @@ void verific_import(Design *design, const std::map<std::string,std::string> &par
 
 #ifdef YOSYSHQ_VERIFIC_EXTENSIONS
 	VerificExtensions::ElaborateAndRewrite("work", &verific_params);
+	verific_error_msg.clear();
 #endif
 
 	if (top.empty()) {
@@ -2300,6 +2308,18 @@ void verific_import(Design *design, const std::map<std::string,std::string> &par
 			VeriModule *veri_module = veri_lib->GetModule(top.c_str(), 1);
 			if (veri_module) {
 				veri_modules.InsertLast(veri_module);
+				if (veri_module->IsConfiguration()) {
+					VeriConfiguration *cfg = (VeriConfiguration*)veri_module;
+					VeriName *module_name = (VeriName*)cfg->GetTopModuleNames()->GetLast();
+					VeriLibrary *lib = veri_module->GetLibrary() ;
+					if (module_name && module_name->IsHierName()) {
+						VeriName *prefix = module_name->GetPrefix() ;
+						const char *lib_name = (prefix) ? prefix->GetName() : 0 ;
+						if (!Strings::compare("work", lib_name)) lib = veri_file::GetLibrary(lib_name, 1) ;
+					}
+					veri_module = (lib && module_name) ? lib->GetModule(module_name->GetName(), 1) : 0;
+					top = veri_module->GetName();
+				}
 			}
 
 			// Also elaborate all root modules since they may contain bind statements
@@ -2378,6 +2398,7 @@ void verific_import(Design *design, const std::map<std::string,std::string> &par
 
 	if (!verific_error_msg.empty())
 		log_error("%s\n", verific_error_msg.c_str());
+	return top;
 }
 
 YOSYS_NAMESPACE_END
@@ -2525,12 +2546,14 @@ struct VerificPass : public Pass {
 		log("\n");
 		log("Set message severity. <msg_id> is the string in square brackets when a message\n");
 		log("is printed, such as VERI-1209.\n");
+		log("Also errors, warnings, infos and comments could be used to set new severity for\n");
+		log("all messages of certain type.\n");
 		log("\n");
 		log("\n");
-		log("    verific -import [options] <top-module>..\n");
+		log("    verific -import [options] <top>..\n");
 		log("\n");
-		log("Elaborate the design for the specified top modules, import to Yosys and\n");
-		log("reset the internal state of Verific.\n");
+		log("Elaborate the design for the specified top modules or configurations, import to\n");
+		log("Yosys and reset the internal state of Verific.\n");
 		log("\n");
 		log("Import options:\n");
 		log("\n");
@@ -2768,9 +2791,20 @@ struct VerificPass : public Pass {
 			else
 				log_abort();
 
-			for (argidx++; argidx < GetSize(args); argidx++)
-				Message::SetMessageType(args[argidx].c_str(), new_type);
-
+			for (argidx++; argidx < GetSize(args); argidx++) {
+				if (Strings::compare(args[argidx].c_str(), "errors")) {
+					Message::SetMessageType("VERI-1063", new_type);
+					Message::SetAllMessageType(VERIFIC_ERROR, new_type);
+				} else if (Strings::compare(args[argidx].c_str(), "warnings")) {
+					Message::SetAllMessageType(VERIFIC_WARNING, new_type);
+				} else if (Strings::compare(args[argidx].c_str(), "infos")) {
+					Message::SetAllMessageType(VERIFIC_INFO, new_type);
+				} else if (Strings::compare(args[argidx].c_str(), "comments")) {
+					Message::SetAllMessageType(VERIFIC_COMMENT, new_type);
+				} else {
+					Message::SetMessageType(args[argidx].c_str(), new_type);
+				}
+			}
 			goto check_error;
 		}
 
@@ -3203,6 +3237,7 @@ struct VerificPass : public Pass {
 
 #ifdef YOSYSHQ_VERIFIC_EXTENSIONS
 			VerificExtensions::ElaborateAndRewrite(work, &parameters);
+			verific_error_msg.clear();
 #endif
 			if (!ppfile.empty())
 				veri_file::PrettyPrint(ppfile.c_str(), nullptr, work.c_str());
@@ -3246,8 +3281,29 @@ struct VerificPass : public Pass {
 
 					VeriModule *veri_module = veri_lib ? veri_lib->GetModule(name, 1) : nullptr;
 					if (veri_module) {
-						log("Adding Verilog module '%s' to elaboration queue.\n", name);
-						veri_modules.InsertLast(veri_module);
+						if (veri_module->IsConfiguration()) {
+							log("Adding Verilog configuration '%s' to elaboration queue.\n", name);	
+							veri_modules.InsertLast(veri_module);
+
+							top_mod_names.erase(name);
+
+							VeriConfiguration *cfg = (VeriConfiguration*)veri_module;
+							VeriName *module_name;
+							int i;
+							FOREACH_ARRAY_ITEM(cfg->GetTopModuleNames(), i, module_name) {
+								VeriLibrary *lib = veri_module->GetLibrary() ;
+								if (module_name && module_name->IsHierName()) {
+									VeriName *prefix = module_name->GetPrefix() ;
+									const char *lib_name = (prefix) ? prefix->GetName() : 0 ;
+									if (!Strings::compare("work", lib_name)) lib = veri_file::GetLibrary(lib_name, 1) ;
+								}
+								veri_module = (lib && module_name) ? lib->GetModule(module_name->GetName(), 1) : 0;
+								top_mod_names.insert(veri_module->GetName());
+							}
+						} else {
+							log("Adding Verilog module '%s' to elaboration queue.\n", name);
+							veri_modules.InsertLast(veri_module);
+						}
 						continue;
 					}
 #ifdef VERIFIC_VHDL_SUPPORT
