@@ -89,7 +89,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             # define Surelog cache values 
             CMAKE_CACHE_ARGS 
                 "-DCMAKE_BUILD_TYPE:STRING=Release" 
-                "-DCMAKE_INSTALL_PREFIX:PATH=${libyosys_BINARY_DIR}" 
+                "-DCMAKE_INSTALL_PREFIX:PATH=${VTR_SOURCE_DIR}/Yosys" 
                 "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON" 
                 "-DCMAKE_WARN_DEPRECATED:BOOL=OFF" 
 
@@ -101,7 +101,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             LOG_OUTPUT_ON_FAILURE ON
             
             # dependency
-            DEPENDS yosys 
+            DEPENDS libyosys 
         ) 
 
         ExternalProject_Add(f4pga-plugins 
@@ -123,6 +123,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
                                         PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
                                         UHDM_INSTALL_DIR=${libyosys_BINARY_DIR}
                                         BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/f4pga-plugins/$(NAME) # NAME will be resolved by yosys-f4pga-plugins Make
+                                        YOSYS_PATH=${VTR_SOURCE_DIR}/Yosys
                                         PLUGIN_LIST=systemverilog #fasm xdc params sdc ql-iob design_introspection integrateinv ql-qlf systemverilog uhdm dsp-ff
                                         install -j${CMAKE_BUILD_PARALLEL_LEVEL}
             
