@@ -121,7 +121,7 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             CONFIGURE_COMMAND "" 
             BUILD_COMMAND ${MAKE_PROGRAM} -C ${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}
                                         PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
-                                        UHDM_INSTALL_DIR=${libyosys_BINARY_DIR}
+                                        UHDM_INSTALL_DIR=${VTR_SOURCE_DIR}/Yosys
                                         BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/f4pga-plugins/$(NAME) # NAME will be resolved by yosys-f4pga-plugins Make
                                         YOSYS_PATH=${VTR_SOURCE_DIR}/Yosys
                                         PLUGIN_LIST=systemverilog #fasm xdc params sdc ql-iob design_introspection integrateinv ql-qlf systemverilog uhdm dsp-ff
