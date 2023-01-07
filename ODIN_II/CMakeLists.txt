@@ -155,8 +155,10 @@ add_library(libodin_ii STATIC
 # link libyosys to the Odin-II library
 if(${ODIN_USE_YOSYS})
     add_dependencies(libodin_ii libyosys)
+    target_link_directories(libodin_ii PUBLIC ${VTR_SOURCE_DIR}/build/libs/EXTERNAL/libyosys)
+    # find_library(yosys_lib libyosys)
     target_include_directories(libodin_ii PUBLIC ${VTR_SOURCE_DIR}/Yosys/share/yosys/include)
-    # target_link_libraries(libodin_ii libyosys)
+    target_link_libraries(libodin_ii yosys)
 endif()
 
 target_include_directories(libodin_ii PUBLIC ${LIB_INCLUDE_DIRS})
