@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -21,14 +21,6 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- * @file: This file includes the circuitry implementation of dlatch, 
- * dlatch with asynchronous reset and a set-reset node.All control
- * signals will be check based on their polarity specified in the 
- * attribute structure of the related node.
- *      DLATCH: a dlatch with enable control signal
- *      ADLATCH: dlatch with asynchronous reset
- *      SETCLR: set (VCC), and clear (GND) to output
  */
 
 #include "Latch.hpp"

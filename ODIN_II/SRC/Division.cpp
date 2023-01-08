@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2021 Seyed Alireza Damghani (sdamghann@gmail.com)
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -21,13 +21,6 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- *
- * @file Division.cpp comprises the combinational implementation of 
- * Division operation using shift and subtraction nodes. To utilize
- * this routine of this file, a high-level RTL DIV node is required
- * with port order according to what is mentioned in resolve_div_node.
- * Currently, this file is used by Yosys generated division sub-circuit.
  */
 
 #include "Division.hpp"

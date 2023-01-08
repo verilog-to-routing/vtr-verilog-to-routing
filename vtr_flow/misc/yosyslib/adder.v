@@ -1,8 +1,9 @@
-/********************************************************
-# Description: definition of the hard adder black-box	#
-#														#
-# Author: Seyed Alireza Damghani (sdamghann@gmail.com)  #
-********************************************************/
+/****************************************************************
+# Description: definition of the hard multiplier black-box		#
+#																#
+# Author: Eddie Hung											#
+# VTR-to-Bitstream: "http://eddiehung.github.io/vtb.html"	#
+****************************************************************/
 
 (* blackbox *)
 module adder(a, b, cin, cout, sumout);

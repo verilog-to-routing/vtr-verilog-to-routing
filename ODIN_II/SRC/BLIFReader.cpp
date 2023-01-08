@@ -1,5 +1,6 @@
-/**
- *
+/*
+ * Copyright 2023 CAS—Atlantic (University of New Brunswick, CASA)
+ * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -20,14 +21,6 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
- * @file: includes the definition of BLIF Reader class to read a given
- * BLIF file. The Odin-II BLIF Reader can also read large files since 
- * it read each file with a BLIF_READ_BUFFER chunk or line by line.
- * Odin-II BLIF Reader caches the read models while traversing the
- * BLIF file to avoid searching the BLIF file looking for the model 
- * definition. Moreover, function getbline provides developers with 
- * the ability to read a BLIF file line by line or using a chunk.
  */
 
 #include <stdlib.h>
