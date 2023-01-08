@@ -157,11 +157,11 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             INSTALL_COMMAND "" 
             CONFIGURE_COMMAND "" 
             BUILD_COMMAND ${MAKE_PROGRAM} -C ${PARMYS_SOURCE_DIR} 
-                                        PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH} 
-                                        VTR_INSTALL_DIR=${CMAKE_BINARY_DIR} 
-                                        BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/parmys-plugin
-                                        YOSYS_PATH=${VTR_SOURCE_DIR}/Yosys
-                                        install -j${CMAKE_BUILD_PARALLEL_LEVEL} 
+                PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH} 
+                VTR_INSTALL_DIR=${CMAKE_INSTALL_PREFIX} 
+                BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/parmys-plugin
+                YOSYS_PATH=${VTR_SOURCE_DIR}/Yosys
+                install -j${CMAKE_BUILD_PARALLEL_LEVEL} 
             
             # redirect logs to a logfile
             LOG_BUILD ON
