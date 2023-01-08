@@ -156,7 +156,6 @@ add_library(libodin_ii STATIC
 if(${ODIN_USE_YOSYS})
     add_dependencies(libodin_ii libyosys)
     target_link_directories(libodin_ii PUBLIC ${VTR_SOURCE_DIR}/build/libs/EXTERNAL/libyosys)
-    # find_library(yosys_lib libyosys)
     target_include_directories(libodin_ii PUBLIC ${VTR_SOURCE_DIR}/Yosys/share/yosys/include)
     target_link_libraries(libodin_ii yosys)
 endif()
@@ -228,3 +227,4 @@ if(VTR_ENABLE_STRICT_COMPILE)
 endif()
 
 install(TARGETS odin_II libodin_ii DESTINATION bin)
+install(FILES ${LIB_HEADERS_H} ${LIB_HEADERS_HPP} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libodin_ii)

@@ -19,6 +19,7 @@ endif()
 # The VTR root CMakeFile initializes the ODIN_USE_YOSYS or WITH_YOSYS
 # Yosys is compiled only if the user ask for it
 if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
+
     # handle make program with both ninja and unix style
     set(MAKE_PROGRAM "$(MAKE)")
     if(${CMAKE_GENERATOR} STREQUAL "Ninja")
@@ -26,42 +27,38 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
     endif()
 
     ExternalProject_Add(libyosys
-    # root directory for the Yosys-F4PGA-Plugins project 
-    PREFIX "libyosys" 
+        # root directory for the Yosys-F4PGA-Plugins project 
+        PREFIX "libyosys" 
 
-    GIT_REPOSITORY    https://github.com/YosysHQ/yosys.git
-    GIT_TAG           yosys-0.25 # yosys-systemverilog release 3c3aaf2-2022-12-30
-    GIT_PROGRESS      TRUE 
+        GIT_REPOSITORY    https://github.com/YosysHQ/yosys.git
+        GIT_TAG           yosys-0.25 # yosys-systemverilog release 3c3aaf2-2022-12-30
+        GIT_PROGRESS      TRUE 
     
-    # setting source, build and install directories 
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libyosys" 
-    BUILD_IN_SOURCE FALSE 
-    INSTALL_DIR "" 
-    # BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libyosys"
+        # setting source, build and install directories 
+        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libyosys" 
+        BUILD_IN_SOURCE FALSE 
+        INSTALL_DIR "" 
  
-    CONFIGURE_COMMAND "" 
-    BUILD_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
-        -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
-        -k "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
-        PREFIX=${VTR_SOURCE_DIR}/Yosys
-        -j${CMAKE_BUILD_PARALLEL_LEVEL}
+        CONFIGURE_COMMAND "" 
+        BUILD_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
+            -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
+            -k "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
+            PREFIX=${VTR_SOURCE_DIR}/Yosys
+            -j${CMAKE_BUILD_PARALLEL_LEVEL}
 
-    INSTALL_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
-        -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
-        install "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
-        PREFIX=${VTR_SOURCE_DIR}/Yosys
-        -j${CMAKE_BUILD_PARALLEL_LEVEL}
+        INSTALL_COMMAND ${MAKE_PROGRAM} -C ${CMAKE_CURRENT_BINARY_DIR}/libyosys
+            -f ${CMAKE_CURRENT_SOURCE_DIR}/libyosys/Makefile #(out-of-tree) build directory
+            install "ENABLE_LIBYOSYS=1" "ENABLE_ABC=0"
+            PREFIX=${VTR_SOURCE_DIR}/Yosys
+            -j${CMAKE_BUILD_PARALLEL_LEVEL}
     
-    # redirect logs to a logfile
-    LOG_BUILD ON
-    LOG_UPDATE ON
-    LOG_INSTALL ON
-    LOG_CONFIGURE ON
-    LOG_OUTPUT_ON_FAILURE ON
-    
-) 
-
-    # add_subdirectory(libyosys)
+        # redirect logs to a logfile
+        LOG_BUILD ON
+        LOG_UPDATE ON
+        LOG_INSTALL ON
+        LOG_CONFIGURE ON
+        LOG_OUTPUT_ON_FAILURE ON
+    ) 
 
     # building Surelog and UHDM in a custom target to avoid any target conflict with VTR targets 
     if(${YOSYS_SV_UHDM_PLUGIN}) 
@@ -120,12 +117,12 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             INSTALL_COMMAND "" 
             CONFIGURE_COMMAND "" 
             BUILD_COMMAND ${MAKE_PROGRAM} -C ${YOSYS_F4PGA_PLUGINS_SOURCE_DIR}
-                                        PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
-                                        UHDM_INSTALL_DIR=${VTR_SOURCE_DIR}/Yosys
-                                        BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/f4pga-plugins/$(NAME) # NAME will be resolved by yosys-f4pga-plugins Make
-                                        YOSYS_PATH=${VTR_SOURCE_DIR}/Yosys
-                                        PLUGIN_LIST=systemverilog #fasm xdc params sdc ql-iob design_introspection integrateinv ql-qlf systemverilog uhdm dsp-ff
-                                        install -j${CMAKE_BUILD_PARALLEL_LEVEL}
+                PATH=${libyosys_BINARY_DIR}/bin/:$ENV{PATH}
+                UHDM_INSTALL_DIR=${VTR_SOURCE_DIR}/Yosys
+                BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/f4pga-plugins/$(NAME) # NAME will be resolved by yosys-f4pga-plugins Make
+                YOSYS_PATH=${VTR_SOURCE_DIR}/Yosys
+                PLUGIN_LIST=systemverilog #fasm xdc params sdc ql-iob design_introspection integrateinv ql-qlf systemverilog uhdm dsp-ff
+                install -j${CMAKE_BUILD_PARALLEL_LEVEL}
             
             # redirect logs to a logfile
             LOG_BUILD ON
@@ -136,10 +133,12 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             
             # dependency
             DEPENDS surelog libyosys 
-        ) 
+        )
+
     endif() 
 
-    if(${YOSYS_PARMYS_PLUGIN}) 
+    if(${YOSYS_PARMYS_PLUGIN})
+
         set(YOSYS_DATDIR ${libyosys_BINARY_DIR}/share/yosys) 
         set(PARMYS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/parmys-plugin) 
         ExternalProject_Add(parmys-plugin 
@@ -173,33 +172,15 @@ if(${ODIN_USE_YOSYS} OR ${WITH_YOSYS})
             # dependency
             DEPENDS libyosys
         ) 
-    endif()
 
-    # In addition to libyosys in the build folder, we copy the libyosys directory
-    # into a temporary folder in the VTR root, named Yosys, to have access to Yosys 
-    # (plugins) execs for using in VTR scripts (similar to VPR/vpr or ODIN_II/odin_II)
-    # add_custom_target(vtr-yosys ALL 
-    #                   DEPENDS libyosys
-    #                         COMMAND ${CMAKE_COMMAND} -E 
-    #                                                 remove_directory ${VTR_SOURCE_DIR}/Yosys/                     
-    #                         COMMAND ${CMAKE_COMMAND} -E 
-    #                                                 make_directory ${VTR_SOURCE_DIR}/Yosys/
-    #                         COMMAND ${CMAKE_COMMAND} -E 
-    #                                                 copy_directory ${CMAKE_CURRENT_BINARY_DIR}/libyosys ${VTR_SOURCE_DIR}/Yosys/                     
-    #                         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
-    if(${YOSYS_SV_UHDM_PLUGIN})
-        # add_dependencies(vtr-yosys f4pga-plugins)
-    endif()
-    if(${YOSYS_PARMYS_PLUGIN})
         # parmys-plugin requires the binaries and headers of the vtr libraries to be installed
         add_custom_target(vtr-libs ALL 
                         DEPENDS libarchfpga libvtrutil liblog libpugixml libpugiutil librtlnumber libyosys
-                            COMMAND ${CMAKE_COMMAND}
-                                                    --install ${CMAKE_BINARY_DIR}/libs                    
-                            WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+                        COMMAND ${CMAKE_COMMAND}
+                            --install ${CMAKE_BINARY_DIR}/libs                    
+                        WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
         add_dependencies(parmys-plugin vtr-libs)
-        # add_dependencies(vtr-yosys parmys-plugin)
+
     endif()
 
 endif()
