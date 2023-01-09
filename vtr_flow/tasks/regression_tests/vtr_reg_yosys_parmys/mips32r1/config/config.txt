@@ -1,0 +1,51 @@
+#
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/mips32r1
+includes_dir=benchmarks/mips32r1
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+
+# Add circuits to list to sweep
+include_list_add=Add.v
+include_list_add=ALU.v
+include_list_add=Compare.v
+include_list_add=Control.v
+include_list_add=CPZero.v
+include_list_add=Divide.v
+include_list_add=EXMEM_Stage.v
+include_list_add=Hazard_Detection.v
+include_list_add=IDEX_Stage.v
+include_list_add=IFID_Stage.v
+include_list_add=MemControl.v
+include_list_add=MEMWB_Stage.v
+include_list_add=MIPS_Parameters.v
+include_list_add=Mux2.v
+include_list_add=Mux4.v
+include_list_add=RegisterFile.v
+include_list_add=Register.v
+include_list_add=TrapDetect.v
+
+# Add circuits to list to sweep
+circuit_list_add=Processor.v
+
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+#Script parameters
+script_params=-track_memory_usage -crit_path_router_iterations 100 -start yosys -mapper parmys
