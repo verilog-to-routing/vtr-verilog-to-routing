@@ -277,6 +277,8 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
         if (from_rr_type == CHANX || from_rr_type == CHANY) {
             std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
+            // delay_cost and cong_cost only represent the cost to get to the root-level pins. The below offsets are used to represent the intra-cluster cost
+            // of getting to a sink
             delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
             cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).congestion;
 
@@ -285,6 +287,7 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
             if (is_inter_cluster_node(from_physical_type,
                                       from_rr_type,
                                       from_node_ptc_num)) {
+                // Similar to CHANX and CHANY
                 std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
                 delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type).at(to_node_ptc_num).delay;
@@ -308,6 +311,9 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                         cong_cost = (1. - params.criticality) * pin_delay_itr->second.congestion;
                     }
                 } else {
+                    // Since we don't know which type of wires are accessible from an OPIN inside the cluster, we use
+                    // distance_based_min_cost to get an estimation of the global cost, and then, add this cost to the tile_min_cost
+                    // to have an estimation of the cost of getting into a cluster - We don't have any estimation of the cost to get out of the cluster
                     int delta_x, delta_y;
                     get_xy_deltas(current_node, target_node, &delta_x, &delta_y);
                     delta_x = abs(delta_x);
@@ -321,6 +327,7 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
                 return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
             }
         } else if (from_rr_type == IPIN) {
+            // we assume that route-through is not enabled.
             VTR_ASSERT(node_in_same_physical_tile(current_node, target_node));
             const auto& pin_delays = inter_tile_pin_primitive_pin_delay.at(from_physical_type)[from_node_ptc_num];
             auto pin_delay_itr = pin_delays.find(rr_graph.node_ptc_num(target_node));
