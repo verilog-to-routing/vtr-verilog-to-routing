@@ -8,7 +8,7 @@
 #include "re_cluster_util.h"
 #include "pack_move_utils.h"
 
-const int MAX_ITERATIONS = 100;
+const int MAX_ITERATIONS = 10;
 
 /******************* Packing move base class ************************/
 /********************************************************************/
@@ -40,6 +40,8 @@ bool packingMoveGenerator::apply_move(std::vector<molMoveDescription>& new_locs,
 /****************************************************************/
 bool randomPackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
+
 
     t_pack_molecule *mol_1, *mol_2;
     ClusterBlockId clb_index_1, clb_index_2;
@@ -59,10 +61,15 @@ bool randomPackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) 
         if (block_type_1 == block_type_2 && clb_index_1 != clb_index_2) {
             found = true;
             build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
+        } else {
+            packing_multithreading_ctx.mu[clb_index_2]->unlock();
         }
         ++iteration;
     } while (!found && iteration < MAX_ITERATIONS);
 
+    if(!found) {
+        packing_multithreading_ctx.mu[clb_index_1]->unlock();
+    }
     return found;
 }
 
@@ -106,6 +113,8 @@ bool quasiDirectedSameTypePackingSwap::evaluate_move(const std::vector<molMoveDe
 }
 
 bool quasiDirectedSameTypePackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) {
+    auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
+
     t_pack_molecule *mol_1, *mol_2;
     ClusterBlockId clb_index_1;
 
@@ -120,6 +129,8 @@ bool quasiDirectedSameTypePackingSwap::propose_move(std::vector<molMoveDescripti
     if (found) {
         ClusterBlockId clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
         build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
+    } else {
+        packing_multithreading_ctx.mu[clb_index_1]->unlock();
     }
     return found;
 }
@@ -131,6 +142,8 @@ bool quasiDirectedCompatibleTypePackingSwap::evaluate_move(const std::vector<mol
 }
 
 bool quasiDirectedCompatibleTypePackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) {
+    auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
+
     t_pack_molecule *mol_1, *mol_2;
     ClusterBlockId clb_index_1;
 
@@ -145,6 +158,8 @@ bool quasiDirectedCompatibleTypePackingSwap::propose_move(std::vector<molMoveDes
     if (found) {
         ClusterBlockId clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
         build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
+    } else {
+        packing_multithreading_ctx.mu[clb_index_1]->unlock();
     }
     return found;
 }
@@ -156,6 +171,8 @@ bool quasiDirectedSameSizePackingSwap::evaluate_move(const std::vector<molMoveDe
 }
 
 bool quasiDirectedSameSizePackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) {
+    auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
+
     t_pack_molecule *mol_1, *mol_2;
     ClusterBlockId clb_index_1;
 
@@ -170,6 +187,8 @@ bool quasiDirectedSameSizePackingSwap::propose_move(std::vector<molMoveDescripti
     if (found) {
         ClusterBlockId clb_index_2 = atom_to_cluster(mol_2->atom_block_ids[mol_2->root]);
         build_mol_move_description(new_locs, mol_1, clb_index_1, mol_2, clb_index_2);
+    } else {
+        packing_multithreading_ctx.mu[clb_index_1]->unlock();
     }
     return found;
 }

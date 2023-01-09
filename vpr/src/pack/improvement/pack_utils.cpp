@@ -113,16 +113,17 @@ void try_n_packing_moves(int thread_num, int n, const std::string& move_type, t_
     for (int i = 0; i < n; i++) {
         new_locs.clear();
         is_proposed = move_generator->propose_move(new_locs);
-        if (!is_proposed)
+        if (!is_proposed) {
             continue;
-
+        }
         is_valid = move_generator->evaluate_move(new_locs);
         if (!is_valid) {
             packing_multithreading_ctx.mu[new_locs[0].new_clb]->unlock();
             packing_multithreading_ctx.mu[new_locs[1].new_clb]->unlock();
             continue;
-        } else
+        } else {
             num_good_moves++;
+        }
 
         is_successful = move_generator->apply_move(new_locs, clustering_data, thread_num);
         if (is_successful)

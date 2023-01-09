@@ -288,6 +288,7 @@ bool pick_molecule_connected_same_type(t_pack_molecule* mol_1, t_pack_molecule*&
     std::unordered_set<AtomBlockId>* atom_ids = cluster_to_atoms(clb_index_2);
     iteration = 0;
     const t_pb* pb_1 = atom_ctx.lookup.atom_pb(mol_1->atom_block_ids[mol_1->root]);
+
     do {
         int rand_num = vtr::irand((int)atom_ids->size() - 1);
         auto it = atom_ids->begin();
@@ -299,11 +300,12 @@ bool pick_molecule_connected_same_type(t_pack_molecule* mol_1, t_pack_molecule*&
             const t_pb* pb_2 = atom_ctx.lookup.atom_pb(mol_2->atom_block_ids[mol_2->root]);
             if (pb_1->pb_graph_node->pb_type == pb_2->pb_graph_node->pb_type)
                 return true;
-            else
+            else {
                 iteration++;
+                break;
+            }
         }
-    } while (iteration < 20);
-
+    } while (iteration < 10);
     packing_multithreading_ctx.mu[clb_index_2]->unlock();
     return false;
 }

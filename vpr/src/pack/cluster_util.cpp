@@ -3041,6 +3041,7 @@ void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* pb_graph
             /* find location of net driver if exist in clb, NULL otherwise */
             // find the driver of the input net connected to the pin being studied
             const auto driver_pin_id = atom_ctx.nlist.net_driver(net_id);
+
             // find the id of the atom occupying the input primitive_pb
             const auto prim_blk_id = atom_ctx.lookup.pb_atom(primitive_pb);
             // find the pb block occupied by the driving atom
