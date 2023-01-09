@@ -310,6 +310,7 @@ will be triggered. The following tests are included in the workflow:
 * [vtr_reg_nightly_test1-3](#vtr_reg_nightly_test1-3)
 * [vtr_reg_strong](#vtr_reg_strong)
 * vtr_reg_yosys
+* vtr_reg_yosys_parmys
 * vtr_reg_yosys_odin
 * odin_tech_strong
 * odin_reg_strong

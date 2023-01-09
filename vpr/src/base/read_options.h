@@ -96,7 +96,8 @@ struct t_options {
     argparse::ArgValue<std::vector<std::string>> pack_high_fanout_threshold;
     argparse::ArgValue<int> pack_verbosity;
     argparse::ArgValue<bool> use_attraction_groups;
-
+    argparse::ArgValue<int> pack_num_moves;
+    argparse::ArgValue<std::string> pack_move_type;
     /* Placement options */
     argparse::ArgValue<int> Seed;
     argparse::ArgValue<bool> ShowPlaceTiming;
@@ -132,7 +133,6 @@ struct t_options {
     argparse::ArgValue<float> place_dm_rlim;
     argparse::ArgValue<e_agent_algorithm> place_agent_algorithm;
     argparse::ArgValue<std::string> place_reward_fun;
-    //argparse::ArgValue<int> place_timing_cost_func;
     argparse::ArgValue<float> place_crit_limit;
     argparse::ArgValue<int> place_constraint_expand;
     argparse::ArgValue<bool> place_constraint_subtile;

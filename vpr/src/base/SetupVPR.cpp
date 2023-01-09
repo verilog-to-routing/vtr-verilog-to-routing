@@ -545,6 +545,8 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->device_layout = Options.device_layout;
 
     PackerOpts->timing_update_type = Options.timing_update_type;
+    PackerOpts->pack_num_moves = Options.pack_num_moves;
+    PackerOpts->pack_move_type = Options.pack_move_type;
 }
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {

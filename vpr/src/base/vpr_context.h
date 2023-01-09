@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <memory>
 #include <vector>
+#include <mutex>
 
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
@@ -331,6 +332,23 @@ struct ClusteringHelperContext : public Context {
 
     // the utilization of external input/output pins during packing (between 0 and 1)
     t_ext_pin_util_targets target_external_pin_util;
+
+    // A vector of unordered_sets of AtomBlockIds that are inside each clustered block [0 .. num_clustered_blocks-1]
+    // unordered_set for faster insertion/deletion during the iterative improvement process of packing
+    vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
+    ~ClusteringHelperContext() {
+        delete[] primitives_list;
+    }
+};
+
+/**
+ * @brief State relating to packing multithreading
+ *
+ * This contain data structures to synchronize multithreading of packing iterative improvement.
+ */
+struct PackingMultithreadingContext : public Context {
+    vtr::vector<ClusterBlockId, bool> clb_in_flight;
+    vtr::vector<ClusterBlockId, std::mutex> mu;
 };
 
 /**
@@ -573,6 +591,9 @@ class VprContext : public Context {
     const NocContext& noc() const { return noc_; }
     NocContext& mutable_noc() { return noc_; }
 
+    const PackingMultithreadingContext& packing_multithreading() const { return packing_multithreading_; }
+    PackingMultithreadingContext& mutable_packing_multithreading() { return packing_multithreading_; }
+
   private:
     DeviceContext device_;
 
@@ -588,6 +609,8 @@ class VprContext : public Context {
     RoutingContext routing_;
     FloorplanningContext constraints_;
     NocContext noc_;
+
+    PackingMultithreadingContext packing_multithreading_;
 };
 
 #endif

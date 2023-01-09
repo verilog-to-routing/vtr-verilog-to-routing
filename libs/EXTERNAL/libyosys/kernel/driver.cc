@@ -202,6 +202,12 @@ extern char *yosys_argv0;
 extern char yosys_path[PATH_MAX];
 };
 #endif
+#ifdef YOSYS_ENABLE_TCL
+namespace Yosys {
+	extern int yosys_tcl_iterp_init(Tcl_Interp *interp);
+	extern void yosys_tcl_activate_repl();
+};
+#endif
 
 int main(int argc, char **argv)
 {
@@ -221,6 +227,7 @@ int main(int argc, char **argv)
 	bool call_abort = false;
 	bool timing_details = false;
 	bool run_shell = true;
+	bool run_tcl_shell = false;
 	bool mode_v = false;
 	bool mode_q = false;
 
@@ -284,10 +291,13 @@ int main(int argc, char **argv)
 		printf("\n");
 		printf("    -c tcl_scriptfile\n");
 		printf("        execute the commands in the tcl script file (see 'help tcl' for details)\n");
+		printf("\n");
+		printf("    -C\n");
+		printf("        enters TCL interatcive shell mode\n");
 #endif
 		printf("\n");
 		printf("    -p command\n");
-		printf("        execute the commands\n");
+		printf("        execute the commands (to chain commands, separate them with semicolon + whitespace: 'cmd1; cmd2')\n");
 		printf("\n");
 		printf("    -m module_file\n");
 		printf("        load the specified module (aka plugin)\n");
@@ -358,7 +368,7 @@ int main(int argc, char **argv)
 	}
 
 	int opt;
-	while ((opt = getopt(argc, argv, "MXAQTVSgm:f:Hh:b:o:p:l:L:qv:tds:c:W:w:e:r:D:P:E:x:B:")) != -1)
+	while ((opt = getopt(argc, argv, "MXAQTVCSgm:f:Hh:b:o:p:l:L:qv:tds:c:W:w:e:r:D:P:E:x:B:")) != -1)
 	{
 		switch (opt)
 		{
@@ -496,6 +506,9 @@ int main(int argc, char **argv)
 		case 'B':
 			perffile = optarg;
 			break;
+		case 'C':
+			run_tcl_shell = true;
+			break;
 		default:
 			fprintf(stderr, "Run '%s -h' for help.\n", argv[0]);
 			exit(1);
@@ -570,10 +583,19 @@ int main(int argc, char **argv)
 	for (auto it = passes_commands.begin(); it != passes_commands.end(); it++)
 		run_pass(*it);
 
-	if (run_shell)
-		shell(yosys_design);
-	else
-		run_backend(output_filename, backend_command);
+	if (run_tcl_shell) {
+#ifdef YOSYS_ENABLE_TCL
+		yosys_tcl_activate_repl();
+		Tcl_Main(argc, argv, yosys_tcl_iterp_init);
+#else
+		log_error("Can't exectue TCL shell: this version of yosys is not built with TCL support enabled.\n");
+#endif
+	} else {
+		if (run_shell)
+			shell(yosys_design);
+		else
+			run_backend(output_filename, backend_command);
+	}
 
 	yosys_design->check();
 	for (auto it : saved_designs)
