@@ -42,7 +42,6 @@ bool randomPackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& packing_multithreading_ctx = g_vpr_ctx.mutable_packing_multithreading();
 
-
     t_pack_molecule *mol_1, *mol_2;
     ClusterBlockId clb_index_1, clb_index_2;
     t_logical_block_type_ptr block_type_1, block_type_2;
@@ -67,7 +66,7 @@ bool randomPackingSwap::propose_move(std::vector<molMoveDescription>& new_locs) 
         ++iteration;
     } while (!found && iteration < MAX_ITERATIONS);
 
-    if(!found) {
+    if (!found) {
         packing_multithreading_ctx.mu[clb_index_1]->unlock();
     }
     return found;
