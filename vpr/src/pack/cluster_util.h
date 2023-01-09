@@ -19,6 +19,7 @@
  * @brief This file includes useful structs and functions for building and modifying clustering
  */
 
+// test change
 #define AAPACK_MAX_HIGH_FANOUT_EXPLORE 10 /* For high-fanout nets that are ignored, consider a maximum of this many sinks, must be less than packer_opts.feasible_block_array_size */
 #define AAPACK_MAX_TRANSITIVE_EXPLORE 40  /* When investigating transitive fanout connections in packing, consider a maximum of this many molecules, must be less than packer_opts.feasible_block_array_size */
 
