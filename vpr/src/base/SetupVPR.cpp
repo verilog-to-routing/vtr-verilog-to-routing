@@ -57,6 +57,13 @@ static void add_primitive_pin_to_physical_tile(const std::vector<int>& pin_list,
                                                t_physical_tile_type* physical_tile);
 static void add_intra_tile_switches();
 
+/**
+ * Identify the pins that can directly reach class_inf
+ * @param physical_tile
+ * @param logical_block
+ * @param class_inf
+ * @param physical_class_num
+ */
 static void do_reachability_analysis(t_physical_tile_type* physical_tile,
                                      t_logical_block_type* logical_block,
                                      t_class* class_inf,
@@ -916,12 +923,14 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
             continue;
         } else {
             auto insert_res = seen_pb_pins.insert(curr_pb_graph_pin);
+            // Make sure that we are visiting each pin once.
             if(insert_res.second) {
                 curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
                 auto driving_pins = get_physical_pin_src_pins(physical_tile,
                                                               logical_block,
                                                               curr_pin_physical_num);
                 for (auto driving_pin_physical_num : driving_pins) {
+                    // Since we define reachable class as a class which is connected to a pin through a series of IPINs, only IPINs are added to the list
                     if(get_pin_type_from_pin_physical_num(physical_tile, driving_pin_physical_num) == e_pin_type::RECEIVER) {
                         pin_list.push_back(driving_pin_physical_num);
                     }

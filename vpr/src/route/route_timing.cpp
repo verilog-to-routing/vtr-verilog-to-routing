@@ -207,6 +207,18 @@ static void update_route_stats(RouterStats& router_stats, RouterStats& router_it
 
 static void init_route_stats(RouterStats& router_stats);
 
+/**
+ * If flat_routing and has_choking_spot are true, there are some choke points inside the cluster which would increase the convergence time of routing.
+ * To address this issue, the congestion cost of those choke points needs to decrease. This function identify those choke points for each net,
+ * and since the amount of congestion reduction is dependant on the number sinks reachable from that choke point, it also store the number of reachable sinks
+ * for each choke point.
+ * @param net_list
+ * @param net_terminal_groups [Net_id][group_id] -> rr_node_id of the pins in the group
+ * @param net_terminal_group_num [Net_id][pin_id] -> group_id
+ * @param has_choking_spot is true if the given architecture has choking spots inside the cluster
+ * @param is_flat is true if flat_routing is enabled
+ * @return [Net_id][pin_id] -> [choke_point_rr_node_id, number of sinks reachable by this choke point]
+ */
 vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(const Netlist<>& net_list,
                                                                                                 const vtr::vector<ParentNetId,
                                                                                                                   std::vector<std::vector<int>>>& net_terminal_groups,
@@ -2351,10 +2363,12 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
         choking_spots[net_id].resize(net_list.net_pins(net_id).size());
     }
 
+    // Return if the architecture doesn't have any potential choke points
     if(!has_choking_spot) {
         return choking_spots;
     }
 
+    // We only identify choke points if flat_routing is enabled.
     VTR_ASSERT(is_flat);
 
     const auto& device_ctx = g_vpr_ctx.device();
@@ -2364,10 +2378,12 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
 
     for(const auto& net_id : net_list.nets()) {
         int pin_count = 0;
+        // Global nets are not routed, thus we don't consider them.
         if(net_list.net_is_global(net_id)) {
             continue;
         }
         for(auto pin_id : net_list.net_pins(net_id)) {
+            // pin_count == 0 corresponds to the net's source pin
             if(pin_count == 0) {
                 pin_count++;
                 continue;
@@ -2375,34 +2391,34 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
             auto block_id = net_list.pin_block(pin_id);
             auto blk_loc = get_block_loc(block_id, is_flat);
             int group_num = net_terminal_group_num[net_id][pin_count];
+            // This is a group of sinks, including the current pin_id, which share a specific number of parent blocks.
+            // To determine the choke points of the current sink, pin_id, we only consider the sinks in this group for the
+            // run-time purpose
             std::vector<int> sink_grp = net_terminal_groups[net_id][group_num];
             VTR_ASSERT((int)sink_grp.size() >= 1);
             if(sink_grp.size() == 1) {
                 pin_count++;
                 continue;
             } else {
+                // get the ptc_number of the sinks in the group
                 std::for_each(sink_grp.begin(), sink_grp.end(), [&rr_graph](int& sink_rr_num) {
                     sink_rr_num = rr_graph.node_ptc_num(RRNodeId(sink_rr_num));
                 });
                 auto physical_type = device_ctx.grid[blk_loc.loc.x][blk_loc.loc.y].type;
+                // Get the choke points of the sink corresponds to pin_count given the sink group
                 auto sink_choking_spots = get_sink_choking_points(physical_type,
                                                                   rr_graph.node_ptc_num(RRNodeId(net_rr_terminal[net_id][pin_count])),
                                                                   sink_grp);
+                // Store choke points rr_node_id and the number reachable sinks
                 for(const auto& choking_spot : sink_choking_spots) {
                     int pin_physical_num = choking_spot.first;
                     int num_reachable_sinks = choking_spot.second;
-                    std::vector<int> x_offset_vec;
-                    std::vector<int> y_offset_vec;
-                    std::vector<e_side> pin_sides_vec;
-                    std::tie(x_offset_vec, y_offset_vec, pin_sides_vec) = get_pin_coordinates(physical_type,
-                                                                                              pin_physical_num,
-                                                                                              std::vector<e_side>(SIDES.begin(), SIDES.end()));
-                    VTR_ASSERT(!pin_sides_vec.empty());
-                    auto pin_rr_node_id = rr_graph.node_lookup().find_node(blk_loc.loc.x + x_offset_vec[0],
-                                                                           blk_loc.loc.y + y_offset_vec[0],
-                                                                           t_rr_type::IPIN,
-                                                                           pin_physical_num,
-                                                                           pin_sides_vec[0]);
+                    auto pin_rr_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
+                                                             physical_type,
+                                                             blk_loc.loc.x,
+                                                             blk_loc.loc.y,
+                                                             pin_physical_num);
+                    VTR_ASSERT(pin_rr_node_id != RRNodeId::INVALID());
                     choking_spots[net_id][pin_count].insert(std::make_pair(pin_rr_node_id, num_reachable_sinks));
                 }
             }
