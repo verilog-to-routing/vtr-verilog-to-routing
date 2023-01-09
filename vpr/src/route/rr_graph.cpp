@@ -89,8 +89,8 @@ struct t_pin_chain_node {
 };
 
 struct t_cluster_pin_chain {
-    std::vector<int> pin_chain_idx;
-    std::vector<std::vector<t_pin_chain_node>> chains;
+    std::vector<int> pin_chain_idx; // [pin_physical_num] -> chain_num
+    std::vector<std::vector<t_pin_chain_node>> chains; // [chain_num] -> chain_node
 
     t_cluster_pin_chain() = default;
     t_cluster_pin_chain(std::vector<int> pin_chain_idx_, std::vector<std::vector<t_pin_chain_node>> chains_)
@@ -331,6 +331,20 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          int i,
                          int j);
 
+/**
+ * Edges going in/out of collapse nodes are not added by the normal routine. This function add those edges
+ * @param rr_graph_builder
+ * @param rr_edges_to_create
+ * @param physical_type
+ * @param logical_block
+ * @param cluster_pins
+ * @param nodes_to_collapse
+ * @param R_minW_nmos
+ * @param R_minW_pmos
+ * @param i
+ * @param j
+ * @return Number of the collapsed nodes
+ */
 static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          t_rr_edge_info_set& rr_edges_to_create,
                                          t_physical_tile_type_ptr physical_type,
@@ -436,14 +450,31 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
                                                         RRNodeId from_rr,
                                                         const std::vector<RRNodeId>& candidate_rr_nodes);
 
+/**
+ *
+ * @param cluster_pins
+ * @param physical_type
+ * @param logical_block
+ * @param is_flat
+ * @return A structure containing
+ */
 static t_cluster_pin_chain get_cluster_directly_connected_nodes(const std::vector<int>& cluster_pins,
                                                                 t_physical_tile_type_ptr physical_type,
                                                                 t_logical_block_type_ptr logical_block,
                                                                 bool is_flat);
 
+/**
+ *
+ * @param physical_type
+ * @param logical_block
+ * @param pins_in_cluster
+ * @param pin_physical_num
+ * @param is_flat
+ * @return A chain of nodes starting from pin_physcical_num. All of the pins in this chain has a fan-out of 1
+ */
 static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr physical_type,
                                                      t_logical_block_type_ptr logical_block,
-                                                     const std::unordered_set<int>& cluster_pin_num_vec,
+                                                     const std::unordered_set<int>& pins_in_cluster,
                                                      int pin_physical_num,
                                                      bool is_flat);
 
@@ -465,6 +496,14 @@ static std::vector<int> get_src_pins_in_cluster(const std::unordered_set<int>& p
 
 static int get_chain_idx(const std::vector<int>& pin_idx_vec, const std::vector<int>& pin_chain, int new_idx);
 
+/**
+ * If pin chain is a part of a chain already added to all_chains, add the new parts to the corresponding chain. Otherwise, add pin_chain as a new chain to all_chains.
+ * @param pin_chain
+ * @param chain_idx
+ * @param pin_index_vec
+ * @param all_chains
+ * @param is_new_chain
+ */
 static void add_pin_chain(const std::vector<int>& pin_chain,
                           int chain_idx,
                           std::vector<int>& pin_index_vec,
@@ -2322,6 +2361,7 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
     auto cluster_pins = get_cluster_block_pins(physical_type,
                                                cluster_blk_id,
                                                abs_cap);
+    // Get the chains of nodes - Each chain would collapse into a single node
     auto nodes_to_collapse = get_cluster_directly_connected_nodes(cluster_pins,
                                                                   physical_type,
                                                                   logical_block,
@@ -2348,6 +2388,8 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
         add_pb_child_to_list(pb_q, pb);
     }
 
+    // Edges going in/out of the nodes on the chain are not added by the previous funtions, they are added
+    // by this function
     num_collapsed_nodes += add_edges_for_collapsed_nodes(rr_graph_builder,
                                                          rr_edges_to_create,
                                                          physical_type,
@@ -2427,6 +2469,7 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          float R_minW_pmos,
                                          int i,
                                          int j) {
+    // Store the cluster pins in a set to make the search more run-time efficient
     std::unordered_set<int> cluster_pins_set(cluster_pins.begin(), cluster_pins.end());
 
     int num_collapsed_pins = 0;
@@ -4198,7 +4241,9 @@ static t_cluster_pin_chain get_cluster_directly_connected_nodes(const std::vecto
                                                                 bool is_flat) {
     std::unordered_set<int> cluster_pins_set(cluster_pins.begin(), cluster_pins.end()); // Faster for search
 
-    std::vector<int> pin_index_vec(get_tile_pin_max_ptc(physical_type, is_flat), OPEN);
+    VTR_ASSERT(is_flat);
+    std::vector<int> pin_index_vec(get_tile_total_num_pin(physical_type), OPEN);
+
     std::vector<std::vector<t_pin_chain_node>> chains;
     for (auto pin_physical_num : cluster_pins) {
         auto pin_type = get_pin_type_from_pin_physical_num(physical_type, pin_physical_num);
@@ -4211,6 +4256,7 @@ static t_cluster_pin_chain get_cluster_directly_connected_nodes(const std::vecto
                                                        logical_block,
                                                        pin_physical_num);
         VTR_ASSERT(pin_type != OPEN);
+        // Continue if the fan-out or fan-in of pin_physical_num is not equal to one or pin is already assigned to a chain.
         if (pin_index_vec[pin_physical_num] >= 0 || conn_src_pins.size() != 1 || conn_sink_pins.size() != 1) {
             continue;
         } else {
@@ -4219,6 +4265,7 @@ static t_cluster_pin_chain get_cluster_directly_connected_nodes(const std::vecto
                                                            cluster_pins_set,
                                                            pin_physical_num,
                                                            is_flat);
+            // If chain contains more than one pin, we store it.
             if (node_chain.size() > 1) {
                 int num_chain = (int)chains.size();
                 int chain_idx = get_chain_idx(pin_index_vec, node_chain, num_chain);
@@ -4237,7 +4284,7 @@ static t_cluster_pin_chain get_cluster_directly_connected_nodes(const std::vecto
                                     pin_index_vec,
                                     chains));
 
-    return t_cluster_pin_chain(pin_index_vec, chains);
+    return {pin_index_vec, chains};
 }
 
 static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr physical_type,
@@ -4255,9 +4302,7 @@ static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr ph
         do {
             int conn_pin_num = conn_sink_pins[0];
             conn_node_chain.push_back(conn_pin_num);
-            // To enable route-through, input pins on the primitives are connected to the output pins.
-            // To prevent collapsing these nodes, since the input pins are actually also connected to SINK nodes,
-            // we added this if-condition
+            // In the RR Graph, primitive IPINs are also connected to SINK Node. Thus, when hit a primitive IPIN, the loop is stopped
             if (is_primitive_pin(physical_type, conn_pin_num) && get_pin_type_from_pin_physical_num(physical_type, conn_pin_num) == e_pin_type::RECEIVER) {
                 break;
             }
@@ -4368,7 +4413,7 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
             VTR_ASSERT(pin_index_vec[pin_num] == OPEN);
             // Assign the pin its chain index
             pin_index_vec[pin_num] = chain_idx;
-            new_pin_chain.push_back(t_pin_chain_node(pin_num, nxt_node_idx));
+            new_pin_chain.emplace_back(pin_num, nxt_node_idx);
             nxt_node_idx++;
         }
 
@@ -4391,7 +4436,7 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
         for (auto pin_num : pin_chain) {
             if (pin_index_vec[pin_num] == OPEN) {
                 pin_index_vec[pin_num] = chain_idx;
-                node_chain.push_back(t_pin_chain_node(pin_num, nxt_node_idx));
+                node_chain.emplace_back(pin_num, nxt_node_idx);
                 nxt_node_idx++;
                 is_new_pin_added = true;
             } else {
